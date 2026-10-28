@@ -37,18 +37,21 @@ describe('admin landing pages server api helpers', () => {
     await expect(getAdminLandingPagesForUser('missing-user')).resolves.toBeNull()
   })
 
-  it('calls the admin landing page analytics endpoint with encoded page id and headers', async () => {
+  it('calls the admin landing page analytics endpoint with owner and page slugs', async () => {
     const headers = { cookie: 'session=1' }
-    await getAdminLandingPageAnalytics('page/1', { headers })
+    await getAdminLandingPageAnalytics('alice', 'bonus', { headers })
 
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/admin/landing-pages/page%2F1/analytics', {
-      headers,
-    })
+    expect(mockGet).toHaveBeenCalledWith(
+      '/api/v1/admin/users/alice/landing-pages/bonus/analytics',
+      {
+        headers,
+      },
+    )
   })
 
   it('returns null for missing admin landing page analytics', async () => {
     mockGet.mockRejectedValue(new ApiError('Not found', 404))
 
-    await expect(getAdminLandingPageAnalytics('missing-page')).resolves.toBeNull()
+    await expect(getAdminLandingPageAnalytics('alice', 'missing-page')).resolves.toBeNull()
   })
 })

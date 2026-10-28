@@ -47,18 +47,24 @@ describe('AdminLandingPageAnalyticsPage', () => {
   })
 
   it('renders the landing page analytics dashboard', async () => {
-    render(await AdminLandingPageAnalyticsPage({ params: Promise.resolve({ pageId: 'page-1' }) }))
+    render(
+      await AdminLandingPageAnalyticsPage({
+        params: Promise.resolve({ idOrUsername: 'alice', slug: 'bonus' }),
+      }),
+    )
 
     expect(screen.getByTestId('analytics-total').textContent).toBe('17')
     expect(screen.getByTestId('analytics-items').textContent).toBe('1')
-    expect(mockGetAdminLandingPageAnalytics).toHaveBeenCalledWith('page-1')
+    expect(mockGetAdminLandingPageAnalytics).toHaveBeenCalledWith('alice', 'bonus')
   })
 
   it('calls notFound when analytics are missing', async () => {
     mockGetAdminLandingPageAnalytics.mockResolvedValue(null)
 
     await expect(
-      AdminLandingPageAnalyticsPage({ params: Promise.resolve({ pageId: 'page-1' }) }),
+      AdminLandingPageAnalyticsPage({
+        params: Promise.resolve({ idOrUsername: 'alice', slug: 'bonus' }),
+      }),
     ).rejects.toThrow('notFound')
   })
 
@@ -66,7 +72,9 @@ describe('AdminLandingPageAnalyticsPage', () => {
     mockGetAdminLandingPageAnalytics.mockRejectedValue(new Error('timeout'))
 
     await expect(
-      AdminLandingPageAnalyticsPage({ params: Promise.resolve({ pageId: 'page-1' }) }),
+      AdminLandingPageAnalyticsPage({
+        params: Promise.resolve({ idOrUsername: 'alice', slug: 'bonus' }),
+      }),
     ).rejects.toThrow('notFound')
   })
 })

@@ -68,17 +68,22 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/links/entity-href'), () => ({
-  createUrlPathname: vi.fn<VitestLooseMock>((_id: string, path: string) => `/url/${_id}${path}`),
+  urlCrawlHref: vi.fn<VitestLooseMock>(
+    (url: { url: string }, id: string) => `/url/${encodeURIComponent(url.url)}/crawls/${id}`,
+  ),
   domainHref: vi.fn<VitestLooseMock>(
     (h: unknown) => `/domain/${(h as { hostname: string }).hostname}`,
   ),
-  urlHref: vi.fn<VitestLooseMock>((id: string) => `/url/${id}`),
+  urlHref: vi.fn<VitestLooseMock>((url: { url: string }) => `/url/${encodeURIComponent(url.url)}`),
 }))
 
 describe('CrawlDetailPage', () => {
   it('renders crawl detail and passes og_image_sideload to CrawlMetaTags', async () => {
     const jsx = await CrawlDetailPage({
-      params: Promise.resolve({ id: 'url-1', crawlId: 'crawl-1' }),
+      params: Promise.resolve({
+        urlValue: encodeURIComponent('https://example.com/page'),
+        crawlId: 'crawl-1',
+      }),
     })
     render(jsx)
 

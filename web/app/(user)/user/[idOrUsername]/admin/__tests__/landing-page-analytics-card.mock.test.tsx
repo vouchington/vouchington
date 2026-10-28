@@ -21,6 +21,7 @@ describe('LandingPageAnalyticsCard', () => {
   it('lists landing pages with analytics links', async () => {
     render(
       await LandingPageAnalyticsCard({
+        username: 'alice',
         landingPages: [
           {
             id: 'page-1',
@@ -51,16 +52,16 @@ describe('LandingPageAnalyticsCard', () => {
     expect(screen.getByText('Secondary')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View analytics for Primary' })).toHaveAttribute(
       'href',
-      '/admin/landing-pages/page-1/analytics',
+      '/landing/alice/primary/analytics',
     )
     expect(screen.getByRole('link', { name: 'View analytics for Secondary' })).toHaveAttribute(
       'href',
-      '/admin/landing-pages/page-2/analytics',
+      '/landing/alice/secondary/analytics',
     )
   })
 
   it('shows an empty state when the user has no landing pages', async () => {
-    render(await LandingPageAnalyticsCard({ landingPages: [] }))
+    render(await LandingPageAnalyticsCard({ username: 'alice', landingPages: [] }))
 
     expect(screen.getByText('No landing pages found for this user.')).toBeInTheDocument()
   })

@@ -82,7 +82,7 @@ export function createReferralProgramValidationsListPage() {
         </AdminPageHeader>
         <ValidationsListTable
           validations={data.results}
-          basePath={basePath}
+          programSlug={topic.slug}
           t={t}
         />
       </div>
@@ -120,7 +120,7 @@ export function createReferralProgramValidationNewPage() {
         />
         <div className='max-w-lg'>
           <ValidationForm
-            basePath={basePath}
+            programSlug={topic.slug}
             referralProgramId={topic.id}
           />
         </div>
@@ -185,7 +185,7 @@ export function createReferralProgramValidationDetailPage() {
           </h2>
           <ValidationForm
             existing={validation}
-            basePath={basePath}
+            programSlug={topic.slug}
           />
         </div>
         <ValidationRulesTable

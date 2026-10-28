@@ -1017,7 +1017,7 @@
     "I003": [["item_id", "story_id"]],
     "I004": [["userId"]],
     "I005": [["after", "limit"]],
-    "I006": [["page_id"]],
+    "I006": [["slug", "username"]],
     "I007": [["range"]],
     "I008": [["action_type", "actor_user_id", "after", "community_id", "limit"]],
     "I009": [[]],
@@ -1618,7 +1618,7 @@
         "decision": false
       }
     ],
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": [
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": [
       {
         "audience": "admin",
         "facts": "F08",

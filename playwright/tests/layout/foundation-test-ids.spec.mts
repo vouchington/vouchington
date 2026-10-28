@@ -12,7 +12,7 @@ const SEEDED_DISCUSSION_ID = '019c64e6-f720-7001-a001-000000000001'
 
 let topicId: string
 let feedHostname: string
-let feedUrlId: string
+let feedUrl: string
 
 test.beforeAll(async () => {
   protectPlaywrightHookTimeouts(test.info())
@@ -30,7 +30,7 @@ test.beforeAll(async () => {
   const feed = await insertTestRssFeed(sourceTopic.id, `pw-foundation-${suffix}`)
   await setTopicHostnameLink(sourceTopic.id, feed.hostnameId)
   feedHostname = feed.hostname
-  feedUrlId = feed.rssFeedUrlId
+  feedUrl = `https://${feed.hostname}/feed.xml`
 })
 
 test.describe('Signed-out foundation test ids', () => {
@@ -62,7 +62,7 @@ test.describe('Signed-in foundation test ids', () => {
   test.use({ storageState: AUTH_STATE })
 
   test('url detail exposes the source link', async ({ page }) => {
-    await navigateTo(page, `/url/${feedUrlId}`)
+    await navigateTo(page, `/url/${encodeURIComponent(feedUrl)}`)
     await expect(page.getByTestId('url-page-source-link')).toBeAttached()
   })
 

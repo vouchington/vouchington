@@ -88,10 +88,10 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'native.admin-landing-page-analytics.default',
     method: 'GET',
-    path: '/api/v1/admin/landing-pages/landing-page-1/analytics',
+    path: '/api/v1/admin/users/fixture-user/landing-pages/links/analytics',
     route: {
-      routeTemplate: '/api/v1/admin/landing-pages/:pageId/analytics',
-      pathParams: { pageId: 'landing-page-1' },
+      routeTemplate: '/api/v1/admin/users/:username/landing-pages/:slug/analytics',
+      pathParams: { username: 'fixture-user', slug: 'links' },
     },
     auth: 'fixture-admin',
     status: 200,

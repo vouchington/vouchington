@@ -75,6 +75,7 @@ export const MainPageContent: Story = {
       />
       <UrlCrawlsPage
         urlId={publicUrl.id}
+        url={publicUrl.url}
         data={{
           results: [
             {

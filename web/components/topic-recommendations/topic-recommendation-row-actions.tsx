@@ -74,7 +74,7 @@ export function TopicRecommendationRowActions({
             data-pw='topic-recommendation-row-edit'
           >
             <Link
-              href={topicRecommendationHref(post, '/edit')}
+              href={topicRecommendationHref(post.slug!, '/edit')}
               prefetch={false}
             >
               <EditIcon className='h-4 w-4' />

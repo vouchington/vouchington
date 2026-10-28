@@ -13,14 +13,14 @@ export const metadata: Metadata = createNoIndexMetadata('Edit Topic Recommendati
 export default async function EditTopicRecommendationPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
 }) {
   const t = await getTranslations()
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/login')
 
-  const { id } = await params
-  const data = await getTopicRecommendation(id)
+  const { slug } = await params
+  const data = await getTopicRecommendation(slug)
   if (
     !data?.post ||
     data.post.post_type !== 'topic_recommendation' ||

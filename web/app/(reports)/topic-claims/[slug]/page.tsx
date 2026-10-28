@@ -13,24 +13,24 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('Claim Topic')
 
 interface Props {
-  params: Promise<{ topicId: string }>
+  params: Promise<{ slug: string }>
 }
 
 export default async function ClaimTopicPage({ params }: Props) {
   const t = await getTranslations()
-  const { topicId } = await params
+  const { slug } = await params
   const currentUser = await getCurrentUser()
-  if (!currentUser) redirect(`/login?next=/topic-claims/${topicId}`)
+  if (!currentUser) redirect(`/login?next=${encodeURIComponent(topicClaimHref(slug))}`)
 
-  const existingClaims = await getTopicClaims(topicId, true, true).catch(() => ({ results: [] }))
+  const existingClaims = await getTopicClaims(slug, true, true).catch(() => ({ results: [] }))
   const existingClaim = existingClaims.results[0]
 
   return (
     <>
       <Breadcrumbs
-        items={buildBreadcrumbsForPath(topicClaimHref(topicId), {
+        items={buildBreadcrumbsForPath(topicClaimHref(slug), {
           isAuthenticated: true,
-          tail: [{ name: 'Claim topic', path: topicClaimHref(topicId) }],
+          tail: [{ name: 'Claim topic', path: topicClaimHref(slug) }],
         })}
       />
       <div className='mt-4 max-w-lg space-y-6'>
@@ -41,7 +41,7 @@ export default async function ClaimTopicPage({ params }: Props) {
           {t('extracted.topicid.page.verifyYourRelationshipToThisTopic_2c72fbba')}
         </p>
         <TopicClaimFlow
-          topicIdOrSlug={topicId}
+          topicIdOrSlug={slug}
           existingClaim={existingClaim}
         />
       </div>

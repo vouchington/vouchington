@@ -545,7 +545,7 @@
       "required": ["penalty"],
       "type": "object"
     },
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
       "additionalProperties": false,
       "properties": {
         "analytics": {
@@ -41592,14 +41592,17 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
       "path": {
         "properties": {
-          "pageId": {
+          "username": {
+            "type": "string"
+          },
+          "slug": {
             "type": "string"
           }
         },
-        "required": ["pageId"],
+        "required": ["username", "slug"],
         "type": "object"
       }
     },

@@ -6,7 +6,7 @@ import { createTestLandingPage, createTestUser } from '../../../backend/test-hel
 let targetId = ''
 let targetUsername = ''
 let targetEmail = ''
-let landingPageId = ''
+let landingPageSlug = ''
 let viewerId = ''
 
 test.beforeAll(async () => {
@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   targetUsername = target.username!
   targetEmail = target.email_address!
   const landingPage = await createTestLandingPage(targetId, `users-admin-${suffix}`)
-  landingPageId = landingPage.landingPageId
+  landingPageSlug = landingPage.slug
 
   const viewer = await createTestUser({ username: `users-viewer-${suffix}` })
   if (!viewer) throw new Error('Failed to create viewer user')
@@ -59,7 +59,7 @@ test.describe('Users search and admin management', () => {
     await expect(page.getByTestId('admin-user-landing-page')).toBeVisible()
     await expect(page.getByTestId('admin-user-landing-page-analytics-link')).toHaveAttribute(
       'href',
-      `/admin/landing-pages/${landingPageId}/analytics`,
+      `/landing/${targetUsername}/${landingPageSlug}/analytics`,
     )
 
     const suspendResponse = await page.evaluate(async userId => {

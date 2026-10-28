@@ -81,18 +81,18 @@ describe('ClaimTopicPage', () => {
       throw new Error('REDIRECT')
     })
 
-    await expect(
-      ClaimTopicPage({ params: Promise.resolve({ topicId: 'my-topic' }) }),
-    ).rejects.toThrow('REDIRECT')
+    await expect(ClaimTopicPage({ params: Promise.resolve({ slug: 'my-topic' }) })).rejects.toThrow(
+      'REDIRECT',
+    )
 
-    expect(mockRedirect).toHaveBeenCalledWith('/login?next=/topic-claims/my-topic')
+    expect(mockRedirect).toHaveBeenCalledWith('/login?next=%2Ftopic-claims%2Fmy-topic')
   })
 
   it('renders ClaimTopicForm when no existing claim', async () => {
     mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
     mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
 
-    render(await ClaimTopicPage({ params: Promise.resolve({ topicId: 'my-topic' }) }))
+    render(await ClaimTopicPage({ params: Promise.resolve({ slug: 'my-topic' }) }))
 
     expect(screen.getByText('Claim this topic')).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Complete claim' }))
@@ -104,7 +104,7 @@ describe('ClaimTopicPage', () => {
     mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
 
     const { container } = render(
-      await ClaimTopicPage({ params: Promise.resolve({ topicId: 'topic-abc' }) }),
+      await ClaimTopicPage({ params: Promise.resolve({ slug: 'topic-abc' }) }),
     )
 
     expect(container.querySelector('[data-pw="claim-topic-form"]')).not.toBeNull()
@@ -140,7 +140,7 @@ describe('ClaimTopicPage', () => {
     })
 
     const { container } = render(
-      await ClaimTopicPage({ params: Promise.resolve({ topicId: 'topic-abc' }) }),
+      await ClaimTopicPage({ params: Promise.resolve({ slug: 'topic-abc' }) }),
     )
 
     expect(container.querySelector('[data-pw="domain-verification-panel"]')).not.toBeNull()
@@ -153,7 +153,7 @@ describe('ClaimTopicPage', () => {
     mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
 
     const { container } = render(
-      await ClaimTopicPage({ params: Promise.resolve({ topicId: 'topic-abc' }) }),
+      await ClaimTopicPage({ params: Promise.resolve({ slug: 'topic-abc' }) }),
     )
 
     expect(container.querySelector('[data-pw="claim-topic-form"]')).not.toBeNull()

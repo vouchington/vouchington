@@ -19,17 +19,18 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = createNoIndexMetadata()
 
-export default async function UrlDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function UrlDetailPage({ params }: { params: Promise<{ urlValue: string }> }) {
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/login')
   const t = await getTranslations()
 
-  const { id } = await params
-  const data = await getUrl(id)
+  const { urlValue } = await params
+  const urlInput = decodeURIComponent(urlValue)
+  const data = await getUrl(urlInput)
   if (!data) notFound()
   if (!data.can_view_crawl_history) notFound()
 
-  const crawls = await getUrlCrawls(id, { searchParams: { limit: '20' } })
+  const crawls = await getUrlCrawls(urlInput, { searchParams: { limit: '20' } })
 
   const { url, can_trigger_crawl, url_type, rss_feed_id } = data
 
@@ -75,6 +76,7 @@ export default async function UrlDetailPage({ params }: { params: Promise<{ id: 
         <UrlCrawlsPage
           data={crawls}
           urlId={url.id}
+          url={url.url}
         />
       </div>
     </PageWithAside>

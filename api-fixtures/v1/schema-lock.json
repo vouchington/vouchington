@@ -88,10 +88,6 @@
       "fixtureIds": ["engineering.admin.classifiers.human-vote-comparison"],
       "hash": "b550c18dcd0f2da22ed6015ab08dd3265a9bc3f15dace47b1703a61ce0a49572"
     },
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
-      "fixtureIds": ["native.admin-landing-page-analytics.default"],
-      "hash": "24ebcda04fe68d42d11d8a9ef30ba0babbe90c88b7ed57a16e762119cc4bb4e9"
-    },
     "GET:/api/v1/admin/moderation-analytics": {
       "fixtureIds": ["native.moderation.analytics.default"],
       "hash": "c8cce74cefbec230f97eb746c8490a0724d241dfffe31adfac1fd3cb8d710f3b"
@@ -107,6 +103,10 @@
     "GET:/api/v1/admin/users/:userId/landing-pages": {
       "fixtureIds": ["native.admin-user-landing-pages.default"],
       "hash": "41f4d78bc8bce20a2f94ab6df2bcb0b3a9b69496834bb3458d09776c683475e2"
+    },
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
+      "fixtureIds": ["native.admin-landing-page-analytics.default"],
+      "hash": "24ebcda04fe68d42d11d8a9ef30ba0babbe90c88b7ed57a16e762119cc4bb4e9"
     },
     "GET:/api/v1/appeals#member": {
       "fixtureIds": [

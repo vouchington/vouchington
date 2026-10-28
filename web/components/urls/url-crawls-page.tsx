@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { createUrlPathname } from '@/lib/links/entity-href'
+import { urlCrawlHref } from '@/lib/links/entity-href'
 import { mergePageResultsById } from '@ts-shared/utils/collections'
 import type { CrawlListResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -17,9 +17,10 @@ const crawlDateFormatter = new Intl.DateTimeFormat('en-US', {
 interface UrlCrawlsPageProps {
   data: CrawlListResponseBody
   urlId: string
+  url: string
 }
 
-export function UrlCrawlsPage({ data, urlId }: UrlCrawlsPageProps) {
+export function UrlCrawlsPage({ data, urlId, url }: UrlCrawlsPageProps) {
   const t = useTranslations()
   const endpoint = `/api/v1/urls/${encodeURIComponent(urlId)}/crawls`
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
@@ -85,7 +86,7 @@ export function UrlCrawlsPage({ data, urlId }: UrlCrawlsPageProps) {
                 <td className='whitespace-nowrap px-6 py-4 text-sm text-muted-foreground'>
                   <Link
                     prefetch={false}
-                    href={createUrlPathname(urlId, `/crawls/${crawl.id}`)}
+                    href={urlCrawlHref(url, crawl)}
                     className='text-primary hover:text-primary/80'
                   >
                     {t('extracted.urls.urlCrawlsPage.view_dcc839a4')}

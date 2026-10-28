@@ -39,6 +39,8 @@ describe('typed-recommendations', () => {
       })
 
       expect(recommendation.post_type).toBe('topic_recommendation')
+      expect(recommendation.slug).toMatch(/^referral-program-topic-/)
+      expect((await getPostByAny(recommendation.slug!))?.id).toBe(recommendation.id)
       expect(recommendation.topic_recommendation?.topic_type).toBe('referral_program')
       expect(recommendation.topic_recommendation?.example_referral_link).toBe(
         `https://example.com/referral-${random}`,

@@ -25,12 +25,13 @@ export const getAdminLandingPagesForUser = cache(
 
 export const getAdminLandingPageAnalytics = cache(
   async (
-    pageId: string,
+    username: string,
+    slug: string,
     options?: { headers?: Record<string, string> },
   ): Promise<AdminLandingPageAnalyticsResponseBody | null> => {
     return returnNullForMissingEntity(
       serverApi.get<AdminLandingPageAnalyticsResponseBody>(
-        `/api/v1/admin/landing-pages/${encodeURIComponent(pageId)}/analytics`,
+        `/api/v1/admin/users/${encodeURIComponent(username)}/landing-pages/${encodeURIComponent(slug)}/analytics`,
         options,
       ),
     )

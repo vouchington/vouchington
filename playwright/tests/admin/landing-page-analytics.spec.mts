@@ -8,21 +8,18 @@ const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 test.describe('Admin landing page analytics', () => {
   test.use({ storageState: ADMIN_AUTH_STATE })
 
-  let landingPageId = ''
+  let landingPageSlug = ''
 
   test.beforeAll(async () => {
     protectPlaywrightHookTimeouts(test.info())
-    const { landingPageId: pageId } = await createTestLandingPage(
-      TEST_USER_ID,
-      'Playwright Admin Analytics Test',
-    )
-    landingPageId = pageId
+    const { slug } = await createTestLandingPage(TEST_USER_ID, 'Playwright Admin Analytics Test')
+    landingPageSlug = slug
   })
 
   test('admin can view a target landing page analytics dashboard', async ({ page }) => {
-    await navigateTo(page, `/admin/landing-pages/${landingPageId}/analytics`)
+    await navigateTo(page, `/landing/tests/${landingPageSlug}/analytics`)
 
-    await expect(page).toHaveURL(/\/admin\/landing-pages\/[^/]+\/analytics$/)
+    await expect(page).toHaveURL(new RegExp(`/landing/tests/${landingPageSlug}/analytics$`))
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   })
 })

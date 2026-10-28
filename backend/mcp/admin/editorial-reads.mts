@@ -8,7 +8,7 @@ import {
   currentUserCanViewImportBatch,
 } from '@services/admin-imports'
 import { getAdminArticleSyncStatus } from '@services/admin-imports/article-sync-controls'
-import { getLandingPageById, listLandingPagesForUserPage } from '@services/my'
+import { getLandingPageByUsernameAndSlug, listLandingPagesForUserPage } from '@services/my'
 import { getLandingPageAnalyticsByPageId } from '@services/landing-page-analytics'
 import { getSignupCountByReferrerId } from '@services/attribution'
 import { createPaginationParser } from '@modules/pagination'
@@ -92,18 +92,21 @@ const pages = createAdminTool<{ user_id: string; after?: string; limit?: number 
 })
 const analyticsApi = {
   method: 'GET',
-  path: '/api/v1/admin/landing-pages/{pageId}/analytics',
+  path: '/api/v1/admin/users/{username}/landing-pages/{slug}/analytics',
 } as const
-const analytics = createAdminTool<{ page_id: string }>({
+const analytics = createAdminTool<{ username: string; slug: string }>({
   name: 'get_landing_page_analytics',
   description: 'Read landing-page analytics and the signup conversion funnel.',
   scope: 'editorial:read',
   api: analyticsApi,
-  parameters: adminInput({ page_id: UUID_INPUT }, ['page_id']),
+  parameters: adminInput(
+    { username: { type: 'string', minLength: 1 }, slug: { type: 'string', minLength: 1 } },
+    ['username', 'slug'],
+  ),
   outputSchema: adminRouteOutputSchema(analyticsApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (_, args) => {
-    const page = await getLandingPageById(args.page_id)
+    const page = await getLandingPageByUsernameAndSlug(args.username, args.slug)
     const [analytics, totalSignups] = await Promise.all([
       getLandingPageAnalyticsByPageId(page.id),
       getSignupCountByReferrerId(page.user_id),

@@ -82,10 +82,9 @@ test.describe('Admin URLs', () => {
 
   test('should view URL detail with inline crawls list', async ({ page }) => {
     // Navigate directly to avoid pagination issues (seed URLs are not on page 1 of the list)
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    await navigateTo(page, `/url/${urlId}`)
+    await navigateTo(page, `/url/${encodeURIComponent('https://example.com/page1')}`)
 
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1/)
 
     // h1 is the URL string itself
     await expect(page.getByRole('heading', { level: 1 })).toContainText('https://example.com/page1')
@@ -108,9 +107,8 @@ test.describe('Admin URLs', () => {
 
   test('should trigger URL crawl', async ({ page }) => {
     // Navigate directly to avoid pagination issues (seed URLs are not on page 1 of the list)
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    await navigateTo(page, `/url/${urlId}`)
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
+    await navigateTo(page, `/url/${encodeURIComponent('https://example.com/page1')}`)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1/)
 
     // Click trigger crawl button
     const triggerCrawlBtn = page.locator('button').filter({ hasText: /trigger crawl/i })
@@ -124,7 +122,7 @@ test.describe('Admin URLs', () => {
     ).toBeVisible()
 
     // URL should not have changed
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1/)
     // h1 still shows the URL
     await expect(page.getByRole('heading', { level: 1 })).toContainText('https://example.com/page1')
   })
@@ -133,11 +131,13 @@ test.describe('Admin URLs', () => {
     // Navigate directly to a known seed crawl to avoid interference from triggered crawls.
     // crawlId comes from crawl-ids.mts, which uses a guarded recent UTC day so it
     // matches what seedPlaywrightTestData() inserts across UTC midnight.
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
     const crawlId = recentSeedCrawlId(2)
-    await navigateTo(page, `/url/${urlId}/crawls/${crawlId}`)
+    await navigateTo(
+      page,
+      `/url/${encodeURIComponent('https://example.com/page1')}/crawls/${crawlId}`,
+    )
 
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+\/crawls\/[a-f0-9-]+/)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1\/crawls\/[a-f0-9-]+/)
 
     // Check crawl detail page
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Crawl Details')

@@ -1716,874 +1716,6 @@
       "source": "backend/api/v1/admin/classifiers/human-vote-comparison.mts",
       "statusKnowledge": "default"
     },
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
-      "bodyKind": "content",
-      "hash": "24ebcda04fe68d42d11d8a9ef30ba0babbe90c88b7ed57a16e762119cc4bb4e9",
-      "mediaType": "application/json",
-      "mediaTypeKnowledge": "known",
-      "method": "GET",
-      "routeTemplate": "/api/v1/admin/landing-pages/:pageId/analytics",
-      "schema": {
-        "definitions": {
-          "DailyStats": {
-            "additionalProperties": false,
-            "properties": {
-              "clicks": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "date": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "unique_visitors": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "visits": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "ImagePlacementTuple": {
-            "additionalProperties": false,
-            "properties": {
-              "image_id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "placement_id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "placement_revision": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "LandingPage": {
-            "additionalProperties": false,
-            "properties": {
-              "created_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "is_default": {
-                "required": true,
-                "schema": {
-                  "type": "boolean"
-                }
-              },
-              "slug": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "subtitle": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "title": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "updated_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "user_id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "LandingPageCandidateReferralLink": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "label": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "referral_program_id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "referral_program_name": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "referral_program_slug": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "url": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "LandingPageCandidateReview": {
-            "additionalProperties": false,
-            "properties": {
-              "created_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "declared_language": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "lingua_rs_detected_language": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "markdown": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "review_topic_ratings": {
-                "required": true,
-                "schema": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "order_index": {
-                        "required": true,
-                        "schema": {
-                          "type": "number"
-                        }
-                      },
-                      "rating": {
-                        "required": true,
-                        "schema": {
-                          "type": "number"
-                        }
-                      },
-                      "topic_id": {
-                        "required": true,
-                        "schema": {
-                          "type": "string"
-                        }
-                      },
-                      "topic_name": {
-                        "required": true,
-                        "schema": {
-                          "type": "string"
-                        }
-                      },
-                      "topic_slug": {
-                        "required": true,
-                        "schema": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              },
-              "slug": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "title": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "LandingPageItem": {
-            "type": "union",
-            "variants": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "entries": {
-                    "required": true,
-                    "schema": {
-                      "items": {
-                        "name": "LandingPageTopicGroupEntry",
-                        "type": "ref"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "topic": {
-                    "required": true,
-                    "schema": {
-                      "name": "LandingPageTopic",
-                      "type": "ref"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "topic_group"
-                    }
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "label": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "link"
-                    }
-                  },
-                  "url": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "profile_link": {
-                    "required": true,
-                    "schema": {
-                      "name": "ProfileLink",
-                      "type": "ref"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "profile_link"
-                    }
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "referral_link": {
-                    "required": true,
-                    "schema": {
-                      "name": "LandingPageCandidateReferralLink",
-                      "type": "ref"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "referral_link"
-                    }
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "review": {
-                    "required": true,
-                    "schema": {
-                      "name": "LandingPageCandidateReview",
-                      "type": "ref"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "review"
-                    }
-                  }
-                },
-                "type": "object"
-              }
-            ]
-          },
-          "LandingPageItemClickStats": {
-            "additionalProperties": false,
-            "properties": {
-              "click_count": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "item_id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "item_type": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "LandingPageTopic": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "name": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "slug": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "topic_type": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "LandingPageTopicGroupEntry": {
-            "type": "union",
-            "variants": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "referral_link": {
-                    "required": true,
-                    "schema": {
-                      "name": "LandingPageCandidateReferralLink",
-                      "type": "ref"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "referral_link"
-                    }
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "review": {
-                    "required": true,
-                    "schema": {
-                      "name": "LandingPageCandidateReview",
-                      "type": "ref"
-                    }
-                  },
-                  "type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "review"
-                    }
-                  }
-                },
-                "type": "object"
-              }
-            ]
-          },
-          "ProfileLink": {
-            "additionalProperties": false,
-            "properties": {
-              "created_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "handle": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "image_id": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "image_placement": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "name": "ImagePlacementTuple",
-                      "type": "ref"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "link_type": {
-                "required": true,
-                "schema": {
-                  "name": "ProfileLinkType",
-                  "type": "ref"
-                }
-              },
-              "name": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "sort_order": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "updated_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "url": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "url_id": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "user_id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "ProfileLinkType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "facebook"
-              },
-              {
-                "type": "literal",
-                "value": "github"
-              },
-              {
-                "type": "literal",
-                "value": "instagram"
-              },
-              {
-                "type": "literal",
-                "value": "linkedin"
-              },
-              {
-                "type": "literal",
-                "value": "tiktok"
-              },
-              {
-                "type": "literal",
-                "value": "twitter"
-              },
-              {
-                "type": "literal",
-                "value": "url"
-              },
-              {
-                "type": "literal",
-                "value": "youtube"
-              }
-            ]
-          },
-          "UtmSourceStats": {
-            "additionalProperties": false,
-            "properties": {
-              "utm_source": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "visits": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              }
-            },
-            "type": "object"
-          }
-        },
-        "root": {
-          "additionalProperties": false,
-          "properties": {
-            "analytics": {
-              "required": true,
-              "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "conversion_funnel": {
-                    "required": true,
-                    "schema": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "total_clicks": {
-                          "required": true,
-                          "schema": {
-                            "type": "number"
-                          }
-                        },
-                        "total_signups": {
-                          "required": true,
-                          "schema": {
-                            "type": "number"
-                          }
-                        },
-                        "total_visits": {
-                          "required": true,
-                          "schema": {
-                            "type": "number"
-                          }
-                        },
-                        "visit_to_click_rate": {
-                          "required": true,
-                          "schema": {
-                            "type": "number"
-                          }
-                        }
-                      },
-                      "type": "object"
-                    }
-                  },
-                  "ctr": {
-                    "required": true,
-                    "schema": {
-                      "type": "number"
-                    }
-                  },
-                  "daily_stats": {
-                    "required": true,
-                    "schema": {
-                      "items": {
-                        "name": "DailyStats",
-                        "type": "ref"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "item_clicks": {
-                    "required": true,
-                    "schema": {
-                      "items": {
-                        "name": "LandingPageItemClickStats",
-                        "type": "ref"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "total_clicks": {
-                    "required": true,
-                    "schema": {
-                      "type": "number"
-                    }
-                  },
-                  "total_visits": {
-                    "required": true,
-                    "schema": {
-                      "type": "number"
-                    }
-                  },
-                  "unique_visitors": {
-                    "required": true,
-                    "schema": {
-                      "type": "number"
-                    }
-                  },
-                  "utm_sources": {
-                    "required": true,
-                    "schema": {
-                      "items": {
-                        "name": "UtmSourceStats",
-                        "type": "ref"
-                      },
-                      "type": "array"
-                    }
-                  }
-                },
-                "type": "object"
-              }
-            },
-            "landing_page": {
-              "required": true,
-              "schema": {
-                "type": "intersection",
-                "variants": [
-                  {
-                    "additionalProperties": false,
-                    "properties": {
-                      "items": {
-                        "required": true,
-                        "schema": {
-                          "items": {
-                            "name": "LandingPageItem",
-                            "type": "ref"
-                          },
-                          "type": "array"
-                        }
-                      }
-                    },
-                    "type": "object"
-                  },
-                  {
-                    "name": "LandingPage",
-                    "type": "ref"
-                  }
-                ]
-              }
-            }
-          },
-          "type": "object"
-        }
-      },
-      "source": "backend/api/v1/admin/landing-pages.mts",
-      "statusKnowledge": "default"
-    },
     "GET:/api/v1/admin/moderation-analytics": {
       "bodyKind": "content",
       "hash": "c8cce74cefbec230f97eb746c8490a0724d241dfffe31adfac1fd3cb8d710f3b",
@@ -3885,6 +3017,874 @@
         "root": {
           "name": "LandingPagesPage",
           "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/admin/landing-pages.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
+      "bodyKind": "content",
+      "hash": "24ebcda04fe68d42d11d8a9ef30ba0babbe90c88b7ed57a16e762119cc4bb4e9",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/admin/users/:username/landing-pages/:slug/analytics",
+      "schema": {
+        "definitions": {
+          "DailyStats": {
+            "additionalProperties": false,
+            "properties": {
+              "clicks": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "date": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "unique_visitors": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "visits": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "LandingPage": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_default": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "slug": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "subtitle": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "title": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "LandingPageCandidateReferralLink": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "label": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "referral_program_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "referral_program_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "referral_program_slug": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "url": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "LandingPageCandidateReview": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "declared_language": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "lingua_rs_detected_language": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "markdown": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "review_topic_ratings": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "order_index": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "rating": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "topic_id": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "topic_name": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "topic_slug": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "slug": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "title": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "LandingPageItem": {
+            "type": "union",
+            "variants": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "entries": {
+                    "required": true,
+                    "schema": {
+                      "items": {
+                        "name": "LandingPageTopicGroupEntry",
+                        "type": "ref"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "topic": {
+                    "required": true,
+                    "schema": {
+                      "name": "LandingPageTopic",
+                      "type": "ref"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "topic_group"
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "label": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "link"
+                    }
+                  },
+                  "url": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "profile_link": {
+                    "required": true,
+                    "schema": {
+                      "name": "ProfileLink",
+                      "type": "ref"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "profile_link"
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "referral_link": {
+                    "required": true,
+                    "schema": {
+                      "name": "LandingPageCandidateReferralLink",
+                      "type": "ref"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "referral_link"
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "review": {
+                    "required": true,
+                    "schema": {
+                      "name": "LandingPageCandidateReview",
+                      "type": "ref"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "review"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "LandingPageItemClickStats": {
+            "additionalProperties": false,
+            "properties": {
+              "click_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "item_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "item_type": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "LandingPageTopic": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "slug": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "topic_type": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "LandingPageTopicGroupEntry": {
+            "type": "union",
+            "variants": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "referral_link": {
+                    "required": true,
+                    "schema": {
+                      "name": "LandingPageCandidateReferralLink",
+                      "type": "ref"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "referral_link"
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "review": {
+                    "required": true,
+                    "schema": {
+                      "name": "LandingPageCandidateReview",
+                      "type": "ref"
+                    }
+                  },
+                  "type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "review"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "ProfileLink": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "handle": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "link_type": {
+                "required": true,
+                "schema": {
+                  "name": "ProfileLinkType",
+                  "type": "ref"
+                }
+              },
+              "name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sort_order": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "url": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "url_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ProfileLinkType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "facebook"
+              },
+              {
+                "type": "literal",
+                "value": "github"
+              },
+              {
+                "type": "literal",
+                "value": "instagram"
+              },
+              {
+                "type": "literal",
+                "value": "linkedin"
+              },
+              {
+                "type": "literal",
+                "value": "tiktok"
+              },
+              {
+                "type": "literal",
+                "value": "twitter"
+              },
+              {
+                "type": "literal",
+                "value": "url"
+              },
+              {
+                "type": "literal",
+                "value": "youtube"
+              }
+            ]
+          },
+          "UtmSourceStats": {
+            "additionalProperties": false,
+            "properties": {
+              "utm_source": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "visits": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "analytics": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "conversion_funnel": {
+                    "required": true,
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "total_clicks": {
+                          "required": true,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "total_signups": {
+                          "required": true,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "total_visits": {
+                          "required": true,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "visit_to_click_rate": {
+                          "required": true,
+                          "schema": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "ctr": {
+                    "required": true,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "daily_stats": {
+                    "required": true,
+                    "schema": {
+                      "items": {
+                        "name": "DailyStats",
+                        "type": "ref"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "item_clicks": {
+                    "required": true,
+                    "schema": {
+                      "items": {
+                        "name": "LandingPageItemClickStats",
+                        "type": "ref"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "total_clicks": {
+                    "required": true,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "total_visits": {
+                    "required": true,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "unique_visitors": {
+                    "required": true,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "utm_sources": {
+                    "required": true,
+                    "schema": {
+                      "items": {
+                        "name": "UtmSourceStats",
+                        "type": "ref"
+                      },
+                      "type": "array"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "landing_page": {
+              "required": true,
+              "schema": {
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "items": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "name": "LandingPageItem",
+                            "type": "ref"
+                          },
+                          "type": "array"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "LandingPage",
+                    "type": "ref"
+                  }
+                ]
+              }
+            }
+          },
+          "type": "object"
         }
       },
       "source": "backend/api/v1/admin/landing-pages.mts",
@@ -101894,22 +101894,23 @@
     },
     {
       "auth": "fixture-admin",
-      "backendResponseContractKey": "GET:/api/v1/admin/landing-pages/:pageId/analytics",
+      "backendResponseContractKey": "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics",
       "bodyFile": "responses/native.admin-landing-page-analytics.default.json",
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.admin-landing-page-analytics.default",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/admin/landing-pages.mts"],
-      "path": "/api/v1/admin/landing-pages/landing-page-1/analytics",
+      "path": "/api/v1/admin/users/fixture-user/landing-pages/links/analytics",
       "responseSchema": {
         "hash": "b76d93376d8d1afb70afc2cfc9120007b7ec62e0b0590732d133f3fd676f991a",
         "key": "native.admin-landing-page-analytics.default"
       },
       "route": {
         "pathParams": {
-          "pageId": "landing-page-1"
+          "slug": "links",
+          "username": "fixture-user"
         },
-        "routeTemplate": "/api/v1/admin/landing-pages/:pageId/analytics"
+        "routeTemplate": "/api/v1/admin/users/:username/landing-pages/:slug/analytics"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-landing-page-cases.mts"

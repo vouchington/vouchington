@@ -15,8 +15,6 @@ const sapphireValidation: ReferralLinkValidation = {
   updated_at: '2026-09-20T12:00:00.000Z',
 }
 
-const basePath = '/referral-program/amex-referrals/validations'
-
 const meta = {
   title: 'Admin/Validation Form',
   beforeEach() {
@@ -32,7 +30,7 @@ export const Create: Story = {
   render: () => (
     <StoryFrame width='max-w-xl'>
       <ValidationForm
-        basePath={basePath}
+        programSlug='amex-referrals'
         referralProgramId='topic-amex-referrals'
       />
     </StoryFrame>
@@ -44,7 +42,7 @@ export const Update: Story = {
     <StoryFrame width='max-w-xl'>
       <ValidationForm
         existing={sapphireValidation}
-        basePath={basePath}
+        programSlug='amex-referrals'
       />
     </StoryFrame>
   ),

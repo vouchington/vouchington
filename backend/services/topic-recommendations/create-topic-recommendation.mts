@@ -7,6 +7,7 @@ import sql from 'sql-template-strings'
 import { assertValidCreateTopicRecommendationInput } from './shared.mts'
 import type { CreateTopicRecommendationInput, TopicRecommendationPost } from './types.mts'
 import { createPostModerationContent } from '@services/posts/content'
+import { createPostSlug } from '@services/posts/slugs'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { enqueueOnPostCreated } from '@queues/entity-listeners/enqueues'
@@ -136,7 +137,7 @@ async function createTopicRecommendationInStore(
 
   await insertTopicRecommendationExtensionRow(postId, materialized, options)
   await replaceTopicRecommendationHostnames(postId, materialized.hostname_ids, options)
-
+  await createPostSlug({ id: postId, title: materialized.topic_title }, undefined, options)
   const reloaded = await getPostByAny(postId, options)
   assert(
     reloaded?.post_type === 'topic_recommendation' && reloaded.topic_recommendation,

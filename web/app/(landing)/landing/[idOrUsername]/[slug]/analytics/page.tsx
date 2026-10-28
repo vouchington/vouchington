@@ -10,15 +10,15 @@ import { createNoIndexMetadata } from '@/lib/seo/metadata'
 export const metadata: Metadata = createNoIndexMetadata('Landing Page Analytics | Admin')
 
 interface PageProps {
-  params: Promise<{ pageId: string }>
+  params: Promise<{ idOrUsername: string; slug: string }>
 }
 
 export default async function AdminLandingPageAnalyticsPage({ params }: PageProps) {
   await requireAdmin()
-  const { pageId } = await params
+  const { idOrUsername, slug } = await params
   let analyticsData: Awaited<ReturnType<typeof getAdminLandingPageAnalytics>> = null
   try {
-    analyticsData = await getAdminLandingPageAnalytics(pageId)
+    analyticsData = await getAdminLandingPageAnalytics(idOrUsername, slug)
   } catch (err) {
     console.error('Failed to load admin landing page analytics:', err)
   }

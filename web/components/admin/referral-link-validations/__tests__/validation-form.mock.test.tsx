@@ -46,7 +46,7 @@ describe('ValidationForm', () => {
 
   describe('create mode (no existing prop)', () => {
     it('submit button is disabled when slug is empty', () => {
-      render(<ValidationForm basePath='/referral-program/test-rp/validations' />)
+      render(<ValidationForm programSlug='test-rp' />)
       const btn = screen.getByRole('button', { name: /create/i })
       expect(btn).toBeDisabled()
     })
@@ -55,7 +55,7 @@ describe('ValidationForm', () => {
       const result = { validation: fakeValidation }
       mockCreate.mockResolvedValueOnce(result)
 
-      render(<ValidationForm basePath='/referral-program/test-rp/validations' />)
+      render(<ValidationForm programSlug='test-rp' />)
 
       fireEvent.change(screen.getByLabelText('Slug'), { target: { value: 'chase-sapphire' } })
       fireEvent.change(screen.getByLabelText('User Help Text'), {
@@ -75,7 +75,7 @@ describe('ValidationForm', () => {
     it('calls onError when create fails', async () => {
       mockCreate.mockRejectedValueOnce(new Error('Server error'))
 
-      render(<ValidationForm basePath='/referral-program/test-rp/validations' />)
+      render(<ValidationForm programSlug='test-rp' />)
 
       fireEvent.change(screen.getByLabelText('Slug'), { target: { value: 'some-slug' } })
       fireEvent.submit(screen.getByRole('button', { name: /create/i }).closest('form')!)
@@ -93,7 +93,7 @@ describe('ValidationForm', () => {
 
       render(
         <ValidationForm
-          basePath='/referral-program/test-rp/validations'
+          programSlug='test-rp'
           referralProgramId='prog-1'
         />,
       )
@@ -116,7 +116,7 @@ describe('ValidationForm', () => {
       render(
         <ValidationForm
           existing={fakeValidation}
-          basePath='/referral-program/test-rp/validations'
+          programSlug='test-rp'
         />,
       )
       expect(screen.getByLabelText('Slug')).toHaveValue('chase-sapphire')
@@ -130,7 +130,7 @@ describe('ValidationForm', () => {
       render(
         <ValidationForm
           existing={fakeValidation}
-          basePath='/referral-program/test-rp/validations'
+          programSlug='test-rp'
         />,
       )
 
@@ -157,7 +157,7 @@ describe('ValidationForm', () => {
         <ValidationForm
           existing={fakeValidation}
           onSaved={onSaved}
-          basePath='/referral-program/test-rp/validations'
+          programSlug='test-rp'
         />,
       )
 

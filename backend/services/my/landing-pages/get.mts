@@ -1,4 +1,8 @@
-import { getLandingPageRowById, getLandingPageRowForUser } from './reads.mts'
+import {
+  getLandingPageRowById,
+  getLandingPageRowByUsernameAndSlug,
+  getLandingPageRowForUser,
+} from './reads.mts'
 import { resolveLandingPageWithItems } from './resolve-items.mts'
 import type { LandingPageWithItems } from './types.mts'
 
@@ -12,5 +16,13 @@ export async function getMyLandingPage(
 
 export async function getLandingPageById(pageId: string): Promise<LandingPageWithItems> {
   const page = await getLandingPageRowById(pageId)
+  return resolveLandingPageWithItems(page)
+}
+
+export async function getLandingPageByUsernameAndSlug(
+  username: string,
+  slug: string,
+): Promise<LandingPageWithItems> {
+  const page = await getLandingPageRowByUsernameAndSlug(username, slug)
   return resolveLandingPageWithItems(page)
 }

@@ -73,8 +73,8 @@ vi.mock(
   import('@/components/admin/referral-link-validations/validations-list-table'),
   () =>
     ({
-      ValidationsListTable: ({ basePath }: { basePath: string }) => (
-        <div data-testid={`list-table:${basePath}`} />
+      ValidationsListTable: ({ programSlug }: { programSlug: string }) => (
+        <div data-testid={`list-table:${programSlug}`} />
       ),
     }) as unknown as typeof import('@/components/admin/referral-link-validations/validations-list-table'),
 )
@@ -84,14 +84,14 @@ vi.mock(
     ({
       ValidationForm: ({
         existing,
-        basePath,
+        programSlug,
         referralProgramId,
       }: {
         existing?: { slug: string }
-        basePath: string
+        programSlug: string
         referralProgramId?: string | null
       }) => (
-        <form data-testid={`validation-form:${basePath}`}>
+        <form data-testid={`validation-form:${programSlug}`}>
           {existing && <span data-testid='existing-slug'>{existing.slug}</span>}
           {referralProgramId && <span data-testid='referral-program-id'>{referralProgramId}</span>}
         </form>
@@ -122,12 +122,10 @@ describe('referral-validation-factories', () => {
   })
 
   describe('list page', () => {
-    it('renders the validations table scoped to the program base path', async () => {
+    it('renders the validations table scoped to the program slug', async () => {
       const { default: Page } = createReferralProgramValidationsListPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp' }) }))
-      expect(
-        screen.getByTestId('list-table:/referral-program/amex-rp/validations'),
-      ).toBeInTheDocument()
+      expect(screen.getByTestId('list-table:amex-rp')).toBeInTheDocument()
     })
 
     it('calls getReferralProgramValidations with the program UUID (not slug)', async () => {
@@ -163,12 +161,10 @@ describe('referral-validation-factories', () => {
   })
 
   describe('new page', () => {
-    it('renders the create form with the program base path', async () => {
+    it('renders the create form with the program slug', async () => {
       const { default: Page } = createReferralProgramValidationNewPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp' }) }))
-      expect(
-        screen.getByTestId('validation-form:/referral-program/amex-rp/validations'),
-      ).toBeInTheDocument()
+      expect(screen.getByTestId('validation-form:amex-rp')).toBeInTheDocument()
     })
 
     it('passes the referralProgramId to the form for link-on-create', async () => {

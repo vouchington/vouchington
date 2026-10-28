@@ -27780,12 +27780,16 @@
             "inputSchema": {
               "type": "object",
               "properties": {
-                "page_id": {
+                "username": {
                   "type": "string",
-                  "format": "uuid"
+                  "minLength": 1
+                },
+                "slug": {
+                  "type": "string",
+                  "minLength": 1
                 }
               },
-              "required": ["page_id"],
+              "required": ["username", "slug"],
               "additionalProperties": false
             },
             "outputSchema": {
@@ -28327,7 +28331,7 @@
           "api": [
             {
               "method": "GET",
-              "path": "/api/v1/admin/landing-pages/{pageId}/analytics"
+              "path": "/api/v1/admin/users/{username}/landing-pages/{slug}/analytics"
             }
           ]
         },
