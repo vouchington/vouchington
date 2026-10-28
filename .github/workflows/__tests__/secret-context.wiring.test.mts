@@ -57,7 +57,7 @@ describe('secret-backed workflow context gates (wiring and routing)', () => {
     )
 
     expect(buildBackendFilter).toContain(
-      "'static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts'",
+      "'static-code-analysis/docker-deploy/compile-backend-binaries.mts'",
     )
   })
 
