@@ -8,65 +8,8 @@ import { getListItemStorageConfig } from './catalog.mts'
 import { listPostDiscoveryFilter } from './listable.mts'
 import type { ListItem, ListItemType } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { isUUID } from '@modules/utils'
-import { getListItemLabelForAdd } from './item-labels.mts'
 import { rowToListItem } from './item-row.mts'
-
-export async function addListItem(
-  listId: string,
-  itemType: ListItemType,
-  entityId: string,
-): Promise<ListItem> {
-  const { table, entityColumn } = getListItemStorageConfig(itemType)
-  assert(table && entityColumn, 500, 'unknown item type')
-
-  assert(isUUID(entityId), 422, 'Invalid entity ID format')
-
-  const { mediaType, entityLabel } = await getListItemLabelForAdd(itemType, entityId)
-
-  const { rows } = await write(
-    `/* addListItem */
-    -- Dynamic table and column come from the closed list-item storage catalog; VALUES is one row.
-    /* no-mistakes: deadlock-safe */
-    INSERT INTO ${table} (user_list_id, ${entityColumn})
-    VALUES ($1, $2)
-    RETURNING id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
-    `,
-    [listId, entityId],
-  ).catch(async (err: unknown) => {
-    const code = (err as { code?: string }).code
-    if (code === '23505') {
-      // write() not read() to avoid replica-lag race on immediate re-add
-      return write(
-        `/* addListItem:existing */
-        SELECT id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
-        FROM ${table}
-        WHERE user_list_id = $1
-          AND ${entityColumn} = $2
-          AND removed_at IS NULL
-        LIMIT 1
-        `,
-        [listId, entityId],
-      )
-    }
-    if (code === '23503') {
-      assert(false, 404, 'Referenced list or entity does not exist')
-    }
-    if (code === '22P02') {
-      assert(false, 422, 'Invalid entity ID format')
-    }
-    throw err
-  })
-
-  assert(rows.length > 0, 500, 'Failed to add list item')
-
-  const item = rowToListItem(
-    { ...rows[0]!, media_type: mediaType, entity_label: entityLabel },
-    itemType,
-  )
-  await invalidate.lists(listId)
-  return item
-}
+export { addListItem } from './add-item.mts'
 
 export async function removeListItem(
   listId: string,
