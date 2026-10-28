@@ -133,8 +133,8 @@ function restBodyFields(schema: unknown, seen = new Set<string>()): string[] | n
   const branchFields = branches.flatMap(branch => restBodyFields(branch, seen) ?? [])
   return sorted([...new Set([...own, ...branchFields])])
 }
-function facts(source: RouteSource, audience: OAuthResourceAudience) {
-  const roles = source.roles
+function facts(source: RouteSource, audience: OAuthResourceAudience, publicName: string) {
+  const roles = ALL_TOOLS.find(tool => tool.schema.name === publicName)?.roles
   return {
     scopes: sorted([...(source.meta?.requiredScopes ?? [])]),
     roles:
@@ -161,7 +161,7 @@ function currentRecords() {
         audience,
         method,
         path: normalizedPath,
-        facts: facts(source, audience),
+        facts: facts(source, audience, publicName),
         inputFields: inputFields(source.schema.parameters),
         restRequestSchemaFields: restBodyFields(operation?.body),
         publicName,
@@ -217,7 +217,7 @@ describe('MCP route completeness from baseline facts', () => {
       )) {
         const published = on.find(tool => tool.name === entry.publicName)
         expect(published).toBeDefined()
-        const expected = facts(entry.source, config.audience)
+        const expected = facts(entry.source, config.audience, entry.publicName)
         expect(published!['_meta']!['voucha/requiredScopes'].toSorted()).toEqual(expected.scopes)
         expect(published!.annotations).toEqual(expected.annotations)
       }

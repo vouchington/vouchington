@@ -39,7 +39,6 @@ export function publicMergedOptionGroups(tools: readonly Tool[]) {
         return {
           option,
           source: {
-            roles: tool.roles,
             schema: {
               name: tool.schema.name,
               parameters: sourceParameters,
