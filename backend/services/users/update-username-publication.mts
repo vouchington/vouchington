@@ -1,14 +1,47 @@
-import { beginTransaction, write, type QueryInput } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { assertNever } from '@modules/utils/assert-never'
 import {
   lockAuthorPublicationLifecycle,
   recordPostPublicationChange,
 } from '@services/post-publication'
 
-export async function commitUserFieldUpdate(userId: string, input: QueryInput, username?: string) {
-  if (username === undefined) return write(input).then(() => undefined)
+export type UserUpdateBody = {
+  readonly text: string
+  readonly values: readonly unknown[]
+}
+
+type UserUpdateOperation =
+  | {
+      readonly kind: 'fields'
+      readonly body: UserUpdateBody
+      readonly username: string | undefined
+    }
+  | { readonly kind: 'identity'; readonly body: UserUpdateBody; readonly username: string }
+
+export async function commitUserUpdateOperation(userId: string, operation: UserUpdateOperation) {
+  const { body, username } = operation
+  if (operation.kind === 'fields' && username === undefined)
+    return write(`/* updateUserFields */ ${body.text}`, body.values).then(() => undefined)
   await using query = await beginTransaction()
   await lockAuthorPublicationLifecycle(query, userId)
-  const { rows } = await query<{ previous_username: string | null }>(input)
+  let result: { rows: { previous_username: string | null }[] }
+  switch (operation.kind) {
+    case 'fields':
+      result = await query<{ previous_username: string | null }>(
+        `/* updateUserFields */ ${body.text}`,
+        body.values,
+      )
+      break
+    case 'identity':
+      result = await query<{ previous_username: string | null }>(
+        `/* updateUsername */ ${body.text}`,
+        body.values,
+      )
+      break
+    default:
+      return assertNever(operation, 'Unknown user update operation')
+  }
+  const { rows } = result
   const previousUsername = rows[0]?.previous_username ?? null
   const changed = rows.length > 0 && previousUsername !== username
   const scope = { type: 'author' as const, authorUserId: userId }
