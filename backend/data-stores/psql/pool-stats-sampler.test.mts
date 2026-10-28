@@ -5,7 +5,9 @@ import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
-import { emitPoolStats, createPoolStatsSampler, type SampledPools } from './pool-stats-sampler.mts'
+import { emitPoolStats, createPoolStatsSampler } from './pool-stats-sampler.mts'
+
+type SampledPools = Parameters<typeof emitPoolStats>[0]
 
 function fakePool(total: number, idle: number, waiting: number): SampledPools['write'] {
   return {

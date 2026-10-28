@@ -8,8 +8,9 @@ import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-re
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import { psql } from '@queues/psql/queues'
 import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
-import type { PartitionDropOutcome } from '@data-stores/psql/migration-runner/monthly-partitions'
+import type { cleanupPartitions as cleanupPartitionsService } from '@data-stores/psql/migration-runner/monthly-partitions'
 
+type PartitionDropOutcome = Awaited<ReturnType<typeof cleanupPartitionsService>>[number]
 const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
 const createPartitions = vi.fn<() => Promise<void>>()
 const noAIRetention = Object.fromEntries(

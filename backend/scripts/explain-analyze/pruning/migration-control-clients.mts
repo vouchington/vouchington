@@ -7,7 +7,7 @@ const serverClientBackendTypes = ['client backend', 'parallel worker'] as const
 const migrationServerClientSettleMs = 2_000
 export const migrationServerClientSampleMs = 200
 
-export interface MigrationActivityRow {
+interface MigrationActivityRow {
   pid: number
   backendType: string
   state: string | null

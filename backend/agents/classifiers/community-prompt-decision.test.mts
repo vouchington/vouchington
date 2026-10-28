@@ -4,10 +4,15 @@ import { prepareSingleCallClassifierDecision } from './prepare-single-call.mts'
 import { assertCompleteCandidateCoverage } from './results.mts'
 import { classifierPrompt } from './safe-content.mts'
 import type {
-  CommunityPromptClassifierCandidate,
+  ClassifierDecisionCandidate,
   ClassifierDecisionRequestInput,
   NoulClassifierBinding,
 } from './types.mts'
+
+type CommunityPromptClassifierCandidate = Extract<
+  ClassifierDecisionCandidate,
+  { candidateKind: 'community_prompt' }
+>
 import {
   assertBindingsMatchConfiguration,
   assertClassifierDecisionIds,

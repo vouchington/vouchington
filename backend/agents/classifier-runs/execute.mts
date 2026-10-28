@@ -28,7 +28,7 @@ export type ClassifierRunProviderHooks = {
 }
 
 /** The per-classifier input building; everything else about running a leased run is shared. */
-export type ClassifierRunInputs<C, L> = {
+type ClassifierRunInputs<C, L> = {
   /** Null when the run has no remote half. Runs before local detection and any provider spend. */
   buildRemoteInput(lease: ClassifierRunLease<C>): Promise<ClassifierRunRemoteInput | null>
   /** Required exactly when the configuration asks for a local outcome. */

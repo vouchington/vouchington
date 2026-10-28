@@ -2,7 +2,6 @@ import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations
 import {
   PARTITION_POLICIES,
   UNBOUNDED_UNPARTITIONED_TABLES,
-  type PartitionPolicy,
 } from '../data-stores/psql/schema-growth-registry.mts'
 import { EXPLICIT_BOUNDED_TABLES } from './schema-growth-bounded-policies.mts'
 import { CLASSIFIER_RETENTION_POLICIES } from './schema-growth-classifier-retention.mts'
@@ -14,7 +13,7 @@ export type SchemaGrowthRegistryEntry = {
   growth: SchemaGrowthClass
   idPolicy: SchemaIdPolicy
   idPolicyRationale: string
-  partition: PartitionPolicy | null
+  partition: NonNullable<ReturnType<typeof PARTITION_POLICIES.get>> | null
   noPartitionRationale?: string
   reconsiderPartitioningWhen?: string
 }

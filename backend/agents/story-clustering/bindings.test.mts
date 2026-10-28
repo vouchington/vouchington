@@ -10,9 +10,11 @@ import {
   buildStoryClusteringBindings,
   STORY_CLUSTERING_NONE_KEY,
   STORY_CLUSTERING_QUESTION_ID,
-  type StoryClusteringPromptCandidate,
 } from './bindings.mts'
 
+type StoryClusteringPromptCandidate = Parameters<
+  typeof buildStoryClusteringBindings
+>[0]['candidates'][number]
 const PROMPT = 'Which candidate, if any, covers the same event as the incoming article?'
 const STORY_ID = '018f0000-0000-7000-8000-0000000000a1'
 
