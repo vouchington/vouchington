@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  beginTransaction,
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers'
+import { beginTransaction, getTestPostgresBackendProcessId } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { lockHostnameOwnership } from './ownership-lock.mts'
 import { getUrlHostnameByAny } from './get.mts'
 import { prepareUrlHostnamesForOwnedMutation, upsertUrlHostnames } from './upsert.mts'
@@ -17,16 +14,24 @@ describe('concurrent public hostname batch', () => {
     await using owner = await beginTransaction()
     const coldId = (await prepareUrlHostnamesForOwnedMutation(null, [cold], owner)).get(cold)!
     const ownerPid = await getTestPostgresBackendProcessId(owner)
-    const promoting = upsertUrlHostnames(null, [existing, cold])
-    void promoting.catch(() => {})
-
-    await waitForTestPostgresLockWaiter(ownerPid, 'upsertUrlHostnames:insertMissing')
-    // The old public path held existingId's advisory lock before waiting on
-    // coldId's uncommitted row, so this acquisition formed a database deadlock.
-    await lockHostnameOwnership(owner, [existingId])
-    await owner.commit()
-
-    const resolved = await promoting
+    const resolved = await withTestOwnedPostgresWait(
+      {
+        holderProcessId: ownerPid,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'upsertUrlHostnames:insertMissing',
+        releaseHolder: () => owner[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const promoting = upsertUrlHostnames(null, [existing, cold])
+        await waitForLock(promoting)
+        // The old public path held existingId's advisory lock before waiting on
+        // coldId's uncommitted row, so this acquisition formed a database deadlock.
+        await lockHostnameOwnership(owner, [existingId])
+        await owner.commit()
+        return promoting
+      },
+    )
     expect(resolved.get(existing)).toBe(existingId)
     expect(resolved.get(cold)).toBe(coldId)
     expect((await getUrlHostnameByAny(existingId))?.publicly_introduced_at).toBeInstanceOf(Date)

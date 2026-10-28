@@ -1869,7 +1869,6 @@ rules:
     exclude:
       - 'backend/test-helpers/polling.mts'
       - 'backend/test-helpers/polling.test.mts'
-      - 'backend/test-helpers/postgres-lock-wait.mts'
     options:
       roots:
         - glob:

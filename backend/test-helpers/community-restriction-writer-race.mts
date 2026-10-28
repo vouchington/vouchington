@@ -2,10 +2,8 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { vi } from 'vitest'
 import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
-import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 /** Keep the delegated community fence until the real restriction writer is blocked on it. */
 export async function withHeldDelegatedCommunityFenceForTest<T>(
@@ -14,30 +12,27 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
   operation: () => Promise<T>,
   options: {
     beforeRelease?: (query: TransactionQuery) => Promise<void>
-    signal?: AbortSignal
   } = {},
 ): Promise<T> {
   await using query = await beginTransaction()
   await lockDelegatedPostCommunity(query, communityId, actorId)
   const processId = await getTestPostgresBackendProcessId(query)
-  const pending = operation()
-  void pending.catch(() => undefined)
-  try {
-    await waitForTestPostgresLockWaiter(
-      processId,
-      'lockCommunityRestrictionWrites',
-      'write',
-      undefined,
-      options.signal,
-    )
-    await options.beforeRelease?.(query)
-    await query.commit()
-  } catch (err) {
-    await query.rollback()
-    await pending.catch(() => undefined)
-    throw err
-  }
-  return await pending
+  return await withTestOwnedPostgresWait(
+    {
+      holderProcessId: processId,
+      pool: 'write',
+      lock: { kind: 'transaction' },
+      queryMarker: '/* lockCommunityRestrictionWrites */',
+      releaseHolder: () => query[Symbol.asyncDispose](),
+    },
+    async waitForLock => {
+      const pending = operation()
+      await waitForLock(pending)
+      await options.beforeRelease?.(query)
+      await query.commit()
+      return pending
+    },
+  )
 }
 
 /** Expire one fixture-owned restriction while its community writer is held at the fence. */

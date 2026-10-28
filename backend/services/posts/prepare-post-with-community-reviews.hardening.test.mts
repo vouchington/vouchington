@@ -5,9 +5,9 @@ import {
   createTestUser,
   getTestPostgresBackendProcessId,
   overrideDynamicConfigFieldsForTest,
-  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { expireWebRiskCleanVerdictForTest } from '@voucha/test-helpers/web-risk-state'
 import { getTestPostCreationSourceUrlId } from '@voucha/test-helpers/entities/post-field-queries'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
@@ -30,18 +30,26 @@ describe('post URL policy across ownership and publication locks', () => {
     await using holder = await beginTransaction()
     await lockAuthorPublicationLifecycle(holder, admin.id)
     const pid = await getTestPostgresBackendProcessId(holder)
-    const creating = createPost(admin, WEB_PROVENANCE, { post_type: 'link', url: href }).then(
-      value => ({ value }),
-      (err: unknown) => ({ err }),
-    )
     try {
-      try {
-        await waitForTestPostgresLockWaiter(pid, 'lockPostPublicationScope')
-        await expireWebRiskCleanVerdictForTest(href)
-      } finally {
-        await holder.commit()
-      }
-      const result = await creating
+      const result = await withTestOwnedPostgresWait(
+        {
+          holderProcessId: pid,
+          pool: 'write',
+          lock: { kind: 'advisory', key: `author:${admin.id.toLowerCase()}` },
+          queryMarker: 'lockPostPublicationScope',
+          releaseHolder: () => holder[Symbol.asyncDispose](),
+        },
+        async waitForLock => {
+          const creating = createPost(admin, WEB_PROVENANCE, { post_type: 'link', url: href })
+          await waitForLock(creating)
+          await expireWebRiskCleanVerdictForTest(href)
+          await holder.commit()
+          return creating.then(
+            value => ({ value }),
+            (err: unknown) => ({ err }),
+          )
+        },
+      )
       expect(result).toHaveProperty('value')
       if (!('value' in result)) throw new Error('Post creation failed')
       expect(await getTestPostCreationSourceUrlId(result.value.id)).toBe(url!.id)

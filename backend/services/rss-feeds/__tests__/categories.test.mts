@@ -1,9 +1,7 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import { beginTransaction, createTestTopic, createRandomString } from '@voucha/test-helpers'
-import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers/postgres-lock-wait'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { hardDeleteRssFeedById } from '../delete.mts'
@@ -88,16 +86,29 @@ describe('rss-feed categories', () => {
         await using holder = await beginTransaction()
         await lockTopicRssFeedAttachmentLifecycle(holder, topic.id)
         const holderPid = await getTestPostgresBackendProcessId(holder)
-        outcome = upsertRssFeedCategories(feed.id, [category]).then(
-          value => ({ value }),
-          err => ({ error: err }),
+        await withTestOwnedPostgresWait(
+          {
+            holderProcessId: holderPid,
+            pool: 'write',
+            lock: { kind: 'advisory', key: `topic-rss-feed-attachment:${topic.id.toLowerCase()}` },
+            queryMarker: 'lockTopicRssFeedAttachmentLifecycles',
+            releaseHolder: () => holder[Symbol.asyncDispose](),
+          },
+          async waitForLock => {
+            const pending = upsertRssFeedCategories(feed.id, [category])
+            outcome = pending.then(
+              value => ({ value }),
+              err => ({ error: err }),
+            )
+            await waitForLock(pending)
+            await holder(
+              '/* rssFeedCategoryFenceConflict */ UPDATE topics SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
+              [topic.id],
+            )
+            await holder.commit()
+            await outcome
+          },
         )
-        await waitForTestPostgresLockWaiter(holderPid, 'lockTopicRssFeedAttachmentLifecycles')
-        await holder(
-          '/* rssFeedCategoryFenceConflict */ UPDATE topics SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
-          [topic.id],
-        )
-        await holder.commit()
       }
       await expect(outcome).resolves.toMatchObject({ error: { status: 409 } })
       expect(await getRssFeedCategories(feed.id)).toEqual([])

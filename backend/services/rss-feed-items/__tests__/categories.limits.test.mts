@@ -1,4 +1,5 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { it, expect, beforeEach, describe } from 'vitest'
@@ -13,7 +14,6 @@ import {
   getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
   lockTestRssFeedItemCategory,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { createTopicAliases } from '@services/topics/aliases'
 import { RSS_FEED_ITEM_MAX_CATEGORIES } from '../processing-limits.mts'
@@ -44,7 +44,6 @@ describe('categories limits', () => {
     ])
     testRssFeedItemId = items[0]!.id
   })
-
   it('does not mutate categories when a category list or batch is empty', async () => {
     await expect(
       upsertRssFeedItemCategories([{ rss_feed_item_id: testRssFeedItemId, categories: [] }]),
@@ -59,7 +58,6 @@ describe('categories limits', () => {
     await upsertRssFeedItemCategories([])
     await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(before)
   })
-
   it('upsertRssFeedItemCategories caps categories per item after normalization', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     await upsertRssFeedItemCategories([
@@ -248,18 +246,28 @@ describe('categories limits', () => {
     const holder = holdMatchingCategory()
     await ready.promise
 
-    const backfill = backfillCategoriesForTopicAliases(topic.id)
-    await waitForTestPostgresLockWaiter(
-      await holderProcessId.promise,
-      'backfillCategoriesForTopicAliases',
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: await holderProcessId.promise,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'backfillCategoriesForTopicAliases',
+        releaseHolder: async () => {
+          release.resolve()
+          await holder
+        },
+      },
+      async waitForLock => {
+        const backfill = backfillCategoriesForTopicAliases(topic.id)
+        await waitForLock(backfill)
+        await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
+          expect.objectContaining({ category_text: alias, topic_id: null }),
+        ])
+        release.resolve()
+        await holder
+        await expect(backfill).resolves.toEqual({ updated: 1, hasMore: false })
+      },
     )
-    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
-      expect.objectContaining({ category_text: alias, topic_id: null }),
-    ])
-
-    release.resolve()
-    await holder
-    await expect(backfill).resolves.toEqual({ updated: 1, hasMore: false })
     await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: alias, topic_id: topic.id }),
     ])

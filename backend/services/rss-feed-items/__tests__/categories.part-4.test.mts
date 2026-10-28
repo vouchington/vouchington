@@ -1,4 +1,5 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
@@ -28,10 +29,8 @@ import {
   insertTestRssFeedCategory,
   softDeleteTopic,
   insertTestRssFeedDirect,
-  getTestPostgresBackendProcessId,
   lockTestRssFeedItemCategory,
   setTestEntityRelationIdAndScore,
-  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
@@ -211,32 +210,26 @@ describe('categories', () => {
     ])
     await unlinkTopicAlias(alias!.id, { expectedTopicId: testTopicId, skipSideEffects: true })
 
-    const ready = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const holderProcessId = Promise.withResolvers<number>()
-    async function holdStaleCategory(): Promise<void> {
-      await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
-      await lockTestRssFeedItemCategory(testRssFeedItemId, categoryText, query)
-      ready.resolve()
-      await release.promise
-      await query.commit()
-    }
-    const holder = holdStaleCategory()
-    await ready.promise
-
-    const cleanup = clearCategoriesForUnlinkedTopicAlias(alias!.id, testTopicId)
-    await waitForTestPostgresLockWaiter(
-      await holderProcessId.promise,
-      'clearCategoriesForUnlinkedTopicAlias',
-    )
+    await using holder = await beginTransaction()
+    await lockTestRssFeedItemCategory(testRssFeedItemId, categoryText, holder)
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'transaction' },
+      selected: {
+        marker: '/* clearCategoriesForUnlinkedTopicAlias */',
+        binding: { index: 0, value: [testRssFeedItemId] },
+      },
+    })
+    const cleanup = clearCategoriesForUnlinkedTopicAlias(alias!.id, testTopicId, {
+      query: waiter.query,
+    })
+    await waiter.waitForLock(cleanup)
     await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ category_text: categoryText })]),
     )
-
-    release.resolve()
-    await holder
+    await holder.commit()
     await expect(cleanup).resolves.toEqual({ updated: 1, hasMore: false })
+    await waiter.query.commit()
     await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: categoryText, topic_id: null }),

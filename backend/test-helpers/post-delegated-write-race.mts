@@ -1,15 +1,9 @@
-import {
-  advisoryLockPool,
-  beginTransaction,
-  type OwnedTransaction,
-  type QueryExecutor,
-} from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
-import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import type { TestOwnedPostgresWaitOptions } from './postgres-client-lock-identity.mts'
 
 /** Hold the canonical writer fence while a delegated mutation passes its old public preflight. */
 export function withConcurrentPostPrivacyChangeForTest<T>(
@@ -19,6 +13,7 @@ export function withConcurrentPostPrivacyChangeForTest<T>(
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     'lockPostPublicationCaptures',
+    { kind: 'advisory', key: `post:${postId.toLowerCase()}` },
     async query => {
       await query(sql`/* withConcurrentPostPrivacyChangeForTest.fence */
         SELECT pg_advisory_xact_lock(hashtextextended(${`post:${postId.toLowerCase()}`}, 0))`)
@@ -35,6 +30,7 @@ export function withConcurrentCommunityReviewDisableForTest<T>(
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     'lockDelegatedPostCommunity',
+    { kind: 'transaction' },
     async query => {
       await query(sql`/* withConcurrentCommunityReviewDisableForTest */
         UPDATE communities SET should_allow_review_posts = false WHERE id = ${communityId}`)
@@ -49,6 +45,7 @@ export function withConcurrentCommunityDeletionForTest<T>(
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     'lockDelegatedPostCommunity',
+    { kind: 'transaction' },
     async query => {
       await query(sql`/* withConcurrentCommunityDeletionForTest */
         UPDATE communities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
@@ -62,10 +59,15 @@ export function withConcurrentCommunityArchiveForTest<T>(
   operation: () => Promise<T>,
   queryMarker = 'lockDelegatedPostCommunity',
 ): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(operation, queryMarker, async query => {
-    await query(sql`/* withConcurrentCommunityArchiveForTest */
+  return withConcurrentDelegatedWriteChangeForTest(
+    operation,
+    queryMarker,
+    { kind: 'transaction' },
+    async query => {
+      await query(sql`/* withConcurrentCommunityArchiveForTest */
         UPDATE communities SET archived_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
-  })
+    },
+  )
 }
 /** Commit suspension after a delegated write reaches the canonical author lifecycle fence. */
 export function withConcurrentActorSuspensionForTest<T>(
@@ -75,6 +77,7 @@ export function withConcurrentActorSuspensionForTest<T>(
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     'lockPostPublicationScope',
+    { kind: 'advisory', key: `author:${userId.toLowerCase()}` },
     async query => {
       await query(sql`/* withConcurrentActorSuspensionForTest.fence */
         SELECT pg_advisory_xact_lock(hashtextextended(${`author:${userId.toLowerCase()}`}, 0))`)
@@ -92,6 +95,7 @@ export function withConcurrentActorDeletionForTest<T>(
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     'lockActiveUserSubjectsForMutation',
+    { kind: 'advisory', key: userId.toLowerCase() },
     async query => {
       await query(sql`/* withConcurrentActorDeletionForTest.fence */
         SELECT pg_advisory_xact_lock(hashtextextended(${userId.toLowerCase()}, 0))`)
@@ -110,6 +114,7 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     queryMarker,
+    { kind: 'transaction' },
     async query => {
       await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
           UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
@@ -122,79 +127,43 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
 async function withConcurrentDelegatedWriteChangeForTest<T>(
   operation: () => Promise<T>,
   queryMarker: string,
+  lock: TestOwnedPostgresWaitOptions['lock'],
   stageChange: (query: QueryExecutor) => Promise<void>,
   membershipDiagnostics = false,
 ): Promise<T> {
   const diagnostics = createMembershipLockDiagnosticReporter(membershipDiagnostics)
-  diagnostics.emit('observer-acquire-start')
-  const observer = await beginTransaction({ client: advisoryLockPool })
-  diagnostics.emit('observer-acquired')
-  let query: OwnedTransaction | undefined
-  let pending: Promise<T> | undefined
-  let result: T | undefined
-  let failure: { reason: unknown } | undefined
-  const cleanupErrors: unknown[] = []
-  let settlementAttempted = false
+  diagnostics.emit('holder-acquire-start')
+  await using query = await beginTransaction()
+  diagnostics.emit('holder-pid-query-start')
+  const processId = await getTestPostgresBackendProcessId(query)
+  diagnostics.emit('holder-acquired', `holder_pid=${processId}`)
+  await stageChange(query)
+  diagnostics.emit('change-staged')
   try {
-    diagnostics.emit('holder-acquire-start')
-    query = await beginTransaction()
-    diagnostics.emit('holder-pid-query-start')
-    const processId = await getTestPostgresBackendProcessId(query)
-    diagnostics.emit('holder-acquired', `holder_pid=${processId}`)
-    await stageChange(query)
-    diagnostics.emit('change-staged')
-    pending = operation()
-    void pending.catch(() => undefined)
-    diagnostics.emit('pending-started')
-    await waitForTestPostgresLockWaiter(
-      processId,
-      queryMarker,
-      observer,
-      membershipDiagnostics ? diagnostics.observeWait : undefined,
+    return await withTestOwnedPostgresWait(
+      {
+        holderProcessId: processId,
+        pool: 'write',
+        lock,
+        queryMarker,
+        releaseHolder: () => query[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const pending = operation()
+        diagnostics.emit('pending-started')
+        await waitForLock(pending)
+        diagnostics.emit('holder-commit-start')
+        await query.commit()
+        diagnostics.emit('holder-committed')
+        const result = await pending
+        diagnostics.emit('operation-settled')
+        return result
+      },
     )
-    settlementAttempted = true
-    diagnostics.emit('holder-commit-start')
-    await query.commit()
-    diagnostics.emit('holder-committed')
-    result = await pending
-    diagnostics.emit('operation-settled')
   } catch (err) {
     diagnostics.emit('failed')
-    failure = { reason: err }
+    throw err
   } finally {
-    if (query && !settlementAttempted) {
-      try {
-        await query.rollback()
-      } catch (err) {
-        cleanupErrors.push(err)
-      }
-    }
-    try {
-      await query?.[Symbol.asyncDispose]()
-    } catch (err) {
-      cleanupErrors.push(err)
-    }
-    try {
-      await observer[Symbol.asyncDispose]()
-    } catch (err) {
-      cleanupErrors.push(err)
-    }
-    if (pending) {
-      try {
-        await pending
-      } catch (err) {
-        if (!failure) failure = { reason: err }
-        else if (!Object.is(err, failure.reason)) cleanupErrors.push(err)
-      }
-    }
+    diagnostics.emit('cleanup-complete')
   }
-  diagnostics.emit('cleanup-complete')
-  if (cleanupErrors.length > 0) {
-    throw new AggregateError(
-      [...(failure ? [failure.reason] : []), ...cleanupErrors],
-      'Delegated write race cleanup failed',
-    )
-  }
-  if (failure) throw failure.reason
-  return result as T
 }

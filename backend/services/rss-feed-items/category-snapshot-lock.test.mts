@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  getTestPostgresAdvisoryLockHolderProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers'
 import { withRssFeedItemCategorySnapshotLocks } from './category-snapshot-lock.mts'
 
 describe('RSS feed item category snapshot locks', () => {
@@ -43,18 +41,25 @@ describe('RSS feed item category snapshot locks', () => {
       namespace: 0x5253,
       key: itemId,
     })
-    const second = withRssFeedItemCategorySnapshotLocks([itemId], async () => {
-      secondEntered = true
-    })
-
-    await waitForTestPostgresLockWaiter(
-      firstHolderProcessId,
-      'withRssFeedItemCategorySnapshotLocks.lock',
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: firstHolderProcessId,
+        pool: 'advisory',
+        lock: { kind: 'advisory', namespace: 0x5253, key: itemId },
+        queryMarker: 'withRssFeedItemCategorySnapshotLocks.lock',
+        releaseHolder: async () => releaseFirst.resolve(),
+      },
+      async waitForLock => {
+        const second = withRssFeedItemCategorySnapshotLocks([itemId], async () => {
+          secondEntered = true
+        })
+        await waitForLock(second)
+        expect(secondEntered).toBe(false)
+        releaseFirst.resolve()
+        await Promise.all([first, second])
+        expect(secondEntered).toBe(true)
+      },
     )
-    expect(secondEntered).toBe(false)
-    releaseFirst.resolve()
-    await Promise.all([first, second])
-    expect(secondEntered).toBe(true)
   })
 
   it('allows operations for distinct RSS feed items to enter concurrently', async () => {

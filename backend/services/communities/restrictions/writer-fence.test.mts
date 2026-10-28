@@ -50,24 +50,18 @@ async function fixture() {
 }
 
 describe('community restriction writers share delegated post fences', () => {
-  it('uses database expiry time when the application clock trails PostgreSQL', async ({
-    signal,
-  }) => {
+  it('uses database expiry time when the application clock trails PostgreSQL', async () => {
     const { currentUser, loaded, community, delegateActorId } = await fixture()
     const expiresAt = new Date(Date.now() - 1000)
     await withCommunityRestrictionApplicationClockForTest(
       new Date(expiresAt.getTime() - 1000),
       async () => {
         await expect(
-          withHeldDelegatedCommunityFenceForTest(
-            community.id,
-            delegateActorId,
-            () =>
-              activateCommunityRestrictions(currentUser, loaded, {
-                restrictionTypes: ['no_links'],
-                expiresAt,
-              }),
-            { signal },
+          withHeldDelegatedCommunityFenceForTest(community.id, delegateActorId, () =>
+            activateCommunityRestrictions(currentUser, loaded, {
+              restrictionTypes: ['no_links'],
+              expiresAt,
+            }),
           ),
         ).rejects.toMatchObject({ status: 422, message: 'expires_at must be in the future' })
         expect(await countTestCommunityRestrictions(community.id)).toBe(0)

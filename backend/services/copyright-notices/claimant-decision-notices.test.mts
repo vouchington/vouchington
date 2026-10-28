@@ -4,10 +4,8 @@ import { listNotifications } from '@services/notifications'
 import { deliverCopyrightInAppNotification } from './delivery-transport.mts'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
-import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers/postgres-lock-wait'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import {
   createClearScreenedForm,
@@ -153,18 +151,21 @@ describe('claimant copyright decision notices', () => {
       { noticeId: caseId, event: 'not_accepted' },
       holder,
     )
-    let reversal: Promise<void> | undefined
-    try {
-      reversal = replayTestCopyrightClaimantDecision(caseId, 'reversed')
-      await waitForTestPostgresLockWaiter(
+    await withTestOwnedPostgresWait(
+      {
         holderProcessId,
-        'createCopyrightClaimantDecisionNoticeInTransaction:recipient',
-      )
-    } finally {
-      await holder.commit()
-      await reversal?.catch(() => undefined)
-    }
-    await reversal
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'createCopyrightClaimantDecisionNoticeInTransaction:recipient',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const reversal = replayTestCopyrightClaimantDecision(caseId, 'reversed')
+        await waitForLock(reversal)
+        await holder.commit()
+        await reversal
+      },
+    )
     const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
       row => row.delivery_kind === 'claimant_decision_notice',
     )

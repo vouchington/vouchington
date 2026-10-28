@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createServer, connect } from 'node:net'
 import {
   advisoryLockPool,
@@ -6,6 +6,7 @@ import {
   readPool,
   writePool,
 } from '../data-stores/psql/setup.mts'
+import { createTestPostgresMultiWait } from './postgres-multi-client-lock-observer.mts'
 
 import type { PsqlPoolSocketHandles } from './psql-pool-metrics.mts'
 
@@ -67,6 +68,64 @@ describe('PostgreSQL pool metrics', () => {
       await new Promise<void>(resolve => server.close(() => resolve()))
     }
   })
+
+  it('releases both holders and restores pools and client settings after a bad snapshot', async () => {
+    const firstKey = `multi-lock-first-${crypto.randomUUID()}`
+    const secondKey = `multi-lock-second-${crypto.randomUUID()}`
+    const firstHolder = await holdAdvisoryLock(firstKey)
+    onTestFinished(async () => firstHolder.release())
+    const secondHolder = await holdAdvisoryLock(secondKey)
+    onTestFinished(async () => secondHolder.release())
+    const writeConnect = Object.getOwnPropertyDescriptor(writePool, 'connect')
+    const advisoryConnect = Object.getOwnPropertyDescriptor(advisoryLockPool, 'connect')
+    const owner = await createTestPostgresMultiWait()
+    let firstOperation: Promise<unknown> | undefined
+    let secondOperation: Promise<unknown> | undefined
+
+    try {
+      const first = await owner.start(
+        {
+          pool: 'write',
+          holderProcessId: firstHolder.processId,
+          lock: { kind: 'advisory', key: firstKey },
+          queryMarker: 'multiLockFirstWaiter',
+          releaseHolder: firstHolder.release,
+        },
+        () => waitOnAdvisoryLock(firstKey, 'multiLockFirstWaiter'),
+      )
+      firstOperation = first.operation
+      await first.waitForLock()
+
+      const second = await owner.start(
+        {
+          pool: 'write',
+          holderProcessId: secondHolder.processId,
+          lock: { kind: 'advisory', key: secondKey },
+          queryMarker: 'markerThatDoesNotMatchSecondWaiter',
+          releaseHolder: secondHolder.release,
+        },
+        () => waitOnAdvisoryLock(secondKey, 'multiLockSecondWaiter'),
+      )
+      secondOperation = second.operation
+      await expect(second.waitForLock()).rejects.toThrow(
+        'Native lock notice did not match the owned holder and real query',
+      )
+    } finally {
+      try {
+        await owner[Symbol.asyncDispose]()
+      } finally {
+        await Promise.allSettled([firstHolder.release(), secondHolder.release()])
+      }
+    }
+
+    if (firstOperation === undefined || secondOperation === undefined)
+      throw new Error('Owned actions did not return their blocked operations')
+    await expect(Promise.all([firstOperation, secondOperation])).resolves.toHaveLength(2)
+    expect(firstHolder.released).toBe(true)
+    expect(secondHolder.released).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(writePool, 'connect')).toEqual(writeConnect)
+    expect(Object.getOwnPropertyDescriptor(advisoryLockPool, 'connect')).toEqual(advisoryConnect)
+  })
   it('recognizes connected pools from a reset module graph without duplicate listeners', async () => {
     vi.resetModules()
     const runtime = await import('../data-stores/psql/runtime.mts')
@@ -102,4 +161,59 @@ function getRegisteredPsqlPoolSocketHandles(): PsqlPoolSocketHandles | null {
     globalThis as typeof globalThis & Record<symbol, (() => PsqlPoolSocketHandles) | undefined>
   )[Symbol.for('vitest-fork-leak-pool-socket-handles')]
   return provider?.() ?? null
+}
+
+async function holdAdvisoryLock(key: string) {
+  const client = await writePool.connect()
+  let processId: number
+  try {
+    const { rows } = await client.query<{ process_id: number }>(
+      'SELECT pg_backend_pid()::integer AS process_id',
+    )
+    const pid = rows[0]?.process_id
+    if (pid === undefined) throw new Error('PostgreSQL did not return a backend process ID')
+    processId = pid
+    await client.query('SELECT pg_advisory_lock(hashtextextended($1, 0))', [key])
+  } catch (err) {
+    client.release(toError(err))
+    throw err
+  }
+  let released: Promise<void> | undefined
+  return {
+    processId,
+    get released() {
+      return released !== undefined
+    },
+    release() {
+      return (released ??= (async () => {
+        try {
+          const result = await client.query<{ unlocked: boolean }>(
+            'SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
+            [key],
+          )
+          if (!result.rows[0]?.unlocked)
+            throw new Error('PostgreSQL did not release the test advisory lock')
+          client.release()
+        } catch (err) {
+          client.release(toError(err))
+          throw err
+        }
+      })())
+    },
+  }
+}
+
+async function waitOnAdvisoryLock(key: string, marker: string): Promise<void> {
+  const client = await writePool.connect()
+  try {
+    await client.query(`/* ${marker} */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+      key,
+    ])
+  } finally {
+    client.release()
+  }
+}
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error))
 }

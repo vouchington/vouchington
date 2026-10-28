@@ -9,9 +9,9 @@ import {
   getEntityRelation,
   getTestPostgresBackendProcessId,
   insertTestTopic,
-  waitForTestPostgresLockWaiter,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { PrivateUser } from '@services/users/types'
 import { lockPostPublication } from '@services/post-publication'
@@ -59,21 +59,17 @@ describe('createEntityRelationAction post mutation guard', () => {
       )
       const holderPid = await locked.promise
 
-      const creating = createEntityRelationAction(
-        owner,
-        {
-          kind: 'delegated',
-          credentialOwnerId: owner.id,
-          grantedScopes: ['entity-relations:read', 'entity-relations:write'],
-        },
-        input,
-      ).catch(err => err)
-      try {
-        await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
-      } finally {
-        release.resolve()
-      }
-      await holder
+      const creating = withPublicationWait(holderPid, post.id, release, holder, () =>
+        createEntityRelationAction(
+          owner,
+          {
+            kind: 'delegated',
+            credentialOwnerId: owner.id,
+            grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+          },
+          input,
+        ).catch(err => err),
+      )
       await expect(creating).resolves.toMatchObject({ statusCode: 403 })
       await expect(
         getEntityRelation(relation.table_name, input.entityId, input.objectId),
@@ -95,27 +91,23 @@ describe('createEntityRelationAction post mutation guard', () => {
     )
     const holderPid = await locked.promise
 
-    const creating = createEntityRelationAction(
-      owner,
-      {
-        kind: 'delegated',
-        credentialOwnerId: owner.id,
-        grantedScopes: ['entity-relations:read', 'entity-relations:write'],
-      },
-      {
-        entityType: 'post',
-        entityId: subject.id,
-        predicate: 'related',
-        objectType: 'post',
-        objectId: object.id,
-      },
-    ).catch(err => err)
-    try {
-      await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
-    } finally {
-      release.resolve()
-    }
-    await holder
+    const creating = withPublicationWait(holderPid, subject.id, release, holder, () =>
+      createEntityRelationAction(
+        owner,
+        {
+          kind: 'delegated',
+          credentialOwnerId: owner.id,
+          grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+        },
+        {
+          entityType: 'post',
+          entityId: subject.id,
+          predicate: 'related',
+          objectType: 'post',
+          objectId: object.id,
+        },
+      ).catch(err => err),
+    )
 
     await expect(creating).resolves.toMatchObject({ statusCode: 403 })
     await expect(
@@ -157,35 +149,59 @@ describe('createEntityRelationAction post mutation guard', () => {
     )
     const holderPid = await locked.promise
 
-    const creating = createEntityRelationAction(
-      owner,
-      {
-        kind: 'delegated',
-        credentialOwnerId: owner.id,
-        grantedScopes: [
-          'entity-relations:read',
-          'entity-relations:write',
-          'post-relations.owned-private:write',
-        ],
-      },
-      {
-        entityType: 'post',
-        entityId: reply.id,
-        predicate: 'category',
-        objectType: 'topic',
-        objectId: topicId,
-      },
-    ).catch(err => err)
-    try {
-      await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
-    } finally {
-      release.resolve()
-    }
-    await holder
+    const creating = withPublicationWait(holderPid, reply.id, release, holder, () =>
+      createEntityRelationAction(
+        owner,
+        {
+          kind: 'delegated',
+          credentialOwnerId: owner.id,
+          grantedScopes: [
+            'entity-relations:read',
+            'entity-relations:write',
+            'post-relations.owned-private:write',
+          ],
+        },
+        {
+          entityType: 'post',
+          entityId: reply.id,
+          predicate: 'category',
+          objectType: 'topic',
+          objectId: topicId,
+        },
+      ).catch(err => err),
+    )
     await expect(creating).resolves.toMatchObject({ statusCode: 404 })
     await expect(getEntityRelation(relation.table_name, reply.id, topicId)).resolves.toEqual([])
   })
 })
+
+function withPublicationWait<Result>(
+  holderProcessId: number,
+  postId: string,
+  release: PromiseWithResolvers<void>,
+  holder: Promise<void>,
+  start: () => Promise<Result>,
+): Promise<Result> {
+  const releaseHolder = async () => {
+    release.resolve()
+    await holder
+  }
+  return withTestOwnedPostgresWait(
+    {
+      holderProcessId,
+      pool: 'write',
+      lock: { kind: 'advisory', key: `post:${postId.toLowerCase()}` },
+      queryMarker: 'lockPostPublicationCaptures',
+      releaseHolder,
+    },
+    async waitForLock => {
+      const action = start()
+      await waitForLock(action)
+      await releaseHolder()
+      return action
+    },
+  )
+}
 
 async function holdPublicationLockThenMutate(
   postId: string,

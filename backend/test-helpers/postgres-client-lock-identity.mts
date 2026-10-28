@@ -2,10 +2,24 @@ import type { PoolClient } from '@data-stores/psql'
 
 export type TestPostgresLockIdentity = {
   holderProcessId: number
-  lock: { kind: 'advisory'; key: string; namespace?: number } | { kind: 'transaction' }
+  lock:
+    | {
+        kind: 'advisory'
+        key: string
+        namespace?: number
+        holderMode?: 'exclusive' | 'shared'
+        waiterMode?: 'exclusive' | 'shared'
+      }
+    | {
+        kind: 'advisory32'
+        key: string
+        holderMode?: 'exclusive' | 'shared'
+        waiterMode?: 'exclusive' | 'shared'
+      }
+    | { kind: 'transaction' }
 }
 export type TestHeldPostgresLock =
-  | { kind: 'advisory'; tag: string }
+  | { kind: 'advisory'; tag: string; waiterMode: 'exclusive' | 'shared' }
   | { kind: 'transaction'; transactionId: string }
 export type TestOwnedPostgresWaitOptions = TestPostgresLockIdentity & {
   pool: 'advisory' | 'write'
@@ -18,10 +32,11 @@ export async function getTestOwnedPostgresLock(
   observer: PoolClient,
   identity: TestPostgresLockIdentity,
 ): Promise<TestHeldPostgresLock> {
-  if (identity.lock.kind === 'advisory')
+  if (identity.lock.kind !== 'transaction')
     return {
       kind: 'advisory',
       tag: await getTestOwnedAdvisoryLockTag(observer, identity.holderProcessId, identity.lock),
+      waiterMode: identity.lock.waiterMode ?? 'exclusive',
     }
   const { rows } = await observer.query<{ transaction_id: string }>(
     `/* getTestOwnedTransactionLock */
@@ -40,23 +55,38 @@ export async function getTestOwnedPostgresLock(
 async function getTestOwnedAdvisoryLockTag(
   observer: PoolClient,
   holderProcessId: number,
-  lock: { key: string; namespace?: number },
+  lock: {
+    kind: 'advisory' | 'advisory32'
+    key: string
+    namespace?: number
+    holderMode?: 'exclusive' | 'shared'
+    waiterMode?: 'exclusive' | 'shared'
+  },
 ): Promise<string> {
   const { rows } = await observer.query<{ lock_tag: string }>(
     `/* getTestOwnedAdvisoryLockTag */
       SELECT 'advisory lock [' || database::text || ',' || classid::text || ',' ||
         objid::text || ',' || objsubid::text || ']' AS lock_tag
       FROM pg_locks
-      WHERE pid = $1 AND locktype = 'advisory' AND granted AND mode = 'ExclusiveLock'
+      WHERE pid = $1 AND locktype = 'advisory' AND granted
+        AND mode = CASE WHEN $5::text = 'shared' THEN 'ShareLock' ELSE 'ExclusiveLock' END
         AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
         AND (($3::integer IS NULL AND objsubid = 1
-          AND classid::bigint = ((hashtextextended($2, 0) >> 32) & 4294967295)
-          AND objid::bigint = (hashtextextended($2, 0) & 4294967295))
+          AND classid::bigint = (((CASE WHEN $4::boolean THEN hashtext($2)::bigint
+            ELSE hashtextextended($2, 0) END) >> 32) & 4294967295)
+          AND objid::bigint = ((CASE WHEN $4::boolean THEN hashtext($2)::bigint
+            ELSE hashtextextended($2, 0) END) & 4294967295))
         OR ($3::integer IS NOT NULL AND objsubid = 2
           AND classid::bigint = ($3::bigint & 4294967295)
           AND objid::bigint = (hashtext($2)::bigint & 4294967295)))
       LIMIT 2`,
-    [holderProcessId, lock.key, lock.namespace ?? null],
+    [
+      holderProcessId,
+      lock.key,
+      lock.namespace ?? null,
+      lock.kind === 'advisory32',
+      lock.holderMode ?? 'exclusive',
+    ],
   )
   if (rows.length !== 1 || !rows[0])
     throw new Error('Owned holder did not report exactly the expected advisory lock')

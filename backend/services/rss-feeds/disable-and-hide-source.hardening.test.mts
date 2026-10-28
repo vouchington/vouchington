@@ -3,15 +3,11 @@ import {
   beginTransaction,
   createTestTopic,
   createTestUser,
-  getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
+import { runTestRssFeedHideLockRace } from '@voucha/test-helpers/rss-feed-hide-lock-race'
 import { lockPostPublicationRssFeedScopes } from '@services/post-publication'
-import {
-  lockHostnameOwnership,
-  lockTopicHostnameMutations,
-} from '@services/urls-hostnames/ownership-lock'
+import { lockTopicHostnameMutations } from '@services/urls-hostnames/ownership-lock'
 import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
 import { addUrl } from '../urls/upsert.mts'
 import { addAdditionalHostname } from '../topics/additional-hostnames.mts'
@@ -40,7 +36,6 @@ describe('source hide releases all hostname ownership', () => {
       const url = (await addUrl(admin.id, `https://${child}/`))!
       await using publication = await beginTransaction()
       await lockPostPublicationRssFeedScopes(publication, [feed.id])
-      const publicationPid = await getTestPostgresBackendProcessId(publication)
       await using owner = await beginTransaction()
       await lockTopicHostnameMutations(owner, [topic.id])
       if (kind.startsWith('additional'))
@@ -50,41 +45,14 @@ describe('source hide releases all hostname ownership', () => {
           query: owner,
           skipBlockedHostnameGuard: true,
         })
-      const ownerPid = await getTestPostgresBackendProcessId(owner)
-      await using hider = await beginTransaction()
-      const hiderPid = await getTestPostgresBackendProcessId(hider)
-      const hiding = disableAndHideSource(feed.id, { query: hider }).then(
-        () => null,
-        (err: unknown) => err,
-      )
-      try {
-        await waitForTestPostgresLockWaiter(ownerPid, 'lockTopicHostnameMutations')
-      } finally {
-        await owner.commit()
-      }
-      await using probe = await beginTransaction()
-      let probing: Promise<unknown> | undefined
-      let hidingResult: unknown
-      let probeResult: unknown
-      try {
-        await waitForTestPostgresLockWaiter(publicationPid, 'lockPostPublicationRssFeedScopes')
-        probing = lockHostnameOwnership(probe, [
-          kind.endsWith('ancestor') ? parentId : url.hostname.id,
-        ]).then(
-          () => null,
-          (err: unknown) => err,
-        )
-        await waitForTestPostgresLockWaiter(hiderPid, 'lockHostnameOwnership')
-      } finally {
-        await publication.commit()
-        hidingResult = await hiding
-        if (hidingResult === null) await hider.commit()
-        else await hider.rollback()
-        probeResult = await probing
-      }
-      expect(hidingResult).toBeNull()
-      expect(probeResult).toBeNull()
-      await probe.commit()
+      await runTestRssFeedHideLockRace({
+        owner,
+        publication,
+        topicId: topic.id,
+        feedId: feed.id,
+        hostnameId: kind.endsWith('ancestor') ? parentId : url.hostname.id,
+        hide: query => disableAndHideSource(feed.id, { query }),
+      })
       expect(await getTopicByAny(topic.id)).toBeNull()
       expect(await queryRssFeedBaseState(feed.id)).toMatchObject({ is_enabled: false })
     },

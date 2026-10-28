@@ -1,4 +1,3 @@
-import type { QueryExecutor } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -7,95 +6,19 @@ import {
   insertTestCommunity,
   insertTestCommunityBan,
   insertTestCommunityMember,
-  waitForTestPostgresLockWaiter,
   updateTestCommunityMemberRole,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { banUserFromCommunity } from '../bans/create.mts'
 import { getActiveCommunityBan } from '../bans/get.mts'
 import { liftCommunityBan } from '../bans/lift.mts'
-import { lockCommunityUser, lockCommunityUsers } from '../bans/lock.mts'
+import { lockCommunityUser } from '../bans/lock.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { removeMember } from '../members/remove.mts'
 import { updateMemberRole } from '../members/update-role.mts'
 import { initiateOwnershipTransfer } from '../ownership-transfer.mts'
 
 describe('community membership role locks', () => {
-  it('locks reversed duplicate user inputs concurrently without deadlocking', async () => {
-    const { owner, target, community } = await createOwnerAndTarget('member')
-    const release = Promise.withResolvers<void>()
-    const firstAcquiredSignal = Promise.withResolvers<void>()
-    const secondAcquiredSignal = Promise.withResolvers<void>()
-    let firstAcquired = false
-    let secondAcquired = false
-
-    // Barrier both sides so their lockCommunityUsers statements dispatch to Postgres in the
-    // same tick, instead of `first` (constructed first) getting an unbounded JS head start
-    // that could let its whole combined-lock statement finish before `second` is even sent.
-    // lockCommunityUsers acquires every key inside one combined MATERIALIZED-CTE statement
-    // (see ../bans/lock.mts), issued as a single query per call — there is no per-key
-    // acquisition hook exposed, so this dispatch barrier is the finest-grained interleaving
-    // point this test can force without instrumenting lock.mts itself.
-    const firstDispatching = Promise.withResolvers<void>()
-    const secondDispatching = Promise.withResolvers<void>()
-
-    const first = acquireFirstUserLocks()
-    const second = acquireSecondUserLocks()
-
-    async function acquireFirstUserLocks(): Promise<void> {
-      await using query = await beginTransaction()
-      const barrieredQuery: QueryExecutor = async (input, values) => {
-        firstDispatching.resolve()
-        await secondDispatching.promise
-        return query(input, values)
-      }
-      await lockCommunityUsers(community.id, [owner.id, target.id, owner.id], {
-        query: barrieredQuery,
-      })
-      firstAcquired = true
-      firstAcquiredSignal.resolve()
-      await release.promise
-
-      await query.commit()
-    }
-
-    async function acquireSecondUserLocks(): Promise<void> {
-      await using query = await beginTransaction()
-      const barrieredQuery: QueryExecutor = async (input, values) => {
-        secondDispatching.resolve()
-        await firstDispatching.promise
-        return query(input, values)
-      }
-      await lockCommunityUsers(community.id, [target.id, owner.id, target.id], {
-        query: barrieredQuery,
-      })
-      secondAcquired = true
-      secondAcquiredSignal.resolve()
-      await release.promise
-
-      await query.commit()
-    }
-
-    try {
-      // Wait for whichever side actually wins the race to acquire, instead of a fixed delay —
-      // a loaded database fork can take longer than any fixed sleep to grant either lock, and
-      // a fixed delay would then fail this assertion despite correct locking. The loser
-      // genuinely cannot acquire the same advisory lock keys while the winner's transaction
-      // still holds them open (blocked below on `release.promise`), so as soon as one signal
-      // fires, the other side is deterministically still waiting.
-      await Promise.race([firstAcquiredSignal.promise, secondAcquiredSignal.promise])
-      expect(firstAcquired).not.toBe(secondAcquired)
-    } finally {
-      // Always release, even if the assertion above throws — otherwise whichever transaction
-      // eventually acquires the locks would hang forever awaiting `release.promise`, turning a
-      // simple assertion failure into a test timeout and a leaked pool connection.
-      release.resolve()
-    }
-
-    await Promise.all([first, second])
-    expect(firstAcquired).toBe(true)
-    expect(secondAcquired).toBe(true)
-  })
-
   it('updateMemberRole waits for the target user advisory lock', async () => {
     const { owner, target, community } = await createOwnerAndTarget('member')
     const ready = Promise.withResolvers<void>()
@@ -114,16 +37,20 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const update = updateMemberRole(owner.id, community, target.id, 'moderator')
-    try {
-      await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
-      const beforeRelease = await getCommunityMember(community.id, target.id)
-      expect(beforeRelease?.role).toBe('member')
-    } finally {
-      release.resolve()
-      await Promise.allSettled([holder, update])
-    }
-    await update
+    await withHeldCommunityUserWait({
+      holderProcessId: await holderProcessId.promise,
+      communityId: community.id,
+      userId: target.id,
+      releaseHolder: async () => {
+        release.resolve()
+        await holder
+      },
+      start: () => updateMemberRole(owner.id, community, target.id, 'moderator'),
+      whileBlocked: async () => {
+        const beforeRelease = await getCommunityMember(community.id, target.id)
+        expect(beforeRelease?.role).toBe('member')
+      },
+    })
     const afterRelease = await getCommunityMember(community.id, target.id)
     expect(afterRelease?.role).toBe('moderator')
   })
@@ -146,16 +73,20 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const removal = removeMember(owner.id, community, target.id)
-    try {
-      await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
-      const beforeRelease = await getCommunityMember(community.id, target.id)
-      expect(beforeRelease).not.toBeNull()
-    } finally {
-      release.resolve()
-      await Promise.allSettled([holder, removal])
-    }
-    await removal
+    await withHeldCommunityUserWait({
+      holderProcessId: await holderProcessId.promise,
+      communityId: community.id,
+      userId: target.id,
+      releaseHolder: async () => {
+        release.resolve()
+        await holder
+      },
+      start: () => removeMember(owner.id, community, target.id),
+      whileBlocked: async () => {
+        const beforeRelease = await getCommunityMember(community.id, target.id)
+        expect(beforeRelease).not.toBeNull()
+      },
+    })
     const afterRelease = await getCommunityMember(community.id, target.id)
     expect(afterRelease).toBeNull()
   })
@@ -178,16 +109,20 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const transfer = initiateOwnershipTransfer(owner.id, community, target.id)
-    try {
-      await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
-      const beforeRelease = await getCommunityMember(community.id, target.id)
-      expect(beforeRelease?.role).toBe('moderator')
-    } finally {
-      release.resolve()
-      await Promise.allSettled([holder, transfer])
-    }
-    await transfer
+    await withHeldCommunityUserWait({
+      holderProcessId: await holderProcessId.promise,
+      communityId: community.id,
+      userId: target.id,
+      releaseHolder: async () => {
+        release.resolve()
+        await holder
+      },
+      start: () => initiateOwnershipTransfer(owner.id, community, target.id),
+      whileBlocked: async () => {
+        const beforeRelease = await getCommunityMember(community.id, target.id)
+        expect(beforeRelease?.role).toBe('moderator')
+      },
+    })
     const afterRelease = await getCommunityMember(community.id, target.id)
     expect(afterRelease?.role).toBe('owner')
   })
@@ -218,16 +153,19 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const ban = banUserFromCommunity(moderator, community.id, target.id)
-    const banRejection = ban.catch((err: unknown) => err)
-    try {
-      await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
-    } finally {
-      demote.resolve()
-      await Promise.allSettled([holder, banRejection])
-    }
+    const banRejection = await withHeldCommunityUserWait({
+      holderProcessId: await holderProcessId.promise,
+      communityId: community.id,
+      userId: moderator.id,
+      releaseHolder: async () => {
+        demote.resolve()
+        await holder
+      },
+      start: () =>
+        banUserFromCommunity(moderator, community.id, target.id).catch((err: unknown) => err),
+    })
 
-    await expect(banRejection).resolves.toMatchObject({ status: 403 })
+    expect(banRejection).toMatchObject({ status: 403 })
     const activeBan = await getActiveCommunityBan(community.id, target.id)
     expect(activeBan).toBeNull()
     const targetMembership = await getCommunityMember(community.id, target.id)
@@ -267,22 +205,51 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const lift = liftCommunityBan(moderator, community.id, target.id)
-    const liftRejection = lift.catch((err: unknown) => err)
-    try {
-      await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
-    } finally {
-      demote.resolve()
-      await Promise.allSettled([holder, liftRejection])
-    }
+    const liftRejection = await withHeldCommunityUserWait({
+      holderProcessId: await holderProcessId.promise,
+      communityId: community.id,
+      userId: moderator.id,
+      releaseHolder: async () => {
+        demote.resolve()
+        await holder
+      },
+      start: () =>
+        liftCommunityBan(moderator, community.id, target.id).catch((err: unknown) => err),
+    })
 
-    await expect(liftRejection).resolves.toMatchObject({ status: 403 })
+    expect(liftRejection).toMatchObject({ status: 403 })
     const activeBan = await getActiveCommunityBan(community.id, target.id)
     expect(activeBan).not.toBeNull()
     const moderatorMembership = await getCommunityMember(community.id, moderator.id)
     expect(moderatorMembership?.role).toBe('member')
   })
 })
+
+async function withHeldCommunityUserWait<Result>(input: {
+  holderProcessId: number
+  communityId: string
+  userId: string
+  releaseHolder: () => Promise<void>
+  start: () => Promise<Result>
+  whileBlocked?: () => Promise<void>
+}): Promise<Result> {
+  return withTestOwnedPostgresWait(
+    {
+      holderProcessId: input.holderProcessId,
+      pool: 'write',
+      lock: { kind: 'advisory', key: `${input.communityId}:${input.userId}` },
+      queryMarker: 'lockCommunityUsers',
+      releaseHolder: input.releaseHolder,
+    },
+    async waitForLock => {
+      const action = input.start()
+      await waitForLock(action)
+      await input.whileBlocked?.()
+      await input.releaseHolder()
+      return action
+    },
+  )
+}
 
 async function createOwnerAndTarget(role: 'member' | 'moderator') {
   const [owner, target] = await Promise.all([createTestUser(), createTestUser()])

@@ -1,13 +1,36 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import type { TestPostgresLockIdentity } from './postgres-client-lock-identity.mts'
 
 export type OperationWaitingOnClient<T> = {
   clientId: string
   waiterQueryMarker: string
   start: () => Promise<T>
+}
+
+/** Starts one OAuth operation and releases its exact test-owned lock after its native wait. */
+export function withTestOAuthOperationWaiting<T>(input: {
+  holderProcessId: number
+  lock: TestPostgresLockIdentity['lock']
+  waiterQueryMarker: string
+  releaseHolder: () => PromiseLike<void>
+  start: () => Promise<T>
+}): Promise<T> {
+  return withTestOwnedPostgresWait(
+    {
+      holderProcessId: input.holderProcessId,
+      lock: input.lock,
+      pool: 'write',
+      queryMarker: input.waiterQueryMarker,
+      releaseHolder: input.releaseHolder,
+    },
+    async waitForLock => {
+      const operation = input.start()
+      await waitForLock(operation)
+      await input.releaseHolder()
+      return operation
+    },
+  )
 }
 
 /**
@@ -18,56 +41,46 @@ export async function updateTestOAuthClientWhileWaiting<T>(
   input: OperationWaitingOnClient<T>,
   update: (transaction: TransactionQuery) => Promise<unknown>,
 ): Promise<T> {
-  let operationOutcome: Promise<PromiseSettledResult<T>> | undefined
-  let outcome: PromiseSettledResult<T> | undefined
-  let observerFailure: { error: unknown } | undefined
+  const transaction = await beginTransaction()
+  let transactionDisposed = false
   try {
-    await using transaction = await beginTransaction()
     await update(transaction)
-    const holderProcessId = await getTestPostgresBackendProcessId(transaction)
-    const observation = new AbortController()
-    operationOutcome = Promise.allSettled([input.start()] as const).then(([outcome]) => {
-      observation.abort(
-        outcome.status === 'rejected'
-          ? outcome.reason
-          : new Error('Operation completed before the test lock was observed'),
-      )
-      return outcome
-    })
-    try {
-      // Await cancellation too: an in-flight observation must drain before rollback releases
-      // the holder. The observer keeps its full positive window while the operation is live.
-      await waitForTestPostgresLockWaiter(
+    const { rows } = await transaction<{ process_id: number }>(
+      `/* updateTestOAuthClientWhileWaiting.process */ SELECT pg_backend_pid()::integer AS process_id`,
+    )
+    const holderProcessId = rows[0]?.process_id
+    if (holderProcessId === undefined)
+      throw new Error('PostgreSQL did not return a backend process ID')
+    let releaseAsRollback = true
+    const releaseHolder = async () => {
+      if (transactionDisposed) return
+      try {
+        if (releaseAsRollback) await transaction[Symbol.asyncDispose]()
+        else await transaction.commit()
+        transactionDisposed = true
+      } catch (err) {
+        releaseAsRollback = true
+        throw err
+      }
+    }
+    return await withTestOwnedPostgresWait(
+      {
         holderProcessId,
-        input.waiterQueryMarker,
-        'advisoryLock',
-        undefined,
-        observation.signal,
-      )
-      await transaction.commit()
-    } catch (err) {
-      observerFailure = { error: err }
-    }
-  } finally {
-    // Always observe started work after holder disposal is attempted, including rollback errors.
-    if (operationOutcome) outcome = await operationOutcome
+        lock: { kind: 'transaction' },
+        pool: 'write',
+        queryMarker: input.waiterQueryMarker,
+        releaseHolder,
+      },
+      async waitForLock => {
+        const operation = input.start()
+        await waitForLock(operation)
+        releaseAsRollback = false
+        await releaseHolder()
+        return operation
+      },
+    )
+  } catch (err) {
+    if (!transactionDisposed) await transaction[Symbol.asyncDispose]()
+    throw err
   }
-  if (!outcome) throw new Error('OAuth operation did not start')
-  if (observerFailure) {
-    const cause = observerFailure.error instanceof Error ? observerFailure.error.cause : undefined
-    if (
-      outcome.status === 'rejected' &&
-      cause !== outcome.reason &&
-      !(cause instanceof SuppressedError && cause.suppressed === outcome.reason)
-    ) {
-      throw new SuppressedError(
-        observerFailure.error,
-        outcome.reason,
-        'Lock observation and OAuth operation both failed',
-      )
-    }
-    throw observerFailure.error
-  }
-  if (outcome.status === 'rejected') throw outcome.reason
-  return outcome.value
 }

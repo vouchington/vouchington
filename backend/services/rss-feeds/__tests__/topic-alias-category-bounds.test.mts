@@ -1,4 +1,5 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import '@services/elections-votes'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
@@ -15,7 +16,6 @@ import {
   lockTestRssFeedItemCategory,
   setTestRssFeedItemCategoryTopicId,
   updateTestTopicAliasCategoryMappingOwner,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { createTopicAliases } from '@services/topics/aliases'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
@@ -177,16 +177,33 @@ describe('bounded topic alias category reconciliation', () => {
     let reconciling: ReturnType<typeof processReconcileTopicAliasCategoryMappings> | undefined
     try {
       const holderProcessId = await ready.promise
-      reconciling = processReconcileTopicAliasCategoryMappings(undefined, [alias.id])
-      await waitForTestPostgresLockWaiter(holderProcessId, 'backfillCategoriesForTopicAliases')
-      await updateTestTopicAliasCategoryMappingOwner(alias.id, nextOwner.id)
-      const successor = await getTopicAliasCategoryMappingDirtyRowForTest(alias.id)
-      release.resolve()
-      await holder
-      await expect(reconciling).resolves.toMatchObject({ reconciled: 0, hasMore: true })
-      await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toMatchObject({
-        generation: successor!.generation,
-      })
+      await withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: 'backfillCategoriesForTopicAliases',
+          releaseHolder: async () => {
+            release.resolve()
+            await holder
+          },
+        },
+        async waitForLock => {
+          const pending = processReconcileTopicAliasCategoryMappings(undefined, [alias.id])
+          reconciling = pending
+          await waitForLock(pending)
+          await updateTestTopicAliasCategoryMappingOwner(alias.id, nextOwner.id)
+          const successor = await getTopicAliasCategoryMappingDirtyRowForTest(alias.id)
+          release.resolve()
+          await holder
+          await expect(pending).resolves.toMatchObject({ reconciled: 0, hasMore: true })
+          await expect(
+            getTopicAliasCategoryMappingDirtyRowForTest(alias.id),
+          ).resolves.toMatchObject({
+            generation: successor!.generation,
+          })
+        },
+      )
       await expect(
         processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
       ).resolves.toMatchObject({ reconciled: 1, hasMore: false })

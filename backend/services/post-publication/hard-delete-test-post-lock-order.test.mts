@@ -8,8 +8,8 @@ import {
   insertTestPost,
   insertTestTopic,
   startPausedTestPostTopicRelationWriter,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 
 describe('hardDeleteTestPost', () => {
   it('queues behind the post scope lock instead of locking the post row ahead of a live writer', async () => {
@@ -33,12 +33,21 @@ describe('hardDeleteTestPost', () => {
       (relation as { id: string }).id,
     )
 
-    const deletion = hardDeleteTestPost(postId)
-    const completedWriter = waitForTestPostgresLockWaiter(
-      writer.holderProcessId,
-      'lockPostPublicationCaptures',
-    ).finally(() => writer.complete())
-    await Promise.all([deletion, completedWriter])
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: writer.holderProcessId,
+        pool: 'write',
+        lock: { kind: 'advisory', key: `post:${postId}` },
+        queryMarker: 'lockPostPublicationCaptures',
+        releaseHolder: writer.complete,
+      },
+      async waitForLock => {
+        const deletion = hardDeleteTestPost(postId)
+        await waitForLock(deletion)
+        await writer.complete()
+        await deletion
+      },
+    )
 
     await expect(getEntityRelation(relationTable, postId, topicId)).resolves.toEqual([])
   })

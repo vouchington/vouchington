@@ -5,9 +5,9 @@ import {
   lockTestUserMutation,
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
-  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { createPost } from '../create.mts'
 
@@ -33,15 +33,30 @@ describe('createPost deleted author lifecycle', () => {
       )
       await deletionHoldsAuthorLifecycle.promise
 
-      creationOutcome = createPost(author, WEB_PROVENANCE, {
-        title: 'Creation blocked by concurrent author deletion',
-        markdown: 'This post must not be created after the author is deleted.',
-        post_type: 'discussion',
-      }).catch((err: unknown) => err)
-      await waitForTestPostgresLockWaiter(deletionBackendId, 'lockActiveUserSubjectsForMutation')
-      releaseDeletion.resolve()
+      creationOutcome = withTestOwnedPostgresWait(
+        {
+          holderProcessId: deletionBackendId,
+          pool: 'write',
+          lock: { kind: 'advisory', key: author.id },
+          queryMarker: 'lockActiveUserSubjectsForMutation',
+          releaseHolder: async () => {
+            releaseDeletion.resolve()
+            await deleting
+          },
+        },
+        async waitForLock => {
+          const creating = createPost(author, WEB_PROVENANCE, {
+            title: 'Creation blocked by concurrent author deletion',
+            markdown: 'This post must not be created after the author is deleted.',
+            post_type: 'discussion',
+          })
+          await waitForLock(creating)
+          releaseDeletion.resolve()
+          await deleting
+          return creating.catch((err: unknown) => err)
+        },
+      )
 
-      await expect(deleting).resolves.toBeUndefined()
       await expect(creationOutcome).resolves.toMatchObject({
         status: 409,
         message: 'Author is not active',
