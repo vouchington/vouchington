@@ -3,6 +3,7 @@
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added language detection columns to topics
 -- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
+-- edited-in-place: idx_topic_aliases__unlink_topic_id is now (unlink_topic_id, id) to serve id-ordered paging
 -- Merged from: 0005-00-00-topics.sql, 0110-00-00-wikipedia-topic-recommendations.sql, 0160-00-00-review-snippet-categories.sql
 
 -- ==========================================================================
@@ -830,7 +831,7 @@ ON topic_aliases (id)
 WHERE unlink_requested_at IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__unlink_topic_id
-ON topic_aliases (unlink_topic_id)
+ON topic_aliases (unlink_topic_id, id)
 WHERE unlink_topic_id IS NOT NULL;
 
 COMMENT ON TABLE topic_aliases IS 'Topic aliases and standalone hashtags. Linked aliases are synced to topics.aliases.';
