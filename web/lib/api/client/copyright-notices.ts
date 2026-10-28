@@ -3,20 +3,11 @@
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import { withoutCopyrightCaptcha } from './copyright-notice-idempotency'
-import type {
-  CopyrightNoticeDetail,
-  CopyrightNoticesPage,
-  CopyrightParticipantNoticeDetail,
-  CopyrightStaffQueuePage,
-} from '@/types/copyright-notices'
+import type { CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
 import type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 export { createCopyrightEuNotice, createCopyrightEuRedress } from './copyright-eu-notices'
-export {
-  replayCopyrightActionIntent,
-  replayCopyrightDeliveryIntent,
-  replayCopyrightMediaDelivery,
-} from './copyright-recovery'
+export { replayCopyrightActionIntent, replayCopyrightDeliveryIntent } from './copyright-recovery'
 export type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 export function createCopyrightNotice(
   input: {
@@ -79,27 +70,6 @@ export function createCopyrightCounterNotice(
         headers: { 'Idempotency-Key': idempotencyKey },
       }),
   )
-}
-
-export function listCopyrightNotices(options?: {
-  after?: string
-  limit?: number
-}): Promise<CopyrightNoticesPage> {
-  return clientApi.get('/api/v1/copyright-notices', {
-    searchParams: { after: options?.after, limit: options?.limit },
-  })
-}
-
-export function getCopyrightNotice(
-  id: string,
-): Promise<{ copyright_notice: CopyrightNoticeDetail }> {
-  return clientApi.get(`/api/v1/copyright-notices/${id}`)
-}
-
-export function getCopyrightParticipantNotice(
-  id: string,
-): Promise<{ copyright_notice: CopyrightParticipantNoticeDetail }> {
-  return clientApi.get(`/api/v1/copyright-notices/${id}/participant`)
 }
 
 export function listCopyrightReviewQueue(options?: {

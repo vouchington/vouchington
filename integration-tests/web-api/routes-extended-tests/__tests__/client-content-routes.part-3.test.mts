@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
 import * as clientRoutes from '@/lib/api/client'
+import { createRssFeedItemClientActions } from '@/test-helpers/rss-feed-item-client-actions'
+import { admissionIdempotency } from '@/lib/api/client/admission-idempotency'
 import { exportRssFeeds, exportTopics, importRssFeeds } from '@/lib/api/client/import-export'
 import {
   createTestRssFeedItemWithUrl,
   setTestItemStoryId,
 } from '../../../../backend/test-helpers/index.mts'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
+
+const { createLinkPostFromRssFeedItem } = createRssFeedItemClientActions(
+  clientRoutes.clientApi,
+  admissionIdempotency,
+)
 
 function unset(target: object, key: string) {
   delete (target as Record<string, unknown>)[key]
@@ -78,7 +85,7 @@ describe('client-content-routes', () => {
     it('createLinkPostFromRssFeedItem returns 200', async () => {
       const anotherItem = await createTestRssFeedItemWithUrl(harness.rssFeedId)
       const result = await harness.withClientRuntime(
-        () => clientRoutes.createLinkPostFromRssFeedItem(anotherItem.id),
+        () => createLinkPostFromRssFeedItem(anotherItem.id),
         harness.adminCookieHeader,
       )
       expect(result).toMatchObject({ post: expect.objectContaining({ title: anotherItem.title }) })

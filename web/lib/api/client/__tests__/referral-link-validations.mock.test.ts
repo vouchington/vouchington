@@ -15,12 +15,9 @@ vi.mock(
 
 import { clientApi } from '../instance'
 import {
-  listReferralLinkValidations,
   getReferralLinkValidation,
   createReferralLinkValidation,
   updateReferralLinkValidation,
-  deleteReferralLinkValidation,
-  getReferralLinkValidationRules,
   createReferralLinkValidationRule,
   updateReferralLinkValidationRule,
   deleteReferralLinkValidationRule,
@@ -37,40 +34,6 @@ const mockDelete = vi.mocked(clientApi.delete)
 describe('referral-link-validations client', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  describe('listReferralLinkValidations', () => {
-    it('calls GET with default limit 100 when no options provided', async () => {
-      const resp = { results: [] }
-      mockGet.mockResolvedValueOnce(resp)
-
-      const result = await listReferralLinkValidations()
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/referral-link-validations', {
-        searchParams: { limit: 100 },
-      })
-      expect(result).toBe(resp)
-    })
-
-    it('includes search param when provided', async () => {
-      mockGet.mockResolvedValueOnce({ results: [] })
-
-      await listReferralLinkValidations({ search: 'chase', limit: 25 })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/referral-link-validations', {
-        searchParams: { limit: 25, search: 'chase' },
-      })
-    })
-
-    it('does not include search param when not provided', async () => {
-      mockGet.mockResolvedValueOnce({ results: [] })
-
-      await listReferralLinkValidations({ limit: 10 })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/referral-link-validations', {
-        searchParams: { limit: 10 },
-      })
-    })
   })
 
   describe('getReferralLinkValidation', () => {
@@ -115,30 +78,6 @@ describe('referral-link-validations client', () => {
 
       expect(mockPatch).toHaveBeenCalledWith('/api/v1/referral-link-validations/val-1', {
         slug: 'new-slug',
-      })
-      expect(result).toBe(resp)
-    })
-  })
-
-  describe('deleteReferralLinkValidation', () => {
-    it('calls DELETE with the correct endpoint', async () => {
-      mockDelete.mockResolvedValueOnce(undefined)
-
-      await deleteReferralLinkValidation('val-1')
-
-      expect(mockDelete).toHaveBeenCalledWith('/api/v1/referral-link-validations/val-1')
-    })
-  })
-
-  describe('getReferralLinkValidationRules', () => {
-    it('calls GET with limit=100 searchParam', async () => {
-      const resp = { results: [] }
-      mockGet.mockResolvedValueOnce(resp)
-
-      const result = await getReferralLinkValidationRules('val-1')
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/referral-link-validations/val-1/rules', {
-        searchParams: { limit: 100 },
       })
       expect(result).toBe(resp)
     })

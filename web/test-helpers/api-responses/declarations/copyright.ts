@@ -25,13 +25,11 @@ export const COPYRIGHT_DECLARATIONS = [
     'web.copyright.notices.default',
     webCopyrightNoticesDefault,
     context => context.server.copyrightNotices.getCopyrightNotices(),
-    [context => context.client.copyrightNotices.listCopyrightNotices()],
   ),
   defineWebApiFixture<CopyrightNoticesPage>()(
     'web.copyright.notices.null-claimant',
     webCopyrightNoticesNullClaimant,
     context => context.server.copyrightNotices.getCopyrightNotices(),
-    [context => context.client.copyrightNotices.listCopyrightNotices()],
   ),
   defineWebApiFixture<CopyrightNoticeDetail>()(
     'web.copyright.notice.detail.populated',
@@ -40,12 +38,6 @@ export const COPYRIGHT_DECLARATIONS = [
       context.server.copyrightNotices.getCopyrightNoticeServer(
         '00000000-0000-7000-8000-000000000804',
       ),
-    [
-      context =>
-        context.client.copyrightNotices
-          .getCopyrightNotice('00000000-0000-7000-8000-000000000804')
-          .then(response => response.copyright_notice),
-    ],
   ),
   defineWebApiFixture<CopyrightNoticeDetail>()(
     'web.copyright.notice.detail.null-claimant',
@@ -54,12 +46,6 @@ export const COPYRIGHT_DECLARATIONS = [
       context.server.copyrightNotices.getCopyrightNoticeServer(
         '00000000-0000-7000-8000-000000000804',
       ),
-    [
-      context =>
-        context.client.copyrightNotices
-          .getCopyrightNotice('00000000-0000-7000-8000-000000000804')
-          .then(response => response.copyright_notice),
-    ],
   ),
   defineWebApiFixture<CopyrightParticipantNoticeDetail>()(
     'web.copyright.notice.participant.populated',
@@ -68,12 +54,6 @@ export const COPYRIGHT_DECLARATIONS = [
       context.server.copyrightNotices.getCopyrightParticipantNoticeServer(
         '00000000-0000-7000-8000-000000000804',
       ),
-    [
-      context =>
-        context.client.copyrightNotices
-          .getCopyrightParticipantNotice('00000000-0000-7000-8000-000000000804')
-          .then(response => response.copyright_notice),
-    ],
   ),
   defineWebApiFixture<CopyrightParticipantNoticeDetail>()(
     'web.copyright.notice.participant.null-claimant',
@@ -82,12 +62,6 @@ export const COPYRIGHT_DECLARATIONS = [
       context.server.copyrightNotices.getCopyrightParticipantNoticeServer(
         '00000000-0000-7000-8000-000000000804',
       ),
-    [
-      context =>
-        context.client.copyrightNotices
-          .getCopyrightParticipantNotice('00000000-0000-7000-8000-000000000804')
-          .then(response => response.copyright_notice),
-    ],
   ),
   defineWebApiFixture<CopyrightStaffQueuePage>()(
     'web.copyright.staff-queue.default',
