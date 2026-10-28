@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -47,12 +46,12 @@ export async function listLocalActiveClassifierPromptVersions(
 // system user, not an agent.
 export async function countLocalAgentsForSystemUsername(username: string): Promise<number> {
   const { rows } = await write<{ count: number }>(
-    allowUnannotatedQuery(sql`
+    sql`/* countLocalAgentsForSystemUsername */
     SELECT COUNT(*)::int AS count
     FROM agents a
     JOIN users u ON u.id = a.system_user_id
     WHERE u.username = ${username}
-  `),
+  `,
   )
   return rows[0]?.count ?? 0
 }
@@ -72,7 +71,7 @@ type LocalClassifierSeedFacts = {
 // community_prompt classifier) and the one active prompt revision with its default thresholds.
 export async function getLocalClassifierSeedFacts(slug: string): Promise<LocalClassifierSeedFacts> {
   const { rows } = await write<LocalClassifierSeedFacts>(
-    allowUnannotatedQuery(sql`
+    sql`/* getLocalClassifierSeedFacts */
     SELECT classifier.candidate_kind::text,
       (SELECT COUNT(*)::int FROM classifier_candidates
         WHERE classifier_id = classifier.id) AS stored_candidates,
@@ -88,7 +87,7 @@ export async function getLocalClassifierSeedFacts(slug: string): Promise<LocalCl
       AND prompt.deleted_at IS NULL
     LEFT JOIN users actor ON actor.id = classifier.created_by_id
     WHERE classifier.slug = ${slug}
-  `),
+  `,
   )
   return rows[0]!
 }

@@ -1,10 +1,9 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function getModerator(moderatorId: string): Promise<unknown> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getModerator */
     SELECT
       a.id,
       am.slug,
@@ -16,18 +15,18 @@ export async function getModerator(moderatorId: string): Promise<unknown> {
     WHERE a.id = ${moderatorId}
       AND a.deleted_at IS NULL
       AND a.agent_type = 'moderator'
-  `),
+  `,
   )
   return rows[0] || null
 }
 
 export async function softDeleteModerator(moderatorId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* softDeleteModerator */
     UPDATE agents
     SET deleted_at = CURRENT_TIMESTAMP
     WHERE id = ${moderatorId}
       AND agent_type = 'moderator'
-  `),
+  `,
   )
 }
