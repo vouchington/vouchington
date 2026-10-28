@@ -8,7 +8,7 @@ import {
 
 const PORT = Number(process.env.IMAGE_LAMBDA_PORT) || 3100
 
-export const server = http.createServer(async (req, res) => {
+const server = http.createServer(async (req, res) => {
   const start = Date.now()
   const pathname = new URL(req.url ?? '/', 'http://localhost').pathname
 
@@ -70,7 +70,7 @@ export const server = http.createServer(async (req, res) => {
 
 // No 'error' listener: a bind failure such as EADDRINUSE crashes the process with the
 // error on stderr, which the image-lambda smoke test greps to reallocate a port.
-export function listen(target: http.Server, port: number): void {
+function listen(target: http.Server, port: number): void {
   target.listen(port, () => {
     console.log(`Lambda dev server: http://localhost:${port}`)
     console.log('  GET  /images/{key}         — image resize')
@@ -79,7 +79,4 @@ export function listen(target: http.Server, port: number): void {
   })
 }
 
-if (import.meta.main) {
-  /* c8 ignore next -- entry-point guard never executes under import-based tests */
-  listen(server, PORT)
-}
+listen(server, PORT)
