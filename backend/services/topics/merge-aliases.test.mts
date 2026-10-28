@@ -4,9 +4,11 @@ import { getTopicCacheKeys } from '@services/entity-cache/keys'
 import { createTestTopic, createTestUser, getTopicRevisionsForTest } from '@voucha/test-helpers'
 
 import { describe, expect, it } from 'vitest'
-import { read } from '@data-stores/psql'
 import { createTopicAliases, unlinkTopicAlias } from './aliases.mts'
-import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
+import {
+  getTopicAliasesForTest,
+  getTopicAliasUnlinkOwnerForTest,
+} from '@voucha/test-helpers/topic-aliases'
 import { getTopicByAny, getTopicByAnyWithRedirect, getTopicBySlug } from './get.mts'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
@@ -201,10 +203,9 @@ describe('mergeTopicAliases', () => {
 
     await mergeTopicAliases(admin, source, destination)
 
-    const { rows } = await read<{ topic_id: string | null; unlink_topic_id: string | null }>(
-      `/* mergeTopicAliases pendingUnlinkTest */ SELECT topic_id, unlink_topic_id FROM topic_aliases WHERE id = $1::uuid`,
-      [alias.id],
-    )
-    expect(rows).toEqual([{ topic_id: null, unlink_topic_id: destination.id }])
+    await expect(getTopicAliasUnlinkOwnerForTest(alias.id)).resolves.toEqual({
+      topic_id: null,
+      unlink_topic_id: destination.id,
+    })
   })
 })
