@@ -591,6 +591,12 @@
     "import_entity_types": {
       "values": ["topic", "rss_feed"]
     },
+    "import_retention_families": {
+      "values": ["admin", "rss"]
+    },
+    "import_retention_phases": {
+      "values": ["discoveries", "rows", "batch"]
+    },
     "list_visibilities": {
       "values": ["private", "unlisted", "public"]
     },
@@ -1264,6 +1270,9 @@
     "url_hostname_block_sources": {
       "values": ["admin", "google_web_risk", "parent_hostname", "url_blocklist", "email_blocklist"]
     },
+    "user_data_request_attempt_cleanup_names": {
+      "values": ["expired_attempts"]
+    },
     "user_deletion_external_work_kinds": {
       "values": ["cloudflare-cache-tag", "entity-relation-effects", "s3-export", "stripe-customer"]
     },
@@ -1605,6 +1614,9 @@
     "fn_reject_community_prompt_result_configuration": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_community_prompt_result_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF batch.post_id IS NULL THEN\n    RAISE EXCEPTION 'community prompt classifier results require a post batch' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.effective_lower_threshold IS DISTINCT FROM prompt.default_lower_threshold\n    OR NEW.effective_upper_threshold IS DISTINCT FROM prompt.default_upper_threshold THEN\n    RAISE EXCEPTION 'community prompt classifier result thresholds must match the prompt revision defaults' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_reject_completed_import_batch_child": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_completed_import_batch_child()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch_completed_at TIMESTAMPTZ;\nBEGIN\n  IF TG_ARGV[0] NOT IN ('admin_import_batches', 'user_rss_feed_import_batches') THEN\n    RAISE EXCEPTION 'Unsupported import batch parent' USING ERRCODE = 'check_violation';\n  END IF;\n  EXECUTE format('SELECT completed_at FROM %I WHERE id = $1 FOR SHARE', TG_ARGV[0])\n    INTO batch_completed_at USING NEW.batch_id;\n  IF batch_completed_at IS NOT NULL THEN\n    RAISE EXCEPTION 'Completed import batches cannot acquire new children'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_reject_copyright_action_intent": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_action_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE next_state copyright_notice_action_intent_states;\nBEGIN\n  next_state := CASE WHEN NEW.completed_at IS NOT NULL THEN NEW.completed_at_reason WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_action_intent_states ELSE 'pending'::copyright_notice_action_intent_states END;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_restriction_id, OLD.copyright_notice_deadline_id,\n      OLD.expected_placement_revision, OLD.action)\n    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.copyright_notice_deadline_id,\n      NEW.expected_placement_revision, NEW.action) THEN\n    RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state IN ('completed', 'stale') AND next_state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright action intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state IN ('blocked', 'failed') AND next_state IS DISTINCT FROM OLD.state\n    AND NOT (next_state = 'pending' AND NEW.completed_at IS NULL\n      AND NEW.completed_at_reason IS NULL AND NEW.leased_at IS NULL\n      AND NEW.attempt_count = 0) THEN\n    RAISE EXCEPTION 'blocked and failed copyright actions may only be explicitly replayed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (NEW.attempt_count < OLD.attempt_count\n      AND NOT (OLD.state IN ('blocked', 'failed') AND next_state = 'pending'\n        AND NEW.attempt_count = 0))\n    OR NEW.attempt_count > OLD.attempt_count + 1 THEN\n    RAISE EXCEPTION 'copyright action intent attempts must advance one at a time' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    AND NOT (OLD.state IN ('blocked', 'failed') AND next_state = 'pending' AND NEW.completed_at IS NULL) THEN\n    RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1827,6 +1839,9 @@
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
+    "fn_sync_active_user_data_request_claim": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_active_user_data_request_claim()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    DELETE FROM active_user_data_request_claims WHERE request_id = OLD.id;\n  END IF;\n  IF NEW.completed_at IS NULL AND NEW.failed_at IS NULL\n     AND NEW.user_id IS NOT NULL AND NEW.requested_by_id IS NOT NULL THEN\n    INSERT INTO active_user_data_request_claims (user_id, requested_by_id, request_id)\n    VALUES (NEW.user_id, NEW.requested_by_id, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n"
     },
@@ -1920,6 +1935,158 @@
   },
   "policies": {},
   "tables": {
+    "active_user_data_request_claims": {
+      "checkConstraints": {},
+      "columns": {
+        "request_id": {
+          "collation": null,
+          "comment": "Active export request holding this claim.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "requested_by_id": {
+          "collation": null,
+          "comment": "Requester whose concurrent export is claimed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Subject of the active export.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "One global active export claim per subject and requester across request partitions.",
+      "foreignKeys": {
+        "active_user_data_request_claims_request_id_fkey": {
+          "columns": ["request_id"],
+          "definition": "FOREIGN KEY (request_id) REFERENCES user_data_requests(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_data_requests",
+          "validated": true
+        },
+        "active_user_data_request_claims_requested_by_id_fkey": {
+          "columns": ["requested_by_id"],
+          "definition": "FOREIGN KEY (requested_by_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "active_user_data_request_claims_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "active_user_data_request_claims_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX active_user_data_request_claims_pkey ON public.active_user_data_request_claims USING btree (user_id, requested_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "active_user_data_request_claims_request_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX active_user_data_request_claims_request_id_key ON public.active_user_data_request_claims USING btree (request_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_active_user_data_request_claims__requested_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_active_user_data_request_claims__requested_by_id ON public.active_user_data_request_claims USING btree (requested_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["user_id", "requested_by_id"],
+        "definition": "PRIMARY KEY (user_id, requested_by_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "active_user_data_request_claims_request_id_key": {
+          "columns": ["request_id"],
+          "definition": "UNIQUE (request_id)"
+        }
+      }
+    },
     "activitypub_actor_keys": {
       "checkConstraints": {},
       "columns": {
@@ -3522,7 +3689,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "admin_import_batches_pkey": {
           "accessMethod": "btree",
@@ -3542,6 +3709,33 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_admin_import_batches__completed_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_admin_import_batches__completed_at__id ON public.admin_import_batches USING btree (completed_at, id) WHERE (completed_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "completed_at",
+              "descending": false,
+              "expression": "completed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_admin_import_batches__created_by": {
@@ -3759,7 +3953,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "admin_import_rows__batch_row_index": {
           "accessMethod": "btree",
@@ -3811,13 +4005,20 @@
         "idx_admin_import_rows__batch_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_admin_import_rows__batch_id ON public.admin_import_rows USING btree (batch_id)",
+          "definition": "CREATE INDEX idx_admin_import_rows__batch_id ON public.admin_import_rows USING btree (batch_id, id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "batch_id",
               "descending": false,
               "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -3877,6 +4078,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_admin_import_rows_guard_completed_batch": "CREATE TRIGGER trigger_admin_import_rows_guard_completed_batch BEFORE INSERT OR UPDATE OF batch_id ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_completed_import_batch_child('admin_import_batches')",
         "trigger_admin_import_rows_guard_deleted_rss_feed": "CREATE TRIGGER trigger_admin_import_rows_guard_deleted_rss_feed BEFORE INSERT OR UPDATE OF rss_feed_id, completed_at ON public.admin_import_rows FOR EACH ROW WHEN ((new.rss_feed_id IS NOT NULL)) EXECUTE FUNCTION fn_reject_admin_import_deleted_rss_feed()",
         "trigger_admin_import_rows_guard_terminal_lifecycle": "CREATE TRIGGER trigger_admin_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')",
         "trigger_admin_import_rows_updated_at": "CREATE TRIGGER trigger_admin_import_rows_updated_at BEFORE UPDATE ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
@@ -50551,6 +50753,186 @@
           "definition": "UNIQUE (sha_256)"
         }
       }
+    },
+    "import_retention_cursors": {
+      "checkConstraints": {
+        "chk_import_retention_cursors__batch_family": "CHECK ((((family = 'admin'::import_retention_families) AND (rss_batch_id IS NULL)) OR ((family = 'rss'::import_retention_families) AND (admin_batch_id IS NULL))))",
+        "chk_import_retention_cursors__discovery_position": "CHECK (((discovery_url_id IS NULL) = ((phase <> 'discoveries'::import_retention_phases) OR (row_id IS NULL))))"
+      },
+      "columns": {
+        "admin_batch_id": {
+          "collation": null,
+          "comment": "Current completed admin batch, if one is being drained.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "discovery_url_id": {
+          "collation": null,
+          "comment": "Last UUIDv7 discovery URL visited within the row.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "family": {
+          "collation": null,
+          "comment": "Independent admin or RSS import cleanup pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "import_retention_families"
+        },
+        "phase": {
+          "collation": null,
+          "comment": "Child-first stage currently being drained.",
+          "defaultExpression": "'rows'::import_retention_phases",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "import_retention_phases"
+        },
+        "row_id": {
+          "collation": null,
+          "comment": "Last UUIDv7 import row or discovery parent visited.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "rss_batch_id": {
+          "collation": null,
+          "comment": "Current completed RSS batch, if one is being drained.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last successful transactional cursor update.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Transactional UUIDv7 child positions for bounded completed-import cleanup.",
+      "foreignKeys": {
+        "import_retention_cursors_admin_batch_id_fkey": {
+          "columns": ["admin_batch_id"],
+          "definition": "FOREIGN KEY (admin_batch_id) REFERENCES admin_import_batches(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "admin_import_batches",
+          "validated": true
+        },
+        "import_retention_cursors_rss_batch_id_fkey": {
+          "columns": ["rss_batch_id"],
+          "definition": "FOREIGN KEY (rss_batch_id) REFERENCES user_rss_feed_import_batches(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_rss_feed_import_batches",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_import_retention_cursors__admin_batch_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_import_retention_cursors__admin_batch_id ON public.import_retention_cursors USING btree (admin_batch_id) WHERE (admin_batch_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "admin_batch_id",
+              "descending": false,
+              "expression": "admin_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(admin_batch_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_import_retention_cursors__rss_batch_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_import_retention_cursors__rss_batch_id ON public.import_retention_cursors USING btree (rss_batch_id) WHERE (rss_batch_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_batch_id",
+              "descending": false,
+              "expression": "rss_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_batch_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "import_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX import_retention_cursors_pkey ON public.import_retention_cursors USING btree (family)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "family",
+              "descending": false,
+              "expression": "family",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["family"],
+        "definition": "PRIMARY KEY (family)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_import_retention_cursors_updated_at": "CREATE TRIGGER trigger_import_retention_cursors_updated_at BEFORE UPDATE ON public.import_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
     },
     "individual_cards": {
       "checkConstraints": {
@@ -131208,6 +131590,104 @@
       },
       "uniqueConstraints": {}
     },
+    "user_data_request_attempt_retention_cursors": {
+      "checkConstraints": {
+        "chk_user_data_request_attempt_retention_cursors__position": "CHECK (((cursor_request_id IS NULL) = (cursor_processing_attempt_id IS NULL)))"
+      },
+      "columns": {
+        "cleanup_name": {
+          "collation": null,
+          "comment": "Fixed cleanup family owning this position.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "user_data_request_attempt_cleanup_names"
+        },
+        "cursor_processing_attempt_id": {
+          "collation": null,
+          "comment": "Last attempt token scanned for the current request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "cursor_request_id": {
+          "collation": null,
+          "comment": "Last request UUIDv7 scanned in this pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "sweep_cutoff_id": {
+          "collation": null,
+          "comment": "Exclusive fixed request UUIDv7 end of this pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed scan checkpoint.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable composite UUIDv7 scan position for old export attempt keys.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "user_data_request_attempt_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_data_request_attempt_retention_cursors_pkey ON public.user_data_request_attempt_retention_cursors USING btree (cleanup_name)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "cleanup_name",
+              "descending": false,
+              "expression": "cleanup_name",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["cleanup_name"],
+        "definition": "PRIMARY KEY (cleanup_name)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_user_data_request_attempt_retention_cursors_updated_at": "CREATE TRIGGER trigger_user_data_request_attempt_retention_cursors_updated_at BEFORE UPDATE ON public.user_data_request_attempt_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "user_data_request_attempts": {
       "checkConstraints": {},
       "columns": {
@@ -131284,7 +131764,7 @@
         "user_data_request_attempts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_data_request_attempts_pkey ON public.user_data_request_attempts USING btree (request_id, processing_attempt_id)",
+          "definition": "CREATE UNIQUE INDEX user_data_request_attempts_pkey ON ONLY public.user_data_request_attempts USING btree (request_id, processing_attempt_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -131309,13 +131789,22 @@
           "valid": true
         }
       },
-      "partition": null,
-      "physicalPartition": null,
+      "partition": {
+        "accessClass": "retention-window",
+        "children": "default",
+        "key": "request_id",
+        "retentionOwner": "operatorPartitionDrop",
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (request_id)",
+        "strategy": "range"
+      },
       "primaryKey": {
         "columns": ["request_id", "processing_attempt_id"],
         "definition": "PRIMARY KEY (request_id, processing_attempt_id)"
       },
-      "relationKind": "table",
+      "relationKind": "partitioned table",
       "triggers": {
         "trigger_user_data_request_attempts_updated_at": "CREATE TRIGGER trigger_user_data_request_attempts_updated_at BEFORE UPDATE ON public.user_data_request_attempts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -131518,37 +132007,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_user_data_requests__active_per_requester": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_user_data_requests__active_per_requester ON public.user_data_requests USING btree (user_id, requested_by_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "requested_by_id",
-              "descending": false,
-              "expression": "requested_by_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "idx_user_data_requests__download_expiry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_data_requests__download_expiry ON public.user_data_requests USING btree (expires_at, id) WHERE (s3_key IS NOT NULL)",
+          "definition": "CREATE INDEX idx_user_data_requests__download_expiry ON ONLY public.user_data_requests USING btree (expires_at, id) WHERE (s3_key IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -131572,30 +132034,30 @@
           "unique": false,
           "valid": true
         },
-        "idx_user_data_requests__processing_attempt_id": {
+        "idx_user_data_requests__nonterminal_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_user_data_requests__processing_attempt_id ON public.user_data_requests USING btree (processing_attempt_id)",
+          "definition": "CREATE INDEX idx_user_data_requests__nonterminal_id ON ONLY public.user_data_requests USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
-              "column": "processing_attempt_id",
+              "column": "id",
               "descending": false,
-              "expression": "processing_attempt_id",
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL))",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_user_data_requests__requested_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_data_requests__requested_by_id ON public.user_data_requests USING btree (requested_by_id)",
+          "definition": "CREATE INDEX idx_user_data_requests__requested_by_id ON ONLY public.user_data_requests USING btree (requested_by_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -131612,10 +132074,57 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_data_requests__stored_export_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__stored_export_id ON ONLY public.user_data_requests USING btree (id) WHERE (s3_key IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(s3_key IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_data_requests__terminal_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__terminal_at__id ON ONLY public.user_data_requests USING btree (COALESCE(completed_at, failed_at), id) WHERE ((completed_at IS NOT NULL) OR (failed_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(completed_at, failed_at)",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((completed_at IS NOT NULL) OR (failed_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_data_requests__user_id_requested_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_data_requests__user_id_requested_by_id ON public.user_data_requests USING btree (user_id, requested_by_id, id DESC)",
+          "definition": "CREATE INDEX idx_user_data_requests__user_id_requested_by_id ON ONLY public.user_data_requests USING btree (user_id, requested_by_id, id DESC)",
           "includedColumns": [],
           "keys": [
             {
@@ -131649,7 +132158,7 @@
         "user_data_requests_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_data_requests_pkey ON public.user_data_requests USING btree (id)",
+          "definition": "CREATE UNIQUE INDEX user_data_requests_pkey ON ONLY public.user_data_requests USING btree (id)",
           "includedColumns": [],
           "keys": [
             {
@@ -131667,16 +132176,26 @@
           "valid": true
         }
       },
-      "partition": null,
-      "physicalPartition": null,
+      "partition": {
+        "accessClass": "retention-window",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": "operatorPartitionDrop",
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
       "primaryKey": {
         "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
-      "relationKind": "table",
+      "relationKind": "partitioned table",
       "triggers": {
         "trigger_user_data_requests_guard_terminal_lifecycle": "CREATE TRIGGER trigger_user_data_requests_guard_terminal_lifecycle BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')",
         "trigger_user_data_requests_record_attempt": "CREATE TRIGGER trigger_user_data_requests_record_attempt AFTER INSERT OR UPDATE OF processing_started_at, processing_attempt_id ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_record_user_data_request_attempt()",
+        "trigger_user_data_requests_sync_active_claim": "CREATE TRIGGER trigger_user_data_requests_sync_active_claim AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_sync_active_user_data_request_claim()",
         "trigger_user_data_requests_updated_at": "CREATE TRIGGER trigger_user_data_requests_updated_at BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -138877,8 +139396,35 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
+        "idx_user_rss_feed_import_batches__completed_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_batches__completed_at__id ON public.user_rss_feed_import_batches USING btree (completed_at, id) WHERE (completed_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "completed_at",
+              "descending": false,
+              "expression": "completed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_rss_feed_import_batches__created_via_oauth_client_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -138986,6 +139532,17 @@
         "user_rss_feed_import_row_discoveries_check": "CHECK (((discovered_feed_url_id IS NULL) OR (failed_at IS NULL)))"
       },
       "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Owning batch for bounded child-first retention.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
         "crawl_id": {
           "collation": null,
           "comment": "Completed crawl used to resolve the feed link, if retained.",
@@ -138994,7 +139551,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "discovered_feed_url_id": {
@@ -139005,7 +139562,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "discovery_url_id": {
@@ -139016,7 +139573,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "failed_at": {
@@ -139027,7 +139584,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "generation": {
@@ -139038,7 +139595,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "import_row_id": {
@@ -139064,6 +139621,15 @@
           "referencedTable": "urls",
           "validated": true
         },
+        "user_rss_feed_import_row_discoveries_batch_row_fkey": {
+          "columns": ["batch_id", "import_row_id"],
+          "definition": "FOREIGN KEY (batch_id, import_row_id) REFERENCES user_rss_feed_import_rows(batch_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["batch_id", "id"],
+          "referencedTable": "user_rss_feed_import_rows",
+          "validated": true
+        },
         "user_rss_feed_import_row_discoveries_crawl_id_fkey": {
           "columns": ["crawl_id"],
           "definition": "FOREIGN KEY (crawl_id) REFERENCES crawls(id) ON DELETE SET NULL",
@@ -139081,19 +139647,44 @@
           "referencedColumns": ["id"],
           "referencedTable": "urls",
           "validated": true
-        },
-        "user_rss_feed_import_row_discoveries_import_row_id_fkey": {
-          "columns": ["import_row_id"],
-          "definition": "FOREIGN KEY (import_row_id) REFERENCES user_rss_feed_import_rows(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_rss_feed_import_rows",
-          "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
+        "idx_user_rss_feed_import_row_discoveries__batch_row_url": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_row_discoveries__batch_row_url ON public.user_rss_feed_import_row_discoveries USING btree (batch_id, import_row_id, discovery_url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "import_row_id",
+              "descending": false,
+              "expression": "import_row_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "discovery_url_id",
+              "descending": false,
+              "expression": "discovery_url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_rss_feed_import_row_discoveries__crawl_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -139189,7 +139780,9 @@
         "definition": "PRIMARY KEY (import_row_id, discovery_url_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_rss_import_discoveries_guard_completed_batch": "CREATE TRIGGER trigger_rss_import_discoveries_guard_completed_batch BEFORE INSERT OR UPDATE OF batch_id ON public.user_rss_feed_import_row_discoveries FOR EACH ROW EXECUTE FUNCTION fn_reject_completed_import_batch_child('user_rss_feed_import_batches')"
+      },
       "uniqueConstraints": {}
     },
     "user_rss_feed_import_rows": {
@@ -139344,7 +139937,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_user_rss_feed_import_rows__batch_id__row_index": {
           "accessMethod": "btree",
@@ -139398,6 +139991,33 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "user_rss_feed_import_rows__batch_id__id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_rss_feed_import_rows__batch_id__id ON public.user_rss_feed_import_rows USING btree (batch_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "user_rss_feed_import_rows__batch_row_index": {
@@ -139456,12 +140076,17 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_user_rss_feed_import_rows_guard_completed_batch": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_completed_batch BEFORE INSERT OR UPDATE OF batch_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_completed_import_batch_child('user_rss_feed_import_batches')",
         "trigger_user_rss_feed_import_rows_guard_hard_delete": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')",
         "trigger_user_rss_feed_import_rows_guard_result": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_result BEFORE INSERT OR UPDATE OF outcome, completed_at, rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_user_rss_feed_import_result()",
         "trigger_user_rss_feed_import_rows_guard_terminal_lifecycle": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')",
         "trigger_user_rss_feed_import_rows_updated_at": "CREATE TRIGGER trigger_user_rss_feed_import_rows_updated_at BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
+        "user_rss_feed_import_rows__batch_id__id": {
+          "columns": ["batch_id", "id"],
+          "definition": "UNIQUE (batch_id, id)"
+        },
         "user_rss_feed_import_rows__batch_row_index": {
           "columns": ["batch_id", "row_index"],
           "definition": "UNIQUE (batch_id, row_index)"
