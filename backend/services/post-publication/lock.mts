@@ -33,7 +33,15 @@ export async function lockPostPublicationScope(
   query: TransactionQuery,
   scope: PostPublicationScope,
 ): Promise<void> {
-  await postPublicationScopeLocks.lock(query, [postPublicationScopeLockKey(scope)])
+  await lockPostPublicationScopes(query, [scope])
+}
+
+/** Acquires every scope fence in one ordered statement. */
+export async function lockPostPublicationScopes(
+  query: TransactionQuery,
+  scopes: readonly PostPublicationScope[],
+): Promise<void> {
+  await postPublicationScopeLocks.lock(query, scopes.map(postPublicationScopeLockKey))
 }
 
 /** Records keys acquired by an ordered SQL batch on this same transaction query. */
@@ -43,11 +51,20 @@ export function markPostPublicationScopeLocksHeld(
 ): void {
   postPublicationScopeLocks.markHeld(query, scopes.map(postPublicationScopeLockKey))
 }
+export async function lockAuthorPublicationLifecycles(
+  query: TransactionQuery,
+  authorUserIds: readonly string[],
+): Promise<void> {
+  await lockPostPublicationScopes(
+    query,
+    authorUserIds.map(authorUserId => ({ type: 'author' as const, authorUserId })),
+  )
+}
 export async function lockAuthorPublicationLifecycle(
   query: TransactionQuery,
   authorUserId: string,
 ): Promise<void> {
-  await lockPostPublicationScope(query, { type: 'author', authorUserId })
+  await lockAuthorPublicationLifecycles(query, [authorUserId])
 }
 export async function lockPostPublication(query: TransactionQuery, postId: string): Promise<void> {
   await lockPostPublicationScope(query, { type: 'post', postId })

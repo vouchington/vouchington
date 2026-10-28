@@ -150,8 +150,9 @@ describe('community preservation during final user purge', () => {
     const window = createTestRetentionWindow()
     await softDeleteUserAt(owner.id, window.firstEligibleDate)
 
-    const failure = await withPostgresPoolQueryFailureForTest('/* getPrivateUserByAny */', () =>
-      cleanupSoftDeletedUser(owner.id, window.upperBoundDate),
+    const failure = await withPostgresPoolQueryFailureForTest(
+      '/* enqueuePurgeOwnershipTransferEmails:recipients */',
+      () => cleanupSoftDeletedUser(owner.id, window.upperBoundDate),
     )
 
     expect(failure.result).toEqual({ deleted: 0, hasMore: true })

@@ -1,4 +1,7 @@
-import { transferCommunityOwnershipForUserPurge } from '../services/communities/ownership-transfer.mts'
+import {
+  lockUserPurgeOwnership,
+  transferCommunitiesOwnershipForUserPurge,
+} from '../services/communities/ownership-transfer-user-purge.mts'
 import {
   insertTestRetentionTombstone,
   insertTestRetentionReceipt,
@@ -88,7 +91,17 @@ export async function attemptTestPurgeOwnershipTransfer(
     slug: string
   }>(sql`/* attemptTestPurgeOwnershipTransfer:community */
     SELECT id, name, slug FROM communities WHERE id = ${communityId}`)
-  const effect = await transferCommunityOwnershipForUserPurge(query, rows[0]!, fromUserId, toUserId)
+  await lockUserPurgeOwnership(
+    query,
+    fromUserId,
+    [communityId],
+    [{ communityId, successorId: toUserId }],
+  )
+  const { afterCommit: effect } = await transferCommunitiesOwnershipForUserPurge(
+    query,
+    fromUserId,
+    [{ community: rows[0]!, successorId: toUserId }],
+  )
   const { rows: members } = await query<{
     role: string
   }>(sql`/* attemptTestPurgeOwnershipTransfer:afterProbe */

@@ -6,12 +6,15 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanDeleteCommunity } from './authorization.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import type { CommunityMember } from './types.mts'
-import { writeCommunityUpdate } from './community-update-returning.mts'
+import { writeCommunitiesUpdate, writeCommunityUpdate } from './community-update-returning.mts'
 import { updateCommunity, type UpdateCommunityInput } from './update.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { recordPostPublicationChange } from '@services/post-publication'
+import {
+  recordPostPublicationChange,
+  recordPostPublicationChangeBatch,
+} from '@services/post-publication'
 
 type UpdateCommunityAndSetArchiveStateDependencies = {
   invalidateCommunities: typeof invalidate.communities
@@ -29,20 +32,32 @@ export async function archiveCommunity(
   archivedById: string | null,
   options?: QueryOptions,
 ): Promise<CommunityWithOwner | null> {
+  const [archived] = await archiveCommunities([communityId], archivedById, options)
+  return archived ?? null
+}
+
+/** Archives every active community in one UPDATE and one publication-fence statement. */
+export async function archiveCommunities(
+  communityIds: readonly string[],
+  archivedById: string | null,
+  options?: QueryOptions,
+): Promise<CommunityWithOwner[]> {
+  if (communityIds.length === 0) return []
   const update = sql`
     UPDATE communities
     SET archived_at = CURRENT_TIMESTAMP, archived_by_id = ${archivedById}
-    WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NULL`
-  const run = async (query: TransactionQuery): Promise<CommunityWithOwner | null> => {
-    const updated = await writeCommunityUpdate(sql`/* archiveCommunity */`, update, { query })
-    if (updated) {
-      await recordPostPublicationChange(query, {
-        scope: { type: 'community', communityId },
+    WHERE id = ANY(${[...communityIds]}::uuid[]) AND deleted_at IS NULL AND archived_at IS NULL`
+  const run = async (query: TransactionQuery): Promise<CommunityWithOwner[]> => {
+    const updated = await writeCommunitiesUpdate(sql`/* archiveCommunities */`, update, { query })
+    await recordPostPublicationChangeBatch(
+      query,
+      updated.map(({ id }) => ({
+        scope: { type: 'community', communityId: id },
         reason: 'community_visibility_changed',
-        impactedCommunityIds: [communityId],
-        footprint: { priorCommunityId: communityId },
-      })
-    }
+        impactedCommunityIds: [id],
+        footprint: { priorCommunityId: id },
+      })),
+    )
     return updated
   }
   if (options?.query || options?.client) return withTransactionOptions(options, run)

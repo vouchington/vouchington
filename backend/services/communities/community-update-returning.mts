@@ -28,10 +28,18 @@ export async function writeCommunityUpdate(
   update: SQLStatement,
   options?: QueryOptions,
 ): Promise<CommunityWithOwner | null> {
+  const [updated] = await writeCommunitiesUpdate(annotation, update, options)
+  return updated ?? null
+}
+
+export async function writeCommunitiesUpdate(
+  annotation: SQLStatement,
+  update: SQLStatement,
+  options?: QueryOptions,
+): Promise<CommunityWithOwner[]> {
   const statement = communityUpdateReturning(annotation, update)
   const { rows } = options?.query
     ? await options.query<CommunityRowWithOwner>(statement.text, statement.values)
     : await write<CommunityRowWithOwner>(statement.text, statement.values, options)
-  const row = rows[0]
-  return row ? mapCommunityWithOwner(row) : null
+  return rows.map(mapCommunityWithOwner)
 }

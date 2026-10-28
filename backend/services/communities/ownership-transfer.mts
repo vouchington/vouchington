@@ -1,19 +1,10 @@
 import { transferLockedCommunityOwnership } from './ownership-transfer-core.mts'
 import { createOwnershipTransferNotifications } from './ownership-transfer-notifications.mts'
-import {
-  lockActiveUserLifecycleForMutation,
-  lockUserSubjectMutationFences,
-} from '@services/users/active-user-lifecycle-lock'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import { getActiveCommunityMembersForUsers } from './members/batch.mts'
 import type { Community } from './types.mts'
-import {
-  lockCommunityMembershipRoles,
-  lockCommunityRoleMutation,
-  lockCommunityUsers,
-} from './bans/lock.mts'
+import { lockCommunityRoleMutation } from './bans/lock.mts'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCommunityOwnershipTransferEmail } from '@queues/emails/enqueues'
@@ -76,52 +67,6 @@ export async function initiateOwnershipTransfer(
     targetUserId,
     currentUserId,
   )
-}
-
-/** Trusted account purge shares the transition and successor delivery, inside its transaction. */
-export async function transferCommunityOwnershipForUserPurge(
-  query: TransactionQuery,
-  community: Pick<Community, 'id' | 'name' | 'slug'>,
-  fromUserId: string,
-  toUserId: string,
-): Promise<(() => Promise<void>) | null> {
-  await lockCommunityMembershipRoles(query, [community.id])
-  // The SQL active-user guard raises for an inactive subject, which would poison the caller-owned
-  // transaction. Fence deletion first, then make expected ineligibility an ordinary empty result.
-  await lockUserSubjectMutationFences(query, [toUserId])
-  const { rows: activeUsers } = await query(sql`/* transferCommunityOwnershipForUserPurge:active */
-    SELECT id FROM users WHERE id = ${toUserId} AND deleted_at IS NULL`)
-  if (!activeUsers[0]) return null
-  // ast-grep-ignore: no-three-sequential-awaits -- lifecycle, sorted member locks, then eligibility must be ordered.
-  await lockActiveUserLifecycleForMutation(query, toUserId)
-  await lockCommunityUsers(community.id, [fromUserId, toUserId], { query })
-  const { rows } = await query(sql`/* transferCommunityOwnershipForUserPurge:eligible */
-    SELECT member.id FROM community_members member JOIN users target ON target.id = member.user_id
-    WHERE member.community_id = ${community.id} AND member.user_id = ${toUserId}
-      AND member.role = 'moderator' AND member.removed_at IS NULL AND target.deleted_at IS NULL
-      AND EXISTS (
-        SELECT 1 FROM community_members owner
-        WHERE owner.community_id = ${community.id} AND owner.user_id = ${fromUserId}
-          AND owner.role = 'owner' AND owner.removed_at IS NULL
-      )
-      AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = target.id AND lifted_at IS NULL)
-      AND NOT EXISTS (SELECT 1 FROM user_deletion_requests WHERE user_id = target.id AND completed_at IS NULL)
-    LIMIT 1`)
-  if (!rows[0]) return null
-  const transition = await transferLockedCommunityOwnership(community.id, fromUserId, toUserId, {
-    query,
-  })
-  const notifications = await createOwnershipTransferNotifications(
-    community,
-    toUserId,
-    transition,
-    { query },
-  )
-  return async () => {
-    await enqueueCommunityLifecycleNotificationPush(notifications)
-    const emails = await sendOwnershipTransferEmails(community.name, community.slug, toUserId)
-    await Promise.all(Object.values(emails).filter(email => email !== null))
-  }
 }
 
 type OwnershipTransferEmailEnqueues = {
