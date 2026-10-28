@@ -1931,6 +1931,13 @@ rules:
         - moduleExport: { module: no-mistakes, export: symbols }
         - moduleExport: { module: no-mistakes, export: testsPlan }
         - moduleExport: { module: no-mistakes, export: validateMermaidMarkdown }
+  - name: Vitest tests do not scan the live repository
+    rule: test-no-live-repository-scan
+    scope: repository
+    severity: advisory
+    options:
+      roots:
+        - vitest: true
   - name: Vitest tests do not load the live workflow topology
     rule: forbidden-calls
     scope: repository
