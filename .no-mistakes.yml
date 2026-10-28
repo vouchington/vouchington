@@ -5294,6 +5294,32 @@ rules:
       unanalyzable: advise
 
   # Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
+  - name: production exports are not kept only for tests
+    rule: production-exports-only-used-by-tests
+    scope: repository
+    severity: advisory
+    options:
+      productionRoots:
+        [backend, web, lambdas, cloudflare-worker, ts-shared, email-templates, localization]
+      testGlobs:
+        - '**/*.test.{ts,tsx,mts,js,mjs}'
+        - '**/*.spec.{ts,tsx,mts}'
+        - '**/__tests__/**'
+        - '**/*.stories.{ts,tsx}'
+        - '**/vitest.setup*.{ts,mts}'
+        - '**/vitest.config*.{ts,mts}'
+        - 'playwright/**'
+        - 'integration-tests/**'
+      testHelperRoots:
+        - test-helpers
+        - backend/test-helpers
+        - web/test-helpers
+        - web/storybook
+        - cloudflare-worker/test-helpers
+        - lambdas/test-helpers
+        - ts-shared/test-helpers
+        - email-templates/test-helpers
+      unanalyzable: advise
   - name: React compiler and hook rules are never suppressed in web source
     rule: forbidden-lint-suppressions
     scope: repository
