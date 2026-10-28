@@ -4,7 +4,7 @@
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
 import { detectAiGeneratedModeration } from '@workers/ai-agents/processors/ai-generated-content'
 
-/* c8 ignore start -- process entrypoint exercised through the backend image smoke tests. */
+/* v8 ignore start -- process entrypoint exercised through the backend image smoke tests. */
 try {
   const result = await detectAiGeneratedModeration(
     'A short paragraph about a weekend hike along the river with friends.',
@@ -14,4 +14,4 @@ try {
 } finally {
   await shutdownDataStoresForOneOffCommand()
 }
-/* c8 ignore stop */
+/* v8 ignore stop */

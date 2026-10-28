@@ -3,10 +3,10 @@
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
 import { enqueueHeartbeat } from '@queues/heartbeat/enqueues'
 
-/* c8 ignore start -- process entrypoint exercised through the backend image smoke tests. */
+/* v8 ignore start -- process entrypoint exercised through the backend image smoke tests. */
 try {
   await enqueueHeartbeat()
 } finally {
   await shutdownDataStoresForOneOffCommand()
 }
-/* c8 ignore stop */
+/* v8 ignore stop */
