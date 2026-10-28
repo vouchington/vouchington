@@ -21,7 +21,7 @@ const mockEnqueueBulkSyncGithubFriends = vi.fn<typeof enqueueBulkSyncGithubFrien
 
 async function* createMockStream(ids: string[]): AsyncGenerator<AccountToSync> {
   for (const id of ids) {
-    yield { id }
+    yield { id, eligible: true }
   }
 }
 

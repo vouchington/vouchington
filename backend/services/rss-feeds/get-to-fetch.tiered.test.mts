@@ -25,11 +25,13 @@ describe('tiered RSS feed selection', () => {
 
     const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 1 })
     try {
-      const selected = await getRssFeedsToFetch({
-        limit: 2,
-        asOf: AS_OF,
-        cursor: { lane: 5, afterId: uuidBefore(feed.id) },
-      })
+      const selected = (
+        await getRssFeedsToFetch({
+          limit: 2,
+          asOf: AS_OF,
+          cursor: { lane: 5, afterId: uuidBefore(feed.id) },
+        })
+      ).feeds
       expect(selected).toEqual([
         expect.objectContaining({
           id: feed.id,
@@ -42,6 +44,32 @@ describe('tiered RSS feed selection', () => {
           dispatch_lane: 5,
         }),
       ])
+    } finally {
+      restore()
+    }
+  })
+
+  it('advances the raw lane cursor when a source page has no due feeds', async () => {
+    const feeds = await Promise.all([insertTestRssFeedDirect({}), insertTestRssFeedDirect({})])
+    feeds.sort((left, right) => left.id.localeCompare(right.id))
+    await updateRssFeedTiming(feeds[0]!.id, new Date(AS_OF.getTime() - 1))
+    const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 2 })
+    try {
+      const first = await getRssFeedsToFetch({
+        limit: 1,
+        rawBudget: 2,
+        asOf: AS_OF,
+        cursor: { lane: 5, afterId: uuidBefore(feeds[0]!.id) },
+      })
+      expect(first.feeds).toEqual([])
+      expect(first.rawRowsRead).toBeGreaterThan(0)
+      expect(first.nextCursor?.afterId).toBe(feeds[0]!.id)
+      const second = await getRssFeedsToFetch({
+        limit: 1,
+        asOf: AS_OF,
+        cursor: first.nextCursor,
+      })
+      expect(second.feeds.map(feed => feed.id)).toContain(feeds[1]!.id)
     } finally {
       restore()
     }
@@ -64,10 +92,12 @@ describe('tiered RSS feed selection', () => {
         tier5_sla_ms: TIER_FIVE_SLA_MS,
       })
       try {
-        const selected = await getRssFeedsToFetch({
-          asOf: AS_OF,
-          cursor: { lane, afterId: uuidBefore(feed.id) },
-        })
+        const selected = (
+          await getRssFeedsToFetch({
+            asOf: AS_OF,
+            cursor: { lane, afterId: uuidBefore(feed.id) },
+          })
+        ).feeds
         expect(selected).toEqual([
           expect.objectContaining({
             id: feed.id,

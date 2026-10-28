@@ -1,66 +1,49 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
+import { FEED_COLUMNS, FEED_JOINS } from './get-to-fetch-columns.mts'
+import type { RssFeedToFetch } from './get-to-fetch-types.mts'
 import * as crawlConfig from './crawl-config.mts'
 
-export type RssFeedToFetch = {
-  id: string
-  url: string
-  url_hostname_id: string
-  crawlable: boolean
-  title: string | null
-  declared_language: string | null
-  last_modified_at: Date | null
-  etag: string | null
-  last_fetched_at: Date | null
-  feed_type: 'article' | 'podcast' | 'video' | 'mixed'
-  feed_ignore_robots_txt: boolean | null
-  hostname_ignore_robots_txt: boolean | null
-  feed_unreliable_status_codes: number[] | null
-  hostname_unreliable_status_codes: number[] | null
-  crawl_score: number
-  crawl_tier: number
-  priority_group: 1 | 2
-}
+export type { RssFeedToFetch } from './get-to-fetch-types.mts'
 
-export type RssFeedDispatchCursor = { lane: number; afterId: string }
+export type RssFeedDispatchCursor = { lane: number; afterId: string; throughId?: string }
 type RssFeedDispatchCandidate = RssFeedToFetch & { dispatch_lane: number }
+export type RssFeedDispatchPage = {
+  feeds: RssFeedDispatchCandidate[]
+  rawRowsRead: number
+  nextCursor?: RssFeedDispatchCursor
+}
 
 type GetRssFeedsToFetchOptions = {
   limit?: number
+  rawBudget?: number
   cursor?: RssFeedDispatchCursor
   asOf?: Date
 }
 
-const FEED_COLUMNS = `
-      rss_feeds.id,
-      urls.url AS url,
-      urls.hostname_id AS url_hostname_id,
-      url_hostnames.is_crawlable AS crawlable,
-      rss_feeds.title,
-      rss_feeds.declared_language,
-      rss_feeds.last_modified_at,
-      rss_feeds.etag,
-      rss_feeds.last_fetched_at,
-      rss_feeds.feed_type,
-      rss_feeds.should_ignore_robots_txt AS feed_ignore_robots_txt,
-      url_hostnames.should_ignore_robots_txt AS hostname_ignore_robots_txt,
-      rss_feeds.unreliable_status_codes AS feed_unreliable_status_codes,
-      url_hostnames.unreliable_status_codes AS hostname_unreliable_status_codes`
-
-const FEED_JOINS = `
-    JOIN urls ON urls.id = rss_feeds.rss_feed_url_id
-    JOIN url_hostnames ON url_hostnames.id = urls.hostname_id`
-
 async function getRssFeedsTiered(
   limit: number,
+  rawBudget: number,
   asOf: Date,
   cursor?: RssFeedDispatchCursor,
-): Promise<RssFeedDispatchCandidate[]> {
+): Promise<RssFeedDispatchPage> {
   const tier1_sla_ms = crawlConfig.getTierSlaMs(1)
   const tier2_sla_ms = crawlConfig.getTierSlaMs(2)
   const tier3_sla_ms = crawlConfig.getTierSlaMs(3)
   const tier4_sla_ms = crawlConfig.getTierSlaMs(4)
   const tier5_sla_ms = crawlConfig.getTierSlaMs(5)
 
+  const lane = cursor?.lane ?? 1
+  if (!Number.isSafeInteger(lane) || lane < 1 || lane > 10)
+    throw new RangeError('Invalid RSS dispatch lane')
+  const tier = lane <= 5 ? lane : lane - 5
+  const throughId =
+    cursor?.throughId ??
+    (
+      await read<{ id: string }>(
+        `/* getRssFeedDispatchUpperId */ SELECT id FROM rss_feeds ORDER BY id DESC LIMIT 1`,
+      )
+    ).rows[0]?.id
+  if (!throughId) return { feeds: [], rawRowsRead: 0 }
   const tierExpr = `COALESCE(t.crawl_tier, 5)`
   const scoreExpr = `COALESCE(t.crawl_score, 0)`
 
@@ -73,40 +56,49 @@ async function getRssFeedsTiered(
         ELSE $5::BIGINT
       END * INTERVAL '1 millisecond'`
 
-  const isDueExpr = `(rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= $7::timestamptz - (${slaCaseExpr}))`
+  const isDueExpr = `(rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= $6::timestamptz - (${slaCaseExpr}))`
 
   const enabledWhere = `rss_feeds.deleted_at IS NULL
       AND rss_feeds.is_enabled = TRUE
       AND (url_hostnames.network_backoff_ends_at IS NULL
         OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)`
 
+  const rawSource =
+    tier === 5
+      ? `SELECT id FROM rss_feeds
+       WHERE deleted_at IS NULL AND is_enabled = TRUE
+         AND id > $7::uuid AND id <= $11::uuid
+       ORDER BY id LIMIT $9`
+      : `SELECT rss_feed_id AS id FROM mv_rss_feed_crawl_tiers
+       WHERE crawl_tier = $8::int AND rss_feed_id > $7::uuid
+         AND rss_feed_id <= $11::uuid
+       ORDER BY rss_feed_id LIMIT $9`
+  const priorityExpr = `CASE WHEN ${isDueExpr} THEN 1 ELSE 2 END`
+  const dispatchLaneExpr = `CASE WHEN ${isDueExpr} THEN ${tierExpr} ELSE ${tierExpr} + 5 END`
   const query = `/* getRssFeedsTiered */
-    WITH candidates AS (
-      SELECT${FEED_COLUMNS},
-        ${scoreExpr} AS crawl_score,
-        ${tierExpr} AS crawl_tier,
-        CASE WHEN ${isDueExpr} THEN 1 ELSE 2 END AS priority_group
-      FROM rss_feeds${FEED_JOINS}
-      LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
-      WHERE ${enabledWhere}
-        AND (${isDueExpr}
-          OR rss_feeds.last_fetched_at <= $7::timestamptz - ($1::BIGINT * INTERVAL '1 millisecond'))
-    ), ranked AS (
-      SELECT *, CASE WHEN priority_group = 1 THEN crawl_tier ELSE crawl_tier + 5 END AS dispatch_lane
-      FROM candidates
-    )
-    SELECT
-      id, url, url_hostname_id, crawlable, title,
+    WITH raw_page AS MATERIALIZED (${rawSource})
+    SELECT raw_page.id AS raw_id,
+      ranked.id, url, url_hostname_id, crawlable, title,
       declared_language, last_modified_at, etag, last_fetched_at, feed_type,
       feed_ignore_robots_txt, hostname_ignore_robots_txt,
       feed_unreliable_status_codes, hostname_unreliable_status_codes,
       crawl_score, crawl_tier, priority_group, dispatch_lane
-    FROM ranked
-    WHERE ($8::int IS NULL OR (dispatch_lane, id) > ($8::int, $9::uuid))
-    -- Due tiers precede every backfill tier. Within a lane only the immutable id is a cursor:
-    -- deadline and crawl_score can change between continuation jobs.
-    ORDER BY dispatch_lane ASC, id ASC
-    LIMIT $6`
+    FROM raw_page LEFT JOIN LATERAL (
+      SELECT${FEED_COLUMNS},
+        ${scoreExpr} AS crawl_score,
+        ${tierExpr} AS crawl_tier,
+        ${priorityExpr} AS priority_group,
+        ${dispatchLaneExpr} AS dispatch_lane
+      FROM rss_feeds${FEED_JOINS}
+      LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
+      WHERE rss_feeds.id = raw_page.id AND ${enabledWhere}
+        AND ${tierExpr} = $8::int
+        AND (${isDueExpr}
+          OR rss_feeds.last_fetched_at <= $6::timestamptz - ($1::BIGINT * INTERVAL '1 millisecond'))
+        AND ${dispatchLaneExpr} = $10::int
+      LIMIT 1
+    ) ranked ON TRUE
+    ORDER BY raw_page.id ASC`
 
   const params: unknown[] = [
     tier1_sla_ms,
@@ -114,54 +106,58 @@ async function getRssFeedsTiered(
     tier3_sla_ms,
     tier4_sla_ms,
     tier5_sla_ms,
-    limit,
     asOf,
-    cursor?.lane ?? null,
-    cursor?.afterId ?? null,
+    cursor?.afterId ?? '00000000-0000-0000-0000-000000000000',
+    tier,
+    Math.min(limit + 1, rawBudget),
+    lane,
+    throughId,
   ]
-
-  const { rows } = await read<RssFeedDispatchCandidate>(query, params)
-  return rows
+  const { rows } = await read<
+    (RssFeedDispatchCandidate & { raw_id: string }) | { raw_id: string; id: null }
+  >(query, params)
+  const consumed = rows.slice(0, limit)
+  const hasMoreInLane = rows.length > limit || (rawBudget <= limit && rows.length === limit)
+  return {
+    feeds: consumed.flatMap(row => {
+      if (row.id === null) return []
+      const { raw_id: _rawId, ...feed } = row
+      return [feed]
+    }),
+    rawRowsRead: rows.length,
+    ...(hasMoreInLane
+      ? { nextCursor: { lane, afterId: consumed.at(-1)!.raw_id, throughId } }
+      : lane < 10
+        ? {
+            nextCursor: {
+              lane: lane + 1,
+              afterId: '00000000-0000-0000-0000-000000000000',
+              throughId,
+            },
+          }
+        : {}),
+  }
 }
 
 export function getRssFeedsToFetch({
   limit,
+  rawBudget,
   cursor,
   asOf = new Date(),
-}: GetRssFeedsToFetchOptions = {}): Promise<RssFeedDispatchCandidate[]> {
+}: GetRssFeedsToFetchOptions = {}): Promise<RssFeedDispatchPage> {
   const capacityBudget = crawlConfig.getCrawlCapacityBudget()
   const budget = Math.min(limit ?? capacityBudget, capacityBudget)
   const asOfMs = asOf.getTime()
   if (!Number.isFinite(asOfMs)) throw new RangeError('Invalid RSS tier scheduling time')
-  return getRssFeedsTiered(budget, new Date(asOfMs), cursor)
+  const physicalBudget = Math.min(rawBudget ?? capacityBudget, capacityBudget)
+  if (!Number.isSafeInteger(physicalBudget) || physicalBudget < 1)
+    throw new RangeError('RSS raw budget must be a positive safe integer')
+  return getRssFeedsTiered(
+    Math.min(budget, physicalBudget),
+    physicalBudget,
+    new Date(asOfMs),
+    cursor,
+  )
 }
 
-type GetRssFeedByIdToFetchOptions = QueryOptions & { ttl?: number }
-
-export async function getRssFeedByIdToFetch(
-  rssFeedId: string,
-  { ttl = 60_000, ...queryOptions }: GetRssFeedByIdToFetchOptions = {},
-): Promise<RssFeedToFetch | null> {
-  const params: unknown[] = [rssFeedId]
-  const ttlFilter =
-    ttl > 0
-      ? `AND (rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($2 * INTERVAL '1 millisecond'))`
-      : ''
-  if (ttl > 0) params.push(ttl)
-
-  const query = `/* getRssFeedByIdToFetch */
-    SELECT
-${FEED_COLUMNS.slice(1)},
-      0::DOUBLE PRECISION AS crawl_score,
-      5::INT AS crawl_tier,
-      1 AS priority_group
-    FROM rss_feeds${FEED_JOINS}
-    WHERE rss_feeds.id = $1
-      AND rss_feeds.deleted_at IS NULL
-      AND rss_feeds.is_enabled = TRUE
-      ${ttlFilter}
-    LIMIT 1`
-
-  const { rows } = await read<RssFeedToFetch>(query, params, queryOptions)
-  return rows[0] ?? null
-}
+export { getRssFeedByIdToFetch } from './get-by-id-to-fetch.mts'

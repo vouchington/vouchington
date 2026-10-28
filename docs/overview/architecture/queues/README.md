@@ -81,6 +81,13 @@ retains its age cutoff while committed deletions advance the remaining-work pred
 index excludes successful historical crawls from each page. A continuation keeps work eligible
 without holding a worker through the entire backlog.
 
+RSS dispatch carries its lane, raw feed position, and fixed upper bound in Glide continuations.
+Each job reads a bounded raw page before due, tier, and hostname eligibility, while the sweep's
+remaining capacity counts admitted fetches. An empty eligible page advances the cursor without
+consuming fetch capacity, and lower-priority lanes wait until earlier raw lanes finish.
+Friend-account dispatch and Bedrock stale cleanup also advance by raw source IDs. A full page may
+need one empty continuation to confirm the tail while keeping the physical read bound exact.
+
 Moderation-history retention uses the existing PostgreSQL maintenance queue and a serial ordering
 lane. A scheduled or operator seed starts a bounded sweep; each completed job immediately admits
 a distinct continuation for only its unfinished record families. Native job receipts preserve the

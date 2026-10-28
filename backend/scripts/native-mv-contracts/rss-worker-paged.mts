@@ -17,12 +17,14 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { rssFeedsHandlers } from '@workers/rss-feeds/workers'
+import { captureRssJobs } from '@voucha/test-helpers/rss-dispatch-jobs'
 
 /** The lane-5 cursor and run budget are global, so this real-queue case has one native owner. */
 export async function checkRssWorkerPagedContracts(): Promise<void> {
   const ownedFeedIds: string[] = []
   let firstJob: Awaited<ReturnType<typeof background.add>> | undefined
   let continuation: Awaited<ReturnType<typeof background.getJob>> | undefined
+  const admitted: NonNullable<Awaited<ReturnType<typeof background.getJob>>>[] = []
   let restorePage: () => void = () => {}
   let restoreBudget: () => void = () => {}
   let failure: unknown
@@ -48,20 +50,34 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
 
     firstJob = await background.add(
       RSS_FEEDS_DISPATCH_JOB.name,
-      { cursor: { lane: 5, afterId: uuidBefore(feedIds[0]!) } },
+      { cursor: { lane: 5, afterId: uuidBefore(feedIds[0]!), throughId: feedIds[2] } },
       { ...RSS_FEEDS_DISPATCH_JOB.options, ordering: RSS_FEEDS_ORDERING.dispatcher },
     )
     assert.ok(firstJob, 'RSS dispatcher job admission')
-    await dispatcher.handle(firstJob as Job<never>)
-    const firstPageRows = await background.searchJobs({
-      name: RSS_FEEDS_FETCH_JOB.name,
-      data: { rssFeedId: feedIds[0] },
-    })
+    const firstAdmission = await captureRssJobs(
+      () => dispatcher.handle(firstJob as Job<never>),
+      2,
+      row =>
+        (row.name === RSS_FEEDS_FETCH_JOB.name &&
+          feedIds.includes((row.data as { rssFeedId: string }).rssFeedId)) ||
+        (row.name === RSS_FEEDS_DISPATCH_JOB.name &&
+          (row.data as RssFeedsDispatchData).cursor?.afterId === feedIds[0]),
+      row => admitted.push(row),
+    )
+    const firstPage = firstAdmission.result as { count: number }
+    assert.equal(firstPage.count, 1, 'the first raw page must select its owned due feed')
+    const firstPageRows = firstAdmission.jobs.filter(
+      row =>
+        row.name === RSS_FEEDS_FETCH_JOB.name &&
+        (row.data as { rssFeedId: string }).rssFeedId === feedIds[0],
+    )
     assert.equal(firstPageRows.length, 1, 'the first feed must receive a real fetch job')
 
-    const continuations = (
-      await background.searchJobs({ name: RSS_FEEDS_DISPATCH_JOB.name })
-    ).filter(row => (row.data as RssFeedsDispatchData).cursor?.afterId === feedIds[0])
+    const continuations = firstAdmission.jobs.filter(
+      row =>
+        row.name === RSS_FEEDS_DISPATCH_JOB.name &&
+        (row.data as RssFeedsDispatchData).cursor?.afterId === feedIds[0],
+    )
     assert.equal(continuations.length, 1, 'the first page must persist one continuation')
     continuation = await background.getJob(continuations[0]!.id)
     assert.ok(continuation, 'Expected persisted RSS continuation')
@@ -75,21 +91,27 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
       concurrency: getBackgroundOrderingConcurrency(RSS_FEEDS_ORDERING.dispatcher.key),
     })
 
-    await dispatcher.handle(continuation as Job<never>)
-    const secondPageRows = await background.searchJobs({
-      name: RSS_FEEDS_FETCH_JOB.name,
-      data: { rssFeedId: feedIds[1] },
-    })
+    const secondAdmission = await captureRssJobs(
+      () => dispatcher.handle(continuation as Job<never>),
+      1,
+      row =>
+        row.name === RSS_FEEDS_FETCH_JOB.name &&
+        feedIds.includes((row.data as { rssFeedId: string }).rssFeedId),
+      row => admitted.push(row),
+    )
+    assert.equal((secondAdmission.result as { count: number }).count, 1)
+    const secondPageRows = secondAdmission.jobs.filter(
+      row =>
+        row.name === RSS_FEEDS_FETCH_JOB.name &&
+        (row.data as { rssFeedId: string }).rssFeedId === feedIds[1],
+    )
     assert.equal(secondPageRows.length, 1, 'the second feed must receive a real fetch job')
-    const thirdPageRows = await background.searchJobs({
-      name: RSS_FEEDS_FETCH_JOB.name,
-      data: { rssFeedId: feedIds[2] },
-    })
-    assert.equal(thirdPageRows.length, 0, 'the third feed must remain outside the run budget')
-    const furtherContinuations = (
-      await background.searchJobs({ name: RSS_FEEDS_DISPATCH_JOB.name })
-    ).filter(row => (row.data as RssFeedsDispatchData).cursor?.afterId === feedIds[1])
-    assert.equal(furtherContinuations.length, 0, 'the exhausted budget must not continue')
+    const exhaustedJob = await background.getJob(continuation.id)
+    assert.ok(exhaustedJob)
+    const receipt = (
+      exhaustedJob.data as RssFeedsDispatchData & { dispatchReceipt?: { next?: unknown } }
+    ).dispatchReceipt
+    assert.equal(receipt?.next, undefined, 'the exhausted budget must not continue')
   } catch (err) {
     failed = true
     failure = err
@@ -100,16 +122,7 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
     async () => restorePage(),
     async () => restoreBudget(),
     async () => firstJob?.remove(),
-    async () => continuation?.remove(),
-    async () => {
-      for (const feedId of ownedFeedIds) {
-        const rows = await background.searchJobs({
-          name: RSS_FEEDS_FETCH_JOB.name,
-          data: { rssFeedId: feedId },
-        })
-        await Promise.all(rows.map(row => row.remove()))
-      }
-    },
+    async () => Promise.all(admitted.map(row => row.remove())),
     async () => deleteRssFeedsByIds(ownedFeedIds),
   ]) {
     try {

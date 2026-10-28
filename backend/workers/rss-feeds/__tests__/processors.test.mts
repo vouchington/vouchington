@@ -4,8 +4,6 @@ import type { getRssFeedsToFetch, getTierSlaMs } from '@services/rss-feeds'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
 
-type RssFeedDispatchCandidate = Awaited<ReturnType<typeof getRssFeedsToFetch>>[number]
-
 const mockEnqueueBulkFetchRssFeeds = vi.fn<typeof enqueueBulkFetchRssFeeds>()
 const mockGetRssFeedsToFetch = vi.fn<typeof getRssFeedsToFetch>()
 const mockGetTierSlaMs = vi.fn<typeof getTierSlaMs>()
@@ -24,7 +22,7 @@ function makeRssFeedToFetch(overrides: {
   crawl_tier?: number
   crawl_score?: number
   priority_group?: 1 | 2
-}): RssFeedDispatchCandidate {
+}): Awaited<ReturnType<typeof getRssFeedsToFetch>>['feeds'][number] {
   const crawlTier = overrides.crawl_tier ?? 5
   const priorityGroup = overrides.priority_group ?? 1
   return {
@@ -60,15 +58,15 @@ describe('processRssFeedsDispatcher', () => {
   })
 
   it('returns { count: 0 } and does not enqueue when no feeds returned', async () => {
-    mockGetRssFeedsToFetch.mockResolvedValue([])
+    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [], rawRowsRead: 0 })
     const result = await runDispatcher()
-    expect(result).toEqual({ count: 0 })
+    expect(result).toEqual({ count: 0, rawRowsRead: 0 })
     expect(mockEnqueueBulkFetchRssFeeds).not.toHaveBeenCalled()
   })
 
   it('enqueues feeds with TIER_PRIORITY[1] and tier-1 SLA for tier-1 feeds', async () => {
     const feed = makeRssFeedToFetch({ id: 'feed-tier1', crawl_tier: 1, crawl_score: 10 })
-    mockGetRssFeedsToFetch.mockResolvedValue([feed])
+    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [feed], rawRowsRead: 1 })
 
     await runDispatcher()
 
@@ -81,7 +79,7 @@ describe('processRssFeedsDispatcher', () => {
 
   it('enqueues feeds with TIER_PRIORITY[5] and tier-5 SLA for tier-5 feeds', async () => {
     const feed = makeRssFeedToFetch({ id: 'feed-tier5', crawl_tier: 5, crawl_score: 0 })
-    mockGetRssFeedsToFetch.mockResolvedValue([feed])
+    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [feed], rawRowsRead: 1 })
 
     await runDispatcher()
 
@@ -97,7 +95,7 @@ describe('processRssFeedsDispatcher', () => {
       makeRssFeedToFetch({ id: 'feed-b', crawl_tier: 1, crawl_score: 8 }),
       makeRssFeedToFetch({ id: 'feed-c', crawl_tier: 3, crawl_score: 2 }),
     ]
-    mockGetRssFeedsToFetch.mockResolvedValue(feeds)
+    mockGetRssFeedsToFetch.mockResolvedValue({ feeds, rawRowsRead: feeds.length })
 
     await runDispatcher()
 
@@ -118,15 +116,15 @@ describe('processRssFeedsDispatcher', () => {
       makeRssFeedToFetch({ id: 'x1', crawl_tier: 2 }),
       makeRssFeedToFetch({ id: 'x2', crawl_tier: 4 }),
     ]
-    mockGetRssFeedsToFetch.mockResolvedValue(feeds)
+    mockGetRssFeedsToFetch.mockResolvedValue({ feeds, rawRowsRead: feeds.length })
 
     const result = await runDispatcher()
-    expect(result).toEqual({ count: 2 })
+    expect(result).toEqual({ count: 2, rawRowsRead: 2 })
   })
 
   it('omits ttl for backfill feeds so they are not blocked by the SLA dedup window', async () => {
     const feed = makeRssFeedToFetch({ id: 'feed-backfill', crawl_tier: 5, priority_group: 2 })
-    mockGetRssFeedsToFetch.mockResolvedValue([feed])
+    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [feed], rawRowsRead: 1 })
 
     await runDispatcher()
 

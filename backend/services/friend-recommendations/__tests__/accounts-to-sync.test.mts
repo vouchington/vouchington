@@ -13,6 +13,7 @@ import {
   streamGithubAccountsToSync,
   getFriendSyncProviderUserId,
 } from '../accounts-to-sync.mts'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 
 async function collectStream<T>(gen: AsyncGenerator<T>): Promise<T[]> {
   const results: T[] = []
@@ -40,18 +41,45 @@ describe('streamFacebookAccountsToSync', () => {
   })
 
   it('yields accounts that have never synced', async () => {
-    const results = await collectStream(streamFacebookAccountsToSync())
-    const ids = results.map(r => r.id)
+    const results = await collectStream(
+      streamFacebookAccountsToSync({ afterId: uuidBefore(accountId), upperId: accountId }),
+    )
+    const ids = results.filter(r => r.eligible).map(r => r.id)
     expect(ids).toContain(accountId)
     await expect(getFriendSyncProviderUserId('facebook', accountId)).resolves.toBe(facebookUserId)
   })
 
   it('excludes recently synced accounts', async () => {
     await setTestOAuthAccountFriendsSyncedAt('facebook', facebookUserId, 'now')
-    const results = await collectStream(streamFacebookAccountsToSync())
-    const ids = results.map(r => r.id)
+    const results = await collectStream(
+      streamFacebookAccountsToSync({ afterId: uuidBefore(accountId), upperId: accountId }),
+    )
+    const ids = results.filter(r => r.eligible).map(r => r.id)
     expect(ids).not.toContain(accountId)
   })
+})
+
+describe('empty friend account sweep', () => {
+  it.each([
+    ['facebook', streamFacebookAccountsToSync],
+    ['x', streamXAccountsToSync],
+    ['github', streamGithubAccountsToSync],
+  ] as const)(
+    'completes an explicitly empty %s sweep without a cursor',
+    async (_provider, stream) => {
+      let completed: { rowsRead: number; hasMore: boolean; lastRow?: { id: string } } | undefined
+      const rows = await collectStream(
+        stream({
+          upperId: null,
+          onComplete: result => {
+            completed = result
+          },
+        }),
+      )
+      expect(rows).toEqual([])
+      expect(completed).toEqual({ rowsRead: 0, hasMore: false })
+    },
+  )
 })
 
 describe('streamGithubAccountsToSync', () => {
@@ -66,8 +94,10 @@ describe('streamGithubAccountsToSync', () => {
   })
 
   it('yields accounts that have never synced', async () => {
-    const results = await collectStream(streamGithubAccountsToSync())
-    const ids = results.map(r => r.id)
+    const results = await collectStream(
+      streamGithubAccountsToSync({ afterId: uuidBefore(accountId), upperId: accountId }),
+    )
+    const ids = results.filter(r => r.eligible).map(r => r.id)
     expect(ids).toContain(accountId)
   })
 })
@@ -87,16 +117,20 @@ describe('streamXAccountsToSync', () => {
   })
 
   it('yields accounts with valid tokens that have never synced', async () => {
-    const results = await collectStream(streamXAccountsToSync())
-    const ids = results.map(r => r.id)
+    const results = await collectStream(
+      streamXAccountsToSync({ afterId: uuidBefore(accountId), upperId: accountId }),
+    )
+    const ids = results.filter(r => r.eligible).map(r => r.id)
     expect(ids).toContain(accountId)
   })
 
   it('excludes accounts with expired tokens and no refresh token', async () => {
     await setTestOAuthAccountTokenExpiry('x', xUserId, true)
     await setTestOAuthAccountTokens('x', xUserId, { refreshToken: null })
-    const results = await collectStream(streamXAccountsToSync())
-    const ids = results.map(r => r.id)
+    const results = await collectStream(
+      streamXAccountsToSync({ afterId: uuidBefore(accountId), upperId: accountId }),
+    )
+    const ids = results.filter(r => r.eligible).map(r => r.id)
     expect(ids).not.toContain(accountId)
   })
 })

@@ -39,6 +39,7 @@
     "@services/admin-imports": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/autotagger": "workspace:^",
+    "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/classifiers": "workspace:^",

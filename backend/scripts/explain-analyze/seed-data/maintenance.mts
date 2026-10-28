@@ -63,7 +63,14 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'relation__post__related__url', column: 'object_id' },
   { table: 'referral_program_topics', column: 'topic_id' },
   { table: 'user_referral_program_links', column: 'referral_program_topic_id' },
-  { table: 'facebook_accounts', column: 'facebook_user_id', pattern: 'seed-fb-user-%' },
+  {
+    table: 'facebook_accounts',
+    column: 'facebook_user_id',
+    pattern: 'explain-ingestion-facebook-%',
+  },
+  { table: 'x_accounts', column: 'x_user_id', pattern: 'explain-ingestion-x-%' },
+  { table: 'github_accounts', column: 'github_user_id', pattern: 'explain-ingestion-github-%' },
+  { table: 'bedrock_embedding_batches', column: 'id' },
   { table: 'facebook_friends', column: 'facebook_friend_id', pattern: 'seed-fb-user-%' },
 ]
 

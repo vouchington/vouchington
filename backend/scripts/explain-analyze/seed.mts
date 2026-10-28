@@ -1,4 +1,5 @@
 import { seedUploadCleanup } from './seed-data/upload-cleanup.mts'
+import { seedIngestionRawPages } from './seed-data/ingestion-raw-pages.mts'
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { cleanupPublicationScopePages } from './seed-data/publication-scope-cleanup.mts'
 import { cleanupNotificationVisibility } from './seed-data/notification-visibility-cleanup.mts'
@@ -175,6 +176,7 @@ async function main() {
   await seedViewPostsHydration()
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
+  await seedIngestionRawPages()
   await seedBloomReconciliation()
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()

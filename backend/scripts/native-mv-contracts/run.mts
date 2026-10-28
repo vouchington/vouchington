@@ -7,6 +7,7 @@ import { checkTrendingHttpContracts } from './trending-http.mts'
 import { checkTrendingServiceContracts } from './trending-service.mts'
 import { checkRssWorkerContracts } from './rss-worker.mts'
 import { checkRssWorkerPagedContracts } from './rss-worker-paged.mts'
+import { checkRssWorkerSparseLane } from './rss-worker-sparse.mts'
 import { checkCrawlTierContracts } from './crawl-tiers.mts'
 import { checkRevenueContracts } from './revenue.mts'
 import { checkHashtagAuthorDeletionContract } from './hashtag-author-deletion.mts'
@@ -20,6 +21,7 @@ const contracts: ReadonlyArray<readonly [string, () => Promise<void>]> = [
   ['trending HTTP', checkTrendingHttpContracts],
   ['trending service', checkTrendingServiceContracts],
   ['RSS worker paged', checkRssWorkerPagedContracts],
+  ['RSS worker sparse lane', checkRssWorkerSparseLane],
   ['RSS worker', checkRssWorkerContracts],
   ['crawl tiers', checkCrawlTierContracts],
   ['revenue', checkRevenueContracts],

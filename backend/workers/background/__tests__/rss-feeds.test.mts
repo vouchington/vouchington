@@ -11,6 +11,7 @@ import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
 import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processRssFeedsDispatcher } from '../../rss-feeds/processors.mts'
 import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
@@ -55,12 +56,23 @@ describe('rss-feeds background domain', () => {
 
   it('runs the dispatcher as one page bounded by the crawl capacity budget', async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 2 }))
-    // The shared test database may hold more due feeds than the budget, never fewer than these.
-    await Promise.all([createTestRssFeed({}), createTestRssFeed({}), createTestRssFeed({})])
+    const feeds = await Promise.all([
+      createTestRssFeed({}),
+      createTestRssFeed({}),
+      createTestRssFeed({}),
+    ])
+    feeds.sort((left, right) => left.id.localeCompare(right.id))
 
-    const { count } = await processRssFeedsDispatcher()
+    const result = await processRssFeedsDispatcher(undefined, {
+      cursor: { lane: 5, afterId: uuidBefore(feeds[0]!.id), throughId: feeds[2]!.id },
+      asOf: new Date(),
+      limit: 2,
+      rawBudget: 2,
+    })
 
-    expect(count).toBe(2)
+    expect(result.count).toBe(2)
+    expect(result.rawRowsRead).toBe(2)
+    expect(result.nextCursor?.afterId).toBe(feeds[1]!.id)
     expect(RSS_FEEDS_DISPATCH_JOB.options.priority).toBe(100)
   })
 })

@@ -108,6 +108,7 @@ async function collectAndEnqueue(
   let count = 0
   let batch: string[] = []
   for await (const row of stream) {
+    if (!row.eligible) continue
     batch.push(row.id)
     if (batch.length >= batchSize) {
       await enqueueBulkFn(batch)
