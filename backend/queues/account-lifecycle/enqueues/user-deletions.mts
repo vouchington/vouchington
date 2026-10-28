@@ -63,6 +63,6 @@ export function enqueueRecoverUserDeletions(): EnqueueReturnType {
   )
 }
 
-export function userDeletionJobId(data: UserDeletionJobData): string {
+function userDeletionJobId(data: UserDeletionJobData): string {
   return `user-deletion__${data.requestId}__${data.processingAttemptId}`
 }

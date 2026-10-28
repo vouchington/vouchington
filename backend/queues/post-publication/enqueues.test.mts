@@ -11,7 +11,6 @@ import {
   enqueueAuditReviewSuccessionHistory,
   enqueueContinueAuditReviewSuccessionHistory,
   enqueuePostPublicationEffects,
-  postPublicationEffectJobId,
 } from './enqueues.mts'
 import { backgroundQueue as postPublicationQueue } from '../../test-helpers/shared-background-queue.mts'
 
@@ -30,12 +29,12 @@ describe('post-publication direct enqueues', () => {
       scopeTopicKeysCaptured: false,
       keyOffset: 0,
     }
-    const id = postPublicationEffectJobId(data)
-    onTestFinished(async () => (await postPublicationQueue.getJob(id))?.remove())
     const job = await readEnqueuedJob(
       postPublicationQueue,
       await enqueuePostPublicationEffects(data),
     )
+    const id = job.id
+    onTestFinished(async () => (await postPublicationQueue.getJob(id))?.remove())
     expect(job).toMatchObject({
       name: POST_PUBLICATION_EFFECTS_JOB.name,
       data,

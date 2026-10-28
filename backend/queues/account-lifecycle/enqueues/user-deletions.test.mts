@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
-import {
-  enqueueRecoverUserDeletions,
-  enqueueUserDeletion,
-  userDeletionJobId,
-} from './user-deletions.mts'
+import { enqueueRecoverUserDeletions, enqueueUserDeletion } from './user-deletions.mts'
 import { accountLifecycle } from '../queues.mts'
 
 describe('user-deletions enqueues', () => {
@@ -15,7 +11,6 @@ describe('user-deletions enqueues', () => {
 
     await enqueueUserDeletion(data)
 
-    expect(userDeletionJobId(data)).toBe(expectedId)
     await expect(readEnqueuedJob(accountLifecycle, { id: expectedId })).resolves.toMatchObject({
       id: expectedId,
       name: 'account-lifecycle.processUserDeletion',

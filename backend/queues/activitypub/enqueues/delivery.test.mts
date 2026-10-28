@@ -1,13 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
-import { readAllQueueJobs } from '../../../test-helpers/queue-jobs.mts'
+import { readAllQueueJobs, readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
 import {
   enqueueBulkDeliverActivity,
   enqueueBulkDistributeActivity,
   enqueueDeliverAcceptActivity,
   enqueueDistributeActivity,
-  getAcceptActivityId,
   type DistributeActivityData,
 } from './delivery.mts'
 import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
@@ -89,33 +88,50 @@ describe('ActivityPub delivery enqueues', () => {
   })
 
   describe('Accept activity id', () => {
-    const sourceUserId = randomUUID()
-    const followActivityId = `https://remote.example/activities/${randomUUID()}`
+    async function enqueueAccept(sourceId: string, followId: string) {
+      return readEnqueuedJob(
+        activitypub,
+        await enqueueDeliverAcceptActivity({
+          sourceUserId: sourceId,
+          inboxUrl: `https://${randomUUID()}.example/inbox`,
+          followActivityId: followId,
+          followActorUri: 'https://remote.example/users/alice',
+        }),
+      )
+    }
 
-    it('is stable for one local user acknowledging one inbound Follow', () => {
-      const id = getAcceptActivityId({ sourceUserId, followActivityId })
+    it('is stable for one local user acknowledging one inbound Follow', async () => {
+      const sourceUserId = randomUUID()
+      const followActivityId = `https://remote.example/activities/${randomUUID()}`
+      const first = await enqueueAccept(sourceUserId, followActivityId)
+      const id = (first.data as { activityId: string }).activityId
 
       expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
-      expect(getAcceptActivityId({ sourceUserId, followActivityId })).toBe(id)
+      await first.remove()
+      const repeat = await enqueueAccept(sourceUserId, followActivityId)
+      expect((repeat.data as { activityId: string }).activityId).toBe(id)
     })
 
-    it('differs for another Follow or another local user so no Accept is mistaken for a repeat', () => {
-      const id = getAcceptActivityId({ sourceUserId, followActivityId })
-
-      expect(
-        getAcceptActivityId({
-          sourceUserId,
-          followActivityId: `https://remote.example/activities/${randomUUID()}`,
-        }),
-      ).not.toBe(id)
-      expect(getAcceptActivityId({ sourceUserId: randomUUID(), followActivityId })).not.toBe(id)
+    it('differs for another Follow or another local user so no Accept is mistaken for a repeat', async () => {
+      const sourceUserId = randomUUID()
+      const followActivityId = `https://remote.example/activities/${randomUUID()}`
+      const first = await enqueueAccept(sourceUserId, followActivityId)
+      const id = (first.data as { activityId: string }).activityId
+      const anotherFollow = await enqueueAccept(
+        sourceUserId,
+        `https://remote.example/activities/${randomUUID()}`,
+      )
+      expect((anotherFollow.data as { activityId: string }).activityId).not.toBe(id)
+      await first.remove()
+      const anotherUser = await enqueueAccept(randomUUID(), followActivityId)
+      expect((anotherUser.data as { activityId: string }).activityId).not.toBe(id)
     })
 
     it('is the activity id the queued Accept job carries', async () => {
       const input = {
-        sourceUserId,
+        sourceUserId: randomUUID(),
         inboxUrl: `https://${randomUUID()}.example/inbox`,
-        followActivityId,
+        followActivityId: `https://remote.example/activities/${randomUUID()}`,
         followActorUri: 'https://remote.example/users/alice',
       }
 
@@ -128,7 +144,9 @@ describe('ActivityPub delivery enqueues', () => {
       expect(jobs[0]!.data).toEqual({
         ...input,
         activityType: 'Accept',
-        activityId: getAcceptActivityId(input),
+        activityId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
       })
     })
   })

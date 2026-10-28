@@ -91,6 +91,6 @@ function deletePageOptions(data: RssFeedHardDeletePageData, phase: string) {
   }
 }
 
-export function rssFeedHardDeletePageJobId(data: RssFeedHardDeletePageData, phase: string): string {
+function rssFeedHardDeletePageJobId(data: RssFeedHardDeletePageData, phase: string): string {
   return `hard-delete-rss-feed__${data.rssFeedId}__${phase}__${data.pageCursor}`
 }

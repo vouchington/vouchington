@@ -10,7 +10,7 @@ import {
   CLASSIFIER_RUN_ATTEMPTS,
   CLASSIFIER_RUN_BACKOFF,
 } from '@queues/ai-agents/config'
-import { classifierRunJobId, enqueueClassifierRun } from '@queues/ai-agents/enqueues/classifier-run'
+import { enqueueClassifierRun } from '@queues/ai-agents/enqueues/classifier-run'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { notifications } from '@queues/notifications/queues'
 import type { ClassifierRunJobData } from '@queues/ai-agents/types'
@@ -175,7 +175,7 @@ describe('classifier run processor (real GlideMQ)', () => {
         backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: () => 50 },
       },
     )
-    const jobId = classifierRunJobId(data.runId)
+    const jobId = `classifier_run_${data.runId}`
     const facts = async () => (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]
     const exhausted = waitForWorkerJob(worker, 'failed', jobId, CLASSIFIER_RUN_ATTEMPTS)
     try {

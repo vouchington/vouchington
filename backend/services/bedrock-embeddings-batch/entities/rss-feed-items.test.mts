@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto'
 import { decodeUuidCursor, encodeScopedUuidCursor, isSimpleCursor } from '@modules/pagination'
-import { classifierRunDispatcherJobId } from '@queues/ai-agents/enqueues/classifier-run'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertTestEmbeddings, makeRandomEmbedding, readAllQueueJobs } from '@voucha/test-helpers'
@@ -23,11 +22,7 @@ function cursorBefore(id: string): string {
 }
 
 async function storyClusteringDispatched(rssFeedItemId: string): Promise<boolean> {
-  const jobId = classifierRunDispatcherJobId({
-    classifier: STORY_CLUSTERING_CLASSIFIER_SLUG,
-    postId: null,
-    rssFeedItemId,
-  })
+  const jobId = `classifier_run_dispatcher_${STORY_CLUSTERING_CLASSIFIER_SLUG}_${rssFeedItemId}`
   return (await readAllQueueJobs(ai_agents)).some(job => job.id === jobId)
 }
 

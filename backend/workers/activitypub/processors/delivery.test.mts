@@ -8,7 +8,6 @@ import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import {
-  getAcceptActivityId,
   getUndoFollowActivityId,
   type DeliverActivityData,
 } from '@queues/activitypub/enqueues/delivery'
@@ -96,10 +95,7 @@ describe('deliverActivity', () => {
   it('keeps direct Accept replies outside the activity-age check', async () => {
     const accept: DeliverActivityData = {
       activityType: 'Accept',
-      activityId: getAcceptActivityId({
-        sourceUserId: 'user-1',
-        followActivityId: 'remote-follow',
-      }),
+      activityId: randomUUID(),
       sourceUserId: 'user-1',
       inboxUrl: 'https://a.example/inbox',
       followActivityId: 'remote-follow',

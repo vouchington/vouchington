@@ -1,6 +1,5 @@
 import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 import { AI_AGENTS_QUEUE_NAME } from '../queues/ai-agents/config.mts'
-import { classifierRunJobId } from '../queues/ai-agents/enqueues/classifier-run.mts'
 import { ai_agents } from '../queues/ai-agents/queues.mts'
 import type {
   ClassifierRunDispatcherJobData,
@@ -14,7 +13,7 @@ import { readAllQueueJobs } from './queue-jobs.mts'
  */
 export function removeClassifierRunJobForTest(runId: string): void {
   const queue = getOrCreateQueue(AI_AGENTS_QUEUE_NAME)
-  const jobId = classifierRunJobId(runId)
+  const jobId = `classifier_run_${runId}`
   queue.jobs.delete(jobId)
   const waitingIndex = queue.waitingQueue.findIndex(record => record.id === jobId)
   if (waitingIndex >= 0) queue.waitingQueue.splice(waitingIndex, 1)

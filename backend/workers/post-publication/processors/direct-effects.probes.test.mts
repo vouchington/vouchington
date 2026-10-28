@@ -9,7 +9,6 @@ import {
   workerQueuePrefix,
 } from '../../../data-stores/valkey-core/glide-mq-client.mts'
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
-import { postPublicationEffectJobId } from '@queues/post-publication/enqueues'
 import { hashCapturedPublicationKeys } from '@services/post-publication/captured-keys'
 import { caches } from '@services/entity-cache/caches'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
@@ -37,7 +36,7 @@ describe('publication transient storage recovery', () => {
       scopeTopicKeysCaptured: false,
       keyOffset: 0,
     }
-    const rootId = postPublicationEffectJobId(data)
+    const rootId = randomUUID()
     const rootPayloads: unknown[] = []
     let rejectNextRead = true
     await caches.post_metrics.set(postId, 'preimage awaiting effects')
@@ -64,7 +63,7 @@ describe('publication transient storage recovery', () => {
     await executeTestPublicationChain(data, async next => {
       // Exercise retry/idempotency without waiting for the production outage backoff window.
       const job = await worker.add(POST_PUBLICATION_EFFECTS_JOB, next, {
-        jobId: postPublicationEffectJobId(next),
+        jobId: next === data ? rootId : randomUUID(),
         backoff: { type: 'fixed', delay: 1 },
       })
       expect(await worker.settled(job)).toBe('completed')

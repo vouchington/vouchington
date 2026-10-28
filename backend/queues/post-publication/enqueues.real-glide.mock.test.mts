@@ -4,11 +4,8 @@ import type { PostPublicationEffectsJobData } from '@voucha/types/post-publicati
 import { hashCapturedPublicationKeys } from '../../services/post-publication/captured-keys.mts'
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
 import { postPublicationHandlers } from '../../workers/post-publication/workers.mts'
-import {
-  enqueueBulkPostPublicationEffects,
-  enqueuePostPublicationEffects,
-  postPublicationEffectJobId,
-} from './enqueues.mts'
+import { getEnqueuedJobId } from '../../test-helpers/queue-jobs.mts'
+import { enqueueBulkPostPublicationEffects, enqueuePostPublicationEffects } from './enqueues.mts'
 import { backgroundQueue as postPublicationQueue } from '../../test-helpers/shared-background-queue.mts'
 import { enqueueLiveScopePostEffects } from '../../workers/post-publication/processors/direct-scope-post-effects.mts'
 
@@ -50,10 +47,18 @@ describe('direct publication jobs through real GlideMQ', () => {
       keyOffset: 0,
       continuation: { kind: 'author_posts', subjectIds: [authorId], subjectIndex: 0, after: null },
     }
-    const id = postPublicationEffectJobId(canonical)
+    let id: string | undefined
     try {
       await enqueueLiveScopePostEffects(first)
-      const admitted = await postPublicationQueue.getJob(id)
+      const candidates = await postPublicationQueue.searchJobs({
+        name: POST_PUBLICATION_EFFECTS_JOB.name,
+        data: { changeId: first.changeId },
+      })
+      const admitted = candidates.find(
+        job => (job.data as PostPublicationEffectsJobData).continuation?.kind === 'author_posts',
+      )
+      if (!admitted) throw new Error('Expected scope discovery admission')
+      id = admitted.id
       expect(admitted?.data).toEqual(canonical)
       await enqueueLiveScopePostEffects({
         ...first,
@@ -65,7 +70,7 @@ describe('direct publication jobs through real GlideMQ', () => {
       expect((await postPublicationQueue.getJob(id))?.data).toEqual(canonical)
       expect(await enqueuePostPublicationEffects(canonical)).toBeNull()
     } finally {
-      await (await postPublicationQueue.getJob(id))?.remove()
+      if (id) await (await postPublicationQueue.getJob(id))?.remove()
     }
   })
 
@@ -73,27 +78,28 @@ describe('direct publication jobs through real GlideMQ', () => {
     const postId = randomUUID()
     const first = payload(randomUUID(), postId)
     const second = payload(randomUUID(), postId)
-    const firstId = postPublicationEffectJobId(first)
-    const secondId = postPublicationEffectJobId(second)
-    expect(firstId).not.toBe(secondId)
     expect(
       postPublicationHandlers.some(
         handler => handler.job.name === POST_PUBLICATION_EFFECTS_JOB.name,
       ),
     ).toBe(true)
 
+    const firstId = getEnqueuedJobId(await enqueuePostPublicationEffects(first))
+    let secondId: string | undefined
     try {
-      await enqueuePostPublicationEffects(first)
       expect((await postPublicationQueue.getJob(firstId))?.id).toBe(firstId)
       expect(await enqueuePostPublicationEffects(first)).toBeNull()
-      await enqueuePostPublicationEffects(second)
+      secondId = getEnqueuedJobId(await enqueuePostPublicationEffects(second))
+      expect(firstId).not.toBe(secondId)
       expect((await postPublicationQueue.getJob(secondId))?.id).toBe(secondId)
       expect(await enqueuePostPublicationEffects(second)).toBeNull()
       expect((await postPublicationQueue.getJob(firstId))?.data).toEqual(first)
       expect((await postPublicationQueue.getJob(secondId))?.data).toEqual(second)
     } finally {
       await Promise.all(
-        [firstId, secondId].map(async id => (await postPublicationQueue.getJob(id))?.remove()),
+        [firstId, secondId].map(
+          async id => id && (await postPublicationQueue.getJob(id))?.remove(),
+        ),
       )
     }
   })
@@ -102,9 +108,19 @@ describe('direct publication jobs through real GlideMQ', () => {
     const postId = randomUUID()
     const first = payload(randomUUID(), postId)
     const second = payload(randomUUID(), postId)
-    const ids = [postPublicationEffectJobId(first), postPublicationEffectJobId(second)]
+    let ids: string[] = []
     try {
       await enqueueBulkPostPublicationEffects([first, second])
+      const jobs = await postPublicationQueue.searchJobs({
+        name: POST_PUBLICATION_EFFECTS_JOB.name,
+      })
+      ids = [first, second].map(data => {
+        const job = jobs.find(
+          job => (job.data as PostPublicationEffectsJobData).changeId === data.changeId,
+        )
+        if (!job) throw new Error('Expected bulk publication admission')
+        return job.id
+      })
       expect((await postPublicationQueue.getJob(ids[0]!))?.data).toEqual(first)
       expect((await postPublicationQueue.getJob(ids[1]!))?.data).toEqual(second)
       await enqueueBulkPostPublicationEffects([first, second])
@@ -129,10 +145,10 @@ describe('direct publication jobs through real GlideMQ', () => {
       ...first,
       continuation: { ...first.continuation!, subjectIds: [postId, randomUUID()] },
     }
-    const ids = [postPublicationEffectJobId(first), postPublicationEffectJobId(second)]
+    const ids: string[] = []
     try {
-      await enqueuePostPublicationEffects(first)
-      await enqueuePostPublicationEffects(second)
+      ids.push(getEnqueuedJobId(await enqueuePostPublicationEffects(first)))
+      ids.push(getEnqueuedJobId(await enqueuePostPublicationEffects(second)))
       expect((await postPublicationQueue.getJob(ids[0]!))?.data).toEqual(first)
       expect((await postPublicationQueue.getJob(ids[1]!))?.data).toEqual(second)
       expect(await enqueuePostPublicationEffects(first)).toBeNull()

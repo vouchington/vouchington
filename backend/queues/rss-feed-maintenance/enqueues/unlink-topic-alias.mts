@@ -46,7 +46,7 @@ const enqueueRecovery = createEnqueueFunction<TopicAliasUnlinkRecovery, TopicAli
   defaults: pageDefaults,
 })
 
-export function topicAliasUnlinkJobId(page: TopicAliasUnlinkPage): string {
+function topicAliasUnlinkJobId(page: TopicAliasUnlinkPage): string {
   return `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`
 }
 

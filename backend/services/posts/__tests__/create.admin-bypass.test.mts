@@ -10,7 +10,6 @@ import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/cla
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { countTestPostModerationAttempts } from '@voucha/test-helpers/post-moderation-attempt-state'
-import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues/classifier-run.mts'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
 import { ENTITY_LISTENERS_POST_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
@@ -58,7 +57,7 @@ describe('create.admin-bypass', () => {
     const dispatcherJobs = await readClassifierRunDispatcherJobsForTest(post.id)
     expect(dispatcherJobs).toHaveLength(1)
     expect(dispatcherJobs[0]).toMatchObject({
-      id: classifierRunDispatcherJobId(taggingData),
+      id: `classifier_run_dispatcher_${taggingData.classifier}_${post.id}`,
       name: 'classifier-run-dispatcher',
     })
     expect(dispatcherJobs[0]!.data).toEqual(taggingData)
