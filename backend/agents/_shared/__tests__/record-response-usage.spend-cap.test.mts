@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
-import type { SpendCapBreach } from '@services/ai-usage'
+import type { evaluateSpendCapBreach } from '@services/ai-usage'
 import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
 import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
+
+type SpendCapBreach = NonNullable<Awaited<ReturnType<typeof evaluateSpendCapBreach>>>
 
 function callParams(agentSlug: string) {
   return {
