@@ -976,7 +976,7 @@
           "uiEvidence": ["web/components/appeals/appeal-row.tsx"],
           "behaviorTests": [
             "web/components/appeals/appeal-row.mock.test.tsx",
-            "web/lib/lifecycle-scenarios/runner.test.ts"
+            "web/test-helpers/lifecycle-runner.test.ts"
           ]
         },
         "swift": {
@@ -1108,7 +1108,7 @@
           "behaviorTests": [
             "web/app/(vote-integrity)/vote-integrity/flags/__tests__/page.mock.test.tsx",
             "web/app/(report-integrity)/report-integrity/flags/__tests__/report-integrity-flags-actions.mock.test.tsx",
-            "web/lib/lifecycle-scenarios/runner.test.ts"
+            "web/test-helpers/lifecycle-runner.test.ts"
           ]
         },
         "swift": {
@@ -1822,7 +1822,7 @@
             "web/components/users/relation-management-action.tsx"
           ],
           "behaviorTests": [
-            "web/lib/lifecycle-scenarios/runner.test.ts",
+            "web/test-helpers/lifecycle-runner.test.ts",
             "web/components/users/__tests__/user-post-relation-list.mock.test.tsx"
           ]
         },

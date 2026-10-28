@@ -1,4 +1,4 @@
-import lifecycleScenarioManifest from '../../../api-fixtures/v1/lifecycle-scenarios.json'
+import lifecycleScenarioManifest from '../../api-fixtures/v1/lifecycle-scenarios.json'
 
 const moderationAppealViewerRoles = new Set(['administrator', 'moderator', 'member'])
 

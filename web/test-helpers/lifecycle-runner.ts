@@ -4,8 +4,8 @@ import {
   loadLifecycleScenarioManifest,
   validateManifest,
   type LifecycleScenarioManifest,
-} from './manifest'
-import { webLifecycleAdapters, type LifecycleObservation } from './adapters'
+} from './lifecycle-manifest'
+import { webLifecycleAdapters, type LifecycleObservation } from './lifecycle-adapters'
 import { formatUnknownValue } from '@/lib/format-unknown-value'
 
 function sameJson(actual: unknown, expected: unknown, path: string): void {
