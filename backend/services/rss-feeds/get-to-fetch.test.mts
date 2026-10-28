@@ -74,6 +74,20 @@ describe('get-to-fetch', () => {
     )
   })
 
+  it.each([0, 11, 1.5])('rejects invalid dispatch lane %s', async lane => {
+    await expect(
+      getRssFeedsToFetch({
+        cursor: { lane, afterId: '00000000-0000-0000-0000-000000000000' },
+      }),
+    ).rejects.toThrow('Invalid RSS dispatch lane')
+  })
+
+  it.each([0, Number.NaN, 1.5])('rejects invalid physical page budget %s', rawBudget => {
+    expect(() => getRssFeedsToFetch({ rawBudget })).toThrow(
+      'RSS raw budget must be a positive safe integer',
+    )
+  })
+
   it('getRssFeedByIdToFetch returns feed_ignore_robots_txt=null by default', async () => {
     const feed = await getRssFeedByIdToFetch(neverFetchedId, { ttl: TTL_MS })
     expect(feed).not.toBeNull()

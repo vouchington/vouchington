@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
-import { seedIngestionAccountId } from '../seed-data/ingestion-raw-pages.mts'
+import {
+  INGESTION_UNQUALIFIED_ACCOUNT_COUNT,
+  seedIngestionAccountId,
+} from '../seed-data/ingestion-raw-pages.mts'
 import {
   streamFacebookAccountsToSync,
   streamGithubAccountsToSync,
@@ -18,7 +21,7 @@ export async function runIngestionRawPageScenarios(): Promise<void> {
   ] as const) {
     for (const [phase, afterId, eligible] of [
       ['sparse', seedIngestionAccountId(0), false],
-      ['eligible', seedIngestionAccountId(1000), true],
+      ['eligible', seedIngestionAccountId(INGESTION_UNQUALIFIED_ACCOUNT_COUNT), true],
     ] as const) {
       const scenarioId = `friend-${provider}-${phase}-raw-page`
       registerScenarioContract(scenarioId, {

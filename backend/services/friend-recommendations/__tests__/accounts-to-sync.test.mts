@@ -59,6 +59,29 @@ describe('streamFacebookAccountsToSync', () => {
   })
 })
 
+describe('empty friend account sweep', () => {
+  it.each([
+    ['facebook', streamFacebookAccountsToSync],
+    ['x', streamXAccountsToSync],
+    ['github', streamGithubAccountsToSync],
+  ] as const)(
+    'completes an explicitly empty %s sweep without a cursor',
+    async (_provider, stream) => {
+      let completed: { rowsRead: number; hasMore: boolean; lastRow?: { id: string } } | undefined
+      const rows = await collectStream(
+        stream({
+          upperId: null,
+          onComplete: result => {
+            completed = result
+          },
+        }),
+      )
+      expect(rows).toEqual([])
+      expect(completed).toEqual({ rowsRead: 0, hasMore: false })
+    },
+  )
+})
+
 describe('streamGithubAccountsToSync', () => {
   const githubUserId = `gh_sync_test_${Math.random().toString(36).slice(2, 10)}`
   let accountId: string
