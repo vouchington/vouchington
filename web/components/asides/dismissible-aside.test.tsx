@@ -3,43 +3,17 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import { DismissibleAside } from './dismissible-aside'
 
 describe('DismissibleAside', () => {
-  it('renders children by default', () => {
+  it('renders content and an accessible dismiss button, then hides and saves dismissal', () => {
     render(
       <DismissibleAside dismissKey='test-aside-1'>
         <div>Aside content</div>
       </DismissibleAside>,
     )
-    expect(screen.getByText('Aside content')).toBeDefined()
-  })
-
-  it('renders a dismiss button', () => {
-    render(
-      <DismissibleAside dismissKey='test-aside-2'>
-        <div>Content</div>
-      </DismissibleAside>,
-    )
-    expect(screen.getByRole('button', { name: 'Dismiss test aside 2' })).toBeDefined()
-  })
-
-  it('hides content after clicking dismiss', () => {
-    render(
-      <DismissibleAside dismissKey='test-aside-3'>
-        <div>Hidden after dismiss</div>
-      </DismissibleAside>,
-    )
-    const btn = screen.getByRole('button', { name: 'Dismiss test aside 3' })
+    expect(screen.getByText('Aside content')).toBeVisible()
+    const btn = screen.getByRole('button', { name: 'Dismiss test aside 1' })
     fireEvent.click(btn)
-    expect(screen.queryByText('Hidden after dismiss')).toBeNull()
-  })
-
-  it('saves dismissed state to localStorage on dismiss', () => {
-    render(
-      <DismissibleAside dismissKey='test-aside-4'>
-        <div>Content</div>
-      </DismissibleAside>,
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss test aside 4' }))
-    expect(localStorage.getItem('test-aside-4')).toBe('dismissed')
+    expect(screen.queryByText('Aside content')).toBeNull()
+    expect(localStorage.getItem('test-aside-1')).toBe('dismissed')
   })
 
   it('hides content when localStorage key is already dismissed', async () => {
