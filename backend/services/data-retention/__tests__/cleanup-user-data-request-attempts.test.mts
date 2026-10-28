@@ -43,7 +43,7 @@ describe('export attempt retention', () => {
       now,
       lowerBoundDate,
       batchSize: 10,
-      maxBatches: 1,
+      maxBatches: 5,
     })
     expect(result).toMatchObject({ deleted: 1, hasMore: false })
     expect(await countDataRequestAttemptsForRetention(eligible)).toBe(0)
@@ -68,7 +68,7 @@ describe('export attempt retention', () => {
     const firstPage = await cleanupExpiredUserDataRequestAttempts({
       now,
       lowerBoundDate,
-      batchSize: 1,
+      batchSize: 10,
       maxBatches: 1,
     })
     expect(firstPage).toMatchObject({ deleted: 1, hasMore: true })
@@ -76,7 +76,7 @@ describe('export attempt retention', () => {
     const secondPage = await cleanupExpiredUserDataRequestAttempts({
       now,
       lowerBoundDate,
-      batchSize: 1,
+      batchSize: 10,
       maxBatches: 1,
     })
     expect(secondPage).toMatchObject({ deleted: 1, hasMore: false, continuation: null })

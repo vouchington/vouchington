@@ -75,27 +75,27 @@ async function deleteAttemptPage(
       batchSize + 1,
     ],
   )
-  const page = rows.slice(0, batchSize)
+  // One request per page keeps the DELETE keyed by a scalar request_id in generic plans.
+  // The lookahead may contain the next request, so it also drives the continuation flag.
+  const requestId = rows[0]?.request_id
+  const page = rows.slice(0, batchSize).filter(row => row.request_id === requestId)
   let deleted = 0
   if (page.length > 0) {
     const { rowCount } = await query(
       `/* deleteExpiredUserDataRequestAttemptPage */
-      WITH selected AS (
-        SELECT * FROM unnest($1::uuid[], $2::uuid[])
-          AS key(request_id, processing_attempt_id)
-      )
       DELETE FROM user_data_request_attempts attempt
-      USING selected, user_data_requests request
-      WHERE attempt.request_id = selected.request_id
-        AND attempt.processing_attempt_id = selected.processing_attempt_id
+      USING user_data_requests request
+      WHERE attempt.request_id = $1::uuid
+        AND attempt.processing_attempt_id = ANY($2::uuid[])
         AND request.id = attempt.request_id
         AND request.id < $3::uuid
         AND COALESCE(request.completed_at, request.failed_at) < $4::timestamptz
         AND request.s3_key IS NULL
         AND GREATEST(attempt.started_at,
-          COALESCE(attempt.upload_lease_expires_at, attempt.started_at)) < $5::timestamptz`,
+          COALESCE(attempt.upload_lease_expires_at, attempt.started_at)) < $5::timestamptz
+      RETURNING attempt.request_id`,
       [
-        page.map(row => row.request_id),
+        requestId,
         page.map(row => row.processing_attempt_id),
         sweepCutoffId,
         requestCutoff,
@@ -104,7 +104,7 @@ async function deleteAttemptPage(
     )
     deleted = rowCount ?? 0
   }
-  const hasMore = rows.length > batchSize
+  const hasMore = rows.length > page.length
   const last = page.at(-1)
   await query(
     `/* updateUserDataRequestAttemptRetentionCursor */

@@ -1,8 +1,14 @@
+import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
+import { cleanupExpiredUserDataRequestAttempts } from '@services/data-retention/cleanup-user-data-request-attempts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { postSeedTimestampMs, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { seedImportRequestRetention } from '../seed-data/import-request-retention.mts'
 
 export async function runImportRequestRetentionScenarios(): Promise<void> {
+  const oldRequestTimestamp = postSeedTimestampMs(0) - 40 * 86_400_000
+  const requestId = seedUuidAtTimestamp(oldRequestTimestamp, 0)
   registerScenarioContract('import-retention-parent', {
     expectations: [
       {
@@ -62,10 +68,46 @@ export async function runImportRequestRetentionScenarios(): Promise<void> {
       [
         'ffffffff-ffff-7fff-bfff-ffffffffffff',
         '00000000-0000-7000-8000-000000000000',
-        '019e0000-7c01-7000-8000-000000000000',
+        requestId,
         '019e0000-7c02-7000-8000-000000010000',
       ],
     ),
+  )
+
+  registerScenarioContract('request-attempt-retention-delete', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['user_data_request_attempts__default_pkey'] },
+      // DELETE RETURNING counts the 100 indexed inputs and 100 modified target rows.
+      { kind: 'maxProcessedRows', relation: 'user_data_request_attempts', max: 202 },
+      { kind: 'maxProcessedRows', relation: 'user_data_requests', max: 102 },
+    ],
+    seededRows: {
+      user_data_request_attempts: 20_001,
+      user_data_requests: 20_002,
+    },
+  })
+  await runAndCapture(
+    'request-attempt-retention-delete',
+    async () => {
+      const result = await cleanupExpiredUserDataRequestAttempts({
+        batchSize: 100,
+        maxBatches: 1,
+        lowerBoundDate: new Date(oldRequestTimestamp),
+      })
+      assert.equal(result.deleted, 100, 'The seeded page must contain 100 eligible attempt keys')
+    },
+    undefined,
+    'deleteExpiredUserDataRequestAttemptPage',
+    {
+      afterCapture: async () => {
+        await seedImportRequestRetention()
+        await write(`/* resetExplainAttemptRetentionCursor */
+          UPDATE user_data_request_attempt_retention_cursors
+          SET cursor_request_id = NULL, cursor_processing_attempt_id = NULL,
+            cursor_upper_id = NULL
+          WHERE cleanup_name = 'expired_attempts'`)
+      },
+    },
   )
 
   registerScenarioContract('request-range-retirement-recent', {

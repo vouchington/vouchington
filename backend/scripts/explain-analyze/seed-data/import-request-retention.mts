@@ -1,10 +1,10 @@
 import { write } from '@data-stores/psql'
-import { seedUuid } from './common.mts'
+import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 /** Large enough to make the new retention access paths observable in both plan modes. */
 export async function seedImportRequestRetention(): Promise<void> {
   const adminBatchId = '019e0000-7a01-7000-8000-000000000000'
-  const requestId = '019e0000-7c01-7000-8000-000000000000'
+  const requestId = seedUuidAtTimestamp(postSeedTimestampMs(0) - 40 * 86_400_000, 0)
   await write(
     `/* seedImportRequestRetention:adminBatches */
      INSERT INTO admin_import_batches (id, import_type, created_by_id, total_rows, failed_rows, completed_at)
