@@ -1,5 +1,4 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import { assertNever } from '@modules/utils/assert-never'
 import {
   lockAuthorPublicationLifecycle,
   recordPostPublicationChange,
@@ -38,8 +37,6 @@ export async function commitUserUpdateOperation(userId: string, operation: UserU
         body.values,
       )
       break
-    default:
-      return assertNever(operation, 'Unknown user update operation')
   }
   const { rows } = result
   const previousUsername = rows[0]?.previous_username ?? null
