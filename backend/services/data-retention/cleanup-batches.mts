@@ -1,32 +1,17 @@
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 import { assertWhitelistedSqlIdentifier, write } from '@data-stores/psql'
-import { providerTableConfigs } from '@services/oauth/providers'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
 import { DEFAULT_DATA_RETENTION_CONFIG } from './config.mts'
+import {
+  allowedOAuthAccountIdIdentifiers,
+  allowedOAuthCleanupIdentifiers,
+  oauthAccountIdColumnByTable,
+  oauthAuthorizationProviderUserIdColumnByAccountTable,
+  oauthProviderUserIdColumnByTable,
+} from './oauth-cleanup-identifiers.mts'
 export const DEFAULT_BATCH_SIZE = DEFAULT_DATA_RETENTION_CONFIG.batch_size
-const oauthProviderUserIdColumnByTable = new Map(
-  Object.values(providerTableConfigs).map(config => [config.table, config.providerUserIdColumn]),
-)
-const allowedOAuthCleanupIdentifiers = new Set([...oauthProviderUserIdColumnByTable].flat())
-const oauthAuthorizationProviderUserIdColumnByAccountTable = new Map([
-  ['facebook_accounts', 'facebook_account_id'],
-  ['github_accounts', 'github_account_id'],
-  ['linkedin_accounts', 'linkedin_account_id'],
-  ['x_accounts', 'x_account_id'],
-  ['microsoft_accounts', 'microsoft_account_id'],
-  ['google_accounts', 'google_account_id'],
-])
-const oauthAccountIdColumnByTable = new Map([
-  ['facebook_accounts', 'id'],
-  ['github_accounts', 'id'],
-  ['linkedin_accounts', 'id'],
-  ['x_accounts', 'id'],
-  ['microsoft_accounts', 'id'],
-  ['google_accounts', 'id'],
-])
-const allowedOAuthAccountIdIdentifiers = new Set([...allowedOAuthCleanupIdentifiers, 'id'])
 export async function cleanupSoftDeletedUserBatch(
   cutoffDate: Date,
   batchSize: number,
