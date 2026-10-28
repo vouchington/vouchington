@@ -4,6 +4,7 @@ import { promoteCopyrightEmailIntake } from '../../../services/copyright-notices
 import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
 import { appendCopyrightEmailIntakeRecommendation } from '../../../services/copyright-notices/email-recommendations.mts'
 import { liftTestCopyrightRestriction } from '../../data-stores/psql/copyright-form-reviews.mts'
+import { insertTestCopyrightDecisionRationaleForCase } from '../../data-stores/psql/copyright-decision-rationale.mts'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -73,6 +74,7 @@ export async function createRetentionEmailCase(
     rationale: `The email carries the statutory statements ${randomUUID()}.`,
   })
   const noticeId = promoted.noticeId
+  await insertTestCopyrightDecisionRationaleForCase(noticeId, moderator.id)
   const restriction = (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]
   if (!restriction) throw new Error('fixture restriction missing')
   const incident = (await readTestRepeatInfringerIncidents(poster.id)).find(

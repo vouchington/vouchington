@@ -11,6 +11,10 @@ import {
   oauthAuthorizationExchangeWorkMaxValues,
 } from '@services/oauth/work-limits'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
+import {
+  oauthAccountFriendWorkConfig,
+  oauthAccountFriendWorkMaxValues,
+} from '@services/oauth-accounts/work-limits'
 import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth-github/work-limits'
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
 import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@workers/ses-inbound/work-limits'
@@ -27,6 +31,16 @@ export const backgroundWorkEntries4 = [
     label: 'PostgreSQL queue',
     maxValues: psqlQueueMaxValues,
     descriptions: psqlQueueDescriptions,
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'oauth-account-friend-work-config',
+    config: oauthAccountFriendWorkConfig,
+    label: 'OAuth account friend linkage',
+    maxValues: oauthAccountFriendWorkMaxValues,
+    descriptions: {
+      friend_reference_connect_batch_size:
+        'Existing incoming friend references resolved during one account connection.',
+    },
   }),
   defineBoundedWorkNamespace({
     namespace: 'oauth-authorization-exchange-work-config',

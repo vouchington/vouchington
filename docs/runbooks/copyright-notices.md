@@ -23,7 +23,8 @@ the tools; the staff REST decision routes are unaffected.
 Email approval through MCP takes the same body as the staff route. Read the raw email in the staff web
 interface first, then supply every claimant field, statutory declaration, and hosted image yourself.
 The recommendation is guidance only and is not compared with your values. Every decision requires a
-rationale, retained only in the encrypted per-call [MCP audit](../overview/architecture/services/README.md).
+rationale, retained as encrypted legal evidence linked to the case or intake separately from the
+short-lived [MCP security audit](../overview/architecture/mcp/README.md#per-call-audit).
 
 ## DSA statement database
 

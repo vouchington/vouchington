@@ -34,8 +34,11 @@ _none_
 
 - `github_friends_github_account_id_github_friend_id_key`: `CREATE UNIQUE INDEX github_friends_github_account_id_github_friend_id_key ON public.github_friends USING btree (github_account_id, github_friend_id)`
 - `github_friends_pkey`: `CREATE UNIQUE INDEX github_friends_pkey ON public.github_friends USING btree (id)`
-- `idx_github_friends__friend_github_account_id`: `CREATE INDEX idx_github_friends__friend_github_account_id ON public.github_friends USING btree (friend_github_account_id) WHERE (friend_github_account_id IS NOT NULL)`
 - `idx_github_friends__friend_id`: `CREATE INDEX idx_github_friends__friend_id ON public.github_friends USING btree (github_friend_id)`
+- `idx_github_friends__retention`: `CREATE INDEX idx_github_friends__retention ON public.github_friends USING btree (last_observed_at, id)`
+- `idx_github_friends__source_observed`: `CREATE INDEX idx_github_friends__source_observed ON public.github_friends USING btree (github_account_id, last_observed_at, id)`
+- `idx_github_friends__target_observed`: `CREATE INDEX idx_github_friends__target_observed ON public.github_friends USING btree (friend_github_account_id, last_observed_at, id) WHERE (friend_github_account_id IS NOT NULL)`
+- `idx_github_friends__unresolved_reference`: `CREATE INDEX idx_github_friends__unresolved_reference ON public.github_friends USING btree (github_friend_id, last_observed_at, id) WHERE (friend_github_account_id IS NULL)`
 
 **Triggers:**
 

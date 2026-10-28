@@ -124,6 +124,22 @@ export function buildUnboundedUnpartitionedTables(
         'amazon_ses_address_suppressions',
         'One durable row per normalized address with a permanent bounce or complaint; address-key reads remain selective.',
       ],
+      [
+        'oauth_native_session_token_mints',
+        'Native session token issuance audit is retained for at most 12 months, with active account preservation holds extending the window; indexed UUIDv7 pages and a durable cursor bound cleanup work.',
+      ],
+      [
+        'copyright_decision_rationales',
+        'Admitted legal decision attempts grow with case and review activity; preservation holds can extend the six-calendar-year retention window, while target and retention indexes keep reads selective.',
+      ],
+      [
+        'oauth_grant_retention_anchors',
+        'One non-authorizing retained identity per OAuth grant; live grants persist, and ended anchors remain until consent evidence expires.',
+      ],
+      [
+        'oauth_client_grant_markers',
+        'One insert-only usage marker per OAuth client persists with that client so never-used cleanup cannot erase a formerly granted registration.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

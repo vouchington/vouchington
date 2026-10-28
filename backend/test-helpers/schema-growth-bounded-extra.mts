@@ -53,6 +53,10 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'The finite cleanup-name enum bounds durable notification and email sweep positions to four rows.',
   ],
   [
+    'security_retention_cleanup_cursors',
+    'The security_retention_sources enum is the primary key, so there is at most one durable cursor per fixed cleanup family.',
+  ],
+  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

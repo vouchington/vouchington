@@ -6089,6 +6089,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../copyright-notices
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
@@ -6098,6 +6101,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../oauth-authorization-server
@@ -6132,9 +6138,6 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
-      '@services/oauth-accounts':
-        specifier: workspace:^
-        version: link:../oauth-accounts
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../ses-bounce-events
@@ -6334,6 +6337,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@services/oauth-facebook':
         specifier: workspace:^
         version: link:../oauth-facebook
@@ -8832,6 +8838,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../../modules/api-egress-proxy
@@ -8862,6 +8871,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      valkyries:
+        specifier: ^0.13.0
+        version: 0.13.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
