@@ -6,7 +6,7 @@ type ClassifierDecisionSubject =
   | { postId: string; rssFeedItemId: null }
   | { postId: null; rssFeedItemId: string }
 
-export type TopicClassifierCandidate = {
+type TopicClassifierCandidate = {
   candidateKind: 'topic'
   topicId: string
   storedCandidateId: string | null
@@ -29,7 +29,7 @@ type RssFeedItemClassifierCandidate = {
 }
 
 /** One community moderation prompt; it has no stored candidate or threshold revision. */
-export type CommunityPromptClassifierCandidate = {
+type CommunityPromptClassifierCandidate = {
   candidateKind: 'community_prompt'
   communityPromptId: string
   storedCandidateId: null

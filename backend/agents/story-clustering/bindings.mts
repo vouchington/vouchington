@@ -27,7 +27,7 @@ export const STORY_CLUSTERING_QUESTION_ID = 'story-clustering'
 export const STORY_CLUSTERING_NONE_KEY = classifierChoiceKey('none')
 
 /** One reserved candidate and the item whose content stands in for it in the prompt. */
-export type StoryClusteringPromptCandidate = {
+type StoryClusteringPromptCandidate = {
   candidate: StoryRunCandidate
   /** Null when the representative is gone: the block then carries only its structural lines. */
   item: ViewRssFeedItem | null

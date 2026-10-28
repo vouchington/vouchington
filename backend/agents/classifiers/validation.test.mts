@@ -11,10 +11,12 @@ import {
 } from '@voucha/test-helpers/agents/classifiers/fixtures'
 import type {
   ChoiceClassifierBinding,
+  ClassifierDecisionCandidate,
   ClassifierDecisionRequestInput,
   NoulClassifierBinding,
-  TopicClassifierCandidate,
 } from './types.mts'
+
+type TopicClassifierCandidate = Extract<ClassifierDecisionCandidate, { candidateKind: 'topic' }>
 import {
   assertBindingsMatchConfiguration,
   assertClassifierDecisionIds,

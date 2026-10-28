@@ -3,7 +3,7 @@ import { STAGING_RSS_FEEDS } from './config-driven/utils/staging-rss-feeds.mts'
 import { close, read } from './setup.mts'
 import type { QueryValues } from './types.mts'
 
-export type StagingFeedRow = {
+type StagingFeedRow = {
   url: string
   slug: string
   is_enabled: boolean
@@ -12,7 +12,7 @@ export type StagingFeedRow = {
 
 type PublisherSlugRow = { slug: string }
 
-export type StagingBootstrapReader = {
+type StagingBootstrapReader = {
   readFeeds: (sql: string, values: QueryValues) => Promise<{ rows: StagingFeedRow[] }>
   readPublisherSlugs: (sql: string, values: QueryValues) => Promise<{ rows: PublisherSlugRow[] }>
 }

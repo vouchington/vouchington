@@ -3,7 +3,7 @@ import { emitAnalytics } from './analytics-emit.mts'
 
 const DEFAULT_INTERVAL_MS = 60_000
 
-export interface SampledPools {
+interface SampledPools {
   write: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
   read: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
   advisoryLock: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>

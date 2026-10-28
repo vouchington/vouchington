@@ -21,7 +21,7 @@ import {
   type PartitionDropRefusal,
 } from './partition-drop-guard.mts'
 
-export type PartitionDropOutcome = {
+type PartitionDropOutcome = {
   table: string
   partition: string
   outcome: 'dropped' | 'refused'

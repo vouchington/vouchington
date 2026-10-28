@@ -3,9 +3,9 @@ import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/cla
 import { createSyntheticFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
 import { leaseSyntheticRun } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { completeClassifierRun } from '@services/classifier-runs'
-import { executeClassifierRun, type ClassifierRunInputs } from './execute.mts'
+import { executeClassifierRun } from './execute.mts'
 
-type LocalOnlyInputs = ClassifierRunInputs<{ version: number }, never>
+type LocalOnlyInputs = Parameters<typeof executeClassifierRun<{ version: number }, never, never>>[2]
 
 /** The only thing a new classifier owes the executor: how to build its input. */
 function localOnlyInputs(): LocalOnlyInputs {

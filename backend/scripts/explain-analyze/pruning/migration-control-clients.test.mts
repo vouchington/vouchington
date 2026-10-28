@@ -7,9 +7,9 @@ import {
   migrationServerClients,
   parseMigrationActivity,
   readSettledMigrationServerClients,
-  type MigrationActivityRow,
 } from './migration-control-clients.mts'
 
+type MigrationActivityRow = ReturnType<typeof parseMigrationActivity>[number]
 const ownedDatabase = `voucha_pruning_${'a'.repeat(24)}`
 
 function activity(backendType: string, pid = 42): MigrationActivityRow {

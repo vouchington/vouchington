@@ -7,7 +7,7 @@ import { buildUnboundedUnpartitionedTables } from './schema-growth-classificatio
 
 export type PartitionAccessClass = 'target-scoped' | 'retention-window' | 'intentional-fanout'
 
-export type PartitionPolicy = {
+type PartitionPolicy = {
   strategy: 'RANGE'
   key: string
   children: 'default' | 'monthly'

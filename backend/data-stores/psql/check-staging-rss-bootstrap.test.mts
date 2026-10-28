@@ -2,10 +2,12 @@ import assert from 'node:assert/strict'
 import { describe, it, vi } from 'vitest'
 import { STAGING_RSS_FEEDS } from './config-driven/utils/staging-rss-feeds.mts'
 import {
+  assertStagingRssBootstrap,
   checkStagingRssBootstrap,
-  type StagingBootstrapReader,
-  type StagingFeedRow,
 } from './check-staging-rss-bootstrap.mts'
+
+type StagingFeedRow = Parameters<typeof assertStagingRssBootstrap>[0][number]
+type StagingBootstrapReader = NonNullable<Parameters<typeof checkStagingRssBootstrap>[0]>
 
 const feeds = (): StagingFeedRow[] =>
   STAGING_RSS_FEEDS.map(feed => ({
