@@ -1,7 +1,10 @@
-import { readMyMessagesGroup, manageMyMessagesGroup } from '../mcp/my-messages.mts'
-import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '../mcp/my-households.mts'
+import { readMyMessagesGroup } from '../mcp/my-message-reads.mts'
+import { manageMyMessagesGroup } from '../mcp/my-message-writes.mts'
+import { readMyHouseholdsGroup } from '../mcp/my-household-reads.mts'
+import { manageMyHouseholdsGroup } from '../mcp/my-household-writes.mts'
 import type { ApiScope } from '../modules/scopes/index.mts'
-import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '../mcp/brand/topic-claims.mts'
+import { brandTopicClaimTools } from '../mcp/brand/topic-claims.mts'
+import { publicMergedOptionGroups } from './mcp-public-merged-options.mts'
 import { communityModerationGroups } from '../mcp/community-moderation-tools.mts'
 import { participationWriteGroups } from '../mcp/registry/participation-write-groups.mts'
 import userFixtures from './merged-user-options.json' with { type: 'json' }
@@ -38,8 +41,7 @@ const userMergedNames = new Set(
     ...communityModerationGroups,
     readMyMessagesGroup,
     manageMyMessagesGroup,
-    readMyTopicClaimsGroup,
-    manageTopicClaimGroup,
+    ...publicMergedOptionGroups(brandTopicClaimTools),
     readMyHouseholdsGroup,
     manageMyHouseholdsGroup,
   ].map(group => group.name),
@@ -146,8 +148,7 @@ export function currentOperationCases(): OperationCase[] {
     ...participationWriteGroups,
     readMyMessagesGroup,
     manageMyMessagesGroup,
-    readMyTopicClaimsGroup,
-    manageTopicClaimGroup,
+    ...publicMergedOptionGroups(brandTopicClaimTools),
     readMyHouseholdsGroup,
     manageMyHouseholdsGroup,
   ].flatMap(group =>

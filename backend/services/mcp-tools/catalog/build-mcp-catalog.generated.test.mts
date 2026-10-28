@@ -2,9 +2,12 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
-import { readMyMessagesGroup, manageMyMessagesGroup } from '@voucha/mcp/my-messages'
-import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '@voucha/mcp/brand/topic-claims'
-import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
+import { readMyMessagesGroup } from '@voucha/mcp/my-message-reads'
+import { manageMyMessagesGroup } from '@voucha/mcp/my-message-writes'
+import { brandTopicClaimTools } from '@voucha/mcp/brand/topic-claims'
+import { publicMergedOptionGroups } from '@voucha/test-helpers/mcp-public-merged-options'
+import { readMyHouseholdsGroup } from '@voucha/mcp/my-household-reads'
+import { manageMyHouseholdsGroup } from '@voucha/mcp/my-household-writes'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
@@ -45,8 +48,7 @@ const groups = [
   ...participationWriteGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
-  readMyTopicClaimsGroup,
-  manageTopicClaimGroup,
+  ...publicMergedOptionGroups(brandTopicClaimTools),
 ]
 const mergedNames = new Set(groups.map(group => group.name))
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')

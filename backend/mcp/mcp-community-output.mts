@@ -92,7 +92,7 @@ function externalText(text: string | null, contentType: string): Promise<string 
 const iso = (value: Date | string): string => new Date(value).toISOString()
 
 /** Names are sanitized like titles; the description and rules are wrapped as external content. */
-export async function toMcpCommunity(community: Community): Promise<McpCommunity> {
+async function toMcpCommunity(community: Community): Promise<McpCommunity> {
   const [name, markdown, rulesMarkdown] = await Promise.all([
     sanitizePromptInjection(community.name, { isTitle: true }),
     externalText(community.markdown, 'community_description'),
@@ -115,7 +115,7 @@ export async function toMcpCommunity(community: Community): Promise<McpCommunity
   }
 }
 
-export async function toMcpCommunityOwner(
+async function toMcpCommunityOwner(
   owner: CommunityWithOwner['owner'],
 ): Promise<McpCommunityOwner | null> {
   if (!owner) return null
@@ -128,7 +128,7 @@ export async function toMcpCommunityOwner(
   }
 }
 
-export function toMcpCommunityMetrics(
+function toMcpCommunityMetrics(
   metrics: CommunityMetrics | null | undefined,
 ): McpCommunityMetrics | null {
   if (!metrics) return null

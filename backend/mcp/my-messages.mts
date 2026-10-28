@@ -1,7 +1,6 @@
 import { createMergedTool } from './create-merged-tool.mts'
 import { readMyMessagesGroup } from './my-message-reads.mts'
 import { manageMyMessagesGroup } from './my-message-writes.mts'
-export { readMyMessagesGroup, manageMyMessagesGroup }
 
 export const myMessageTools = [
   createMergedTool(readMyMessagesGroup.name, 'Read My Messages', readMyMessagesGroup.options),

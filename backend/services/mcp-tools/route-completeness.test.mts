@@ -1,5 +1,7 @@
-import { readMyMessagesGroup, manageMyMessagesGroup } from '@voucha/mcp/my-messages'
-import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
+import { readMyMessagesGroup } from '@voucha/mcp/my-message-reads'
+import { manageMyMessagesGroup } from '@voucha/mcp/my-message-writes'
+import { readMyHouseholdsGroup } from '@voucha/mcp/my-household-reads'
+import { manageMyHouseholdsGroup } from '@voucha/mcp/my-household-writes'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { readFileSync } from 'node:fs'
 import { isDeepStrictEqual } from 'node:util'
@@ -10,7 +12,8 @@ import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
-import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '@voucha/mcp/brand/topic-claims'
+import { brandTopicClaimTools } from '@voucha/mcp/brand/topic-claims'
+import { publicMergedOptionGroups } from '@voucha/test-helpers/mcp-public-merged-options'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type { OAuthResourceAudience } from '@services/oauth-authorization-server/resources'
@@ -76,7 +79,6 @@ const expectedRecords = [...baselineRecords, ...additions]
 const requestContracts = JSON.parse(
   readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
 ) as { operations: Record<string, { body?: unknown }>; components: Record<string, unknown> }
-
 type RouteSource = Pick<Tool, 'roles' | 'meta'> & { schema: Pick<Tool['schema'], 'parameters'> }
 type SourceEntry = { publicName: string; option: string | null; source: RouteSource }
 const mergedGroups = [
@@ -90,8 +92,7 @@ const mergedGroups = [
   ...userMergedAccountGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
-  readMyTopicClaimsGroup,
-  manageTopicClaimGroup,
+  ...publicMergedOptionGroups(brandTopicClaimTools),
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sourceEntries: SourceEntry[] = [
@@ -260,7 +261,6 @@ describe('MCP route completeness from baseline facts', () => {
       current.filter(actual => !expectedRecords.some(expected => sameContract(expected, actual))),
     ).toEqual([])
   })
-
   it('keeps pinned REST-twin body fields accepted by the current REST contract', () => {
     const current = currentRecords()
     for (const expected of baselineRecords.filter(record => record.requestBodyFields !== null)) {
@@ -275,7 +275,6 @@ describe('MCP route completeness from baseline facts', () => {
       expect(expected.requestBodyFields!.filter(field => !allowed.includes(field))).toEqual([])
     }
   })
-
   it('retains baseline GET query and selector fields', () => {
     const current = currentRecords()
     for (const expected of baselineRecords.filter(record => record.method === 'GET')) {
