@@ -1917,6 +1917,15 @@ rules:
       targets:
         - exact: performance.now
         - exact: process.memoryUsage
+  # Advisory during the #3160 fixture migration; make blocking once findings reach zero.
+  - name: Vitest tests do not scan the live repository
+    rule: test-no-live-repository-scan
+    severity: advisory
+    scope: repository
+    options:
+      roots:
+        - vitest: true
+
   - name: Vitest tests do not run live no-mistakes analysis
     rule: forbidden-calls
     scope: repository
