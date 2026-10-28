@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { createTestPostgresClientLoan, discardTestPostgresClient } from './postgres-client-loan.mts'
-import type { TestPostgresMultiWaitState } from './postgres-multi-client-lock-observer.mts'
+import type { TestPostgresMultiWaitState } from './postgres-multi-client-lock-types.mts'
 
 /** Route one selected Promise checkout per action and leave unrelated clients untouched. */
 export function installTestPostgresMultiWaitPoolProxy(

@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { PoolClient } from '@data-stores/psql'
 import { onTestFinished } from 'vitest'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 import { reserveTestPostgresObserver } from './postgres-client-loan.mts'
@@ -10,28 +9,10 @@ import {
 } from './postgres-client-lock-identity.mts'
 import { cleanupTestPostgresMultiWait } from './postgres-multi-client-lock-cleanup.mts'
 import { installTestPostgresMultiWaitPoolProxy } from './postgres-multi-client-lock-pool-proxy.mts'
-
-export type Deferred<Value> = ReturnType<typeof Promise.withResolvers<Value>>
-type TestPostgresClientLoan = ReturnType<
-  typeof import('./postgres-client-loan.mts').createTestPostgresClientLoan
->
-
-export type TestPostgresMultiWaitState = {
-  token: object
-  options: TestOwnedPostgresWaitOptions
-  started: Promise<void>
-  observerLoan?: ReturnType<typeof reserveTestPostgresObserver>
-  setup?: ReturnType<typeof getTestOwnedPostgresLock>
-  pendingConnect?: Promise<PoolClient>
-  claimed?: boolean
-  loan?: TestPostgresClientLoan
-  operation?: Promise<unknown>
-  witnessed: boolean
-  cancelled: Deferred<never>
-  captured: Deferred<TestPostgresClientLoan>
-  holderRelease?: Promise<void>
-  snapshot?: Promise<void>
-}
+import type {
+  TestPostgresClientLoan,
+  TestPostgresMultiWaitState,
+} from './postgres-multi-client-lock-types.mts'
 
 export type TestPostgresMultiWaitAction<Result> = {
   operation: Promise<Result>

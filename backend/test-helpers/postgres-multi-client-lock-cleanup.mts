@@ -1,4 +1,4 @@
-import type { TestPostgresMultiWaitState } from './postgres-multi-client-lock-observer.mts'
+import type { TestPostgresMultiWaitState } from './postgres-multi-client-lock-types.mts'
 
 /** Release every holder first, then drain its operations and restore every borrowed client. */
 export async function cleanupTestPostgresMultiWait(input: {
