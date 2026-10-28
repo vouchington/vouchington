@@ -3,8 +3,8 @@ import {
   getWebLifecycleScenarios,
   loadLifecycleScenarioManifest,
   type LifecycleScenarioManifest,
-} from '@/test-helpers/lifecycle-manifest'
-import { runWebLifecycleContract, runWebLifecycleScenario } from '@/test-helpers/lifecycle-runner'
+} from './lifecycle-manifest'
+import { runWebLifecycleContract, runWebLifecycleScenario } from './lifecycle-runner'
 
 describe('web lifecycle scenario contract', () => {
   it('loads and executes every claimed web scenario', async () => {
