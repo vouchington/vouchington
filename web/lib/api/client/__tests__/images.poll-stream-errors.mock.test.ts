@@ -83,6 +83,36 @@ describe('images', () => {
       await expect(promise).resolves.toMatchObject({ ready: true })
     })
 
+    it('retries a failed recovery probe after the stream closes permanently', async () => {
+      mockGet
+        .mockRejectedValueOnce(new ApiError('temporary outage', 503))
+        .mockResolvedValueOnce({ upload_state: makeState() })
+
+      const controller = new AbortController()
+      const promise = pollImageUntilTerminal('img-1', { signal: controller.signal })
+      void promise.catch(() => {})
+      try {
+        const first = MockEventSource.instances[0]!
+        first.emitConnectionError(true)
+        await flushMicrotasks()
+
+        await vi.advanceTimersByTimeAsync(1999)
+        expect(mockGet).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(1)
+        expect(mockGet).toHaveBeenCalledTimes(2)
+        expect(MockEventSource.instances).toHaveLength(2)
+
+        MockEventSource.instances[1]!.emit(
+          'state',
+          makeState({ ready: true, upload_status: 'complete' }),
+        )
+        await expect(promise).resolves.toMatchObject({ ready: true })
+        expect(vi.getTimerCount()).toBe(0)
+      } finally {
+        controller.abort()
+      }
+    })
+
     it('resets stream-open REST probe errors after a valid state event', async () => {
       mockGet
         .mockRejectedValueOnce(new ApiError('temporary outage', 503))
@@ -103,6 +133,19 @@ describe('images', () => {
 
       const result = await promise
       expect(result.ready).toBe(true)
+    })
+
+    it('stops closed-stream recovery at the existing probe error budget', async () => {
+      const error = new ApiError('temporary outage', 503)
+      mockGet.mockRejectedValue(error)
+      const promise = pollImageUntilTerminal('img-1')
+      void promise.catch(() => {})
+      MockEventSource.instances[0]!.emitConnectionError(true)
+      await flushMicrotasks()
+      await vi.advanceTimersByTimeAsync(4000)
+      await expect(promise).rejects.toBe(error)
+      expect(mockGet).toHaveBeenCalledTimes(3)
+      expect(vi.getTimerCount()).toBe(0)
     })
 
     it('treats stream-open REST probe rate limits as retryable', async () => {

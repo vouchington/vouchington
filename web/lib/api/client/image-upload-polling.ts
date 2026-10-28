@@ -92,6 +92,9 @@ async function streamImageStateUntilTerminal(
             settle(() =>
               reject(err instanceof Error ? err : new Error('Image upload probe failed')),
             )
+          } else if (source?.readyState === EventSource.CLOSED) {
+            // A closed source will emit no more transport errors to trigger recovery.
+            scheduleProbe(POLL_INTERVAL_MS, source)
           }
         })
         .finally(() => {
