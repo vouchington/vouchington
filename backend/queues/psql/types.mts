@@ -55,7 +55,6 @@ export const AI_RETENTION_FAMILIES = [
   'textEmbeddingCache',
   'terminalEmbeddingBatches',
   'oldMediaDeliveryChanges',
-  'oldProviderResponseKeys',
 ] as const
 
 export type AIRetentionFamily = (typeof AI_RETENTION_FAMILIES)[number]

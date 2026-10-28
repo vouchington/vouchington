@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
@@ -6,37 +5,22 @@ import { deleteOldClassifierRuns } from '../services/data-retention/cleanup-clas
 import { sweepClassifierVersionedIdentityPageWithQuery } from '../services/data-retention/cleanup-classifier-identity-versions.mts'
 import { insertTestAiUsageRecord } from './entities/ai-usage.mts'
 
-export async function seedClassifierRetentionPricedUsage(runId: string): Promise<{
-  recordId: string
-  responseId: string
-}> {
-  const recordId = await insertTestAiUsageRecord({ classifierRunId: runId, costMicrounits: 319 })
-  const responseId = `classifier-retirement-${randomBytes(16).toString('hex')}`
-  await write(sql`/* seedClassifierRetirementProviderResponse */
-    INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
-    VALUES (${responseId}, ${recordId})`)
-  return { recordId, responseId }
+export async function seedClassifierRetentionPricedUsage(runId: string): Promise<string> {
+  return insertTestAiUsageRecord({ classifierRunId: runId, costMicrounits: 319 })
 }
 
-export async function readClassifierRetentionPricedUsage(
-  recordId: string,
-  responseId: string,
-): Promise<{
+export async function readClassifierRetentionPricedUsage(recordId: string): Promise<{
   classifier_run_identity_id: string | null
   cost_microunits: string
   currency_code: string
-  response_id: string
 } | null> {
   const { rows } = await write<{
     classifier_run_identity_id: string | null
     cost_microunits: string
     currency_code: string
-    response_id: string
   }>(sql`/* readClassifierRetirementPricedLedger */
-    SELECT record.*, key.response_id
-    FROM ai_usage_records record
-    JOIN ai_usage_provider_response_keys key ON key.ai_usage_record_id = record.id
-    WHERE record.id = ${recordId} AND key.response_id = ${responseId}`)
+    SELECT classifier_run_identity_id, cost_microunits, currency_code
+    FROM ai_usage_records WHERE id = ${recordId}`)
   return rows[0] ?? null
 }
 

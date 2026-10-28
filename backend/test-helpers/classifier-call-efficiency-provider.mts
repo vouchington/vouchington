@@ -18,7 +18,7 @@ type ProviderOptions = {
 export type EfficiencyProvider = {
   /** The question ids of every request that reached the provider, refused ones included. */
   requests: string[][]
-  /** The response ids of the requests it billed (the ledger's idempotency keys). */
+  /** The response ids of the requests it billed, for asserting provider calls. */
   billedResponseIds: string[]
   /** Refuses the next `count` requests like a provider outage: transient, nothing is billed. */
   refuseNext(count: number): void

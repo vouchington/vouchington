@@ -23,16 +23,8 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
 
 const INPUT = 'Reply with the single word OK and nothing else.'
 
-type LatchHook = (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
-
-function withLatchHook(
-  onUnknownBilledAttempt: ReturnType<typeof vi.fn<LatchHook>>,
-  run: () => ReturnType<typeof createOpenAIResponse>,
-) {
-  return runWithOpenAIResponseAttemptHooks(
-    { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-    run,
-  )
+function withAttemptHook(run: () => ReturnType<typeof createOpenAIResponse>) {
+  return runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, run)
 }
 
 describe('createOpenAIResponse against recorded OpenAI responses', () => {
@@ -79,28 +71,22 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
     replay.assertDrained()
   })
 
-  it('latches an HTTP 500 on create and stops without a second request', async () => {
+  it('rejects an HTTP 500 on create and stops without a second request', async () => {
     replay.respondWith(loadRecordedResponse('openai/responses-create-server-error-500.http'))
-    const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
 
     await expect(
-      withLatchHook(onUnknownBilledAttempt, () =>
-        createOpenAIResponse({ model: 'gpt-6-luna', input: INPUT }),
-      ),
+      withAttemptHook(() => createOpenAIResponse({ model: 'gpt-6-luna', input: INPUT })),
     ).rejects.toMatchObject({ status: 500 })
-
-    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
     expect(replay.requests).toHaveLength(1)
   })
 
-  it('latches a server_error that arrives in the stream before any delta, cancels the response, and stops', async () => {
+  it('cancels a response when server_error arrives before any delta', async () => {
     replay.respondWith(
       loadRecordedResponse('openai/responses-stream-error-server-error.http'),
       loadRecordedResponse('openai/responses-cancelled.http'),
     )
-    const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
 
-    const error: unknown = await withLatchHook(onUnknownBilledAttempt, () =>
+    const error: unknown = await withAttemptHook(() =>
       createOpenAIResponse({ model: 'gpt-6-luna', input: INPUT }),
     ).catch((err: unknown) => err)
 
@@ -108,17 +94,15 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
     // the drain reports an iteration failure before any text delta, with the provider code as cause.
     expect(error).toBeInstanceOf(OpenAIResponseStreamIterationError)
     expect(error).toMatchObject({ emittedTextDelta: false, cause: { code: 'server_error' } })
-    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
     // The recorded cancel answer was consumed: the created response cannot keep billing, and no
     // third response was queued because a replay of the request would have had none to receive.
     replay.assertDrained()
   })
 
-  it('does not latch a missing previous response delivered as an SSE error', async () => {
+  it('reports a missing previous response delivered as an SSE error', async () => {
     replay.respondWith(loadRecordedResponse('openai/responses-stream-error-previous-response.http'))
-    const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
 
-    const error: unknown = await withLatchHook(onUnknownBilledAttempt, () =>
+    const error: unknown = await withAttemptHook(() =>
       createOpenAIResponse({
         model: 'gpt-6-luna',
         input: INPUT,
@@ -134,7 +118,6 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
         param: 'previous_response_id',
       },
     })
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
     expect(replay.requests).toHaveLength(1)
     replay.assertDrained()
   })

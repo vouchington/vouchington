@@ -168,16 +168,11 @@ describe('OpenAI response integration boundary', () => {
       const onResponseCreated = vi
         .fn<(responseId: string) => Promise<boolean>>()
         .mockResolvedValue(true)
-      const onUnknownBilledAttempt = vi.fn<
-        (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
-      >(() => Promise.resolve())
       await expect(
-        runWithOpenAIResponseAttemptHooks(
-          { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-          async () =>
-            runWithBackgroundResponseHooks({ onResponseCreated }, () =>
-              createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
-            ),
+        runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+          runWithBackgroundResponseHooks({ onResponseCreated }, () =>
+            createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+          ),
         ),
       ).rejects.toMatchObject({
         message: 'OpenAI response stream iteration failed before any text delta was emitted',
@@ -186,7 +181,6 @@ describe('OpenAI response integration boundary', () => {
 
       expect(onResponseCreated).toHaveBeenCalledExactlyOnceWith('resp-abc')
       expect(openAIMocks.cancel).toHaveBeenCalledWith('resp-abc', BACKGROUND_TEARDOWN_OPTIONS)
-      expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
     })
 
     it('does not cancel when the stream fails before any response id is known', async () => {
@@ -198,21 +192,13 @@ describe('OpenAI response integration boundary', () => {
         [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(cause) }),
       }
       openAIMocks.create.mockResolvedValueOnce(failingStream)
-
-      const onUnknownBilledAttempt = vi.fn<
-        (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
-      >(() => Promise.resolve())
       await expect(
-        runWithOpenAIResponseAttemptHooks(
-          { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-          () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+        runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, () =>
+          createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
         ),
       ).rejects.toMatchObject({ cause })
 
       expect(openAIMocks.cancel).not.toHaveBeenCalled()
-      expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({ error: expect.objectContaining({ cause }) }),
-      )
     })
 
     it('does not throw when no BackgroundResponseHooks are in scope', async () => {

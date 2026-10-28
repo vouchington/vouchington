@@ -12,8 +12,6 @@ import onError from '@modules/on-error'
 import { getBackgroundResponseHooks } from './background-response-context.mts'
 import { cancelOpenAIResponse } from './background-response-teardown.mts'
 import { withOpenAIFlexFallback } from './flex-fallback.mts'
-import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { shouldLatchUnknownBilledAttempt } from './latch-policy.mts'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
 import { iterateOpenAIResponseStream } from './response-stream-iteration.mts'
 
@@ -46,7 +44,7 @@ export async function createOpenAIResponse(
       background: true,
     }
     const response = await createOpenAIResponseWithRetries(streamParams, options, priorAttempts)
-    return drainBackgroundOpenAIResponse(response.stream, response.requestStartedAt)
+    return drainBackgroundOpenAIResponse(response.stream)
   })
 }
 
@@ -92,15 +90,12 @@ export async function* streamOpenAIResponseEvents(
  */
 async function drainBackgroundOpenAIResponse(
   stream: ResponseStreamLike,
-  requestStartedAt: Date,
 ): Promise<CompletedOpenAIResponse> {
   const hooks = getBackgroundResponseHooks()
-  const attemptHooks = getOpenAIResponseAttemptHooks()
   let responseId: string | undefined
-  let registered = false
   const events = streamOpenAIResponseEvents(stream, async id => {
     responseId = id
-    registered = (await hooks?.onResponseCreated(id)) ?? false
+    await hooks?.onResponseCreated(id)
   })
   try {
     return await drainAsyncGenerator(events)
@@ -117,9 +112,6 @@ async function drainBackgroundOpenAIResponse(
         err.status === 'in_progress')
     ) {
       await cancelOpenAIResponse(responseId).catch(onError)
-    }
-    if (!registered && shouldLatchUnknownBilledAttempt(err)) {
-      await attemptHooks?.onUnknownBilledAttempt({ requestStartedAt, error: err })
     }
     throw err
   }

@@ -10,15 +10,9 @@ export type StructuredDecisionFetch = (
   init: Parameters<typeof undiciFetch>[1],
 ) => Promise<Response>
 export type StructuredDecisionAttempt = { requestStartedAt: Date }
-export type StructuredDecisionUnknownBilledAttempt = {
-  requestStartedAt: Date
-  error: unknown
-}
 // `id`/`model` are passed through exactly as the provider sent them (or `undefined` if absent) --
 // the client only validates that `usage` is well-formed enough to be worth recording; a caller
-// that needs a trustworthy id/model coerces these itself, the same way OpenAI-side recording
-// tolerates a missing response id (`recordAgentResponseUsage`,
-// `backend/agents/_shared/record-response-usage.mts`).
+// that needs a trustworthy id/model coerces these itself. Usage recording does not require an id.
 export type StructuredDecisionBilledResponse = {
   id: unknown
   model: unknown
@@ -34,11 +28,6 @@ export interface StructuredDecisionAttemptHooks {
   /** Fires for every 2xx response, from the raw parsed body, before `decodeResult`'s strict
    *  validation runs -- so a 2xx that fails strict decoding still reports the usage it billed. */
   onBilledResponse?: (response: StructuredDecisionBilledResponse) => Promise<void>
-  /** Fires when the attempt failed in a way that leaves whether the provider billed it
-   *  genuinely ambiguous (a network/connection error, an ambiguous HTTP status, or malformed
-   *  JSON on an otherwise-2xx response) -- never for an explicit caller cancellation or an
-   *  ordinary non-ambiguous 4xx. */
-  onUnknownBilledAttempt?: (attempt: StructuredDecisionUnknownBilledAttempt) => Promise<void>
 }
 /**
  * The `{ provider, model }` a jev classifier entry point takes: the classifier row's transport and

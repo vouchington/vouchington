@@ -27,8 +27,6 @@ describe('schema growth classification', () => {
     expect(tables.get('rss_feed_item_guids')).toContain('Relationship edges')
     expect(tables.has('admin_import_batches')).toBe(false)
     expect(EXPLICIT_BOUNDED_TABLES.has('admin_import_batches')).toBe(true)
-    expect(tables.has('ai_usage_provider_response_keys')).toBe(false)
-    expect(EXPLICIT_BOUNDED_TABLES.get('ai_usage_provider_response_keys')).toContain('90 days')
     expect(tables.get('web_push_endpoint_owners')).toContain('cross-user endpoint uniqueness')
     expect(tables.get('community_members')).toContain('Relationship edges')
     expect(tables.get(EXTRA_UNBOUNDED_TABLES[0]!)).toContain('owning entity or workflow')
@@ -120,23 +118,6 @@ describe('schema growth registry', () => {
       partition: PARTITION_POLICIES.get('posts'),
     })
     expect(registry[2]).not.toHaveProperty('noPartitionRationale')
-  })
-
-  it('classifies provider response keys by their 90-day retention', () => {
-    const [entry] = buildSchemaGrowthRegistry(
-      new Map([
-        [
-          'ai_usage_provider_response_keys',
-          { idPolicy: 'no-id' as const, idPolicyRationale: 'Natural response-id key.' },
-        ],
-      ]),
-    )
-
-    expect(entry).toMatchObject({
-      growth: 'bounded',
-      partition: null,
-      reconsiderPartitioningWhen: expect.stringContaining('bounded-cardinality'),
-    })
   })
 
   it('bounds Stripe processing work while retaining the immutable event ledger', () => {

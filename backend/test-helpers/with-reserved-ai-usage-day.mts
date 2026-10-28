@@ -1,14 +1,13 @@
 import { onTestFinished, vi } from 'vitest'
-import { getAccountingUncertaintyKey, spendCapConfig } from '../services/ai-usage/index.mts'
-import { unlinkTestAiUsageUncertaintyKey } from './ai-usage-uncertainty-key.mts'
+import { spendCapConfig } from '../services/ai-usage/index.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
 import { acquireTestAiUsageDateReservation } from './entities/ai-usage-date-reservation.mts'
+import { insertTestAiUsageRecord } from './entities/ai-usage.mts'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 /**
  * Runs `fn` on a reserved, clean AI-usage day with the spend cap enabled at `dailyCapMicrounits`.
- * `Date` is faked into that day, so an ambiguous billed provider failure latches the reserved day
- * and never the real one. The day's latch is cleared afterwards because a far-future day would
- * otherwise keep it for the length of its TTL.
+ * `Date` is faked into that day so tests can isolate cap decisions from ambient usage.
  */
 export async function withReservedAiUsageDay<T>(
   dailyCapMicrounits: number,
@@ -25,6 +24,13 @@ export async function withReservedAiUsageDay<T>(
   onTestFinished(release)
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
+  // Zero cap allows an empty day. These zero-cap fixtures assert a breach, so record known spend.
+  if (dailyCapMicrounits === 0) {
+    await insertTestAiUsageRecord({
+      id: timestampToUuidv7LowerBound(Date.now()),
+      costMicrounits: 1,
+    })
+  }
   const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
     enabled: true,
     daily_cap_microunits: dailyCapMicrounits,
@@ -34,7 +40,6 @@ export async function withReservedAiUsageDay<T>(
   } finally {
     restore()
     vi.useRealTimers()
-    await unlinkTestAiUsageUncertaintyKey(getAccountingUncertaintyKey(reservation.day))
     await release()
   }
 }

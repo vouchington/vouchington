@@ -74,7 +74,6 @@ function emptyScopedOptions(now: Date) {
     federationRetention: { now: new Date(0) },
     textEmbeddingCache: emptyWindow,
     terminalEmbeddingBatches: emptyWindow,
-    oldProviderResponseKeys: emptyWindow,
     oldMediaDeliveryChanges: emptyWindow,
     classifierRecords: emptyWindow,
     sesBounceEvents: emptyWindow,

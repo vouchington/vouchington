@@ -3,9 +3,7 @@ import type { AIRetentionFamily } from '@queues/psql/types'
 import {
   embeddingBatchExistsForRetentionTest,
   insertEmbeddingBatchForRetentionTest,
-  insertProviderResponseKeyForRetentionTest,
   insertTextEmbeddingForRetentionTest,
-  providerResponseKeyExistsForRetentionTest,
   textEmbeddingExistsForRetentionTest,
 } from './entities/ai-retention.mts'
 import {
@@ -13,10 +11,7 @@ import {
   resetMediaDeliveryRetentionCursorForTest,
 } from './entities/media-delivery-retention.mts'
 import { createIsolatedRetentionWindow } from './retention-window.mts'
-import {
-  insertRetentionMediaFixture,
-  insertRetentionUsageFixture,
-} from './ai-retention-continuation-schema.mts'
+import { insertRetentionMediaFixture } from './ai-retention-continuation-schema.mts'
 
 /**
  * Each fixture ages its rows inside a private far-future window, so the production cleanup is
@@ -62,27 +57,6 @@ export async function createAIRetentionContinuationFixture(
           await using reader = await beginTransaction()
           return await Promise.all(
             batchIds.map(id => embeddingBatchExistsForRetentionTest(reader, id)),
-          )
-        },
-      }
-    }
-    case 'oldProviderResponseKeys': {
-      await using setup = await beginTransaction()
-      const usage = await Promise.all([0, 1, 2].map(() => insertRetentionUsageFixture(setup)))
-      const keyIds = await Promise.all(
-        usage.map((id, index) =>
-          insertProviderResponseKeyForRetentionTest(setup, id, index < 2 ? old : now),
-        ),
-      )
-      await setup.commit()
-      return {
-        options: limits,
-        passes: 2,
-        expected: [false, false, true],
-        state: async () => {
-          await using reader = await beginTransaction()
-          return await Promise.all(
-            keyIds.map(id => providerResponseKeyExistsForRetentionTest(reader, id)),
           )
         },
       }

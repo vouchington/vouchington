@@ -30,12 +30,10 @@ const SCHEMA = {
 }
 
 type BeforeAttempt = (attempt: { attempt: number; requestStartedAt: Date }) => Promise<void>
-type LatchHook = (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
 
 function makeHooks() {
   const beforeAttempt = vi.fn<BeforeAttempt>(() => Promise.resolve())
-  const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
-  return { beforeAttempt, onUnknownBilledAttempt }
+  return { beforeAttempt }
 }
 
 describe('createOpenRouterResponse against recorded OpenRouter responses', () => {
@@ -96,11 +94,10 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
     })
     expect(hooks.beforeAttempt).toHaveBeenCalledOnce()
     expect(hooks.beforeAttempt.mock.calls[0]?.[0]).toMatchObject({ attempt: 1 })
-    expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()
     replay.assertDrained()
   })
 
-  it('latches an HTTP 500 on create and stops without a second request', async () => {
+  it('rejects an HTTP 500 on create and stops without a second request', async () => {
     replay.respondWith(loadRecordedResponse('openrouter/responses-create-server-error-500.http'))
     const hooks = makeHooks()
 
@@ -113,8 +110,6 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
         }),
       ),
     ).rejects.toMatchObject({ status: 500 })
-
-    expect(hooks.onUnknownBilledAttempt).toHaveBeenCalledOnce()
     // A non-flex failure is not resent on the default tier, and the SDK does not retry it.
     expect(replay.requests).toHaveLength(1)
     expect(hooks.beforeAttempt).toHaveBeenCalledOnce()
@@ -124,7 +119,7 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
     ['a top-level error object', 'openrouter/responses-stream-error-top-level.http'],
     ['an error event', 'openrouter/responses-stream-error-event.http'],
   ])(
-    'latches a server_error that arrives as %s before any delta and stops',
+    'reports server_error arriving as %s before any delta and stops',
     async (_framing, fixture) => {
       replay.respondWith(loadRecordedResponse(fixture))
       const hooks = makeHooks()
@@ -137,14 +132,13 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
       // drain reports an iteration failure before any text delta, with the provider code as cause.
       expect(error).toBeInstanceOf(OpenAIResponseStreamIterationError)
       expect(error).toMatchObject({ emittedTextDelta: false, cause: { code: 'server_error' } })
-      expect(hooks.onUnknownBilledAttempt).toHaveBeenCalledOnce()
       // Foreground mode has no created response to cancel and no resend: one request, one answer.
       expect(replay.requests).toHaveLength(1)
       replay.assertDrained()
     },
   )
 
-  it('does not latch a missing previous response delivered as an SSE error', async () => {
+  it('reports a missing previous response delivered as an SSE error', async () => {
     replay.respondWith(
       loadRecordedResponse('openrouter/responses-stream-error-previous-response.http'),
     )
@@ -166,7 +160,6 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
         param: 'previous_response_id',
       },
     })
-    expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()
     expect(replay.requests).toHaveLength(1)
     replay.assertDrained()
   })

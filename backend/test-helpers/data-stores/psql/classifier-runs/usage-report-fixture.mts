@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recordAiUsage } from '../../../../services/ai-usage/index.mts'
@@ -50,25 +49,17 @@ type BilledCall = {
   cost?: number
   /** A model with no price and no reported cost. */
   unpriced?: boolean
-  responseId?: string
 }
 
 /**
  * One billed provider response attributed to the run, written the way the classifier clients write
- * it. The row lands on a reserved far-future day: an unpriced row on today's real day would make
- * the daily spend cap fail closed for every other test.
+ * it. The row lands on a reserved future day to isolate the report fixture.
  */
 export function recordBilledCall(
   setup: PostClassifierExecutionFixture,
-  {
-    latencyMs,
-    cost = 0.002,
-    unpriced = false,
-    responseId = `decision-${randomUUID()}`,
-  }: BilledCall,
+  { latencyMs, cost = 0.002, unpriced = false }: BilledCall,
 ) {
   return recordAiUsage({
-    responseId,
     agentSlug: 'post-classifier',
     provider: 'typesafe',
     transport: 'typesafe',

@@ -5,7 +5,6 @@ import {
   createTestUserDirect,
   expireTestPostModerationVersion,
   getPostClearanceStatus,
-  insertTestAiUsageRecord,
   insertTestPost,
 } from '@voucha/test-helpers'
 import {
@@ -13,14 +12,11 @@ import {
   insertEmbeddingBatchForRetentionTest,
   insertTextEmbeddingForRetentionTest,
   textEmbeddingExistsForRetentionTest,
-  insertProviderResponseKeyForRetentionTest,
-  providerResponseKeyExistsForRetentionTest,
 } from '@voucha/test-helpers/entities/ai-retention'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { deleteModerationWorkForAdmissionTest } from '@voucha/test-helpers/entities/ai-retention-moderation'
 import { cleanupTextEmbeddingCache } from '../cleanup-text-embeddings.mts'
 import { cleanupTerminalEmbeddingBatches } from '../cleanup-embedding-batches.mts'
-import { cleanupOldProviderResponseKeys } from '../cleanup-provider-response-keys.mts'
 import {
   countTestPostModerationIncompleteWork,
   countTestPostModerationAttempts,
@@ -34,35 +30,6 @@ import {
 import { checkPostClearance } from '../../post-clearance/check-clearance.mts'
 
 describe('AI and embedding retention', () => {
-  it('retires only old provider response keys in bounded pages', async () => {
-    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
-    const usageIds = await Promise.all([
-      insertTestAiUsageRecord(),
-      insertTestAiUsageRecord(),
-      insertTestAiUsageRecord(),
-    ])
-    await using setup = await beginTransaction()
-    const keys = await Promise.all([
-      insertProviderResponseKeyForRetentionTest(setup, usageIds[0]!, at(100)),
-      insertProviderResponseKeyForRetentionTest(setup, usageIds[1]!, at(100)),
-      insertProviderResponseKeyForRetentionTest(setup, usageIds[2]!, at(10)),
-    ])
-    await setup.commit()
-    await using reader = await beginTransaction()
-    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
-    expect(await cleanupOldProviderResponseKeys(options)).toMatchObject({
-      deleted: 1,
-      hasMore: true,
-    })
-    expect(await cleanupOldProviderResponseKeys(options)).toMatchObject({
-      deleted: 1,
-      hasMore: false,
-    })
-    expect(
-      await Promise.all(keys.map(id => providerResponseKeyExistsForRetentionTest(reader, id))),
-    ).toEqual([false, false, true])
-  })
-
   it('resumes text-cache eviction and retains recent vectors', async () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     await using setup = await beginTransaction()

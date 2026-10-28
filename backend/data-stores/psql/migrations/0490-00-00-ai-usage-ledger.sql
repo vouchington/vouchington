@@ -56,21 +56,6 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED
 ) PARTITION BY RANGE (id);
 
--- Global uniqueness cannot be enforced on response_id inside the range-partitioned ledger because
--- PostgreSQL requires every unique constraint on a partitioned parent to include its partition
--- key. This non-partitioned map is the durable idempotency gate for provider-reported usage.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  response_id TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  ai_usage_record_id UUID NOT NULL UNIQUE
-    REFERENCES ai_usage_records (id) ON DELETE CASCADE
-    DEFERRABLE INITIALLY DEFERRED,
-  CHECK (response_id = TRIM(response_id) AND char_length(response_id) BETWEEN 1 AND 100)
-);
-
-
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__community_id_id
   ON ai_usage_records (community_id, id DESC)
@@ -94,7 +79,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   WHERE currency_code IS NOT NULL;
 
 COMMENT ON TABLE ai_usage_records IS 'Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.';
-COMMENT ON TABLE ai_usage_provider_response_keys IS 'Time-bounded global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row; old keys expire after provider replay is no longer expected.';
 
 COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community.';
 COMMENT ON COLUMN ai_usage_records.post_id IS 'The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.';
@@ -114,8 +98,6 @@ COMMENT ON COLUMN ai_usage_records.latency_milliseconds IS 'Milliseconds from th
 COMMENT ON COLUMN ai_usage_records.pricing_status IS 'Whether pricing was known when this usage record was written.';
 COMMENT ON COLUMN ai_usage_records.cost_microunits IS 'Estimated cost in millionths of the major currency unit; NULL when unpriced.';
 COMMENT ON COLUMN ai_usage_records.currency_code IS 'Currency of the estimated cost; NULL when unpriced.';
-COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Unique provider response or decision id; it prevents duplicate ledger rows across UUIDv7 ledger partitions.';
-COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__service_tier_id

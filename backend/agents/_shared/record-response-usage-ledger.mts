@@ -15,7 +15,6 @@ export interface ClassifierUsageAttribution {
 }
 
 interface ClaimRegisteredResponseUsageParams {
-  responseId?: string
   /** `anthropic`, `openai` or `typesafe`; the `ai_model_providers` finite set guards the column. */
   provider: string
   transport: string
@@ -38,13 +37,11 @@ interface ClaimRegisteredResponseUsageParams {
  */
 export async function claimRegisteredResponseUsage({
   registration,
-  responseId,
   createdAt,
   classifier,
   ...usage
 }: ClaimRegisteredResponseUsageParams): Promise<void> {
   await recordAiUsage({
-    responseId: registration?.responseId ?? responseId,
     createdAt: registration?.createdAt ?? createdAt,
     classifierRunId: classifier?.runId,
     latencyMs: classifier?.latencyMs,

@@ -30,7 +30,6 @@
     "@modules/structured-decisions": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@ts-shared/utils": "workspace:^",
     "@vouchington/ai": "^0.3.0"
   },
   "devDependencies": {

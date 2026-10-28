@@ -48,7 +48,7 @@ export type CommunityPromptDryRun = {
  * same question, over the same sanitized content, of the same pinned classifier model as a real
  * run, and judges the answer by the same threshold, but it makes one call per piece of content and
  * writes no receipt, attempt, `agent_moderations` row or other classifier lifecycle state: only the
- * cost ledger (and an accounting-uncertainty latch) record that it ran.
+ * cost ledger records that it ran.
  */
 export async function prepareCommunityPromptDryRun(
   input: { communityId: string; prompt: { id: string; text: string } },

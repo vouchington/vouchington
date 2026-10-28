@@ -1,5 +1,3 @@
-import { isAmbiguousBilledHttpStatus } from '@modules/utils/http'
-import { isNetworkError } from '@vouchington/http-transport/fetch'
 import type { Response } from 'undici'
 import {
   StructuredDecisionError,
@@ -86,12 +84,7 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
       signal: options.signal,
     })
   } catch (err) {
-    // Checked before classifying the error as ambiguous: `AbortSignal.timeout`'s abort surfaces
-    // as a `DOMException` named `TimeoutError`, which `isNetworkError` also treats as a network
-    // failure -- without this ordering, every caller-driven timeout/cancellation would latch an
-    // uncertainty record it never actually caused.
     throwIfAborted(options.signal)
-    if (isNetworkError(err)) await latchUnknownBilledAttempt(options, err)
     throw new StructuredDecisionError(
       'provider-error',
       'Structured-decision transport failed.',
@@ -117,7 +110,6 @@ async function rejectResponse(response: Response, options: AttemptOptions): Prom
     response.status,
     { failure },
   )
-  if (isAmbiguousBilledHttpStatus(response.status)) await latchUnknownBilledAttempt(options, error)
   throw error
 }
 
@@ -129,10 +121,6 @@ async function decodeBilledResponse(
   try {
     raw = await response.json()
   } catch (err) {
-    // Any failure reading/parsing the body of a 2xx response is ambiguous, not just a
-    // `SyntaxError` -- a truncated stream throws a plain connection error from `.json()` too, and
-    // it is exactly as billing-ambiguous as malformed JSON.
-    await latchUnknownBilledAttempt(options, err)
     throw new StructuredDecisionError(
       'invalid-response',
       'Provider returned malformed JSON.',
@@ -146,12 +134,10 @@ async function decodeBilledResponse(
   if (options.hooks?.onBilledResponse) {
     const usage = parseBilledUsage(raw)
     if (!usage) {
-      const error = new StructuredDecisionError(
+      throw new StructuredDecisionError(
         'invalid-response',
         'Provider response did not contain readable usage.',
       )
-      await latchUnknownBilledAttempt(options, error)
-      throw error
     }
     await options.hooks.onBilledResponse({
       id: record(raw) ? raw.id : undefined,
@@ -166,13 +152,6 @@ async function decodeBilledResponse(
     fallbackProvider: options.dispatch.provider,
     isExpectedModel: model => (isOpenRouter ? OPENROUTER_MODEL : TYPESAFE_MODEL).test(model),
     isExpectedProvider: provider => !isOpenRouter || provider === 'TypeSafe',
-  })
-}
-
-async function latchUnknownBilledAttempt(options: AttemptOptions, error: unknown): Promise<void> {
-  await options.hooks?.onUnknownBilledAttempt?.({
-    requestStartedAt: options.requestStartedAt,
-    error,
   })
 }
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
 import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
-import { findAiUsageRecordForResponseId, findAiUsageRecordForAgent } from '@voucha/test-helpers'
+import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
 import {
   makeAgentModelCaller,
   makeModelCallResult,
@@ -97,8 +97,9 @@ describe('callStoryPostAgent', () => {
 
     await callStoryPostAgent(makeStory(), itemSummaries, TEST_MODEL_SELECTION, callModel)
 
-    await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
-      agent_slug: 'story-post',
+    await expect(
+      findAiUsageRecordForAgent('story-post', { inputTokens: 100, outputTokens: 20 }),
+    ).resolves.toMatchObject({
       model_provider: 'anthropic',
       model: 'claude-haiku-5-5',
       pricing_status: 'priced',

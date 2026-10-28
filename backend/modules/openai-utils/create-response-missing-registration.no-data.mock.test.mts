@@ -29,7 +29,7 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
 }))
 
 describe('background response drain without durable registration', () => {
-  it('awaits accounting uncertainty after response.created when registration returns false', async () => {
+  it('cancels a response after registration returns false', async () => {
     process.env.OPENAI_API_KEY = 'test-key'
     const cause = new Error('socket closed')
     const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
@@ -44,30 +44,19 @@ describe('background response drain without durable registration', () => {
     }
     openAIMocks.create.mockResolvedValueOnce(stream)
     openAIMocks.cancel.mockResolvedValueOnce(makeSdkResponse({ status: 'cancelled' }))
-    let uncertaintySettled = false
-    const onUnknownBilledAttempt = vi.fn<(value: unknown) => Promise<void>>(async () => {
-      await Promise.resolve()
-      uncertaintySettled = true
-    })
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () =>
-          runWithBackgroundResponseHooks({ onResponseCreated: () => Promise.resolve(false) }, () =>
-            createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
-          ),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+        runWithBackgroundResponseHooks({ onResponseCreated: () => Promise.resolve(false) }, () =>
+          createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+        ),
       ),
     ).rejects.toMatchObject({ cause })
 
-    expect(uncertaintySettled).toBe(true)
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ error: expect.objectContaining({ cause }) }),
-    )
     expect(openAIMocks.cancel).toHaveBeenCalledTimes(1)
   })
 
-  it('latches an unregistered terminal failed response that omitted usage', async () => {
+  it('rejects an unregistered terminal failed response that omitted usage', async () => {
     process.env.OPENAI_API_KEY = 'test-key'
     openAIMocks.create.mockResolvedValueOnce({
       async *[Symbol.asyncIterator]() {
@@ -78,17 +67,11 @@ describe('background response drain without durable registration', () => {
         })
       },
     })
-    const onUnknownBilledAttempt = vi.fn<(value: unknown) => Promise<void>>(async () => {})
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, () =>
+        createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
-
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ error: expect.any(OpenAIResponseNotCompletedError) }),
-    )
   })
 })

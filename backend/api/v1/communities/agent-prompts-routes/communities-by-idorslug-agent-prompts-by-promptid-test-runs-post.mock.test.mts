@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
-  findAiUsageRecordForResponseId,
+  findAiUsageRecordForCommunity,
   getLatestTestPromptTestTrainingFeedback,
   insertTestCommunity,
   insertTestCommunityMember,
@@ -119,10 +119,10 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
 
       await testRun({ text: 'Sample content to moderate' }).expect(200)
 
-      await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
-        agent_slug: 'community-moderation-dry-run',
+      await expect(
+        findAiUsageRecordForCommunity(community.id, 'community-moderation-dry-run'),
+      ).resolves.toMatchObject({
         community_id: community.id,
-        post_id: null,
         input_tokens: 12,
         output_tokens: 0,
       })

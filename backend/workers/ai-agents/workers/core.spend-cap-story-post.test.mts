@@ -75,7 +75,7 @@ function mockJob(postId: string, force = false): Job<AIAgentJobData> {
 }
 
 function createDailyTotalLoader(totalMicrounits: number): () => Promise<DailyAiCostTotal> {
-  return () => Promise.resolve({ totalMicrounits, hasUnpricedRows: false, day: '2026-08-16' })
+  return () => Promise.resolve({ totalMicrounits, day: '2026-08-16' })
 }
 
 describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', () => {

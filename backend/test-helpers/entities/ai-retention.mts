@@ -32,33 +32,6 @@ export async function textEmbeddingExistsForRetentionTest(
   return rows.length > 0
 }
 
-export async function insertProviderResponseKeyForRetentionTest(
-  query: TransactionQuery,
-  usageRecordId: string,
-  at: Date,
-): Promise<string> {
-  const id = v7({ msecs: at.getTime() })
-  await query(
-    `/* insertProviderResponseKeyForRetentionTest */
-    INSERT INTO ai_usage_provider_response_keys (id, response_id, ai_usage_record_id)
-    VALUES ($1, $2, $3)`,
-    [id, randomUUID(), usageRecordId],
-  )
-  return id
-}
-
-export async function providerResponseKeyExistsForRetentionTest(
-  query: TransactionQuery,
-  id: string,
-): Promise<boolean> {
-  const { rows } = await query(
-    `/* providerResponseKeyExistsForRetentionTest */
-    SELECT 1 FROM ai_usage_provider_response_keys WHERE id = $1`,
-    [id],
-  )
-  return rows.length > 0
-}
-
 export async function insertEmbeddingBatchForRetentionTest(
   query: TransactionQuery,
   terminalAt: Date | null,

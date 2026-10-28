@@ -48,14 +48,6 @@ effects:
     batchFunctions: [pipelineBatch]
   valkey:
     targets:
-      - {
-          module: '@services/ai-usage/accounting-uncertainty.mts',
-          export: getAccountingUncertaintySource,
-        }
-      - {
-          module: '@services/ai-usage/accounting-uncertainty.mts',
-          export: latchAccountingUncertainty,
-        }
       - { module: '@services/valkey-admin/diagnostics.mts', export: collectValkeyDiagnostics }
     functions:
       - cacheValkeyClient.get

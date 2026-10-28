@@ -209,7 +209,6 @@ describe('processPsql', () => {
         textEmbeddingCache: { hasMore: false },
         terminalEmbeddingBatches: { hasMore: false },
         oldMediaDeliveryChanges: { hasMore: false },
-        oldProviderResponseKeys: { hasMore: false },
         deliveredMembershipEntitlementEffects: { hasMore: effects },
         endedMembershipRenewalNotices: { hasMore: notices },
         terminalGooglePlayAcknowledgments: { hasMore: false },

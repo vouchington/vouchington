@@ -52,10 +52,7 @@ function makeHooks() {
   const beforeAttempt = vi.fn<
     (value: { attempt: number; requestStartedAt: Date }) => Promise<void>
   >(() => Promise.resolve())
-  const onUnknownBilledAttempt = vi.fn<
-    (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-  >(() => Promise.resolve())
-  return { beforeAttempt, onUnknownBilledAttempt }
+  return { beforeAttempt }
 }
 
 describe('OpenAI flex capacity fallback', () => {
@@ -105,7 +102,6 @@ describe('OpenAI flex capacity fallback', () => {
     ])
     // A response that reached the failed status is finished; cancelling it would waste a request.
     expect(mocks.cancel).not.toHaveBeenCalled()
-    expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()
     expect(hooks.beforeAttempt.mock.calls.map(([value]) => value.attempt)).toEqual([1, 2])
     expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith('openai_flex_fallback', {
       level: 'warning',

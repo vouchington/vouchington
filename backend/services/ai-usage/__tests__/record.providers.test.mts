@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestFutureUtcDay,
@@ -40,7 +39,6 @@ describe('recordAiUsage across providers and transports', () => {
 
   it('records an Anthropic call with split cache writes at the base Haiku rates', async () => {
     const row = await record('test-anthropic-cache', {
-      responseId: `msg_${randomUUID()}`,
       provider: 'anthropic',
       transport: 'direct',
       model: 'claude-haiku-5-5',
@@ -74,7 +72,6 @@ describe('recordAiUsage across providers and transports', () => {
 
   it('prices a Haiku prompt over 100k tokens, output included, at the higher tier', async () => {
     const row = await record('test-anthropic-long-prompt', {
-      responseId: `msg_${randomUUID()}`,
       provider: 'anthropic',
       transport: 'direct',
       model: 'claude-haiku-5-5',
@@ -88,7 +85,6 @@ describe('recordAiUsage across providers and transports', () => {
 
   it('records the tokens of an OpenRouter call but takes its reported cost', async () => {
     const row = await record('test-openrouter-reported-cost', {
-      responseId: `resp_${randomUUID()}`,
       provider: 'openai',
       transport: 'openrouter',
       model: 'gpt-6-luna-2026-10-01',
@@ -111,8 +107,7 @@ describe('recordAiUsage across providers and transports', () => {
       model: 'claude-haiku-9-9',
       serviceTier: 'standard',
       usage: usage({ inputTokens: 12, outputTokens: 3 }),
-      // Backdated off today's UTC day: an unpriced row on the current day would trip the daily
-      // spend cap for every other guarded-route test in this parallel project.
+      // Keep the unpriced row outside the current spend window for fixture isolation.
       createdAt: new Date(`${createTestFutureUtcDay()}T12:00:00.000Z`),
     })
 

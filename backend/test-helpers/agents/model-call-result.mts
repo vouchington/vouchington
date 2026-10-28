@@ -5,8 +5,8 @@ import type { ModelCallResult, ToolCall, ToolTurnResult } from '@vouchington/ai/
 
 /**
  * A billed model answer, as an agent's model caller returns it (typed `never` so it fits any agent): priced (Haiku 5.5 on the standard
- * tier) so the daily spend cap never reads it as an unpriced breach, with a fresh response id so
- * every recorded ledger row is distinct on a shared database.
+ * tier) so the daily spend cap has a known priced amount. The response id models the provider's
+ * external protocol, including background recovery.
  */
 export function makeModelCallResult(
   output: object | null,

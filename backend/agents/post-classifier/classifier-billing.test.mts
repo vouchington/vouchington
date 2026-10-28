@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { countAiUsageRecordsForResponseId, findAiUsageRecordForPost } from '@voucha/test-helpers'
+import { findAiUsageRecordForPost, listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { withCurrentClassifierUsage } from '@voucha/test-helpers/classifier-current-usage'
-import { getAccountingUncertaintySource, SpendCapBreachError } from '@services/ai-usage'
+import { SpendCapBreachError } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import {
@@ -113,7 +113,7 @@ describe('post classifier billing', () => {
         community_id: input.community.id,
         pricing_status: 'priced',
       })
-      await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+      await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
     })
   })
 
@@ -148,7 +148,7 @@ describe('post classifier billing', () => {
       expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
         provider_attempts_started: 1,
       })
-      await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+      await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
     })
   })
 
@@ -185,12 +185,12 @@ describe('post classifier billing', () => {
 
     it('persists the billed decision with one attempt and one billing call', async () => {
       await withCurrentClassifierUsage(async trackRunId => {
-        const { input, responseId, fetch, run } = await runAbortingAfterProvider(true, 3)
+        const { input, fetch, run } = await runAbortingAfterProvider(true, 3)
         trackRunId(input.run.runId)
 
         expect(await run).toBe('persisted')
         expect(fetch).toHaveBeenCalledOnce()
-        await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+        await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
         expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject(
           {
             provider_attempts_started: 1,
@@ -203,11 +203,11 @@ describe('post classifier billing', () => {
 
     it('records a post-return failure as invalid-result, never as a provider error', async () => {
       await withReservedAiUsageDay(1_000_000, async () => {
-        const { input, responseId, fetch, run } = await runAbortingAfterProvider(false, 1)
+        const { input, fetch, run } = await runAbortingAfterProvider(false, 1)
 
         expect(await run).toBe('terminal')
         expect(fetch).toHaveBeenCalledOnce()
-        await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+        await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
         expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject(
           {
             provider_attempts_started: 1,
@@ -233,12 +233,12 @@ describe('post classifier billing', () => {
       await expect(
         findAiUsageRecordForPost(input.post.id, 'post-classifier'),
       ).resolves.toMatchObject({ pricing_status: 'priced', community_id: input.community.id })
-      await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+      await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
     })
   })
 
-  it('latches an ambiguous billed provider failure', async () => {
-    await withReservedAiUsageDay(1_000_000, async day => {
+  it('reports an ambiguous provider failure', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
       const input = await createPostClassifierExecutionFixture(true, false)
       await expect(
         executePostClassifierRun(
@@ -246,7 +246,6 @@ describe('post classifier billing', () => {
           createBillingDependencies(input, async () => new Response('', { status: 503 })),
         ),
       ).rejects.toMatchObject({ code: 'provider-error' })
-      await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
     })
   })
 })

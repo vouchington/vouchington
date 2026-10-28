@@ -34,7 +34,7 @@ describe('AI spend-cap recheck rollover', () => {
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: async () => {
           vi.setSystemTime(new Date(endMs + 1))
-          return { totalMicrounits: 0, hasUnpricedRows: false, day }
+          return { totalMicrounits: 0, day }
         },
         beginSpendCapDelayedJobRelease: () => Promise.resolve('lease-a'),
         releaseSpendCapDelayedJobs,

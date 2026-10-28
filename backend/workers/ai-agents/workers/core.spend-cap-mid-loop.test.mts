@@ -56,7 +56,7 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 10_000_000 }),
         getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 0, hasUnpricedRows: false, day: '2026-08-16' }),
+          Promise.resolve({ totalMicrounits: 0, day: '2026-08-16' }),
         recordSpendCapBreach,
         handleOpenAIRateLimit,
         registerSpendCapRecheck,
@@ -86,7 +86,7 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 10_000_000 }),
       getDailyAiCostTotalMicrounits: () =>
-        Promise.resolve({ totalMicrounits: 0, hasUnpricedRows: false, day: '2026-08-16' }),
+        Promise.resolve({ totalMicrounits: 0, day: '2026-08-16' }),
       handleOpenAIRateLimit,
       processAIAgent,
     })

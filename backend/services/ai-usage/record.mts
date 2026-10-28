@@ -5,15 +5,12 @@ import type { ModelUsage } from '@vouchington/ai/providers'
 import { getUsageCostMicrounits } from '@vouchington/ai/usage'
 
 export interface RecordAiUsageOptions {
-  /** Provider response or decision id. When present, repeated recording is an idempotent no-op. */
-  responseId?: string
   /** The community this call is scoped to, if any. Most non-moderation agents have none. */
   communityId?: string | null
   postId?: string | null
   /**
    * The classifier run whose reserved provider attempt made this call. Only classifier clients set
-   * it; the per-run usage report (`@services/classifier-runs`) joins on it. Recording stays
-   * idempotent by response id, so a duplicate response never re-attributes the first row.
+   * it; the per-run usage report (`@services/classifier-runs`) joins on it.
    */
   classifierRunId?: string | null
   /** Milliseconds from the request leaving to the response body being read, when measured. */
@@ -35,19 +32,14 @@ export interface RecordAiUsageOptions {
    * response recorded after its request day. daily-total.mts buckets spend by id-range, and
    * ai_usage_records.id's UUIDv7 timestamp otherwise defaults to "now" -- the moment this INSERT
    * runs, not the moment the request started -- so a response created before UTC midnight but
-   * recorded after it would misattribute its cost to the following day. Omit for a foreground
-   * response, which always records the same tick it completes.
+   * recorded after it would misattribute its cost to the following day. Foreground callers also
+   * supply their request start time when available.
    */
   createdAt?: Date
 }
 
-export type RecordAiUsageResult = 'recorded' | 'already-recorded'
-
-type RecordedRow = { recorded: boolean }
-
-export async function recordAiUsage(options: RecordAiUsageOptions): Promise<RecordAiUsageResult> {
+export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void> {
   const {
-    responseId,
     communityId,
     postId,
     classifierRunId,
@@ -65,73 +57,6 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
     { provider, model, serviceTier, usage },
     MODEL_PRICES,
   )
-  if (responseId !== undefined) {
-    const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */
-      WITH registered_tier AS (
-        INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
-        ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
-        RETURNING id
-      ), claimed_response AS (
-        INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
-        VALUES (
-          ${responseId},
-          uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0'))
-        )
-        ON CONFLICT (response_id) DO NOTHING
-        RETURNING ai_usage_record_id
-      ),
-      recorded_usage AS (
-        INSERT INTO ai_usage_records (
-          id,
-          community_id,
-          post_id,
-          classifier_run_identity_id,
-          agent_slug,
-          model_provider,
-          provider_transport,
-          model,
-          service_tier_id,
-          input_tokens,
-          cached_input_tokens,
-          cache_write_5m_input_tokens,
-          cache_write_1h_input_tokens,
-          output_tokens,
-          reasoning_output_tokens,
-          latency_milliseconds,
-          pricing_status,
-          cost_microunits,
-          currency_code
-        )
-        SELECT
-          ai_usage_record_id,
-          ${communityId ?? null},
-          ${postId ?? null},
-          ${classifierRunId ?? null},
-          ${agentSlug},
-          ${provider},
-          ${transport},
-          ${model},
-          registered_tier.id,
-          ${usage.inputTokens},
-          ${usage.cacheReadTokens},
-          ${usage.cacheWrite5mTokens},
-          ${usage.cacheWrite1hTokens},
-          ${usage.outputTokens},
-          ${usage.reasoningOutputTokens},
-          ${latencyMs ?? null},
-          ${costMicrounits === null ? 'unpriced' : 'priced'},
-          ${costMicrounits},
-          ${costMicrounits === null ? null : 'usd'}
-        FROM claimed_response CROSS JOIN registered_tier
-        RETURNING id
-      )
-      SELECT EXISTS (SELECT 1 FROM recorded_usage) AS recorded
-    `)
-    const result = rows[0]
-    if (!result) throw new Error('recordAiUsage idempotency query returned no result row')
-    return result.recorded ? 'recorded' : 'already-recorded'
-  }
-
   await run(sql`/* recordAiUsage */
     WITH registered_tier AS (
       INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
@@ -180,5 +105,4 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       ${costMicrounits === null ? null : 'usd'}
     FROM registered_tier
   `)
-  return 'recorded'
 }

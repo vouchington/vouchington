@@ -15,8 +15,7 @@ import openAIClient from '@modules/openai-utils/client'
 import {
   createTestUser,
   createTestConversationMessage,
-  countAiUsageRecordsForResponseId,
-  findAiUsageRecordForResponseId,
+  findAiUsageRecordForAgent,
 } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import {
@@ -119,6 +118,7 @@ describe('conversation title input and model owners', () => {
   async function expectSettledResponse(
     responseId: string,
     fixture: ReturnType<typeof createTitleResponseStream>,
+    tokens = { inputTokens: 1, outputTokens: 1 },
   ): Promise<void> {
     expect(fixture.getRegistration()).toMatchObject({
       response_id: responseId,
@@ -128,7 +128,7 @@ describe('conversation title input and model owners', () => {
       response_id: responseId,
       agent_slug: 'chat-generate-title',
     })
-    await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+    await expect(findAiUsageRecordForAgent('chat-generate-title', tokens)).resolves.not.toBeNull()
     expect(cancel).not.toHaveBeenCalled()
     expect(retrieve).not.toHaveBeenCalled()
   }
@@ -185,8 +185,9 @@ describe('conversation title input and model owners', () => {
         expect.objectContaining({ maxRetries: 0 }),
       )
       await expectSettledResponse(responseId, fixture)
-      await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
-        agent_slug: 'chat-generate-title',
+      await expect(
+        findAiUsageRecordForAgent('chat-generate-title', { inputTokens: 1, outputTokens: 1 }),
+      ).resolves.toMatchObject({
         model: 'gpt-6-luna-2026-10-01',
         service_tier_id: 'flex',
         input_tokens: 1,
@@ -261,10 +262,15 @@ describe('conversation title input and model owners', () => {
             : 'OpenAI response incomplete: max_output_tokens',
         )
         expect(create).toHaveBeenCalledOnce()
-        await expectSettledResponse(responseId, fixture)
-        const row = await findAiUsageRecordForResponseId(responseId)
+        await expectSettledResponse(responseId, fixture, {
+          inputTokens: 84_732,
+          outputTokens: 6391,
+        })
+        const row = await findAiUsageRecordForAgent('chat-generate-title', {
+          inputTokens: 84_732,
+          outputTokens: 6391,
+        })
         expect(row).toMatchObject({
-          agent_slug: 'chat-generate-title',
           model: 'gpt-6-luna-2026-10-01',
           service_tier_id: 'flex',
           input_tokens: 84_732,

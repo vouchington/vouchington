@@ -1,15 +1,11 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { APIConnectionError, APIError } from 'openai'
+import { APIError } from 'openai'
 import type {
   ResponseCreateParamsStreaming,
   ResponseStreamEvent,
 } from 'openai/resources/responses/responses'
-import { isAmbiguousBilledHttpStatus } from '@modules/utils'
 import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
-import {
-  isExplicitClientCancelError,
-  isOpenAIFlexResourceUnavailableError,
-} from '@vouchington/ai/openai'
+import { isOpenAIFlexResourceUnavailableError } from '@vouchington/ai/openai'
 import openai from './client.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 
@@ -37,7 +33,7 @@ export async function createOpenAIResponseWithRetries(
 }
 
 /**
- * Applies the direct OpenAI transport's retry and uncertainty policy to an OpenAI-compatible
+ * Applies the direct OpenAI transport's retry policy to an OpenAI-compatible
  * Responses endpoint. Callers must supply an endpoint that accepts the same SDK request shape.
  * A non-zero `priorAttempts` says an earlier call already made a physical request for the same
  * logical request (the default-tier flex fallback), so `beforeAttempt` sees `attempt > 1` and
@@ -73,10 +69,6 @@ export async function createOpenAICompatibleResponseWithRetries<
         await waitForOpenAIResponseRetry(err, attempt - 1, options?.signal ?? undefined)
         continue
       }
-      if (!isFlexResourceUnavailable && isUnknownBilledOpenAIResponseAttempt(err)) {
-        // oxlint-disable-next-line no-await-in-loop -- uncertainty must persist before propagating a billed-ambiguous error
-        await hooks?.onUnknownBilledAttempt({ requestStartedAt, error: err })
-      }
       throw err
     }
   }
@@ -104,11 +96,4 @@ function getRetryAfterMs(error: unknown): number | null {
   const retryAfter = getHeaderValue(error.headers, 'retry-after')
   const value = Array.isArray(retryAfter) ? retryAfter[0] : retryAfter
   return parseRetryAfter(value) ?? null
-}
-
-function isUnknownBilledOpenAIResponseAttempt(error: unknown): boolean {
-  if (isExplicitClientCancelError(error)) return false
-  if (error instanceof APIConnectionError) return true
-  if (!(error instanceof APIError)) return false
-  return isAmbiguousBilledHttpStatus(error.status)
 }

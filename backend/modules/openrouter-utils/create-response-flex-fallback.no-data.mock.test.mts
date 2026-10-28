@@ -36,10 +36,7 @@ function makeHooks() {
   const beforeAttempt = vi.fn<
     (value: { attempt: number; requestStartedAt: Date }) => Promise<void>
   >(() => Promise.resolve())
-  const onUnknownBilledAttempt = vi.fn<
-    (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-  >(() => Promise.resolve())
-  return { beforeAttempt, onUnknownBilledAttempt }
+  return { beforeAttempt }
 }
 
 describe('OpenRouter flex capacity fallback', () => {
@@ -73,7 +70,6 @@ describe('OpenRouter flex capacity fallback', () => {
       extra: { model: 'openai/gpt-6-luna' },
     })
     // The failed flex attempt is known to be unbilled, so it must not fail-close the spend cap.
-    expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()
     // The resend is a second physical request, so the spend-cap guard sees attempt 2.
     expect(hooks.beforeAttempt.mock.calls.map(([value]) => value.attempt)).toEqual([1, 2])
   })

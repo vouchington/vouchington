@@ -42,8 +42,7 @@ describe('AI spend-cap registration timing', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck: (registeredJob, registeredDay) =>
           registerRecheck(registeredJob, registeredDay, Date.now(), {
             registerSpendCapDelayedJob: register,

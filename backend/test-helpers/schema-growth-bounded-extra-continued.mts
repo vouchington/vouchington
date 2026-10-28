@@ -8,10 +8,6 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'Batch member rows cascade when a terminal parent batch expires.',
   ],
   [
-    'ai_usage_provider_response_keys',
-    'Provider response identities expire after 90 days through bounded UUIDv7 deletion batches.',
-  ],
-  [
     'stripe_event_processing_work_items',
     'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
   ],

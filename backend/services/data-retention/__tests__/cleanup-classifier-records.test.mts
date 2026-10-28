@@ -61,13 +61,12 @@ describe('classifier retention cleanup', () => {
       at,
       terminalCount: 3,
     })
-    const { recordId, responseId } = await seedClassifierRetentionPricedUsage(terminalIds[0]!)
-    const originalUsage = await readClassifierRetentionPricedUsage(recordId, responseId)
+    const recordId = await seedClassifierRetentionPricedUsage(terminalIds[0]!)
+    const originalUsage = await readClassifierRetentionPricedUsage(recordId)
     expect(originalUsage).toMatchObject({
       classifier_run_identity_id: terminalIds[0],
       cost_microunits: '319',
       currency_code: 'usd',
-      response_id: responseId,
     })
     const options = {
       retentionDays: 90,
@@ -95,7 +94,7 @@ describe('classifier retention cleanup', () => {
     expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(0)
     expect(await countClassifierRows('classifier_runs', [pendingId])).toBe(1)
     expect(await countClassifierRows('classifier_run_identities', terminalIds)).toBe(0)
-    expect(await readClassifierRetentionPricedUsage(recordId, responseId)).toEqual({
+    expect(await readClassifierRetentionPricedUsage(recordId)).toEqual({
       ...originalUsage,
       classifier_run_identity_id: null,
     })

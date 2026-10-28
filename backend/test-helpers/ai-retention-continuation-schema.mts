@@ -1,26 +1,9 @@
-import { randomUUID } from 'node:crypto'
 import { v7 } from 'uuid'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
   insertAgedMediaDeliveryTransitionForTest,
   setMediaDeliveryDesiredStateForTest,
 } from './entities/media-delivery-retention.mts'
-
-/** Committed fixtures stay zero-cost priced so they never trip the shared daily spend-cap gate. */
-export async function insertRetentionUsageFixture(query: TransactionQuery): Promise<string> {
-  const { rows } = await query<{ id: string }>(
-    `/* insertRetentionUsageFixture */
-    WITH tier AS (
-      INSERT INTO ai_service_tiers (service_tier) VALUES ($1) RETURNING id
-    )
-    INSERT INTO ai_usage_records (agent_slug, model_provider, provider_transport, model,
-      service_tier_id, input_tokens, output_tokens, pricing_status, cost_microunits, currency_code)
-    SELECT 'retention-fixture', 'typesafe', 'typesafe', 'retention-fixture', id, 0, 0, 'priced', 0, 'usd'
-    FROM tier RETURNING id`,
-    [`retention-${randomUUID()}`],
-  )
-  return rows[0]!.id
-}
 
 /** Retained legal rows cannot be deleted for cleanup, so none escape the supplied transaction. */
 export async function insertRetentionMediaFixture(query: TransactionQuery, old: Date, now: Date) {
