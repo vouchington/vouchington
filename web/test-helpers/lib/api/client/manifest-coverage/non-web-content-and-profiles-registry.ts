@@ -69,11 +69,6 @@ export const contentAndProfilesEndpointRegistry = {
     requestBody: { slug: 'updated-links', title: 'Updated Links' },
   },
   'native.me.individual': { method: 'GET', path: '/api/v1/me/individual' },
-  'native.users.profile.default': {
-    method: 'GET',
-    path: '/api/v1/users/alice',
-    query: { include_bio: '1' },
-  },
   'native.users.profile.restricted': endpoint('/api/v1/users/restricted', {
     include_bio: '1',
   }),
