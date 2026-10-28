@@ -1,14 +1,13 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function softDeleteTopic(topicId: string, deletedById: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* softDeleteTopic */
     UPDATE topics
     SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${deletedById}
     WHERE id = ${topicId}
-  `),
+  `,
   )
 }
 
@@ -42,13 +41,13 @@ export async function mergeTopicForTest(
   mergedById: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* mergeTopicForTest */
     UPDATE topics
     SET merged_into_topic_id = ${intoTopicId},
         merged_at = CURRENT_TIMESTAMP,
         merged_by_id = ${mergedById}
     WHERE id = ${topicId}
-  `),
+  `,
   )
 }
 
@@ -56,11 +55,11 @@ export async function getTopicDeletedById(topicId: string): Promise<{
   deleted_by_id: string | null
 } | null> {
   const { rows } = await read<{ deleted_by_id: string | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTopicDeletedById */
     SELECT deleted_by_id
     FROM topics
     WHERE id = ${topicId}
-  `),
+  `,
   )
   return rows[0] ?? null
 }

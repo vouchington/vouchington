@@ -20,11 +20,11 @@ export async function linkTopicToCategory(
   categoryTopicId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* linkTopicToCategory */
     INSERT INTO "relation__topic__category__topic" (subject_id, object_id)
     VALUES (${subjectTopicId}, ${categoryTopicId})
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -35,18 +35,18 @@ export async function markPostsAsViewed(userId: string, postIds: string[]) {
 
 export async function dismissTopicRecommendation(userId: string, topicId: string) {
   await write(
-    allowUnannotatedQuery(`INSERT INTO relation__user__dismiss_recommendation__topic (subject_id, object_id, created_by_id)
+    `/* dismissTopicRecommendation */ INSERT INTO relation__user__dismiss_recommendation__topic (subject_id, object_id, created_by_id)
      VALUES ($1, $2, $3)
-     ON CONFLICT DO NOTHING`),
+     ON CONFLICT DO NOTHING`,
     [userId, topicId, userId],
   )
 }
 
 export async function followTopicById(userId: string, topicId: string) {
   await write(
-    allowUnannotatedQuery(`INSERT INTO relation__user__follow__topic (subject_id, object_id, created_by_id)
+    `/* followTopicById */ INSERT INTO relation__user__follow__topic (subject_id, object_id, created_by_id)
      VALUES ($1, $2, $3)
-     ON CONFLICT DO NOTHING`),
+     ON CONFLICT DO NOTHING`,
     [userId, topicId, userId],
   )
 }
