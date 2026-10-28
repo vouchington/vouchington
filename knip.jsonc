@@ -163,6 +163,18 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/data-stores/graceful-shutdown": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/data-stores/valkey-pubsub": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/data-stores/valkey-rate-limiter": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/modules/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
@@ -187,6 +199,38 @@
     "backend/services/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
+    },
+    "backend/services/oauth-accounts": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-apple": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-facebook": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-github": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-google": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-linkedin": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-microsoft": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/oauth-x": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
     },
     "backend/services/posts": {
       "entry": ["**/*.mts"],
