@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, getTestUserRaw } from '@voucha/test-helpers'
-import { beginTransaction } from '@data-stores/psql'
 import { createTestPostgresMultiWait } from '@voucha/test-helpers/postgres-multi-client-lock-observer'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { setReciprocalTestUserDeletionActors } from '../../../test-helpers/reciprocal-user-purge.mts'
+import {
+  holdTestFinalPurgeUserLifecycle,
+  setReciprocalTestUserDeletionActors,
+} from '../../../test-helpers/reciprocal-user-purge.mts'
 import { cleanupSoftDeletedUser, FINAL_USER_PURGE_LOCK_KEY } from '../cleanup-soft-deleted-user.mts'
 
 describe('reciprocal final user purges', () => {
@@ -19,12 +20,8 @@ describe('reciprocal final user purges', () => {
       new Date('2020-01-01T00:00:00.000Z'),
     )
     const cutoffDate = new Date('2020-02-01T00:00:00.000Z')
-    await using barrier = await beginTransaction()
-    await barrier(
-      '/* holdTestFinalPurgeUserLifecycle */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-      [firstUser.id],
-    )
-    const holderProcessId = await getTestPostgresBackendProcessId(barrier)
+    await using barrier = await holdTestFinalPurgeUserLifecycle(firstUser.id)
+    const holderProcessId = barrier.holderProcessId
     let released: Promise<void> | undefined
     const releaseHolder = () => (released ??= Promise.resolve(barrier[Symbol.asyncDispose]()))
     await using waits = await createTestPostgresMultiWait()
