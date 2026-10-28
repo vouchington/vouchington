@@ -1,34 +1,21 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { useState, type ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 
 const resolvedTargets = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const fetchPost = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchPosts = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(
   import('@/lib/api/client/posts'),
-  () => ({ fetchPost }) as unknown as typeof import('@/lib/api/client/posts'),
+  () => ({ fetchPost, fetchPosts }) as unknown as typeof import('@/lib/api/client/posts'),
 )
 vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
   ...(await importOriginal()),
   resolveCopyrightNoticeTargets: resolvedTargets,
 }))
-vi.mock(
-  import('@/components/posts/post-autocomplete'),
-  () =>
-    ({
-      PostAutocomplete: ({ onChange }: { onChange: (id: string, title: string) => void }) => (
-        <button
-          type='button'
-          onClick={() => onChange('post-2', 'Harbour')}
-        >
-          Choose post
-        </button>
-      ),
-    }) as unknown as typeof import('@/components/posts/post-autocomplete'),
-)
 vi.mock(
   import('@/components/ui/select'),
   () =>
@@ -85,6 +72,14 @@ const draft: CopyrightEmailApprovalDraft = {
 }
 
 describe('CopyrightEmailApprovalManualTargetFields', () => {
+  beforeEach(() => {
+    fetchPosts.mockResolvedValue({
+      posts: {
+        'post-2': { id: 'post-2', title: 'Harbour', post_type: 'discussion' },
+      },
+    })
+  })
+
   it('offers a post search and hosted image picker without asking for an ID', () => {
     render(
       <CopyrightEmailApprovalManualTargetFields
@@ -96,7 +91,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
       />,
     )
     expect(screen.getByRole('alert')).toHaveTextContent('URL lookup failed')
-    expect(screen.getByRole('button', { name: 'Choose post' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Search posts/)).toHaveValue('')
     expect(screen.queryByPlaceholderText(/resolved .*id/i)).not.toBeInTheDocument()
   })
 
@@ -163,7 +158,16 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
       )
     }
     render(<Harness />)
-    fireEvent.click(screen.getByRole('button', { name: 'Choose post' }))
+    fireEvent.change(screen.getByPlaceholderText(/Search posts/), {
+      target: { value: 'Harbour' },
+    })
+    fireEvent.click(await screen.findByRole('option', { name: /Harbour/ }))
+    expect(fetchPosts).toHaveBeenCalledWith({
+      q: 'Harbour',
+      limit: 10,
+      signal: expect.any(AbortSignal),
+    })
+    expect(screen.queryByText('post-2')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Hosted use URL')).not.toBeInTheDocument()
     await screen.findByRole('button', { name: 'Find hosted material' })
     fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
@@ -199,8 +203,11 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
       )
     }
     render(<Harness />)
-    fireEvent.click(screen.getByRole('button', { name: 'Choose post' }))
-    expect(screen.queryByRole('button', { name: 'Choose post' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText(/Search posts/), {
+      target: { value: 'Harbour' },
+    })
+    fireEvent.click(await screen.findByRole('option', { name: /Harbour/ }))
+    expect(screen.queryByPlaceholderText(/Search posts/)).not.toBeInTheDocument()
     await screen.findByRole('button', { name: 'Find hosted material' })
     fireEvent.click(screen.getByRole('button', { name: 'Choose different owner' }))
     expect(latest.current.targets[0]).toMatchObject({
@@ -208,7 +215,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
       image_id: '',
       resolution_status: 'failed',
     })
-    expect(screen.getByRole('button', { name: 'Choose post' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Search posts/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
   })
 
@@ -236,7 +243,10 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
       )
     }
     render(<Harness />)
-    fireEvent.click(screen.getByRole('button', { name: 'Choose post' }))
+    fireEvent.change(screen.getByPlaceholderText(/Search posts/), {
+      target: { value: 'Harbour' },
+    })
+    fireEvent.click(await screen.findByRole('option', { name: /Harbour/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Choose different owner' }))
     finishLookup({
       post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
