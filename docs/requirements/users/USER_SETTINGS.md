@@ -52,6 +52,9 @@ OAuth redirect flow. Swift and .NET render the same account-linking state and ac
 settings, launch authorization in the system browser, and finish through a one-time app handoff.
 The native handoff binds the authenticated user, a purpose-bound completion token, and an
 app-retained SHA-256 proof verifier; an intercepted custom-scheme token is insufficient by itself.
+Concurrent consumers can attach the account only once. A consumer that already discovered the
+handoff and waits behind its winner receives the same not-found result as a later replay, while
+the original active-session and device requirements still apply.
 Bluesky account linking is distinct from the ActivityPub federation opt-in.
 
 ## Data Display Rules
