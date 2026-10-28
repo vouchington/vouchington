@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -25,13 +24,13 @@ type CreateTestConversationMessageOptions = {
 
 export async function createTestConversationMessage(options: CreateTestConversationMessageOptions) {
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* createTestConversationMessage */
     INSERT INTO conversation_messages (conversation_id, created_by_id, created_via, content)
     VALUES (
       ${options.conversationId}, ${options.createdById}, 'system', ${JSON.stringify(options.content)}
     )
     RETURNING id
-  `),
+  `,
   )
   return { id: rows[0].id as string }
 }
