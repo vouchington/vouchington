@@ -9,10 +9,9 @@ import {
 } from './copyright-email-approval-model'
 import { createPostPathname, topicHref, userHref } from '@/lib/links/entity-href'
 import { getPostSlugFromType } from '@/lib/route-configs'
-import { clientApi } from '@/lib/api/client/instance'
-import type { Post } from '@/types/posts'
-import type { Topic } from '@/types/topics'
-import type { UserResponseBody } from '@/types/api-responses'
+import { fetchPost } from '@/lib/api/client/posts'
+import { fetchTopic } from '@/lib/api/client/topics'
+import { fetchUser } from '@/lib/api/client/users'
 import onError from '@/lib/on-error'
 
 export function useCopyrightEmailApprovalOwnerSelection(
@@ -73,16 +72,15 @@ export function useCopyrightEmailApprovalOwnerSelection(
     update({ post_id: id, image_id: '' })
     if (!id) return
     try {
-      const { post } = await clientApi.get<{ post: Post }>(
-        `/api/v1/posts/${encodeURIComponent(id)}`,
+      const post = (await fetchPost(id))?.post
+      if (request !== selectionRequest.current) return
+      if (!post) throw new Error('Selected post is unavailable')
+      setOwnerUrl(
+        new URL(
+          createPostPathname(getPostSlugFromType(post.post_type), post),
+          window.location.origin,
+        ).href,
       )
-      if (request === selectionRequest.current)
-        setOwnerUrl(
-          new URL(
-            createPostPathname(getPostSlugFromType(post.post_type), post),
-            window.location.origin,
-          ).href,
-        )
     } catch (err) {
       if (request === selectionRequest.current)
         onError(err, { fallback: 'Could not load that post.' })
@@ -97,11 +95,10 @@ export function useCopyrightEmailApprovalOwnerSelection(
     update({ topic_id: id, image_id: '' })
     if (!id) return
     try {
-      const { topic } = await clientApi.get<{ topic: Topic }>(
-        `/api/v1/topics/${encodeURIComponent(id)}`,
-      )
-      if (request === selectionRequest.current)
-        setOwnerUrl(new URL(topicHref(topic), window.location.origin).href)
+      const topic = await fetchTopic(id)
+      if (request !== selectionRequest.current) return
+      if (!topic) throw new Error('Selected topic is unavailable')
+      setOwnerUrl(new URL(topicHref(topic), window.location.origin).href)
     } catch (err) {
       if (request === selectionRequest.current)
         onError(err, { fallback: 'Could not load that topic.' })
@@ -118,11 +115,9 @@ export function useCopyrightEmailApprovalOwnerSelection(
     setOwnerUrl('')
     setChoices([])
     try {
-      const { user } = await clientApi.get<UserResponseBody>(
-        `/api/v1/users/${encodeURIComponent(id)}`,
-      )
+      const user = (await fetchUser(id))?.user
       if (request !== selectionRequest.current) return
-      if (!user.username) {
+      if (!user?.username) {
         onError(new Error('Selected account has no username'), {
           fallback: 'This account has no username to locate its hosted images.',
         })

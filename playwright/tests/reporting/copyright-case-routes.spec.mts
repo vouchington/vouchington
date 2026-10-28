@@ -11,12 +11,18 @@ test('accepted case links retain poster scope in appeal and statutory counter-no
   const fixture = await createCopyrightCaseFixture()
   await loginAsUser(page, fixture.poster.id)
   await navigateTo(page, '/copyright/notices')
-  const caseLink = page.getByRole('link', { name: `Case ${fixture.noticeId}`, exact: true })
+  const caseLink = page
+    .getByRole('link')
+    .and(page.locator(`[href="/copyright/notices/${fixture.noticeId}"]`))
   await expect(caseLink).toBeVisible()
+  await expect(caseLink).toContainText(fixture.publicClaimantName)
+  await expect(caseLink).not.toContainText(fixture.noticeId)
   await caseLink.click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Copyright notice')
   await navigateTo(page, `/copyright/notices/${fixture.noticeId}`)
-  await expect(page.getByText(`Case ${fixture.noticeId}`, { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: fixture.publicClaimantName, exact: true }),
+  ).toBeVisible()
   await expect(page.getByRole('link', { name: 'Appeal', exact: true })).toBeVisible()
 
   await navigateTo(page, `/copyright/notices/${fixture.noticeId}/appeal`)
@@ -60,7 +66,7 @@ test('staff review rationale hydrates for a genuine pending restriction', async 
   await navigateTo(page, '/copyright/review-queue')
   const item = page
     .getByRole('article')
-    .filter({ has: page.getByRole('heading', { name: `Case ${fixture.noticeId}`, exact: true }) })
+    .filter({ has: page.getByRole('heading', { name: new RegExp(fixture.claimantName) }) })
   await revealOwnedQueueItem(page, item, '/api/v1/copyright-notices/review-queue')
   await expect(item).toBeVisible()
   await expect(page).toHaveURL(/\/copyright\/review-queue$/)
@@ -87,9 +93,13 @@ test('email review loads real parsed evidence and hydrates the private rationale
   const intake = await createParsedCopyrightEmailIntake()
   await loginAsMfaUser(page, fixture.moderator.id)
   await navigateTo(page, '/copyright/email-review')
-  const item = page.getByRole('button', { name: `Initial intake ${intake.id}`, exact: true })
+  const item = page
+    .getByTestId('copyright-email-queue-item-select')
+    .and(page.locator(`[data-intake-id="${intake.id}"]`))
   await revealOwnedQueueItem(page, item, '/api/v1/copyright-email-intakes/review-queue')
-  await expect(page.getByTestId('copyright-email-queue-item-select').first()).toBeAttached()
+  await expect(item).toBeAttached()
+  await expect(item).toContainText('Initial intake')
+  await expect(item).not.toContainText(intake.id)
   await item.click()
   await expect(
     page.getByRole('heading', { name: 'Staff-private evidence', exact: true }),

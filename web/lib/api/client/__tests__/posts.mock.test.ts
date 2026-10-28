@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { PostMutationResponseBody } from '@/types/api-responses'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
+import { loadWebApiFixture } from '@/test-helpers/api-responses/fixture-loader'
+import { ApiError } from '@vouchington/api-client'
 
 vi.mock(
   import('../instance'),
@@ -21,6 +23,7 @@ import {
   createPost,
   deletePost,
   fetchPostAncestors,
+  fetchPost,
   fetchPostDescendants,
 } from '../posts'
 
@@ -31,6 +34,26 @@ const mockPost = vi.mocked(clientApi.post)
 describe('posts client', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('fetchPost', () => {
+    it('reads one post through its encoded detail path', async () => {
+      const response = loadWebApiFixture('native.topic-recommendation.detail.default')
+      await expectApiWrapperCall({
+        mock: mockGet,
+        response,
+        call: async () => (await fetchPost('comment root'))!,
+        expectedArgs: ['/api/v1/posts/comment%20root'],
+      })
+    })
+
+    it('returns null for a missing post but propagates other API errors', async () => {
+      mockGet.mockRejectedValueOnce(new ApiError('Missing post', 404))
+      await expect(fetchPost('missing-post')).resolves.toBeNull()
+      const unavailable = new ApiError('Unavailable', 503)
+      mockGet.mockRejectedValueOnce(unavailable)
+      await expect(fetchPost('missing-post')).rejects.toBe(unavailable)
+    })
   })
 
   describe('deletePost', () => {

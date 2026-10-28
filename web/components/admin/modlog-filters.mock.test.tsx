@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { ModlogFilters } from './modlog-filters'
 
-const get = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchUser = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 vi.mock(
-  import('@/lib/api/client/instance'),
-  () => ({ clientApi: { get } }) as unknown as typeof import('@/lib/api/client/instance'),
+  import('@/lib/api/client/users'),
+  () => ({ fetchUser }) as unknown as typeof import('@/lib/api/client/users'),
 )
 vi.mock(
   import('@/components/users/user-autocomplete'),
@@ -47,37 +47,37 @@ const nav = createNavMock()
 
 describe('ModlogFilters user selection', () => {
   beforeEach(() => {
-    get.mockReset()
+    fetchUser.mockReset()
     nav.reset()
   })
 
   it('uses the fetched username instead of the autocomplete display label', async () => {
-    get.mockResolvedValue({ user: { id: 'user-2', username: 'harbouruser' } })
+    fetchUser.mockResolvedValue({ user: { id: 'user-2', username: 'harbouruser' } })
     render(<ModlogFilters community='harbour' />)
     fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
     await waitFor(() =>
       expect(nav.push).toHaveBeenCalledWith('/admin/modlog?community=harbour&actor=harbouruser'),
     )
-    expect(get).toHaveBeenCalledWith('/api/v1/users/user-2')
+    expect(fetchUser).toHaveBeenCalledWith('user-2')
   })
 
   it('does not put an account ID in the URL when it has no username', async () => {
-    get.mockResolvedValue({ user: { id: 'user-2', username: null } })
+    fetchUser.mockResolvedValue({ user: { id: 'user-2', username: null } })
     render(<ModlogFilters />)
     fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/api/v1/users/user-2'))
+    await waitFor(() => expect(fetchUser).toHaveBeenCalledWith('user-2'))
     expect(nav.push).not.toHaveBeenCalled()
   })
 
   it('ignores a late lookup after a newer user selection', async () => {
     let finishFirst!: (value: unknown) => void
     let finishSecond!: (value: unknown) => void
-    get.mockReturnValueOnce(
+    fetchUser.mockReturnValueOnce(
       new Promise(resolve => {
         finishFirst = resolve
       }),
     )
-    get.mockReturnValueOnce(
+    fetchUser.mockReturnValueOnce(
       new Promise(resolve => {
         finishSecond = resolve
       }),
@@ -93,7 +93,7 @@ describe('ModlogFilters user selection', () => {
 
   it('ignores a pending user lookup after clearing the community filter', async () => {
     let finishLookup!: (value: unknown) => void
-    get.mockReturnValueOnce(
+    fetchUser.mockReturnValueOnce(
       new Promise(resolve => {
         finishLookup = resolve
       }),

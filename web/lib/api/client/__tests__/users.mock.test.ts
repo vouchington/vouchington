@@ -15,9 +15,12 @@ vi.mock(
 
 import { clientApi } from '../instance'
 import { ApiError } from '@vouchington/api-client'
+import { loadWebApiFixture } from '@/test-helpers/api-responses/fixture-loader'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import {
   createUserDataRequest,
   deleteUser,
+  fetchUser,
   fetchFollowerUsers,
   getUserDataRequest,
   searchUsers,
@@ -34,6 +37,24 @@ describe('users client api helpers', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  it('reads a user profile through its encoded detail path', async () => {
+    const response = loadWebApiFixture('native.users.profile.default')
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: async () => (await fetchUser('alice', { includeBio: true }))!,
+      expectedArgs: ['/api/v1/users/alice', { searchParams: { include_bio: '1' } }],
+    })
+  })
+
+  it('returns null for a missing user but propagates other API errors', async () => {
+    mockGet.mockRejectedValueOnce(new ApiError('Missing user', 404))
+    await expect(fetchUser('missing-user')).resolves.toBeNull()
+    const unavailable = new ApiError('Unavailable', 503)
+    mockGet.mockRejectedValueOnce(unavailable)
+    await expect(fetchUser('missing-user')).rejects.toBe(unavailable)
   })
 
   it('searches users with query and limit', async () => {

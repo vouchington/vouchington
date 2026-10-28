@@ -7,8 +7,7 @@ import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
 import { UserAutocomplete } from '@/components/users/user-autocomplete'
 import { fetchCommunities } from '@/lib/api/client/communities'
 import type { CommunityRelationItem } from '@/types/api-responses/communities'
-import type { UserResponseBody } from '@/types/api-responses'
-import { clientApi } from '@/lib/api/client/instance'
+import { fetchUser } from '@/lib/api/client/users'
 import onError from '@/lib/on-error'
 
 export function ModlogFilters({ community, actor }: { community?: string; actor?: string }) {
@@ -31,11 +30,9 @@ export function ModlogFilters({ community, actor }: { community?: string; actor?
     if (!id) return
     const request = ++selectionRequest.current
     try {
-      const { user } = await clientApi.get<UserResponseBody>(
-        `/api/v1/users/${encodeURIComponent(id)}`,
-      )
+      const user = (await fetchUser(id))?.user
       if (request !== selectionRequest.current) return
-      if (user.username) go(community, user.username)
+      if (user?.username) go(community, user.username)
       else
         onError(new Error('Selected account has no username'), {
           fallback: 'This account cannot be used as a user filter.',

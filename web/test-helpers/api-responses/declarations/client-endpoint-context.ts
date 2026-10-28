@@ -167,7 +167,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly users: Pick<
     typeof import('@/lib/api/client/users'),
-    'createUserDataRequest' | 'deleteUser' | 'getUserDataRequest'
+    'createUserDataRequest' | 'deleteUser' | 'fetchUser' | 'getUserDataRequest'
   >
   readonly warnings: Pick<typeof import('@/lib/api/client/warnings'), 'issueCommunityUserWarning'>
 }

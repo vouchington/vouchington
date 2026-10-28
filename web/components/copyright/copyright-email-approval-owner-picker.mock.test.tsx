@@ -6,10 +6,15 @@ import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-mod
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 
 const resolvedTargets = vi.hoisted(() => vi.fn<VitestLooseMock>())
-const get = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchTopic = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchUser = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(
-  import('@/lib/api/client/instance'),
-  () => ({ clientApi: { get } }) as unknown as typeof import('@/lib/api/client/instance'),
+  import('@/lib/api/client/topics'),
+  () => ({ fetchTopic }) as unknown as typeof import('@/lib/api/client/topics'),
+)
+vi.mock(
+  import('@/lib/api/client/users'),
+  () => ({ fetchUser }) as unknown as typeof import('@/lib/api/client/users'),
 )
 vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
   ...(await importOriginal()),
@@ -106,11 +111,14 @@ describe('copyright approval manual owner paths', () => {
     'uses the selected %s owner for hosted image lookup',
     async (surface, button, path, key, id) => {
       if (surface === 'topic-logo-image')
-        get.mockResolvedValue({
-          topic: { id, name: 'Harbour topic', topic_type: 'topic', slug: 'harbour' },
+        fetchTopic.mockResolvedValue({
+          id,
+          name: 'Harbour topic',
+          topic_type: 'topic',
+          slug: 'harbour',
         })
       if (surface === 'user-profile-image')
-        get.mockResolvedValue({ user: { id, username: 'harbouruser' } })
+        fetchUser.mockResolvedValue({ user: { id, username: 'harbouruser' } })
       const ownerUrl = new URL(path, window.location.origin).href
       resolvedTargets.mockResolvedValue([
         {
@@ -179,7 +187,7 @@ describe('copyright approval manual owner paths', () => {
   )
 
   it('does not build an ID URL for a selected account without a username', async () => {
-    get.mockResolvedValue({ user: { id: 'user-2', username: null } })
+    fetchUser.mockResolvedValue({ user: { id: 'user-2', username: null } })
     const initial: CopyrightEmailApprovalDraft = {
       ...draft,
       targets: [{ ...target, surface: 'user-profile-image' }],
@@ -194,7 +202,7 @@ describe('copyright approval manual owner paths', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/api/v1/users/user-2'))
+    await waitFor(() => expect(fetchUser).toHaveBeenCalledWith('user-2'))
     expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
   })
 })

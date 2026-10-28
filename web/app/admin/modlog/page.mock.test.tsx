@@ -1,6 +1,7 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import AdminModlogPage from './page'
 const notFoundMock = vi.hoisted(() =>
   vi.fn<() => never>(() => {
@@ -9,11 +10,8 @@ const notFoundMock = vi.hoisted(() =>
 )
 vi.mock(
   import('next/navigation'),
-  async () =>
-    ({
-      ...(await import('vouchington-tooling/next-navigation-mock')).navMockModule,
-      notFound: notFoundMock,
-    }) as unknown as typeof import('next/navigation'),
+  () =>
+    ({ ...navMockModule, notFound: notFoundMock }) as unknown as typeof import('next/navigation'),
 )
 
 const requireAdminMock = vi.hoisted(() => vi.fn<VitestLooseMock>())

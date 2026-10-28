@@ -6,10 +6,10 @@ import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-mod
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 
 const resolvedTargets = vi.hoisted(() => vi.fn<VitestLooseMock>())
-const get = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchPost = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(
-  import('@/lib/api/client/instance'),
-  () => ({ clientApi: { get } }) as unknown as typeof import('@/lib/api/client/instance'),
+  import('@/lib/api/client/posts'),
+  () => ({ fetchPost }) as unknown as typeof import('@/lib/api/client/posts'),
 )
 vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
   ...(await importOriginal()),
@@ -125,7 +125,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
 
   it('resolves the selected owner URL and stores only its matching image', async () => {
     const ownerUrl = new URL('/discussion/harbour', window.location.origin).href
-    get.mockResolvedValue({
+    fetchPost.mockResolvedValue({
       post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
     })
     resolvedTargets.mockResolvedValue([
@@ -179,7 +179,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
   })
 
   it('locks a selected owner until staff explicitly clears it', async () => {
-    get.mockResolvedValue({
+    fetchPost.mockResolvedValue({
       post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
     })
     const latest = { current: draft }
@@ -214,7 +214,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
 
   it('ignores a late owner lookup after staff clears the selection', async () => {
     let finishLookup!: (value: unknown) => void
-    get.mockReturnValueOnce(
+    fetchPost.mockReturnValueOnce(
       new Promise(resolve => {
         finishLookup = resolve
       }),
@@ -241,7 +241,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
     finishLookup({
       post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
     })
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/api/v1/posts/post-2'))
+    await waitFor(() => expect(fetchPost).toHaveBeenCalledWith('post-2'))
     expect(latest.current.targets[0]).toMatchObject({ post_id: '', image_id: '' })
     expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
   })

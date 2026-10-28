@@ -8,6 +8,7 @@
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import { assertPathIdentifier } from './path-identifiers'
+import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
 import {
   assertFollowerDistributionSendBody,
   type FollowerDistributionSendBody,
@@ -15,6 +16,7 @@ import {
 import type {
   FollowerDistributionAcceptedResponseBody,
   PostsResponseBody,
+  PostResponseBody,
   PostMutationResponseBody,
 } from '@/types/api-responses'
 import type { PostType, PostBroadcast, PostPrivacy } from '@/types/posts'
@@ -76,6 +78,13 @@ export async function fetchPosts(options: FetchPostsOptions = {}): Promise<Posts
     },
     signal: options.signal,
   })
+}
+
+export function fetchPost(idOrSlug: string): Promise<PostResponseBody | null> {
+  const safe = assertPathIdentifier(idOrSlug)
+  return returnNullForMissingEntity(
+    clientApi.get<PostResponseBody>(`/api/v1/posts/${encodeURIComponent(safe)}`),
+  )
 }
 
 export function fetchPostDescendants(
