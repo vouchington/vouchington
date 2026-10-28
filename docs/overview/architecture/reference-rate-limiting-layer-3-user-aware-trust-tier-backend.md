@@ -11,6 +11,8 @@ General-purpose, user-aware rate limiting with thresholds that adjust based on u
 Computed by `computeTrustTier`; see the canonical trust-tier definition for scoring signals and penalties. Higher trust = higher rate limits.
 
 The special cases define the new-account cooling period and administrator override.
+Session trust tiers use the session's MFA-filtered roles, so the administrator override requires
+the same completed MFA assurance as administrator authority.
 
 ### Categories
 

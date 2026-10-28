@@ -34,11 +34,13 @@ describe('enrich', () => {
     expect(current.roles).toContain('administrator')
     const withoutProof = await getEnrichedSessionClaims(current)
     expect(withoutProof.roles).not.toContain('administrator')
+    expect(withoutProof.trustTier).toBe(0)
     expect(getSessionAuthorizedUser(current, {}).roles).not.toContain('administrator')
     const withProof = await getEnrichedSessionClaims(current, {
       mfaVerifiedAt: Math.floor(Date.now() / 1000) - 60,
     })
     expect(withProof.roles).toContain('administrator')
+    expect(withProof.trustTier).toBe(5)
     expect(
       getSessionAuthorizedUser(current, { mfaVerifiedAt: Math.floor(Date.now() / 1000) - 60 })
         .roles,
