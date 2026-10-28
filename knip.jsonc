@@ -224,6 +224,46 @@
       // route imports reach authenticate/challenge internals in production analysis.
       "ignoreExportsUsedInFile": true,
     },
+    "backend/services/api-keys": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/passkeys": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/totp": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/session-advisory-lock": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/identity-verification": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/user-consents": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/request-client-info": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/read-states": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/recently-viewed": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/services/aside-preferences": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/queues/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
