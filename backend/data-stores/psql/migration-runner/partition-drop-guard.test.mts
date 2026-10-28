@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction, write } from '../setup.mts'
+import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
   getMonthlyPartitionUpperBound,
@@ -77,23 +77,6 @@ describe('partition drop guard', () => {
     )
     const direct = await getPartitionDropRefusal(write, monthly!, policy, referenceDate)
     expect(status.get(monthly!.partition)).toBe(direct)
-  })
-
-  it('holds the legal-hold relation lock while refusing a live child inside retention', async () => {
-    const monthly = (await listMonthlyDropCandidates(write)).find(
-      entry => entry.table === 'rss_feed_crawls',
-    )
-    expect(monthly).toBeDefined()
-    await using transaction = await beginTransaction()
-
-    await expect(
-      guardAndRetireMonthlyPartition(
-        transaction,
-        monthly!,
-        { minimumRetentionDays: 30, legalHoldAccountColumn: 'id' },
-        new Date('1900-01-01T00:00:00.000Z'),
-      ),
-    ).resolves.toBe('inside-retention')
   })
 
   it('refuses a missing minimum or a partition without an upper bound', async () => {
@@ -211,6 +194,20 @@ describe('partition drop guard', () => {
       'getPartitionDropRefusal:inFlight',
     ])
     expect(statements[0]).toContain('IN ACCESS EXCLUSIVE MODE')
+    statements.length = 0
+    await expect(
+      guardAndRetireMonthlyPartition(
+        transaction,
+        oldCandidate,
+        { ...policy, legalHoldAccountColumn: 'id' },
+        new Date('1900-01-01T00:00:00.000Z'),
+      ),
+    ).resolves.toBe('inside-retention')
+    expect(statements).toEqual([
+      '/* cleanupPartitions:lockParent */ LOCK TABLE rss_feed_crawls IN ACCESS EXCLUSIVE MODE',
+      '/* cleanupPartitions:lockCandidate */ LOCK TABLE rss_feed_crawls__p_2025_01 IN ACCESS EXCLUSIVE MODE',
+      '/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE',
+    ])
     statements.length = 0
     inFlight = false
     await expect(

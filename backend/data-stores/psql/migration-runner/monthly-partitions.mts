@@ -89,13 +89,14 @@ export async function retirePartitionsSequentially(
 export async function retireMonthlyPartitionCandidate(
   candidate: PartitionDropCandidate,
   referenceDate: Date,
+  begin: typeof beginTransaction = beginTransaction,
 ): Promise<PartitionDropOutcome> {
   const base = { table: candidate.table, partition: candidate.partition }
   const policy = PARTITION_DROP_POLICIES[candidate.table]
   const preflightReason = getPartitionDropAgeRefusal(candidate, policy, referenceDate)
   if (preflightReason) return { ...base, outcome: 'refused', reason: preflightReason }
   try {
-    await using transaction = await beginTransaction()
+    await using transaction = await begin()
     const reason = await guardAndRetireMonthlyPartition(
       transaction,
       candidate,
