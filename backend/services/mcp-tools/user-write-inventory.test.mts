@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
-import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '@voucha/mcp/brand/topic-claims'
+import { brandTopicClaimTools } from '@voucha/mcp/brand/topic-claims'
+import { publicMergedOptionGroups } from '@voucha/test-helpers/mcp-public-merged-options'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
-import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
+import { readMyHouseholdsGroup } from '@voucha/mcp/my-household-reads'
+import { manageMyHouseholdsGroup } from '@voucha/mcp/my-household-writes'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
@@ -36,8 +38,7 @@ const mergedGroups = [
   ...userMergedAccountGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
-  readMyTopicClaimsGroup,
-  manageTopicClaimGroup,
+  ...publicMergedOptionGroups(brandTopicClaimTools),
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sources = [

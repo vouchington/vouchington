@@ -21,7 +21,7 @@ const evidence = {
 }
 const claimRef = { topic, claim_id: claimId }
 
-export const readMyTopicClaimsGroup = {
+const readMyTopicClaimsGroup = {
   name: 'read_my_topic_claims',
   options: [
     {
@@ -69,7 +69,7 @@ export const readMyTopicClaimsGroup = {
   ],
 }
 
-export const manageTopicClaimGroup = {
+const manageTopicClaimGroup = {
   name: 'manage_topic_claim',
   options: [
     {

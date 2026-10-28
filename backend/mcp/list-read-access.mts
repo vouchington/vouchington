@@ -9,7 +9,7 @@ import type { BasicUser } from '@services/users/types'
  * read reuses it instead of inventing a second private-read scope. `mcp.user:write` does not
  * imply it (it is `requiresExactGrant`), so a broad credential never reads a private list.
  */
-export const OWNED_PRIVATE_GRANT = 'post-relations.owned-private:write'
+const OWNED_PRIVATE_GRANT = 'post-relations.owned-private:write'
 
 /**
  * Whether this call carries the owned-private grant for the account it acts as. Only trusted MCP
