@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
 import pgvector from 'pgvector/pg'
@@ -24,7 +23,7 @@ export async function insertTestCrawlChunk(data: {
     ])
 
     await write(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestCrawlChunk:embedded */
       INSERT INTO crawl_chunks (
         crawl_id,
         order_index,
@@ -43,14 +42,14 @@ export async function insertTestCrawlChunk(data: {
         ${pgvector.toSql(data.embedding)},
         NOW()
       )
-    `),
+    `,
     )
   } else {
     await write(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestCrawlChunk:pending */
       INSERT INTO crawl_chunks (crawl_id, order_index, markdown, bedrock_nova_multimodal_v1_content_sha256)
       VALUES (${data.crawlId}, ${data.orderIndex}, ${data.markdown}, ${data.contentSha256})
-    `),
+    `,
     )
   }
 }
@@ -66,10 +65,10 @@ export async function insertTestCrawlChunksBulk(
 ): Promise<void> {
   for (const chunk of chunks) {
     await write(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestCrawlChunksBulk */
       INSERT INTO crawl_chunks (crawl_id, order_index, markdown, bedrock_nova_multimodal_v1_content_sha256)
       VALUES (${chunk.crawlId}, ${chunk.orderIndex}, ${chunk.markdown}, decode(${chunk.contentSha256}, 'hex'))
-    `),
+    `,
     )
   }
 }
