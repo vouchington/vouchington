@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Domain blacklists entity test helpers
  */
@@ -21,9 +20,9 @@ export async function insertTestDomainBlacklist(
 ): Promise<void> {
   // Get or create the source
   const sourceResult = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestDomainBlacklist:findSource */
     SELECT id FROM domain_blocklist_sources WHERE name = ${sourceName}
-  `),
+  `,
     options,
   )
 
@@ -32,12 +31,12 @@ export async function insertTestDomainBlacklist(
     sourceId = sourceResult.rows[0].id
   } else {
     const insertResult = await write(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestDomainBlacklist:createSource */
       INSERT INTO domain_blocklist_sources (type, name, url)
       VALUES ('url'::domain_blocklist_types, ${sourceName}, 'https://example.com/blacklist.txt')
       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
       RETURNING id
-    `),
+    `,
       options,
     )
     sourceId = insertResult.rows[0].id
@@ -45,11 +44,11 @@ export async function insertTestDomainBlacklist(
 
   const hostnameId = await upsertTestHostnameId(domain, options)
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestDomainBlacklist:addDomain */
     INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
     VALUES (${sourceId}, ${domain}, ${hostnameId})
     ON CONFLICT (domain, source_id) DO NOTHING
-  `),
+  `,
     options,
   )
 }
@@ -62,14 +61,14 @@ export async function createTestBlacklistSource(
   options: QueryOptions = {},
 ): Promise<DomainBlacklistSourceId> {
   const result = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* createTestBlacklistSource */
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES (${source.type}::domain_blocklist_types, ${source.name}, ${source.url})
     ON CONFLICT (name) DO UPDATE SET
       type = EXCLUDED.type,
       url = EXCLUDED.url
     RETURNING id
-  `),
+  `,
     options,
   )
   return result.rows[0].id
@@ -83,10 +82,10 @@ export async function countBlacklistEntriesBySource(
   options: QueryOptions = {},
 ): Promise<number> {
   const result = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* countBlacklistEntriesBySource */
     SELECT COUNT(*)::int as count FROM blocklisted_domains
     WHERE source_id = ${sourceId}
-  `),
+  `,
     options,
   )
   return result.rows[0].count
@@ -115,12 +114,12 @@ export async function listBlacklistDomainsBySource(
   options: QueryOptions = {},
 ): Promise<string[]> {
   const result = await read<{ domain: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* listBlacklistDomainsBySource */
     SELECT domain
     FROM blocklisted_domains
     WHERE source_id = ${sourceId}
     ORDER BY domain
-  `),
+  `,
     options,
   )
   return result.rows.map(row => row.domain)
@@ -145,11 +144,11 @@ export async function getTestBlacklistMembershipDiffAppliedAt(
   sourceId: DomainBlacklistSourceId,
 ): Promise<Date | null> {
   const result = await read<{ membership_diff_applied_at: Date | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestBlacklistMembershipDiffAppliedAt */
     SELECT membership_diff_applied_at
     FROM domain_blocklist_sources
     WHERE id = ${sourceId}
-  `),
+  `,
   )
   return result.rows[0]?.membership_diff_applied_at ?? null
 }
