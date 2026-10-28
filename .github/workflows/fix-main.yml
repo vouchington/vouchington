@@ -58,7 +58,7 @@ jobs:
         timeout-minutes: 1
         with:
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
         timeout-minutes: 5
         with:
           install-scripts: 'false'
@@ -127,7 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
         timeout-minutes: 5
         with:
           install-scripts: 'false'
@@ -168,7 +168,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
         timeout-minutes: 5
         with:
           install-scripts: 'false'
@@ -208,7 +208,7 @@ jobs:
       needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
       needs.render-prompt.result == 'success' &&
       needs.render-prompt.outputs.source-current == 'true'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
     permissions:
       contents: read
     secrets:
@@ -262,7 +262,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
         timeout-minutes: 5
         with:
           install-scripts: 'false'
