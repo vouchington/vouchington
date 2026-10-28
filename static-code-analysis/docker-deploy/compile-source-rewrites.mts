@@ -3,9 +3,18 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
-import type { BunPlugin } from './compile-backend-binaries.mts'
 
 export const REPO_ROOT = resolve(import.meta.dirname, '../..')
+
+export type BunPlugin = {
+  name: string
+  setup(build: {
+    onLoad(
+      options: { filter: RegExp },
+      callback: (args: { path: string }) => { contents: string; loader: 'js' | 'ts' } | undefined,
+    ): void
+  }): void
+}
 
 // Without --aot, every bundled module shares `import.meta.dir` (`/$bunfs/root`) and an embedded
 // directory keeps only its own name. Source files are therefore rewritten to see their
