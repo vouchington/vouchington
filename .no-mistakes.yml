@@ -2389,6 +2389,19 @@ rules:
           message: >-
             patch and diff files are not allowed; fix the underlying problem upstream or file and link a Vouchington issue labeled dependencies
 
+  # repo-file-policy separately requires and reads the canonical default.rules file.
+  - name: Codex rules have one canonical source
+    rule: banned-paths
+    scope: repository
+    include:
+      - '.codex/rules/*.rules'
+    exclude:
+      - .codex/rules/default.rules
+    options:
+      bannedPaths:
+        - glob: '.codex/rules/*.rules'
+          message: Codex rules must live in .codex/rules/default.rules.
+
   - name: package dependencies resolve from registries
     rule: package-json-registry-only
     scope: repository
@@ -3008,6 +3021,26 @@ rules:
       comparisons:
         - left: agentSkills
           right: claudeSkillDiscovery
+
+  # The behavior tests share this list; the static gate owns the live hook inventory.
+  - name: active Husky hooks match the exercised hook names
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: exercisedHuskyHooks
+          file: .husky/husky-hooks.test.mts
+          kind: ts-array-literal
+          target: ACTIVE_HOOK_NAMES
+          minSize: 5
+        - name: trackedActiveHuskyHooks
+          kind: path-regex-capture
+          # Git hook names have no dot; this excludes README/tests without hiding an active hook.
+          pattern: '^\.husky/(?<value>[a-z][a-z-]*)$'
+          minSize: 5
+      comparisons:
+        - left: exercisedHuskyHooks
+          right: trackedActiveHuskyHooks
 
   # Replaces ci/backend-package-json-workspaces-sync.test.mts (deleted). The
   # `../ts-shared/*` entries are covered separately by
