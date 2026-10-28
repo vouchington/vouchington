@@ -58,6 +58,18 @@ function evaluateExpectation(
         )
       return
     }
+    case 'maxBitmapIndexRows': {
+      // Bitmap Index Scan nodes have no Relation Name, so maxProcessedRows on a table misses
+      // a broad index read whose bitmap heap intersection ultimately returns only one row.
+      const total = nodes
+        .filter(node => node['Node Type'] === 'Bitmap Index Scan')
+        .reduce((sum, node) => sum + processedRows(node), 0)
+      if (total > expectation.max)
+        throw new Error(
+          `${result.name} processed ${total} bitmap index entries; expected at most ${expectation.max}`,
+        )
+      return
+    }
     case 'usesIndexes': {
       if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
         return

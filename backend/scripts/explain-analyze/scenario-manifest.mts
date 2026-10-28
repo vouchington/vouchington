@@ -169,6 +169,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-search-best',
   'topic-search-text',
   'topic-viewer-counts',
+  'topic-viewer-counts-dense',
   'topic-votes-by-user',
   'top-urls-by-hostname-ids',
   'trending-communities',

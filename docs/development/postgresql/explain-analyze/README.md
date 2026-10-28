@@ -80,6 +80,13 @@ stopped at a setup step.
   times loops), require indexes, bind queries to the selected page, forbid correlated aggregates,
   and require single-leaf partition access. Budgets derive from measured work across both plan
   modes plus headroom. Timing and buffers stay diagnostic.
+- **Topic viewer counts.** A dense topic fixture combines many zero-vote attachments for the
+  requested topic with positive attachments elsewhere. It catches plans that scan global positive
+  votes or hash the posts table to count a small candidate set. Positive topic lookup indexes and
+  child most-common-value statistics work together here: the indexes narrow physical relation
+  reads, while child statistics estimate how many positive rows the requested topic has. Parent
+  statistics alone do not correct the child estimate. If these default partitions are split into
+  range children, create equivalent statistics for each new child before relying on its plan.
 - **Universal checks.** An executing read of an unbounded partitioned parent must touch one leaf
   unless the scenario declares a cross-partition reason. An executing sequential scan on an unbounded
   relation above the seeded-row threshold fails, and a nonempty scan with no declared fixture count

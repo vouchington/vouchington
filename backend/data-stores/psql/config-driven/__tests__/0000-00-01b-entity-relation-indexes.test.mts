@@ -46,6 +46,19 @@ describe('0000-00-01b-entity-relation-indexes', () => {
     )
   })
 
+  it('keeps topic-side positive candidate lookups selective', () => {
+    const sql = idempotent()
+
+    expect(sql).toContain(
+      'ON relation__post__category__topic (object_id, subject_id)\nWHERE deleted_at IS NULL AND votes_score_net > 0;',
+    )
+    expect(sql).toContain(
+      'ON relation__post__category__topic_alias (object_id, subject_id)\nWHERE deleted_at IS NULL AND votes_score_net > 0;',
+    )
+    expect(sql).toContain('ON "relation__post__category__topic" (object_id, subject_id);')
+    expect(sql).toContain('ON "relation__post__category__topic_alias" (object_id, subject_id);')
+  })
+
   it('reuses composite newest indexes for all private user post collections', () => {
     const generatedSql = idempotent()
     for (const predicate of ['save', 'hide', 'follow', 'subscribe']) {

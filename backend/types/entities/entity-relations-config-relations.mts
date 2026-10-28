@@ -77,11 +77,23 @@ WHERE deleted_at IS NULL;`,
   },
   post: {
     topic: {
-      category: {},
+      category: {
+        extra_indexes: [
+          `CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__positive_object
+ON relation__post__category__topic (object_id, subject_id)
+WHERE deleted_at IS NULL AND votes_score_net > 0;`,
+        ],
+      },
       mentioned: {},
     },
     topic_alias: {
-      category: {},
+      category: {
+        extra_indexes: [
+          `CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic_alias__positive_object
+ON relation__post__category__topic_alias (object_id, subject_id)
+WHERE deleted_at IS NULL AND votes_score_net > 0;`,
+        ],
+      },
     },
     post: {
       related: {},

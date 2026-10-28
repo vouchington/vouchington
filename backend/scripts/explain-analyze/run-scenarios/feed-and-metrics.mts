@@ -158,7 +158,15 @@ export async function runFeedAndMetricScenarios() {
     searchUrlHostnames({ topic_ids: [seedTopicId], limit: 25 }),
   )
   registerScenarioContract('topic-viewer-counts', {
-    expectations: [{ kind: 'custom', name: 'topicViewerCandidateBind' }],
+    expectations: [
+      { kind: 'custom', name: 'topicViewerCandidateBind' },
+      { kind: 'maxBitmapIndexRows', max: 1_000 },
+      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 100 },
+      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 500 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 100 },
+      { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 20 },
+      { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 20 },
+    ],
     crossPartition: {
       relation__post__category__topic:
         'Topic viewer counts follow candidate topic relations across posts.',

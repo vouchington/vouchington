@@ -87,6 +87,28 @@ describe('plan expectation registry', () => {
     ).toThrow('posts_pkey')
   })
 
+  it('budgets bitmap index entries even when the heap returns one row', () => {
+    registerScenarioContract('topic-viewer-counts-dense', {
+      expectations: [{ kind: 'maxBitmapIndexRows', max: 1_000 }],
+    })
+    const plan = result('topic-viewer-counts-dense', {
+      'Node Type': 'Bitmap Heap Scan',
+      'Relation Name': 'relation__post__category__topic__default',
+      'Actual Rows': 1,
+      'Actual Loops': 1,
+      Plans: [
+        {
+          'Node Type': 'Bitmap Index Scan',
+          'Index Name': 'global_positive_score_index',
+          'Actual Rows': 20_000,
+          'Actual Loops': 1,
+        },
+      ],
+    })
+
+    expect(() => assertRequiredPlanShape(plan)).toThrow('processed 20000 bitmap index entries')
+  })
+
   it('accepts any one of equivalent indexes when anyOf is set', () => {
     registerScenarioContract('post-metrics-batch', {
       expectations: [{ kind: 'usesIndexes', indexes: ['posts_a_idx', 'posts_b_idx'], anyOf: true }],
