@@ -7,11 +7,8 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import {
-  getReferralLinkCrawlStatus,
   setReferralLinkLastCrawlSuccessAtRecent,
   softDeleteReferralLink,
-  isReferralLinkDispatchable,
-  getReferralLinkDispatchRows,
 } from '@voucha/test-helpers/entities/referral-links'
 import { setHostnameAsValidForCrawlSearch } from '@voucha/test-helpers/entities/url-hostnames'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
@@ -21,6 +18,7 @@ import type { PrivateUser } from '@services/users/types'
 import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from './dispatch.mts'
 import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { CRAWLER_USER_AGENT } from '@voucha/config'
+import { getDateFromUUIDv7 } from '@modules/utils'
 
 describe('dispatch', () => {
   let user: PrivateUser
@@ -60,57 +58,55 @@ describe('dispatch', () => {
     })
   }
 
-  it('dispatches only active links', async () => {
+  it('enqueues only due active links with shared hostname ordering', async () => {
     const suffix = Math.random().toString(36).slice(2, 8)
-    const activeLink = await createActiveLink(`active-${suffix}`)
-    const deactivatedLink = await createActiveLink(`deact-${suffix}`)
-    await deactivateUserReferralLink(user, deactivatedLink.id)
+    const [first, second, recent, deleted, deactivated] = await Promise.all(
+      ['first', 'second', 'recent', 'deleted', 'deactivated'].map(label =>
+        createActiveLink(`${label}-${suffix}`),
+      ),
+    )
+    assert.ok(first && second && recent && deleted && deactivated)
+    await setReferralLinkLastCrawlSuccessAtRecent(recent.id)
+    await softDeleteReferralLink(deleted.id)
+    await deactivateUserReferralLink(user, deactivated.id)
+    const url = await getUrlById(first.url_id)
+    assert.ok(url)
+    const ownedIds = [first.id, second.id, recent.id, deleted.id, deactivated.id]
+    let rateLimitCalls = 0
+    const rateLimitMs = 731
 
-    // Verify active link is active and deactivated link is not
-    const activeStatus = await getReferralLinkCrawlStatus(activeLink.id)
-    assert.ok(activeStatus.activated_at)
-    assert.equal(activeStatus.deactivated_at, null)
+    const result = await dispatchReferralLinkCrawls({
+      referralLinkIds: ownedIds,
+      now: getDateFromUUIDv7(ownedIds.toSorted().at(-1)!)!,
+      computeHostnameRateLimitMs: async () => {
+        rateLimitCalls += 1
+        return rateLimitMs
+      },
+    })
 
-    const deactStatus = await getReferralLinkCrawlStatus(deactivatedLink.id)
-    assert.equal(deactStatus.activated_at, null)
-    assert.ok(deactStatus.deactivated_at)
-  })
-
-  it('links crawled within 7 days are skipped by dispatch query', async () => {
-    const suffix = Math.random().toString(36).slice(2, 8)
-    const recentLink = await createActiveLink(`recent-${suffix}`)
-
-    // Set last_crawl_success_at to now (within 7 days)
-    await setReferralLinkLastCrawlSuccessAtRecent(recentLink.id)
-
-    // Dispatch query should exclude this link
-    const dispatchable = await isReferralLinkDispatchable(recentLink.id)
-    assert.equal(dispatchable, false, 'recently crawled link should be excluded from dispatch')
-  })
-
-  it('deleted links are skipped by dispatch query', async () => {
-    const suffix = Math.random().toString(36).slice(2, 8)
-    const link = await createActiveLink(`deleted-${suffix}`)
-
-    // Soft-delete the link
-    await softDeleteReferralLink(link.id)
-
-    const dispatchable = await isReferralLinkDispatchable(link.id)
-    assert.equal(dispatchable, false, 'deleted link should be excluded from dispatch')
-  })
-
-  it('groups links by hostname in dispatch query', async () => {
-    const suffix = Math.random().toString(36).slice(2, 8)
-    const link1 = await createActiveLink(`group-a-${suffix}`)
-    const link2 = await createActiveLink(`group-b-${suffix}`)
-
-    const rows = await getReferralLinkDispatchRows([link1.id, link2.id])
-
-    assert.equal(rows.length, 2)
-    // Both should share the same hostname
-    assert.equal(rows[0].hostname, testHostname)
-    assert.equal(rows[1].hostname, testHostname)
-    assert.equal(rows[0].hostname_id, rows[1].hostname_id)
+    assert.deepEqual(result, { count: 2, hasMore: false })
+    const jobs = (await readAllQueueJobs(crawlReferralLinksQueue)).filter(
+      job =>
+        job.name === 'crawl.crawl_referral_link' &&
+        ownedIds.includes((job.data as { linkId: string }).linkId),
+    )
+    assert.deepEqual(
+      jobs
+        .map(job => job.data as { linkId: string })
+        .toSorted((a, b) => a.linkId.localeCompare(b.linkId)),
+      [first, second]
+        .map(link => ({ linkId: link.id, urlId: link.url_id, referralProgramId }))
+        .toSorted((a, b) => a.linkId.localeCompare(b.linkId)),
+    )
+    assert.deepEqual(
+      jobs.map(job => job.opts.ordering),
+      [first, second].map(() => ({
+        key: `crawl:${url.hostname.id}`,
+        concurrency: 1,
+        rateLimit: { max: 1, duration: rateLimitMs },
+      })),
+    )
+    assert.equal(rateLimitCalls, 1)
   })
 
   it('scopes a scheduled enqueue failure to the selected referral link', async () => {
@@ -146,9 +142,6 @@ describe('dispatch', () => {
     const targetUrl = await getUrlById(targetLink.url_id)
     assert.ok(targetUrl)
     await setHostnameAsValidForCrawlSearch(targetUrl.hostname.id)
-
-    assert.equal(await isReferralLinkDispatchable(unrelatedLink.id), true)
-    assert.equal(await isReferralLinkDispatchable(targetLink.id), true)
 
     const enqueueError = new Error(`sentinel dispatcher enqueue failure ${suffix}`)
     const jobsBefore = await readAllQueueJobs(crawlReferralLinksQueue)
