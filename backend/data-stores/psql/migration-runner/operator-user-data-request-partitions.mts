@@ -1,72 +1,46 @@
 import { beginBoundedTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
-  matchesClassifierPartitionBound,
   parseClassifierPartitionRange,
   type ClassifierPartitionRangeInput,
 } from './classifier-partition-range.mts'
+import {
+  REQUESTS,
+  ATTEMPTS,
+  TABLES,
+  readChildren,
+  assertDefaults,
+  attachedRangeCount,
+} from './operator-user-data-request-catalog.mts'
 
 export type RequestRangeInput = ClassifierPartitionRangeInput
-export const REQUESTS = 'user_data_requests'
-export const ATTEMPTS = 'user_data_request_attempts'
-export const TABLES = [REQUESTS, ATTEMPTS] as const
 const REQUEST_COLUMNS = `id, user_id, requested_by_id, queued_at, processing_attempt_id,
   dispatched_at, processing_attempts, processing_started_at, completed_at, failed_at,
   last_error_message, s3_key, expires_at, updated_at`
 const ATTEMPT_COLUMNS = `request_id, processing_attempt_id, started_at, updated_at,
   upload_lease_expires_at`
 
-type Child = { parent_table: string | null; partition_name: string; partition_bound: string | null }
-
-export async function readChildren(query: QueryExecutor, suffix: string): Promise<Child[]> {
-  const names = TABLES.flatMap(table => [`${table}__default`, `${table}__${suffix}`])
-  const { rows } = await query<Child>(
-    `/* readUserDataRequestPartitionChildren */
-    SELECT parent.relname AS parent_table, child.relname AS partition_name,
-      pg_get_expr(child.relpartbound, child.oid) AS partition_bound
-    FROM pg_class child
-    JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
-    LEFT JOIN pg_inherits inheritance ON inheritance.inhrelid = child.oid
-    LEFT JOIN pg_class parent ON parent.oid = inheritance.inhparent
-    WHERE child_ns.nspname = current_schema() AND child.relname = ANY($1::text[])`,
-    [names],
-  )
-  return rows
+type RangeMove = {
+  query: QueryExecutor
+  range: ReturnType<typeof parseClassifierPartitionRange>
+  requestChild: string
+  attemptChild: string
 }
 
-export function assertDefaults(children: readonly Child[]): void {
-  for (const table of TABLES) {
-    if (
-      !children.some(
-        child => child.parent_table === table && child.partition_name === `${table}__default`,
-      )
-    ) {
-      throw new Error(`Request history DEFAULT is missing for ${table}`)
-    }
+/** Parent locks fence both DEFAULT moves and range retirement on the same connection. */
+export async function lockRequestPartitionParents(
+  query: QueryExecutor,
+  operation: 'create' | 'retire',
+): Promise<void> {
+  if (operation === 'create') {
+    await query(`/* createUserDataRequestRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
+    await query(`/* createUserDataRequestRange:lockParents */
+      LOCK TABLE ${REQUESTS}, ${ATTEMPTS} IN ACCESS EXCLUSIVE MODE NOWAIT`)
+    return
   }
-}
-
-export function attachedRangeCount(
-  children: readonly Child[],
-  suffix: string,
-  fromId: string,
-  toId: string,
-): number {
-  let count = 0
-  const byName = new Map(children.map(child => [child.partition_name, child]))
-  for (const table of TABLES) {
-    const child = byName.get(`${table}__${suffix}`)
-    if (!child) continue
-    if (
-      child.parent_table !== table ||
-      !child.partition_bound ||
-      !matchesClassifierPartitionBound(child.partition_bound, fromId, toId)
-    ) {
-      throw new Error(`Request history range has unexpected bounds for ${table}`)
-    }
-    count++
-  }
-  return count
+  await query(`/* retireUserDataRequestRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
+  await query(`/* retireUserDataRequestRange:lockParents */
+    LOCK TABLE ${REQUESTS}, ${ATTEMPTS} IN ACCESS EXCLUSIVE MODE NOWAIT`)
 }
 
 /** Split only a capped DEFAULT, moving requests and attempt keys atomically. */
@@ -84,9 +58,7 @@ export async function guardAndCreateUserDataRequestRange(
   input: RequestRangeInput,
 ): Promise<void> {
   const range = parseClassifierPartitionRange(input)
-  await query(`/* createUserDataRequestRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
-  await query(`/* createUserDataRequestRange:lockParents */
-    LOCK TABLE ${REQUESTS}, ${ATTEMPTS} IN ACCESS EXCLUSIVE MODE NOWAIT`)
+  await lockRequestPartitionParents(query, 'create')
   const children = await readChildren(query, range.nameSuffix)
   assertDefaults(children)
   const attached = attachedRangeCount(children, range.nameSuffix, range.fromId, range.toId)
@@ -113,10 +85,38 @@ export async function guardAndCreateUserDataRequestRange(
 
   const requestChild = `${REQUESTS}__${range.nameSuffix}`
   const attemptChild = `${ATTEMPTS}__${range.nameSuffix}`
+  const move = { query, range, requestChild, attemptChild }
+  await prepareRangeChildren(move)
+  await sealRangeChildren(move)
+}
+
+async function prepareRangeChildren(move: RangeMove): Promise<void> {
+  await createRangeChildren(move)
+  await copyRangeRows(move)
+}
+
+async function sealRangeChildren(move: RangeMove): Promise<void> {
+  await removeAndAttachRangeChildren(move)
+  await restoreActiveClaims(move)
+}
+
+async function createRangeChildren({
+  query,
+  requestChild,
+  attemptChild,
+}: RangeMove): Promise<void> {
   await query(`/* createUserDataRequestRange:createRequests */
     CREATE TABLE ${requestChild} (LIKE ${REQUESTS} INCLUDING ALL)`)
   await query(`/* createUserDataRequestRange:createAttempts */
     CREATE TABLE ${attemptChild} (LIKE ${ATTEMPTS} INCLUDING ALL)`)
+}
+
+async function copyRangeRows({
+  query,
+  range,
+  requestChild,
+  attemptChild,
+}: RangeMove): Promise<void> {
   await query(
     `/* createUserDataRequestRange:copyRequests */
     INSERT INTO ${requestChild} (${REQUEST_COLUMNS})
@@ -131,6 +131,14 @@ export async function guardAndCreateUserDataRequestRange(
     WHERE request_id >= $1::uuid AND request_id < $2::uuid`,
     [range.fromId, range.toId],
   )
+}
+
+async function removeAndAttachRangeChildren(move: RangeMove): Promise<void> {
+  await removeDefaultRows(move)
+  await attachRangeChildren(move)
+}
+
+async function removeDefaultRows({ query, range }: RangeMove): Promise<void> {
   await query(
     `/* createUserDataRequestRange:deleteAttempts */
     DELETE FROM ONLY ${ATTEMPTS}__default
@@ -143,12 +151,23 @@ export async function guardAndCreateUserDataRequestRange(
     WHERE id >= $1::uuid AND id < $2::uuid`,
     [range.fromId, range.toId],
   )
+}
+
+async function attachRangeChildren({
+  query,
+  range,
+  requestChild,
+  attemptChild,
+}: RangeMove): Promise<void> {
   await query(`/* createUserDataRequestRange:attachRequests */
     ALTER TABLE ${REQUESTS} ATTACH PARTITION ${requestChild}
     FOR VALUES FROM ('${range.fromId}') TO ('${range.toId}')`)
   await query(`/* createUserDataRequestRange:attachAttempts */
     ALTER TABLE ${ATTEMPTS} ATTACH PARTITION ${attemptChild}
     FOR VALUES FROM ('${range.fromId}') TO ('${range.toId}')`)
+}
+
+async function restoreActiveClaims({ query, requestChild }: RangeMove): Promise<void> {
   // Deleting source request rows cascaded their active claims. Reestablish the exact claims
   // under the same parent locks; attached rows do not fire INSERT triggers retroactively.
   await query(`/* createUserDataRequestRange:restoreActiveClaims */

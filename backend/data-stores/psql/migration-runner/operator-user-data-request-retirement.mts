@@ -3,14 +3,17 @@ import type { QueryExecutor } from '../types.mts'
 import { parseClassifierPartitionRange } from './classifier-partition-range.mts'
 import { getPartitionDropAgeRefusal } from './partition-drop-guard.mts'
 import {
+  lockRequestPartitionParents,
+  type RequestRangeInput,
+} from './operator-user-data-request-partitions.mts'
+import {
   ATTEMPTS,
   REQUESTS,
   TABLES,
   readChildren,
   assertDefaults,
   attachedRangeCount,
-  type RequestRangeInput,
-} from './operator-user-data-request-partitions.mts'
+} from './operator-user-data-request-catalog.mts'
 
 /** Refuse retirement until every request is terminal and aged, with no export artifact or attempt key. */
 export async function retireUserDataRequestRange(input: RequestRangeInput): Promise<void> {
@@ -41,9 +44,7 @@ export async function guardAndRetireUserDataRequestRange(
     partition: `${REQUESTS}__${range.nameSuffix}`,
     upperBound: range.toDate,
   }
-  await query(`/* retireUserDataRequestRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
-  await query(`/* retireUserDataRequestRange:lockParents */
-    LOCK TABLE ${REQUESTS}, ${ATTEMPTS} IN ACCESS EXCLUSIVE MODE NOWAIT`)
+  await lockRequestPartitionParents(query, 'retire')
   const children = await readChildren(query, range.nameSuffix)
   assertDefaults(children)
   const attached = attachedRangeCount(children, range.nameSuffix, range.fromId, range.toId)
@@ -73,9 +74,17 @@ export async function guardAndRetireUserDataRequestRange(
   const { rows: attempts } = await query(`/* retireUserDataRequestRange:attempts */
     SELECT request_id FROM ${attemptChild} ORDER BY request_id LIMIT 1`)
   if (attempts.length) throw new Error('Request history range retains S3 attempt keys')
+  await retireAttemptChild(query, attemptChild)
+  await retireRequestChild(query, requestChild)
+}
+
+async function retireAttemptChild(query: QueryExecutor, attemptChild: string): Promise<void> {
   await query(`/* retireUserDataRequestRange:detachAttempts */
     ALTER TABLE ${ATTEMPTS} DETACH PARTITION ${attemptChild}`)
   await query(`/* retireUserDataRequestRange:dropAttempts */ DROP TABLE ${attemptChild}`)
+}
+
+async function retireRequestChild(query: QueryExecutor, requestChild: string): Promise<void> {
   await query(`/* retireUserDataRequestRange:detachRequests */
     ALTER TABLE ${REQUESTS} DETACH PARTITION ${requestChild}`)
   await query(`/* retireUserDataRequestRange:dropRequests */ DROP TABLE ${requestChild}`)

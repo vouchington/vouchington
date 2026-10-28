@@ -9,14 +9,14 @@ import {
   deleteTestPostClearanceChange,
   insertTestFeedCrawl,
   insertThreeTestFeedCrawls,
-  insertCompletedTestUserImportBatch,
-  deleteTestUserImportBatch,
-  insertCompletedTestUserImportRow,
-  insertCompletedTestAdminImportBatch,
-  deleteTestAdminImportBatch,
-  insertCompletedTestAdminImportRow,
   countTestFeedRows,
 } from '../../test-helpers/rss-hard-delete-queries.mts'
+import {
+  createCompletedTestUserImportWithFeed,
+  deleteTestUserImportBatch,
+  createCompletedTestAdminImportWithFeed,
+  deleteTestAdminImportBatch,
+} from '../../test-helpers/rss-hard-delete-import-fixtures.mts'
 import {
   createRandomString,
   createTestPost,
@@ -152,17 +152,15 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Completed user import feed',
     })
-    const batchId = await insertCompletedTestUserImportBatch(user.id)
+    const batchId = await createCompletedTestUserImportWithFeed(
+      user.id,
+      `https://rss-import-result-${nonce}.example.com/feed.xml`,
+      feed.id,
+    )
     onTestFinished(async () => {
       await deleteTestUserImportBatch(batchId)
       await deleteTestRssFeedRow(feed.id)
     })
-    await insertCompletedTestUserImportRow(
-      batchId,
-      `https://rss-import-result-${nonce}.example.com/feed.xml`,
-      feed.id,
-    )
-
     await expect(hardDeleteRssFeedById(feed.id)).resolves.toBe(true)
     await hardDeleteRssFeedChildPage(feed.id, 'setting_changes')
     await expect(hardDeleteRssFeedChildPage(feed.id, 'user_import_rows')).resolves.toMatchObject({
@@ -185,12 +183,11 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Retained import feed',
     })
-    const batchId = await insertCompletedTestAdminImportBatch(user.id)
+    const batchId = await createCompletedTestAdminImportWithFeed(user.id, feed.id)
     onTestFinished(async () => {
       await deleteTestAdminImportBatch(batchId)
       await deleteTestRssFeedRow(feed.id)
     })
-    await insertCompletedTestAdminImportRow(batchId, feed.id)
     await expect(hardDeleteRssFeedById(feed.id)).rejects.toMatchObject({ status: 409 })
     expect(await readTestRssFeedDeleteMarker(feed.id)).toBeNull()
   })

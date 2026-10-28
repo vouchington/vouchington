@@ -11,13 +11,14 @@ import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/pub
 import {
   readTestRssFeedDeleteMarker,
   deleteTestRssFeedRow,
-  insertCompletedTestAdminImportBatch,
-  deleteTestAdminImportBatch,
-  insertCompletedTestAdminImportRow,
   countTestFeedRows,
   markReferencedTestRssFeedForDeletion,
   insertTestFeedCrawl,
 } from '../../test-helpers/rss-hard-delete-queries.mts'
+import {
+  createCompletedTestAdminImportWithFeed,
+  deleteTestAdminImportBatch,
+} from '../../test-helpers/rss-hard-delete-import-fixtures.mts'
 import { createRssFeed } from './create.mts'
 import { hardDeleteRssFeedById } from './delete.mts'
 import { hardDeleteRssFeedChildPage } from './hard-delete-child-page.mts'
@@ -34,12 +35,11 @@ describe('RSS hard-delete terminal settlement', () => {
       topic_id: topic.id,
       title: 'Retained feed',
     })
-    const batchId = await insertCompletedTestAdminImportBatch(user.id)
+    const batchId = await createCompletedTestAdminImportWithFeed(user.id, feed.id)
     onTestFinished(async () => {
       await deleteTestAdminImportBatch(batchId)
       await deleteTestRssFeedRow(feed.id)
     })
-    await insertCompletedTestAdminImportRow(batchId, feed.id)
     await markReferencedTestRssFeedForDeletion(feed.id)
     // Earlier phases may already have drained the old setting history.
     await hardDeleteRssFeedChildPage(feed.id, 'setting_changes')

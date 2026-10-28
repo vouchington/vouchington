@@ -1,6 +1,26 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 export const RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS = [
   [
+    'import_retention_cursors.cursor_row_id',
+    'Deletion-stable import row keyset position survives the swept row; it is not a relationship.',
+  ],
+  [
+    'import_retention_cursors.cursor_discovery_url_id',
+    'Deletion-stable discovery keyset position survives the swept discovery; it is not a relationship.',
+  ],
+  [
+    'user_data_request_attempt_retention_cursors.cursor_request_id',
+    'Composite attempt keyset position survives request deletion; it is not a relationship.',
+  ],
+  [
+    'user_data_request_attempt_retention_cursors.cursor_processing_attempt_id',
+    'Composite attempt keyset tie-breaker survives deletion of the swept attempt; it is not a relationship.',
+  ],
+  [
+    'user_data_request_attempt_retention_cursors.cursor_upper_id',
+    'Frozen request UUIDv7 sweep boundary survives request deletion; it is not a relationship.',
+  ],
+  [
     'payment_operational_cleanup_cursors.cursor_id',
     'Operational keyset position survives deletion of the swept row; it is not a relationship.',
   ],

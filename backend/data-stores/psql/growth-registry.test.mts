@@ -25,7 +25,8 @@ describe('schema growth classification', () => {
 
     expect(tables.get('communities')).toContain('product adoption')
     expect(tables.get('rss_feed_item_guids')).toContain('Relationship edges')
-    expect(tables.get('admin_import_batches')).toContain('audit/workflow')
+    expect(tables.has('admin_import_batches')).toBe(false)
+    expect(EXPLICIT_BOUNDED_TABLES.has('admin_import_batches')).toBe(true)
     expect(tables.has('ai_usage_provider_response_keys')).toBe(false)
     expect(EXPLICIT_BOUNDED_TABLES.get('ai_usage_provider_response_keys')).toContain('90 days')
     expect(tables.get('web_push_endpoint_owners')).toContain('cross-user endpoint uniqueness')

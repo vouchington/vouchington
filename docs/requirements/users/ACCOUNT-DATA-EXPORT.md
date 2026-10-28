@@ -124,7 +124,7 @@ request-row sweep. The owner can retire a range only after every request in it h
 terminal state beyond the declared minimum and no download object or possible upload key remains.
 The attempt-key ledger is pruned in bounded pages only after the request is terminal, its download
 object reference is cleared, and the last possible upload is older than the export bucket's
-checked-in [lifecycle rule](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/s3.tf).
+configured storage lifecycle window.
 An unresolved key prevents range retirement. Account deletion clears the subject and requester
 links without giving the retained row any authority over the deleted account.
 

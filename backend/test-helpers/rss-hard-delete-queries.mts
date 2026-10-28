@@ -66,64 +66,6 @@ export async function insertThreeTestFeedCrawls(feedId: string): Promise<void> {
   )
 }
 
-export async function insertCompletedTestUserImportBatch(userId: string): Promise<string> {
-  const { rows } = await write<{ id: string }>(
-    `/* insertCompletedTestUserImportBatch */ INSERT INTO user_rss_feed_import_batches
-     (user_id, created_via, total_rows, completed_rows, completed_at)
-     VALUES ($1::uuid, 'system', 1, 1, CURRENT_TIMESTAMP) RETURNING id`,
-    [userId],
-  )
-  return rows[0]!.id
-}
-
-export async function deleteTestUserImportBatch(batchId: string): Promise<void> {
-  await write(
-    '/* deleteTestUserImportBatch */ DELETE FROM user_rss_feed_import_batches WHERE id = $1',
-    [batchId],
-  )
-}
-
-export async function insertCompletedTestUserImportRow(
-  batchId: string,
-  inputUrl: string,
-  feedId: string,
-): Promise<void> {
-  await write(
-    `/* insertCompletedTestUserImportRow */ INSERT INTO user_rss_feed_import_rows
-     (batch_id, row_index, input_url, outcome, rss_feed_id, completed_at)
-     VALUES ($1::uuid, 0, $2, 'imported', $3::uuid, CURRENT_TIMESTAMP)`,
-    [batchId, inputUrl, feedId],
-  )
-}
-
-export async function insertCompletedTestAdminImportBatch(userId: string): Promise<string> {
-  const { rows } = await write<{ id: string }>(
-    `/* insertCompletedTestAdminImportBatch */ INSERT INTO admin_import_batches
-     (import_type, created_by_id, total_rows, completed_rows, completed_at)
-     VALUES ('rss_feed', $1::uuid, 1, 1, CURRENT_TIMESTAMP) RETURNING id`,
-    [userId],
-  )
-  return rows[0]!.id
-}
-
-export async function deleteTestAdminImportBatch(batchId: string): Promise<void> {
-  await write('/* deleteTestAdminImportBatch */ DELETE FROM admin_import_batches WHERE id = $1', [
-    batchId,
-  ])
-}
-
-export async function insertCompletedTestAdminImportRow(
-  batchId: string,
-  feedId: string,
-): Promise<void> {
-  await write(
-    `/* insertCompletedTestAdminImportRow */ INSERT INTO admin_import_rows
-     (batch_id, row_index, input_data, rss_feed_id, completed_at)
-     VALUES ($1::uuid, 0, '{}'::jsonb, $2::uuid, CURRENT_TIMESTAMP)`,
-    [batchId, feedId],
-  )
-}
-
 export async function countTestFeedRows(feedId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(
     '/* countTestFeedRows */ SELECT count(*)::integer AS count FROM rss_feeds WHERE id = $1',
