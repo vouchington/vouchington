@@ -1,8 +1,8 @@
 import { clientFetch } from '@/lib/api/client/raw-fetch'
 import { normalizeHnDiscussionUrl } from './normalize-url'
 
-export const HN_ALGOLIA_SEARCH_ORIGIN = 'https://hn.algolia.com'
-export const HN_ITEM_URL = 'https://news.ycombinator.com/item'
+const HN_ALGOLIA_SEARCH_ORIGIN = 'https://hn.algolia.com'
+const HN_ITEM_URL = 'https://news.ycombinator.com/item'
 
 export interface HnDiscussionThread {
   objectID: string
@@ -50,7 +50,7 @@ function mapHnAlgoliaHits(
   return threads
 }
 
-export async function searchHnDiscussionsForUrl(pageUrl: string): Promise<HnDiscussionThread[]> {
+async function searchHnDiscussionsForUrl(pageUrl: string): Promise<HnDiscussionThread[]> {
   const key = normalizeHnDiscussionUrl(pageUrl) ?? pageUrl
   const existing = inflightByNormalizedUrl.get(key)
   if (existing) return existing

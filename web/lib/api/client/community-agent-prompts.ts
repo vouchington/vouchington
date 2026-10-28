@@ -17,7 +17,7 @@ export interface CommunityAgentPromptHistoryEntry {
   created_at: string
 }
 
-export interface CommunityAutomodSimulationResult {
+interface CommunityAutomodSimulationResult {
   post_id: string
   title: string
   declared_language: string | null

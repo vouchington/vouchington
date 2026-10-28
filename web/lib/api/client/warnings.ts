@@ -45,7 +45,7 @@ export type IssueUserWarningResponse =
   | AdminIssueUserWarningResponse
   | CommunityIssueUserWarningResponse
 
-export interface CreatedUserWarning {
+interface CreatedUserWarning {
   id: string
   case_id: string
   user_id: string

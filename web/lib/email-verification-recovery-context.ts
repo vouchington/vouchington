@@ -2,7 +2,7 @@
 
 import { createContext, use } from 'react'
 
-export interface OpenEmailVerificationRecoveryOptions {
+interface OpenEmailVerificationRecoveryOptions {
   onVerified?: () => void
 }
 

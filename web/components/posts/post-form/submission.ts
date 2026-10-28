@@ -159,7 +159,7 @@ async function createNewPost(
   return { post: saved, communityPostReview: response.community_post_review }
 }
 
-export function serializeDiscussionCategories(
+function serializeDiscussionCategories(
   categories: SubmitPostInput['discussionCategories'],
 ): Array<{ type: 'topic'; topic_id: string } | { type: 'hashtag'; hashtag: string }> {
   const serialized: Array<

@@ -4,7 +4,7 @@ import { useLoadScript } from '@vouchington/script-loader'
 import { getRecaptchaSiteKey, isRecaptchaConfigured } from '@/lib/recaptcha-config'
 import { useRuntimePublicConfig } from '@/lib/runtime-public-config-context'
 
-export type RecaptchaAction = 'create_post' | 'create_comment'
+type RecaptchaAction = 'create_post' | 'create_comment'
 
 interface GrecaptchaEnterprise {
   enterprise: {

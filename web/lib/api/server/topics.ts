@@ -10,7 +10,7 @@ import type {
 } from '@/types/api-responses'
 import type { TopicAdditionalHostname } from '@/lib/api/client/topic-additional-hostnames'
 
-export interface PublisherTypeTopic {
+interface PublisherTypeTopic {
   id: string
   slug: string
   label: string
@@ -21,7 +21,7 @@ export interface PublisherTypesResponse {
 export interface UserTagsResponse {
   user_tags: UserTagTopic[]
 }
-export interface UserTagTopic {
+interface UserTagTopic {
   id: string
   slug: string
   label: string

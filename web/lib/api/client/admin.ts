@@ -12,7 +12,7 @@ export function enqueueUrlCrawl(id: string, body?: unknown): Promise<EnqueueUrlC
   return clientApi.post<EnqueueUrlCrawlResponseBody>(`/api/v1/urls/${id}/crawl`, body)
 }
 
-export interface ArticleSyncItem {
+interface ArticleSyncItem {
   file: string
   slug: string
   action: 'created' | 'updated' | 'skipped' | 'error'
