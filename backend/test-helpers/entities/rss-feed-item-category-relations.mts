@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -7,7 +6,7 @@ export async function addScoredCategoryTopicRelationToRssFeedItem(
   topicId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addScoredCategoryTopicRelationToRssFeedItem */
     INSERT INTO relation__rss_feed_item__category__topic (
       subject_id,
       object_id,
@@ -18,6 +17,6 @@ export async function addScoredCategoryTopicRelationToRssFeedItem(
       votes_score_up = EXCLUDED.votes_score_up,
       votes_count_up = EXCLUDED.votes_count_up,
       deleted_at = NULL
-  `),
+  `,
   )
 }
