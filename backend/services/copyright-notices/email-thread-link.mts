@@ -33,7 +33,10 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       raw_storage_object_id: string | null
     }>(sql`/* linkCopyrightEmailIntakeToNotice:lockThreadIntake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId} FOR UPDATE
+      WHERE id = ${input.intakeId}
+        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+          WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
+      FOR UPDATE
     `)
     if (live.length === 0) return false
     const { rows: retained } = await transaction<{
@@ -72,7 +75,10 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       raw_storage_object_id: string | null
     }>(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId} FOR KEY SHARE
+      WHERE id = ${input.intakeId}
+        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+          WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
+      FOR KEY SHARE
     `)
     if (live.length === 0) return false
     if (live[0]!.raw_storage_object_id === null) {

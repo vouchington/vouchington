@@ -43,7 +43,10 @@ export async function recordCopyrightEmailThreadReferences(input: {
   const { rows: liveIntakes } = await transaction<{ raw_storage_object_id: string | null }>(sql`
     /* recordCopyrightEmailThreadReferences:lockIntake */
     SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-    WHERE id = ${input.intakeId} FOR UPDATE`)
+    WHERE id = ${input.intakeId}
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
+    FOR UPDATE`)
   if (!liveIntakes[0]?.raw_storage_object_id) {
     await transaction.commit()
     return null

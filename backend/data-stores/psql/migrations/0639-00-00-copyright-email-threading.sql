@@ -40,6 +40,8 @@ CREATE TABLE copyright_notice_email_thread_references (
 
   CONSTRAINT uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind UNIQUE (copyright_notice_email_intake_id, token_id, reference_kind)
 );
+CREATE INDEX idx_copyright_notice_email_thread_references__intake_id
+  ON copyright_notice_email_thread_references (copyright_notice_email_intake_id, id);
 
 -- A message's intake row is immutable. Each edge is recorded once, when one token resolves.
 CREATE TABLE copyright_notice_email_message_ancestors (
@@ -51,22 +53,51 @@ CREATE TABLE copyright_notice_email_message_ancestors (
 );
 ALTER TABLE copyright_notice_email_message_ancestors
   ADD CONSTRAINT fk_copyright_notice_email_message_ancestors__reply
-  FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
+  FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intake_receipts(id)
   ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_email_message_ancestors
   VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__reply;
 ALTER TABLE copyright_notice_email_message_ancestors
   ADD CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor
-  FOREIGN KEY (ancestor_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
+  FOREIGN KEY (ancestor_message_intake_id) REFERENCES copyright_notice_email_intake_receipts(id)
   ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_email_message_ancestors
   VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor;
 CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor_reply
   ON copyright_notice_email_message_ancestors (ancestor_message_intake_id, reply_message_intake_id);
+CREATE FUNCTION fn_copyright_email_ancestor_requires_live_endpoints()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE intake_id uuid;
+BEGIN
+  -- Receipts retain existing ancestry after erasure. New edges still require live intakes,
+  -- and these locks fence a concurrent private-intake deletion through commit.
+  FOR intake_id IN
+    SELECT unnest(ARRAY[NEW.reply_message_intake_id, NEW.ancestor_message_intake_id])
+    ORDER BY 1
+  LOOP
+    PERFORM 1 FROM copyright_notice_email_intake_receipts
+      WHERE id = intake_id AND erased_at IS NULL FOR SHARE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'copyright email ancestor source is under retention erasure'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    PERFORM 1 FROM copyright_notice_email_intakes
+      WHERE id = intake_id AND raw_storage_object_id IS NOT NULL FOR KEY SHARE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'copyright email ancestor source is no longer live'
+        USING ERRCODE = 'foreign_key_violation';
+    END IF;
+  END LOOP;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_email_ancestor_requires_live_endpoints
+  BEFORE INSERT ON copyright_notice_email_message_ancestors
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_ancestor_requires_live_endpoints();
 CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_message_ancestors
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
-COMMENT ON TABLE copyright_notice_email_message_ancestors IS 'Resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token; edges expire after the exclusively owning case closes its reply window.';
+COMMENT ON TABLE copyright_notice_email_message_ancestors IS 'Resolved ancestor edges between inbound email receipts. Retained endpoints preserve linked-case ancestry after an unlinked private intake is erased; receipts never authorize threading or access.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.reply_message_intake_id IS 'Inbound reply intake that named the ancestor.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.ancestor_message_intake_id IS 'Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.reference_kind IS 'Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.';
@@ -213,3 +244,113 @@ COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.reviewed_by_id I
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.rationale_ciphertext IS 'Encrypted moderator rationale.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.manual_fallback_reason_ciphertext IS 'Encrypted reason staff proceeded without an agent recommendation.';
 COMMENT ON COLUMN copyright_notice_correspondence_messages.copyright_notice_email_intake_id IS 'Immutable original email intake containing the raw MIME evidence for an inbound correspondence.';
+
+-- Current-case thread activity is maintained at every write boundary, so a retention check
+-- never needs to aggregate an unbounded case graph or historical reference set.
+CREATE TABLE copyright_notice_thread_retention_activity (
+  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE CASCADE,
+  last_activity_at timestamptz NOT NULL
+);
+COMMENT ON TABLE copyright_notice_thread_retention_activity IS 'Latest case-thread write clock used to bound the closed-window retention check; never grants access to retained source identities.';
+
+CREATE FUNCTION fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamptz)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
+  INSERT INTO copyright_notice_thread_retention_activity (copyright_notice_id, last_activity_at)
+  VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))
+  ON CONFLICT (copyright_notice_id) DO UPDATE
+    SET last_activity_at = GREATEST(copyright_notice_thread_retention_activity.last_activity_at,
+                                    EXCLUDED.last_activity_at);
+END;
+$$;
+
+CREATE FUNCTION fn_copyright_thread_activity_on_link()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE clock_at timestamptz;
+BEGIN
+  SELECT GREATEST(
+    uuid_extract_timestamp(NEW.id), intake.received_at,
+    (SELECT reference.created_at FROM copyright_notice_email_thread_references reference
+      WHERE reference.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id
+      ORDER BY reference.id DESC LIMIT 1),
+    (SELECT review.reviewed_at FROM copyright_notice_email_intake_reviews review
+      WHERE review.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id
+      ORDER BY review.id DESC LIMIT 1),
+    CURRENT_TIMESTAMP
+  ) INTO clock_at
+  FROM copyright_notice_email_intakes intake
+  WHERE intake.id = NEW.copyright_notice_email_intake_id;
+  PERFORM fn_copyright_touch_thread_retention_activity(NEW.copyright_notice_id, clock_at);
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_thread_activity_on_link
+  AFTER INSERT ON copyright_notice_email_intake_notice_links
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_thread_activity_on_link();
+
+CREATE FUNCTION fn_copyright_thread_activity_on_reference()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE case_id uuid;
+BEGIN
+  SELECT link.copyright_notice_id INTO case_id
+  FROM copyright_notice_email_intake_notice_links link
+  WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;
+  IF case_id IS NOT NULL THEN
+    PERFORM fn_copyright_touch_thread_retention_activity(case_id, uuid_extract_timestamp(NEW.id));
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_thread_activity_on_reference
+  AFTER INSERT ON copyright_notice_email_thread_references
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_thread_activity_on_reference();
+
+CREATE FUNCTION fn_copyright_thread_activity_on_edge()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE case_id uuid;
+BEGIN
+  FOR case_id IN
+    SELECT DISTINCT link.copyright_notice_id
+    FROM copyright_notice_email_intake_notice_links link
+    WHERE link.copyright_notice_email_intake_id IN
+      (NEW.reply_message_intake_id, NEW.ancestor_message_intake_id)
+    ORDER BY link.copyright_notice_id
+  LOOP
+    PERFORM fn_copyright_touch_thread_retention_activity(case_id, CURRENT_TIMESTAMP);
+  END LOOP;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_thread_activity_on_edge
+  AFTER INSERT ON copyright_notice_email_message_ancestors
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_thread_activity_on_edge();
+
+CREATE FUNCTION fn_copyright_thread_activity_on_intake_review()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE case_id uuid;
+BEGIN
+  SELECT link.copyright_notice_id INTO case_id
+  FROM copyright_notice_email_intake_notice_links link
+  WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;
+  IF case_id IS NOT NULL THEN
+    PERFORM fn_copyright_touch_thread_retention_activity(case_id, NEW.reviewed_at);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_thread_activity_on_intake_review
+  AFTER INSERT ON copyright_notice_email_intake_reviews
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_thread_activity_on_intake_review();
+
+CREATE FUNCTION fn_copyright_thread_activity_on_correspondence_review()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_copyright_touch_thread_retention_activity(
+    NEW.copyright_notice_id, COALESCE(NEW.reviewed_at, uuid_extract_timestamp(NEW.id)));
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_thread_activity_on_correspondence_review
+  AFTER INSERT ON copyright_notice_email_correspondence_reviews
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_thread_activity_on_correspondence_review();

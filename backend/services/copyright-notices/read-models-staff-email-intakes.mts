@@ -67,6 +67,8 @@ export async function searchCopyrightStaffEmailIntakes(
   query.append(copyrightEmailReplyReferenceSql())
   query.append(sql` AS has_reply_reference
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt
+      ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN LATERAL (SELECT id FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true

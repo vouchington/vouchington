@@ -108,10 +108,7 @@ async function deleteSelected(
       AND capability.expires_at <= ${cutoff}
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submissions submission
-        WHERE submission.copyright_notice_guest_capability_id = capability.id)
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_lifecycle_changes change
-        WHERE change.copyright_notice_guest_capability_id = capability.id)`)
+        WHERE submission.copyright_notice_guest_capability_id = capability.id)`)
   return rowCount ?? 0
 }
 
@@ -138,23 +135,34 @@ async function sweepPage(
     sql`/* scanCopyrightOperationalRetentionPage */ SELECT id FROM `.append(TABLES[kind])
       .append(sql` WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
-      ORDER BY id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`)
-  const { rows } = await transaction<{ id: string }>(statement)
-  const ids = rows.map(row => row.id)
+      ORDER BY id LIMIT ${batchSize}`)
+  const { rows: rawRows } = await transaction<{ id: string }>(statement)
+  const rawIds = rawRows.map(row => row.id)
+  // Lock only the already capped raw ID page. SKIP LOCKED cannot walk an unbounded
+  // prefix of busy rows, and skipped rows become eligible again on the next pass.
+  const { rows: lockedRows } =
+    rawIds.length === 0
+      ? { rows: [] as { id: string }[] }
+      : await transaction<{ id: string }>(
+          sql`/* lockCopyrightOperationalRetentionPage */ SELECT id FROM `
+            .append(TABLES[kind])
+            .append(sql` WHERE id = ANY(${rawIds}::uuid[]) FOR UPDATE SKIP LOCKED`),
+        )
+  const ids = lockedRows.map(row => row.id)
   let deleted = 0
   if (ids.length > 0) {
     await transaction(sql`/* enableCopyrightOperationalRetention */
       SET LOCAL app.copyright_operational_retention = 'on'`)
     deleted = await deleteSelected(transaction, kind, ids, cutoff)
   }
-  const hasMore = ids.length === batchSize
+  const hasMore = rawIds.length === batchSize
   await transaction(sql`/* advanceCopyrightOperationalRetentionCursor */
     UPDATE copyright_notice_operational_retention_cursors
-    SET cursor_record_id = ${hasMore ? ids.at(-1)! : null}::uuid,
+    SET cursor_record_id = ${hasMore ? rawIds.at(-1)! : null}::uuid,
       sweep_upper_bound_record_id = ${hasMore ? upperBound : null}::uuid
     WHERE kind = ${kind}::copyright_notice_operational_retention_kinds`)
   await transaction.commit()
-  return { scanned: ids.length, deleted, hasMore }
+  return { scanned: rawIds.length, deleted, hasMore }
 }
 
 /** Each pass scans bounded UUIDv7 pages, including retained/latest rows, and resumes next tick. */

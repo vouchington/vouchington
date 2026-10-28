@@ -21,6 +21,7 @@ import {
 } from './cleanup-batches.mts'
 import {
   getClassifierRetentionDays,
+  getDataRetentionLimits,
   readDataRetentionField,
   getTopicImportAttemptDeletionBatchSize,
   type DataRetentionLimits,
@@ -162,6 +163,8 @@ type DataRetentionCleanupOptions = {
   voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
   userAgentStringIds?: readonly string[]
   voteIntegrityFlagIds?: readonly string[]
+  /** Non-copyright continuations omit the independent copyright retention chain. */
+  activeCopyrightFamilies?: readonly CopyrightRetentionFamily[]
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
@@ -217,13 +220,13 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
-  copyrightFormScreeningAttempts: { scanned: number; deleted: number; hasMore: boolean }
-  copyrightActionAttempts: { scanned: number; deleted: number; hasMore: boolean }
-  copyrightDeliveryAttempts: { scanned: number; deleted: number; hasMore: boolean }
-  copyrightGuestCapabilities: { scanned: number; deleted: number; hasMore: boolean }
-  copyrightUnlinkedEmailIntakes: { scanned: number; erased: number; hasMore: boolean }
-  copyrightCaseThreads: { scanned: number; deleted: number; hasMore: boolean }
-  copyrightOrphanEmailThreadTokens: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightFormScreeningAttempts?: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightActionAttempts?: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightDeliveryAttempts?: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightGuestCapabilities?: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightUnlinkedEmailIntakes?: { scanned: number; erased: number; hasMore: boolean }
+  copyrightCaseThreads?: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightOrphanEmailThreadTokens?: { scanned: number; deleted: number; hasMore: boolean }
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
   retainedMediaBindings: RetainedMediaBindingCleanupPage
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
@@ -300,6 +303,82 @@ export async function runVoteRetentionCleanupPage(
     ? await cleanupVoteIntegrityDetails(limits.batchSize, now)
     : { scanned: 0, redacted: 0, hasMore: false }
   return { supersededVoteBallots, orphanedUserAgentStrings, voteIntegrityDetails }
+}
+
+export type CopyrightRetentionFamily =
+  | 'copyrightFormScreeningAttempts'
+  | 'copyrightActionAttempts'
+  | 'copyrightDeliveryAttempts'
+  | 'copyrightGuestCapabilities'
+  | 'copyrightUnlinkedEmailIntakes'
+  | 'copyrightCaseThreads'
+  | 'copyrightOrphanEmailThreadTokens'
+
+type CopyrightRetentionCleanupResult = Partial<
+  Pick<DataRetentionCleanupResult, CopyrightRetentionFamily>
+>
+
+/** A continuation runs only the copyright families that reached their last page cap. */
+export async function runCopyrightOperationalRetentionCleanup(
+  options: {
+    activeFamilies?: readonly CopyrightRetentionFamily[]
+    limits?: DataRetentionLimits
+  } = {},
+): Promise<CopyrightRetentionCleanupResult> {
+  const limits = options.limits ?? getDataRetentionLimits()
+  const active = (family: CopyrightRetentionFamily) =>
+    options.activeFamilies === undefined || options.activeFamilies.includes(family)
+  const result: CopyrightRetentionCleanupResult = {}
+  if (active('copyrightFormScreeningAttempts'))
+    result.copyrightFormScreeningAttempts = await sweepCopyrightOperationalRetention(
+      'form_screening_attempts',
+      {
+        ...limits,
+        retentionDays: readDataRetentionField('copyright_form_screening_attempt_days'),
+      },
+    )
+  if (active('copyrightActionAttempts'))
+    result.copyrightActionAttempts = await sweepCopyrightOperationalRetention('action_attempts', {
+      ...limits,
+      retentionDays: readDataRetentionField('copyright_action_attempt_days'),
+    })
+  if (active('copyrightDeliveryAttempts'))
+    result.copyrightDeliveryAttempts = await sweepCopyrightOperationalRetention(
+      'delivery_attempts',
+      {
+        ...limits,
+        retentionDays: readDataRetentionField('copyright_delivery_attempt_days'),
+      },
+    )
+  if (active('copyrightGuestCapabilities'))
+    result.copyrightGuestCapabilities = await sweepCopyrightOperationalRetention(
+      'guest_capabilities',
+      {
+        ...limits,
+        retentionDays: readDataRetentionField('copyright_guest_capability_days'),
+      },
+    )
+  if (active('copyrightUnlinkedEmailIntakes'))
+    result.copyrightUnlinkedEmailIntakes = await sweepUnlinkedCopyrightEmailIntakes({
+      childLimit: limits.batchSize,
+      maxBatches: limits.maxBatches,
+      retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
+    })
+  if (active('copyrightCaseThreads'))
+    result.copyrightCaseThreads = await sweepCopyrightCaseThreads({
+      batchSize: limits.batchSize,
+      maxBatches: limits.maxBatches,
+      replyDays: readDataRetentionField('copyright_email_thread_reply_days'),
+    })
+  if (active('copyrightOrphanEmailThreadTokens'))
+    result.copyrightOrphanEmailThreadTokens = await sweepCopyrightOperationalRetention(
+      'orphan_email_thread_tokens',
+      {
+        ...limits,
+        retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
+      },
+    )
+  return result
 }
 
 export async function runDataRetentionCleanup(
@@ -454,36 +533,10 @@ export async function runDataRetentionCleanup(
     options.voteIntegrityFlagIds,
   )
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
-  const copyrightFormScreeningAttempts = await sweepCopyrightOperationalRetention(
-    'form_screening_attempts',
-    { ...limits, retentionDays: readDataRetentionField('copyright_form_screening_attempt_days') },
-  )
-  const copyrightActionAttempts = await sweepCopyrightOperationalRetention('action_attempts', {
-    ...limits,
-    retentionDays: readDataRetentionField('copyright_action_attempt_days'),
+  const copyright = await runCopyrightOperationalRetentionCleanup({
+    limits,
+    activeFamilies: options.activeCopyrightFamilies,
   })
-  const copyrightDeliveryAttempts = await sweepCopyrightOperationalRetention('delivery_attempts', {
-    ...limits,
-    retentionDays: readDataRetentionField('copyright_delivery_attempt_days'),
-  })
-  const copyrightGuestCapabilities = await sweepCopyrightOperationalRetention(
-    'guest_capabilities',
-    { ...limits, retentionDays: readDataRetentionField('copyright_guest_capability_days') },
-  )
-  const copyrightUnlinkedEmailIntakes = await sweepUnlinkedCopyrightEmailIntakes({
-    childLimit: limits.batchSize,
-    maxBatches: limits.maxBatches,
-    retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
-  })
-  const copyrightCaseThreads = await sweepCopyrightCaseThreads({
-    batchSize: limits.batchSize,
-    maxBatches: limits.maxBatches,
-    replyDays: readDataRetentionField('copyright_email_thread_reply_days'),
-  })
-  const copyrightOrphanEmailThreadTokens = await sweepCopyrightOperationalRetention(
-    'orphan_email_thread_tokens',
-    { ...limits, retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days') },
-  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -500,13 +553,7 @@ export async function runDataRetentionCleanup(
   await cleanupAnalyticsLocalFiles()
 
   return {
-    copyrightFormScreeningAttempts,
-    copyrightActionAttempts,
-    copyrightDeliveryAttempts,
-    copyrightGuestCapabilities,
-    copyrightUnlinkedEmailIntakes,
-    copyrightCaseThreads,
-    copyrightOrphanEmailThreadTokens,
+    ...copyright,
     retainedRelationIdentities,
     retainedMediaBindings,
     retainedIdentityRoots,

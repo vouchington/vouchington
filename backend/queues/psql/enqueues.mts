@@ -52,7 +52,9 @@ export const enqueueDataRetentionCleanup = (): EnqueueReturnType =>
 export function enqueueDataRetentionCleanupContinuation(
   data: NonNullable<PsqlRetentionJobData['continuation']>,
 ) {
-  const jobId = `data-retention-cleanup__${data.runId}__${data.step}`
+  const jobId = data.copyrightFamilies
+    ? `data-retention-copyright__${data.runId}__${data.step}`
+    : `data-retention-cleanup__${data.runId}__${data.step}`
   return enqueueBulkReactivatingFinished({
     queue: psql,
     inputs: [{ continuation: data }],

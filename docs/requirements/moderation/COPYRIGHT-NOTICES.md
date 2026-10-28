@@ -164,9 +164,12 @@ capabilities, and case-exclusive email threading after the case has no open work
 window has passed. A per-case intake-age high-water prevents old SES replays from rebuilding
 expired references while fresh email can still thread through an eligible case. An unlinked email
 intake loses its original object and private MIME parse and attachment data after inactivity; a
-minimal SES receipt remains to prevent re-admission on replay. A terminal legal delivery or staff
-decision can require the intake identity to remain. Legal delivery and staff decision records stay
-unchanged, including an advisory recommendation that a staff decision references. Form intakes
+minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
+the first object-version delete, and the receipt blocks new processing while bounded cleanup
+continues. Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
+intake. Legal delivery and staff decision records stay unchanged, including an advisory
+recommendation that a staff decision references; their identity references point to the receipt.
+Form intakes
 are created with a required notice foreign key, so there is no unlinked form-intake state to sweep.
 
 GDPR and UK GDPR need a retention period and real deletion or anonymisation when it ends. The US

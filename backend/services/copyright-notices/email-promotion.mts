@@ -59,7 +59,9 @@ async function admitCopyrightEmailIntake(
   await using transaction = await beginTransaction()
   const { rows: existing } = await transaction<{ id: string }>(sql`
     /* promoteCopyrightEmailIntake:exists */
-    SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId}
+    SELECT intake.id FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+    WHERE intake.id = ${input.intakeId} AND receipt.erased_at IS NULL
   `)
   assert(existing[0], 404, 'Copyright email intake not found')
   const graph = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)

@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { createTestUserDirect } from './entities/index.mts'
 
 export async function seedCopyrightIntakeLegalDelivery(intakeId: string): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* seedCopyrightIntakeLegalDelivery */
@@ -37,10 +38,14 @@ export async function readCopyrightIntakeLegalDelivery(id: string): Promise<{
   return rows[0] ?? null
 }
 
-export async function seedCopyrightIntakeAuditReview(intakeId: string): Promise<{
+export async function seedCopyrightIntakeAuditReview(
+  intakeId: string,
+  reviewedAt = new Date(),
+): Promise<{
   reviewId: string
   recommendationId: string
 }> {
+  const reviewer = await createTestUserDirect()
   const { rows: recommendation } = await write<{ id: string }>(sql`
     /* seedCopyrightIntakeAuditRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations
@@ -52,8 +57,9 @@ export async function seedCopyrightIntakeAuditReview(intakeId: string): Promise<
   const { rows } = await write<{ id: string }>(sql`/* seedCopyrightIntakeAuditReview */
     INSERT INTO copyright_notice_email_intake_reviews
       (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id,
-       reviewed_at, decision, rationale_ciphertext)
-    VALUES (${intakeId}, ${recommendationId}, CURRENT_TIMESTAMP, 'rejected', 'v1:test-rationale')
+       reviewed_by_id, reviewed_at, decision, rationale_ciphertext)
+    VALUES (${intakeId}, ${recommendationId}, ${reviewer.id}, ${reviewedAt},
+      'rejected', 'v1:test-rationale')
     RETURNING id`)
   return { reviewId: rows[0]!.id, recommendationId }
 }
@@ -128,6 +134,18 @@ export async function seedCopyrightThreadRetirement(
     INSERT INTO copyright_notice_email_thread_retirements
       (copyright_notice_id, retired_before_intake_bound)
     VALUES (${noticeId}, ${retiredBeforeIntakeId}::uuid)`)
+}
+
+/** Adds a historical case party after a proof page without adding a lifecycle event. */
+export async function seedCopyrightThreadPartySubmission(
+  noticeId: string,
+  submittedById: string,
+): Promise<void> {
+  await write(sql`/* seedCopyrightThreadPartySubmission */
+    INSERT INTO copyright_notice_submissions
+      (copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext)
+    VALUES (${noticeId}, ${submittedById}, 'supplement', ${new Date(0)},
+      'signed_in_form', ${`v1:backdated-${randomUUID()}`})`)
 }
 
 export async function readCopyrightIntakeRetentionState(intakeId: string): Promise<{

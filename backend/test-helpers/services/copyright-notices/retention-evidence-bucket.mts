@@ -45,15 +45,21 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
     vi.unstubAllEnvs()
   })
 
-  function list(input: { Bucket?: string; Prefix?: string; VersionIdMarker?: string }) {
+  function list(input: {
+    Bucket?: string
+    Prefix?: string
+    VersionIdMarker?: string
+    MaxKeys?: number
+  }) {
     expectBucket(input.Bucket)
     const entries = [...objects.entries()]
       .filter(([key]) => key.startsWith(input.Prefix ?? ''))
       .toSorted(([left], [right]) => left.localeCompare(right))
       .flatMap(([key, versions]) => versions.map(version => ({ key, ...version })))
     const start = input.VersionIdMarker ? Number(input.VersionIdMarker) : 0
-    const page = entries.slice(start, start + PAGE_SIZE)
-    const truncated = start + PAGE_SIZE < entries.length
+    const pageSize = Math.min(PAGE_SIZE, input.MaxKeys ?? PAGE_SIZE)
+    const page = entries.slice(start, start + pageSize)
+    const truncated = start + pageSize < entries.length
     const Versions: { Key: string; VersionId: string }[] = []
     const DeleteMarkers: { Key: string; VersionId: string }[] = []
     for (const entry of page) {
@@ -64,7 +70,7 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
     return {
       IsTruncated: truncated,
       NextKeyMarker: truncated ? page.at(-1)?.key : undefined,
-      NextVersionIdMarker: truncated ? String(start + PAGE_SIZE) : undefined,
+      NextVersionIdMarker: truncated ? String(start + pageSize) : undefined,
       Versions,
       DeleteMarkers,
     }

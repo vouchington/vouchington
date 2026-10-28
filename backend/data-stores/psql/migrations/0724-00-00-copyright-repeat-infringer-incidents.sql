@@ -35,6 +35,13 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
 
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
   ON copyright_repeat_infringer_incidents (copyright_notice_id);
+CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_updated
+  ON copyright_repeat_infringer_incidents (copyright_notice_id, updated_at);
+CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_id
+  ON copyright_repeat_infringer_incidents (copyright_notice_id, id);
+CREATE TRIGGER trigger_copyright_thread_party_incident
+  AFTER INSERT OR UPDATE OF account_user_id ON copyright_repeat_infringer_incidents
+  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
 
 -- Durable target provenance is required after privacy erasure removes the live placement owner.
 CREATE TABLE copyright_repeat_infringer_incident_targets (

@@ -73,7 +73,7 @@ COMMENT ON COLUMN mcp_call_audit_events.tool_option IS 'Declared literal option 
 CREATE TABLE IF NOT EXISTS copyright_decision_rationales (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id UUID REFERENCES copyright_notices (id) ON DELETE CASCADE,
-  copyright_notice_email_intake_id UUID REFERENCES copyright_notice_email_intakes (id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_id UUID REFERENCES copyright_notice_email_intake_receipts (id) ON DELETE RESTRICT,
   copyright_repeat_infringer_review_id UUID REFERENCES copyright_repeat_infringer_reviews (id) ON DELETE RESTRICT,
   account_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   recorded_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
@@ -116,6 +116,55 @@ COMMENT ON COLUMN copyright_decision_rationales.account_user_id IS 'Retained acc
 COMMENT ON COLUMN copyright_decision_rationales.recorded_by_id IS 'Retained staff identity that supplied the validated legal rationale.';
 COMMENT ON COLUMN copyright_decision_rationales.tool_name IS 'Registered legal decision tool name, never arbitrary caller text.';
 COMMENT ON COLUMN copyright_decision_rationales.rationale_ciphertext IS 'Validated rationale encrypted with AAD bound to this row id; erased under copyright retention.';
+
+-- A retained receipt can keep legal rows after source erasure, but may never authorize a new
+-- parse, recommendation, human decision, delivery, rationale, link or thread reference.
+CREATE FUNCTION fn_copyright_email_source_requires_active_receipt()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE intake_id uuid;
+BEGIN
+  intake_id := (to_jsonb(NEW) ->> 'copyright_notice_email_intake_id')::uuid;
+  IF intake_id IS NULL THEN RETURN NEW; END IF;
+  PERFORM 1
+  FROM copyright_notice_email_intake_receipts receipt
+  JOIN copyright_notice_email_intakes intake ON intake.id = receipt.id
+  WHERE receipt.id = intake_id AND receipt.erased_at IS NULL
+    AND intake.raw_storage_object_id IS NOT NULL
+  FOR SHARE OF receipt;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'copyright email intake is under retention erasure'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_email_parse_active_receipt
+  BEFORE INSERT ON copyright_notice_email_intake_parses
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_attachment_active_receipt
+  BEFORE INSERT ON copyright_notice_email_intake_attachments
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_recommendation_active_receipt
+  BEFORE INSERT ON copyright_notice_email_intake_recommendations
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_review_active_receipt
+  BEFORE INSERT ON copyright_notice_email_intake_reviews
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_delivery_active_receipt
+  BEFORE INSERT ON copyright_notice_delivery_work_items
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_rationale_active_receipt
+  BEFORE INSERT ON copyright_decision_rationales
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_link_active_receipt
+  BEFORE INSERT ON copyright_notice_email_intake_notice_links
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_reference_active_receipt
+  BEFORE INSERT ON copyright_notice_email_thread_references
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+CREATE TRIGGER trigger_copyright_email_correspondence_review_active_receipt
+  BEFORE INSERT ON copyright_notice_email_correspondence_reviews
+  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
 
 -- Each security-retention family has its own durable keyset position. A completed pass resets
 -- the position so rows that became eligible after an earlier scan are reconsidered.

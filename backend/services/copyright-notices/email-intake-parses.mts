@@ -48,7 +48,10 @@ export async function recordCopyrightEmailParse(
     id: string
   }>(sql`/* recordCopyrightEmailParse:lock */
     SELECT id FROM copyright_notice_email_intakes
-    WHERE id = ${intake.id} AND raw_storage_object_id IS NOT NULL FOR UPDATE
+    WHERE id = ${intake.id} AND raw_storage_object_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = ${intake.id} AND receipt.erased_at IS NULL)
+    FOR UPDATE
   `)
   if (liveRows.length === 0) throw new ErasedCopyrightEmailIntakeReplay()
   const { rowCount } = await transaction(sql`/* recordCopyrightEmailParse */

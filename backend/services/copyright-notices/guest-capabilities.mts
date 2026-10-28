@@ -32,6 +32,14 @@ export async function issueCopyrightGuestCapability(input: {
   const id = uuidv7({ msecs: issuedAtMs })
   const token = randomBytes(32).toString('base64url')
   await using transaction = await beginTransaction()
+  const { rows: identities } = await transaction<{
+    id: string
+  }>(sql`/* reserveCopyrightGuestCapabilityIdentity */
+    INSERT INTO copyright_notice_guest_capability_identities (id, copyright_notice_id)
+    SELECT ${id}, notice.id FROM copyright_notices notice
+    WHERE notice.id = ${input.noticeId}
+    RETURNING id`)
+  assert(identities[0], 404, 'Copyright notice was not found')
   const { rows } = await transaction<{ id: string }>(sql`/* issueCopyrightGuestCapability */
     INSERT INTO copyright_notice_guest_capabilities (
       id, copyright_notice_id, token_hash, issued_by_id, expires_at

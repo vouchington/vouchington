@@ -62,7 +62,10 @@ export async function associateCopyrightEmailIntakeWithNotice(
   const { rows: lockedIntakes } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:lockIntake */
     SELECT id FROM copyright_notice_email_intakes
-    WHERE id = ${intakeId} AND raw_storage_object_id IS NOT NULL FOR UPDATE
+    WHERE id = ${intakeId} AND raw_storage_object_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = ${intakeId} AND receipt.erased_at IS NULL)
+    FOR UPDATE
   `)
   assert(lockedIntakes[0], 404, 'Copyright email intake not found')
   // Erasure updates only intakes already linked to its case. A link committed

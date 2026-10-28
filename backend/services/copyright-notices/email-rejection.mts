@@ -71,6 +71,8 @@ export async function rejectCopyrightEmailIntake(input: {
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
     WHERE intake.id = ${input.intakeId} AND intake.raw_storage_object_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = intake.id AND receipt.erased_at IS NULL)
     FOR UPDATE OF intake
   `)
   const intake = rows[0]

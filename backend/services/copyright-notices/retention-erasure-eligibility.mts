@@ -23,13 +23,8 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
  * just cleared never makes a case instantly erasable. Cases already erased are never offered again. Only `us_dmca`
  * cases are covered until the owner decides the EU and UK records.
  */
-export function copyrightRetentionEligibleSql(
-  now: Date,
-  cutoff: Date,
-  scope: 'evidence' | 'operational_thread' = 'evidence',
-  candidateNoticeId?: string,
-): SQLStatement {
-  return copyrightStaffQueueKeysSql({ candidateNoticeId })
+export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLStatement {
+  return copyrightStaffQueueKeysSql()
     .append(', preservation AS (')
     .append(COPYRIGHT_PRESERVATION_PARTIES_SQL)
     .append(sql`), blocked AS (
@@ -39,8 +34,7 @@ export function copyrightRetentionEligibleSql(
       JOIN copyright_notice_email_intakes intake
         ON intake.id = link.copyright_notice_email_intake_id
       WHERE link.link_kind = 'thread' AND `)
-    .append(copyrightEmailIntakeAwaitingReviewSql())
-    .append(sql`
+    .append(copyrightEmailIntakeAwaitingReviewSql()).append(sql`
       UNION ALL
       SELECT copyright_notice_id FROM copyright_notice_deadlines
       WHERE resolved_at IS NULL AND cancelled_at IS NULL
@@ -72,18 +66,11 @@ export function copyrightRetentionEligibleSql(
       WHERE revoked_at IS NULL AND expires_at > ${now}
     ), eligible AS (
       SELECT notice.id FROM copyright_notices notice
-      WHERE `)
-    .append(
-      scope === 'evidence'
-        ? sql`notice.jurisdiction = 'us_dmca'
+      WHERE notice.jurisdiction = 'us_dmca'
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_retention_erasures erased
           WHERE erased.copyright_notice_id = notice.id
-        )`
-        : sql`TRUE`,
-    )
-    .append(candidateNoticeId ? sql` AND notice.id = ${candidateNoticeId}` : sql``)
-    .append(sql`
+        )
         AND NOT EXISTS (SELECT 1 FROM blocked WHERE blocked.notice_id = notice.id)
         AND GREATEST(
           notice.created_at,
@@ -111,23 +98,6 @@ export function copyrightRetentionEligibleSql(
           (SELECT max(review.reviewed_at)
             FROM copyright_notice_email_correspondence_reviews review
             WHERE review.copyright_notice_id = notice.id)
-          `)
-    .append(
-      scope === 'operational_thread'
-        ? sql`,
-          (SELECT max(link.created_at) FROM copyright_notice_email_intake_notice_links link
-           WHERE link.copyright_notice_id = notice.id),
-          (SELECT max(reference.created_at) FROM copyright_notice_email_thread_references reference
-           JOIN copyright_notice_email_intake_notice_links link
-             ON link.copyright_notice_email_intake_id = reference.copyright_notice_email_intake_id
-           WHERE link.copyright_notice_id = notice.id),
-          (SELECT max(reply.created_at) FROM copyright_notice_email_message_ancestors edge
-           JOIN copyright_notice_email_intakes reply ON reply.id = edge.reply_message_intake_id
-           JOIN copyright_notice_email_intake_notice_links link
-             ON link.copyright_notice_email_intake_id = reply.id
-           WHERE link.copyright_notice_id = notice.id)`
-        : sql``,
-    ).append(sql`
         ) <= ${cutoff}
     )
   `)

@@ -11,23 +11,36 @@ type OperationalKind =
   | 'email_thread_references'
   | 'orphan_email_thread_tokens'
 
+function operationalTable(kind: OperationalKind | 'email_thread_tokens'): string {
+  switch (kind) {
+    case 'form_screening_attempts':
+      return 'copyright_notice_form_screening_attempts'
+    case 'action_attempts':
+      return 'copyright_notice_action_attempts'
+    case 'delivery_attempts':
+      return 'copyright_notice_delivery_attempts'
+    case 'guest_capabilities':
+      return 'copyright_notice_guest_capabilities'
+    case 'unlinked_email_intakes':
+      return 'copyright_notice_email_intakes'
+    case 'email_thread_references':
+      return 'copyright_notices'
+    case 'orphan_email_thread_tokens':
+    case 'email_thread_tokens':
+      return 'copyright_notice_email_thread_tokens'
+    default:
+      throw new Error(`Unknown copyright operational kind: ${kind}`)
+  }
+}
+
 /** Starts a real persisted keyset pass immediately before the fixture's first row. */
 export async function positionCopyrightOperationalCursor(
   kind: OperationalKind,
   firstId: string,
 ): Promise<void> {
-  const tables: Record<OperationalKind, string> = {
-    form_screening_attempts: 'copyright_notice_form_screening_attempts',
-    action_attempts: 'copyright_notice_action_attempts',
-    delivery_attempts: 'copyright_notice_delivery_attempts',
-    guest_capabilities: 'copyright_notice_guest_capabilities',
-    unlinked_email_intakes: 'copyright_notice_email_intakes',
-    email_thread_references: 'copyright_notices',
-    orphan_email_thread_tokens: 'copyright_notice_email_thread_tokens',
-  }
   const { rows } = await read<{ id: string }>(
     sql`/* predecessorCopyrightOperationalCursor */ SELECT id FROM `
-      .append(tables[kind])
+      .append(operationalTable(kind))
       .append(sql` WHERE id < ${firstId} ORDER BY id DESC LIMIT 1`),
   )
   await write(sql`/* positionCopyrightOperationalCursor */
@@ -37,7 +50,17 @@ export async function positionCopyrightOperationalCursor(
       ${rows[0]?.id ?? null}::uuid, NULL)
     ON CONFLICT (kind) DO UPDATE SET
       cursor_record_id = EXCLUDED.cursor_record_id,
-      sweep_upper_bound_record_id = NULL`)
+      sweep_upper_bound_record_id = NULL,
+      cursor_child_id = NULL, cursor_edge_id = NULL, cursor_phase = NULL,
+      cursor_legal_phase = NULL, cursor_legal_child_id = NULL,
+      cursor_legal_hold_generation = NULL, cursor_case_party_generation = NULL,
+      cursor_legal_latest_release_at = NULL,
+      cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
+      cursor_blocker_assessment_id = NULL, cursor_blocker_territorial_decision_id = NULL,
+      cursor_blocker_generation = NULL,
+      cursor_blocker_found_qualifying_assessment = false,
+      cursor_blocker_found_screening_target = false,
+      cursor_blocker_found_claimant_receipt = false`)
 }
 
 export async function seedCopyrightExecutionAttemptPair(
@@ -107,40 +130,6 @@ export async function seedCopyrightFormScreeningAttemptPair(
   return { priorId: rows[0]!.id, latestId: rows[1]!.id }
 }
 
-export async function seedUnusedCopyrightGuestCapability(
-  noticeId: string,
-  expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1_000),
-): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`/* seedUnusedCopyrightGuestCapability */
-    INSERT INTO copyright_notice_guest_capabilities
-      (copyright_notice_id, token_hash, expires_at)
-    VALUES (${noticeId}, ${`test-guest-${randomUUID()}`}, ${expiresAt})
-    RETURNING id`)
-  return rows[0]!.id
-}
-
-export async function seedCopyrightGuestCapabilitySubmission(
-  noticeId: string,
-  capabilityId: string,
-): Promise<void> {
-  await write(sql`/* seedCopyrightGuestCapabilitySubmission */
-    INSERT INTO copyright_notice_submissions
-      (copyright_notice_id, kind, received_at, source_kind, body_ciphertext,
-       copyright_notice_guest_capability_id)
-    VALUES (${noticeId}, 'supplement', CURRENT_TIMESTAMP, 'guest_form', 'v1:test-supplement',
-      ${capabilityId})`)
-}
-
-export async function seedCopyrightGuestCapabilityLifecycle(
-  noticeId: string,
-  capabilityId: string,
-): Promise<void> {
-  await write(sql`/* seedCopyrightGuestCapabilityLifecycle */
-    INSERT INTO copyright_notice_lifecycle_changes
-      (copyright_notice_id, change_type, copyright_notice_guest_capability_id)
-    VALUES (${noticeId}, 'guest_capability_issued', ${capabilityId})`)
-}
-
 export async function readCopyrightExecutionResult(
   kind: 'action' | 'delivery',
   attemptId: string,
@@ -166,16 +155,9 @@ export async function readCopyrightOperationalRow(
     | 'email_thread_tokens',
   id: string,
 ): Promise<boolean> {
-  const tables = {
-    form_screening_attempts: 'copyright_notice_form_screening_attempts',
-    action_attempts: 'copyright_notice_action_attempts',
-    delivery_attempts: 'copyright_notice_delivery_attempts',
-    guest_capabilities: 'copyright_notice_guest_capabilities',
-    email_thread_tokens: 'copyright_notice_email_thread_tokens',
-  }
   const { rows } = await read<{ id: string }>(
     sql`/* readCopyrightOperationalRow */ SELECT id FROM `
-      .append(tables[kind])
+      .append(operationalTable(kind))
       .append(sql` WHERE id = ${id}`),
   )
   return rows.length > 0

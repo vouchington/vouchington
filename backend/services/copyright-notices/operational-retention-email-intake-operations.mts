@@ -1,16 +1,33 @@
-import type { TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
+import { deleteCopyrightEvidenceObjectVersionPage } from './retention-erasure-s3.mts'
 
 /** A child page is capped independently; an incomplete intake stays at the cursor until the next page. */
 export async function deleteChildPage(
-  transaction: TransactionQuery,
+  transaction: QueryExecutor,
   intakeId: string,
   remaining: number,
   table: string,
   column = 'copyright_notice_email_intake_id',
   orderBy = 'id',
 ): Promise<number> {
+  if (table === 'copyright_notice_email_intake_recommendations') {
+    // One review at most can retain a recommendation for this intake. The extra raw row
+    // lets this page advance past that legal record without scanning the whole history.
+    const { rowCount } = await transaction(sql`/* deleteUnlinkedCopyrightEmailRecommendations */
+      WITH candidates AS (
+        SELECT id FROM copyright_notice_email_intake_recommendations
+        WHERE copyright_notice_email_intake_id = ${intakeId}
+        ORDER BY id LIMIT ${remaining + 1} FOR UPDATE
+      )
+      DELETE FROM copyright_notice_email_intake_recommendations recommendation
+      USING candidates
+      WHERE recommendation.id = candidates.id
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notice_email_intake_reviews review
+          WHERE review.copyright_notice_email_intake_recommendation_id = recommendation.id)`)
+    return rowCount ?? 0
+  }
   const { rowCount } = await transaction(
     sql`/* deleteUnlinkedCopyrightEmailIntakeChildPage */ DELETE FROM `
       .append(table)
@@ -20,14 +37,6 @@ export async function deleteChildPage(
       .append(sql` WHERE `)
       .append(column)
       .append(sql` = ${intakeId}`)
-      .append(
-        table === 'copyright_notice_email_intake_recommendations'
-          ? sql` AND NOT EXISTS (
-            SELECT 1 FROM copyright_notice_email_intake_reviews review
-            WHERE review.copyright_notice_email_intake_recommendation_id =
-              copyright_notice_email_intake_recommendations.id)`
-          : sql``,
-      )
       .append(sql` ORDER BY `)
       .append(orderBy)
       .append(sql` LIMIT ${remaining} FOR UPDATE)`),
@@ -41,9 +50,6 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
     is_linked: boolean
     has_promoted_review: boolean
     has_pending_delivery: boolean
-    has_linked_neighbor: boolean
-    has_legal_delivery: boolean
-    has_legal_review: boolean
     erased_at: Date | null
   }>(sql`/* inspectUnlinkedCopyrightEmailIntakeActivity */
     SELECT GREATEST(
@@ -59,7 +65,10 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       (SELECT reference.created_at FROM copyright_notice_email_thread_references reference
        WHERE reference.copyright_notice_email_intake_id = intake.id ORDER BY reference.id DESC LIMIT 1),
       (SELECT max(delivery.updated_at) FROM copyright_notice_delivery_work_items delivery
-       WHERE delivery.copyright_notice_email_intake_id = intake.id)
+       WHERE delivery.copyright_notice_email_intake_id = intake.id),
+      (SELECT rationale.created_at FROM copyright_decision_rationales rationale
+       WHERE rationale.copyright_notice_email_intake_id = intake.id
+       ORDER BY rationale.id DESC LIMIT 1)
     ) AS last_activity_at,
     EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
       WHERE link.copyright_notice_email_intake_id = intake.id)
@@ -75,31 +84,67 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
     EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
       WHERE delivery.copyright_notice_email_intake_id = intake.id
         AND delivery.state IN ('pending', 'claimed')) AS has_pending_delivery,
-    EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
-      WHERE delivery.copyright_notice_email_intake_id = intake.id) AS has_legal_delivery,
-    EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-      WHERE review.copyright_notice_email_intake_id = intake.id) AS has_legal_review,
-    EXISTS (
-      SELECT 1 FROM copyright_notice_email_message_ancestors edge
-      JOIN copyright_notice_email_intake_notice_links neighbor
-        ON neighbor.copyright_notice_email_intake_id = CASE
-          WHEN edge.reply_message_intake_id = intake.id THEN edge.ancestor_message_intake_id
-          ELSE edge.reply_message_intake_id END
-      WHERE edge.reply_message_intake_id = intake.id OR edge.ancestor_message_intake_id = intake.id
-    ) AS has_linked_neighbor
-    , receipt.erased_at
+    receipt.erased_at
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
     WHERE intake.id = ${intakeId}`)
   return rows[0]
 }
 
+/** Inspect one indexed raw edge page, including protected edges, before advancing the cursor. */
+export async function deleteUnlinkedAncestorEdgePage(
+  transaction: TransactionQuery,
+  intakeId: string,
+  direction: 'reply' | 'ancestor',
+  afterId: string | null,
+  limit: number,
+): Promise<{ done: boolean; lastId: string | null; scanned: number }> {
+  const { rows } =
+    direction === 'reply'
+      ? await transaction<{ neighbor_id: string }>(sql`/* pageUnlinkedReplyAncestorEdges */
+        SELECT ancestor_message_intake_id AS neighbor_id
+        FROM copyright_notice_email_message_ancestors
+        WHERE reply_message_intake_id = ${intakeId}
+          AND ancestor_message_intake_id > COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        ORDER BY ancestor_message_intake_id LIMIT ${limit}`)
+      : await transaction<{ neighbor_id: string }>(sql`/* pageUnlinkedAncestorReplyEdges */
+        SELECT reply_message_intake_id AS neighbor_id
+        FROM copyright_notice_email_message_ancestors
+        WHERE ancestor_message_intake_id = ${intakeId}
+          AND reply_message_intake_id > COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        ORDER BY reply_message_intake_id LIMIT ${limit}`)
+  const neighbors = rows.map(row => row.neighbor_id)
+  if (neighbors.length > 0) {
+    if (direction === 'reply') {
+      await transaction(sql`/* deleteUnlinkedReplyAncestorEdges */
+        DELETE FROM copyright_notice_email_message_ancestors edge
+        WHERE edge.reply_message_intake_id = ${intakeId}
+          AND edge.ancestor_message_intake_id = ANY(${neighbors}::uuid[])
+          AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+            WHERE link.copyright_notice_email_intake_id = edge.ancestor_message_intake_id)`)
+    } else {
+      await transaction(sql`/* deleteUnlinkedAncestorReplyEdges */
+        DELETE FROM copyright_notice_email_message_ancestors edge
+        WHERE edge.ancestor_message_intake_id = ${intakeId}
+          AND edge.reply_message_intake_id = ANY(${neighbors}::uuid[])
+          AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+            WHERE link.copyright_notice_email_intake_id = edge.reply_message_intake_id)`)
+    }
+  }
+  return {
+    done: rows.length < limit,
+    lastId: rows.at(-1)?.neighbor_id ?? afterId,
+    scanned: rows.length,
+  }
+}
+
 export async function eraseStorage(
   transaction: TransactionQuery,
   intakeId: string,
   storageObjectId: string | null,
-): Promise<void> {
-  if (!storageObjectId) return
+  workLimit: number,
+): Promise<{ complete: boolean; scanned: number }> {
+  if (!storageObjectId) return { complete: true, scanned: 0 }
   const { rows } = await transaction<{
     storage_key: string
   }>(sql`/* lockUnlinkedCopyrightEmailStorageObject */
@@ -116,13 +161,15 @@ export async function eraseStorage(
       SELECT 1 FROM copyright_notice_evidence_artifacts artifact
       WHERE artifact.storage_object_id = ${storageObjectId}
     ) AS is_exclusive`)
-  if (ownership[0]?.is_exclusive) {
-    await deleteCopyrightEvidenceObjectVersions([rows[0]!.storage_key])
-  }
+  const versionPage = ownership[0]?.is_exclusive
+    ? await deleteCopyrightEvidenceObjectVersionPage(rows[0]!.storage_key, workLimit)
+    : { hasMore: false, scanned: 0 }
+  if (versionPage.hasMore) return { complete: false, scanned: versionPage.scanned }
   await transaction(sql`/* clearUnlinkedCopyrightEmailStorageObject */
     UPDATE copyright_notice_email_intakes SET raw_storage_object_id = NULL WHERE id = ${intakeId}`)
   if (ownership[0]?.is_exclusive) {
     await transaction(sql`/* deleteUnlinkedCopyrightEmailStorageObject */
       DELETE FROM copyright_notice_storage_objects WHERE id = ${storageObjectId}`)
   }
+  return { complete: true, scanned: versionPage.scanned }
 }

@@ -1,99 +1,19 @@
 import { beginBoundedTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
-import {
-  deleteChildPage,
-  eraseStorage,
-  lastActivityAndBlockers,
-} from './operational-retention-email-intake-operations.mts'
+import { eraseIntakePage, type EdgeCursor } from './operational-retention-email-intake-page.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 type PageResult = { scanned: number; erased: number; hasMore: boolean }
 
-async function eraseIntakePage(
-  transaction: TransactionQuery,
-  intakeId: string,
+async function sweepPage(
+  cutoffId: string,
   cutoff: Date,
   childLimit: number,
-): Promise<{ complete: boolean; erased: boolean }> {
-  // Admission locks this retained receipt before it can copy evidence. Retention uses the same
-  // lock order, then locks the live row, so a replay cannot recreate a deleted object version.
-  await transaction(sql`/* lockUnlinkedCopyrightEmailReceipt */
-    SELECT id FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId} FOR UPDATE`)
-  const { rows: liveRows } = await transaction<{ raw_storage_object_id: string | null }>(
-    sql`/* lockUnlinkedCopyrightEmailIntake */
-      SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-      WHERE id = ${intakeId} FOR UPDATE`,
-  )
-  if (liveRows.length === 0) return { complete: true, erased: false }
-  const state = await lastActivityAndBlockers(transaction, intakeId)
-  if (
-    !state ||
-    state.is_linked ||
-    state.has_promoted_review ||
-    state.has_pending_delivery ||
-    (state.erased_at === null && state.last_activity_at > cutoff)
-  ) {
-    return { complete: true, erased: false }
-  }
-  // ast-grep-ignore: no-three-sequential-awaits -- the transaction-local erasure gate precedes the receipt marker and irreversible object deletion.
-  await transaction(sql`/* enableUnlinkedCopyrightEmailRetention */
-    SELECT set_config('app.copyright_retention_erasure', 'on', true),
-      set_config('app.copyright_operational_retention', 'on', true)`)
-  await transaction(sql`/* markUnlinkedCopyrightEmailReceiptErased */
-    UPDATE copyright_notice_email_intake_receipts
-    SET erased_at = COALESCE(erased_at, CURRENT_TIMESTAMP)
-    WHERE id = ${intakeId}`)
-  await eraseStorage(transaction, intakeId, liveRows[0]!.raw_storage_object_id)
-  let remaining = childLimit
-  const children = [
-    'copyright_notice_email_intake_recommendations',
-    'copyright_notice_email_intake_attachments',
-    'copyright_notice_email_intake_parses',
-  ] as const
-  for (const table of children) {
-    if (remaining === 0) return { complete: false, erased: true }
-    // oxlint-disable-next-line no-await-in-loop -- each FK child must be deleted before its parent.
-    remaining -= await deleteChildPage(transaction, intakeId, remaining, table) // no-mistakes-disable-line query-reached-per-item: three fixed FK child tables share one capped physical-row budget and parent lock.
-  }
-  if (state.has_linked_neighbor) return { complete: true, erased: true }
-  if (remaining === 0) return { complete: false, erased: true }
-  remaining -= await deleteChildPage(
-    transaction,
-    intakeId,
-    remaining,
-    'copyright_notice_email_message_ancestors',
-    'reply_message_intake_id',
-    'ancestor_message_intake_id',
-  )
-  if (remaining === 0) return { complete: false, erased: true }
-  remaining -= await deleteChildPage(
-    transaction,
-    intakeId,
-    remaining,
-    'copyright_notice_email_message_ancestors',
-    'ancestor_message_intake_id',
-    'reply_message_intake_id',
-  )
-  if (remaining === 0) return { complete: false, erased: true }
-  remaining -= await deleteChildPage(
-    transaction,
-    intakeId,
-    remaining,
-    'copyright_notice_email_thread_references',
-  )
-  if (remaining === 0) return { complete: false, erased: true }
-  if (state.has_legal_delivery || state.has_legal_review) return { complete: true, erased: true }
-  // Child deletes are committed in bounded pages. The final parent delete is guarded by all FKs,
-  // including a late link or legal record that appeared after the eligibility check.
-  await transaction(sql`/* deleteUnlinkedCopyrightEmailIntake */
-    DELETE FROM copyright_notice_email_intakes WHERE id = ${intakeId}`)
-  return { complete: true, erased: true }
-}
-
-async function sweepPage(cutoffId: string, cutoff: Date, childLimit: number): Promise<PageResult> {
+  queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor,
+): Promise<PageResult> {
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
@@ -104,8 +24,10 @@ async function sweepPage(cutoffId: string, cutoff: Date, childLimit: number): Pr
   const { rows: cursorRows } = await transaction<{
     cursor_record_id: string | null
     sweep_upper_bound_record_id: string | null
+    cursor_phase: EdgeCursor['phase']
+    cursor_edge_id: string | null
   }>(sql`/* lockUnlinkedCopyrightEmailRetentionCursor */
-    SELECT cursor_record_id, sweep_upper_bound_record_id
+    SELECT cursor_record_id, sweep_upper_bound_record_id, cursor_phase, cursor_edge_id
     FROM copyright_notice_operational_retention_cursors
     WHERE kind = 'unlinked_email_intakes' FOR UPDATE`)
   const cursor = cursorRows[0]!
@@ -126,13 +48,26 @@ async function sweepPage(cutoffId: string, cutoff: Date, childLimit: number): Pr
     await transaction.commit()
     return { scanned: 0, erased: 0, hasMore: false }
   }
-  const result = await eraseIntakePage(transaction, intakeId, cutoff, childLimit)
+  const edgeCursor: EdgeCursor = { phase: cursor.cursor_phase, edgeId: cursor.cursor_edge_id }
+  const result = await eraseIntakePage(
+    transaction,
+    intakeId,
+    cutoff,
+    childLimit,
+    edgeCursor,
+    queryAfterStorage,
+  )
   await transaction(sql`/* advanceUnlinkedCopyrightEmailRetentionCursor */
     UPDATE copyright_notice_operational_retention_cursors
     SET cursor_record_id = ${result.complete ? intakeId : cursor.cursor_record_id}::uuid,
-      sweep_upper_bound_record_id = ${upperBound}::uuid
+      sweep_upper_bound_record_id = ${upperBound}::uuid,
+      cursor_phase = ${result.complete ? null : edgeCursor.phase}::copyright_notice_thread_retention_phases,
+      cursor_edge_id = ${result.complete ? null : edgeCursor.edgeId}::uuid
     WHERE kind = 'unlinked_email_intakes'`)
   await transaction.commit()
+  if (result.failure instanceof Error) throw result.failure
+  if (result.failure !== undefined)
+    throw new Error('Copyright evidence erasure failed', { cause: result.failure })
   return { scanned: 1, erased: Number(result.erased), hasMore: true }
 }
 
@@ -141,6 +76,7 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
   retentionDays: number
   childLimit: number
   maxBatches: number
+  queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.retentionDays * DAY_MS)
@@ -150,7 +86,7 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
   let hasMore = false
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
-    const page = await sweepPage(cutoffId, cutoff, options.childLimit) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+    const page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
     scanned += page.scanned
     erased += page.erased
     hasMore = page.hasMore

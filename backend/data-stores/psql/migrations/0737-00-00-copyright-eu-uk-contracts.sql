@@ -650,12 +650,18 @@ CREATE INDEX IF NOT EXISTS idx_copyright_territorial_notice_receipts__requester
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_decisions__decided_by
   ON copyright_territorial_decisions (decided_by_id) WHERE decided_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_territorial_decisions__assessment
-  ON copyright_territorial_decisions (copyright_notice_submission_assessment_id)
+  ON copyright_territorial_decisions (copyright_notice_submission_assessment_id, id)
   WHERE copyright_notice_submission_assessment_id IS NOT NULL;
+ALTER TABLE copyright_notice_operational_retention_cursors
+  ADD COLUMN cursor_blocker_territorial_decision_id uuid
+  REFERENCES copyright_territorial_decisions(id) ON DELETE SET NULL;
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_territorial_decision_id IS 'Concrete territorial decision whose reversal requests are being paged for the current blocker proof.';
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision
   ON copyright_territorial_redress_requests (copyright_notice_id, copyright_territorial_decision_id);
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision_page
   ON copyright_territorial_redress_requests (copyright_territorial_decision_id, id);
+CREATE INDEX idx_copyright_territorial_redress_requests__notice_id
+  ON copyright_territorial_redress_requests (copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__submitter
   ON copyright_territorial_redress_requests (submitted_by_id) WHERE submitted_by_id IS NOT NULL;

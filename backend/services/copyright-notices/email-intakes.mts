@@ -65,15 +65,17 @@ export async function createCopyrightEmailIntake(input: {
     ON CONFLICT (amazon_ses_message_id) DO NOTHING RETURNING id`)
   const { rows: receiptRows } = await transaction<{
     id: string
+    erased_at: Date | null
     raw_sha256: Buffer
     raw_storage_key_sha256: Buffer
     raw_byte_size: number
   }>(sql`/* lockCopyrightEmailIntakeReceipt */
-    SELECT id, raw_sha256, raw_storage_key_sha256, raw_byte_size
+    SELECT id, erased_at, raw_sha256, raw_storage_key_sha256, raw_byte_size
     FROM copyright_notice_email_intake_receipts
     WHERE amazon_ses_message_id = ${input.sesMessageId} FOR UPDATE`)
   const receipt = receiptRows[0]
   assert(receipt, 500, 'Copyright email intake receipt conflict has no stored identity')
+  if (receipt.erased_at) throw new ErasedCopyrightEmailIntakeReplay()
   assert(
     receipt.raw_sha256.equals(input.rawSha256) &&
       receipt.raw_storage_key_sha256.equals(storageKeySha256) &&

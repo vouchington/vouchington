@@ -87,7 +87,7 @@ CREATE TABLE copyright_notice_email_intake_attachments (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_recommendations__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_recommendations__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   input_sha256 bytea NOT NULL CONSTRAINT chk_copyright_notice_email_intake_recommendations__input_sha256 CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CONSTRAINT chk_copyright_notice_email_intake_recommendatio__prompt_version CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
@@ -101,7 +101,7 @@ CREATE TABLE copyright_notice_email_intake_recommendations (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_reviews__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_reviews__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -175,12 +175,12 @@ COMMENT ON COLUMN copyright_notice_email_intake_attachments.content_id_ciphertex
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.media_type_id IS 'Declared attachment media type.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.byte_size IS 'Decoded attachment byte size.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.sha256 IS 'SHA-256 digest computed while streaming the attachment.';
-COMMENT ON COLUMN copyright_notice_email_intake_recommendations.copyright_notice_email_intake_id IS 'Email intake evaluated by this advisory recommendation.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendations.copyright_notice_email_intake_id IS 'Retained intake receipt identity evaluated by this advisory recommendation; it does not authorize a deleted intake.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.input_sha256 IS 'Digest of the exact sanitized extraction input.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.prompt_version IS 'Versioned extraction and recommendation prompt.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.model IS 'Model identifier recorded for recommendation provenance.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.structured_output_ciphertext IS 'Encrypted bounded agent extraction and recommendation.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_id IS 'Email intake reviewed by a moderator.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_id IS 'Retained intake receipt identity reviewed by a moderator; the review remains after private source erasure.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_recommendation_id IS 'Optional advisory recommendation reviewed as provenance.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_at IS 'Moderator-supplied review completion timestamp.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_by_id IS 'Staff member who decided the intake; erased on account deletion.';

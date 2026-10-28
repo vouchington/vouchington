@@ -6,7 +6,7 @@
 CREATE TABLE copyright_notice_delivery_work_items (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_email_intake_id uuid CONSTRAINT fk_copyright_notice_delivery_work_items__email_intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_id uuid CONSTRAINT fk_copyright_notice_delivery_work_items__email_intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   copyright_notice_submission_id uuid,
   copyright_notice_correspondence_message_id uuid,
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -153,6 +153,8 @@ ALTER TABLE copyright_notice_lifecycle_changes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice
   ON copyright_notice_delivery_work_items (copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_delivery_work_items__notice_updated
+  ON copyright_notice_delivery_work_items (copyright_notice_id, updated_at);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__submission
   ON copyright_notice_delivery_work_items (copyright_notice_submission_id, copyright_notice_id)
@@ -222,7 +224,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE copyright_notice_delivery_work_items IS 'Durable, idempotent legal-notice delivery obligations, including statements of reasons, decision notices, authenticated arrival receipts, and private replies to rejected email intakes. Transport workers claim and transition intents; they cannot alter case facts.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_id IS 'Copyright case that owns the delivery obligation; NULL for a reply to a declined email intake, which never creates a case.';
-COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_email_intake_id IS 'Private inbound email this receipt or reply answers; exactly one of this and copyright_notice_id is set, and at most one delivery of each kind exists per intake.';
+COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_email_intake_id IS 'Retained inbound email receipt identity this delivery answers; exactly one of this and copyright_notice_id is set, and at most one delivery of each kind exists per intake.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.body_ciphertext IS 'Immutable encrypted receipt or reply body sent for an email intake, so every retry sends the same legal text; NULL for case deliveries.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_submission_id IS 'Optional immutable submission that caused the delivery.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_correspondence_message_id IS 'Optional private correspondence body delivered by this obligation.';

@@ -122,6 +122,45 @@ CREATE TABLE copyright_notice_submissions (
   CONSTRAINT copyright_notice_submissions_id_notice_unique UNIQUE (id, copyright_notice_id)
 );
 
+-- A case-level generation fences paged legal-party proof against newly introduced parties.
+CREATE TABLE copyright_notice_thread_party_generations (
+  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE CASCADE,
+  generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0)
+);
+CREATE TABLE copyright_notice_thread_blocker_generations (
+  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE CASCADE,
+  generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0)
+);
+COMMENT ON TABLE copyright_notice_thread_blocker_generations IS 'Per-case staff and business blocker change generation invalidating a bounded retention proof.';
+CREATE FUNCTION fn_bump_copyright_thread_party_generation()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE notice_id uuid;
+BEGIN
+  IF TG_TABLE_NAME = 'copyright_notices' THEN
+    notice_id := NEW.id;
+  ELSE
+    notice_id := NEW.copyright_notice_id;
+  END IF;
+  PERFORM 1 FROM copyright_notices WHERE id = notice_id FOR KEY SHARE;
+  INSERT INTO copyright_notice_thread_party_generations (copyright_notice_id, generation)
+  VALUES (notice_id, 1)
+  ON CONFLICT (copyright_notice_id) DO UPDATE
+    SET generation = copyright_notice_thread_party_generations.generation + 1;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_thread_party_claimant
+  AFTER UPDATE OF claimant_user_id ON copyright_notices
+  FOR EACH ROW WHEN (OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id)
+  EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
+CREATE TRIGGER trigger_copyright_thread_party_submission
+  AFTER INSERT OR UPDATE OF submitted_by_id ON copyright_notice_submissions
+  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
+CREATE TRIGGER trigger_copyright_thread_party_target
+  AFTER INSERT OR UPDATE OF placement_id, surface_owner_user_id, surface_activation_revision
+  ON copyright_notice_targets
+  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_storage_objects (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -504,8 +543,8 @@ CREATE TABLE copyright_notice_action_work_items (
 CREATE FUNCTION fn_reject_copyright_operational_retention()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF TG_OP = 'DELETE' AND (pg_trigger_depth() > 1 OR
-    current_setting('app.copyright_operational_retention', true) = 'on') THEN
+  IF TG_OP = 'DELETE' AND
+    current_setting('app.copyright_operational_retention', true) = 'on' THEN
     RETURN OLD;
   END IF;
   RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';
@@ -518,10 +557,29 @@ CREATE TYPE copyright_notice_operational_retention_kinds AS ENUM (
   'guest_capabilities', 'unlinked_email_intakes', 'email_thread_references',
   'orphan_email_thread_tokens'
 );
+CREATE TYPE copyright_notice_thread_retention_phases AS ENUM (
+  'references', 'reply_edges', 'ancestor_edges',
+  'unlinked_reply_edges', 'unlinked_ancestor_edges'
+);
 CREATE TABLE copyright_notice_operational_retention_cursors (
   kind copyright_notice_operational_retention_kinds PRIMARY KEY,
   cursor_record_id uuid,
   sweep_upper_bound_record_id uuid,
+  cursor_child_id uuid,
+  cursor_edge_id uuid,
+  cursor_phase copyright_notice_thread_retention_phases,
+  cursor_legal_phase text CHECK (cursor_legal_phase IN ('claimant', 'submissions', 'incidents', 'targets', 'done')),
+  cursor_legal_child_id uuid,
+  cursor_legal_hold_generation bigint,
+  cursor_case_party_generation bigint,
+  cursor_legal_latest_release_at timestamptz,
+  cursor_blocker_phase text,
+  cursor_blocker_child_id uuid,
+  cursor_blocker_assessment_id uuid REFERENCES copyright_notice_submission_assessments(id) ON DELETE SET NULL,
+  cursor_blocker_generation bigint,
+  cursor_blocker_found_qualifying_assessment boolean NOT NULL DEFAULT false,
+  cursor_blocker_found_screening_target boolean NOT NULL DEFAULT false,
+  cursor_blocker_found_claimant_receipt boolean NOT NULL DEFAULT false,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TRIGGER trigger_copyright_operational_cursors_updated_at
@@ -531,6 +589,21 @@ COMMENT ON TABLE copyright_notice_operational_retention_cursors IS 'One bounded 
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.kind IS 'Finite copyright operational sweep whose position this row stores.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_record_id IS 'Last scanned UUIDv7 record; scanned ineligible rows advance this position and a completed pass resets it.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id IS 'Fixed exclusive UUIDv7 upper bound for the current pass; null between passes.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_child_id IS 'Last case-link position examined within the current thread-retention case; a traversal value, not an authorization reference.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_edge_id IS 'Last raw neighboring intake position examined within the current thread or unlinked-intake edge phase; a traversal value, not an authorization reference.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_phase IS 'Thread-retention or unlinked-intake child phase resumed for the current record.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_phase IS 'Current bounded case-party source for legal preservation proof.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_child_id IS 'Last raw party-source row inspected in the current legal phase; a traversal value, not a relation.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_hold_generation IS 'Observed global preservation-hold generation for this paged proof.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_case_party_generation IS 'Observed case-party generation for this paged proof.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_latest_release_at IS 'Latest release timestamp found across completed bounded party pages.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_phase IS 'Current bounded staff and business blocker proof phase.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_child_id IS 'Last raw blocker-source row inspected; an opaque traversal value, not a relationship.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_assessment_id IS 'Concrete submission assessment whose nested blocker children are being paged.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_generation IS 'Observed case blocker generation for the current paged proof.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_found_qualifying_assessment IS 'Accumulated bounded assessment predicate for the current proof.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_found_screening_target IS 'Accumulated bounded screening target predicate for the current proof.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_found_claimant_receipt IS 'Accumulated bounded claimant receipt predicate for the current proof.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.updated_at IS 'Last time this sweep position changed.';
 
 CREATE TABLE copyright_notice_action_attempts (
@@ -663,10 +736,13 @@ CREATE INDEX idx_copyright_notice_target_images__image ON copyright_notice_targe
 CREATE INDEX idx_copyright_notice_target_images__binding ON copyright_notice_target_images(placement_id, image_id, binding_family);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__target ON copyright_restrictions(copyright_notice_target_id);
+CREATE INDEX idx_copyright_restrictions__notice_id ON copyright_restrictions(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restrictions(human_reviewed_by_id) WHERE human_reviewed_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
+CREATE INDEX idx_copyright_notice_submissions__notice_id ON copyright_notice_submissions(copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_targets__notice_id ON copyright_notice_targets(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_id) WHERE submitted_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
