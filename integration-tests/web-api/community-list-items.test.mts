@@ -226,11 +226,11 @@ describe('community-list-items', () => {
   })
 
   describe('community list items client routes', () => {
-    it('addCommunityListTopic + removeCommunityListItem round-trip', async () => {
+    it('addCommunityListItemByType + removeCommunityListItem round-trip', async () => {
       const roundTripTopic = await createTestTopic({ user: adminUser })
 
       await withClientRuntime(
-        () => clientRoutes.addCommunityListTopic(communitySlug, roundTripTopic.id),
+        () => clientRoutes.addCommunityListItemByType(communitySlug, 'topic', roundTripTopic.id),
         adminCookieHeader,
       )
 

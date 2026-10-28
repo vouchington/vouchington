@@ -8,7 +8,6 @@ vi.mock(
         get: vi.fn<VitestLooseMock>(),
         post: vi.fn<VitestLooseMock>(),
         patch: vi.fn<VitestLooseMock>(),
-        delete: vi.fn<VitestLooseMock>(),
       },
     }) as unknown as typeof import('@/lib/api/client/instance'),
 )
@@ -20,17 +19,12 @@ import {
   openModmailThreadForReport,
   getModmailMessagesClient,
   sendModmailMessage,
-  assignModmailThread,
   resolveModmailThread,
-  getCommunitySavedReplies,
-  createSavedReply,
-  deleteSavedReply,
 } from '@/lib/api/client/modmail'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockPost = vi.mocked(clientApi.post)
 const mockPatch = vi.mocked(clientApi.patch)
-const mockDelete = vi.mocked(clientApi.delete)
 
 describe('modmail client api helpers', () => {
   afterEach(() => {
@@ -115,19 +109,6 @@ describe('modmail client api helpers', () => {
     })
   })
 
-  describe('assignModmailThread', () => {
-    it('PATCHes /api/v1/communities/:slug/modmail/:conversationId with assigned_moderator_user_id', async () => {
-      const thread = { id: 'conv-1', assigned_moderator_user_id: 'mod-1' }
-      mockPatch.mockResolvedValueOnce({ thread })
-
-      await assignModmailThread('my-community', 'conv-1', 'mod-1')
-
-      expect(mockPatch).toHaveBeenCalledWith('/api/v1/communities/my-community/modmail/conv-1', {
-        assigned_moderator_user_id: 'mod-1',
-      })
-    })
-  })
-
   describe('resolveModmailThread', () => {
     it('PATCHes /api/v1/communities/:slug/modmail/:conversationId with resolved true', async () => {
       const thread = { id: 'conv-1', resolved_at: '2026-01-01T00:00:00Z' }
@@ -138,58 +119,6 @@ describe('modmail client api helpers', () => {
       expect(mockPatch).toHaveBeenCalledWith('/api/v1/communities/my-community/modmail/conv-1', {
         resolved: true,
       })
-    })
-  })
-
-  describe('getCommunitySavedReplies', () => {
-    it('GETs /api/v1/communities/:slug/saved-replies', async () => {
-      const response = {
-        results: [],
-        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      }
-      mockGet.mockResolvedValueOnce(response)
-
-      const result = await getCommunitySavedReplies('my-community')
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/my-community/saved-replies')
-      expect(result).toBe(response)
-    })
-
-    it('forwards saved reply pagination options', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getCommunitySavedReplies('my-community', { after: 'opaque', limit: 20 })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/my-community/saved-replies', {
-        searchParams: { after: 'opaque', limit: 20 },
-      })
-    })
-  })
-
-  describe('createSavedReply', () => {
-    it('POSTs to /api/v1/communities/:slug/saved-replies with title and body', async () => {
-      const reply = { id: 'reply-1', title: 'Template', body: 'Thank you.' }
-      mockPost.mockResolvedValueOnce({ reply })
-
-      const result = await createSavedReply('my-community', 'Template', 'Thank you.')
-
-      expect(mockPost).toHaveBeenCalledWith('/api/v1/communities/my-community/saved-replies', {
-        title: 'Template',
-        body: 'Thank you.',
-      })
-      expect(result).toEqual({ reply })
-    })
-  })
-
-  describe('deleteSavedReply', () => {
-    it('DELETEs /api/v1/communities/:slug/saved-replies/:id', async () => {
-      mockDelete.mockResolvedValueOnce(undefined)
-
-      await deleteSavedReply('my-community', 'reply-1')
-
-      expect(mockDelete).toHaveBeenCalledWith(
-        '/api/v1/communities/my-community/saved-replies/reply-1',
-      )
     })
   })
 

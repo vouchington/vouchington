@@ -12,12 +12,10 @@ import communitiesPinnedPostsDefault from '../../../../api-fixtures/v1/responses
 import communitiesPostsDefault from '../../../../api-fixtures/v1/responses/web.communities.posts.default.json'
 import communitiesSearchDefault from '../../../../api-fixtures/v1/responses/web.communities.search.default.json'
 import communitiesShowDefault from '../../../../api-fixtures/v1/responses/web.communities.show.default.json'
-import type {
-  CommunityAgentPromptHistoryEntry,
-  CommunityAgentPromptsResponseBody,
-} from '@/lib/api/client/community-agent-prompts'
+import type { CommunityAgentPromptHistoryEntry } from '@/lib/api/client/community-agent-prompts'
 import type {
   CommunitiesSearchResponseBody,
+  CommunityAgentPromptsResponseBody,
   CommunityAiAgentResponseBody,
   CommunityAiAgentsResponseBody,
   CommunityApplicationQuestionsResponseBody,
@@ -50,7 +48,6 @@ export const COMMUNITIES_CORE_DECLARATIONS = [
     'web.communities.agent-prompts.default',
     communitiesAgentPromptsDefault,
     context => context.server.communityAgentPrompts.getCommunityAgentPrompts('test-community'),
-    [context => context.client.communityAgentPrompts.fetchCommunityAgentPrompts('test-community')],
   ),
   defineWebApiFixture<CommunityAiAgentResponseBody>()(
     'web.communities.ai-agent.default',

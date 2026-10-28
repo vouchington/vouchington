@@ -12,15 +12,7 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import {
-  addCommunityListItemByType,
-  addCommunityListDomain,
-  addCommunityListPost,
-  addCommunityListRssFeed,
-  addCommunityListTopic,
-  addCommunityListUrl,
-  removeCommunityListItem,
-} from '../community-list-items'
+import { addCommunityListItemByType, removeCommunityListItem } from '../community-list-items'
 
 const mockDelete = vi.mocked(clientApi.delete)
 const mockPost = vi.mocked(clientApi.post)
@@ -33,11 +25,11 @@ describe('community list item client', () => {
   it('adds community list items through their resource paths', async () => {
     mockPost.mockResolvedValue(undefined)
 
-    await addCommunityListTopic('rewards', 'topic-1')
-    await addCommunityListRssFeed('rewards', 'feed-1')
-    await addCommunityListPost('rewards', 'post-1')
-    await addCommunityListDomain('rewards', 'hostname-1')
-    await addCommunityListUrl('rewards', 'url-1')
+    await addCommunityListItemByType('rewards', 'topic', 'topic-1')
+    await addCommunityListItemByType('rewards', 'rss_feed', 'feed-1')
+    await addCommunityListItemByType('rewards', 'post', 'post-1')
+    await addCommunityListItemByType('rewards', 'url_hostname', 'hostname-1')
+    await addCommunityListItemByType('rewards', 'url', 'url-1')
 
     expect(mockPost).toHaveBeenNthCalledWith(1, '/api/v1/communities/rewards/list-items/topics', {
       topic_id: 'topic-1',

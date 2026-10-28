@@ -19,25 +19,8 @@ export interface ModmailMessage {
   created_at: string
 }
 
-export interface SavedReply {
-  id: string
-  community_id: string
-  title: string
-  body: string
-  order_index: number
-  created_by_id: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
 export interface ModmailMessagesResponseBody {
   results: ModmailMessage[]
-  page_info: PageInfo
-}
-
-export interface SavedRepliesResponseBody {
-  results: SavedReply[]
   page_info: PageInfo
 }
 
@@ -92,17 +75,6 @@ export function sendModmailMessage(
   )
 }
 
-export function assignModmailThread(
-  communitySlug: string,
-  conversationId: string,
-  modUserId: string,
-): Promise<{ thread: ModmailThread }> {
-  return clientApi.patch<{ thread: ModmailThread }>(
-    `/api/v1/communities/${encodeURIComponent(communitySlug)}/modmail/${conversationId}`,
-    { assigned_moderator_user_id: modUserId },
-  )
-}
-
 export function resolveModmailThread(
   communitySlug: string,
   conversationId: string,
@@ -110,33 +82,5 @@ export function resolveModmailThread(
   return clientApi.patch<{ thread: ModmailThread }>(
     `/api/v1/communities/${encodeURIComponent(communitySlug)}/modmail/${conversationId}`,
     { resolved: true },
-  )
-}
-
-export function getCommunitySavedReplies(
-  communitySlug: string,
-  options?: { after?: string; limit?: number },
-): Promise<SavedRepliesResponseBody> {
-  const path = `/api/v1/communities/${encodeURIComponent(communitySlug)}/saved-replies`
-  if (!options) return clientApi.get<SavedRepliesResponseBody>(path)
-  return clientApi.get<SavedRepliesResponseBody>(path, {
-    searchParams: { after: options?.after, limit: options?.limit },
-  })
-}
-
-export function createSavedReply(
-  communitySlug: string,
-  title: string,
-  body: string,
-): Promise<{ reply: SavedReply }> {
-  return clientApi.post<{ reply: SavedReply }>(
-    `/api/v1/communities/${encodeURIComponent(communitySlug)}/saved-replies`,
-    { title, body },
-  )
-}
-
-export function deleteSavedReply(communitySlug: string, replyId: string): Promise<void> {
-  return clientApi.delete(
-    `/api/v1/communities/${encodeURIComponent(communitySlug)}/saved-replies/${replyId}`,
   )
 }

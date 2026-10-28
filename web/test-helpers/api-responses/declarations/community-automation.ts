@@ -16,7 +16,10 @@ import type {
   CommunityPostTypeSettingsResponseBody,
 } from '@/types/api-responses'
 import type { CommunityAutomodSimulation } from '@/lib/api/client/community-agent-prompts'
-import type { SavedRepliesResponseBody, SavedReply } from '@/lib/api/client/modmail'
+import type {
+  SavedRepliesResponseBody,
+  SavedReply,
+} from '@/test-helpers/saved-replies-fixture-types'
 import type { CommunityIssueUserWarningResponse } from '@/lib/api/client/warnings'
 import {
   defineWebApiFixture,
@@ -110,16 +113,18 @@ export const COMMUNITY_AUTOMATION_DECLARATIONS = [
   defineWebApiFixture<SavedRepliesResponseBody>()(
     'web.communities.saved-replies.default',
     communitiesSavedRepliesDefault,
-    context => context.client.modmail.getCommunitySavedReplies('test-community'),
+    context =>
+      context.rawServer.get<SavedRepliesResponseBody>(
+        '/api/v1/communities/test-community/saved-replies',
+      ),
   ),
   defineWebApiFixture<{ reply: SavedReply }>()(
     'web.communities.saved-reply.create.default',
     communitiesSavedReplyCreateDefault,
     context =>
-      context.client.modmail.createSavedReply(
-        'test-community',
-        'Greeting',
-        'Thanks for writing in.',
+      context.rawServer.post<{ reply: SavedReply }>(
+        '/api/v1/communities/test-community/saved-replies',
+        { title: 'Greeting', body: 'Thanks for writing in.' },
       ),
   ),
   defineWebApiFixture<CommunityIssueUserWarningResponse>()(

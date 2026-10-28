@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  fetchCommunityAgentPrompts,
-  fetchCommunityAgentPrompt,
   createCommunityAgentPrompt,
   updateCommunityAgentPrompt,
   deleteCommunityAgentPrompt,
@@ -37,37 +35,9 @@ describe('community-agent-prompts client api helpers', () => {
     mockPost.mockReset()
     mockPatch.mockReset()
     mockDelete.mockReset()
-    mockGet.mockResolvedValue({ community_agent_prompts: [] })
     mockPost.mockResolvedValue({ community_agent_prompt: { id: 'prompt-1' } })
     mockPatch.mockResolvedValue({ community_agent_prompt: { id: 'prompt-1' } })
     mockDelete.mockResolvedValue(undefined)
-  })
-
-  describe('fetchCommunityAgentPrompts', () => {
-    it('calls GET /api/v1/communities/:slug/agent-prompts', async () => {
-      const response = { community_agent_prompts: [], slot_info: { available: true } }
-      mockGet.mockResolvedValueOnce(response)
-
-      const result = await fetchCommunityAgentPrompts('my-community')
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/my-community/agent-prompts')
-      expect(result).toBe(response)
-    })
-
-    it('encodes slug in URL', async () => {
-      await fetchCommunityAgentPrompts('my community')
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/my%20community/agent-prompts')
-    })
-  })
-
-  describe('fetchCommunityAgentPrompt', () => {
-    it('calls GET /api/v1/communities/:slug/agent-prompts/:promptId', async () => {
-      mockGet.mockResolvedValueOnce({ community_agent_prompt: { id: 'prompt-1' } })
-      await fetchCommunityAgentPrompt('my-community', 'prompt-1')
-      expect(mockGet).toHaveBeenCalledWith(
-        '/api/v1/communities/my-community/agent-prompts/prompt-1',
-      )
-    })
   })
 
   describe('createCommunityAgentPrompt', () => {

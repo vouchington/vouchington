@@ -118,7 +118,6 @@ export const COMMUNITY_LISTS_MODERATION_DECLARATIONS = [
     'web.communities.moderator-vacation.default',
     communitiesModeratorVacationDefault,
     context => context.server.communityModeratorVacation.getMyModeratorVacation('test-community'),
-    [context => context.client.moderatorVacation.fetchMyModeratorVacation('test-community')],
   ),
   defineWebApiFixture<ModlogResponseBody>()(
     'web.communities.modlog.default',
@@ -152,6 +151,5 @@ export const COMMUNITY_LISTS_MODERATION_DECLARATIONS = [
     'web.communities.restrictions.default',
     communitiesRestrictionsDefault,
     context => context.server.communityRestrictions.getCommunityRestrictions('test-community'),
-    [context => context.client.communityRestrictions.fetchCommunityRestrictions('test-community')],
   ),
 ] as const satisfies readonly WebApiFixtureDeclaration<string, unknown>[]
