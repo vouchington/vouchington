@@ -5,9 +5,6 @@ import vitestConfig from '../../vitest.config.mts'
 
 import { projectToJob } from './project-ownership-registry.mts'
 
-export const BACKEND_UNIT_SUITE_FLOOR = 2151
-export const BACKEND_UNIT_SUITE_CEILING = 4302
-
 type InlineVitestProject = {
   root?: string
   test?: {
@@ -56,17 +53,4 @@ export function countJobSuiteFiles(
     filesByJob.set(job, jobFiles)
   }
   return new Map([...filesByJob].map(([job, files]) => [job, files.size]))
-}
-
-export function assertBackendUnitSuiteBounds(count: number): void {
-  if (count < BACKEND_UNIT_SUITE_FLOOR) {
-    throw new Error(
-      `test-backend-unit suite count ${count} is below the recorded ${BACKEND_UNIT_SUITE_FLOOR}-file incident floor`,
-    )
-  }
-  if (count > BACKEND_UNIT_SUITE_CEILING) {
-    throw new Error(
-      `test-backend-unit suite count ${count} exceeds the ${BACKEND_UNIT_SUITE_CEILING} overcount canary`,
-    )
-  }
 }

@@ -1,6 +1,7 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { formatCoverageReport, reportCoverage } from '../explain-coverage.mts'
 import { trackedRuntimeSources } from '../explain-coverage-files.mts'
@@ -47,11 +48,40 @@ describe('EXPLAIN coverage', () => {
     }
   })
 
-  it('discovers application SQL without replay-only EXPLAIN infrastructure', () => {
-    const files = new Set(trackedRuntimeSources().map(source => source.fileName))
-    expect(files.has('backend/services/oauth-accounts/connect.mts')).toBe(true)
-    expect(files.has('backend/data-stores/psql/explain-analyze.mts')).toBe(false)
-    expect(files.has('backend/data-stores/psql/explain-prepared.mts')).toBe(false)
+  it('discovers only tracked runtime sources in an owned repository fixture', () => {
+    const root = mkdtempSync(join(tmpdir(), 'explain-coverage-sources-'))
+    try {
+      const included = [
+        'backend/data-stores/fixture.tsx',
+        'backend/modules/fixture.ts',
+        'backend/services/fixture.mts',
+        'backend/workers/fixture.js',
+      ]
+      const excluded = [
+        'backend/services/fixture.test.mts',
+        'backend/services/__tests__/fixture.mts',
+        'backend/services/test-helpers/fixture.mts',
+        'backend/data-stores/psql/migration-runner/fixture.mts',
+        'backend/data-stores/psql/explain-analyze.mts',
+        'backend/data-stores/psql/explain-prepared.mts',
+        'backend/services/fixture.json',
+        'ci/fixture.mts',
+      ]
+      for (const file of [...included, ...excluded]) {
+        const path = join(root, file)
+        mkdirSync(dirname(path), { recursive: true })
+        writeFileSync(path, `// fixture: ${file}`)
+      }
+      execFileSync('git', ['init', '--quiet', root])
+      execFileSync('git', ['add', '--', ...included, ...excluded], { cwd: root })
+      writeFileSync(join(root, 'backend/services/untracked.mts'), '// untracked')
+
+      expect(trackedRuntimeSources(root)).toEqual(
+        included.map(fileName => ({ fileName, source: `// fixture: ${fileName}` })),
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('does not count a dynamic read as covered by a same-named write', async () => {

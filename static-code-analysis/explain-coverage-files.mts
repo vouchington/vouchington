@@ -14,9 +14,9 @@ const RUNTIME_ROOTS = [
   'backend/data-stores',
 ]
 
-export function trackedRuntimeSources(): Source[] {
+export function trackedRuntimeSources(root = REPO_ROOT): Source[] {
   const files = execFileSync('git', ['ls-files', '-z', '--', ...RUNTIME_ROOTS], {
-    cwd: REPO_ROOT,
+    cwd: root,
     maxBuffer: 16 * 1024 * 1024,
   })
     .toString()
@@ -30,7 +30,7 @@ export function trackedRuntimeSources(): Source[] {
     )
   return files.map(fileName => ({
     fileName,
-    source: readFileSync(join(REPO_ROOT, fileName), 'utf8'),
+    source: readFileSync(join(root, fileName), 'utf8'),
   }))
 }
 
