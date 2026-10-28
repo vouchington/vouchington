@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -71,10 +70,10 @@ export async function insertTestPost(data: {
     await setTestPostClearanceStatus(postId, clearanceStatus, data.createdById)
   }
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestPost:slug */
     INSERT INTO post_slugs (post_id, slug)
     VALUES (${postId}, ${data.slug})
-  `),
+  `,
   )
   return postId
 }
@@ -91,25 +90,25 @@ export async function insertTestPostSlugsInOneMillisecond(postId: string): Promi
 }
 export async function setPostDeclaredLanguage(postId: string, lang: string | null): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`UPDATE posts SET declared_language = ${lang} WHERE id = ${postId}`),
+    sql`/* setPostDeclaredLanguage */ UPDATE posts SET declared_language = ${lang} WHERE id = ${postId}`,
   )
 }
 
 export async function deleteTestPost(postId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* deleteTestPost */
     UPDATE posts
     SET deleted_at = NOW()
     WHERE id = ${postId}
-  `),
+  `,
   )
 }
 
 export async function getTestPostDeletedAt(postId: string): Promise<Date | null> {
   const { rows } = await read<{ deleted_at: Date | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestPostDeletedAt */
     SELECT deleted_at FROM posts WHERE id = ${postId} LIMIT 1
-  `),
+  `,
   )
   return rows[0]?.deleted_at ?? null
 }
@@ -120,10 +119,10 @@ export async function insertTestPostReview(
   rating = 5,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestPostReview */
     INSERT INTO post_review_topic_ratings (post_id, topic_id, rating)
     VALUES (${postId}, ${topicId}, ${rating})
-  `),
+  `,
   )
 }
 /**
@@ -131,11 +130,11 @@ export async function insertTestPostReview(
  */
 export async function setPostVotesScoreUp(postId: string, scoreUp: number): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setPostVotesScoreUp */
     UPDATE posts
     SET votes_score_up = ${scoreUp}
     WHERE id = ${postId}
-  `),
+  `,
   )
 }
 
@@ -145,12 +144,12 @@ export async function updatePostTitleMarkdown(
   markdown: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* updatePostTitleMarkdown */
     UPDATE posts
     SET title = ${title},
       markdown = ${markdown}
     WHERE id = ${postId}
-  `),
+  `,
   )
 }
 
