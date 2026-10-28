@@ -18,14 +18,9 @@ import {
   signLegacySessionJwt,
 } from '@voucha/test-helpers/services/jwt-session/index'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
-import {
-  EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
-  EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
-  EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
-} from '@services/users/email-auth-rate-limits'
+import { assertEmailTokenVerificationAllowed } from '@services/users/email-auth-rate-limits'
 import { sanitizeEmailAddress } from '@services/email-address-validator'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
-import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { v7 } from 'uuid'
 
 describe('Email Address Authentication Routes', () => {
@@ -247,23 +242,16 @@ describe('Email Address Authentication Routes', () => {
       // The login-verify limiter (emailLoginVerifyRateLimiter) uses a real 60s sliding window
       // (Valkey ZADD/ZCOUNT). Driving it with 9 sequential HTTP round-trips races that window:
       // on a loaded shard the round-trips can take >60s, letting the earliest increments age out
-      // before the 10th request, which flakily returns 401 instead of 429. Seed the same ZSET key
-      // directly (same prefix + same rate-limiter Valkey client the service reads) so the count
-      // reaches threshold-1 in well under a second, then make one real request to trip the limit
-      // deterministically.
+      // before the 10th request, which flakily returns 401 instead of 429. Call the public service
+      // boundary 9 times to seed the same counter quickly, then use one real request to trip it.
       const req = createRequest()
       const sharedIp = nextTestRequestIp()
       const emailAddress = createUniqueTestEmail('rate-limit')
-      const seedLimiter = new RateLimiter({
-        prefix: EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
-        ttlSeconds: EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
-      })
 
-      for (let seed = 0; seed < EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD - 1; seed += 1) {
-        await seedLimiter.addAndCheck(
-          [sanitizeEmailAddress(emailAddress)],
-          EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
-        )
+      for (let seed = 0; seed < 9; seed += 1) {
+        await assertEmailTokenVerificationAllowed({
+          emailAddress: sanitizeEmailAddress(emailAddress),
+        })
       }
 
       const tokens = await createDeviceAndSessionTokens({ did: v7(), sid: v7() })

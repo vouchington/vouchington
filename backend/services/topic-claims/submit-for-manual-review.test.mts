@@ -5,7 +5,6 @@ import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim } from './admin-verify.mts'
 import { submitTopicClaimForManualReview as submitLoadedClaimForManualReview } from './submit-for-manual-review.mts'
 import { requireTopicClaimOnTopic } from './require-on-topic.mts'
-import { TOPIC_CLAIM_EVIDENCE_MAX_LENGTH } from './parse.mts'
 
 describe('submitTopicClaimForManualReview', () => {
   let claimant: PrivateUser
@@ -68,11 +67,7 @@ describe('submitTopicClaimForManualReview', () => {
       evidence: '',
     })
     await expect(
-      submitTopicClaimForManualReview(
-        claimant.id,
-        claim.id,
-        'e'.repeat(TOPIC_CLAIM_EVIDENCE_MAX_LENGTH + 1),
-      ),
+      submitTopicClaimForManualReview(claimant.id, claim.id, 'e'.repeat(10_001)),
     ).rejects.toMatchObject({ status: 422 })
   })
 

@@ -5,7 +5,6 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
  */
 
 import { read, write, beginTransaction } from '@data-stores/psql'
-import { EMAIL_REAUTH_TOKEN_PURPOSE } from '../../services/users/authentication.mts'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { upsertTestEmailDomainHostnameId, upsertTestHostnameId } from './email-domain-hostname.mts'
@@ -151,7 +150,7 @@ export async function insertEmailAddressLoginToken(
   const hashed = hashToken(
     scope.purpose === 'login'
       ? 'email-address-login-token'
-      : `${EMAIL_REAUTH_TOKEN_PURPOSE}:${sessionId}`,
+      : `email-address-re-auth-token:${sessionId}`,
     token.toUpperCase(),
   )
   await write(

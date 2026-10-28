@@ -5,7 +5,7 @@ import {
   LOGIN_CODE_PATTERN,
 } from '@ts-shared/utils/login-code'
 
-export const LOGIN_TOKEN_LENGTH = LOGIN_CODE_LENGTH
+const LOGIN_TOKEN_LENGTH = LOGIN_CODE_LENGTH
 export const LOGIN_TOKEN_PATTERN = LOGIN_CODE_PATTERN
 
 export function createLoginToken(createRandomBytes: typeof randomBytes = randomBytes) {

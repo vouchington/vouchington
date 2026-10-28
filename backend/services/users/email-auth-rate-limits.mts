@@ -5,9 +5,9 @@ const emailTokenRateLimiter = new RateLimiter({
   prefix: 'email-address-login-token',
   ttlSeconds: 60,
 })
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX = 'email-address-login-verify'
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD = 10
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS = 60
+const EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX = 'email-address-login-verify'
+const EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD = 10
+const EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS = 60
 const emailLoginVerifyRateLimiter = new RateLimiter({
   prefix: EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
   ttlSeconds: EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,

@@ -2,12 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { emails } from '@queues/emails/queues'
+import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import {
   assertEmailTokenRequestAllowed,
   assertEmailTokenVerificationAllowed,
-  EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
 } from '@services/users/email-auth-rate-limits'
 
 const reAuthEmailTokens = '/api/v1/auth/mfa/re-auth/email/tokens'
@@ -98,7 +98,15 @@ describe('re-authentication code boundaries', () => {
     const emailAddress = user.email_address!
     for (let index = 0; index < 4; index++) await assertEmailTokenRequestAllowed({ emailAddress })
     await req.post(reAuthEmailTokens).expect(429)
-    for (let index = 0; index < EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD - 1; index++) {
+    const verifyLimiterKey = new RateLimiter({
+      prefix: 'email-address-login-verify',
+      ttlSeconds: 60,
+    }).getKey(emailAddress)
+    await assertEmailTokenVerificationAllowed({ emailAddress })
+    const ttl = await rateLimiterValkeyClient.pttl(verifyLimiterKey)
+    expect(ttl).toBeGreaterThan(55_000)
+    expect(ttl).toBeLessThanOrEqual(60_000)
+    for (let index = 1; index < 9; index++) {
       await assertEmailTokenVerificationAllowed({ emailAddress })
     }
     await req.post(reAuthEmailVerification).send({ code: 'ABCDEFG234' }).expect(429)

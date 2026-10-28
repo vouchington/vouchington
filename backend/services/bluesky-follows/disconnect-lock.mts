@@ -6,7 +6,7 @@ import {
 // PostgreSQL's two-int advisory keys are structurally disjoint from the one-bigint keys used by
 // Bluesky's user/DID transaction locks. This session lock spans provider I/O performed on other
 // pooled connections, so sharing their key space could self-deadlock.
-export const BLUESKY_DISCONNECT_LOCK_NAMESPACE = 0x4253
+const BLUESKY_DISCONNECT_LOCK_NAMESPACE = 0x4253
 
 export async function withBlueskyDisconnectLock<Result>(
   userId: string,

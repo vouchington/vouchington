@@ -17,8 +17,8 @@ import type {
 } from './management-types.mts'
 
 /** Upper bound on an app's scope list; comfortably above the number of canonical scopes. */
-export const MAX_OAUTH_APP_SCOPES = 32
-
+const MAX_OAUTH_APP_SCOPES = 32
+export type OAuthAppScopeLimit = typeof MAX_OAUTH_APP_SCOPES
 export type OwnedOAuthAppInput = {
   client_name: unknown
   redirect_uris: unknown

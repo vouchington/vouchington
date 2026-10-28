@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { assertValidLoginToken, createLoginToken, LOGIN_TOKEN_LENGTH } from './login-token.mts'
+import { assertValidLoginToken, createLoginToken } from './login-token.mts'
 
 describe('login-token', () => {
   it('creates a ten-character uppercase base32 code', () => {
@@ -13,7 +13,7 @@ describe('login-token', () => {
       return Buffer.from([0, 25, 26, 31, 32, 57, 58, 63, 64, 255])
     })
     expect(token).toBe('AZ27AZ27A7')
-    expect(byteLengths).toEqual([LOGIN_TOKEN_LENGTH])
+    expect(byteLengths).toEqual([10])
   })
 
   it('rejects the wrong alphabet, casing, or length', () => {

@@ -1,5 +1,4 @@
 import { hashToken } from '@modules/token-secrets'
-import { EMAIL_REAUTH_TOKEN_PURPOSE } from '../../services/users/authentication.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -22,7 +21,7 @@ export async function getTestEmailReAuthTokenState(
   invalidated: boolean
   consumed: boolean
 } | null> {
-  const tokenHash = hashToken(`${EMAIL_REAUTH_TOKEN_PURPOSE}:${sessionId}`, code.toUpperCase())
+  const tokenHash = hashToken(`email-address-re-auth-token:${sessionId}`, code.toUpperCase())
   const { rows } = await read<{ invalidated: boolean; consumed: boolean }>(sql`
     /* getTestEmailReAuthTokenState */ SELECT
       invalidated_at IS NOT NULL AS invalidated, consumed_at IS NOT NULL AS consumed

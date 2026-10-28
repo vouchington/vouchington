@@ -16,7 +16,7 @@ import { assertValidLoginToken, createLoginToken } from './login-token.mts'
 const EMAIL_AUTHENTICATION_TOKEN_EXPIRATION_MINUTES = 15
 const LOGIN_EXPIRATION = `${EMAIL_AUTHENTICATION_TOKEN_EXPIRATION_MINUTES} minutes`
 const EMAIL_LOGIN_TOKEN_PURPOSE = 'email-address-login-token'
-export const EMAIL_REAUTH_TOKEN_PURPOSE = 'email-address-re-auth-token'
+const EMAIL_REAUTH_TOKEN_PURPOSE = 'email-address-re-auth-token'
 
 function hashEmailLoginToken(token: string, scope: EmailAuthenticationScope): string {
   return hashSecretToken(
