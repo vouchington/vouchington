@@ -74,58 +74,75 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
     expect(screen.getByText(/No flags found/)).toBeInTheDocument()
   })
 
-  it('renders a post_id entity link', () => {
+  it('renders a post label without exposing its id', () => {
     render(
       <ReportIntegrityFlagsClient
-        initialData={makeInitialData([makeFlag({ post_id: 'post-uuid-1234' })])}
+        initialData={makeInitialData([
+          makeFlag({ post_id: 'post-uuid-1234', entity_label: 'A reported post' }),
+        ])}
         initialStatus='pending'
       />,
     )
-    expect(screen.getByText(/Post\/Comment: post-uui/)).toBeInTheDocument()
+    expect(screen.getByText('A reported post')).toBeInTheDocument()
+    expect(screen.queryByText(/post-uuid-1234/)).not.toBeInTheDocument()
   })
 
-  it('renders a reported_user_id entity link', () => {
+  it('links a reported user by username and displays the label', () => {
     render(
       <ReportIntegrityFlagsClient
-        initialData={makeInitialData([makeFlag({ reported_user_id: 'user-uuid-5678' })])}
+        initialData={makeInitialData([
+          makeFlag({
+            reported_user_id: 'user-uuid-5678',
+            reported_username: 'reported-user',
+            entity_label: 'Reported User',
+          }),
+        ])}
         initialStatus='pending'
       />,
     )
-    expect(screen.getByRole('link', { name: /User: user-uui/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Reported User' })).toHaveAttribute(
       'href',
-      '/user/user-uuid-5678/admin',
+      '/user/reported-user/admin',
     )
+    expect(screen.queryByText(/user-uuid-5678/)).not.toBeInTheDocument()
   })
 
   it('links a hostname flag by its hostname', () => {
     render(
       <ReportIntegrityFlagsClient
         initialData={makeInitialData([
-          makeFlag({ hostname_id: 'hostname-abcdefgh', hostname: 'flags.example.com' }),
+          makeFlag({
+            hostname_id: 'hostname-abcdefgh',
+            hostname: 'flags.example.com',
+            entity_label: 'flags.example.com',
+          }),
         ])}
         initialStatus='pending'
       />,
     )
-    expect(screen.getByRole('link', { name: 'Hostname: flags.example.com' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'flags.example.com' })).toHaveAttribute(
       'href',
       '/domain/flags.example.com',
     )
   })
 
-  it('renders an rss_feed_item_id entity link', () => {
+  it('renders an RSS item label without exposing its id', () => {
     render(
       <ReportIntegrityFlagsClient
-        initialData={makeInitialData([makeFlag({ rss_feed_item_id: 'rss-item-xyz123' })])}
+        initialData={makeInitialData([
+          makeFlag({ rss_feed_item_id: 'rss-item-xyz123', entity_label: 'Feed headline' }),
+        ])}
         initialStatus='pending'
       />,
     )
-    expect(screen.getByText(/RSS Item: rss-item/)).toBeInTheDocument()
+    expect(screen.getByText('Feed headline')).toBeInTheDocument()
+    expect(screen.queryByText(/rss-item-xyz123/)).not.toBeInTheDocument()
   })
 
-  it('renders unknown entity link when no entity id is set', () => {
+  it('renders the server label when no entity id is set', () => {
     render(
       <ReportIntegrityFlagsClient
-        initialData={makeInitialData([makeFlag()])}
+        initialData={makeInitialData([makeFlag({ entity_label: 'Unknown' })])}
         initialStatus='pending'
       />,
     )

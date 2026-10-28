@@ -21989,7 +21989,6 @@
                           "judgement",
                           "reason",
                           "report_count",
-                          "reporter_display_name",
                           "resolved_by_id",
                           "resolver_display_name",
                           "resolver_username",
@@ -24551,7 +24550,6 @@
                         "entity_type",
                         "id",
                         "reason",
-                        "reporter_display_name",
                         "resolved_by_id",
                         "resolver_display_name",
                         "resolver_username",
@@ -30837,6 +30835,7 @@
                     "reason",
                     "reporter_display_name",
                     "reporter_user_id",
+                    "reporter_username",
                     "resolved_by_id",
                     "resolver_display_name",
                     "resolver_username",
@@ -38962,6 +38961,9 @@
                     "post_id": {
                       "type": "string"
                     },
+                    "post_label": {
+                      "type": "string"
+                    },
                     "public_response": {
                       "anyOf": [
                         {
@@ -39239,6 +39241,7 @@
                     }
                   },
                   "required": [
+                    "ai_draft_requested_run_id",
                     "ai_draft_run_id",
                     "ai_drafted_at",
                     "ai_internal_response",
@@ -39257,6 +39260,7 @@
                     "model",
                     "post_content",
                     "post_id",
+                    "post_label",
                     "public_response",
                     "reason",
                     "recommended_action",
@@ -39266,8 +39270,7 @@
                     "sent_at",
                     "status",
                     "topic_id",
-                    "updated_at",
-                    "ai_draft_requested_run_id"
+                    "updated_at"
                   ],
                   "type": "object"
                 },
@@ -39338,6 +39341,9 @@
                       ]
                     },
                     "post_id": {
+                      "type": "string"
+                    },
+                    "post_label": {
                       "type": "string"
                     },
                     "public_response": {
@@ -39416,6 +39422,7 @@
                     "id",
                     "post_content",
                     "post_id",
+                    "post_label",
                     "public_response",
                     "reason",
                     "resolution_action",
@@ -39949,6 +39956,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -40086,6 +40096,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",
@@ -40689,6 +40700,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -40826,6 +40840,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",
@@ -41429,6 +41444,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -41566,6 +41584,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",
@@ -42273,6 +42292,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -42410,6 +42432,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",

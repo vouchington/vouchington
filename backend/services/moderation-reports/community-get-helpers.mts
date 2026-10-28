@@ -45,7 +45,8 @@ export async function fetchBanEvasionReports(
       to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_created_at,
       r.reviewed_at,
       r.reporter_user_id,
-      NULL::text AS reporter_username,
+      reporter_profile.username AS reporter_username,
+      reporter_profile.verified_display_name AS reporter_display_name,
       'user'::moderation_report_entity_types AS entity_type,
       r.reported_user_id AS entity_id,
       COALESCE(NULLIF(BTRIM(tu_profile.verified_display_name), ''), tu.username, 'user') AS target_label,
@@ -59,6 +60,8 @@ export async function fetchBanEvasionReports(
       -- Pending by construction: the WHERE clause below requires r.reviewed_at IS NULL.
       'pending'::text AS status,
       r.resolved_by_id,
+      NULL::text AS resolver_username,
+      NULL::text AS resolver_display_name,
       NULL::timestamptz AS escalated_at,
       NULL::uuid AS escalated_by_id,
       true AS is_system_generated,
@@ -71,6 +74,7 @@ export async function fetchBanEvasionReports(
       false AS target_pending_community_review
     FROM moderation_reports r
     JOIN users ban_sys ON ban_sys.id = r.reporter_user_id AND ban_sys.username = ${BAN_EVASION_SYSTEM_USERNAME}
+    LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     JOIN community_members cm
       ON cm.user_id = r.reported_user_id
       AND cm.community_id = ${communityId}

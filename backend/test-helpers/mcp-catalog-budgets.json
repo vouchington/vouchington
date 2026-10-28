@@ -104,7 +104,7 @@
       "CommunityFree": {
         "on": {
           "count": 1,
-          "list": 41000,
+          "list": 42000,
           "core": 7000,
           "output": 41000
         }
@@ -204,9 +204,9 @@
       "all": {
         "on": {
           "count": 56,
-          "list": 189000,
+          "list": 194000,
           "core": 36000,
-          "output": 178000
+          "output": 183000
         }
       },
       "Reader": {
@@ -228,9 +228,9 @@
       "Reviewer": {
         "on": {
           "count": 8,
-          "list": 56000,
+          "list": 58000,
           "core": 6000,
-          "output": 55000
+          "output": 57000
         }
       },
       "CommunityFree": {

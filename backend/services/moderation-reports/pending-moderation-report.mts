@@ -4,6 +4,10 @@ import type { PostModerationContext } from './post-moderation-context.mts'
 import type { ModerationReportTargetContent } from './target-metadata.mts'
 
 export type PendingModerationReport = ModerationReport & {
+  reporter_username: string | null
+  reporter_display_name: string | null
+  resolver_username: string | null
+  resolver_display_name: string | null
   cursor_created_at: string
   admin_action_path: string | null
   target_label: string

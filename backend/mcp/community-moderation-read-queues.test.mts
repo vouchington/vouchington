@@ -237,6 +237,13 @@ describe('community moderation MCP pending report reads — real PostgreSQL and 
       expect(page.reports).toEqual([expect.objectContaining({ id: reportId })])
       const received = (page.reports as Array<Record<string, unknown>>)[0]!
       expect(received).not.toHaveProperty('case_id')
+      const expectedReporter = (await communityModerationOutput({
+        reporter_username: reporter.username,
+      })) as Record<string, unknown>
+      expect(received.reporter_username).toBe(
+        administrator ? expectedReporter.reporter_username : undefined,
+      )
+      expect(received.reporter_display_name).toBe(administrator ? null : undefined)
       expect(typeof received.automatic_judgement_enabled).toBe(
         administrator ? 'boolean' : 'undefined',
       )

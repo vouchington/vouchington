@@ -54,6 +54,7 @@ const pendingReport = () => {
         ![
           'reporter_user_id',
           'reporter_username',
+          'reporter_display_name',
           'note',
           'community_ban_evasion',
           'automatic_judgement_enabled',

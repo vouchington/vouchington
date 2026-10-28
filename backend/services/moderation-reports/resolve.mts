@@ -60,10 +60,14 @@ export async function resolveModerationReport(
             u.created_at,
             u.reviewed_at,
             u.reporter_user_id,
+            reporter_profile.username AS reporter_username,
+            reporter_profile.verified_display_name AS reporter_display_name,
             u.reason,
             u.note,
             u.resolution_action::text AS status,
             u.resolved_by_id,
+            resolver_profile.username AS resolver_username,
+            resolver_profile.verified_display_name AS resolver_display_name,
             CASE
               WHEN u.post_id IS NOT NULL AND p.post_type = 'comment' THEN 'comment'
               WHEN u.post_id IS NOT NULL THEN 'post'
@@ -74,6 +78,8 @@ export async function resolveModerationReport(
             COALESCE(u.post_id, u.reported_user_id, u.hostname_id, u.rss_feed_item_id) AS entity_id
           FROM updated u
           LEFT JOIN posts p ON u.post_id IS NOT NULL AND p.id = u.post_id
+          LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = u.reporter_user_id
+          LEFT JOIN view_users_public resolver_profile ON resolver_profile.id = u.resolved_by_id
         `,
       { query },
     )

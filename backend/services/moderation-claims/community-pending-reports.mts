@@ -84,7 +84,8 @@ async function fetchPostCommentReports(
       ) AS cursor_created_at,
       r.reviewed_at,
       r.reporter_user_id,
-      NULL::text AS reporter_username,
+      reporter_profile.username AS reporter_username,
+      reporter_profile.verified_display_name AS reporter_display_name,
       r.entity_type,
       r.entity_id,
   `
@@ -94,6 +95,8 @@ async function fetchPostCommentReports(
       r.note,
       r.status,
       r.resolved_by_id,
+      NULL::text AS resolver_username,
+      NULL::text AS resolver_display_name,
       r.escalated_at,
       r.escalated_by_id,
       false AS is_system_generated,
@@ -124,6 +127,7 @@ async function fetchPostCommentReports(
   `)
   query.append(reportTargetJoinsSql())
   query.append(sql`
+    LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::integer AS report_count
       FROM moderation_reports rc

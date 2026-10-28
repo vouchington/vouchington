@@ -115,6 +115,7 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
           cursor_severity_rank: _c,
           reporter_user_id,
           reporter_username,
+          reporter_display_name,
           note,
           judgement,
           community_ban_evasion,
@@ -131,6 +132,7 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
             ? {
                 reporter_user_id,
                 reporter_username,
+                reporter_display_name,
                 note,
                 judgement,
                 community_ban_evasion,

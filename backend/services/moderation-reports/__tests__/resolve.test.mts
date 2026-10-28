@@ -45,6 +45,10 @@ describe('resolveModerationReport', () => {
     expect(report.id).toBe(reportId)
     expect(report.status).toBe('dismissed')
     expect(report.resolved_by_id).toBe(moderator.id)
+    expect(report.reporter_username).toBe(reporter.username)
+    expect(report.resolver_username).toBe(moderator.username)
+    expect(report.reporter_display_name).toBeNull()
+    expect(report.resolver_display_name).toBeNull()
     expect(report.entity_type).toBe('post')
     expect(report.entity_id).toBe(postId)
 

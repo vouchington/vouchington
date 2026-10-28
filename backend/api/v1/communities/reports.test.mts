@@ -88,6 +88,7 @@ describe('community moderation reports routes', () => {
     for (const report of response.body.reports as Array<Record<string, unknown>>) {
       expect(report.reporter_user_id).toBeUndefined()
       expect(report.reporter_username).toBeUndefined()
+      expect(report.reporter_display_name).toBeUndefined()
       expect(report.note).toBeUndefined()
       expect(report.judgement).toBeNull()
       expect(report.automatic_judgement_enabled).toBeUndefined()
@@ -159,6 +160,8 @@ describe('community moderation reports routes', () => {
       entry => entry.id === reportId,
     )
     expect(report?.note).toBe('Reporter note visible to site staff.')
+    expect(report?.reporter_username).toBe(reporter.username)
+    expect(report?.reporter_display_name).toBeNull()
     expect(report?.automatic_judgement_enabled).toBe(false)
     expect((report?.judgement as Record<string, unknown>)?.internal_response).toBe(
       'Staff internal judgement.',

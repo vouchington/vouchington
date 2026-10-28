@@ -41,9 +41,10 @@ export async function createUserModNote(
         FROM target_check
         RETURNING id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
       )
-      SELECT n.*, author_profile.username AS author_username,
+      SELECT n.id, n.created_at, n.target_user_id, n.author_user_id,
+        author_profile.username AS author_username,
         author_profile.verified_display_name AS author_display_name,
-        community.name AS community_name
+        n.community_id, community.name AS community_name, n.body, n.deleted_at
       FROM inserted n
         LEFT JOIN view_users_public author_profile ON author_profile.id = n.author_user_id
       LEFT JOIN communities community ON community.id = n.community_id

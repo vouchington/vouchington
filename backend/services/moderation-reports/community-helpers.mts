@@ -1,9 +1,20 @@
 import type { CommunityBanEvasionContext, ModerationReportSort } from '@services/moderation-reports'
 
-export function redactCommunityReport<T extends { reporter_user_id?: unknown; note?: unknown }>(
-  report: T,
-) {
-  const { reporter_user_id: _, note: __, ...redactedReport } = report
+export function redactCommunityReport<
+  T extends {
+    reporter_user_id?: unknown
+    reporter_username?: unknown
+    reporter_display_name?: unknown
+    note?: unknown
+  },
+>(report: T) {
+  const {
+    reporter_user_id: _,
+    reporter_username: _username,
+    reporter_display_name: _displayName,
+    note: __,
+    ...redactedReport
+  } = report
   return redactedReport
 }
 
