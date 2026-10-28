@@ -7,7 +7,7 @@ import {
   enqueueAdminTopicImportDispatchContinuation,
   enqueueAdminTopicImportDispatches,
 } from './enqueues.mts'
-import { adminImports } from './queues.mts'
+import { backgroundQueue as adminImports } from '../../test-helpers/shared-background-queue.mts'
 
 describe('admin topic import dispatcher ids', () => {
   it('gives every page of a batch its own job id, so a page can continue while it runs', async () => {

@@ -3,9 +3,11 @@ import { upsertEntityRelation } from './upsert.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
 import { createTestUser, readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
-import { activitypub } from '@queues/activitypub/queues'
+import {
+  backgroundQueue as activitypub,
+  backgroundQueue as blueskyFollowPropagation,
+} from '@voucha/test-helpers/shared-background-queue'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
-import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import type { PrivateUser } from '@voucha/types/entities/user'
 

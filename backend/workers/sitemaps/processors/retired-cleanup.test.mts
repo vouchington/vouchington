@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { readAllQueueJobs, overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
-import { sitemapsQueue } from '@queues/sitemaps/queues'
+import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { processRetiredSitemapCleanup } from './retired-cleanup.mts'
 import { sitemapsWorkConfig } from '@services/sitemaps/work-limits'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'

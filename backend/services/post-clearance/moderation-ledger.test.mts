@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postClearanceWorkConfig } from './work-limits.mts'
-import { openAiModerationQueue } from '@queues/openai-moderation/queues'
+import { backgroundQueue as openAiModerationQueue } from '@voucha/test-helpers/shared-background-queue'
 import {
   createTestUser,
   expireTestPostModerationVersion,

@@ -1,6 +1,6 @@
 import { onTestFinished, vi } from 'vitest'
 import { ENTITY_LISTENERS_DOMAIN } from '@queues/background/enqueues/entity-listeners-jobs'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from './shared-background-queue.mts'
 // Register the real processor and its test-context error handler once per module.
 import './entity-listener-completion.mts'
 

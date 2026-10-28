@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { getSitemapPostDayData } from '@voucha/test-helpers/sitemap-queue-jobs'
-import { sitemapsQueue } from '@queues/sitemaps/queues'
+import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { sitemapsWorkConfig } from '@services/sitemaps/work-limits'
 import { sitemapsHandlers } from './workers.mts'
 

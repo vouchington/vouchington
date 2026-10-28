@@ -16,7 +16,7 @@ import { getUserIdByAnyCached } from '@services/entity-cache/lookups'
 
 import { ValkeyBloomFilter } from '@data-stores/valkey'
 
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 

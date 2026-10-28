@@ -9,7 +9,7 @@ import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
 import { updateUserFields } from '@services/users'
 import { dispatchInboundActivity } from '@services/ap-inbox-activities'
 import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,

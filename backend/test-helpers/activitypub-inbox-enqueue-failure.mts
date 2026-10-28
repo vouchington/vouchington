@@ -1,5 +1,5 @@
 import { onTestFinished } from 'vitest'
-import { activitypub } from '../queues/activitypub/queues.mts'
+import { backgroundQueue as activitypub } from './shared-background-queue.mts'
 import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
 
 const failuresBeforeNativeAdmission = new WeakSet<object>()

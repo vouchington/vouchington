@@ -1,4 +1,4 @@
-import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
+import { backgroundQueue as kagiSmallWeb } from '../../test-helpers/shared-background-queue.mts'
 import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import {

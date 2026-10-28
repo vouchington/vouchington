@@ -15,7 +15,7 @@ import {
   enqueueReconcileEntities,
   entityReconciliationRootOptions,
 } from './enqueues/reconciliation.mts'
-import { entitiesListeners } from './queues.mts'
+import { backgroundQueue as entitiesListeners } from '../../test-helpers/shared-background-queue.mts'
 
 describe('entity listener enqueues', () => {
   it('enqueues each post update with the requested priority', async () => {

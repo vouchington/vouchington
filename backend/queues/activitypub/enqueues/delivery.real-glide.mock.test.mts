@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Job } from 'glide-mq'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { enqueueDeliverAcceptActivity, type DeliverAcceptActivityInput } from './delivery.mts'
-import { activitypub } from '../queues.mts'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 

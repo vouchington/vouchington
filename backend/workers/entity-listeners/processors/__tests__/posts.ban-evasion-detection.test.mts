@@ -12,7 +12,7 @@ import type { Community } from '@services/communities/types'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
 import { processPostCreated } from '../posts.mts'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
-import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import { backgroundQueue as moderationSignalsQueue } from '@voucha/test-helpers/shared-background-queue'
 
 describe('processPostCreated ban-evasion detection', () => {
   let owner: PrivateUser

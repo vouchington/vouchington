@@ -4,7 +4,7 @@ import {
   isDeduplicatedEnqueue,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { scheduledJobManifest as activitypubScheduledJobManifest } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'

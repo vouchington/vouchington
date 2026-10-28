@@ -1,5 +1,5 @@
 import { onTestFinished } from 'vitest'
-import { activitypub } from '../queues/activitypub/queues.mts'
+import { backgroundQueue as activitypub } from './shared-background-queue.mts'
 import {
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
   ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,

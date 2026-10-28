@@ -19,7 +19,7 @@ import {
   KAGI_SMALLWEB_PROCESS_FEED_JOB,
   type KagiFeedJobData,
 } from '@queues/background/enqueues/kagi-smallweb-jobs'
-import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
+import { backgroundQueue as kagiSmallWeb } from '@voucha/test-helpers/shared-background-queue'
 import { observeTestPostgresClientQueries, readAllQueueJobs } from '@voucha/test-helpers'
 import { getTopicByAny } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'

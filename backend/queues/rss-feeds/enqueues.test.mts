@@ -6,7 +6,7 @@ import {
 } from '@queues/background/enqueues/rss-feeds-jobs'
 import { RSS_FEEDS_ORDERING } from './config.mts'
 import { enqueueBulkFetchRssFeeds, enqueueDispatchRssFeeds } from './enqueues.mts'
-import { rssFeedsQueue } from './queues.mts'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 function isJobForRssFeed(job: { data: unknown }, rssFeedId: string): boolean {

@@ -7,7 +7,7 @@ import {
   enqueueBulkProcessFollowerDistributions,
   enqueueProcessFollowerDistribution,
 } from './enqueues.mts'
-import { followerDistributions } from './queues.mts'
+import { backgroundQueue as followerDistributions } from '@voucha/test-helpers/shared-background-queue'
 
 // Real integration test: enqueue against the in-memory glide-mq test queue and assert the
 // emitted jobs' data and deduplication options, instead of mocking the enqueue factory.

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
@@ -21,7 +21,7 @@ import {
   enqueueUpdateRootIndex,
 } from '@queues/sitemaps/enqueues'
 import { getSitemapsOrderingKeyForDay } from '@queues/sitemaps/config'
-import { sitemapsQueue } from '@queues/sitemaps/queues'
+import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 
 async function readLandingPageJobs() {
   return (await readAllQueueJobs(sitemapsQueue)).filter(
@@ -42,22 +42,28 @@ describe('enqueues.generated', () => {
 
   it('enqueueUpdateFamilySitemap enqueues topics into the indexes lane with family dedup', async () => {
     const priority = 1_000 + Math.floor(Math.random() * 1_000)
+    const add = vi.spyOn(sitemapsQueue, 'add')
+    onTestFinished(() => add.mockRestore())
     await enqueueUpdateFamilySitemap('topics', priority)
 
-    const jobs = (await readAllQueueJobs(sitemapsQueue)).filter(
-      job => job.name === SITEMAPS_FAMILY_JOB.name && job.opts.priority === priority,
+    const jobs = add.mock.calls.filter(
+      ([name, , options]) => name === SITEMAPS_FAMILY_JOB.name && options?.priority === priority,
     )
 
     expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.data).toEqual({ family: 'topics' })
-    expect(jobs[0]!.opts).toMatchObject({
+    expect(jobs[0]![1]).toEqual({ family: 'topics' })
+    expect(jobs[0]![2]).toMatchObject({
       priority,
-      ordering: { key: 'sitemaps:indexes', concurrency: 1 },
+      ordering: { key: 'sitemaps:indexes' },
       deduplication: {
         id: 'family-index__topics',
         mode: 'throttle',
         ttl: 60_000,
       },
+    })
+    expect(SITEMAPS_FAMILY_JOB.options.ordering).toEqual({
+      key: 'sitemaps:indexes',
+      concurrency: 1,
     })
   })
 
@@ -88,25 +94,34 @@ describe('enqueues.generated', () => {
 
   it('enqueues the post-type, posts and root indexes into the indexes lane', async () => {
     const priority = 500 + Math.floor(Math.random() * 400)
+    const add = vi.spyOn(sitemapsQueue, 'add')
+    onTestFinished(() => add.mockRestore())
     await enqueueUpdatePostTypeIndex('discussion', priority)
     await enqueueUpdatePostsIndex(priority + 1)
     await enqueueUpdateRootIndex(priority + 2)
 
-    const jobs = await readAllQueueJobs(sitemapsQueue)
+    const jobs = add.mock.calls
     const find = (name: string, jobPriority: number) =>
-      jobs.filter(job => job.name === name && job.opts.priority === jobPriority)
+      jobs.filter(([jobName, , options]) => jobName === name && options?.priority === jobPriority)
     const typeIndex = find(SITEMAPS_POST_TYPE_INDEX_JOB.name, priority)
     expect(typeIndex).toHaveLength(1)
-    expect(typeIndex[0]!.data).toEqual({ postType: 'discussion' })
-    expect(typeIndex[0]!.opts.deduplication).toMatchObject({ id: 'type-index__discussion' })
+    expect(typeIndex[0]![1]).toEqual({ postType: 'discussion' })
+    expect(typeIndex[0]![2]?.deduplication).toMatchObject({ id: 'type-index__discussion' })
     const postsIndex = find(SITEMAPS_POSTS_INDEX_JOB.name, priority + 1)
     expect(postsIndex).toHaveLength(1)
-    expect(postsIndex[0]!.opts.deduplication).toMatchObject({ id: 'sitemaps:posts-index' })
+    expect(postsIndex[0]![2]?.deduplication).toMatchObject({ id: 'sitemaps:posts-index' })
     const rootIndex = find(SITEMAPS_ROOT_INDEX_JOB.name, priority + 2)
     expect(rootIndex).toHaveLength(1)
-    expect(rootIndex[0]!.opts.deduplication).toMatchObject({ id: 'sitemaps:root-index' })
+    expect(rootIndex[0]![2]?.deduplication).toMatchObject({ id: 'sitemaps:root-index' })
     for (const job of [...typeIndex, ...postsIndex, ...rootIndex]) {
-      expect(job.opts.ordering).toEqual({ key: 'sitemaps:indexes', concurrency: 1 })
+      expect(job[2]?.ordering).toEqual({ key: 'sitemaps:indexes' })
+    }
+    for (const definition of [
+      SITEMAPS_POST_TYPE_INDEX_JOB,
+      SITEMAPS_POSTS_INDEX_JOB,
+      SITEMAPS_ROOT_INDEX_JOB,
+    ]) {
+      expect(definition.options.ordering).toEqual({ key: 'sitemaps:indexes', concurrency: 1 })
     }
   })
 

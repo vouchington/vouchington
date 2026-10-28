@@ -22,7 +22,7 @@ import {
   enqueuePostPublicationEffects,
   postPublicationEffectJobId,
 } from '@queues/post-publication/enqueues'
-import { postPublicationQueue } from '@queues/post-publication/queues'
+import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { capturedPublicationKeys, hashCapturedPublicationKeys } from './captured-keys.mts'

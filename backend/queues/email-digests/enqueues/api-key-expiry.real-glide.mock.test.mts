@@ -4,7 +4,7 @@ import {
   enqueueBulkSendApiKeyExpiryReminders,
   enqueueDispatchApiKeyExpiryReminders,
 } from './api-key-expiry.mts'
-import { emailDigests as emails } from '../queues.mts'
+import { backgroundQueue as emails } from '../../../test-helpers/shared-background-queue.mts'
 import {
   EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB,
   EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB,

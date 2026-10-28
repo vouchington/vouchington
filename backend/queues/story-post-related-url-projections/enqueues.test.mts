@@ -7,7 +7,7 @@ import {
   enqueueReconcileStoryPostRelatedUrlProjections,
   enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort,
 } from './enqueues.mts'
-import { storyPostRelatedUrlProjectionsQueue } from './queues.mts'
+import { backgroundQueue as storyPostRelatedUrlProjectionsQueue } from '../../test-helpers/shared-background-queue.mts'
 
 describe('story post related URL projection enqueues', () => {
   it('persists recovery and continuation jobs under the domain-wide group with distinct deduplication', async () => {

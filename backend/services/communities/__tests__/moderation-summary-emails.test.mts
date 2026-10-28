@@ -9,7 +9,7 @@ import {
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB } from '@queues/background/enqueues/email-digests-jobs'
-import { emailDigests } from '@queues/email-digests/queues'
+import { backgroundQueue as emailDigests } from '@voucha/test-helpers/shared-background-queue'
 import { updateUserFields } from '@services/users/update-fields'
 import {
   buildModerationSendKey,

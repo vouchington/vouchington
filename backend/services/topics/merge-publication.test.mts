@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
-import { postPublicationQueue } from '../../queues/post-publication/queues.mts'
+import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { caches } from '@services/entity-cache/caches'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { processApplyPostPublicationEffects } from '../../workers/post-publication/processors/direct-effects.mts'

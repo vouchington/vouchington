@@ -8,7 +8,7 @@ import {
   enqueueRearmFailedActivityPubInboxDeliveriesContinuation,
   enqueueRecoverActivityPubInboxDeliveries,
 } from './inbox.mts'
-import { activitypub } from '../queues.mts'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 
 describe('ActivityPub inbox enqueues', () => {
   it('deduplicates the signed-request digest across repeated enqueues', async () => {

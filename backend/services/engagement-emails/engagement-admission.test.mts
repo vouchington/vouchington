@@ -4,7 +4,7 @@ import { withOwnedEngagementAdmissions } from '@voucha/test-helpers/engagement-d
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { onEnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
-import { emailDigests } from '@queues/email-digests/queues'
+import { backgroundQueue as emailDigests } from '@voucha/test-helpers/shared-background-queue'
 import { enqueueSendFollowTopicsEmail } from '@queues/email-digests/enqueues'
 import * as ses from '../../modules/aws/ses.mts'
 

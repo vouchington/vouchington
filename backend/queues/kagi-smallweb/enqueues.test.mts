@@ -10,7 +10,7 @@ import {
   enqueueKagiSmallWebSync,
   enqueueKagiSmallWebSyncContinuation,
 } from './enqueues.mts'
-import { kagiSmallWeb } from './queues.mts'
+import { backgroundQueue as kagiSmallWeb } from '@voucha/test-helpers/shared-background-queue'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)

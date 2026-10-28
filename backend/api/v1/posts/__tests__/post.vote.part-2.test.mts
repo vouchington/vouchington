@@ -8,7 +8,7 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)

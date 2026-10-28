@@ -10,7 +10,7 @@ import {
   getAcceptActivityId,
   type DistributeActivityData,
 } from './delivery.mts'
-import { activitypub } from '../queues.mts'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 
 function followData(activityId = randomUUID()): DistributeActivityData {
   return {

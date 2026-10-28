@@ -26,7 +26,7 @@ export async function runWithOwnedPostElectionVoteStats(
     assertOpen()
     const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
     const statsQueue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
-    const entityQueue = (await import('../queues/entity-listeners/queues.mts')).entitiesListeners
+    const entityQueue = (await import('./shared-background-queue.mts')).backgroundQueue
     assertOpen()
     entity = observeOwnedElectionQueue(entityQueue)
     election = observeOwnedElectionQueue(statsQueue)

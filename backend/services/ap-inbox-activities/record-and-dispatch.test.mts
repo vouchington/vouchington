@@ -23,7 +23,7 @@ import {
   createFederatedUser,
   acceptJobsFor,
 } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { RemoteActorRow } from '@services/remote-actors'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'

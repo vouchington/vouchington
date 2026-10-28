@@ -6,7 +6,7 @@ import {
 } from '@queues/background/enqueues/moderation-signals-jobs'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { enqueueSpamDetection } from './enqueues.mts'
-import { moderationSignalsQueue } from './queues.mts'
+import { backgroundQueue as moderationSignalsQueue } from '@voucha/test-helpers/shared-background-queue'
 
 describe('enqueueSpamDetection', () => {
   it('enqueues one job whose id is the version and source', async () => {

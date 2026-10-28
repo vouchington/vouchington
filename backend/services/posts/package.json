@@ -80,7 +80,6 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
-    "@queues/cache-purge": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
     "@ts-shared/cache": "workspace:^",
     "@types/http-errors": "^2.0.5",

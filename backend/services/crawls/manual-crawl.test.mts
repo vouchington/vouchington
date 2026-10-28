@@ -1,7 +1,7 @@
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
-import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { enqueueManualUrlCrawlAsCurrentUser } from './manual-crawl.mts'
 import type { PrivateUser } from '@services/users/types'
 import { updateUrlHostname } from '@services/urls-hostnames/update'

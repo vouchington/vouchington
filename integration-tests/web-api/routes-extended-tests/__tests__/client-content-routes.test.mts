@@ -5,7 +5,7 @@ import {
   insertTestRssFeedCrawl,
   insertTestRssFeedDirect,
 } from '../../../../backend/test-helpers/index.mts'
-import { rssFeedsQueue } from '../../../../backend/queues/rss-feeds/queues.mts'
+import { backgroundQueue as rssFeedsQueue } from '../../../../backend/test-helpers/shared-background-queue.mts'
 import { createIntegrationClientReads } from '@/test-helpers/integration-client-reads'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 

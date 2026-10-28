@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Queue, Worker, type Job } from 'glide-mq'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import {
   ACTIVITYPUB_RECOVER_OUTBOUND_JOB,
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,

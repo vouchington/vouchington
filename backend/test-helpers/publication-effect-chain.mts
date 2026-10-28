@@ -1,5 +1,5 @@
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
-import { postPublicationQueue } from '@queues/post-publication/queues'
+import { backgroundQueue as postPublicationQueue } from './shared-background-queue.mts'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
 /** Execute admitted children directly; no worker scheduling, queue scans, or waiting. */

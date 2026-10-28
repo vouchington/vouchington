@@ -9756,9 +9756,6 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation
@@ -12605,18 +12602,12 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../queues/content-analysis
-      '@queues/entity-listeners':
-        specifier: workspace:^
-        version: link:../queues/entity-listeners
       '@queues/image-uploads':
         specifier: workspace:^
         version: link:../queues/image-uploads
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications
-      '@queues/post-publication':
-        specifier: workspace:^
-        version: link:../queues/post-publication
       '@queues/psql':
         specifier: workspace:^
         version: link:../queues/psql

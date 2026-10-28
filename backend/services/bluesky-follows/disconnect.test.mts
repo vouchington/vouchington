@@ -10,7 +10,7 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { hasTestPendingBlueskyDisconnect } from '@voucha/test-helpers/bluesky-disconnect-readers'
-import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
+import { backgroundQueue as blueskyFollowPropagation } from '@voucha/test-helpers/shared-background-queue'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
 import {
   disconnectAcceptedBlueskyAccountAndCleanupFollows,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestRssFeed, insertTestTopic } from '@voucha/test-helpers'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
-import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 
 const readFetchJobs = (rssFeedId: string) =>
   rssFeedsQueue.searchJobs({ name: RSS_FEEDS_FETCH_JOB.name, data: { rssFeedId } })

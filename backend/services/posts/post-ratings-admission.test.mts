@@ -4,7 +4,7 @@ import { createPost } from './create.mts'
 import { getPostByAny } from './get.mts'
 import { addPostRating, deletePostRating, updatePostRating } from './post-ratings.mts'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import {
   createTestUser,

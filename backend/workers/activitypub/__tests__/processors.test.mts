@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { apInboxActivitiesWorkConfig } from '@services/ap-inbox-activities/work-limits'
 import { processDelivery } from '../processors/inbox.mts'
 import {
