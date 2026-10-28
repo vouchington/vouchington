@@ -11,16 +11,13 @@ import {
   spoolImageToTempFile,
 } from '../temp-file.mts'
 
-export async function streamToTempFile(
-  stream: MediaBody,
-  maxBytes: number = MAX_INPUT_IMAGE_BYTES,
-): Promise<TempImageFile> {
+async function streamToTempFile(stream: MediaBody): Promise<TempImageFile> {
   return spoolImageToTempFile(
     stream,
-    maxBytes,
+    MAX_INPUT_IMAGE_BYTES,
     bytes =>
       new S3OperationError(
-        `Image too large: ${bytes} bytes exceeds maximum of ${maxBytes} bytes`,
+        `Image too large: ${bytes} bytes exceeds maximum of ${MAX_INPUT_IMAGE_BYTES} bytes`,
         413,
       ),
   )

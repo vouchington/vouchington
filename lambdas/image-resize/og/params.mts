@@ -24,7 +24,7 @@ export type OgParams = OgGenericParams | OgLandingParams
 
 // Defensive cap even though the web side already caps at 5 — the lambda must
 // not trust the signed-but-client-supplied payload shape blindly.
-export const MAX_TOP_CATEGORIES = 5
+const MAX_TOP_CATEGORIES = 5
 
 function requireString(obj: Record<string, unknown>, key: string): string {
   const value = obj[key]

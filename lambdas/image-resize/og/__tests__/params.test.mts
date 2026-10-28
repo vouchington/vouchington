@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateOgParams, MAX_TOP_CATEGORIES } from '../params.mts'
+import { validateOgParams } from '../params.mts'
 import { RequestParseError } from '../../errors.mts'
 
 describe('validateOgParams', () => {
@@ -116,7 +116,7 @@ describe('validateOgParams', () => {
       expect(result.type === 'landing' && result.topCategories).toEqual(['math'])
     })
 
-    it('defensively re-caps topCategories at MAX_TOP_CATEGORIES even if the client sent more', () => {
+    it('defensively re-caps topCategories at five entries even if the client sent more', () => {
       const tooMany = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
       const result = validateOgParams({
         type: 'landing',
@@ -124,9 +124,7 @@ describe('validateOgParams', () => {
         username: 'ada',
         topCategories: tooMany,
       })
-      expect(result.type === 'landing' && result.topCategories).toEqual(
-        tooMany.slice(0, MAX_TOP_CATEGORIES),
-      )
+      expect(result.type === 'landing' && result.topCategories).toEqual(['a', 'b', 'c', 'd', 'e'])
       expect(result.type === 'landing' && result.topCategories.length).toBe(5)
     })
 

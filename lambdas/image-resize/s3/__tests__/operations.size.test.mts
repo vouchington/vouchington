@@ -4,18 +4,23 @@ import { Readable } from 'node:stream'
 import { access } from 'node:fs/promises'
 import { MAX_INPUT_IMAGE_BYTES } from '../../config.mts'
 import { S3OperationError } from '../../errors.mts'
-import { fetchImageFromS3, streamToTempFile } from '../operations.mts'
+import { fetchImageFromS3 } from '../operations.mts'
 
-describe('streamToTempFile size limits', () => {
-  it('throws 413 when the running total exceeds the max', async () => {
-    const stream = Readable.from([Buffer.from('hello '), Buffer.from('world!!!!')])
-    const error = await streamToTempFile(stream, 8).catch((err: unknown) => err)
+describe('fetchImageFromS3 size limits', () => {
+  it('throws 413 when the stream exceeds the running byte limit', async () => {
+    const oversizedBody = Readable.from([Buffer.alloc(MAX_INPUT_IMAGE_BYTES + 1)])
+    const mockClient = {
+      send: vi.fn<VitestLooseMock>().mockResolvedValue({ Body: oversizedBody }),
+    } as unknown as S3Client
+
+    const error = await fetchImageFromS3(mockClient, 'test-bucket', 'oversized-stream').catch(
+      (err: unknown) => err,
+    )
+
     expect(error).toBeInstanceOf(S3OperationError)
     expect((error as S3OperationError).statusCode).toBe(413)
   })
-})
 
-describe('fetchImageFromS3 size limits', () => {
   it('removes a completed temporary artifact when its owner cleans up', async () => {
     const mockClient = {
       send: vi.fn<VitestLooseMock>().mockResolvedValue({

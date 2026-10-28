@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { PLAYWRIGHT_PODCAST_COVER_URL } from './test-helpers/playwright-image-urls.mts'
+
 import {
   isPlaywrightPodcastCoverRequest,
   PLAYWRIGHT_PODCAST_COVER,
-  PLAYWRIGHT_PODCAST_COVER_URL,
 } from './playwright-podcast-cover.mts'
 
 describe('Playwright podcast cover fixture', () => {

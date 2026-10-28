@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 
 import { listen, server } from './dev-server.mts'
-import { PLAYWRIGHT_PODCAST_COVER_URL } from './playwright-podcast-cover.mts'
+import { PLAYWRIGHT_PODCAST_COVER_URL } from './test-helpers/playwright-image-urls.mts'
 
 const execFile = promisify(execFileCallback)
 

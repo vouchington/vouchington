@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { APIGatewayProxyEvent } from 'aws-lambda'
 import type { S3Client } from '@aws-sdk/client-s3'
-import { createLambdaHandler, type LambdaHandlerDependencies } from '../handler.mts'
+import { createLambdaHandler } from '../handler.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { HttpOperationError, S3OperationError } from '../errors.mts'
 import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
+
+type LambdaHandlerDependencies = Required<NonNullable<Parameters<typeof createLambdaHandler>[1]>>
 
 describe('handler.sideload', () => {
   const mockEnvConfig: EnvironmentConfig = {

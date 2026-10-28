@@ -2,9 +2,11 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import type { S3Client } from '@aws-sdk/client-s3'
 import type { APIGatewayProxyEvent } from 'aws-lambda'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLambdaHandler, type LambdaHandlerDependencies } from '../handler.mts'
+import { createLambdaHandler } from '../handler.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
+
+type LambdaHandlerDependencies = Required<NonNullable<Parameters<typeof createLambdaHandler>[1]>>
 
 const AVATAR = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',

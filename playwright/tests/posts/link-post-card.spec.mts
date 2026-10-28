@@ -2,7 +2,7 @@ import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { insertTestLinkPostWithCrawl } from '../../../backend/test-helpers/entities/link-posts.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../../lambdas/playwright-podcast-cover.mts'
+import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../../lambdas/test-helpers/playwright-image-urls.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
