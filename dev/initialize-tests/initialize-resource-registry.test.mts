@@ -1,9 +1,9 @@
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { runInitializeHelper } from '../test-helpers/initialize.mts'
+import { runInitializeHelper, runInitializeHelperStatus } from '../test-helpers/initialize.mts'
 
 describe('initialize worktree resource registry', () => {
   const testDirs: string[] = []
@@ -91,5 +91,66 @@ describe('initialize worktree resource registry', () => {
     })
 
     expect(output).toBe('main')
+  })
+
+  it('names the registry path when the registry cannot be written', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'voucha-resource-registry-eperm-'))
+    testDirs.push(root)
+    const home = join(root, 'home')
+    const checkout = join(root, 'checkout')
+    await mkdir(checkout, { recursive: true })
+    await writeFile(home, 'a file where the HOME directory should be')
+    await writeFile(join(checkout, '.git'), 'gitdir: /repository/.git/worktrees/checkout\n')
+
+    const result = await runInitializeHelperStatus({
+      cwd: checkout,
+      home,
+      script: 'register_worktree_resource_path "$PWD"',
+    })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain(`worktree resource registry at ${join(home, '.voucha')}`)
+    expect(result.stderr).toContain('Fix:')
+  })
+
+  it('rejects a path where a worktree resource id is expected', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'voucha-resource-dir-shape-'))
+    testDirs.push(root)
+
+    const result = await runInitializeHelperStatus({
+      cwd: root,
+      script: 'worktree_resource_validate_dir_shape /Users/me/worktrees/feature',
+    })
+    const accepted = await runInitializeHelperStatus({
+      cwd: root,
+      script:
+        'worktree_resource_validate_dir_shape d0123456789ab && worktree_resource_validate_dir_shape ""',
+    })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('WORKTREE_DIR must be a worktree resource id')
+    expect(result.stderr).toContain('/Users/me/worktrees/feature')
+    expect(result.stderr).toContain('Fix: unset WORKTREE_DIR')
+    expect(accepted.code).toBe(0)
+  })
+
+  it('names the foreign lock holder and says no marker was written', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'voucha-resource-lock-holder-'))
+    testDirs.push(root)
+    const home = join(root, 'home')
+    const lockRoot = join(home, '.voucha', 'worktree-resource-operations')
+    await mkdir(lockRoot, { recursive: true })
+    await writeFile(join(lockRoot, 'owner.1.1'), `${process.pid}\n`)
+    await symlink('owner.1.1', join(lockRoot, 'lock'))
+
+    const result = await runInitializeHelperStatus({
+      cwd: root,
+      home,
+      script: 'worktree_resource_acquire_operation_lock',
+    })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain(`held by PID ${process.pid}`)
+    expect(result.stderr).toContain('no .initialized marker was written')
   })
 })
