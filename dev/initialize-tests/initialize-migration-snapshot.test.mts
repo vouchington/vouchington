@@ -42,4 +42,20 @@ describe('initialize migration snapshot', () => {
     expect(await run(snapshot)).toContain('differs from its local file')
     expect(await run(join(cwd, 'missing'))).toBe('')
   })
+
+  it('demotes readiness to monorepo when the saved snapshot is stale', async () => {
+    const cwd = await makeWorktreeDir('feature-db-snapshot-demote')
+    const snapshot = join(cwd, '.initialized-migrations')
+    await writeFile(snapshot, `${migrationId}\t${'c'.repeat(64)}\n`)
+    const output = await runRecordedInitialize({
+      cwd,
+      env: { INITIALIZED_MIGRATIONS_FILE: snapshot },
+      script: `
+    worktree_resource_validate_migrations_current "$REPO_ROOT" || printf '%s:' "$WORKTREE_RESOURCE_STATUS" >> "$record"
+    worktree_validated_capability "$REPO_ROOT" >> "$record"
+    `,
+    })
+
+    expect(output).toBe('stale-migrations:monorepo')
+  })
 })

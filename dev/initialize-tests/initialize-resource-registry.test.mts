@@ -119,7 +119,7 @@ describe('initialize worktree resource registry', () => {
 
     const result = await runInitializeHelperStatus({
       cwd: root,
-      script: 'worktree_resource_validate_dir_shape /Users/me/worktrees/feature',
+      script: 'worktree_resource_validate_dir_shape /srv/checkouts/feature',
     })
     const accepted = await runInitializeHelperStatus({
       cwd: root,
@@ -129,7 +129,7 @@ describe('initialize worktree resource registry', () => {
 
     expect(result.code).toBe(1)
     expect(result.stderr).toContain('WORKTREE_DIR must be a worktree resource id')
-    expect(result.stderr).toContain('/Users/me/worktrees/feature')
+    expect(result.stderr).toContain('/srv/checkouts/feature')
     expect(result.stderr).toContain('Fix: unset WORKTREE_DIR')
     expect(accepted.code).toBe(0)
   })

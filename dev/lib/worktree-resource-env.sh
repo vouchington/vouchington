@@ -277,11 +277,6 @@ worktree_resource_validate_backend_init() {
     return 1
   fi
 
-  if [ -n "$(worktree_resource_initialized_migration_drift "$repo_root" 2>/dev/null)" ]; then
-    export WORKTREE_RESOURCE_STATUS=stale-migrations
-    return 1
-  fi
-
   if [ -z "${DATABASE_URL:-}" ]; then
     export WORKTREE_RESOURCE_STATUS=missing-database-url
     return 1
@@ -302,6 +297,16 @@ worktree_resource_validate_backend_init() {
       export WORKTREE_RESOURCE_STATUS=main-resource
       return 1
     fi
+  fi
+}
+
+# Readiness (not ownership): succeeds only when no applied migration was edited in place since
+# the last initialization. Kept apart from the ownership validators so teardown and reset can
+# still remove the resources of a worktree whose database went stale.
+worktree_resource_validate_migrations_current() {
+  if [ -n "$(worktree_resource_initialized_migration_drift "$1" 2>/dev/null)" ]; then
+    export WORKTREE_RESOURCE_STATUS=stale-migrations
+    return 1
   fi
 }
 

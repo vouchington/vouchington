@@ -1231,6 +1231,10 @@ mode_at_least() {
 worktree_validated_capability() {
     local repo_root=$1
 
+    if ! worktree_resource_validate_migrations_current "$repo_root"; then
+        printf '%s' monorepo
+        return 0
+    fi
     if worktree_resource_validate_web_init "$repo_root"; then
         printf '%s' web
         return 0

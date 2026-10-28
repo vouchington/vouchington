@@ -20,6 +20,7 @@ storybook-static/
 .worktree-num
 .valkey-port
 .initialized
+.initialized-migrations
 dev/certs/
 
 # AI
