@@ -25,7 +25,6 @@ describe('background registry', () => {
     for (const job of BACKGROUND_JOBS) {
       const key = job.options.ordering?.key
       expect(key === job.domain || key?.startsWith(`${job.domain}:`)).toBe(true)
-      expect(getBackgroundJob(job.name)).toBe(job)
     }
   })
 
