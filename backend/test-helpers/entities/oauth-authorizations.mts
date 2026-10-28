@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { createHash, randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
@@ -191,9 +190,7 @@ export async function markTestOAuthAuthorizationExchanging(
 /** Expire only the named owned flow after an observed queue ownership storage failure. */
 export async function expireTestOAuthAuthorization(id: string): Promise<void> {
   const { rowCount } = await write(
-    allowUnannotatedQuery(
-      "UPDATE oauth_authorizations SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = $1",
-    ),
+    "/* expireTestOAuthAuthorization */ UPDATE oauth_authorizations SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = $1",
     [id],
   )
   if (rowCount !== 1) throw new Error('Expected the exact owned authorization to expire')

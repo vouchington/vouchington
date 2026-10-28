@@ -1,6 +1,5 @@
 import { createTestAccountChangeActor } from '../account-change.mts'
 import { getTestBlueskyCompletionProofVerifier } from './bluesky-link-authorizations.mts'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
@@ -170,10 +169,10 @@ export async function getTestBlueskyLinkedAccountRow(
   did: string,
 ): Promise<TestBlueskyLinkedAccountRow | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(`SELECT bluesky_did, user_id, handle, link_authorization_id,
+    `/* getTestBlueskyLinkedAccountRow */ SELECT bluesky_did, user_id, handle, link_authorization_id,
             session_ciphertext, created_at, updated_at
      FROM bluesky_linked_accounts
-     WHERE bluesky_did = $1`),
+     WHERE bluesky_did = $1`,
     [did],
   )
   return (rows[0] as TestBlueskyLinkedAccountRow | undefined) ?? null
