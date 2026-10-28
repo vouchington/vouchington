@@ -8,7 +8,7 @@ import {
   streamGithubAccountsToSync,
   streamXAccountsToSync,
 } from '@services/friend-recommendations/accounts-to-sync'
-import { getStaleBatches } from '../../../services/bedrock-embeddings-batch/orchestrator/find-stale.mts'
+import { getStaleBatches } from '@services/bedrock-embeddings-batch/orchestrator/find-stale'
 
 export async function runIngestionRawPageScenarios(): Promise<void> {
   for (const [provider, stream] of [

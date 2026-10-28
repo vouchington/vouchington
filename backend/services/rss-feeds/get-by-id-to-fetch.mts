@@ -1,5 +1,5 @@
 import { read, type QueryOptions } from '@data-stores/psql'
-import type { RssFeedToFetch } from './get-to-fetch.mts'
+import type { RssFeedToFetch } from './get-to-fetch-types.mts'
 import { FEED_COLUMNS, FEED_JOINS } from './get-to-fetch-columns.mts'
 
 type GetRssFeedByIdToFetchOptions = QueryOptions & { ttl?: number }

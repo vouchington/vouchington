@@ -39,12 +39,18 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
       }
     })
   }
+  const { rows: tierRows } = await read<{ crawl_tier: number }>(
+    `/* explainRssDispatchTier */ SELECT crawl_tier FROM mv_rss_feed_crawl_tiers
+     WHERE crawl_tier < 5 ORDER BY crawl_tier, rss_feed_id LIMIT 1`,
+  )
+  const tier = tierRows[0]?.crawl_tier
+  assert.ok(tier, 'representative RSS seed must contain a non-fallback tier')
   await runAndCapture('rss-feeds-to-fetch-tiered', async () => {
     const page = await getRssFeedsToFetch({
       limit: 25,
       rawBudget: 26,
       asOf: new Date(Date.now() + 2 * 24 * 60 * 60_000),
-      cursor: { lane: 3, afterId: '00000000-0000-0000-0000-000000000000' },
+      cursor: { lane: tier, afterId: '00000000-0000-0000-0000-000000000000' },
     })
     assert.ok(page.rawRowsRead > 0)
     assert.ok(page.feeds.length > 0)
