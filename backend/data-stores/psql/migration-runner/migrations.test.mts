@@ -2,12 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import type pg from 'pg'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { QueryExecutor, QueryInput } from '../types.mts'
+import { getFilesFromFolder, readMigrationFile } from './files.mts'
+import { readCanonicalConfigDrivenGenerator } from './config-driven-generators.mts'
 import { runConfigDriven } from './migrations.mts'
+import { splitSqlStatements } from './sql-statements.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 describe('runConfigDriven', () => {
@@ -15,6 +19,42 @@ describe('runConfigDriven', () => {
 
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
+  })
+
+  it('rejects an unregistered canonical generator before loading it', async () => {
+    await expect(readCanonicalConfigDrivenGenerator('unregistered-generator.mts')).rejects.toThrow(
+      'Unregistered config-driven generator: unregistered-generator.mts',
+    )
+  })
+
+  it('runs canonical generators in filename order with unchanged SQL statements', async () => {
+    const rootDir = fileURLToPath(new URL('..', import.meta.url))
+    const folder = join(rootDir, 'config-driven')
+    const files = getFilesFromFolder(folder)
+    const writes: string[] = []
+    const logs: unknown[][] = []
+
+    await runConfigDriven(rootDir, {
+      writer: makeWriter(writes),
+      logger: {
+        error: () => {},
+        log: (...args: unknown[]) => {
+          logs.push(args)
+        },
+      },
+    })
+
+    const expectedStatements: string[] = []
+    for (const file of files) {
+      expectedStatements.push(...splitSqlStatements(await readMigrationFile(folder, file)))
+    }
+    const statementPrefix = '/* runConfigDrivenStatements */ '
+    const statements = writes
+      .filter(write => write.startsWith(statementPrefix))
+      .map(write => write.slice(statementPrefix.length))
+
+    expect(logs).toEqual(files.map(file => ['Config-driven migration %s complete!', file]))
+    expect(statements).toEqual(expectedStatements)
   })
 
   async function makeConfigDrivenDir(): Promise<string> {

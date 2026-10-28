@@ -15,6 +15,10 @@
   views with `RESTRICT`, never `CASCADE`, so an unmanaged dependent blocks the rebuild instead of
   being silently removed.
 
+Canonical config-driven generators are explicit lazy dependencies of the runner so static analysis
+can verify their runtime use without export exceptions. Lazy loading preserves bootstrap ordering
+and avoids initializing later generators before earlier files finish.
+
 The Amex all-cards parent and its URL validation rule are invariant application data because
 referral unfurling identifies that parent by its canonical slug. Bootstrap provisions them without
 the optional sample CSV import; per-card program catalogs remain import-managed data.
