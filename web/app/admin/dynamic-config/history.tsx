@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { DynamicConfigHistoryEntry } from '@/lib/api/client/dynamic-config'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/get-user-label'
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -11,6 +12,9 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
 
 export function DynamicConfigHistory({ history }: { history: DynamicConfigHistoryEntry[] }) {
   const t = useTranslations()
+  const deletedUserLabel = t(
+    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
+  )
   return (
     <Card data-pw='dynamic-config-history'>
       <CardHeader>
@@ -31,7 +35,7 @@ export function DynamicConfigHistory({ history }: { history: DynamicConfigHistor
               >
                 <div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
                   <span className='font-medium'>
-                    {entry.changed_by?.username ?? entry.changed_by?.id ?? 'Deleted user'}
+                    {getUserLabel(entry.changed_by, deletedUserLabel)}
                   </span>
                   <time
                     className='text-muted-foreground'

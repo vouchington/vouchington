@@ -85,7 +85,7 @@ describe('RecipientPicker', () => {
       />,
     )
     expect(container.querySelector('[data-pw="recipient-chip"]')).not.toBeNull()
-    expect(screen.getByText('@alice')).toBeDefined()
+    expect(screen.getByText('alice')).toBeDefined()
   })
 
   it('calls onRemove when remove button is clicked', () => {

@@ -6,6 +6,7 @@ import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
 import { searchUsersExcluding } from '@/components/shared/search-users-excluding'
 import type { UserSearchResult } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/get-user-label'
 
 interface Props {
   recipients: UserSearchResult[]
@@ -17,6 +18,9 @@ interface Props {
 
 export function RecipientPicker({ recipients, onAdd, onRemove, excludeIds, disabled }: Props) {
   const t = useTranslations()
+  const deletedUserLabel = t(
+    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
+  )
   const selectedIds = new Set(recipients.map(r => r.id))
 
   async function search(query: string, signal: AbortSignal) {
@@ -37,14 +41,14 @@ export function RecipientPicker({ recipients, onAdd, onRemove, excludeIds, disab
               data-pw='recipient-chip'
               className='flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm'
             >
-              <span>{recipient.username ? `@${recipient.username}` : recipient.id}</span>
+              <span>{getUserLabel(recipient, deletedUserLabel)}</span>
               <Button
                 type='button'
                 variant='ghost'
                 size='icon'
                 data-pw='remove-recipient-button'
                 aria-label={t('extracted.messages.recipientPicker.removeName_e6a3c4a1', {
-                  name: recipient.username ?? recipient.id,
+                  name: getUserLabel(recipient, deletedUserLabel),
                 })}
                 onClick={() => onRemove(recipient.id)}
                 disabled={disabled}
@@ -59,7 +63,7 @@ export function RecipientPicker({ recipients, onAdd, onRemove, excludeIds, disab
       <EntityAutocomplete<UserSearchResult>
         search={search}
         getKey={user => user.id}
-        renderItem={user => <span>{user.username ? `@${user.username}` : user.id}</span>}
+        renderItem={user => <span>{getUserLabel(user, deletedUserLabel)}</span>}
         onSelect={(user, { setQuery }) => {
           onAdd(user)
           setQuery('')

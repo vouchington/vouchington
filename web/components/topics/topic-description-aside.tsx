@@ -4,6 +4,7 @@ import { MarkdownContent } from '@/components/shared/markdown-content'
 import { UserLink } from '@/components/users/user-link'
 import type { TopicContentUpdate } from '@/types/topics'
 import type { getTranslations } from '@/lib/i18n/get-translations'
+import { getUserLabel } from '@/lib/users/get-user-label'
 
 const contentUpdateDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -18,10 +19,6 @@ interface TopicDescriptionAsideProps {
   topicName: string
   contentUpdate?: TopicContentUpdate | null
   contentLanguage?: string | null
-}
-
-function getUserDisplayName(user: TopicContentUpdate['updated_by']): string {
-  return user.display_account?.name ?? user.username ?? user.id
 }
 
 export function TopicDescriptionAside({
@@ -58,7 +55,10 @@ export function TopicDescriptionAside({
             user={contentUpdate.updated_by}
             className='font-medium text-foreground hover:underline'
           >
-            {getUserDisplayName(contentUpdate.updated_by)}
+            {getUserLabel(
+              contentUpdate.updated_by,
+              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
+            )}
           </UserLink>
         </p>
       )}

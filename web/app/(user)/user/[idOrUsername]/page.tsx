@@ -10,7 +10,8 @@ import { createUserPathname } from '@/lib/links/entity-href'
 import { createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
 import { createProfilePageSchema } from '@/lib/seo/profile-page-schema'
 import { resolveProfileLinkUrls } from '@/lib/users/profile-link-href'
-import { getDisplayName, isProfileOwner } from '@/lib/users/user-helpers'
+import { isProfileOwner } from '@/lib/users/user-helpers'
+import { getUserLabel } from '@/lib/users/get-user-label'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { buildPlacementImagePath } from '@/lib/utils/image-url'
 
@@ -28,8 +29,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return createNoIndexMetadata()
   }
   const user = profileData.user
+  const t = await getTranslations()
 
-  const displayName = getDisplayName(user)
+  const displayName = getUserLabel(
+    user,
+    t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
+  )
   const hasDistinctDisplayName =
     user.username && user.display_account?.name && user.display_account.name !== user.username
   const title = hasDistinctDisplayName ? `${displayName} (@${user.username})` : displayName
@@ -56,6 +61,10 @@ export default async function UserProfilePage({ params }: PageProps) {
     notFound()
   }
   const user = profileData.user
+  const userLabel = getUserLabel(
+    user,
+    t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
+  )
 
   const canonicalPath = createUserPathname(user)
   const profileImagePath = buildPlacementImagePath(user.profile_image_placement)
@@ -65,16 +74,18 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   return (
     <>
-      <AnonymousStructuredDataScript
-        data={createProfilePageSchema({
-          username: user.username ?? user.id,
-          displayName: getDisplayName(user),
-          path: canonicalPath,
-          identifier: user.id,
-          imagePath: profileImagePath,
-          sameAs,
-        })}
-      />
+      {user.username ? (
+        <AnonymousStructuredDataScript
+          data={createProfilePageSchema({
+            username: user.username,
+            displayName: userLabel,
+            path: canonicalPath,
+            identifier: user.id,
+            imagePath: profileImagePath,
+            sameAs,
+          })}
+        />
+      ) : null}
       {profileData.user_bio_html ? (
         <UserBioCopy
           html={profileData.user_bio_html}
