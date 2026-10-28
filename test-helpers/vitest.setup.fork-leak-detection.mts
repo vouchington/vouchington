@@ -1,7 +1,7 @@
 /* oxlint-disable vitest/require-top-level-describe -- registered as a Vitest setupFile; the
    afterEach hook must observe every test in the project's fork to build an accurate per-fork
    growth baseline, so it cannot be wrapped in a describe block. */
-import { afterEach } from 'vitest'
+import { afterAll, afterEach } from 'vitest'
 import {
   getOrCreateQueue,
   settleRunnableQueueJobs,
@@ -23,6 +23,22 @@ import { registerCurrentPsqlPoolMetrics } from '../backend/test-helpers/psql-poo
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
 const detector = getForkLeakDetector()
 
+const MAX_JOB_DATA_CHARS = 300
+
+function truncate(text: string): string {
+  return text.length > MAX_JOB_DATA_CHARS ? `${text.slice(0, MAX_JOB_DATA_CHARS)}...` : text
+}
+
+function describeJobData(data: unknown): string {
+  try {
+    return truncate(JSON.stringify(data) ?? String(data))
+  } catch {
+    return '[unserializable]'
+  }
+}
+
+// Names the entity a stuck job works on (its data) and how often it already ran, so the failure
+// points at the file that enqueued it.
 function describePendingQueueJobs(
   queue: ReturnType<typeof getOrCreateQueue>,
   pendingJobIds: readonly string[],
@@ -30,7 +46,9 @@ function describePendingQueueJobs(
   return pendingJobIds
     .map(id => {
       const record = queue.jobs.get(id)
-      return record ? `${record.name}#${id}:${record.state}` : id
+      if (!record) return id
+      const failure = record.failedReason ? ` failedReason=${truncate(record.failedReason)}` : ''
+      return `${record.name}#${id}:${record.state} attemptsMade=${record.attemptsMade} data=${describeJobData(record.data)}${failure}`
     })
     .join(', ')
 }
@@ -105,4 +123,16 @@ afterEach(async ({ task }) => {
         .join('\n\n'),
     )
   }
+})
+
+// Election vote-stats jobs are enqueued with a real delay and the per-test settle skips delayed
+// jobs, so a delayed job would otherwise come due during a later file in this fork. Drop what this
+// file left parked (and any leftover waiting or prioritized work) before the next file starts.
+afterAll(async () => {
+  if (detectionDisabled) return
+  const setupBackgroundQueue = getOrCreateQueue('background')
+  const { getOrCreateQueue: getCurrentQueue } = await import('@vouchington/worker-runtime/testing')
+  const currentBackgroundQueue = getCurrentQueue('background')
+  await setupBackgroundQueue.drain(true)
+  if (currentBackgroundQueue !== setupBackgroundQueue) await currentBackgroundQueue.drain(true)
 })
