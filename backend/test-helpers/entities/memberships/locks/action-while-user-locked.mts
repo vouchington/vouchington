@@ -14,7 +14,7 @@ export async function runTestActionWhileMembershipUserLocked<T>(
 ): Promise<T> {
   await using holder = await beginTransaction()
   let releasing: Promise<void> | undefined
-  const releaseHolder = () => (releasing ??= holder[Symbol.asyncDispose]())
+  const releaseHolder = () => (releasing ??= Promise.resolve(holder[Symbol.asyncDispose]()))
 
   try {
     const { rows } = await holder<{ process_id: number }>(sql`
