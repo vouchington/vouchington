@@ -12,6 +12,7 @@ import { enqueueContinueInvalidatingPostsForTopicAliases } from './topic-aliases
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('topic alias post-invalidation continuation through real GlideMQ', () => {
+  // no-mistakes-timeout-reason: real GlideMQ worker retry of a failed continuation and shutdown
   it('re-activates a terminally failed continuation when the parent page retries', async () => {
     const topicAliasIds = [randomUUID(), randomUUID()]
     const changeId = randomUUID()
