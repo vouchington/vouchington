@@ -28,7 +28,7 @@ describe('SpendCapBreachError', () => {
       dailyCapMicrounits: 100,
       day: getCurrentUtcDay(),
     })
-    expect(error).toMatchObject({ status: 429, statusCode: 429, expose: true })
+    expect(error).toMatchObject({ status: 429, statusCode: 429 })
   })
 })
 

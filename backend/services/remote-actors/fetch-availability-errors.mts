@@ -3,7 +3,6 @@ import { isTimeoutError } from '@vouchington/http-transport/fetch'
 export class RemoteActorFetchAvailabilityError extends Error {
   readonly status = 502
   readonly statusCode = 502
-  readonly expose = true
 
   constructor(message: string, cause?: unknown) {
     super(message, { cause })

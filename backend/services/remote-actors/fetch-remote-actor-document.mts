@@ -34,7 +34,6 @@ export interface RemoteActorDocument {
 export class RemoteActorDocumentInvalidError extends Error {
   readonly status = 422
   readonly statusCode = 422
-  readonly expose = true
 
   constructor(message: string) {
     super(message)

@@ -21,7 +21,6 @@ export class SpendCapBreachError extends Error {
   readonly breach: SpendCapBreach
   readonly status = 429
   readonly statusCode = 429
-  readonly expose = true
 
   constructor(breach: SpendCapBreach) {
     super(formatBreachMessage(breach))
