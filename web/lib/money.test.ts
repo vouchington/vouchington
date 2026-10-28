@@ -4,7 +4,6 @@ import {
   formatScaledMoney,
   formatScaledMoneyAggregate,
   formatScaledMoneyAggregateList,
-  formatScaledMoneyList,
   majorUnitsInputValue,
   compatibleMoneyInputValue,
   monthlyEquivalent,
@@ -37,10 +36,6 @@ describe('web money formatting', () => {
       ),
     ).toBe('$180,143,985,094,819.82')
     expect(formatScaledMoneyAggregateList([], 'en-US')).toBe('0')
-  })
-
-  it('formats an empty scaled-money list as an explicit zero', () => {
-    expect(formatScaledMoneyList([], 'en-US')).toBe('0')
   })
 
   it('returns canonical major-unit input strings', () => {

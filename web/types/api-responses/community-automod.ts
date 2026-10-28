@@ -95,32 +95,3 @@ export interface CommunityAutomodActionsResponseBody {
   }
   page_info: Pick<PageInfo, 'has_next_page' | 'end_cursor'>
 }
-
-interface CommunityAutomodSimulationResult {
-  post_id: string
-  title: string
-  declared_language: string | null
-  lingua_rs_detected_language: string | null
-  post_type: string
-  approved_at: string
-  content_excerpt: string
-  flagged: boolean
-}
-
-interface CommunityAutomodSimulation {
-  prompt_id: string
-  time_window_hours: number
-  sample_count: number
-  would_flag_count: number
-  community_automod_action: CommunityAutomodActionSetting
-  false_positive_estimate: {
-    historical_flagged_count: number
-    historical_approved_count: number
-    rate: number | null
-  } | null
-}
-
-export interface CommunityAutomodSimulationResponseBody {
-  simulation: CommunityAutomodSimulation
-  results: CommunityAutomodSimulationResult[]
-}

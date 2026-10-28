@@ -98,23 +98,6 @@ function CommandGroup({
 }
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
-function CommandSeparator({
-  className,
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator> & {
-  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.Separator>>
-}) {
-  return (
-    <CommandPrimitive.Separator
-      ref={ref}
-      className={cn('-mx-1 h-px bg-border', className)}
-      {...props}
-    />
-  )
-}
-CommandSeparator.displayName = CommandPrimitive.Separator.displayName
-
 function CommandItem({
   className,
   ref,
@@ -223,5 +206,4 @@ export {
   CommandGroup,
   CommandItem,
   CommandShortcut,
-  CommandSeparator,
 }

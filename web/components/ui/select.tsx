@@ -166,23 +166,6 @@ function SelectItem({
 }
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
-function SelectSeparator({
-  className,
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Separator>>
-}) {
-  return (
-    <SelectPrimitive.Separator
-      ref={ref}
-      className={cn('-mx-1 my-1 h-px bg-muted', className)}
-      {...props}
-    />
-  )
-}
-SelectSeparator.displayName = SelectPrimitive.Separator.displayName
-
 export {
   Select,
   SelectGroup,
@@ -191,7 +174,6 @@ export {
   SelectContent,
   SelectLabel,
   SelectItem,
-  SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,
 }

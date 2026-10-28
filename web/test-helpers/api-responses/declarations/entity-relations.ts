@@ -7,14 +7,13 @@ import nativeEntityRelationsRssFeedItemCategoryTopicDefault from '../../../../ap
 import nativeEntityRelationsTopicPublisherTypeTopicDefault from '../../../../api-fixtures/v1/responses/native.entity-relations.topic.publisher-type.topic.default.json'
 import nativeEntityRelationsUserCategoryTopicCreateDefault from '../../../../api-fixtures/v1/responses/native.entity-relations.user.category.topic.create.default.json'
 import nativeEntityRelationsUserCategoryTopicDefault from '../../../../api-fixtures/v1/responses/native.entity-relations.user.category.topic.default.json'
-import type {
-  EntityRelationCreateResponseBody,
-  EntityRelationsResponseBody,
-} from '@/types/entity-relations'
+import type { EntityRelation, EntityRelationsResponse } from '@/lib/api/entity-relations'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
+type EntityRelationCreateFixtureResponse = { relation: EntityRelation }
+
 export const ENTITY_RELATIONS_DECLARATIONS = [
-  defineWebApiFixture<EntityRelationCreateResponseBody>()(
+  defineWebApiFixture<EntityRelationCreateFixtureResponse>()(
     'native.entity-relations.post.category.topic.create.default',
     nativeEntityRelationsPostCategoryTopicCreateDefault,
     async context => ({
@@ -27,7 +26,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
       ),
     }),
   ),
-  defineWebApiFixture<EntityRelationsResponseBody>()(
+  defineWebApiFixture<EntityRelationsResponse>()(
     'native.entity-relations.post.category.topic.default',
     nativeEntityRelationsPostCategoryTopicDefault,
     context =>
@@ -56,7 +55,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
         'confirm',
       ),
   ),
-  defineWebApiFixture<EntityRelationCreateResponseBody>()(
+  defineWebApiFixture<EntityRelationCreateFixtureResponse>()(
     'native.entity-relations.user.category.topic.create.default',
     nativeEntityRelationsUserCategoryTopicCreateDefault,
     async context => ({
@@ -69,7 +68,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
       ),
     }),
   ),
-  defineWebApiFixture<EntityRelationsResponseBody>()(
+  defineWebApiFixture<EntityRelationsResponse>()(
     'native.entity-relations.user.category.topic.default',
     nativeEntityRelationsUserCategoryTopicDefault,
     context =>
@@ -87,7 +86,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
         ),
     ],
   ),
-  defineWebApiFixture<EntityRelationsResponseBody>()(
+  defineWebApiFixture<EntityRelationsResponse>()(
     'native.entity-relations.post.related.post.default',
     nativeEntityRelationsPostRelatedPostDefault,
     context =>
@@ -102,7 +101,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
         }),
     ],
   ),
-  defineWebApiFixture<EntityRelationsResponseBody>()(
+  defineWebApiFixture<EntityRelationsResponse>()(
     'native.entity-relations.post.related.url.default',
     nativeEntityRelationsPostRelatedUrlDefault,
     context =>
@@ -117,7 +116,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
         }),
     ],
   ),
-  defineWebApiFixture<EntityRelationsResponseBody>()(
+  defineWebApiFixture<EntityRelationsResponse>()(
     'native.entity-relations.rss-feed-item.category.topic.default',
     nativeEntityRelationsRssFeedItemCategoryTopicDefault,
     context =>
@@ -141,7 +140,7 @@ export const ENTITY_RELATIONS_DECLARATIONS = [
         ),
     ],
   ),
-  defineWebApiFixture<EntityRelationsResponseBody>()(
+  defineWebApiFixture<EntityRelationsResponse>()(
     'native.entity-relations.topic.publisher-type.topic.default',
     nativeEntityRelationsTopicPublisherTypeTopicDefault,
     context =>

@@ -27,11 +27,6 @@ export function formatScaledMoney(money: ScaledMoney, locale: MoneyLocale): stri
   return formatAtScale(money, MONEY_SCALE, locale)
 }
 
-export function formatScaledMoneyList(values: ScaledMoney[], locale: MoneyLocale): string {
-  if (values.length === 0) return formatNumber(0, locale)
-  return values.map(value => formatScaledMoney(value, locale)).join(', ')
-}
-
 export function formatScaledMoneyAggregate(
   money: ScaledMoneyAggregate,
   locale: MoneyLocale,

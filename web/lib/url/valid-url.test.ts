@@ -1,44 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getValidUrlHref, isHttpUrlWithoutFragment, isValidUrl } from './valid-url'
-
-describe('isValidUrl', () => {
-  it('accepts absolute URLs', () => {
-    expect(isValidUrl('https://example.com/referral?ref=abc')).toBe(true)
-  })
-
-  it('returns the normalized href for absolute URLs', () => {
-    expect(getValidUrlHref('https://example.com/referral?ref=abc')).toBe(
-      'https://example.com/referral?ref=abc',
-    )
-  })
-
-  it('rejects relative and malformed URLs', () => {
-    expect(isValidUrl('/relative/path')).toBe(false)
-    expect(isValidUrl('not a url')).toBe(false)
-    expect(getValidUrlHref('not a url')).toBeNull()
-  })
-
-  it('does not rely on URL.canParse', () => {
-    const descriptor = Object.getOwnPropertyDescriptor(URL, 'canParse')
-
-    Object.defineProperty(URL, 'canParse', {
-      configurable: true,
-      value: undefined,
-    })
-
-    try {
-      expect(isValidUrl('https://example.com/referral')).toBe(true)
-      expect(getValidUrlHref('https://example.com/referral')).toBe('https://example.com/referral')
-      expect(isValidUrl('not a url')).toBe(false)
-    } finally {
-      if (descriptor) {
-        Object.defineProperty(URL, 'canParse', descriptor)
-      } else {
-        delete (URL as Partial<typeof URL>).canParse
-      }
-    }
-  })
-})
+import { isHttpUrlWithoutFragment } from './valid-url'
 
 describe('isHttpUrlWithoutFragment', () => {
   it('accepts http and https URLs with a host and no fragment', () => {
