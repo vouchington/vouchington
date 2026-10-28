@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { WEB_PROVENANCE, createTestUser } from '@voucha/test-helpers'
+import { ensureTestReconciliationBloomFilters } from '@voucha/test-helpers/bloom-repair-live-filters'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
 import { getPostByAnyCached } from '@services/entity-fetch'
@@ -8,6 +9,7 @@ import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
 
 describe('prepared topic recommendation Bloom admission', () => {
   it('publishes ID and slug before finalize resolves', async () => {
+    await ensureTestReconciliationBloomFilters()
     const user = await createTestUser()
     if (!user) throw new Error('Failed to create recommendation author')
     const random = Math.random().toString(36).slice(2, 10)

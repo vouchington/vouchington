@@ -3,6 +3,7 @@ import { normalizeKey } from '@ts-shared/utils/strings'
 import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { ensureTestReconciliationBloomFilters } from '@voucha/test-helpers/bloom-repair-live-filters'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
@@ -32,6 +33,7 @@ describe('typed-recommendations', () => {
 
   describe('referral_program recommendations', () => {
     it('creates a referral_program recommendation with example_referral_link', async () => {
+      await ensureTestReconciliationBloomFilters()
       const random = Math.random().toString(36).slice(2, 10)
       const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
         markdown: `Referral program recommendation ${random}`,
