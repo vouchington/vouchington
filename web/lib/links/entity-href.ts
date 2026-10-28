@@ -42,7 +42,7 @@ export function communityHref(community: SlugInput): string {
   return `/communities/${community.slug}`
 }
 
-export function communityPostsHref(community: string | SlugInput): string {
+function communityPostsHref(community: string | SlugInput): string {
   return createCommunityPathname(community, '/posts')
 }
 
@@ -78,12 +78,6 @@ export function urlHref(url: string | IdInput): string {
   return `/url/${idOrValue(url)}`
 }
 
-export function createDomainPathname(domain: string | HostnameInput, suffix = ''): string {
-  const idOrHostname =
-    typeof domain === 'string' ? domain : 'hostname' in domain ? domain.hostname : domain.id
-  return `/domain/${idOrHostname}${suffix}`
-}
-
 export function domainHref(domain: string | HostnameInput): string {
   return `/domain/${typeof domain === 'string' ? domain : 'hostname' in domain ? domain.hostname : domain.id}`
 }
@@ -108,10 +102,6 @@ export function landingPageNamedHref(
   return slug ? `${landingPageHref(owner)}/${slug}` : landingPageHref(owner)
 }
 
-export function myLandingPagesHref(): string {
-  return '/my/landing-pages'
-}
-
 export function myLandingPageHref(page: string | SlugInput, suffix = ''): string {
   return `/my/landing-page/${slugOrValue(page)}${suffix}`
 }
@@ -125,18 +115,6 @@ export function podcastsHref(): string {
 }
 export function podcastCategoryHref(category: string | SlugInput): string {
   return `/podcasts/${slugOrValue(category)}`
-}
-
-export function plansHref(): string {
-  return '/plans'
-}
-
-export function myMembershipHref(): string {
-  return '/my/membership'
-}
-
-export function membershipGrantsHref(): string {
-  return '/memberships/grants'
 }
 
 export function userTabForPostType(postType: string | undefined): UserTab | undefined {

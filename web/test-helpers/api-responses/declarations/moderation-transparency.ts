@@ -7,7 +7,10 @@ export const MODERATION_TRANSPARENCY_DECLARATIONS = [
   defineWebApiFixture<ModerationTransparency>()(
     'native.moderation.transparency.default',
     moderationTransparencyDefault,
-    context => context.server.moderationAnalytics.getModerationTransparency({ range: '30d' }),
+    context =>
+      context.rawServer.get<ModerationTransparency>('/api/v1/moderation-transparency', {
+        searchParams: { range: '30d' },
+      }),
   ),
   defineWebApiFixture<ModerationTransparency>()(
     'native.community.moderation-transparency.default',

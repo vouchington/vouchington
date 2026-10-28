@@ -6,7 +6,6 @@ import type {
   RssFeedItemResponseBody,
   RssFeedItemsListResponseBody,
 } from '@/types/api-responses'
-import type { ReferenceListResponseBody } from '@/types/api-responses/lists'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import type { UserProfileCollection } from '@ts-shared/user-profile-collections'
 
@@ -49,23 +48,6 @@ export const getUserRssFeedItemsCollection = cache(
     const searchParams = { media_type: options?.mediaType, limit: options?.limit }
     return returnNullForMissingEntity(
       serverApi.get<RssFeedItemsListResponseBody>(
-        `/api/v1/users/${encodeURIComponent(idOrUsername)}/rss-feed-items/${encodeURIComponent(listType)}`,
-        options?.mediaType || options?.limit ? { searchParams } : undefined,
-      ),
-      { nullStatusCodes: [401, 403, 404] },
-    )
-  },
-)
-
-export const getUserRssFeedItemBookmarkReferences = cache(
-  async (
-    idOrUsername: string,
-    listType: RssFeedItemCollectionListType,
-    options?: { mediaType?: string; limit?: number },
-  ): Promise<ReferenceListResponseBody<{ id: string }> | null> => {
-    const searchParams = { media_type: options?.mediaType, limit: options?.limit }
-    return returnNullForMissingEntity(
-      serverApi.get<ReferenceListResponseBody<{ id: string }>>(
         `/api/v1/users/${encodeURIComponent(idOrUsername)}/rss-feed-items/${encodeURIComponent(listType)}`,
         options?.mediaType || options?.limit ? { searchParams } : undefined,
       ),

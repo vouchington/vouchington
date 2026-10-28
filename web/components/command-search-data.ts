@@ -23,7 +23,7 @@ export type SearchTab =
   | 'fediverse'
   | 'pages'
 
-export const SEARCH_TABS: { label: MessageKey; value: SearchTab }[] = [
+const SEARCH_TABS: { label: MessageKey; value: SearchTab }[] = [
   { label: 'extracted.components.commandSearchData.all_a52ace42', value: 'all' },
   { label: 'extracted.components.commandSearchData.topics_e22820fc', value: 'topics' },
   { label: 'extracted.components.commandSearchData.communities_c864f329', value: 'communities' },

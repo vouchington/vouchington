@@ -15,7 +15,7 @@ const POST_TYPE_PATHS: Record<RoutablePostType, string> = {
   link: 'link',
 }
 
-export function getPostTypePath(postType: PostType): string {
+function getPostTypePath(postType: PostType): string {
   if (postType === 'comment') {
     throw new Error('Comment routes require root post context')
   }

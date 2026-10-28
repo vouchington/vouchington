@@ -72,9 +72,7 @@ export interface WebFixtureServerEndpointContext {
   >
   readonly moderationAnalytics: Pick<
     typeof import('@/lib/api/server/moderation-analytics'),
-    | 'getCommunityModerationAnalytics'
-    | 'getCommunityModerationTransparency'
-    | 'getModerationTransparency'
+    'getCommunityModerationAnalytics' | 'getCommunityModerationTransparency'
   >
   readonly modmail: Pick<
     typeof import('@/lib/api/server/modmail'),
@@ -109,10 +107,7 @@ export interface WebFixtureServerEndpointContext {
     typeof import('@/lib/api/server/rss-feed-categories'),
     'getAdminRssFeedCategories'
   >
-  readonly rssFeedItems: Pick<
-    typeof import('@/lib/api/server/rss-feed-items'),
-    'getRssFeedItem' | 'getUserRssFeedItemBookmarkReferences'
-  >
+  readonly rssFeedItems: Pick<typeof import('@/lib/api/server/rss-feed-items'), 'getRssFeedItem'>
   readonly topicRecommendations: Pick<
     typeof import('@/lib/api/server/topic-recommendations'),
     'getTopicRecommendation' | 'getTopHashtags'

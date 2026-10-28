@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getAdminModerationAnalytics,
   getCommunityModerationAnalytics,
-  getCommunityModerationAnalyticsOrNull,
   getCommunityModerationTransparency,
-  getCommunityModerationTransparencyOrNull,
-  getModerationTransparency,
   getModerationTransparencyOrNull,
 } from './moderation-analytics'
 import { ApiError } from '@vouchington/api-client'
@@ -51,7 +48,7 @@ describe('moderation analytics server api helpers', () => {
     })
   })
 
-  it('calls the paid moderation transparency endpoint with range and headers', async () => {
+  it('reads paid moderation transparency through the public nullable reader', async () => {
     const headers = { cookie: 'session=1' }
     const response: ModerationTransparency = {
       range: '30d',
@@ -66,7 +63,9 @@ describe('moderation analytics server api helpers', () => {
     }
     mockGet.mockResolvedValueOnce(response)
 
-    await expect(getModerationTransparency({ range: '30d', headers })).resolves.toEqual(response)
+    await expect(getModerationTransparencyOrNull({ range: '30d', headers })).resolves.toEqual(
+      response,
+    )
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/moderation-transparency', {
       searchParams: { range: '30d' },
@@ -87,33 +86,9 @@ describe('moderation analytics server api helpers', () => {
     )
   })
 
-  it('does not return stale community AI transparency after an entitlement downgrade', async () => {
-    mockGet.mockRejectedValue(new ApiError('Forbidden', 403))
-
-    await expect(
-      getCommunityModerationTransparencyOrNull('credit-cards', { range: '30d' }),
-    ).resolves.toBeNull()
-  })
-
   it('returns null for global paid transparency after an entitlement downgrade', async () => {
     mockGet.mockRejectedValue(new ApiError('Forbidden', 403))
 
     await expect(getModerationTransparencyOrNull({ range: '30d' })).resolves.toBeNull()
-  })
-
-  it('returns null for missing community moderation analytics', async () => {
-    mockGet.mockRejectedValue(new ApiError('Not found', 404))
-
-    await expect(
-      getCommunityModerationAnalyticsOrNull('private-community', { range: '30d' }),
-    ).resolves.toBeNull()
-  })
-
-  it('returns null for forbidden community moderation analytics', async () => {
-    mockGet.mockRejectedValue(new ApiError('Forbidden', 403))
-
-    await expect(
-      getCommunityModerationAnalyticsOrNull('forbidden-community', { range: '30d' }),
-    ).resolves.toBeNull()
   })
 })

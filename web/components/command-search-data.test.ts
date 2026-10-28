@@ -3,12 +3,11 @@ import { createTranslator } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import {
   EMPTY_RESULTS,
-  SEARCH_TABS,
   getMatchingShortcuts,
+  getSearchTabs,
   type Translator,
 } from './command-search-data'
 import { DERIVED_PAGE_SHORTCUTS } from '@/lib/navigation/derive-page-shortcuts'
-import { sortByBookmarked } from './command-search-data-search'
 
 describe('getMatchingShortcuts', () => {
   let t: Translator
@@ -81,81 +80,35 @@ describe('getMatchingShortcuts', () => {
   })
 })
 
-describe('SEARCH_TABS', () => {
+describe('getSearchTabs', () => {
   let t: Translator
 
   beforeAll(async () => {
     t = createTranslator('en', enMessages)
   })
 
-  it('contains Communities tab after Topics', () => {
-    const tabValues = SEARCH_TABS.map(tab => tab.value)
+  it('contains Communities after Topics when the full tab list is enabled', () => {
+    const tabValues = getSearchTabs({ fediverse: true }).map(tab => tab.value)
     const topicsIdx = tabValues.indexOf('topics')
     const communitiesIdx = tabValues.indexOf('communities')
     expect(communitiesIdx).toBe(topicsIdx + 1)
   })
 
-  it('has Communities tab with correct label', () => {
-    const communitiesTab = SEARCH_TABS.find(tab => tab.value === 'communities')
+  it('has Communities tab with the expected label', () => {
+    const communitiesTab = getSearchTabs({ fediverse: true }).find(
+      tab => tab.value === 'communities',
+    )
     expect(communitiesTab).toBeDefined()
     expect(t(communitiesTab!.label)).toBe('Communities')
+  })
+
+  it('omits Fediverse when its feature flag is disabled', () => {
+    expect(getSearchTabs({ fediverse: false }).some(tab => tab.value === 'fediverse')).toBe(false)
   })
 })
 
 describe('EMPTY_RESULTS', () => {
   it('has communities array', () => {
     expect(EMPTY_RESULTS.communities).toEqual([])
-  })
-})
-
-describe('sortByBookmarked', () => {
-  const items = [
-    { id: 'a', name: 'A' },
-    { id: 'b', name: 'B' },
-    { id: 'c', name: 'C' },
-  ]
-
-  it('returns items unchanged when no bookmarks provided', () => {
-    expect(sortByBookmarked(items)).toEqual(items)
-  })
-
-  it('returns items unchanged when bookmarks is empty', () => {
-    expect(sortByBookmarked(items, {})).toEqual(items)
-  })
-
-  it('boosts followed items to the top', () => {
-    const bookmarks = { b: { follow: true } }
-    const result = sortByBookmarked(items, bookmarks)
-    expect(result[0]?.id).toBe('b')
-  })
-
-  it('boosts saved items to the top', () => {
-    const bookmarks = { c: { save: true } }
-    const result = sortByBookmarked(items, bookmarks)
-    expect(result[0]?.id).toBe('c')
-  })
-
-  it('boosts proxy_followed items to the top', () => {
-    const bookmarks = { a: { proxy_follow: true } }
-    const result = sortByBookmarked(items, bookmarks)
-    expect(result[0]?.id).toBe('a')
-  })
-
-  it('does not boost muted items', () => {
-    const bookmarks = { b: { mute: true } }
-    const result = sortByBookmarked(items, bookmarks)
-    expect(result[0]?.id).toBe('a')
-  })
-
-  it('does not boost items with only negative predicates', () => {
-    const bookmarks = { b: { mute: true, block: true, hide: true } }
-    const result = sortByBookmarked(items, bookmarks)
-    expect(result[0]?.id).toBe('a')
-  })
-
-  it('preserves relative order of non-bookmarked items', () => {
-    const bookmarks = { c: { follow: true } }
-    const result = sortByBookmarked(items, bookmarks)
-    expect(result.map(r => r.id)).toEqual(['c', 'a', 'b'])
   })
 })

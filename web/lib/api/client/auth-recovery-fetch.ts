@@ -14,7 +14,7 @@ import { isDefinitiveRenewalFailure, renewBrowserSession } from './session-renew
 type BotChallengeSolver = (action: string, signal?: AbortSignal) => Promise<string>
 
 /** The application owns one finite renewal-then-challenge replay sequence. */
-export function createAuthRecoveryFetch(
+function createAuthRecoveryFetch(
   solve: BotChallengeSolver = requestBotChallengeToken,
 ): typeof fetch {
   return async (input, init) => {

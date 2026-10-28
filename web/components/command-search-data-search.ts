@@ -172,7 +172,7 @@ function extractCommunities(data: Awaited<ReturnType<typeof fetchCommunities>>):
   })
 }
 
-export function sortByBookmarked<T extends { id: string }>(
+function sortByBookmarked<T extends { id: string }>(
   items: T[],
   bookmarks?: Record<string, Record<string, boolean>>,
 ): T[] {

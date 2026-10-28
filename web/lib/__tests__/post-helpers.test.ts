@@ -6,7 +6,6 @@ import {
   getPostPath,
   getPostSchemaKind,
   getPostTitle,
-  getPostTypePath,
   getVoteScoreNet,
 } from '../post-helpers'
 import type { Post, PostType } from '@/types/posts'
@@ -54,6 +53,10 @@ describe('getPostPath', () => {
 })
 
 describe('getCanonicalPostPath', () => {
+  it.each(postTypePathCases)('maps %s to its canonical route', (postType, expectedPath) => {
+    expect(getCanonicalPostPath(makePost({ post_type: postType }))).toBe(`/${expectedPath}/post-1`)
+  })
+
   it('uses the indexed /story route for story posts', () => {
     const post = makePost({ id: 'story-1', slug: 'test-story', post_type: 'story' })
     expect(getCanonicalPostPath(post)).toBe('/story/test-story')
@@ -87,16 +90,6 @@ describe('getCanonicalPostPath', () => {
   it('rejects comments without root post context', () => {
     const post = makePost({ id: 'comment-1', post_type: 'comment' })
     expect(() => getCanonicalPostPath(post)).toThrow('Comment routes require root post context')
-  })
-})
-
-describe('getPostTypePath', () => {
-  it.each(postTypePathCases)('maps %s to %s', (postType, expectedPath) => {
-    expect(getPostTypePath(postType)).toBe(expectedPath)
-  })
-
-  it('rejects comment route segments without root post context', () => {
-    expect(() => getPostTypePath('comment')).toThrow('Comment routes require root post context')
   })
 })
 

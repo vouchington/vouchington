@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as serverRoutes from '@/lib/api/server'
+import type { TopHostnamesResponse } from '@/types/api-responses'
 import {
   createTestPost,
   createTestTopic,
@@ -162,8 +163,8 @@ describe('routes — public and direct', () => {
       expect(Array.isArray(result.results)).toBe(true)
     })
 
-    it('getTopHostnames returns a list of hostnames', async () => {
-      const result = await serverRoutes.getTopHostnames()
+    it('top hostnames endpoint returns a list of hostnames', async () => {
+      const result = await serverRoutes.serverApi.get<TopHostnamesResponse>('/api/v1/hostnames/top')
       expect(Array.isArray(result.results)).toBe(true)
     })
 
