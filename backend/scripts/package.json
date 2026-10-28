@@ -114,7 +114,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.3.0",
     "@vouchington/mcp-server": "^0.2.0",
-    "@vouchington/postgres": "^0.1.0",
+    "@vouchington/postgres": "^0.1.2",
     "@vouchington/rss-parser": "^0.1.0",
     "@workers/openai-moderation": "workspace:^",
     "@workers/rss-feeds": "workspace:^",
