@@ -3,7 +3,6 @@ import { readMyHouseholdsGroup } from './my-household-reads.mts'
 import { manageMyHouseholdsGroup } from './my-household-writes.mts'
 export { readMyHouseholdsGroup, manageMyHouseholdsGroup }
 
-export const myHouseholdGroups = [readMyHouseholdsGroup, manageMyHouseholdsGroup] as const
 export const myHouseholdTools = [
   createMergedTool(readMyHouseholdsGroup.name, 'Read My Households', readMyHouseholdsGroup.options),
   createMergedTool(

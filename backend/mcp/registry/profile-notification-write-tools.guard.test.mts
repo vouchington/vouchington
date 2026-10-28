@@ -13,7 +13,7 @@ import { getProfile } from '@services/my/profile'
 import { createProfileLink, listProfileLinks } from '@services/my/profile-links'
 import { getEmailPreferences, getPrivateUserByAny } from '@services/users'
 import type { ApiScope } from '@modules/scopes'
-import { SETTING_FIELDS } from '../preference-tool-support.mts'
+import { pickSettings } from '../preference-tool-support.mts'
 
 type Fixture = Awaited<ReturnType<typeof createFixture>>
 
@@ -67,7 +67,7 @@ async function snapshot(userId: string) {
         (job.data as { userId?: string }).userId === userId,
     ).length,
     emailPreferences: await getEmailPreferences(userId),
-    settings: SETTING_FIELDS.map(field => user[field]),
+    settings: Object.values(pickSettings(user)),
     identity: [user.use_display_name_from, user.profile_image_id],
   }
 }

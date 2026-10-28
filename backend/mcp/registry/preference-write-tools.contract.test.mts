@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import { getEmailPreferences, getPrivateUserByAny } from '@services/users'
-import { SETTING_FIELDS } from '../preference-tool-support.mts'
+import { SETTINGS_PARAMETERS } from '../preference-tool-support.mts'
 
 const EMAIL_SCOPES = ['preferences:read', 'preferences:write'] as const
 const IDENTITY_SCOPES = ['profile:read', 'profile:write'] as const
@@ -143,9 +143,9 @@ describe('preferences tool contract — real DB', () => {
     )
 
     expect(Object.keys(result.settings as object).toSorted()).toEqual(
-      [...SETTING_FIELDS].toSorted(),
+      Object.keys(SETTINGS_PARAMETERS.properties).toSorted(),
     )
-    for (const field of SETTING_FIELDS) {
+    for (const field of Object.keys(SETTINGS_PARAMETERS.properties)) {
       expect((result.settings as Record<string, unknown>)[field]).toEqual(
         rest.body.user[field] ?? null,
       )

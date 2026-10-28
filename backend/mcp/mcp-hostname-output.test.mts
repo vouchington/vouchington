@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getTopHostnamesTool from './get-top-hostnames.mts'
-import { HOSTNAME_PAGE_LIMIT, mcpHostnameSchema } from './mcp-hostname-output.mts'
+import { HOSTNAME_PAGE_LIMIT, hostnamesPageProperties } from './mcp-hostname-output.mts'
 import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchHostnamesTool from './search-hostnames.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -40,7 +40,7 @@ const TOOLS = [
 
 describe('hostname read tool output schemas', () => {
   it('takes the hostname fields from the public hostname contracts and no moderation field', () => {
-    const hostname = propertiesOf(mcpHostnameSchema())
+    const hostname = propertiesOf(hostnamesPageProperties().results.items)
     const [electionNull, election] = hostname['election']!['anyOf'] as JsonSchema[]
 
     expect(Object.keys(hostname)).toEqual(['id', 'hostname', 'topic_id', 'election'])
@@ -70,7 +70,7 @@ describe('hostname read tool output schemas', () => {
     expect(found!['required']).toEqual(Object.keys(page))
     expect(page['results']).toEqual({
       type: 'array',
-      items: mcpHostnameSchema(),
+      items: hostnamesPageProperties().results.items,
     })
     expect(Object.keys(propertiesOf(page['page_info']!))).toEqual([
       'has_next_page',

@@ -1,6 +1,6 @@
 import { Agent, createServer, type IncomingHttpHeaders } from 'node:http'
 import { describe, expect, it } from 'vitest'
-import { createVouchaApiApp, VOUCHA_API_SERVER_OPTIONS } from './app.mts'
+import { createVouchaApiApp } from './app.mts'
 import {
   closeServer,
   listen,
@@ -10,7 +10,7 @@ import {
   startListening,
 } from '../test-helpers/api/http-boundary.mts'
 
-const BODY_LIMIT_BYTES = VOUCHA_API_SERVER_OPTIONS.bodyLimit
+const BODY_LIMIT_BYTES = 1024 * 1024
 const EXPECTED_SECURITY_HEADERS = {
   'x-xss-protection': '0',
   'x-frame-options': 'SAMEORIGIN',
@@ -25,14 +25,6 @@ const DISABLED_SECURITY_HEADERS = [
 ] as const
 
 describe('API server hardening', () => {
-  it('pins HTTP method validation to the Node parser boundary', () => {
-    expect(VOUCHA_API_SERVER_OPTIONS.strictHttpMethods).toBe(false)
-  })
-
-  it('pins the request body limit to 1 MiB', () => {
-    expect(VOUCHA_API_SERVER_OPTIONS.bodyLimit).toBe(1024 * 1024)
-  })
-
   it('rejects parser-unknown HTTP methods before application dispatch', async () => {
     const app = createVouchaApiApp()
     let applicationDispatched = false

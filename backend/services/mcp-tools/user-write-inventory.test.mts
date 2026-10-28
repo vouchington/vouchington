@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
-import { brandTopicClaimGroups } from '@voucha/mcp/brand/topic-claims'
+import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '@voucha/mcp/brand/topic-claims'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
-import { myHouseholdGroups } from '@voucha/mcp/my-households'
+import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
@@ -29,13 +29,15 @@ const isWrite = (key: string) => !key.startsWith('GET:')
 
 const mergedGroups = [
   ...participationWriteGroups,
-  ...myHouseholdGroups,
+  readMyHouseholdsGroup,
+  manageMyHouseholdsGroup,
   ...userMergedReadingGroups,
   ...userMergedParticipationGroups,
   ...userMergedAccountGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
-  ...brandTopicClaimGroups,
+  readMyTopicClaimsGroup,
+  manageTopicClaimGroup,
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sources = [

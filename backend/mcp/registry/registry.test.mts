@@ -1,5 +1,5 @@
-import { myMessageGroups } from '@voucha/mcp/my-messages'
-import { myHouseholdGroups } from '@voucha/mcp/my-households'
+import { readMyMessagesGroup, manageMyMessagesGroup } from '@voucha/mcp/my-messages'
+import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
 import { participationWriteGroups } from './participation-write-groups.mts'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
@@ -102,8 +102,10 @@ const NON_TOOL_FILES = new Set([
 describe('tool registry', () => {
   it('registers named tools and references every anonymous option source exactly once', async () => {
     const mergedGroups = [
-      ...myMessageGroups,
-      ...myHouseholdGroups,
+      readMyMessagesGroup,
+      manageMyMessagesGroup,
+      readMyHouseholdsGroup,
+      manageMyHouseholdsGroup,
       ...participationWriteGroups,
       ...userMergedAccountGroups,
       ...userMergedParticipationGroups,

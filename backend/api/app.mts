@@ -43,7 +43,7 @@ if (!cfWorkerSecret) {
   }
 }
 
-export const VOUCHA_API_SERVER_OPTIONS = {
+const VOUCHA_API_SERVER_OPTIONS = {
   trustProxy: true,
   strictHttpMethods: false,
   bodyLimit: 1024 * 1024,

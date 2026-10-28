@@ -10,7 +10,7 @@ import { createTestUser, setUserMarkdown } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { setTestNotificationText } from '@voucha/test-helpers/notification-text'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { SETTING_FIELDS } from '../preference-tool-support.mts'
+import { SETTINGS_PARAMETERS } from '../preference-tool-support.mts'
 
 type Body = Record<string, unknown>
 type Scopes = Parameters<typeof callStructuredMcpTool>[3]
@@ -270,9 +270,9 @@ describe('own-data read tools — real DB', () => {
       const tool = await call('read_my_preferences', PREFERENCES, optionArgs('general', {}))
       const { user } = (await rest(`/api/v1/users/${owner.id}`)) as { user: Body }
       expect(Object.keys(tool['settings'] as Body).toSorted()).toEqual(
-        [...SETTING_FIELDS].toSorted(),
+        Object.keys(SETTINGS_PARAMETERS.properties).toSorted(),
       )
-      for (const field of SETTING_FIELDS) {
+      for (const field of Object.keys(SETTINGS_PARAMETERS.properties)) {
         expect((tool['settings'] as Body)[field]).toEqual(user[field] ?? null)
       }
       expect(await call('read_my_preferences', BROAD, optionArgs('general', {}))).toEqual(tool)

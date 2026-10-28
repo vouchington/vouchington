@@ -32,7 +32,6 @@ export const URL_LIST_TYPES = routeListSet('urls') as Set<UrlListType>
 export const HOSTNAME_LIST_TYPES = routeListSet('domains') as Set<HostnameListType>
 export const COMMUNITY_LIST_TYPES = routeListSet('communities') as Set<CommunityRouteListType>
 
-export const PRIVATE_TOPIC_LIST_TYPES = privateRouteListSet('topics') as Set<TopicRouteListType>
 export const PRIVATE_USER_LIST_TYPES = privateRouteListSet('users') as Set<UserRouteListType>
 
 export const TOPIC_SERVICE_LIST_TYPES = serviceListMap('topics') as Record<

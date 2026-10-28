@@ -10,7 +10,7 @@ import {
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
 /** The post fields the MCP read tools return, in output order. */
-export const MCP_POST_FIELDS = PUBLIC_POST_FIELDS
+const MCP_POST_FIELDS = PUBLIC_POST_FIELDS
 
 /** One post as an MCP client receives it. */
 export type McpPost = PublicPost

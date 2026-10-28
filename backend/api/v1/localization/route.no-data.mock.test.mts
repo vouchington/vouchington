@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PUBLIC_LOCALIZATION_CONSUMERS } from '@vouchington/localization'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
-import { createLocalizationRoute } from './localization-route-helpers.mts'
+import { localizationRoute } from './localization-route-helpers.mts'
 import { createSampleLocalizationContext } from '@voucha/test-helpers/localization-fixtures'
 
 function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
@@ -25,10 +25,8 @@ function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
 
 describe('localization route handler', () => {
   let context: ReturnType<typeof createSampleLocalizationContext>
-  let localizationRoute: ReturnType<typeof createLocalizationRoute>
   beforeEach(() => {
     context = createSampleLocalizationContext()
-    localizationRoute = createLocalizationRoute(context.resolver.localizationGetResult)
   })
 
   afterEach(() => {
@@ -55,20 +53,24 @@ describe('localization route handler', () => {
 
   it('writes JSON, 304, and 400 responses', () => {
     const ok = createContext({ consumer: 'web', locales: 'en', selectors: 'nav.*' })
-    localizationRoute(ok as never)
+    localizationRoute(ok as never, context.resolver.localizationGetResult)
     expect(ok.json).toHaveBeenCalled()
     const etag = ok.set.mock.calls.find(call => call[0] === 'ETag')?.[1]
     const cached = createContext({ consumer: 'web', locales: 'en', selectors: 'nav.*' }, etag)
-    localizationRoute(cached as never)
+    localizationRoute(cached as never, context.resolver.localizationGetResult)
     expect(cached.setStatus).toHaveBeenCalledWith(304)
     const missing = createContext({})
-    expect(() => localizationRoute(missing as never)).toThrow(/consumer is required/)
+    expect(() =>
+      localizationRoute(missing as never, context.resolver.localizationGetResult),
+    ).toThrow(/consumer is required/)
     const boom = createContext({ consumer: 'web', locales: 'en', selectors: 'nav.*' })
     boom.throw = vi.fn<(status: number, message: string) => never>()
     boom.set = vi.fn<(name: string, value: string) => void>(() => {
       throw new Error('headers failed')
     })
-    expect(() => localizationRoute(boom as never)).toThrow(/headers failed/)
+    expect(() => localizationRoute(boom as never, context.resolver.localizationGetResult)).toThrow(
+      /headers failed/,
+    )
   })
 
   it.each([
@@ -77,7 +79,9 @@ describe('localization route handler', () => {
   ])('rejects a %s before rendering a localization payload', (_label, query) => {
     const ctx = createContext(query)
 
-    expect(() => localizationRoute(ctx as never)).toThrow(/consumer/i)
+    expect(() => localizationRoute(ctx as never, context.resolver.localizationGetResult)).toThrow(
+      /consumer/i,
+    )
     expect(ctx.throw).toHaveBeenCalledWith(400, expect.any(String))
     expect(ctx.json).not.toHaveBeenCalled()
   })
@@ -89,7 +93,7 @@ describe('localization route handler', () => {
       selectors: ['nav.*', 'email.welcome.preview'],
     })
 
-    localizationRoute(ctx as never)
+    localizationRoute(ctx as never, context.resolver.localizationGetResult)
     expect(ctx.json).toHaveBeenCalled()
   })
 })

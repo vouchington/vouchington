@@ -6,10 +6,7 @@ import undici from 'undici'
 import { describe, expect, it, vi } from 'vitest'
 import { validateRequestContract } from './response-helpers.mts'
 import { sentryCaptureExceptionMock } from '../test-helpers/vitest.setup.sentry-mock.mts'
-import {
-  installRequestContractEnforcement,
-  REQUEST_CONTRACT_VALIDATION_MISSING,
-} from './request-contract-enforcement-helpers.mts'
+import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
 
 async function runRequest(
   app: ReturnType<typeof createApp>,
@@ -64,11 +61,11 @@ describe('runtime request contract enforcement', () => {
     expect(response.status).toBe(500)
     expect(response.json()).toEqual({
       message: 'Request validation did not run',
-      code: REQUEST_CONTRACT_VALIDATION_MISSING,
+      code: 'REQUEST_CONTRACT_VALIDATION_MISSING',
     })
     expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
     expect(sentryCaptureExceptionMock.mock.calls[0]?.[0]).toMatchObject({
-      code: REQUEST_CONTRACT_VALIDATION_MISSING,
+      code: 'REQUEST_CONTRACT_VALIDATION_MISSING',
       tags: { route_key: 'POST:/api/v1/my/api-keys' },
     })
     expect(sentryCaptureExceptionMock.mock.calls[0]?.[1]).toMatchObject({

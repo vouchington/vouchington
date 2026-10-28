@@ -1,7 +1,7 @@
-import { myMessageGroups } from '../mcp/my-messages.mts'
-import { myHouseholdGroups } from '../mcp/my-households.mts'
+import { readMyMessagesGroup, manageMyMessagesGroup } from '../mcp/my-messages.mts'
+import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '../mcp/my-households.mts'
 import type { ApiScope } from '../modules/scopes/index.mts'
-import { brandTopicClaimGroups } from '../mcp/brand/topic-claims.mts'
+import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '../mcp/brand/topic-claims.mts'
 import { communityModerationGroups } from '../mcp/community-moderation-tools.mts'
 import { participationWriteGroups } from '../mcp/registry/participation-write-groups.mts'
 import userFixtures from './merged-user-options.json' with { type: 'json' }
@@ -36,9 +36,12 @@ const userMergedNames = new Set(
     ...userGroups,
     ...participationWriteGroups,
     ...communityModerationGroups,
-    ...myMessageGroups,
-    ...brandTopicClaimGroups,
-    ...myHouseholdGroups,
+    readMyMessagesGroup,
+    manageMyMessagesGroup,
+    readMyTopicClaimsGroup,
+    manageTopicClaimGroup,
+    readMyHouseholdsGroup,
+    manageMyHouseholdsGroup,
   ].map(group => group.name),
 )
 const adminMergedNames = new Set(adminMergedGroups.map(group => group.name))
@@ -141,9 +144,12 @@ function singleCases(audience: Audience, mergedNames: ReadonlySet<string>): Oper
 export function currentOperationCases(): OperationCase[] {
   const participation = [
     ...participationWriteGroups,
-    ...myMessageGroups,
-    ...brandTopicClaimGroups,
-    ...myHouseholdGroups,
+    readMyMessagesGroup,
+    manageMyMessagesGroup,
+    readMyTopicClaimsGroup,
+    manageTopicClaimGroup,
+    readMyHouseholdsGroup,
+    manageMyHouseholdsGroup,
   ].flatMap(group =>
     group.options.map(entry => {
       const args = sampleMcpToolArguments(entry.source as Tool)
