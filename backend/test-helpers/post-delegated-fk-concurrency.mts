@@ -1,5 +1,4 @@
 import { onTestFinished } from 'vitest'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { lockImageDeliveryMutation } from '../services/media-delivery-safety/delivery-lock.mts'
 import { lockPostPublication } from '../services/post-publication/lock.mts'
 import sql from 'sql-template-strings'
@@ -48,7 +47,9 @@ export async function withConcurrentMediaThenPublicationFenceForTest<Result>(
   void pending.catch(() => undefined)
   try {
     await waitForTestPostgresLockWaiter(processId, 'lockImageDeliveryMutation:advisory')
-    await query(allowUnannotatedQuery(sql`SET LOCAL lock_timeout = '2s'`))
+    await query(
+      sql`/* withConcurrentMediaThenPublicationFenceForTest */ SET LOCAL lock_timeout = '2s'`,
+    )
     await lockPostPublication(query, postId)
     await query.rollback()
   } catch (err) {
