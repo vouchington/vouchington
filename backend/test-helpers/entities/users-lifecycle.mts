@@ -1,49 +1,48 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, type TransactionQuery, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function softDeleteUser(userId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* softDeleteUser */
     UPDATE users
     SET deleted_at = CURRENT_TIMESTAMP
     WHERE id = ${userId}
-  `),
+  `,
   )
 }
 
 export async function softDeleteUserDaysAgo(userId: string, daysAgo: number): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* softDeleteUserDaysAgo */
     UPDATE users
     SET deleted_at = CURRENT_TIMESTAMP - make_interval(days => ${daysAgo})
     WHERE id = ${userId}
-  `),
+  `,
   )
 }
 
 export async function softDeleteUserAt(userId: string, deletedAt: Date): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* softDeleteUserAt */
     UPDATE users
     SET deleted_at = ${deletedAt}
     WHERE id = ${userId}
-  `),
+  `,
   )
 }
 
 export async function restoreUser(userId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* restoreUser */
     UPDATE users
     SET deleted_at = NULL
     WHERE id = ${userId}
-  `),
+  `,
   )
 }
 
 export async function hardDeleteTestUser(userId: string): Promise<void> {
-  await write(allowUnannotatedQuery(sql`DELETE FROM users WHERE id = ${userId}`))
+  await write(sql`/* hardDeleteTestUser */ DELETE FROM users WHERE id = ${userId}`)
 }
 
 export async function hardDeleteTestUserWithLockTimeout(
@@ -117,11 +116,11 @@ export async function getTestUserRaw(userId: string): Promise<{
   vote_weight_recalculated_at: Date | null
 } | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestUserRaw */
     SELECT id, username, markdown, deleted_at, platform_account_kind, vote_weight_recalculated_at
     FROM users
     WHERE id = ${userId}
-  `),
+  `,
   )
   return (
     (rows[0] as {
