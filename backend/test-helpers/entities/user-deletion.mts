@@ -1,6 +1,5 @@
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { hardDeleteTestPost } from './posts-deletion.mts'
@@ -8,11 +7,11 @@ import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 
 export async function countTestBlueskyLinkAuthorizationsForUser(userId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(
-    allowUnannotatedQuery(sql`
+    sql`/* countTestBlueskyLinkAuthorizationsForUser */
     SELECT COUNT(*)::int AS count
     FROM bluesky_link_authorizations
     WHERE user_id = ${userId}
-  `),
+  `,
   )
   return rows[0]?.count ?? 0
 }
@@ -123,22 +122,22 @@ export async function rotateTestUserDeletionAttemptDuringProviderCall(
   successorAttemptId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* rotateTestUserDeletionAttemptDuringProviderCall */
     UPDATE user_deletion_requests
     SET processing_attempt_id = ${successorAttemptId},
         processing_started_at = NULL
     WHERE id = ${requestId}
-  `),
+  `,
   )
 }
 
 export async function isTestUserDeletionExternalWorkCompleted(requestId: string): Promise<boolean> {
   const { rows } = await read<{ completed: boolean }>(
-    allowUnannotatedQuery(sql`
+    sql`/* isTestUserDeletionExternalWorkCompleted */
     SELECT completed_at IS NOT NULL AS completed
     FROM user_deletion_external_works
     WHERE request_id = ${requestId}
-  `),
+  `,
   )
   return rows[0]?.completed ?? false
 }
@@ -148,12 +147,12 @@ export async function getTestUserDeletionExternalWorkKeys(
   workKind: 's3-export',
 ): Promise<string[]> {
   const { rows } = await read<{ work_key: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestUserDeletionExternalWorkKeys */
     SELECT work_key
     FROM user_deletion_external_works
     WHERE request_id = ${requestId} AND work_kind = ${workKind}
     ORDER BY work_key
-  `),
+  `,
   )
   return rows.map(row => row.work_key)
 }
