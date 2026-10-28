@@ -44,31 +44,6 @@ function SidebarGroupLabel({
 }
 SidebarGroupLabel.displayName = 'SidebarGroupLabel'
 
-function SidebarGroupAction({
-  className,
-  asChild = false,
-  ref,
-  ...props
-}: React.ComponentProps<'button'> & { asChild?: boolean; ref?: React.Ref<HTMLButtonElement> }) {
-  const Comp = asChild ? Slot : 'button'
-
-  return (
-    <Comp
-      ref={ref}
-      data-sidebar='group-action'
-      className={cn(
-        'absolute right-3 top-3.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
-        // Increases the hit area of the button on mobile.
-        'after:absolute after:-inset-2 after:md:hidden',
-        'group-data-[collapsible=icon]:hidden',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-SidebarGroupAction.displayName = 'SidebarGroupAction'
-
 function SidebarGroupContent({
   className,
   ref,
@@ -85,4 +60,4 @@ function SidebarGroupContent({
 }
 SidebarGroupContent.displayName = 'SidebarGroupContent'
 
-export { SidebarGroup, SidebarGroupAction, SidebarGroupContent, SidebarGroupLabel }
+export { SidebarGroup, SidebarGroupContent, SidebarGroupLabel }

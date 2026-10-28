@@ -8,8 +8,6 @@ import { cn } from '@/lib/utils'
 
 const Select = SelectPrimitive.Root
 
-const SelectGroup = SelectPrimitive.Group
-
 const SelectValue = SelectPrimitive.Value
 
 function SelectTrigger({
@@ -121,23 +119,6 @@ function SelectContent({
 }
 SelectContent.displayName = SelectPrimitive.Content.displayName
 
-function SelectLabel({
-  className,
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Label>>
-}) {
-  return (
-    <SelectPrimitive.Label
-      ref={ref}
-      className={cn('px-2 py-1.5 text-sm font-semibold', className)}
-      {...props}
-    />
-  )
-}
-SelectLabel.displayName = SelectPrimitive.Label.displayName
-
 function SelectItem({
   className,
   children,
@@ -168,11 +149,9 @@ SelectItem.displayName = SelectPrimitive.Item.displayName
 
 export {
   Select,
-  SelectGroup,
   SelectValue,
   SelectTrigger,
   SelectContent,
-  SelectLabel,
   SelectItem,
   SelectScrollUpButton,
   SelectScrollDownButton,

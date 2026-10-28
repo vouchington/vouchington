@@ -1,11 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  Sidebar,
-  SidebarMenuAction,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
+import { Sidebar, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 
 const mediaListeners = new Set<(event: MediaQueryListEvent) => void>()
 
@@ -64,14 +59,5 @@ describe('Sidebar shell', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Sidebar item')).toHaveLength(1)
     })
-  })
-
-  it('keeps menu actions at the minimum accessible target size', () => {
-    render(<SidebarMenuAction aria-label='Example action' />)
-
-    expect(screen.getByRole('button', { name: 'Example action' })).toHaveClass(
-      'w-6',
-      'aspect-square',
-    )
   })
 })

@@ -14,13 +14,10 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
@@ -59,37 +56,6 @@ export const Default: Story = {
             <Button>Confirm</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-    </Frame>
-  ),
-}
-
-export const ExplicitChrome: Story = {
-  render: () => (
-    <Frame>
-      <Dialog defaultOpen>
-        <DialogTrigger asChild>
-          <Button variant='outline'>Open dialog</Button>
-        </DialogTrigger>
-        <DialogPortal>
-          <DialogOverlay />
-          <DialogContent
-            hideOverlay
-            hideCloseButton
-          >
-            <DialogHeader>
-              <DialogTitle>Sample dialog</DialogTitle>
-              <DialogDescription>
-                Modal surface for confirmations and short forms.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant='secondary'>Close</Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </DialogPortal>
       </Dialog>
     </Frame>
   ),

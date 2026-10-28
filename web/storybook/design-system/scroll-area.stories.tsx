@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 
 const tags = Array.from({ length: 50 }, (_, i) => `Tag ${i + 1}`)
@@ -25,24 +25,6 @@ export const VerticalList: Story = {
           </div>
         ))}
       </div>
-    </ScrollArea>
-  ),
-}
-
-export const HorizontalScrollArea: Story = {
-  render: () => (
-    <ScrollArea className='w-96 whitespace-nowrap rounded-md border'>
-      <div className='flex w-max space-x-4 p-4'>
-        {Array.from({ length: 20 }, (_, i) => (
-          <div
-            key={i}
-            className='w-32 shrink-0 rounded-md bg-muted p-4 text-center text-sm'
-          >
-            Item {i + 1}
-          </div>
-        ))}
-      </div>
-      <ScrollBar orientation='horizontal' />
     </ScrollArea>
   ),
 }

@@ -105,8 +105,6 @@ DialogDescriptionBase.displayName = DialogPrimitive.Description.displayName
 
 export {
   DialogBase,
-  DialogPortalBase,
-  DialogOverlayBase,
   DialogTriggerBase,
   DialogCloseBase,
   DialogContentBase,

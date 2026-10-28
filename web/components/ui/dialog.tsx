@@ -11,8 +11,6 @@ import {
   DialogDescriptionBase as DialogDescription,
   DialogFooterBase as DialogFooter,
   DialogHeaderBase as DialogHeader,
-  DialogOverlayBase as DialogOverlay,
-  DialogPortalBase as DialogPortal,
   DialogTitleBase as DialogTitle,
   DialogTriggerBase as DialogTrigger,
 } from '@/components/dialog-primitives'
@@ -47,10 +45,7 @@ DialogContent.displayName = DialogPrimitive.Content.displayName
 
 export {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
   DialogTrigger,
-  DialogClose,
   DialogContent,
   DialogHeader,
   DialogFooter,

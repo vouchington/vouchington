@@ -5,8 +5,6 @@ import { PanelLeft } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { useSidebar } from './context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -42,38 +40,6 @@ function SidebarTrigger({
 }
 SidebarTrigger.displayName = 'SidebarTrigger'
 
-function SidebarRail({
-  className,
-  ref,
-  ...props
-}: React.ComponentProps<'button'> & { ref?: React.Ref<HTMLButtonElement> }) {
-  const t = useTranslations()
-  const { toggleSidebar } = useSidebar()
-
-  return (
-    <button
-      type='button'
-      ref={ref}
-      data-sidebar='rail'
-      data-pw='sidebar-rail'
-      aria-label={t('extracted.sidebar.layout.toggleSidebar_1d4c17db')}
-      tabIndex={-1}
-      onClick={toggleSidebar}
-      className={cn(
-        'absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex',
-        '[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize',
-        '[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize',
-        'group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar',
-        '[[data-side=left][data-collapsible=offcanvas]_&]:-right-2',
-        '[[data-side=right][data-collapsible=offcanvas]_&]:-left-2',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-SidebarRail.displayName = 'SidebarRail'
-
 function SidebarInset({
   className,
   ref,
@@ -94,27 +60,6 @@ function SidebarInset({
 }
 SidebarInset.displayName = 'SidebarInset'
 
-function SidebarInput({
-  className,
-  ref,
-  ...props
-}: React.ComponentProps<typeof Input> & {
-  ref?: React.Ref<React.ElementRef<typeof Input>>
-}) {
-  return (
-    <Input
-      ref={ref}
-      data-sidebar='input'
-      className={cn(
-        'h-8 w-full bg-background shadow-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-SidebarInput.displayName = 'SidebarInput'
-
 function SidebarHeader({
   className,
   ref,
@@ -130,40 +75,6 @@ function SidebarHeader({
   )
 }
 SidebarHeader.displayName = 'SidebarHeader'
-
-function SidebarFooter({
-  className,
-  ref,
-  ...props
-}: React.ComponentProps<'div'> & { ref?: React.Ref<HTMLDivElement> }) {
-  return (
-    <div
-      ref={ref}
-      data-sidebar='footer'
-      className={cn('flex flex-col gap-2 p-2', className)}
-      {...props}
-    />
-  )
-}
-SidebarFooter.displayName = 'SidebarFooter'
-
-function SidebarSeparator({
-  className,
-  ref,
-  ...props
-}: React.ComponentProps<typeof Separator> & {
-  ref?: React.Ref<React.ElementRef<typeof Separator>>
-}) {
-  return (
-    <Separator
-      ref={ref}
-      data-sidebar='separator'
-      className={cn('mx-2 w-auto bg-sidebar-border', className)}
-      {...props}
-    />
-  )
-}
-SidebarSeparator.displayName = 'SidebarSeparator'
 
 function SidebarContent({
   className,
@@ -184,13 +95,4 @@ function SidebarContent({
 }
 SidebarContent.displayName = 'SidebarContent'
 
-export {
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInput,
-  SidebarInset,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger,
-}
+export { SidebarContent, SidebarHeader, SidebarInset, SidebarTrigger }
