@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write, writePool, withTransactionOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -29,11 +28,13 @@ export async function withTestDeliveryReusedClient(
 }
 
 export async function createTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  await query(allowUnannotatedQuery(sql`SAVEPOINT delivery_admission_test`))
+  await query(sql`/* createTestDeliverySavepoint */ SAVEPOINT delivery_admission_test`)
 }
 
 export async function rollbackTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  await query(allowUnannotatedQuery(sql`ROLLBACK TO SAVEPOINT delivery_admission_test`))
+  await query(
+    sql`/* rollbackTestDeliverySavepoint */ ROLLBACK TO SAVEPOINT delivery_admission_test`,
+  )
 }
 
 export async function flagTestDeliveryImageInTransaction(
@@ -41,9 +42,7 @@ export async function flagTestDeliveryImageInTransaction(
   imageId: string,
 ): Promise<void> {
   await query(
-    allowUnannotatedQuery(
-      sql`UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
-    ),
+    sql`/* flagTestDeliveryImageInTransaction */ UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
   )
 }
 
@@ -59,7 +58,7 @@ export async function setTestDeliveryUserImageInTransaction(
     query,
   )
   await query(
-    allowUnannotatedQuery(sql`UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`),
+    sql`/* setTestDeliveryUserImageInTransaction */ UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`,
   )
 }
 
@@ -77,16 +76,16 @@ export async function getTestDeliveryRepairMarker(
   mediaDeliveryRegistryRecordId: string,
 ): Promise<string | null> {
   const { rows } = await read<{ marker_token: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestDeliveryRepairMarker */
     SELECT marker_token FROM media_delivery_repair_markers WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
-  `),
+  `,
   )
   return rows[0]?.marker_token ?? null
 }
 
 export async function getTestDeliveryTransactionPid(query: TransactionQuery): Promise<number> {
   const { rows } = await query<{ pid: number }>(
-    allowUnannotatedQuery(sql`SELECT pg_backend_pid() AS pid`),
+    sql`/* getTestDeliveryTransactionPid */ SELECT pg_backend_pid() AS pid`,
   )
   return rows[0]!.pid
 }
@@ -114,10 +113,10 @@ export async function advanceTestDeliveryPlacementRevision(
   placementId: string,
 ): Promise<number> {
   const { rows } = await query<{ revision: number }>(
-    allowUnannotatedQuery(sql`
+    sql`/* advanceTestDeliveryPlacementRevision */
     UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CURRENT_TIMESTAMP
     WHERE id = ${placementId} RETURNING revision
-  `),
+  `,
   )
   return rows[0]!.revision
 }
