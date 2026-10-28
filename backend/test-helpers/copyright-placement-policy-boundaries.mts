@@ -1,12 +1,11 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
-import {
-  copyrightPlacementPartiesSql,
-  type CopyrightPlacementPartyPurpose,
-} from '../services/media-delivery-safety/copyright-placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '../services/media-delivery-safety/copyright-placement-parties.mts'
 import type { CopyrightImageSelector } from '../services/copyright-notices/placement-resolution.mts'
 import { claimantCanViewCopyrightImagePlacements } from '../services/copyright-notices/placement-visibility-batch.mts'
+
+type CopyrightPlacementPartyPurpose = Parameters<typeof copyrightPlacementPartiesSql>[0]
 
 /** Reads the production policy fragment at its target-correlated database boundary. */
 export async function readTestCopyrightPlacementParties(

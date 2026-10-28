@@ -6,8 +6,9 @@ import {
   getAccountingUncertaintyKey,
   getAccountingUncertaintySource,
   latchAccountingUncertainty,
-  type AccountingUncertaintyValkeyClient,
 } from '../accounting-uncertainty.mts'
+
+type AccountingUncertaintyValkeyClient = Parameters<typeof latchAccountingUncertainty>[1]
 
 describe('accounting uncertainty latch', () => {
   beforeEach(() => {

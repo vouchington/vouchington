@@ -12,7 +12,7 @@ import { recoveryLineageIdentity } from './recovery-recurrence.mts'
 import type { MicrosoftStoreSourceRecoveryContext } from './source-recovery-context.mts'
 
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
-export type MicrosoftStoreSourceRecoveryBatch = {
+type MicrosoftStoreSourceRecoveryBatch = {
   sourceIds: string[]
   previousCursor: string | null
   previousUpperBound: string | null

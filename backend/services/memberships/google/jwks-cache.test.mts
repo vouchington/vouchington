@@ -5,10 +5,11 @@ import {
   getCachedGoogleOidcTrustMaterial,
   googleOidcValkeyTrustStore,
   refreshGoogleOidcTrustMaterial,
-  type GoogleOidcCachedKeys,
-  type GoogleOidcTrustStore,
 } from './jwks-cache.mts'
 import type { GoogleOidcPublicJwk } from './types.mts'
+
+type GoogleOidcCachedKeys = Awaited<ReturnType<typeof refreshGoogleOidcTrustMaterial>>
+type GoogleOidcTrustStore = Parameters<typeof refreshGoogleOidcTrustMaterial>[0]['store']
 
 const trustStoreCache = new ValkeyCache<{ key: string }>({
   prefix: 'memberships-google-oidc-trust',

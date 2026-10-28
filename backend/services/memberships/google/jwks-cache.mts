@@ -2,11 +2,11 @@ import { ValkeyCache } from '@data-stores/valkey/cache'
 import { fetchWithTimeoutSimple } from '@modules/utils'
 import type { GoogleOidcPublicJwk, GoogleOidcTrustMaterial } from './types.mts'
 
-export type GoogleOidcCachedKeys = {
+type GoogleOidcCachedKeys = {
   keysById: Record<string, GoogleOidcPublicJwk>
   expiresAt: Date
 }
-export type GoogleOidcTrustStore = {
+type GoogleOidcTrustStore = {
   load(): Promise<GoogleOidcCachedKeys | null>
   save(value: GoogleOidcCachedKeys): Promise<void>
 }

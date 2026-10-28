@@ -6,12 +6,12 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
-import {
-  candidatePageQuery,
-  listBlueskyFollowPropagationCandidatePage,
-  type BlueskyFollowPropagationCandidate,
-} from './backfill.mts'
+import { candidatePageQuery, listBlueskyFollowPropagationCandidatePage } from './backfill.mts'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
+
+type BlueskyFollowPropagationCandidate = Awaited<
+  ReturnType<typeof listBlueskyFollowPropagationCandidatePage>
+>['candidates'][number]
 
 const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 

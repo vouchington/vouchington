@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
-import { SpendCapBreachError, type SpendCapBreach } from '@services/ai-usage'
+import { SpendCapBreachError, type evaluateSpendCapBreach } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
+
+type SpendCapBreach = NonNullable<Awaited<ReturnType<typeof evaluateSpendCapBreach>>>
 
 // Round-16 regression (#9348): a tool loop's per-iteration recheck (run-tool-loop.mts)
 // can find a breach mid-job, after this job's own pre-dispatch check

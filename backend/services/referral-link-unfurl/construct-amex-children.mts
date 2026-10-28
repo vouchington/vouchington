@@ -10,7 +10,7 @@ const PATHNAME_PREFIXES = {
 
 export type AmexCardKind = keyof typeof PATHNAME_PREFIXES
 
-export interface AmexCardSlug {
+interface AmexCardSlug {
   kind: AmexCardKind
   slug: string
 }

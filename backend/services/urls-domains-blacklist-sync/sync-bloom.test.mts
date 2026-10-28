@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { rebuildBloomForSource, type BloomRebuildDependencies } from './sync-bloom.mts'
+import { rebuildBloomForSource } from './sync-bloom.mts'
+
+type BloomRebuildDependencies = Parameters<typeof rebuildBloomForSource>[1]
 
 function dependencies(invalidate: () => Promise<unknown>) {
   return {

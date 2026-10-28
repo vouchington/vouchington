@@ -1,7 +1,7 @@
 import sql from 'sql-template-strings'
 import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 
-export type CopyrightPlacementPartyPurpose = 'notify' | 'respond' | 'inform' | 'strike' | 'retain'
+type CopyrightPlacementPartyPurpose = 'notify' | 'respond' | 'inform' | 'strike' | 'retain'
 
 /** Correlated to `target`; selects the one immutable target's parties under a single policy table. */
 export function copyrightPlacementPartiesSql(

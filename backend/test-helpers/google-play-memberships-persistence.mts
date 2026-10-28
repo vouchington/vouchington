@@ -4,8 +4,10 @@ import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import {
   persistGooglePlayTokenLineage,
-  type GooglePlayResolvedLineage,
+  type resolveGooglePlayTokenLineage,
 } from '../services/memberships/google/lineage.mts'
+
+type GooglePlayResolvedLineage = Awaited<ReturnType<typeof resolveGooglePlayTokenLineage>>
 
 export async function getTestGooglePlayRtdnEvidenceTerminalState(
   evidenceId: string,

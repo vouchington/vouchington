@@ -9,7 +9,7 @@ import {
   type TerritorialCopyrightJurisdiction,
 } from './territorial-fields.mts'
 
-export type CopyrightJurisdictionPolicyApproval = {
+type CopyrightJurisdictionPolicyApproval = {
   id: string
   jurisdiction: TerritorialCopyrightJurisdiction
   policy_version: string

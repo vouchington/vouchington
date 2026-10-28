@@ -7,7 +7,7 @@ import {
   invalidateEmailBlocklistReadyMarker,
 } from '@services/urls-domains-blacklist/email-bloom-filter'
 
-export interface BloomRebuildDependencies {
+interface BloomRebuildDependencies {
   invalidateEmailReadyMarker: () => Promise<unknown>
   invalidateUrlReadyMarker: () => Promise<unknown>
   enqueueEmailRebuild: () => Promise<void>

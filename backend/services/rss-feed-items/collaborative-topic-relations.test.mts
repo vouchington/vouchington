@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
-import {
-  applyCollaborativeTopicRelations,
-  type CollaborativeTopicLimits,
-} from './collaborative-topic-relations.mts'
+import { applyCollaborativeTopicRelations } from './collaborative-topic-relations.mts'
 import { getRssFeedItemById } from './get.mts'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
@@ -25,6 +22,8 @@ import {
   endTestMembershipProjection,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+
+type CollaborativeTopicLimits = Parameters<typeof applyCollaborativeTopicRelations>[1]
 
 async function setupItem(): Promise<{ feedId: string; itemId: string }> {
   const feed = await insertTestRssFeedDirect({})

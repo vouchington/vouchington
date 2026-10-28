@@ -7,7 +7,7 @@ const UTC_DAY_MS = 24 * 60 * 60 * 1000
 
 export type AccountingUncertaintySource = 'ledger_write_failed' | 'unknown_billed_attempt'
 
-export type AccountingUncertaintyValkeyClient = Pick<GlideClient, 'get' | 'set'>
+type AccountingUncertaintyValkeyClient = Pick<GlideClient, 'get' | 'set'>
 
 export function getAccountingUncertaintyKey(requestDay: string): string {
   return `${ACCOUNTING_UNCERTAINTY_KEY_PREFIX}:${requestDay}`

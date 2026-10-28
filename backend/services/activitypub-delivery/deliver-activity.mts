@@ -17,7 +17,7 @@ const DELIVERY_TIMEOUT_MS = 10000
 const DNS_TIMEOUT_MS = 5000
 const ACTIVITY_CONTENT_TYPE = 'application/activity+json'
 
-export type DeliverActivityToInboxInput = {
+type DeliverActivityToInboxInput = {
   inboxUrl: string
   activity: OutboundActivityJson
   keyId: string

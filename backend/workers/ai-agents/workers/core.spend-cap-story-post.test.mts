@@ -8,13 +8,15 @@ import {
   insertTestStory,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import type { DailyAiCostTotal } from '@services/ai-usage'
+import type { getDailyAiCostTotalMicrounits } from '@services/ai-usage'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '@services/stories/story-posts'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
+
+type DailyAiCostTotal = Awaited<ReturnType<typeof getDailyAiCostTotalMicrounits>>
 
 // #8773 round-15 finding: `story-post` is spend-producing by default (AI_AGENT_JOB_PRODUCES_SPEND),
 // so unlike the exemptions in core.spend-cap-moderation.test.mts, evaluateSpendCapBreach

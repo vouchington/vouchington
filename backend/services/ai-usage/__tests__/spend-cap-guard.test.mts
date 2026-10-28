@@ -4,13 +4,15 @@ import { acquireTestAiUsageDateReservation, insertTestAiUsageRecord } from '@vou
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
-import type { DailyAiCostTotal } from '../daily-total.mts'
+import type { getDailyAiCostTotalMicrounits } from '../daily-total.mts'
 import { spendCapConfig } from '../spend-cap-config.mts'
 import {
   assertDailySpendCapNotBreached,
   evaluateSpendCapBreach,
   SpendCapBreachError,
 } from '../spend-cap-guard.mts'
+
+type DailyAiCostTotal = Awaited<ReturnType<typeof getDailyAiCostTotalMicrounits>>
 
 describe('SpendCapBreachError', () => {
   it('carries the HTTP status @jongleberry/api-server needs to report 429 for an uncaught throw', () => {
