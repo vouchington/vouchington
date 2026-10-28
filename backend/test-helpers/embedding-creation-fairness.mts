@@ -1,6 +1,7 @@
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { getRateLimitConfig } from '../services/bedrock-embeddings/batch/config.mts'
 import {
   getBatchRecordsCreatedInLastHour,
@@ -86,11 +87,11 @@ export async function createEmbeddingFairnessSnapshot(
       removeOwnedReservations: () =>
         start(async () => {
           await transaction!(
-            '/* createEmbeddingFairnessSnapshot:removeReservation */ DELETE FROM bedrock_embedding_batches WHERE id = $1',
+            allowUnannotatedQuery('DELETE FROM bedrock_embedding_batches WHERE id = $1'),
             [id],
           )
           const { rows } = await transaction!(
-            '/* createEmbeddingFairnessSnapshot:verifyRemoved */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
+            allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
             [id],
           )
           expect(rows).toEqual([])
@@ -109,15 +110,15 @@ export async function createEmbeddingFairnessSnapshot(
 
   async function assertPresent(inputSizeMB: number) {
     const { rows } = await transaction!<{ id: string; input_size_mb: number }>(
-      `/* createEmbeddingFairnessSnapshot:assertPresent */ SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
+      allowUnannotatedQuery(`SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
        FROM bedrock_embedding_batches
        WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NULL
-         AND failed_at IS NULL AND cancelled_at IS NULL`,
+         AND failed_at IS NULL AND cancelled_at IS NULL`),
       [id],
     )
     if (inputSizeMB === 0) {
       const absent = await transaction!(
-        '/* createEmbeddingFairnessSnapshot:assertAbsent */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
+        allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
         [id],
       )
       expect(absent.rows).toEqual([])

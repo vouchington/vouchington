@@ -1,6 +1,7 @@
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { getActiveBatchStats } from '../services/bedrock-embeddings/batch/orchestrator/poll-queries.mts'
 import { getBatchCreationLimits } from '../services/bedrock-embeddings-batch/rate-limits.mts'
 import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'
@@ -31,9 +32,7 @@ export async function createEmbeddingCountSnapshot(
   setup = start(async () => {
     transaction = await beginTransaction()
     quota.assertOpen()
-    await transaction(
-      '/* createEmbeddingCountSnapshot:isolation */ SET TRANSACTION ISOLATION LEVEL REPEATABLE READ',
-    )
+    await transaction(allowUnannotatedQuery('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'))
     quota.assertOpen()
     return getActiveBatchStats({ query: transaction })
   })
@@ -66,9 +65,9 @@ export async function createEmbeddingCountSnapshot(
           { query: transaction! },
         )
         const { rows } = await transaction!<{ id: string; input_size_mb: number }>(
-          `/* createEmbeddingCountSnapshot:verifyReservation */ SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
+          allowUnannotatedQuery(`SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
          FROM bedrock_embedding_batches WHERE id = $1 AND submitted_at IS NOT NULL
-           AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL`,
+           AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL`),
           [id],
         )
         expect(rows).toEqual([{ id, input_size_mb: 1 }])
@@ -76,11 +75,11 @@ export async function createEmbeddingCountSnapshot(
     removeOwnedReservations: () =>
       start(async () => {
         await transaction!(
-          '/* createEmbeddingCountSnapshot:removeReservation */ DELETE FROM bedrock_embedding_batches WHERE id = $1',
+          allowUnannotatedQuery('DELETE FROM bedrock_embedding_batches WHERE id = $1'),
           [id],
         )
         const { rows } = await transaction!(
-          '/* createEmbeddingCountSnapshot:verifyRemoved */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
+          allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
           [id],
         )
         expect(rows).toEqual([])
