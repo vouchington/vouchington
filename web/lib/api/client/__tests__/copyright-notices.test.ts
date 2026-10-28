@@ -10,13 +10,9 @@ import {
   createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightNotice,
-  getCopyrightNotice,
-  getCopyrightParticipantNotice,
-  listCopyrightNotices,
   listCopyrightReviewQueue,
   replayCopyrightActionIntent,
   replayCopyrightDeliveryIntent,
-  replayCopyrightMediaDelivery,
   resolveCopyrightLegalHold,
   reviewCopyrightAppeal,
   reviewCopyrightCounterNotice,
@@ -30,15 +26,10 @@ import {
   recordCopyrightRepeatInfringerReviewOutcome,
 } from '../copyright-repeat-infringer'
 import { reviewCopyrightStaydownMatch } from '../copyright-staydown'
-import type { CopyrightNoticesPage, CopyrightStaffQueuePage } from '@/types/copyright-notices'
+import type { CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
 let mockGet: MockInstance<typeof clientApi.get>
 let mockPost: MockInstance<typeof clientApi.post>
-
-const response: CopyrightNoticesPage = {
-  copyright_notices: [],
-  page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
-}
 
 describe('copyright notices client', () => {
   beforeEach(() => {
@@ -50,16 +41,6 @@ describe('copyright notices client', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
-  })
-
-  it('forwards the opaque accepted-case continuation cursor', async () => {
-    expect.hasAssertions()
-    await expectTransportWrapperCall({
-      mock: mockGet,
-      response,
-      call: () => listCopyrightNotices({ after: 'next', limit: 100 }),
-      expectedArgs: ['/api/v1/copyright-notices', { searchParams: { after: 'next', limit: 100 } }],
-    })
   })
 
   it('forwards the opaque staff queue continuation cursor', async () => {
@@ -154,16 +135,9 @@ describe('copyright notices client', () => {
     )
   })
 
-  it('reads public, participant, and staff notice surfaces', async () => {
+  it('reads the staff notice queue', async () => {
     expect.hasAssertions()
     mockGet.mockClear()
-    const notice = { copyright_notice: { id: 'notice-1' } }
-    await expectGet(notice, () => getCopyrightNotice('notice-1'), [
-      '/api/v1/copyright-notices/notice-1',
-    ])
-    await expectGet(notice, () => getCopyrightParticipantNotice('notice-1'), [
-      '/api/v1/copyright-notices/notice-1/participant',
-    ])
     await expectGet(
       {
         copyright_notices: [],
@@ -229,13 +203,6 @@ describe('copyright notices client', () => {
         { resolution_kind: 'dismissed', rationale: 'Dismissed.' },
       ],
     )
-    fetchTransport.mockResolvedValueOnce(jsonResponse({}))
-    await expect(replayCopyrightMediaDelivery()).resolves.toBeUndefined()
-    expect(mockPost).toHaveBeenLastCalledWith('/api/v1/copyright-media-delivery/replays', {})
-    await expectPost(undefined, () => replayCopyrightMediaDelivery(), [
-      '/api/v1/copyright-media-delivery/replays',
-      {},
-    ])
     await expectPost(undefined, () => replayCopyrightActionIntent('notice-1', 'intent-1'), [
       '/api/v1/copyright-notices/notice-1/action-intents/intent-1/replays',
       {},

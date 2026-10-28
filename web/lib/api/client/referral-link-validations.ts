@@ -20,18 +20,6 @@ export interface ReferralLinkValidationRule {
   example_urls: string[] | null
 }
 
-export function listReferralLinkValidations(options?: {
-  limit?: number
-  search?: string
-}): Promise<{ results: ReferralLinkValidation[] }> {
-  return clientApi.get('/api/v1/referral-link-validations', {
-    searchParams: {
-      limit: options?.limit ?? 100,
-      ...(options?.search ? { search: options.search } : {}),
-    },
-  })
-}
-
 export function getReferralLinkValidation(
   idOrSlug: string,
 ): Promise<{ validation: ReferralLinkValidation }> {
@@ -50,18 +38,6 @@ export function updateReferralLinkValidation(
   data: { slug?: string; user_help_text?: string },
 ): Promise<{ validation: ReferralLinkValidation }> {
   return clientApi.patch(`/api/v1/referral-link-validations/${idOrSlug}`, data)
-}
-
-export function deleteReferralLinkValidation(idOrSlug: string): Promise<void> {
-  return clientApi.delete(`/api/v1/referral-link-validations/${idOrSlug}`)
-}
-
-export function getReferralLinkValidationRules(
-  validationId: string,
-): Promise<{ results: ReferralLinkValidationRule[] }> {
-  return clientApi.get(`/api/v1/referral-link-validations/${validationId}/rules`, {
-    searchParams: { limit: 100 },
-  })
 }
 
 export function createReferralLinkValidationRule(

@@ -1,34 +1,6 @@
 'use client'
 import { clientApi } from './instance'
-import type {
-  ListItemsResponseBody,
-  ListResponseBody,
-  ListsSearchResponseBody,
-  ListsContainingResponseBody,
-} from '@/types/api-responses'
-
-export function createList(data: {
-  name: string
-  description?: string | null
-  visibility?: 'private' | 'unlisted' | 'public'
-}): Promise<ListResponseBody> {
-  return clientApi.post<ListResponseBody>('/api/v1/lists', data)
-}
-
-export function updateList(
-  listId: string,
-  data: {
-    name?: string
-    description?: string | null
-    visibility?: 'private' | 'unlisted' | 'public'
-  },
-): Promise<ListResponseBody> {
-  return clientApi.patch<ListResponseBody>(`/api/v1/lists/${listId}`, data)
-}
-
-export function deleteList(listId: string): Promise<void> {
-  return clientApi.delete(`/api/v1/lists/${listId}`)
-}
+import type { ListsSearchResponseBody, ListsContainingResponseBody } from '@/types/api-responses'
 
 export function searchMyLists(
   limit = 20,
@@ -63,20 +35,6 @@ export function getListsContaining(
 ): Promise<ListsContainingResponseBody> {
   return clientApi.get<ListsContainingResponseBody>('/api/v1/lists/contains', {
     searchParams: { item_type: itemType, entity_id: entityId },
-  })
-}
-
-export function searchListItemsClient(
-  listId: string,
-  params: { media_type?: string; read?: boolean; after?: string; limit?: number } = {},
-): Promise<ListItemsResponseBody> {
-  return clientApi.get<ListItemsResponseBody>(`/api/v1/lists/${listId}/items`, {
-    searchParams: {
-      media_type: params.media_type,
-      read: params.read !== undefined ? String(params.read) : undefined,
-      after: params.after,
-      limit: params.limit,
-    },
   })
 }
 

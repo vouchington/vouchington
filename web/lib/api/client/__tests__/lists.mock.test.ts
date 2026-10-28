@@ -7,7 +7,6 @@ vi.mock(
       clientApi: {
         delete: vi.fn<VitestLooseMock>(),
         get: vi.fn<VitestLooseMock>(),
-        patch: vi.fn<VitestLooseMock>(),
         post: vi.fn<VitestLooseMock>(),
       },
     }) as unknown as typeof import('../instance'),
@@ -17,49 +16,20 @@ import { clientApi } from '../instance'
 import {
   addListPost,
   addListRssFeedItem,
-  createList,
-  deleteList,
   getListsContaining,
   importCommunityListClient,
   removeListPost,
   removeListRssFeedItem,
-  searchListItemsClient,
   searchMyLists,
-  updateList,
 } from '../lists'
 
 const mockDelete = vi.mocked(clientApi.delete)
 const mockGet = vi.mocked(clientApi.get)
-const mockPatch = vi.mocked(clientApi.patch)
 const mockPost = vi.mocked(clientApi.post)
 
 describe('lists client api helpers', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  it('creates a list', async () => {
-    mockPost.mockResolvedValue({ list: { id: 'list-1' } })
-
-    await createList({ name: 'My List' })
-
-    expect(mockPost).toHaveBeenCalledWith('/api/v1/lists', { name: 'My List' })
-  })
-
-  it('updates a list', async () => {
-    mockPatch.mockResolvedValue({ list: { id: 'list-1' } })
-
-    await updateList('list-1', { name: 'Updated' })
-
-    expect(mockPatch).toHaveBeenCalledWith('/api/v1/lists/list-1', { name: 'Updated' })
-  })
-
-  it('deletes a list', async () => {
-    mockDelete.mockResolvedValue(undefined)
-
-    await deleteList('list-1')
-
-    expect(mockDelete).toHaveBeenCalledWith('/api/v1/lists/list-1')
   })
 
   it('searches my lists with default limit', async () => {
@@ -135,21 +105,6 @@ describe('lists client api helpers', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/lists/contains', {
       searchParams: { item_type: 'post', entity_id: 'post-2' },
-    })
-  })
-
-  it('searches list items with media_type and read filter', async () => {
-    mockGet.mockResolvedValue({ results: [], page_info: {} })
-
-    await searchListItemsClient('list-1', {
-      media_type: 'audio',
-      read: false,
-      after: 'cur',
-      limit: 10,
-    })
-
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/lists/list-1/items', {
-      searchParams: { media_type: 'audio', read: 'false', after: 'cur', limit: 10 },
     })
   })
 

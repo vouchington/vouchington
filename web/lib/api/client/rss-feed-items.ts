@@ -5,9 +5,7 @@
  */
 
 import { clientApi } from './instance'
-import { admissionIdempotency } from './admission-idempotency'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
-import type { PostMutationResponseBody } from '@/types/api-responses/posts-topics-and-feeds'
 
 interface FetchRssFeedItemsOptions {
   q?: string // Search query
@@ -16,30 +14,6 @@ interface FetchRssFeedItemsOptions {
   /** Embedding-ranked semantic search query; use `after` for relevance pages. */
   semantic_search_query?: string
   signal?: AbortSignal // Request cancellation signal
-}
-
-/**
- * Fetch RSS feed items with optional text or semantic search
- * GET /api/v1/rss-feed-items
- */
-/**
- * Create a link post by discussing an RSS feed item.
- * POST /api/v1/rss-feed-items/:id/discussions
- */
-export async function createLinkPostFromRssFeedItem(
-  itemId: string,
-): Promise<PostMutationResponseBody> {
-  const endpoint = `/api/v1/rss-feed-items/${encodeURIComponent(itemId)}/discussions`
-  const intent = { endpoint, body: {} }
-  return admissionIdempotency.run(intent, idempotencyKey =>
-    clientApi.post<PostMutationResponseBody>(
-      endpoint,
-      {},
-      {
-        headers: { 'Idempotency-Key': idempotencyKey },
-      },
-    ),
-  )
 }
 
 /**
