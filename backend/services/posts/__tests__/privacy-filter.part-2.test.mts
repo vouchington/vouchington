@@ -1,6 +1,4 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import type { SQLStatement } from 'sql-template-strings'
-
 import {
   createTestUser,
   deleteTestPost,
@@ -10,7 +8,6 @@ import {
 import type { BasicUser } from '@services/users/types'
 import { canViewPost } from '../check-privacy-access.mts'
 import { getPostByAny } from '../get.mts'
-import { buildPrivacyFilter } from '@modules/feed-query-builders/privacy-filter'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -67,25 +64,20 @@ describe('buildPrivacyFilter — soft-deleted root', () => {
 
   function hidesCommentOnDeletedRoot(
     description: string,
-    buildFilter: () => SQLStatement | null,
+    getCurrentUser: () => BasicUser | null,
   ): void {
     it(`hides comment on deleted root from ${description}`, async () => {
-      const filter = buildFilter()
-      if (!filter) throw new Error('Expected a privacy filter')
-      const ids = await getPostIdsByPrivacyFilter(filter)
+      const ids = await getPostIdsByPrivacyFilter(getCurrentUser())
       expect(ids).not.toContain(commentOnDeletedRootId)
       expect(ids).toContain(commentOnLiveRootId)
     })
   }
 
-  hidesCommentOnDeletedRoot('logged-out users (buildPrivacyFilter)', () =>
-    buildPrivacyFilter('posts', null),
-  )
-  hidesCommentOnDeletedRoot('logged-in non-owner (buildPrivacyFilter)', () =>
-    buildPrivacyFilter('posts', viewer as BasicUser),
-  )
-  hidesCommentOnDeletedRoot('the commenter themselves (buildPrivacyFilter)', () =>
-    buildPrivacyFilter('posts', commenter as BasicUser),
+  hidesCommentOnDeletedRoot('logged-out users (buildPrivacyFilter)', () => null)
+  hidesCommentOnDeletedRoot('logged-in non-owner (buildPrivacyFilter)', () => viewer as BasicUser)
+  hidesCommentOnDeletedRoot(
+    'the commenter themselves (buildPrivacyFilter)',
+    () => commenter as BasicUser,
   )
 })
 

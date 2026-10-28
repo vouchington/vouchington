@@ -12572,6 +12572,9 @@ importers:
       '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/feed-query-builders':
+        specifier: workspace:^
+        version: link:../modules/feed-query-builders
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../modules/http-signatures
