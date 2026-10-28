@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockNav,
@@ -50,14 +50,14 @@ describe('ReportsClient re-run judgement button', () => {
       expect.any(Function),
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        true,
-        expect.any(Function),
-        'rerun:report-1:report_judgement_test-run',
-        expect.any(Function),
-      ),
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i })),
+    )
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      true,
+      expect.any(Function),
+      'rerun:report-1:report_judgement_test-run',
+      expect.any(Function),
     )
   })
 
@@ -94,14 +94,14 @@ describe('ReportsClient re-run judgement button', () => {
       expect.any(Function),
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: /re-run judgement/i })[0]!)
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        true,
-        expect.any(Function),
-        `rerun:${cluster.reports[0]!.id}:report_judgement_test-run`,
-        expect.any(Function),
-      ),
+    await act(async () =>
+      fireEvent.click(screen.getAllByRole('button', { name: /re-run judgement/i })[0]!),
+    )
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      true,
+      expect.any(Function),
+      `rerun:${cluster.reports[0]!.id}:report_judgement_test-run`,
+      expect.any(Function),
     )
   })
 
@@ -128,15 +128,17 @@ describe('ReportsClient re-run judgement button', () => {
     )
 
     fireEvent.click(screen.getByRole('checkbox', { name: /select reported post report/i }))
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
-    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
-    await waitFor(() =>
-      expect(within(getBulkToolbar()).getByRole('button', { name: 'Dismiss' })).toBeEnabled(),
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i })),
     )
+    expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1')
+    expect(within(getBulkToolbar()).getByRole('button', { name: 'Dismiss' })).toBeEnabled()
     fireEvent.click(within(getBulkToolbar()).getByRole('button', { name: 'Dismiss' }))
-    fireEvent.click(within(getBulkToolbar()).getByRole('button', { name: 'Confirm' }))
+    await act(async () =>
+      fireEvent.click(within(getBulkToolbar()).getByRole('button', { name: 'Confirm' })),
+    )
 
-    await waitFor(() => expect(screen.getByText('0 succeeded, 1 skipped')).toBeVisible())
+    expect(screen.getByText('0 succeeded, 1 skipped')).toBeVisible()
     expect(mockResolveModerationReport).not.toHaveBeenCalled()
   })
 
@@ -171,11 +173,13 @@ describe('ReportsClient re-run judgement button', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i })),
+    )
 
-    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
-    await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledWith('Judgement re-run queued'))
-    await waitFor(() => expect(mockNav.refresh).toHaveBeenCalled())
+    expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1')
+    expect(mockOnSuccess).toHaveBeenCalledWith('Judgement re-run queued')
+    expect(mockNav.refresh).toHaveBeenCalled()
   })
 
   it('routes a failed re-run through onError and keeps the row', async () => {
@@ -188,13 +192,13 @@ describe('ReportsClient re-run judgement button', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i })),
+    )
 
-    await waitFor(() =>
-      expect(mockOnError).toHaveBeenCalledWith(
-        failure,
-        expect.objectContaining({ fallback: 'Failed to re-run judgement' }),
-      ),
+    expect(mockOnError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({ fallback: 'Failed to re-run judgement' }),
     )
     expect(screen.getByText('Reported post')).toBeVisible()
   })
@@ -228,8 +232,8 @@ describe('ReportsClient re-run judgement button', () => {
       />,
     )
     const button = screen.getAllByRole('button', { name: /re-run judgement/i })[0]!
-    fireEvent.click(button)
-    await waitFor(() => expect(button).toBeDisabled())
+    await act(async () => fireEvent.click(button))
+    expect(button).toBeDisabled()
     const onTimeout = mockUsePendingAiRefresh.mock.lastCall?.[3] as
       | ((keys: string[]) => void)
       | undefined
@@ -238,7 +242,7 @@ describe('ReportsClient re-run judgement button', () => {
       onTimeout?.([`rerun:${cluster.reports[0]!.id}:report_judgement_test-run`]),
     )
 
-    await waitFor(() => expect(button).toBeEnabled())
+    expect(button).toBeEnabled()
     expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()
   })
 })
