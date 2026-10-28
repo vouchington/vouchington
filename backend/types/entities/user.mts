@@ -36,7 +36,7 @@ type DisplayNameSource =
   | 'microsoft'
   | 'github'
 
-export type IdentityVerificationStatus =
+type IdentityVerificationStatus =
   | 'unverified'
   | 'payment_pending'
   | 'identity_pending'
@@ -50,7 +50,7 @@ export type PublicVerifiedNameDisplay =
   | 'first_name_last_initial'
   | 'full_name'
 
-export type OAuthAccountInfo = {
+type OAuthAccountInfo = {
   id: string
   name: string | null
   email_address: string | null
@@ -64,7 +64,7 @@ export type ImagePlacementTuple = {
 
 // AT Protocol account linking (Phase D) has no numeric provider ID or email — identity is the DID,
 // with handle as the mutable human-readable label — so it does not fit OAuthAccountInfo's shape.
-export type BlueskyAccountInfo = {
+type BlueskyAccountInfo = {
   did: string
   handle: string | null
 }
@@ -85,7 +85,7 @@ export type BasicUser = {
   verified_display_name?: string | null
 }
 
-export type PublicDisplayAccount = {
+type PublicDisplayAccount = {
   name: string | null
 }
 
