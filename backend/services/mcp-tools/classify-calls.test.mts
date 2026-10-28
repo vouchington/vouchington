@@ -4,7 +4,6 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import type { ApiScope } from '@modules/scopes'
 import {
   exceedsMcpAuditBatchLimit,
-  MAX_AUDITED_MCP_MESSAGES,
   mcpNotificationShapedToolCall,
   mcpToolCallIsDispatched,
   planMcpCalls,
@@ -202,12 +201,8 @@ describe('planMcpCalls events', () => {
 
 describe('exceedsMcpAuditBatchLimit', () => {
   it('allows a batch up to the limit and rejects a larger one', () => {
-    expect(
-      exceedsMcpAuditBatchLimit(Array.from({ length: MAX_AUDITED_MCP_MESSAGES }, () => ({}))),
-    ).toBe(false)
-    expect(
-      exceedsMcpAuditBatchLimit(Array.from({ length: MAX_AUDITED_MCP_MESSAGES + 1 }, () => ({}))),
-    ).toBe(true)
+    expect(exceedsMcpAuditBatchLimit(Array.from({ length: 25 }, () => ({})))).toBe(false)
+    expect(exceedsMcpAuditBatchLimit(Array.from({ length: 26 }, () => ({})))).toBe(true)
   })
 
   it('never limits a single message', () => {

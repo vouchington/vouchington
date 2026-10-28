@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest'
 import { FIELD_SEPARATOR, numberedLine } from './feed-list-lines.mts'
 import {
   createFeedListDirectory,
-  FEED_LIST_DIRECTORY_MAX_AGE_MS,
   readFeedListPage,
   removeFeedListDirectory,
   sweepExpiredFeedListDirectories,
@@ -97,8 +96,8 @@ describe('sweepExpiredFeedListDirectories', () => {
     const freshOther = mkdtempSync(join(tmpdir(), `kagi-feed-list-${otherPid}-`))
     const unrelated = mkdtempSync(join(tmpdir(), 'not-kagi-'))
     const now = Date.now()
-    const expiredAt = new Date(now - FEED_LIST_DIRECTORY_MAX_AGE_MS - 5_000)
-    const insideWindow = new Date(now - FEED_LIST_DIRECTORY_MAX_AGE_MS + 5_000)
+    const expiredAt = new Date(now - 60 * 60_000 - 5_000)
+    const insideWindow = new Date(now - 60 * 60_000 + 5_000)
     const freshAt = new Date(now)
     await utimes(expired, expiredAt, expiredAt)
     await utimes(expiredOther, expiredAt, expiredAt)
@@ -128,7 +127,7 @@ describe('sweepExpiredFeedListDirectories', () => {
     const directory = await createFeedListDirectory()
     writeFileSync(join(directory, 'deduped'), '')
     writeFileSync(join(directory, 'added'), '')
-    const expiredAt = new Date(Date.now() - FEED_LIST_DIRECTORY_MAX_AGE_MS - 5_000)
+    const expiredAt = new Date(Date.now() - 60 * 60_000 - 5_000)
     await utimes(directory, expiredAt, expiredAt)
     try {
       await expect(readFeedListPage(directory, undefined, 1)).resolves.toEqual({

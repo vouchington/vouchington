@@ -1,6 +1,5 @@
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import { CLASSIFIER_RUN_ATTEMPTS } from '../queues/ai-agents/config.mts'
-import { MAX_COMMUNITY_MODERATION_QUESTIONS } from '../services/community-agent-prompts/index.mts'
 import { createCommunityModerationRegistration } from '../workers/ai-agents/processors/classifier-run-community-moderation.mts'
 import { executeLeasedRun, type EfficiencyDriver } from './classifier-call-efficiency-run.mts'
 import {
@@ -15,7 +14,7 @@ import {
 export const communityModerationEfficiencyDriver: EfficiencyDriver = {
   slug: COMMUNITY_MODERATION_CLASSIFIER_SLUG,
   scope: 'C8 community moderation classifier',
-  fanOuts: [1, MAX_COMMUNITY_MODERATION_QUESTIONS],
+  fanOuts: [1, 30],
   questions: ruleCount => ruleCount,
   async seed(ruleCount) {
     const ruleTexts = Array.from({ length: ruleCount }, (_, index) => `No rule breaking ${index}`)

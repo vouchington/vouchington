@@ -1,7 +1,7 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { dynamicConfigPrimaryValkeyClient } from '@data-stores/valkey/clients'
 
-export const DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD = 0.95
+const DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD = 0.95
 
 const DEFAULTS = {
   ai_generated_confidence_threshold: DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD,

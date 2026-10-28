@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   getDomainRateLimitRemainingMs,
-  IMMEDIATE_RETRY_RATE_LIMIT_MS,
   normalizeDomainRateLimitMs,
   normalizeDomainRateLimitScriptResult,
   setDomainRateLimited,
@@ -10,8 +9,8 @@ import {
 describe('domain-rate-limit', () => {
   it('normalizes retry-after values before writing Valkey locks', () => {
     expect(normalizeDomainRateLimitMs()).toBe(60_000)
-    expect(normalizeDomainRateLimitMs(0)).toBe(IMMEDIATE_RETRY_RATE_LIMIT_MS)
-    expect(normalizeDomainRateLimitMs(-1)).toBe(IMMEDIATE_RETRY_RATE_LIMIT_MS)
+    expect(normalizeDomainRateLimitMs(0)).toBe(1_000)
+    expect(normalizeDomainRateLimitMs(-1)).toBe(1_000)
     expect(normalizeDomainRateLimitMs(2_500)).toBe(2_500)
   })
 
@@ -42,9 +41,9 @@ describe('domain-rate-limit', () => {
     const hostnameId = `test-${crypto.randomUUID()}.example.com`
     const lockMs = await setDomainRateLimited(hostnameId, 0)
     const result = await getDomainRateLimitRemainingMs(hostnameId)
-    expect(lockMs).toBe(IMMEDIATE_RETRY_RATE_LIMIT_MS)
+    expect(lockMs).toBe(1_000)
     expect(result).toBeGreaterThan(0)
-    expect(result).toBeLessThanOrEqual(IMMEDIATE_RETRY_RATE_LIMIT_MS)
+    expect(result).toBeLessThanOrEqual(1_000)
   })
 
   it('uses default 60s TTL when no retryAfterMs provided', async () => {

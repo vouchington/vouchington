@@ -8,11 +8,8 @@ import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sent
 
 vi.resetModules()
 
-const {
-  DEFAULT_POST_RELATED_URL_DISPLAY_CONFIG,
-  getPostRelatedUrlDisplayConfig,
-  postRelatedUrlDisplayConfig,
-} = await import('./post-related-url-display-config.mts')
+const { getPostRelatedUrlDisplayConfig, postRelatedUrlDisplayConfig } =
+  await import('./post-related-url-display-config.mts')
 
 describe('post related URL display config', () => {
   beforeEach(async () => {
@@ -22,7 +19,7 @@ describe('post related URL display config', () => {
   })
 
   it('defaults to ten and accepts bounded runtime overrides', () => {
-    expect(getPostRelatedUrlDisplayConfig()).toEqual(DEFAULT_POST_RELATED_URL_DISPLAY_CONFIG)
+    expect(getPostRelatedUrlDisplayConfig()).toEqual({ summary_limit: 10 })
 
     overrideDynamicConfigFieldsForTest(postRelatedUrlDisplayConfig, { summary_limit: 4 })
     expect(getPostRelatedUrlDisplayConfig()).toEqual({ summary_limit: 4 })
@@ -32,7 +29,7 @@ describe('post related URL display config', () => {
   it.each([0, 11, 1.5])('rejects out-of-range display bound %s', value => {
     overrideDynamicConfigFieldsForTest(postRelatedUrlDisplayConfig, { summary_limit: value })
 
-    expect(getPostRelatedUrlDisplayConfig()).toEqual(DEFAULT_POST_RELATED_URL_DISPLAY_CONFIG)
+    expect(getPostRelatedUrlDisplayConfig()).toEqual({ summary_limit: 10 })
     expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
   })
 })

@@ -7,7 +7,7 @@ export type PostRelatedUrlDisplayConfig = {
 
 export const POST_RELATED_URL_DISPLAY_CONFIG_KEY = 'post-related-url-display-config'
 
-export const DEFAULT_POST_RELATED_URL_DISPLAY_CONFIG: PostRelatedUrlDisplayConfig = {
+const DEFAULT_POST_RELATED_URL_DISPLAY_CONFIG: PostRelatedUrlDisplayConfig = {
   summary_limit: 10,
 }
 

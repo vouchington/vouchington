@@ -37,10 +37,7 @@ function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {
   })
 }
 
-import {
-  getDomainRateLimitRemainingMs,
-  IMMEDIATE_RETRY_RATE_LIMIT_MS,
-} from '../domain-rate-limit.mts'
+import { getDomainRateLimitRemainingMs } from '../domain-rate-limit.mts'
 
 import {
   CrawlerRateLimitError,
@@ -160,7 +157,6 @@ describe('crawl-url.errors', () => {
   void (0 as unknown as typeof countCrawlsForUrl)
   // keep generated shard import bindings live for typecheck
   void (0 as unknown as typeof getDomainRateLimitRemainingMs)
-  void (0 as unknown as typeof IMMEDIATE_RETRY_RATE_LIMIT_MS)
   void (0 as unknown as typeof setDomainRateLimitedBackground)
   void (0 as unknown as typeof CrawlerRateLimitError)
   void (0 as unknown as typeof CrawlerTimeoutError)

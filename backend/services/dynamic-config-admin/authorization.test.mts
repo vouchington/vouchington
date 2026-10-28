@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  DYNAMIC_CONFIG_VIEWER_ROLES,
-  currentUserCanAccessDynamicConfigNamespace,
-} from './authorization.mts'
+import { currentUserCanAccessDynamicConfigNamespace } from './authorization.mts'
 import { dynamicConfigRegistry } from './registry.mts'
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 import type { DynamicConfigUser } from './types.mts'
@@ -27,12 +24,20 @@ function makeUser(roles: string[]): DynamicConfigUser {
   return { id: 'user_test', roles }
 }
 
-describe('DYNAMIC_CONFIG_VIEWER_ROLES', () => {
-  it('includes moderator, developer, and investor', () => {
-    expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('moderator')
-    expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('developer')
-    expect(DYNAMIC_CONFIG_VIEWER_ROLES).not.toContain('customer_support')
-    expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('investor')
+describe('dynamic config viewer policy', () => {
+  it('allows viewer roles and excludes customer support', () => {
+    for (const role of ['moderator', 'developer', 'investor']) {
+      expect(
+        currentUserCanAccessDynamicConfigNamespace(makeUser([role]), noRolesEntry, 'view'),
+      ).toBe(true)
+    }
+    expect(
+      currentUserCanAccessDynamicConfigNamespace(
+        makeUser(['customer_support']),
+        noRolesEntry,
+        'view',
+      ),
+    ).toBe(false)
   })
 })
 

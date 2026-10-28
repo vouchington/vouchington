@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { testOAuthClientExists } from '@voucha/test-helpers/data-stores/psql/oauth-client-metadata'
 import {
-  CLIENT_ID_METADATA_MAX_SIZE_BYTES,
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
@@ -126,7 +125,7 @@ describe('Client ID Metadata Documents', () => {
     const readResponseBodyAsBuffer = vi.fn<
       ClientIdMetadataDependencies['readResponseBodyAsBuffer']
     >(async options => {
-      expect(options.maxSizeBytes).toBe(CLIENT_ID_METADATA_MAX_SIZE_BYTES)
+      expect(options.maxSizeBytes).toBe(5 * 1024)
       expect(options.signal).toBeInstanceOf(AbortSignal)
       expect(options.signal).not.toBe(requestSignal)
       expect(requestSignal?.aborted).toBe(false)
