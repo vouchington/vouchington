@@ -160,6 +160,8 @@ export async function expireDataRequests(
 ): Promise<string[]> {
   const { rows } = await write(sql`/* expireDataRequests */
     WITH reclaimable AS (
+      -- cross-partition: download expiry can be extended, so old request ranges can still hold live S3 keys
+      -- no-mistakes-disable-next-line postgres-required-predicates: extended export expiry can leave live keys in old ranges
       SELECT id, s3_key FROM user_data_requests
       WHERE (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
         AND completed_at IS NOT NULL

@@ -9,7 +9,7 @@ type Options = { batchSize?: number; maxBatches: number; now?: Date; lowerBoundD
 type Cursor = {
   cursor_request_id: string | null
   cursor_processing_attempt_id: string | null
-  sweep_cutoff_id: string | null
+  cursor_upper_id: string | null
 }
 const MIN_UUIDV7 = '00000000-0000-7000-8000-000000000000'
 
@@ -45,11 +45,11 @@ async function deleteAttemptPage(
     INSERT INTO user_data_request_attempt_retention_cursors (cleanup_name)
     VALUES ('expired_attempts') ON CONFLICT (cleanup_name) DO NOTHING`)
   const { rows: cursorRows } = await query<Cursor>(`/* lockUserDataRequestAttemptRetentionCursor */
-    SELECT cursor_request_id, cursor_processing_attempt_id, sweep_cutoff_id
+    SELECT cursor_request_id, cursor_processing_attempt_id, cursor_upper_id
     FROM user_data_request_attempt_retention_cursors
     WHERE cleanup_name = 'expired_attempts' FOR UPDATE`)
   const cursor = cursorRows[0]!
-  const sweepCutoffId = lowerId ? upperId : (cursor.sweep_cutoff_id ?? upperId)
+  const sweepCutoffId = lowerId ? upperId : (cursor.cursor_upper_id ?? upperId)
   const cursorRequestId =
     cursor.cursor_request_id &&
     (!lowerId || cursor.cursor_request_id >= lowerId) &&
@@ -110,7 +110,7 @@ async function deleteAttemptPage(
     `/* updateUserDataRequestAttemptRetentionCursor */
     UPDATE user_data_request_attempt_retention_cursors
     SET cursor_request_id = $1, cursor_processing_attempt_id = $2,
-        sweep_cutoff_id = $3
+        cursor_upper_id = $3
     WHERE cleanup_name = 'expired_attempts'`,
     [
       hasMore ? last?.request_id : null,

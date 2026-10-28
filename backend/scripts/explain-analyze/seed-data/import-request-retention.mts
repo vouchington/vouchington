@@ -44,6 +44,19 @@ export async function seedImportRequestRetention(): Promise<void> {
     [requestId],
   )
   await write(
+    `/* seedImportRequestRetention:oldRequests */
+     INSERT INTO user_data_requests (id, failed_at)
+     SELECT format('019e0000-7c00-7000-8000-%s', lpad(n::text, 12, '0'))::uuid,
+       NOW() - INTERVAL '40 days'
+     FROM generate_series(0, 19999) AS n ON CONFLICT DO NOTHING`,
+  )
+  await write(
+    `/* seedImportRequestRetention:recentRequest */
+     INSERT INTO user_data_requests (id, processing_started_at, completed_at)
+     VALUES ('019e0000-7c03-7000-8000-000000000000', NOW(), NOW())
+     ON CONFLICT DO NOTHING`,
+  )
+  await write(
     `/* seedImportRequestRetention:attempts */
      INSERT INTO user_data_request_attempts (request_id, processing_attempt_id, started_at)
      SELECT $1::uuid, format('019e0000-7c02-7000-8000-%s', lpad(n::text, 12, '0'))::uuid,
@@ -54,4 +67,5 @@ export async function seedImportRequestRetention(): Promise<void> {
   await write(`/* seedImportRequestRetention:analyze */ ANALYZE admin_import_batches`)
   await write(`/* seedImportRequestRetention:analyze */ ANALYZE admin_import_rows`)
   await write(`/* seedImportRequestRetention:analyze */ ANALYZE user_data_request_attempts`)
+  await write(`/* seedImportRequestRetention:analyze */ ANALYZE user_data_requests`)
 }

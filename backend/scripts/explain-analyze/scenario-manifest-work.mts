@@ -6,6 +6,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'import-retention-parent',
   'import-retention-child-continuation',
   'request-attempt-retention-continuation',
+  'request-range-retirement-recent',
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
   'upload-cleanup-staged-upper',
   'upload-cleanup-staged-first',

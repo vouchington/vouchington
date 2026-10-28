@@ -201,11 +201,11 @@ CREATE TABLE import_retention_cursors (
   admin_batch_id UUID REFERENCES admin_import_batches(id) ON DELETE SET NULL,
   rss_batch_id UUID,
   phase import_retention_phases NOT NULL DEFAULT 'rows',
-  row_id UUID,
-  discovery_url_id UUID,
+  cursor_row_id UUID,
+  cursor_discovery_url_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_import_retention_cursors__discovery_position CHECK (
-    (discovery_url_id IS NULL) = (phase <> 'discoveries' OR row_id IS NULL)
+    (cursor_discovery_url_id IS NULL) = (phase <> 'discoveries' OR cursor_row_id IS NULL)
   ),
   CONSTRAINT chk_import_retention_cursors__batch_family CHECK (
     (family = 'admin' AND rss_batch_id IS NULL)
@@ -224,6 +224,6 @@ COMMENT ON COLUMN import_retention_cursors.family IS 'Independent admin or RSS i
 COMMENT ON COLUMN import_retention_cursors.admin_batch_id IS 'Current completed admin batch, if one is being drained.';
 COMMENT ON COLUMN import_retention_cursors.rss_batch_id IS 'Current completed RSS batch, if one is being drained.';
 COMMENT ON COLUMN import_retention_cursors.phase IS 'Child-first stage currently being drained.';
-COMMENT ON COLUMN import_retention_cursors.row_id IS 'Last UUIDv7 import row or discovery parent visited.';
-COMMENT ON COLUMN import_retention_cursors.discovery_url_id IS 'Last UUIDv7 discovery URL visited within the row.';
+COMMENT ON COLUMN import_retention_cursors.cursor_row_id IS 'Last UUIDv7 import row or discovery parent visited.';
+COMMENT ON COLUMN import_retention_cursors.cursor_discovery_url_id IS 'Last UUIDv7 discovery URL visited within the row.';
 COMMENT ON COLUMN import_retention_cursors.updated_at IS 'Last successful transactional cursor update.';

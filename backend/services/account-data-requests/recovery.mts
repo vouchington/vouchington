@@ -27,11 +27,15 @@ export async function claimRecoverableDataRequests(
   const { rows: candidateRows } = await transaction<{ id: string; user_id: string | null }>(sql`
     /* claimRecoverableDataRequests:candidates */
     WITH orphan_ids AS (
+      -- cross-partition: a deleted user's unfinished export can be in any request range
+      -- no-mistakes-disable-next-line postgres-required-predicates: deleted users' unfinished exports span all retained request ranges
       SELECT id, user_id FROM user_data_requests
       WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
         AND (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
       ORDER BY id LIMIT ${batchSize}
     ), active_ids AS (
+      -- cross-partition: stalled active exports remain recoverable across every retained request range
+      -- no-mistakes-disable-next-line postgres-required-predicates: stalled active exports must be recovered across all ranges
       SELECT request.id, request.user_id FROM user_data_requests request
       JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
       WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))

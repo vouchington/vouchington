@@ -30,7 +30,7 @@ CREATE TABLE user_data_request_attempt_retention_cursors (
   cleanup_name user_data_request_attempt_cleanup_names PRIMARY KEY,
   cursor_request_id UUID,
   cursor_processing_attempt_id UUID,
-  sweep_cutoff_id UUID,
+  cursor_upper_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_user_data_request_attempt_retention_cursors__position CHECK (
     (cursor_request_id IS NULL) = (cursor_processing_attempt_id IS NULL)
@@ -45,5 +45,5 @@ COMMENT ON TABLE user_data_request_attempt_retention_cursors IS 'Durable composi
 COMMENT ON COLUMN user_data_request_attempt_retention_cursors.cleanup_name IS 'Fixed cleanup family owning this position.';
 COMMENT ON COLUMN user_data_request_attempt_retention_cursors.cursor_request_id IS 'Last request UUIDv7 scanned in this pass.';
 COMMENT ON COLUMN user_data_request_attempt_retention_cursors.cursor_processing_attempt_id IS 'Last attempt token scanned for the current request.';
-COMMENT ON COLUMN user_data_request_attempt_retention_cursors.sweep_cutoff_id IS 'Exclusive fixed request UUIDv7 end of this pass.';
+COMMENT ON COLUMN user_data_request_attempt_retention_cursors.cursor_upper_id IS 'Exclusive fixed request UUIDv7 end of this pass.';
 COMMENT ON COLUMN user_data_request_attempt_retention_cursors.updated_at IS 'Last committed scan checkpoint.';

@@ -60,7 +60,7 @@ async function deleteCompletedImportPage(
   )
   const { rows: cursorRows } = await query<Cursor>(
     `/* lockImportRetentionCursor */
-     SELECT admin_batch_id, rss_batch_id, phase, row_id, discovery_url_id
+     SELECT admin_batch_id, rss_batch_id, phase, cursor_row_id, cursor_discovery_url_id
      FROM import_retention_cursors WHERE family = $1::import_retention_families FOR UPDATE`,
     [family],
   )
@@ -92,8 +92,8 @@ async function deleteCompletedImportPage(
       return { deleted: 0, hasMore: false, continuation: null }
     }
     cursor.phase = family === 'rss' ? 'discoveries' : 'rows'
-    cursor.row_id = null
-    cursor.discovery_url_id = null
+    cursor.cursor_row_id = null
+    cursor.cursor_discovery_url_id = null
     await updateCursor(query, family, batchColumn, batchId, cursor)
   }
 
@@ -106,7 +106,12 @@ async function deleteCompletedImportPage(
        WHERE batch_id = $1
          AND (import_row_id, discovery_url_id) > ($2::uuid, $3::uuid)
        ORDER BY import_row_id, discovery_url_id LIMIT $4 FOR UPDATE`,
-      [batchId, cursor.row_id ?? MIN_UUIDV7, cursor.discovery_url_id ?? MIN_UUIDV7, batchSize + 1],
+      [
+        batchId,
+        cursor.cursor_row_id ?? MIN_UUIDV7,
+        cursor.cursor_discovery_url_id ?? MIN_UUIDV7,
+        batchSize + 1,
+      ],
     )
     const page = rows.slice(0, batchSize)
     if (page.length > 0) {
@@ -120,13 +125,13 @@ async function deleteCompletedImportPage(
         [batchId, page.map(row => row.import_row_id), page.map(row => row.discovery_url_id)],
       )
       deleted = rowCount ?? 0
-      cursor.row_id = last.import_row_id
-      cursor.discovery_url_id = last.discovery_url_id
+      cursor.cursor_row_id = last.import_row_id
+      cursor.cursor_discovery_url_id = last.discovery_url_id
     }
     if (rows.length <= batchSize) {
       cursor.phase = 'rows'
-      cursor.row_id = null
-      cursor.discovery_url_id = null
+      cursor.cursor_row_id = null
+      cursor.cursor_discovery_url_id = null
     }
   } else if (cursor.phase === 'rows') {
     const rowTable = family === 'admin' ? 'admin_import_rows' : 'user_rss_feed_import_rows'
@@ -135,7 +140,7 @@ async function deleteCompletedImportPage(
        SELECT id FROM ${rowTable} WHERE batch_id = $1
          AND id > $2::uuid
        ORDER BY id LIMIT $3 FOR UPDATE`,
-      [batchId, cursor.row_id ?? MIN_UUIDV7, batchSize + 1],
+      [batchId, cursor.cursor_row_id ?? MIN_UUIDV7, batchSize + 1],
     )
     const page = rows.slice(0, batchSize)
     if (page.length > 0) {
@@ -145,11 +150,11 @@ async function deleteCompletedImportPage(
         [batchId, page.map(row => row.id)],
       )
       deleted = rowCount ?? 0
-      cursor.row_id = page.at(-1)!.id
+      cursor.cursor_row_id = page.at(-1)!.id
     }
     if (rows.length <= batchSize) {
       cursor.phase = 'batch'
-      cursor.row_id = null
+      cursor.cursor_row_id = null
     }
   } else {
     const rowTable = family === 'admin' ? 'admin_import_rows' : 'user_rss_feed_import_rows'
@@ -163,8 +168,8 @@ async function deleteCompletedImportPage(
     deleted = rowCount ?? 0
     if (deleted > 0) batchId = null
     cursor.phase = family === 'rss' ? 'discoveries' : 'rows'
-    cursor.row_id = null
-    cursor.discovery_url_id = null
+    cursor.cursor_row_id = null
+    cursor.cursor_discovery_url_id = null
   }
   await updateCursor(query, family, batchColumn, batchId, cursor)
   let hasMore = batchId !== null
@@ -187,8 +192,8 @@ async function deleteCompletedImportPage(
       ? {
           batchId,
           phase: cursor.phase,
-          rowId: cursor.row_id,
-          discoveryUrlId: cursor.discovery_url_id,
+          rowId: cursor.cursor_row_id,
+          discoveryUrlId: cursor.cursor_discovery_url_id,
         }
       : null,
   }

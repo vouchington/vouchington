@@ -7,8 +7,8 @@ export type Cursor = {
   admin_batch_id: string | null
   rss_batch_id: string | null
   phase: Phase
-  row_id: string | null
-  discovery_url_id: string | null
+  cursor_row_id: string | null
+  cursor_discovery_url_id: string | null
 }
 export async function updateCursor(
   query: TransactionQuery,
@@ -20,8 +20,8 @@ export async function updateCursor(
   await query(
     `/* updateImportRetentionCursor */ UPDATE import_retention_cursors
      SET ${batchColumn} = $2, phase = $3::import_retention_phases,
-         row_id = $4, discovery_url_id = $5
+         cursor_row_id = $4, cursor_discovery_url_id = $5
      WHERE family = $1::import_retention_families`,
-    [family, batchId, cursor.phase, cursor.row_id, cursor.discovery_url_id],
+    [family, batchId, cursor.phase, cursor.cursor_row_id, cursor.cursor_discovery_url_id],
   )
 }

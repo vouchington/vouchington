@@ -67,4 +67,26 @@ export async function runImportRequestRetentionScenarios(): Promise<void> {
       ],
     ),
   )
+
+  registerScenarioContract('request-range-retirement-recent', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['user_data_requests__default_coalesce_id_idx'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'user_data_requests', max: 2 },
+    ],
+    seededRows: { user_data_requests: 20_002 },
+  })
+  await runAndCapture('request-range-retirement-recent', () =>
+    write(
+      `/* retireUserDataRequestRange:recent */
+       SELECT id FROM user_data_requests__default
+       WHERE (completed_at IS NOT NULL OR failed_at IS NOT NULL)
+         AND COALESCE(completed_at, failed_at) >= $1::timestamptz
+       ORDER BY COALESCE(completed_at, failed_at), id LIMIT 1`,
+      [new Date(Date.now() - 30 * 86_400_000)],
+    ),
+  )
 }

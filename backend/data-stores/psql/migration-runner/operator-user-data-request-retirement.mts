@@ -61,7 +61,8 @@ export async function guardAndRetireUserDataRequestRange(
   const { rows: recent } = await query(
     `/* retireUserDataRequestRange:recent */
     SELECT id FROM ${requestChild}
-    WHERE COALESCE(completed_at, failed_at) >= $1::timestamptz
+    WHERE (completed_at IS NOT NULL OR failed_at IS NOT NULL)
+      AND COALESCE(completed_at, failed_at) >= $1::timestamptz
     ORDER BY COALESCE(completed_at, failed_at), id LIMIT 1`,
     [cutoff],
   )

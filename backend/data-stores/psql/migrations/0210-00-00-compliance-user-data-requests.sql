@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS active_user_data_request_claims (
 CREATE INDEX idx_active_user_data_request_claims__requested_by_id
 ON active_user_data_request_claims (requested_by_id);
 
-CREATE FUNCTION fn_sync_active_user_data_request_claim() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_active_user_data_request_claim() RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' THEN
     DELETE FROM active_user_data_request_claims WHERE request_id = OLD.id;
@@ -107,7 +107,7 @@ END;
 $$;
 CREATE TRIGGER trigger_user_data_requests_sync_active_claim
 AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at
-ON user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_sync_active_user_data_request_claim();
+ON user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_active_user_data_request_claim();
 
 COMMENT ON TABLE active_user_data_request_claims IS 'One global active export claim per subject and requester across request partitions.';
 COMMENT ON COLUMN active_user_data_request_claims.user_id IS 'Subject of the active export.';

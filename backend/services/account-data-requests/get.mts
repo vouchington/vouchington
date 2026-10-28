@@ -11,6 +11,7 @@ export async function getLatestDataRequest(
   requestedById: string,
 ): Promise<UserDataRequest | null> {
   const { rows } = await read(sql`/* getLatestDataRequest */
+    -- cross-partition: the latest request for this subject and requester can be in any retained request range
     SELECT
       id,
       user_id,
@@ -27,6 +28,7 @@ export async function getLatestDataRequest(
       expires_at,
       uuid_extract_timestamp(id) AS created_at,
       updated_at
+    -- no-mistakes-disable-next-line postgres-required-predicates: the latest subject/requester request can be in any retained range
     FROM user_data_requests
     WHERE user_id = ${userId}
       AND requested_by_id = ${requestedById}
