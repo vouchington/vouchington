@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -80,14 +79,14 @@ export async function getTestUserSessionById(sessionId: string): Promise<{
   revoked_at: Date | null
 } | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestUserSessionById */
     SELECT s.id, s.user_id, s.device_id, s.authentication_origin, s.device_name, ua.user_agent, s.ip_address,
       s.created_at, s.last_seen_at, s.expires_at, s.revoked_at
     FROM user_sessions s
     JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
     WHERE s.id = ${sessionId}
     LIMIT 1
-  `),
+  `,
   )
   return (
     (rows[0] as
@@ -123,7 +122,7 @@ export async function getActiveTestUserSessions(userId: string): Promise<
   }>
 > {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getActiveTestUserSessions */
     SELECT s.id, s.user_id, s.device_id, s.device_name, ua.user_agent, s.ip_address,
       s.created_at, s.last_seen_at, s.expires_at, s.revoked_at
     FROM user_sessions s
@@ -131,7 +130,7 @@ export async function getActiveTestUserSessions(userId: string): Promise<
     WHERE s.user_id = ${userId}
       AND s.revoked_at IS NULL
     ORDER BY s.last_seen_at DESC, s.id DESC
-  `),
+  `,
   )
   return rows as Array<{
     id: string
@@ -148,26 +147,26 @@ export async function getActiveTestUserSessions(userId: string): Promise<
 }
 
 export async function deleteTestUserSession(sessionId: string): Promise<void> {
-  await write(allowUnannotatedQuery(sql`DELETE FROM user_sessions WHERE id = ${sessionId}`))
+  await write(sql`/* deleteTestUserSession */ DELETE FROM user_sessions WHERE id = ${sessionId}`)
 }
 
 export async function expireTestUserSession(sessionId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`UPDATE user_sessions
+    sql`/* expireTestUserSession */ UPDATE user_sessions
       SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second',
           device_token_issued_at = CASE WHEN device_token_issued_at IS NULL THEN NULL
             ELSE LEAST(device_token_issued_at, CURRENT_TIMESTAMP - INTERVAL '2 seconds') END
-      WHERE id = ${sessionId}`),
+      WHERE id = ${sessionId}`,
   )
 }
 
 export async function countTestUserAgentStrings(userAgent: string): Promise<number> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* countTestUserAgentStrings */
     SELECT COUNT(*)::int AS count
     FROM user_agent_strings
     WHERE user_agent = ${userAgent}
-  `),
+  `,
   )
   return (rows[0] as { count: number }).count
 }
