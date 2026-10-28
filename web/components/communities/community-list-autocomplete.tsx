@@ -51,7 +51,7 @@ async function searchByItemType(
     }
     case 'post': {
       const res = await fetchPosts({ q, limit: 10, signal })
-      return res.results.flatMap(r => {
+      return res.results.flatMap<SearchResult>(r => {
         const post = res.posts?.[r.id]
         if (!post) return []
         const displayName = post.title?.trim() || post.slug || post.markdown?.trim().slice(0, 80)
