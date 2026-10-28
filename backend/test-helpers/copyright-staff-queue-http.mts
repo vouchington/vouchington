@@ -41,12 +41,12 @@ export async function withCopyrightStaffQueueHttp<Result>(
   let locked = false
   const releaseLock = async () => {
     if (!locked || !lockKey) return
-    locked = false
     const { rows } = await client.query<{ unlocked: boolean }>(
       '/* unlockCopyrightQueueSnapshot */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
       [lockKey],
     )
     if (!rows[0]?.unlocked) throw new Error('Copyright snapshot session lock was not held')
+    locked = false // stays set on failure so final cleanup retries, then discards the client
   }
   let discardClient = false
   let failed = false
