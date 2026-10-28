@@ -8,7 +8,7 @@ import {
   createLockedEntityId,
   writeBatchFixtureFile as writeTempFile,
 } from '@voucha/test-helpers/bedrock-batch-creation-fixtures'
-import { createBatch as submitBatch } from './create.mts'
+import { createBatch as submitBatch } from '../create.mts'
 
 const createBatch = (file: string, count: number, ids: string) =>
   submitBatch(
