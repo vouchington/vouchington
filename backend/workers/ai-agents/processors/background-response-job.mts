@@ -45,18 +45,29 @@ export async function recoverJobBackgroundResponses(
   context: BackgroundResponseJobContext,
 ): Promise<boolean> {
   const inline = job.name === 'recover-background-response'
+  let firstError: unknown
+  let hasError = false
   const active = await pMap(
     job.data.backgroundResponses ?? [],
     async response => {
-      const result = await reconcileBackgroundResponse(
-        { ...response, createdAt: new Date(response.createdAt) },
-        inline ? 'inline' : 'worker',
-      )
-      if (result === 'settled') await context.settle(response.responseId)
-      return result === 'still-active'
+      try {
+        const result = await reconcileBackgroundResponse(
+          { ...response, createdAt: new Date(response.createdAt) },
+          inline ? 'inline' : 'worker',
+        )
+        if (result === 'settled') await context.settle(response.responseId)
+        return result === 'still-active'
+      } catch (err) {
+        if (!hasError) {
+          firstError = err
+          hasError = true
+        }
+        return false
+      }
     },
     { concurrency: RECONCILE_CONCURRENCY },
   )
+  if (hasError) throw firstError
   if (inline && active.includes(true)) await job.moveToDelayed(Date.now() + RECHECK_DELAY_MS)
   return inline
 }

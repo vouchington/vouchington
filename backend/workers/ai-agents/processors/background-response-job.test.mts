@@ -83,6 +83,37 @@ describe('job-owned background responses', () => {
     expect(job.data.backgroundResponses).toEqual([])
   })
 
+  it('waits for started recovery before surfacing the original retrieval error', async () => {
+    const first = Promise.withResolvers<Awaited<ReturnType<typeof retrieve>>>()
+    const second = Promise.withResolvers<Awaited<ReturnType<typeof retrieve>>>()
+    const bothStarted = Promise.withResolvers<void>()
+    const failure = APIError.generate(
+      429,
+      { error: { code: 'rate_limit' } },
+      'limited',
+      new Headers(),
+    )
+    retrieve.mockImplementation(responseId => {
+      if (responseId !== 'resp_a') bothStarted.resolve()
+      const result = responseId === 'resp_a' ? first.promise : second.promise
+      return result as ReturnType<typeof Responses.prototype.retrieve>
+    })
+    const job = makeJob('story-post', [response('resp_a'), response('resp_b')])
+    const context = createBackgroundResponseJobContext(job as unknown as Job<AIAgentJobData>)
+    const recovery = recoverJobBackgroundResponses(job as unknown as Job<AIAgentJobData>, context)
+    const outcome = recovery.then(
+      () => 'resolved' as const,
+      err => err,
+    )
+
+    await bothStarted.promise
+    first.reject(failure)
+    second.resolve(makeSdkResponse({ id: 'resp_b', status: 'failed' }))
+
+    expect(await outcome).toBe(failure)
+    expect(job.data.backgroundResponses?.map(item => item.responseId)).toEqual(['resp_a'])
+  })
+
   it('rechecks later while an inline call response is still running', async () => {
     retrieve.mockResolvedValue(running())
     const job = makeJob('recover-background-response', [response('resp_a')])
