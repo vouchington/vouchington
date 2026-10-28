@@ -51,6 +51,7 @@ RANGE partitioned on `subject_id` (children: default, no retention owner, access
 **Indexes:**
 
 - `idx_relation__post__category__topic_alias__id`: `CREATE INDEX idx_relation__post__category__topic_alias__id ON ONLY public.relation__post__category__topic_alias USING btree (id)`
+- `idx_relation__post__category__topic_alias__positive_object`: `CREATE INDEX idx_relation__post__category__topic_alias__positive_object ON ONLY public.relation__post__category__topic_alias USING btree (object_id, subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))`
 - `idx_relation__post__category__topic_alias__positive_score__id`: `CREATE INDEX idx_relation__post__category__topic_alias__positive_score__id ON ONLY public.relation__post__category__topic_alias USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relation__post__category__topic_alias__reverse_index`: `CREATE INDEX idx_relation__post__category__topic_alias__reverse_index ON ONLY public.relation__post__category__topic_alias USING btree (object_id, subject_id)`
 - `idx_relation__post__category__topic_alias__subject__best`: `CREATE INDEX idx_relation__post__category__topic_alias__subject__best ON ONLY public.relation__post__category__topic_alias USING btree (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`

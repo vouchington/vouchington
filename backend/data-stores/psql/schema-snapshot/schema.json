@@ -86234,6 +86234,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__category__topic__positive_object": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__positive_object ON ONLY public.relation__post__category__topic USING btree (object_id, subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic__positive_score__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -87075,6 +87102,33 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic_alias__positive_object": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__positive_object ON ONLY public.relation__post__category__topic_alias USING btree (object_id, subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "primary": false,
           "ready": true,
           "unique": false,
