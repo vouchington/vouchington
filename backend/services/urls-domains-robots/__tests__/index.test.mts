@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { isUrlCrawlable, fetchRobotsTxt, computeHostnameRateLimitMs } from '../index.mts'
+import { isUrlCrawlable, fetchRobotsTxtCached, computeHostnameRateLimitMs } from '../index.mts'
 import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 import { HttpResponseSizeError } from '@vouchington/sentry'
@@ -23,8 +23,8 @@ function robotsResponse() {
   return { status: 200, statusText: 'OK', body: {} }
 }
 
-function fetchRobotsTxtForTest(domain: string) {
-  return fetchRobotsTxt(domain, dependencies)
+function fetchRobotsTxtCachedForTest(domain: string) {
+  return fetchRobotsTxtCached(domain, dependencies)
 }
 
 function isUrlCrawlableForTest(
@@ -52,7 +52,7 @@ describe('urls-domains-robots', () => {
     const domain = randomDomain()
     await insertTestUrlHostname({ hostname: domain, is_crawlable: false })
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
     expect(mockFetchWithTimeoutSimple).not.toHaveBeenCalled()
@@ -63,7 +63,7 @@ describe('urls-domains-robots', () => {
     mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
     mockReadResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     // result is a direct passthrough of readResponseBody's mocked return value, so
     // matching it alone can't distinguish "actually fetched" from a hard-coded shortcut.
@@ -77,7 +77,7 @@ describe('urls-domains-robots', () => {
     await insertTestDomainBlacklist(domain)
     await addDomainsToBloomFilter([domain])
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
   })
@@ -89,7 +89,7 @@ describe('urls-domains-robots', () => {
       statusText: 'Not Found',
     })
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
   })
@@ -100,7 +100,7 @@ describe('urls-domains-robots', () => {
     mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
     mockReadResponseBody.mockResolvedValue(robotsContent)
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     // result is a direct passthrough of readResponseBody's mocked return value; assert the
     // body was actually read from the fetched response, not just returned unconditionally.
@@ -120,7 +120,7 @@ describe('urls-domains-robots', () => {
     mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
     mockReadResponseBody.mockRejectedValue(oversizedError)
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
     expect(mockReadResponseBody).toHaveBeenCalledWith(
@@ -138,7 +138,7 @@ describe('urls-domains-robots', () => {
       body: null,
     })
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
     expect(mockReadResponseBody).not.toHaveBeenCalled()
@@ -150,7 +150,7 @@ describe('urls-domains-robots', () => {
     mockFetchWithTimeoutSimple.mockRejectedValue(networkError)
     mockIsNetworkError.mockReturnValue(true)
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
@@ -168,7 +168,7 @@ describe('urls-domains-robots', () => {
     mockIsNetworkError.mockReturnValue(false)
     mockIsRetryableError.mockReturnValue(true)
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(2)
@@ -181,7 +181,7 @@ describe('urls-domains-robots', () => {
       statusText: 'Unauthorized',
     })
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
   })

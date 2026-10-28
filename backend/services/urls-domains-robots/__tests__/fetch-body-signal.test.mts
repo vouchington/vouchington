@@ -2,7 +2,7 @@ import type { fetchWithTimeout as fetchWithTimeoutFn } from '@modules/utils/http
 import { readResponseBody as readResponseBodyFn } from '@modules/utils/http-body'
 import type { validateUrl as validateUrlFn } from 'ssrf-guard/node'
 import { describe, expect, it, vi } from 'vitest'
-import { defaultRobotsDependencies, fetchRobotsTxtWithRetryOutcome } from '../fetch-retry.mts'
+import { fetchRobotsTxtOutcome } from '../fetch-retry.mts'
 
 type ReadResponseBodyFn = typeof readResponseBodyFn
 type FetchWithTimeoutFn = typeof fetchWithTimeoutFn
@@ -27,8 +27,7 @@ describe('robots fetch body deadline', () => {
       .mockResolvedValue('User-agent: *\nAllow: /\n')
 
     await expect(
-      fetchRobotsTxtWithRetryOutcome('example.com', {
-        ...defaultRobotsDependencies,
+      fetchRobotsTxtOutcome('example.com', {
         validateUrl: vi.fn<ValidateUrlFn>().mockResolvedValue(PUBLIC_ADDRESSES),
         fetchWithTimeout: vi.fn<FetchWithTimeoutFn>().mockResolvedValue({
           response,

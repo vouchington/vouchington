@@ -4,7 +4,7 @@ import {
 } from '@modules/utils/http'
 import { readResponseBody as readResponseBodyFn } from '@modules/utils/http-body'
 import { describe, expect, it, vi } from 'vitest'
-import { defaultRobotsDependencies, fetchRobotsTxtWithRetryOutcome } from '../fetch-retry.mts'
+import { fetchRobotsTxtOutcome } from '../fetch-retry.mts'
 
 type CancelResponseBodyFn = typeof cancelResponseBodyFn
 type ReadResponseBodyFn = typeof readResponseBodyFn
@@ -28,7 +28,6 @@ function retryDependencies(
   const readResponseBody = vi.fn<ReadResponseBodyFn>()
   return {
     dependencies: {
-      ...defaultRobotsDependencies,
       fetchWithTimeoutSimple,
       cancelResponseBody,
       readResponseBody,
@@ -50,9 +49,7 @@ describe('robots fetch unread bodies', () => {
       retryDependencies(fetchWithTimeoutSimple)
     readResponseBody.mockResolvedValue(ALLOW_ROBOTS_TXT)
 
-    await expect(
-      fetchRobotsTxtWithRetryOutcome('example.com', dependencies),
-    ).resolves.toMatchObject({
+    await expect(fetchRobotsTxtOutcome('example.com', dependencies)).resolves.toMatchObject({
       body: ALLOW_ROBOTS_TXT,
       kind: 'rules',
     })
@@ -69,9 +66,7 @@ describe('robots fetch unread bodies', () => {
     const { dependencies, cancelResponseBody, readResponseBody } =
       retryDependencies(fetchWithTimeoutSimple)
 
-    await expect(
-      fetchRobotsTxtWithRetryOutcome('example.com', dependencies),
-    ).resolves.toMatchObject({
+    await expect(fetchRobotsTxtOutcome('example.com', dependencies)).resolves.toMatchObject({
       body: ALLOW_ROBOTS_TXT,
       kind: 'unavailable',
     })
@@ -91,9 +86,7 @@ describe('robots fetch unread bodies', () => {
     const { dependencies, cancelResponseBody, readResponseBody } =
       retryDependencies(fetchWithTimeoutSimple)
 
-    await expect(
-      fetchRobotsTxtWithRetryOutcome('example.com', dependencies),
-    ).resolves.toMatchObject({
+    await expect(fetchRobotsTxtOutcome('example.com', dependencies)).resolves.toMatchObject({
       body: 'User-agent: *\nDisallow: /',
       kind: 'unreachable',
     })
@@ -112,7 +105,7 @@ describe('robots fetch unread bodies', () => {
     const { dependencies, cancelResponseBody, readResponseBody } =
       retryDependencies(fetchWithTimeoutSimple)
 
-    await expect(fetchRobotsTxtWithRetryOutcome('example.com', dependencies)).rejects.toThrow(
+    await expect(fetchRobotsTxtOutcome('example.com', dependencies)).rejects.toThrow(
       'Failed to fetch robots.txt for example.com: 301 Moved Permanently',
     )
     expect(cancelResponseBody).toHaveBeenCalledWith(response)

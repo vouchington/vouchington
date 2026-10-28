@@ -7,7 +7,7 @@ import { getTopicByAny } from '@services/topics/get'
 import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTopicAliases } from '@services/topics/aliases'
 import { resolveHostname } from '@services/topics/resolve-hostname'
-import { getUrlHostnameById } from '@services/urls-hostnames/get'
+import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import {
   createTestUserDirect,
   insertTestTopic,
@@ -76,7 +76,7 @@ describe('createInstanceFromHostname', () => {
     // linkHostnameToSourceTopic sets topics.hostname_id but must NOT claim
     // url_hostnames.topic_id — that column means "this whole domain IS this topic," which
     // stays a separate, explicit admin action out of scope for user-suggested instances.
-    const urlHostname = await getUrlHostnameById(hostnameId!)
+    const urlHostname = await getUrlHostnameByAny(hostnameId!)
     expect(urlHostname?.topic_id).toBeNull()
   })
 

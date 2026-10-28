@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { getUrlHostnameById } from '@services/urls-hostnames/get'
+import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
 import { createImportBatch } from '../create-batch.mts'
 import { processTopicRow } from '../process-topic-row.mts'
@@ -111,7 +111,7 @@ describe('process-topic-row (basic)', () => {
     expect(topic!.name).toBe(`Test Feed ${suffix} (${feedUrl})`)
     expect(topic!.topic_type).toBe('rss_feed')
     expect(topic!.hostname_id).not.toBeNull()
-    const hostname = await getUrlHostnameById(topic!.hostname_id!)
+    const hostname = await getUrlHostnameByAny(topic!.hostname_id!)
     expect(hostname!.topic_id).toBeNull()
 
     const feed = await getRssFeedByTopicId(topicId)

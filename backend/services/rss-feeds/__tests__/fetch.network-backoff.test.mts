@@ -6,7 +6,7 @@ import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
 import { getRssFeedById } from '../get.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
-import { NETWORK_BACKOFF_FAILURE_THRESHOLD } from '@services/urls-hostnames/network-backoff'
+const NETWORK_BACKOFF_FAILURE_THRESHOLD = 10
 import { CrawlerNetworkError } from '@modules/on-error/errors'
 import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {

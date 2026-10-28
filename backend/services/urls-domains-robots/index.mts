@@ -11,7 +11,7 @@ import { fetchRobotsTxtOutcome, type RobotsDependencies } from './fetch-retry.mt
 export { checkDomainBlacklisted }
 export { fetchRobotsTxtCached }
 
-export const fetchRobotsTxt = async (
+const fetchRobotsTxt = async (
   domain: string,
   dependencyOverrides: Partial<RobotsDependencies> = {},
 ): Promise<string> => {

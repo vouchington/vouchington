@@ -2,11 +2,6 @@ import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { describe, expect, it, vi } from 'vitest'
 import { fetchRobotsTxtCached } from '../index.mts'
-import {
-  ROBOTS_RULES_CACHE_PREFIX,
-  ROBOTS_UNREACHABLE_CACHE_PREFIX,
-  ROBOTS_UNREACHABLE_MARKER,
-} from '../fetch-cache.mts'
 
 const ALLOW_ROBOTS_TXT = 'User-agent: *\nAllow: /'
 const DISALLOW_ROBOTS_TXT = 'User-agent: *\nDisallow: /'
@@ -19,11 +14,11 @@ function randomDomain() {
 function robotsCachePair() {
   return {
     rules: new ValkeyCache({
-      prefix: ROBOTS_RULES_CACHE_PREFIX,
+      prefix: 'urls-domains-robots',
       ttlSeconds: 60 * 60 * 24,
     }),
     unreachable: new ValkeyCache({
-      prefix: ROBOTS_UNREACHABLE_CACHE_PREFIX,
+      prefix: 'urls-domains-robots-unreachable',
       ttlSeconds: UNREACHABLE_TTL_SECONDS,
     }),
   }
@@ -57,7 +52,7 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
       ).resolves.toBe(DISALLOW_ROBOTS_TXT)
       expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
       expect(await rules.get(domain)).toBeNull()
-      expect(await unreachable.get(domain)).toBe(ROBOTS_UNREACHABLE_MARKER)
+      expect(await unreachable.get(domain)).toBe('unreachable')
       const ttlSeconds = await cacheValkeyClient.ttl(unreachable.getKey(domain))
       expect(ttlSeconds).toBeGreaterThan(14 * 60)
       expect(ttlSeconds).toBeLessThanOrEqual(UNREACHABLE_TTL_SECONDS)

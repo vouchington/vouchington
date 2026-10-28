@@ -6,7 +6,7 @@ import {
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
-import { getUrlHostnameById } from '@services/urls-hostnames/get'
+import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 
 describe('PATCH /api/v1/hostnames/:id', () => {
   let regularUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
@@ -80,18 +80,18 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     const domain = `staff-update-${crypto.randomUUID()}.example.com`
     const id = await resolveEmailDomainHostnameId(`owner@${domain}`)
     if (!id) throw new Error('Expected private hostname')
-    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeNull()
+    expect((await getUrlHostnameByAny(id))?.publicly_introduced_at).toBeNull()
     await createRequest().get(`/api/v1/hostnames/${id}`).expect(404)
 
     const request = createRequest()
     await request.authenticateAs(administrator)
     await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: false }).expect(204)
-    const introducedAt = (await getUrlHostnameById(id))?.publicly_introduced_at
+    const introducedAt = (await getUrlHostnameByAny(id))?.publicly_introduced_at
     expect(introducedAt).toBeInstanceOf(Date)
     await createRequest().get(`/api/v1/hostnames/${id}`).expect(200)
 
     await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: true }).expect(204)
-    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toEqual(introducedAt)
+    expect((await getUrlHostnameByAny(id))?.publicly_introduced_at).toEqual(introducedAt)
   })
 
   it('invalidates cached hostname detail after a flag update', async () => {
@@ -196,13 +196,13 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     const parentId = await insertTestUrlHostname({ hostname: parent, is_blocked: true })
     const id = await resolveEmailDomainHostnameId(`owner@child.${parent}`)
     if (!id) throw new Error('Expected private hostname')
-    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeNull()
+    expect((await getUrlHostnameByAny(id))?.publicly_introduced_at).toBeNull()
 
     const request = createRequest()
     await request.authenticateAs(adminUser!)
     await request.patch(`/api/v1/hostnames/${id}`).send({ is_blocked: false }).expect(204)
-    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeInstanceOf(Date)
-    expect((await getUrlHostnameById(parentId))?.is_blocked).toBe(true)
+    expect((await getUrlHostnameByAny(id))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(parentId))?.is_blocked).toBe(true)
   })
 
   it('updates should_ignore_robots_txt and returns 204', async () => {

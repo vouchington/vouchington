@@ -1,7 +1,7 @@
 import { it, expect, describe } from 'vitest'
 import { updateUrlHostname } from './update.mts'
 import { upsertUrlHostnames } from './upsert.mts'
-import { getUrlHostnameById } from './get.mts'
+import { getUrlHostnameByAny } from './get.mts'
 import { updateUrlHostnameBlocked } from '@voucha/test-helpers'
 import {
   failNextHostnameCacheDeleteForTest,
@@ -22,7 +22,7 @@ describe('update.generated', () => {
 
     await updateUrlHostnameBlocked(hostnameId, true)
 
-    const retrieved = await getUrlHostnameById(hostnameId)
+    const retrieved = await getUrlHostnameByAny(hostnameId)
     expect(retrieved!.is_blocked).toBe(true)
   })
 
@@ -33,7 +33,7 @@ describe('update.generated', () => {
     const updated = await updateUrlHostname(hostnameId, { is_crawlable: true })
     expect(updated).toBeDefined()
 
-    const retrieved = await getUrlHostnameById(hostnameId)
+    const retrieved = await getUrlHostnameByAny(hostnameId)
     expect(retrieved!.is_crawlable).toBe(true)
   })
 
@@ -44,7 +44,7 @@ describe('update.generated', () => {
     const updated = await updateUrlHostname(hostnameId, { should_follow_link_rel: false })
     expect(updated).toBeDefined()
 
-    const retrieved = await getUrlHostnameById(hostnameId)
+    const retrieved = await getUrlHostnameByAny(hostnameId)
     expect(retrieved!.should_follow_link_rel).toBe(false)
   })
 
@@ -55,7 +55,7 @@ describe('update.generated', () => {
     const updated = await updateUrlHostname(hostnameId, { should_skip_web_risk: true })
     expect(updated).toBeDefined()
 
-    const retrieved = await getUrlHostnameById(hostnameId)
+    const retrieved = await getUrlHostnameByAny(hostnameId)
     expect(retrieved!.should_skip_web_risk).toBe(true)
   })
 
@@ -70,7 +70,7 @@ describe('update.generated', () => {
     })
     expect(updated).toBeDefined()
 
-    const retrieved = await getUrlHostnameById(hostnameId)
+    const retrieved = await getUrlHostnameByAny(hostnameId)
     expect(retrieved!.is_blocked).toBe(true)
     expect(retrieved!.is_crawlable).toBe(false)
     expect(retrieved!.should_follow_link_rel).toBe(true)
@@ -99,7 +99,7 @@ describe('update.generated', () => {
     } finally {
       restoreFailure()
     }
-    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(id))?.publicly_introduced_at).toBeInstanceOf(Date)
     expect(await getHostnameCacheInvalidationWorkForTest(id)).toMatchObject({
       lease_token: null,
       attempt_count: 1,

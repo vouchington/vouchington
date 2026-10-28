@@ -5,7 +5,7 @@ import {
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { lockHostnameOwnership } from './ownership-lock.mts'
-import { getUrlHostnameById } from './get.mts'
+import { getUrlHostnameByAny } from './get.mts'
 import { prepareUrlHostnamesForOwnedMutation, upsertUrlHostnames } from './upsert.mts'
 
 describe('concurrent public hostname batch', () => {
@@ -29,7 +29,7 @@ describe('concurrent public hostname batch', () => {
     const resolved = await promoting
     expect(resolved.get(existing)).toBe(existingId)
     expect(resolved.get(cold)).toBe(coldId)
-    expect((await getUrlHostnameById(existingId))?.publicly_introduced_at).toBeInstanceOf(Date)
-    expect((await getUrlHostnameById(coldId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(existingId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(coldId))?.publicly_introduced_at).toBeInstanceOf(Date)
   })
 })

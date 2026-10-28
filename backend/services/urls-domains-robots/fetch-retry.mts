@@ -35,7 +35,7 @@ export type RobotsDependencies = PinnedRobotsFetchDependencies & {
   retryDelayMs: number
 }
 
-export const defaultRobotsDependencies: RobotsDependencies = {
+const defaultRobotsDependencies: RobotsDependencies = {
   fetchWithTimeoutSimple,
   readResponseBody,
   isNetworkError,
@@ -59,7 +59,7 @@ export async function fetchRobotsTxtOutcome(
   return fetchRobotsTxtWithRetryOutcome(domain, dependencies)
 }
 
-export async function fetchRobotsTxtWithRetryOutcome(
+async function fetchRobotsTxtWithRetryOutcome(
   domain: string,
   dependencies: RobotsDependencies,
 ): Promise<RobotsFetchOutcome> {

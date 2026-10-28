@@ -1,15 +1,15 @@
 import { it, expect, describe } from 'vitest'
-import { fetchRobotsTxt, fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
+import { fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { insertTestDomainBlacklist } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
 // example.com, example.net, and example.org answer /robots.txt with HTTP 404.
-// fetchRobotsTxt turns that into this permissive body.
+// fetchRobotsTxtCached turns that into this permissive body.
 const PERMISSIVE_ROBOTS_TXT = 'User-agent: *\nAllow: /'
 
 describe('index.generated', () => {
-  it('fetchRobotsTxt returns the permissive body for example.com', async () => {
-    await expect(fetchRobotsTxt('example.com')).resolves.toBe(PERMISSIVE_ROBOTS_TXT)
+  it('fetchRobotsTxtCached returns the permissive body for example.com', async () => {
+    await expect(fetchRobotsTxtCached('example.com')).resolves.toBe(PERMISSIVE_ROBOTS_TXT)
   })
 
   it('fetchRobotsTxtCached repeats the permissive body for example.net', async () => {
@@ -39,22 +39,22 @@ describe('index.generated', () => {
     await expect(isUrlCrawlable('https://example.org/', 'MyBot/1.0')).resolves.toBe(true)
   })
 
-  it('fetchRobotsTxt returns permissive robots.txt on 404', async () => {
-    await expect(fetchRobotsTxt('example.org')).resolves.toBe(PERMISSIVE_ROBOTS_TXT)
+  it('fetchRobotsTxtCached returns permissive robots.txt on 404', async () => {
+    await expect(fetchRobotsTxtCached('example.org')).resolves.toBe(PERMISSIVE_ROBOTS_TXT)
   })
 
   it('isUrlCrawlable allows crawling when robots.txt returns 404', async () => {
     await expect(isUrlCrawlable('https://example.com/page', 'MyBot/1.0')).resolves.toBe(true)
   })
 
-  it('fetchRobotsTxt returns disallow robots.txt for blacklisted domains', async () => {
+  it('fetchRobotsTxtCached returns disallow robots.txt for blacklisted domains', async () => {
     const testDomain = `test-blacklist-${Math.random().toString(36).slice(2)}.com`
 
     // Add domain to blacklist and bloom filter so checkDomainBlacklisted takes the full query path
     await insertTestDomainBlacklist(testDomain)
     await addDomainsToBloomFilter([testDomain])
 
-    const result = await fetchRobotsTxt(testDomain)
+    const result = await fetchRobotsTxtCached(testDomain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
   })
