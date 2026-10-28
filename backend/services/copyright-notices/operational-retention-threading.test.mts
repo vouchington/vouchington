@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import {
@@ -32,6 +33,7 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright operational thread retention', () => {
+  useCopyrightOperationalCursorReservation()
   it('removes exclusive closed-case tokens, references and ancestor edges after the reply window', async () => {
     const notice = await createRetentionMinimalCase()
     const ancestor = await createRetentionParsedEmail('thread-ancestor')
@@ -51,7 +53,18 @@ describe('copyright operational thread retention', () => {
     expect((await readCopyrightIntakeRetentionState(reply.id)).ancestorCount).toBe(1)
 
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
-    await sweepCopyrightCaseThreads({ ...options, now: future(181), batchSize: 1, maxBatches: 30 })
+    let deleted = 0
+    for (let page = 0; page < 100; page++) {
+      const result = await sweepCopyrightCaseThreads({
+        ...options,
+        now: future(181),
+        batchSize: 1,
+        maxBatches: 1,
+      })
+      deleted += result.deleted
+      if (deleted > 0 || !result.hasMore) break
+    }
+    expect(deleted).toBeGreaterThan(0)
     const betweenPages = await readCopyrightThreadReferenceState(reply.id)
     await recordCopyrightEmailThreadReferences({
       intakeId: reply.id,
@@ -104,8 +117,14 @@ describe('copyright operational thread retention', () => {
     await linkTestCopyrightEmailIntake(second.id, notice.noticeId)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
     const firstBefore = await readCopyrightThreadReferenceState(first.id)
-    const options = { now: future(181), replyDays: 180, batchSize: 1, maxBatches: 30 }
-    await sweepCopyrightCaseThreads(options)
+    const options = { now: future(181), replyDays: 180, batchSize: 1, maxBatches: 1 }
+    let deleted = 0
+    for (let page = 0; page < 100; page++) {
+      const result = await sweepCopyrightCaseThreads(options)
+      deleted += result.deleted
+      if (deleted > 0 || !result.hasMore) break
+    }
+    expect(deleted).toBeGreaterThan(0)
     expect((await readCopyrightThreadReferenceState(first.id)).referenceCount).toBeLessThan(
       firstBefore.referenceCount,
     )
@@ -128,9 +147,11 @@ describe('copyright operational thread retention', () => {
 
     const holdId = await insertPreservationHoldForTest(notice.claimantId!, notice.moderator.id)
     await releasePreservationHoldAtForTest(holdId, notice.moderator.id, future(181))
+    await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     const sibling = await createRetentionMinimalCase()
     const siblingIntake = await createRetentionParsedEmail('thread-hold-release-sibling')
     await linkTestCopyrightEmailIntake(siblingIntake.id, sibling.noticeId)
+    await positionCopyrightOperationalCursor('email_thread_references', sibling.noticeId)
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     expect((await readCopyrightThreadReferenceState(siblingIntake.id)).referenceCount).toBe(0)
     expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
@@ -148,9 +169,11 @@ describe('copyright operational thread retention', () => {
     await sweepCopyrightCaseThreads(options)
 
     await seedCopyrightThreadPartySubmission(notice.noticeId, party.id)
+    await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     const sibling = await createRetentionMinimalCase()
     const siblingIntake = await createRetentionParsedEmail('thread-new-party-sibling')
     await linkTestCopyrightEmailIntake(siblingIntake.id, sibling.noticeId)
+    await positionCopyrightOperationalCursor('email_thread_references', sibling.noticeId)
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     expect((await readCopyrightThreadReferenceState(siblingIntake.id)).referenceCount).toBe(0)
     expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)

@@ -33,24 +33,36 @@ function operationalTable(kind: OperationalKind | 'email_thread_tokens'): string
   }
 }
 
-/** Starts a real persisted keyset pass immediately before the fixture's first row. */
+function offsetUuid(id: string, offset: bigint): string {
+  const value = BigInt(`0x${id.replaceAll('-', '')}`) + offset
+  if (value < 0n || value >= 1n << 128n) throw new Error('Invalid copyright cursor window')
+  const hex = value.toString(16).padStart(32, '0')
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-')
+}
+
+/** Constrains a real persisted pass to exactly the owned UUID or explicit owned interval. */
 export async function positionCopyrightOperationalCursor(
   kind: OperationalKind,
   firstId: string,
+  lastId = firstId,
 ): Promise<void> {
-  const { rows } = await read<{ id: string }>(
-    sql`/* predecessorCopyrightOperationalCursor */ SELECT id FROM `
-      .append(operationalTable(kind))
-      .append(sql` WHERE id < ${firstId} ORDER BY id DESC LIMIT 1`),
-  )
+  const lower = offsetUuid(firstId, -1n)
+  const upper = offsetUuid(lastId, 1n)
+  if (lower >= upper) throw new Error('Invalid copyright cursor window order')
   await write(sql`/* positionCopyrightOperationalCursor */
     INSERT INTO copyright_notice_operational_retention_cursors
       (kind, cursor_record_id, sweep_upper_bound_record_id)
     VALUES (${kind}::copyright_notice_operational_retention_kinds,
-      ${rows[0]?.id ?? null}::uuid, NULL)
+      ${lower}::uuid, ${upper}::uuid)
     ON CONFLICT (kind) DO UPDATE SET
       cursor_record_id = EXCLUDED.cursor_record_id,
-      sweep_upper_bound_record_id = NULL,
+      sweep_upper_bound_record_id = EXCLUDED.sweep_upper_bound_record_id,
       cursor_child_id = NULL, cursor_edge_id = NULL, cursor_phase = NULL,
       cursor_legal_phase = NULL, cursor_legal_child_id = NULL,
       cursor_legal_hold_generation = NULL, cursor_case_party_generation = NULL,
@@ -124,7 +136,7 @@ export async function seedCopyrightFormScreeningAttemptPair(
   const { rows } = await write<{ id: string }>(sql`/* seedCopyrightFormScreeningAttemptPair */
     INSERT INTO copyright_notice_form_screening_attempts
       (copyright_notice_form_intake_id, attempt_number, started_at, failed_at)
-    VALUES (${intakeId}, ${priorNumber}, CURRENT_TIMESTAMP, ${priorTerminalAt}),
+    VALUES (${intakeId}, ${priorNumber}, LEAST(CURRENT_TIMESTAMP, ${priorTerminalAt}), ${priorTerminalAt}),
       (${intakeId}, ${priorNumber + 1}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     RETURNING id`)
   return { priorId: rows[0]!.id, latestId: rows[1]!.id }

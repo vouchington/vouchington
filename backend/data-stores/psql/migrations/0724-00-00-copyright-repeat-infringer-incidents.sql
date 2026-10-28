@@ -33,8 +33,6 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
   WHERE is_operative;
 
-CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
-  ON copyright_repeat_infringer_incidents (copyright_notice_id);
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_updated
   ON copyright_repeat_infringer_incidents (copyright_notice_id, updated_at);
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_id

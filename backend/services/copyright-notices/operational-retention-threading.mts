@@ -100,6 +100,7 @@ async function sweepPage(
         LEFT JOIN copyright_notice_email_thread_tokens token ON token.id = page.token_id`)
       : { rows: [] }
   // Token, case replay, then legal party locks match the ingestion order.
+  // ast-grep-ignore: no-three-sequential-awaits -- digest, case, and preservation locks have a required global order before eligibility can be read.
   await lockCopyrightEmailThreadTokens(transaction, [
     ...references.flatMap(row => (row.lookup_digest ? [row.lookup_digest] : [])),
     ...(link.matched_lookup_digest ? [link.matched_lookup_digest] : []),
@@ -136,10 +137,11 @@ async function sweepPage(
   }
   // The marker and first irreversible delete commit together. Old-source replay cannot
   // recreate a removed reference between pages; a fresh source remains admissible.
+  // ast-grep-ignore: no-three-sequential-awaits -- the replay fence must precede bounded child deletion, then its cursor must record committed progress.
   await transaction(sql`/* retireCopyrightCaseThread */
     INSERT INTO copyright_notice_email_thread_retirements
       (copyright_notice_id, retired_before_intake_bound)
-    VALUES (${noticeId}, ${upperBound}::uuid)
+    VALUES (${noticeId}, ${cutoffId}::uuid)
     ON CONFLICT (copyright_notice_id) DO UPDATE SET
       retired_before_intake_bound = GREATEST(
         copyright_notice_email_thread_retirements.retired_before_intake_bound,
@@ -179,7 +181,7 @@ export async function sweepCopyrightCaseThreads(options: {
   let hasMore = false
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
-    const page = await sweepPage(now, cutoff, cutoffId, options.batchSize)
+    const page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore

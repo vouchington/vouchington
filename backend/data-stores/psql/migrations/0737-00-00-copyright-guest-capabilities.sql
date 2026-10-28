@@ -8,6 +8,8 @@ CREATE TABLE copyright_notice_guest_capability_identities (
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   CONSTRAINT copyright_guest_capability_identity_notice_key UNIQUE (id, copyright_notice_id)
 );
+CREATE INDEX idx_copyright_guest_capability_identities__notice
+  ON copyright_notice_guest_capability_identities (copyright_notice_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capabilities (
@@ -36,7 +38,7 @@ CREATE INDEX idx_copyright_notice_guest_capabilities__notice
   ON copyright_notice_guest_capabilities (copyright_notice_id, id);
 CREATE INDEX idx_copyright_notice_guest_capabilities__notice_updated
   ON copyright_notice_guest_capabilities (copyright_notice_id, updated_at);
-CREATE INDEX idx_copyright_notice_guest_capabilities__notice_expires_unrevoked
+CREATE INDEX idx_copyright_guest_capabilities__notice_expires_live
   ON copyright_notice_guest_capabilities (copyright_notice_id, expires_at)
   WHERE revoked_at IS NULL;
 CREATE INDEX idx_copyright_notice_guest_capabilities__issued_by

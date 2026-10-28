@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import {
@@ -22,6 +23,7 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright operational email intake retention', () => {
+  useCopyrightOperationalCursorReservation()
   const bucket = useFakeCopyrightEvidenceBucket()
   it('keeps the replay fence if a database child write fails after S3 deletion', async () => {
     const intake = await createRetentionParsedEmail('post-s3-database-failure')
@@ -69,6 +71,13 @@ describe('copyright operational email intake retention', () => {
     bucket.put(linked.raw_storage_key)
     bucket.put(legal.raw_storage_key, { versions: 2 })
     await positionCopyrightOperationalCursor('unlinked_email_intakes', linked.id)
+    await sweepUnlinkedCopyrightEmailIntakes({
+      now: future(91),
+      retentionDays: 90,
+      childLimit: 20,
+      maxBatches: 10,
+    })
+    await positionCopyrightOperationalCursor('unlinked_email_intakes', legal.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(91),
       retentionDays: 90,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import { insertConcurrentCopyrightPartySubmissions } from '@voucha/test-helpers/copyright-operational-concurrency'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
@@ -35,6 +36,7 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright operational retention', () => {
+  useCopyrightOperationalCursorReservation()
   const bucket = useFakeCopyrightEvidenceBucket()
 
   it('commits concurrent same-case party inserts without a case lock upgrade', async () => {
@@ -107,8 +109,13 @@ describe('copyright operational retention', () => {
     await sweepCopyrightOperationalRetention('guest_capabilities', options)
     expect(await readCopyrightOperationalRow('guest_capabilities', unused)).toBe(true)
 
-    await positionCopyrightOperationalCursor('guest_capabilities', unused)
-    await sweepCopyrightOperationalRetention('guest_capabilities', { ...options, now: future(111) })
+    for (const candidate of [unused, submitted, issued]) {
+      await positionCopyrightOperationalCursor('guest_capabilities', candidate)
+      await sweepCopyrightOperationalRetention('guest_capabilities', {
+        ...options,
+        now: future(111),
+      })
+    }
     expect(await readCopyrightOperationalRow('guest_capabilities', unused)).toBe(false)
     expect(await readCopyrightOperationalRow('guest_capabilities', submitted)).toBe(true)
     expect(await readCopyrightOperationalRow('guest_capabilities', issued)).toBe(false)

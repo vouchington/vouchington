@@ -46,6 +46,9 @@ export async function reviewCopyrightFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
+  // A review must enter the case before thread cleanup rechecks its blocker proof.
+  await transaction(sql`/* reviewCopyrightFormIntake:lockNotice */
+    SELECT id FROM copyright_notices WHERE id = ${intake.notice_id} FOR KEY SHARE`)
   const { rows: reviewRows } = await transaction<{ is_accepted: boolean }>(
     sql`/* reviewCopyrightFormIntake:existing */
       SELECT is_accepted FROM copyright_notice_form_intake_reviews

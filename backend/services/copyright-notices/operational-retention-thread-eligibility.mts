@@ -6,7 +6,7 @@ export function copyrightOperationalThreadEligibleSql(cutoff: Date, noticeId: st
   return sql`/* recheckCopyrightThreadCaseEligibility */
     SELECT notice.id FROM copyright_notices notice
     WHERE notice.id = ${noticeId}
-      AND notice.created_at <= ${cutoff}
+      AND notice.id < ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id
           AND event.id >= ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid)

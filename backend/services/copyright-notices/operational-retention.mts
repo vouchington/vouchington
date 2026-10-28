@@ -2,6 +2,11 @@ import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import {
+  deleteExpiredCopyrightGuestCapabilities,
+  lockCopyrightGuestCapabilityCases,
+} from './operational-retention-guest-capabilities.mts'
+import { lockCopyrightOrphanTokenDigests } from './operational-retention-orphan-tokens.mts'
 
 export type CopyrightOperationalSweepKind =
   | 'form_screening_attempts'
@@ -102,14 +107,7 @@ async function deleteSelected(
           WHERE link.matched_token_id = token.id)`)
     return rowCount ?? 0
   }
-  const { rowCount } = await transaction(sql`/* deleteExpiredCopyrightGuestCapabilities */
-    DELETE FROM copyright_notice_guest_capabilities capability
-    WHERE capability.id = ANY(${[...ids]}::uuid[])
-      AND capability.expires_at <= ${cutoff}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submissions submission
-        WHERE submission.copyright_notice_guest_capability_id = capability.id)`)
-  return rowCount ?? 0
+  return deleteExpiredCopyrightGuestCapabilities(transaction, ids, cutoff)
 }
 
 async function sweepPage(
@@ -138,6 +136,10 @@ async function sweepPage(
       ORDER BY id LIMIT ${batchSize}`)
   const { rows: rawRows } = await transaction<{ id: string }>(statement)
   const rawIds = rawRows.map(row => row.id)
+  if (kind === 'guest_capabilities' && rawIds.length > 0)
+    await lockCopyrightGuestCapabilityCases(transaction, rawIds)
+  if (kind === 'orphan_email_thread_tokens' && rawIds.length > 0)
+    await lockCopyrightOrphanTokenDigests(transaction, rawIds)
   // Lock only the already capped raw ID page. SKIP LOCKED cannot walk an unbounded
   // prefix of busy rows, and skipped rows become eligible again on the next pass.
   const { rows: lockedRows } =

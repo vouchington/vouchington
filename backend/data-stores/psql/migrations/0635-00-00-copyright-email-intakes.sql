@@ -87,7 +87,7 @@ CREATE TABLE copyright_notice_email_intake_attachments (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_recommendations__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_email_recommendations__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   input_sha256 bytea NOT NULL CONSTRAINT chk_copyright_notice_email_intake_recommendations__input_sha256 CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CONSTRAINT chk_copyright_notice_email_intake_recommendatio__prompt_version CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
