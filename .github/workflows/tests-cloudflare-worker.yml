@@ -63,7 +63,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
         with:
           suite: cloudflare-worker
       - name: Upload full cloudflare-worker LCOV to GitHub (attempt 2)
@@ -71,7 +71,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
         with:
           suite: cloudflare-worker
           name-suffix: -retry
