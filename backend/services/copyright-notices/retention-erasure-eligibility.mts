@@ -9,8 +9,7 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
  *
  * `blocked` collects every case with: open staff work (the staff queue's own rule, so an
  * undecided intake, pending restriction review, open appeal, failed media action or pending
- * enforcement counts), an unresolved thread-linked email intake, an open counter-notice or
- * restoration deadline, a restriction still in
+ * enforcement counts), an open counter-notice or restoration deadline, a restriction still in
  * force, an open qualifying court or CCB hold, an is_operative repeat-infringer incident, an open
  * legal-process preservation hold on any account that is a party to the case, an unfinished
  * delivery, or a guest capability that can still file. A case whose only queue item is a failed
@@ -20,12 +19,17 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
  *
  * `eligible` also needs the case's retention clock to have run out. The clock restarts at the
  * latest of the case's last lifecycle event and the last change to a delivery, incident, guest
- * capability, preservation hold or thread-linked email, not all of which write a lifecycle event, so a blocker that has
+ * capability or preservation hold, none of which write a lifecycle event, so a blocker that has
  * just cleared never makes a case instantly erasable. Cases already erased are never offered again. Only `us_dmca`
  * cases are covered until the owner decides the EU and UK records.
  */
-export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLStatement {
-  return copyrightStaffQueueKeysSql()
+export function copyrightRetentionEligibleSql(
+  now: Date,
+  cutoff: Date,
+  scope: 'evidence' | 'operational_thread' = 'evidence',
+  candidateNoticeId?: string,
+): SQLStatement {
+  return copyrightStaffQueueKeysSql({ candidateNoticeId })
     .append(', preservation AS (')
     .append(COPYRIGHT_PRESERVATION_PARTIES_SQL)
     .append(sql`), blocked AS (
@@ -35,7 +39,8 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
       JOIN copyright_notice_email_intakes intake
         ON intake.id = link.copyright_notice_email_intake_id
       WHERE link.link_kind = 'thread' AND `)
-    .append(copyrightEmailIntakeAwaitingReviewSql()).append(sql`
+    .append(copyrightEmailIntakeAwaitingReviewSql())
+    .append(sql`
       UNION ALL
       SELECT copyright_notice_id FROM copyright_notice_deadlines
       WHERE resolved_at IS NULL AND cancelled_at IS NULL
@@ -67,11 +72,18 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
       WHERE revoked_at IS NULL AND expires_at > ${now}
     ), eligible AS (
       SELECT notice.id FROM copyright_notices notice
-      WHERE notice.jurisdiction = 'us_dmca'
+      WHERE `)
+    .append(
+      scope === 'evidence'
+        ? sql`notice.jurisdiction = 'us_dmca'
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_retention_erasures erased
           WHERE erased.copyright_notice_id = notice.id
-        )
+        )`
+        : sql`TRUE`,
+    )
+    .append(candidateNoticeId ? sql` AND notice.id = ${candidateNoticeId}` : sql``)
+    .append(sql`
         AND NOT EXISTS (SELECT 1 FROM blocked WHERE blocked.notice_id = notice.id)
         AND GREATEST(
           notice.created_at,
@@ -99,6 +111,23 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
           (SELECT max(review.reviewed_at)
             FROM copyright_notice_email_correspondence_reviews review
             WHERE review.copyright_notice_id = notice.id)
+          `)
+    .append(
+      scope === 'operational_thread'
+        ? sql`,
+          (SELECT max(link.created_at) FROM copyright_notice_email_intake_notice_links link
+           WHERE link.copyright_notice_id = notice.id),
+          (SELECT max(reference.created_at) FROM copyright_notice_email_thread_references reference
+           JOIN copyright_notice_email_intake_notice_links link
+             ON link.copyright_notice_email_intake_id = reference.copyright_notice_email_intake_id
+           WHERE link.copyright_notice_id = notice.id),
+          (SELECT max(reply.created_at) FROM copyright_notice_email_message_ancestors edge
+           JOIN copyright_notice_email_intakes reply ON reply.id = edge.reply_message_intake_id
+           JOIN copyright_notice_email_intake_notice_links link
+             ON link.copyright_notice_email_intake_id = reply.id
+           WHERE link.copyright_notice_id = notice.id)`
+        : sql``,
+    ).append(sql`
         ) <= ${cutoff}
     )
   `)

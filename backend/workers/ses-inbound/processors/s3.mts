@@ -14,6 +14,7 @@ import {
 import { SesInboundTerminalError } from './mime.mts'
 import { createRawMimeDigest, type SesInboundRawDigest } from './raw-mime-digest.mts'
 import { boundedBodyStream, rejectOversizedRawEmail } from './s3-streams.mts'
+import { copyrightEvidenceEmailKey } from './evidence-key.mts'
 
 export type SesInboundObjectPage = {
   objectKeys: string[]
@@ -85,7 +86,7 @@ export async function copySesInboundObjectToCopyrightEvidence(
 ): Promise<string> {
   const sourceBucket = getSesInboundBucket()
   const destinationBucket = getCopyrightEvidenceBucket()
-  const destinationKey = `email/${sesMessageId}/${sha256.toString('hex')}.eml`
+  const destinationKey = copyrightEvidenceEmailKey(sesMessageId, sha256)
   const encodedSource = `${sourceBucket}/${encodeURIComponent(objectKey).replaceAll('%2F', '/')}`
   await S3ImagesClient.send(
     new CopyObjectCommand({

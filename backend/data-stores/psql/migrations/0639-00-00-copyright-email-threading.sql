@@ -17,6 +17,19 @@ CREATE TABLE copyright_notice_email_thread_tokens (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
+CREATE TABLE copyright_notice_email_thread_retirements (
+  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  retired_before_intake_bound uuid NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER trigger_copyright_email_thread_retirements_updated_at
+  BEFORE UPDATE ON copyright_notice_email_thread_retirements
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE copyright_notice_email_thread_retirements IS 'Durable case threading high-water: previously admitted intake IDs below the bound cannot rebuild expired references on replay; fresh sources may still thread when the case accepts them.';
+COMMENT ON COLUMN copyright_notice_email_thread_retirements.copyright_notice_id IS 'Case whose email threading is retired.';
+COMMENT ON COLUMN copyright_notice_email_thread_retirements.retired_before_intake_bound IS 'Exclusive UUIDv7 intake-age boundary committed atomically with the first cleanup page, then advanced for later closed windows; this synthetic bound is not a foreign-key reference.';
+COMMENT ON COLUMN copyright_notice_email_thread_retirements.updated_at IS 'Last time the closed-case threading high-water advanced.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -53,7 +66,7 @@ CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor_reply
 CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_message_ancestors
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
-COMMENT ON TABLE copyright_notice_email_message_ancestors IS 'Immutable resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token, including an ancestor that arrives later.';
+COMMENT ON TABLE copyright_notice_email_message_ancestors IS 'Resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token; edges expire after the exclusively owning case closes its reply window.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.reply_message_intake_id IS 'Inbound reply intake that named the ancestor.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.ancestor_message_intake_id IS 'Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.reference_kind IS 'Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.';
@@ -175,9 +188,9 @@ CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor
   FOR EACH ROW WHEN (NEW.action <> 'pending')
   EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
-COMMENT ON TABLE copyright_notice_email_thread_tokens IS 'Private UUID identities for keyed RFC message-reference digests; the digest survives while any live case or reply uses it.';
+COMMENT ON TABLE copyright_notice_email_thread_tokens IS 'Private UUID identities for keyed RFC message-reference digests; exclusively owned tokens expire after the case reply window, while shared tokens survive.';
 COMMENT ON COLUMN copyright_notice_email_thread_tokens.lookup_digest IS 'Keyed hex64 digest of a normalized RFC message reference; retention erasure overwrites it only when no live reference remains.';
-COMMENT ON TABLE copyright_notice_email_thread_references IS 'Private UUID references to keyed RFC Message-ID and In-Reply-To/References tokens.';
+COMMENT ON TABLE copyright_notice_email_thread_references IS 'Private UUID references to keyed RFC Message-ID and In-Reply-To/References tokens; exclusively owned references expire with their token after the case reply window.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.copyright_notice_email_intake_id IS 'Inbound email whose private thread token was recorded.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.token_id IS 'Private token identity; NULL only after the owning case is erased under the retention-erasure flag.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.reference_kind IS 'Whether the token is this message''s Message-ID, an In-Reply-To token, or a References token.';

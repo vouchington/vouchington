@@ -70,7 +70,7 @@ export async function rejectCopyrightEmailIntake(input: {
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
-    WHERE intake.id = ${input.intakeId}
+    WHERE intake.id = ${input.intakeId} AND intake.raw_storage_object_id IS NOT NULL
     FOR UPDATE OF intake
   `)
   const intake = rows[0]

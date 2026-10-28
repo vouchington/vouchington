@@ -39,7 +39,7 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
   const { rows } = await transaction<{ amazon_ses_message_id: string }>(
     sql`/* recordCopyrightEmailIntakeLegalProcess:lock */
       SELECT amazon_ses_message_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId}
+      WHERE id = ${input.intakeId} AND raw_storage_object_id IS NOT NULL
       FOR UPDATE`,
   )
   const intake = rows[0]

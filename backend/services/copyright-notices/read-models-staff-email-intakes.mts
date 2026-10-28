@@ -75,7 +75,7 @@ export async function searchCopyrightStaffEmailIntakes(
     LEFT JOIN copyright_notice_delivery_work_items reply
       ON reply.copyright_notice_email_intake_id = intake.id
       AND reply.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information') AND reply.state IN ('failed', 'bounced')
-    WHERE (`)
+    WHERE intake.raw_storage_object_id IS NOT NULL AND (`)
   query.append(copyrightEmailIntakeAwaitingReviewSql())
   query.append(sql` OR reply.id IS NOT NULL)`)
   if (intakeIds) query.append(sql` AND intake.id = ANY(${intakeIds}::uuid[])`)

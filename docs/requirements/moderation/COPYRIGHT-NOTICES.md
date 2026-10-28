@@ -159,6 +159,16 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 
 ## Evidence retention
 
+The daily operational cleanup separately expires screening and transport attempts, unused guest
+capabilities, and case-exclusive email threading after the case has no open work and its reply
+window has passed. A per-case intake-age high-water prevents old SES replays from rebuilding
+expired references while fresh email can still thread through an eligible case. An unlinked email
+intake loses its original object and private MIME parse and attachment data after inactivity; a
+minimal SES receipt remains to prevent re-admission on replay. A terminal legal delivery or staff
+decision can require the intake identity to remain. Legal delivery and staff decision records stay
+unchanged, including an advisory recommendation that a staff decision references. Form intakes
+are created with a required notice foreign key, so there is no unlinked form-intake state to sweep.
+
 GDPR and UK GDPR need a retention period and real deletion or anonymisation when it ends. The US
 side must keep records for the repeat-infringer policy (17 USC 512(i)), restoration (512(g)), the
 three-year limitation period (17 USC 507(b)), and litigation holds. A sweep reconciles the two. It

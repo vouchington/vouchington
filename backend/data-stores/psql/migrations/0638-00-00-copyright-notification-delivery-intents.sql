@@ -84,16 +84,16 @@ CREATE TABLE copyright_notice_delivery_attempt_results (
   CHECK (num_nonnulls(sent_at, failed_at, bounced_at, abandoned_at) = 1)
 );
 CREATE TRIGGER trigger_copyright_delivery_attempts_immutable BEFORE UPDATE OR DELETE ON copyright_notice_delivery_attempts
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention();
 CREATE TRIGGER trigger_copyright_delivery_attempt_results_immutable BEFORE UPDATE OR DELETE ON copyright_notice_delivery_attempt_results
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
-COMMENT ON TABLE copyright_notice_delivery_attempts IS 'Immutable numbered executions across all explicit replay generations; legal work retention owns this history.';
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention();
+COMMENT ON TABLE copyright_notice_delivery_attempts IS 'Numbered transport executions across replay generations; terminal nonlatest rows expire under bounded operational retention while the durable work item remains.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.work_item_id IS 'Concrete copyright delivery work whose execution this records.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.generation IS 'Replay generation captured before external execution.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.attempt_number IS 'Monotonically increasing ordinal across retries and replay generations.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.lease_token IS 'Opaque execution ownership token, not an entity reference.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.started_at IS 'Database time this execution acquired its lease.';
-COMMENT ON TABLE copyright_notice_delivery_attempt_results IS 'Exactly one immutable terminal result for each claimed execution, including abandonment on takeover.';
+COMMENT ON TABLE copyright_notice_delivery_attempt_results IS 'Exactly one terminal result for each claimed execution, including abandonment on takeover; deleted with an expired nonlatest attempt.';
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.attempt_id IS 'Execution finalized by this immutable result.';
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.sent_at IS 'Database time this execution ended as sent.';
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.failed_at IS 'Database time this execution ended as failed.';

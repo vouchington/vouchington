@@ -5,6 +5,11 @@ import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 // to delegate to (user_id is already NULL). Exposing hardDelete helpers from each
 // OAuth provider would add significant boilerplate for a single use case.
 import { providerTableConfigs } from '@services/oauth/providers'
+import {
+  sweepCopyrightOperationalRetention,
+  sweepUnlinkedCopyrightEmailIntakes,
+  sweepCopyrightCaseThreads,
+} from '@services/copyright-notices'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { cleanupLocalAnalyticsRetention } from '@data-stores/analytics/retention'
 import { flush as flushLocalAnalytics } from '@data-stores/analytics/backend-local'
@@ -16,6 +21,7 @@ import {
 } from './cleanup-batches.mts'
 import {
   getClassifierRetentionDays,
+  readDataRetentionField,
   getTopicImportAttemptDeletionBatchSize,
   type DataRetentionLimits,
 } from './config.mts'
@@ -211,6 +217,13 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
+  copyrightFormScreeningAttempts: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightActionAttempts: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightDeliveryAttempts: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightGuestCapabilities: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightUnlinkedEmailIntakes: { scanned: number; erased: number; hasMore: boolean }
+  copyrightCaseThreads: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightOrphanEmailThreadTokens: { scanned: number; deleted: number; hasMore: boolean }
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
   retainedMediaBindings: RetainedMediaBindingCleanupPage
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
@@ -440,6 +453,37 @@ export async function runDataRetentionCleanup(
     new Date(),
     options.voteIntegrityFlagIds,
   )
+  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
+  const copyrightFormScreeningAttempts = await sweepCopyrightOperationalRetention(
+    'form_screening_attempts',
+    { ...limits, retentionDays: readDataRetentionField('copyright_form_screening_attempt_days') },
+  )
+  const copyrightActionAttempts = await sweepCopyrightOperationalRetention('action_attempts', {
+    ...limits,
+    retentionDays: readDataRetentionField('copyright_action_attempt_days'),
+  })
+  const copyrightDeliveryAttempts = await sweepCopyrightOperationalRetention('delivery_attempts', {
+    ...limits,
+    retentionDays: readDataRetentionField('copyright_delivery_attempt_days'),
+  })
+  const copyrightGuestCapabilities = await sweepCopyrightOperationalRetention(
+    'guest_capabilities',
+    { ...limits, retentionDays: readDataRetentionField('copyright_guest_capability_days') },
+  )
+  const copyrightUnlinkedEmailIntakes = await sweepUnlinkedCopyrightEmailIntakes({
+    childLimit: limits.batchSize,
+    maxBatches: limits.maxBatches,
+    retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
+  })
+  const copyrightCaseThreads = await sweepCopyrightCaseThreads({
+    batchSize: limits.batchSize,
+    maxBatches: limits.maxBatches,
+    replyDays: readDataRetentionField('copyright_email_thread_reply_days'),
+  })
+  const copyrightOrphanEmailThreadTokens = await sweepCopyrightOperationalRetention(
+    'orphan_email_thread_tokens',
+    { ...limits, retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days') },
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -456,6 +500,13 @@ export async function runDataRetentionCleanup(
   await cleanupAnalyticsLocalFiles()
 
   return {
+    copyrightFormScreeningAttempts,
+    copyrightActionAttempts,
+    copyrightDeliveryAttempts,
+    copyrightGuestCapabilities,
+    copyrightUnlinkedEmailIntakes,
+    copyrightCaseThreads,
+    copyrightOrphanEmailThreadTokens,
     retainedRelationIdentities,
     retainedMediaBindings,
     retainedIdentityRoots,

@@ -113,7 +113,7 @@ async function admitCopyrightEmailIntake(
     WHERE intake.id = ${input.intakeId}
   `)
   const intake = intakeRows[0]
-  assert(intake, 404, 'Copyright email intake not found')
+  assert(intake?.raw_storage_object_id, 404, 'Copyright email intake not found')
   await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{

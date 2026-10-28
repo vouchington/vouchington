@@ -11,6 +11,7 @@ import sql from 'sql-template-strings'
 import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import {
   copyrightEmailIntakePurpose,
+  ErasedCopyrightEmailIntakeReplay,
   type CopyrightEmailIntake,
   type CopyrightEmailIntakeForAgent,
 } from './email-intakes.mts'
@@ -43,9 +44,13 @@ export async function recordCopyrightEmailParse(
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   await using transaction = await beginTransaction()
   // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
-  await transaction(sql`/* recordCopyrightEmailParse:lock */
-    SELECT id FROM copyright_notice_email_intakes WHERE id = ${intake.id} FOR UPDATE
+  const { rows: liveRows } = await transaction<{
+    id: string
+  }>(sql`/* recordCopyrightEmailParse:lock */
+    SELECT id FROM copyright_notice_email_intakes
+    WHERE id = ${intake.id} AND raw_storage_object_id IS NOT NULL FOR UPDATE
   `)
+  if (liveRows.length === 0) throw new ErasedCopyrightEmailIntakeReplay()
   const { rowCount } = await transaction(sql`/* recordCopyrightEmailParse */
     INSERT INTO copyright_notice_email_intake_parses (
       copyright_notice_email_intake_id, status, sender_email_ciphertext,

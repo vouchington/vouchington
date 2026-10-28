@@ -4,6 +4,7 @@ import type {
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from '@services/copyright-notices'
+import { ErasedCopyrightEmailIntakeReplay } from '@services/copyright-notices/email-intakes'
 import type {
   copySesInboundObjectToCopyrightEvidence,
   loadSesInboundObjectAndHash,
@@ -21,6 +22,44 @@ vi.mock<typeof import('mailparser')>(import('mailparser'), async importOriginal 
 // The intake switch gates decisions, not ingest (#1443): every test below runs with it off.
 describe('SES copyright inbound routing while intake is switched off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
+
+  it('finishes an erased SES replay without recopying evidence or recreating work', async () => {
+    const copy = vi.fn<typeof copySesInboundObjectToCopyrightEvidence>()
+    const parse = vi.fn<typeof recordCopyrightEmailParse>()
+    const enqueue = vi.fn<(intakeId: string) => Promise<void>>()
+    const deleteSource = vi.fn<(key: string) => Promise<void>>().mockResolvedValue(undefined)
+    await processSesInboundEmail(
+      {
+        sesMessageId: 'erased-ses-message',
+        objectKey: 'copyright-incoming/erased-ses-message',
+      },
+      {
+        loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
+          rawMime: Readable.from([Buffer.from('raw')]),
+          digest: Promise.resolve({
+            sha256: Buffer.alloc(32, 1),
+            byteSize: 3,
+            sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+          }),
+          receivedAt: new Date(),
+          sourceIdentity: { eTag: 'etag', versionId: 'version' },
+        }),
+        loadSesInboundObjectVersion: vi.fn<typeof loadSesInboundObjectVersion>(),
+        copySesInboundObjectToCopyrightEvidence: copy,
+        createCopyrightEmailIntake: vi
+          .fn<typeof createCopyrightEmailIntake>()
+          .mockRejectedValue(new ErasedCopyrightEmailIntakeReplay()),
+        parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>(),
+        recordCopyrightEmailParse: parse,
+        enqueueCopyrightEmailIntake: enqueue,
+        deleteSesInboundObject: deleteSource,
+      },
+    )
+    expect(copy).not.toHaveBeenCalled()
+    expect(parse).not.toHaveBeenCalled()
+    expect(enqueue).not.toHaveBeenCalled()
+    expect(deleteSource).toHaveBeenCalledWith('copyright-incoming/erased-ses-message')
+  })
 
   it('reconciles every copyright evidence page', async () => {
     vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
@@ -88,7 +127,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       virus: 'processing_failed',
     } as const
     const deleteObject = vi.fn<(objectKey: string) => Promise<void>>().mockResolvedValue(undefined)
-    const createIntake = vi.fn<typeof createCopyrightEmailIntake>().mockResolvedValue({
+    const intakeResult = {
       intake: {
         id: 'intake-id',
         amazon_ses_message_id: data.sesMessageId,
@@ -101,7 +140,13 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         raw_byte_size: 3,
       },
       isNew: true,
-    })
+    }
+    const createIntake = vi
+      .fn<typeof createCopyrightEmailIntake>()
+      .mockImplementation(async input => {
+        await input.preserveRawEvidence?.()
+        return intakeResult
+      })
     const enqueue = vi.fn<(intakeId: string) => Promise<void>>().mockResolvedValue(undefined)
     const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
     const parsed: ParsedSesInboundEmail = {

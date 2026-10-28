@@ -42,7 +42,7 @@ async function appendWithCurrentLink(
   const { rows } = await transaction<{ amazon_ses_message_id: string }>(sql`
       /* appendCopyrightEmailIntakeRecommendation:lockIntake */
       SELECT amazon_ses_message_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId} FOR UPDATE`)
+      WHERE id = ${input.intakeId} AND raw_storage_object_id IS NOT NULL FOR UPDATE`)
   const intake = rows[0]
   assert(intake, 404, 'Copyright email intake not found')
   const { rows: currentLinks } = await transaction<{ copyright_notice_id: string }>(sql`

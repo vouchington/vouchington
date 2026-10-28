@@ -501,6 +501,38 @@ CREATE TABLE copyright_notice_action_work_items (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_reject_copyright_operational_retention()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND (pg_trigger_depth() > 1 OR
+    current_setting('app.copyright_operational_retention', true) = 'on') THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';
+END;
+$$;
+COMMENT ON FUNCTION fn_reject_copyright_operational_retention() IS 'Allows deletion of named copyright operational rows only inside a retention transaction; updates remain forbidden.';
+
+CREATE TYPE copyright_notice_operational_retention_kinds AS ENUM (
+  'form_screening_attempts', 'action_attempts', 'delivery_attempts',
+  'guest_capabilities', 'unlinked_email_intakes', 'email_thread_references',
+  'orphan_email_thread_tokens'
+);
+CREATE TABLE copyright_notice_operational_retention_cursors (
+  kind copyright_notice_operational_retention_kinds PRIMARY KEY,
+  cursor_record_id uuid,
+  sweep_upper_bound_record_id uuid,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER trigger_copyright_operational_cursors_updated_at
+  BEFORE UPDATE ON copyright_notice_operational_retention_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE copyright_notice_operational_retention_cursors IS 'One bounded keyset position per copyright operational history sweep.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.kind IS 'Finite copyright operational sweep whose position this row stores.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_record_id IS 'Last scanned UUIDv7 record; scanned ineligible rows advance this position and a completed pass resets it.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id IS 'Fixed exclusive UUIDv7 upper bound for the current pass; null between passes.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.updated_at IS 'Last time this sweep position changed.';
+
 CREATE TABLE copyright_notice_action_attempts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   work_item_id uuid NOT NULL REFERENCES copyright_notice_action_work_items(id) ON DELETE CASCADE,
@@ -521,16 +553,16 @@ CREATE TABLE copyright_notice_action_attempt_results (
   CHECK (num_nonnulls(completed_at, stale_at, blocked_at, failed_at, abandoned_at) = 1)
 );
 CREATE TRIGGER trigger_copyright_action_attempts_immutable BEFORE UPDATE OR DELETE ON copyright_notice_action_attempts
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention();
 CREATE TRIGGER trigger_copyright_action_attempt_results_immutable BEFORE UPDATE OR DELETE ON copyright_notice_action_attempt_results
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
-COMMENT ON TABLE copyright_notice_action_attempts IS 'Immutable numbered executions across all explicit replay generations; legal work retention owns this history.';
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention();
+COMMENT ON TABLE copyright_notice_action_attempts IS 'Numbered execution history across replay generations; terminal nonlatest rows expire under bounded operational retention while the durable work item remains.';
 COMMENT ON COLUMN copyright_notice_action_attempts.work_item_id IS 'Concrete copyright delivery work whose execution this records.';
 COMMENT ON COLUMN copyright_notice_action_attempts.generation IS 'Replay generation captured before external execution.';
 COMMENT ON COLUMN copyright_notice_action_attempts.attempt_number IS 'Monotonically increasing ordinal across retries and replay generations.';
 COMMENT ON COLUMN copyright_notice_action_attempts.lease_token IS 'Opaque execution ownership token, not an entity reference.';
 COMMENT ON COLUMN copyright_notice_action_attempts.started_at IS 'Database time this execution acquired its lease.';
-COMMENT ON TABLE copyright_notice_action_attempt_results IS 'Exactly one immutable terminal result for each claimed execution, including abandonment on takeover.';
+COMMENT ON TABLE copyright_notice_action_attempt_results IS 'Exactly one terminal result for each claimed execution, including abandonment on takeover; deleted with an expired nonlatest attempt.';
 COMMENT ON COLUMN copyright_notice_action_attempt_results.attempt_id IS 'Execution finalized by this immutable result.';
 COMMENT ON COLUMN copyright_notice_action_attempt_results.completed_at IS 'Database time this execution ended as completed.';
 COMMENT ON COLUMN copyright_notice_action_attempt_results.stale_at IS 'Database time this execution ended as stale.';
@@ -716,6 +748,14 @@ CREATE INDEX idx_copyright_notice_lifecycle_changes__actor ON copyright_notice_l
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on'
+    AND TG_TABLE_NAME IN (
+      'copyright_notice_email_intakes', 'copyright_notice_email_intake_parses',
+      'copyright_notice_email_intake_attachments',
+      'copyright_notice_email_intake_recommendations',
+      'copyright_notice_email_thread_tokens', 'copyright_notice_email_thread_references',
+      'copyright_notice_email_message_ancestors'
+    ) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
     IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;

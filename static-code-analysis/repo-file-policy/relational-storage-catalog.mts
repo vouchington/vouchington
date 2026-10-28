@@ -46,6 +46,9 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
+  // Durable keyset positions can outlive their scanned rows.
+  'copyright_notice_operational_retention_cursors.cursor_record_id',
+  'copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id',
   // Cleanup positions survive deletion of the scanned auth or subscription row.
   'auth_session_retention_cleanup_cursors.cursor_id',
   // History checkpoints may outlive deletion of their raw candidate rows.

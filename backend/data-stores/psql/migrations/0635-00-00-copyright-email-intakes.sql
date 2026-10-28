@@ -3,9 +3,25 @@
 -- intentionally separate from a legal case because email cannot safely identify a target until a
 -- moderator verifies the agent's extraction.
 
+CREATE TABLE copyright_notice_email_intake_receipts (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
+  raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
+  raw_storage_key_sha256 bytea NOT NULL CHECK (octet_length(raw_storage_key_sha256) = 32),
+  raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
+  erased_at timestamptz,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+COMMENT ON TABLE copyright_notice_email_intake_receipts IS 'Minimal SES replay identity retained after an unlinked private intake and its evidence are erased; this row never authorizes access to an intake.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.amazon_ses_message_id IS 'Stable opaque SES delivery identifier reserved against re-admission after erasure.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_sha256 IS 'Digest of the original MIME used to reject a reused SES delivery identifier.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_storage_key_sha256 IS 'Digest of the original object key used to reject changed replay evidence without keeping the key.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_byte_size IS 'Original MIME size used to reject changed replay evidence.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.erased_at IS 'Time the private intake began operational erasure; the replay identity survives.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intakes (
-  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  id uuid PRIMARY KEY REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
   received_at timestamptz NOT NULL,
   raw_storage_object_id uuid,

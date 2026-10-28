@@ -15,7 +15,13 @@ export function copyrightStaffQueueKeysSql({
   now,
   paging = false,
   trustedFlaggerBoost = false,
-}: { now?: Date; paging?: boolean; trustedFlaggerBoost?: boolean } = {}): SQLStatement {
+  candidateNoticeId,
+}: {
+  now?: Date
+  paging?: boolean
+  trustedFlaggerBoost?: boolean
+  candidateNoticeId?: string
+} = {}): SQLStatement {
   if (now && !Number.isFinite(now.getTime()))
     throw new TypeError('Copyright queue clock must be valid')
   return sql`
@@ -162,6 +168,11 @@ export function copyrightStaffQueueKeysSql({
         min(open_item.since) AS waiting_since,
         array_agg(DISTINCT open_item.reason ORDER BY open_item.reason) AS reasons
       FROM open_item
+      `)
+    .append(
+      candidateNoticeId ? sql` WHERE open_item.copyright_notice_id = ${candidateNoticeId}` : sql``,
+    )
+    .append(sql`
       GROUP BY open_item.copyright_notice_id
     )
   `)
