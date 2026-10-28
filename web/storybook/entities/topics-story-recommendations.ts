@@ -5,6 +5,7 @@ import { posts } from './entity-fixtures'
 export const recommendationPost = {
   ...posts[0]!,
   id: 'topic-recommendation-story',
+  slug: 'fixture-topic-recommendation',
   title: 'Recommend a rewards-program topic',
   markdown: 'This request proposes a missing topic for Storybook coverage.',
   topic_recommendation: {

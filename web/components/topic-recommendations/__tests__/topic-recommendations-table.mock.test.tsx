@@ -125,6 +125,10 @@ describe('TopicRecommendationsTable', () => {
     renderTable()
 
     const withdrawButton = screen.getByRole('button', { name: 'Withdraw' })
+    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
+      'href',
+      '/topic-recommendations/proposed-topic-recommendation/edit',
+    )
     expect(withdrawButton).toContainElement(screen.getByTestId('recommendation-withdraw-icon'))
     fireEvent.click(withdrawButton)
     fireEvent.click(

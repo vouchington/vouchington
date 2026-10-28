@@ -971,8 +971,8 @@
       },
       "get_landing_page_analytics": {
         "measured": {
-          "list": 5820,
-          "core": 258
+          "list": 5866,
+          "core": 304
         },
         "max": {
           "list": 6000,

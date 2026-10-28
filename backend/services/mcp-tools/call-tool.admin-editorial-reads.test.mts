@@ -54,10 +54,17 @@ describe('registered admin read projections', () => {
     const pages = await invoke('list_user_landing_pages', { user_id: user.id, limit: 1 })
     expect(pages.isError).not.toBe(true)
     expect(JSON.stringify(pages.structuredContent)).toContain(page.landingPageId)
-    const analytics = await invoke('get_landing_page_analytics', { page_id: page.landingPageId })
+    const analytics = await invoke('get_landing_page_analytics', {
+      username: user.username,
+      slug: page.slug,
+    })
     expect(analytics.isError).not.toBe(true)
     expect(analytics.structuredContent).toMatchObject({
-      landing_page: { id: page.landingPageId },
+      landing_page: {
+        id: page.landingPageId,
+        user_id: user.id,
+        slug: expect.stringContaining(page.slug),
+      },
       analytics: { conversion_funnel: { total_signups: 0 } },
     })
     expect(await readStaffActionHistory(admin.id)).toEqual(history)

@@ -73,6 +73,7 @@ export function makeRecommendationTableFixture(): {
 } {
   const basePost = {
     id: 'rec-1',
+    slug: 'proposed-topic-recommendation',
     post_type: 'topic_recommendation',
     title: 'Need this topic',
     markdown: 'Detailed rationale',
