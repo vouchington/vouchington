@@ -47,9 +47,9 @@ export async function insertUserSavedRssFeedItem(
   rssFeedItemId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(`INSERT INTO relation__user__save__rss_feed_item (subject_id, object_id)
+    `/* insertUserSavedRssFeedItem */ INSERT INTO relation__user__save__rss_feed_item (subject_id, object_id)
     VALUES ($1, $2)
-    ON CONFLICT DO NOTHING`),
+    ON CONFLICT DO NOTHING`,
     [userId, rssFeedItemId],
   )
 }
@@ -59,9 +59,9 @@ export async function insertUserHiddenRssFeedItem(
   rssFeedItemId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(`INSERT INTO relation__user__hide__rss_feed_item (subject_id, object_id)
+    `/* insertUserHiddenRssFeedItem */ INSERT INTO relation__user__hide__rss_feed_item (subject_id, object_id)
     VALUES ($1, $2)
-    ON CONFLICT DO NOTHING`),
+    ON CONFLICT DO NOTHING`,
     [userId, rssFeedItemId],
   )
 }
