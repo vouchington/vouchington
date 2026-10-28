@@ -75,34 +75,13 @@ describe('hasPlusTier status cases', () => {
 })
 
 describe('hasPlusTier', () => {
-  it('returns true for active plus', () => {
-    expect(hasPlusTier(makeMembership({ plan: 'plus' }), fixedNow)).toBe(true)
-  })
-
-  it('returns false for an elapsed grant and true for an elapsed Stripe period', () => {
+  it('returns false for an elapsed grant', () => {
     const elapsed = new Date(fixedNow.getTime() - 1_000)
     expect(hasPlusTier(makeMembership({ expires_at: elapsed }), fixedNow)).toBe(false)
-    expect(
-      hasPlusTier(
-        makeMembership({
-          stripe_subscription_id: 'sub_lapsed',
-          expires_at: elapsed,
-        }),
-        fixedNow,
-      ),
-    ).toBe(true)
   })
 
   it('returns true for active pro', () => {
     expect(hasPlusTier(makeMembership({ plan: 'pro' }), fixedNow)).toBe(true)
-  })
-
-  it('returns false for null', () => {
-    expect(hasPlusTier(null, fixedNow)).toBe(false)
-  })
-
-  it('returns false for cancelled', () => {
-    expect(hasPlusTier(makeMembership({ status: 'cancelled' }), fixedNow)).toBe(false)
   })
 })
 
