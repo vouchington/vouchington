@@ -8,9 +8,7 @@ import { assertValidCreateTopicRecommendationInput } from './shared.mts'
 import type { CreateTopicRecommendationInput, TopicRecommendationPost } from './types.mts'
 import { createPostModerationContent } from '@services/posts/content'
 import { createPostSlug } from '@services/posts/slugs'
-import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
-import { normalizeKey } from '@ts-shared/utils/strings'
-import { enqueueOnPostCreated } from '@queues/entity-listeners/enqueues'
+import { applyPostCommitSideEffects } from '@services/posts/create/post-commit-side-effects'
 import assert from 'http-assert'
 import {
   materializeTopicRecommendationInput,
@@ -58,8 +56,7 @@ export async function createTopicRecommendation(
 
   if (options.skipCreatedEvents) return post
 
-  void addEntityBloomKeys('posts', [normalizeKey(post.id)])
-  void enqueueOnPostCreated(post.id)
+  await applyPostCommitSideEffects({ post })
 
   return post
 }
@@ -76,10 +73,7 @@ export async function prepareTopicRecommendation(
   })
   return {
     response: post,
-    finalize: async () => {
-      void addEntityBloomKeys('posts', [normalizeKey(post.id)])
-      void enqueueOnPostCreated(post.id)
-    },
+    finalize: () => applyPostCommitSideEffects({ post }),
   }
 }
 

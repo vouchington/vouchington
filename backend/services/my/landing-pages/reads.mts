@@ -35,18 +35,6 @@ export async function getLandingPageRowForUser(
   return rows[0] as LandingPage
 }
 
-export async function getLandingPageRowById(pageId: string): Promise<LandingPage> {
-  validateUUID(pageId)
-  const { rows } = await read(sql`/* getLandingPageRowById */
-    SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
-    FROM user_landing_pages
-    WHERE id = ${pageId}
-    LIMIT 1
-  `)
-  assert(rows[0], 404, 'Landing page not found')
-  return rows[0] as LandingPage
-}
-
 export async function getLandingPageRowByUsernameAndSlug(
   username: string,
   slug: string,

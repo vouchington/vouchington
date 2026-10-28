@@ -1,4 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { normalizeKey } from '@ts-shared/utils/strings'
+import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
+import { getPostByAnyCached } from '@services/entity-fetch'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getPostByAny } from '@services/posts'
@@ -41,6 +44,11 @@ describe('typed-recommendations', () => {
       expect(recommendation.post_type).toBe('topic_recommendation')
       expect(recommendation.slug).toMatch(/^referral-program-topic-/)
       expect((await getPostByAny(recommendation.slug!))?.id).toBe(recommendation.id)
+      expect(await entityCacheBloomFilters.posts.exists(normalizeKey(recommendation.id))).toBe(true)
+      expect(await entityCacheBloomFilters.posts.exists(normalizeKey(recommendation.slug!))).toBe(
+        true,
+      )
+      expect((await getPostByAnyCached(recommendation.slug!))?.id).toBe(recommendation.id)
       expect(recommendation.topic_recommendation?.topic_type).toBe('referral_program')
       expect(recommendation.topic_recommendation?.example_referral_link).toBe(
         `https://example.com/referral-${random}`,
