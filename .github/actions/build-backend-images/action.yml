@@ -217,9 +217,10 @@ runs:
           exit 1
         fi
         echo "✓ /infra/ping returned 200 pong"
-        # The infrastructure health check runs the base image's Node, not the executable.
-        docker exec "$SERVER_CONTAINER" /nodejs/bin/node -e "fetch('http://127.0.0.1:$PORT/infra/ping').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-        echo "✓ ECS health check command passed"
+        # Distroless: /nodejs/bin is not on PATH; use absolute path for node.
+        # pnpm deploy links only the entrypoint's direct deps at the root, so resolve
+        # the shared JWT package through its consumer (@voucha/api) instead of bare.
+        docker exec "$SERVER_CONTAINER" /nodejs/bin/node -e "const { createRequire } = require('node:module'); const { pathToFileURL } = require('node:url'); const api = createRequire('/app/backend/package.json').resolve('@voucha/api'); const jwt = createRequire(api).resolve('@ts-shared/session-jwt'); import(pathToFileURL(jwt).href).then(() => console.log('✓ shared JWT package imports successfully')).catch(error => { console.error(error); process.exit(1) })"
 
         echo "Running deployed Valkey diagnostic in a fresh container..."
         DIAGNOSTIC_OUTPUT=$(docker run --rm --network host \
@@ -294,11 +295,10 @@ runs:
           exit 1
         fi
 
-        echo "Enqueueing heartbeat job from a second container of the image..."
-        docker run --rm --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e VALKEY_URL \
-          "$IMAGE" enqueue-heartbeat.mts
+        echo "Enqueueing heartbeat job..."
+        # Distroless: /nodejs/bin is not on PATH; use absolute path for node.
+        docker exec -i "$WORKER_CONTAINER" /nodejs/bin/node --input-type=module < \
+          backend/test-helpers/deployed-worker-heartbeat.mts
 
         JOB_DONE=false
         for _ in $(seq 1 30); do
@@ -317,11 +317,9 @@ runs:
         fi
         echo "✓ Heartbeat job completed"
 
-        echo "Checking native addons that load on first use..."
-        docker run --rm --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e VALKEY_URL \
-          "$IMAGE" check-native-addons.mts
+        echo "Checking deployed native addons..."
+        docker exec -i "$WORKER_CONTAINER" /nodejs/bin/node --input-type=module < \
+          ci/check-deployed-worker-native-addons.mjs
 
         echo "✓ Worker-cpu smoke test passed"
 
@@ -342,10 +340,8 @@ runs:
         }
         trap cleanup EXIT
 
-        # Run only the universal heartbeat queue: exclude every IO-class queue the app expands
-        # from the worker queue policy (SQS consumers skip themselves without queue URLs).
-        WORKER_QUEUE_EXCLUDES=$(jq -er '(.ioCapableQueues - .sqsConsumerQueues) | if length == 0 then error("worker-io has no queues") else map("-" + .) | join(",") end' \
-          backend/modules/worker-queue-inventory/worker-queue-policy.json)
+        WORKER_QUEUE_EXCLUDES=$(docker run --rm --entrypoint /nodejs/bin/node "$IMAGE" -e \
+          'const { createRequire } = require("node:module"); const { pathToFileURL } = require("node:url"); const entry = createRequire("/app/backend/package.json").resolve("@entrypoints/worker-io/worker-definitions"); import(pathToFileURL(entry).href).then(m => { const queues = m.WORKER_DEFINITIONS.map(definition => `-${definition.queueName}`); if (queues.length === 0) throw new Error("worker-io WORKER_DEFINITIONS is empty"); process.stdout.write(queues.join(",")); })')
 
         echo "Starting worker-io container..."
         docker run -d --name "$WORKER_CONTAINER" --network host \
@@ -382,11 +378,10 @@ runs:
           exit 1
         fi
 
-        echo "Enqueueing heartbeat job from a second container of the image..."
-        docker run --rm --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e VALKEY_URL \
-          "$IMAGE" enqueue-heartbeat.mts
+        echo "Enqueueing heartbeat job..."
+        # Distroless: /nodejs/bin is not on PATH; use absolute path for node.
+        docker exec -i "$WORKER_CONTAINER" /nodejs/bin/node --input-type=module < \
+          backend/test-helpers/deployed-worker-heartbeat.mts
 
         JOB_DONE=false
         for _ in $(seq 1 30); do
@@ -405,6 +400,46 @@ runs:
         fi
         echo "✓ Heartbeat job completed"
 
+        # Distroless images have no coreutils (find unavailable); use Node to scan for
+        # native addons that must not be present in the IO-only worker-io image.
+        # -e NODE_OPTIONS overrides the container's --max-old-space-size=384 so the
+        # scan process does not compete with the running server for the heap limit.
+        # Sharp native addons can live in two places under node_modules:
+        #   1. node_modules/@img/sharp-*/  (hoisted/flat install)
+        #   2. node_modules/.pnpm/@img+sharp*/node_modules/@img/sharp-*/  (pnpm virtual store)
+        # Both are checked to catch addons regardless of pnpm install mode.
+        if ! docker exec -e NODE_OPTIONS="--max-old-space-size=64" "$WORKER_CONTAINER" /nodejs/bin/node -e \
+          'const f=require("node:fs"),p=require("node:path");
+           function scan(d){
+             if(!f.existsSync(d))return[];
+             const r=[];
+             try{for(const e of f.readdirSync(d,{withFileTypes:true})){
+               const q=p.join(d,e.name);
+               if(e.isFile()&&e.name.endsWith(".node"))r.push(q);
+               else if(e.isDirectory())r.push(...scan(q));}}
+             catch{}
+             return r}
+           const w=scan("/app/backend/workspace-packages");
+           const imgDir="/app/backend/node_modules/@img";
+           const s1=f.existsSync(imgDir)
+             ?f.readdirSync(imgDir,{withFileTypes:true})
+               .filter(e=>(e.isDirectory()||e.isSymbolicLink())&&e.name.startsWith("sharp-"))
+               .flatMap(e=>scan(p.join(imgDir,e.name)))
+             :[];
+           const pnpmDir="/app/backend/node_modules/.pnpm";
+           const s2=f.existsSync(pnpmDir)
+             ?f.readdirSync(pnpmDir,{withFileTypes:true})
+               .filter(e=>(e.isDirectory()||e.isSymbolicLink())&&e.name.startsWith("@img+sharp-"))
+               .flatMap(e=>scan(p.join(pnpmDir,e.name)))
+             :[];
+           const s=[...s1,...s2];
+           if(w.length){process.stderr.write("  workspace-packages: "+w.join(", ")+"\n")}
+           if(s.length){process.stderr.write("  sharp: "+s.join(", ")+"\n")}
+           if(w.length||s.length){process.exit(1)}' 2>&1; then
+          echo "✗ Worker-io image contains native addons (should be IO-only) — see output above"
+          exit 1
+        fi
+        echo "✓ Worker-io contains no workspace-package or sharp native addons"
         echo "✓ Worker-io smoke test passed"
 
     - name: Install Trivy

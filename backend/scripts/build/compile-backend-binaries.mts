@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // Compiles the backend entrypoints into standalone Bun executables for the backend images.
-// Runs under Bun (`bun static-code-analysis/docker-deploy/compile-backend-binaries.mts <out>`);
+// Runs under Bun (`bun backend/scripts/build/compile-backend-binaries.mts <out>`);
 // development and tests keep running the TypeScript sources under Node.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'

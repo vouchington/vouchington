@@ -34,15 +34,7 @@ page says which layer owns what.
   refresh tokens cannot be tied to this app.
 - **Cursor pagination has typed cursor shapes** (id-only, score, ranking, timestamp, name, tier).
   See [pagination](../pagination.md).
-- **The Rust native module targets the deployed Linux architecture,** and development and tests run
-  the TypeScript sources natively through type-stripping, with no build step.
-- **Images ship Bun standalone executables, not a `node_modules` tree.** The image build compiles each
-  entrypoint with `bun build --compile`, which embeds the module graph, the native addons, and the
-  files the code reads at run time, so a runtime image is one executable plus the shared libraries
-  its addons load. Bundling changes Node
-  semantics the sources rely on (shared `import.meta.dir`, build-machine `__dirname`, Bun's built-in
-  `undici`, top-level-await ordering); the compile script owns each correction and its reason. Code
-  that reads a new file at run time must be added to that script's staged files, which the image
-  smoke tests exercise.
+- **The Rust native module targets the deployed Linux architecture,** and the backend runs
+  TypeScript natively through type-stripping, so there is no build step.
 
 Test project names for focused runs are in the [project name reference](../../../development/reference-project-name-reference.md).

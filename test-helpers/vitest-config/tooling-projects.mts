@@ -153,7 +153,12 @@ export const toolingProjects = [
       testTimeout: 5_000,
       hookTimeout: 5_000,
       include: [
-        'static-code-analysis/docker-deploy/compile-source-rewrites.test.mts',
+        'static-code-analysis/docker-deploy/dockerfile-runtime-cmd.test.mts',
+        'static-code-analysis/docker-deploy/dockerfile-prewarm-ports.test.mts',
+        'static-code-analysis/docker-deploy/__tests__/normalize-deployed-layer.test.mts',
+        'static-code-analysis/docker-deploy/__tests__/prune-deployed-runtime-deps.test.mts',
+        'static-code-analysis/docker-deploy/__tests__/prune-opentelemetry-alternate-builds.test.mts',
+        'static-code-analysis/docker-deploy/__tests__/restore-deployed-workspace-packages*.test.mts',
         'backend/dependency-cruiser-rules/__tests__/*.test.mts',
       ],
       exclude: defaultExcludes,

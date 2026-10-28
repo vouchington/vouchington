@@ -32,8 +32,8 @@ jobs:
     needs: [prepare-postgres]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
-    # The bun leg compiles the api and worker executables the backend images ship, so a backend
-    # change that breaks `bun build --compile` fails here instead of only in the image build.
+    # The bun leg compiles the api and worker-io Bun executables (#4236 will ship them in the
+    # images), so a backend change that breaks `bun build --compile` fails before that switch.
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -90,14 +90,14 @@ jobs:
       - name: Compile Bun executables
         if: matrix.runtime == 'bun'
         timeout-minutes: 6
+        env:
+          # renovate: datasource=npm depName=bun
+          BUN_VERSION: 1.4.4
         run: |
           set -euo pipefail
-          # The backend Dockerfile owns the Bun pin.
-          BUN_VERSION=$(sed -n 's/^ARG BUN_VERSION=//p' backend/Dockerfile)
-          test -n "$BUN_VERSION"
           npm install -g "bun@$BUN_VERSION"
           OUT_DIR="$RUNNER_TEMP/bun-executables-$BUN_VERSION"
-          bun static-code-analysis/docker-deploy/compile-backend-binaries.mts "$OUT_DIR"
+          bun backend/scripts/build/compile-backend-binaries.mts "$OUT_DIR"
           {
             echo "API_EXECUTABLE=$OUT_DIR/api"
             echo "WORKER_IO_EXECUTABLE=$OUT_DIR/worker-io"

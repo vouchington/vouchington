@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+import {
+  restoreDeployedWorkspacePackages,
+  runRestoreDeployedWorkspacePackagesCli as runPublished,
+} from 'vouchington-tooling/pnpm-deploy'
+
+export { restoreDeployedWorkspacePackages }
+
+const VOUCHINGTON_DEPLOY_ENV = {
+  PROD_DIR: '/prod/backend',
+  BACKEND_DIR: '/app/backend',
+} as const
+
+export function runRestoreDeployedWorkspacePackagesCli(
+  options: Parameters<typeof runPublished>[0],
+): void {
+  runPublished({
+    ...options,
+    env: { ...VOUCHINGTON_DEPLOY_ENV, ...options.env },
+  })
+}
+
+runRestoreDeployedWorkspacePackagesCli({
+  args: process.argv.slice(2),
+  env: process.env,
+  isMain: import.meta.main,
+})

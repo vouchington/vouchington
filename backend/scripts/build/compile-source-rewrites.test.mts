@@ -2,7 +2,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { rewriteModuleSource } from './compile-source-rewrites.mts'
 
-const repoRoot = path.resolve(import.meta.dirname, '..', '..')
+const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..')
 const repoModule = path.join(repoRoot, 'backend/modules/utils/example.mts')
 const embeddedDir = '/$bunfs/root/src/backend/modules/utils'
 

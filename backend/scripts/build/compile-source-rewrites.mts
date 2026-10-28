@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
 
-export const REPO_ROOT = resolve(import.meta.dirname, '../..')
+export const REPO_ROOT = resolve(import.meta.dirname, '../../..')
 
 export type BunPlugin = {
   name: string
