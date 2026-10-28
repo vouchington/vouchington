@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockNav,
@@ -45,15 +45,13 @@ describe('ReportsClient concurrent judgement reruns', () => {
     )
     const rerunButtons = screen.getAllByRole('button', { name: /re-run ai judgement/i })
     await act(async () => fireEvent.click(rerunButtons[0]!))
-    await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledTimes(1))
+    expect(mockOnSuccess).toHaveBeenCalledTimes(1)
     const firstPendingKey = mockUsePendingAiRefresh.mock.lastCall?.[2]
-    await waitFor(() => expect(rerunButtons[1]).toBeEnabled())
+    expect(rerunButtons[1]).toBeEnabled()
     await act(async () => fireEvent.click(rerunButtons[1]!))
-    await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledTimes(2))
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
-        'rerun:report-1:report_judgement_test-run|rerun:report-2:report_judgement_test-run',
-      ),
+    expect(mockOnSuccess).toHaveBeenCalledTimes(2)
+    expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+      'rerun:report-1:report_judgement_test-run|rerun:report-2:report_judgement_test-run',
     )
     expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).not.toBe(firstPendingKey)
     rerender(
@@ -85,10 +83,8 @@ describe('ReportsClient concurrent judgement reruns', () => {
     })
     expect(mockGetReportJudgementRun).toHaveBeenCalledWith('report-1', 'report_judgement_test-run')
     expect(mockGetReportJudgementRun).toHaveBeenCalledWith('report-2', 'report_judgement_test-run')
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
-        'rerun:report-2:report_judgement_test-run',
-      ),
+    expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+      'rerun:report-2:report_judgement_test-run',
     )
     rerender(
       <ReportsClient
@@ -111,13 +107,11 @@ describe('ReportsClient concurrent judgement reruns', () => {
     await act(async () => {
       await poll?.()
     })
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        false,
-        expect.any(Function),
-        '',
-        expect.any(Function),
-      ),
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      '',
+      expect.any(Function),
     )
   })
 
@@ -137,19 +131,17 @@ describe('ReportsClient concurrent judgement reruns', () => {
         data={{ ...data, results: [first, second] }}
       />,
     )
-    fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[0]!)
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        true,
-        expect.any(Function),
-        expect.any(String),
-        expect.any(Function),
-      ),
+    await act(async () =>
+      fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[0]!),
     )
-    await waitFor(() => expect(mockNav.refresh).toHaveBeenCalledTimes(1))
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeDisabled(),
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      true,
+      expect.any(Function),
+      expect.any(String),
+      expect.any(Function),
     )
+    expect(mockNav.refresh).toHaveBeenCalledTimes(1)
+    expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeDisabled()
     expect(mockRerunReportJudgement).toHaveBeenCalledTimes(1)
 
     rerender(
@@ -176,11 +168,11 @@ describe('ReportsClient concurrent judgement reruns', () => {
     })
     const poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
     await act(async () => poll?.())
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeEnabled(),
+    expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeEnabled()
+    await act(async () =>
+      fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]!),
     )
-    fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]!)
-    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledTimes(2))
+    expect(mockRerunReportJudgement).toHaveBeenCalledTimes(2)
   })
 
   it('releases only an expired rerun while another report is still pending', async () => {
@@ -200,17 +192,17 @@ describe('ReportsClient concurrent judgement reruns', () => {
       />,
     )
     const buttons = screen.getAllByRole('button', { name: /re-run ai judgement/i })
-    fireEvent.click(buttons[0]!)
-    await waitFor(() => expect(buttons[1]).toBeEnabled())
-    fireEvent.click(buttons[1]!)
-    await waitFor(() => expect(buttons[0]).toBeDisabled())
+    await act(async () => fireEvent.click(buttons[0]!))
+    expect(buttons[1]).toBeEnabled()
+    await act(async () => fireEvent.click(buttons[1]!))
+    expect(buttons[0]).toBeDisabled()
     const onTimeout = mockUsePendingAiRefresh.mock.lastCall?.[3] as
       | ((keys: string[]) => void)
       | undefined
 
     await act(async () => onTimeout?.(['rerun:report-1:report_judgement_test-run']))
 
-    await waitFor(() => expect(buttons[0]).toBeEnabled())
+    expect(buttons[0]).toBeEnabled()
     expect(buttons[1]).toBeDisabled()
     expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()
   })
