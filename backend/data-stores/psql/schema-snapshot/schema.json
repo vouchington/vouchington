@@ -119676,13 +119676,20 @@
         "idx_topic_aliases__unlink_topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_aliases__unlink_topic_id ON public.topic_aliases USING btree (unlink_topic_id) WHERE (unlink_topic_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_topic_aliases__unlink_topic_id ON public.topic_aliases USING btree (unlink_topic_id, id) WHERE (unlink_topic_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
               "column": "unlink_topic_id",
               "descending": false,
               "expression": "unlink_topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
