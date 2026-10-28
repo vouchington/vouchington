@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -44,14 +43,10 @@ export async function getMismatchedAdminImportTargetViolationCodes(
   suffix: string,
 ): Promise<string[]> {
   const { rows: topicRows } = await write<{ id: string }>(
-    allowUnannotatedQuery(
-      sql`INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via) VALUES (${`Admin import ${suffix}`}, ${`admin-import-${suffix}`}, ${`\\x${'0'.repeat(64)}`}, 'system') RETURNING id`,
-    ),
+    sql`/* getMismatchedAdminImportTargetViolationCodes:topic */ INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via) VALUES (${`Admin import ${suffix}`}, ${`admin-import-${suffix}`}, ${`\\x${'0'.repeat(64)}`}, 'system') RETURNING id`,
   )
   const { rows: batches } = await write<{ id: string; import_type: string }>(
-    allowUnannotatedQuery(
-      sql`INSERT INTO admin_import_batches (import_type, created_by_id, total_rows) VALUES ('topic', ${userId}, 1), ('rss_feed', ${userId}, 1) RETURNING id, import_type`,
-    ),
+    sql`/* getMismatchedAdminImportTargetViolationCodes:batches */ INSERT INTO admin_import_batches (import_type, created_by_id, total_rows) VALUES ('topic', ${userId}, 1), ('rss_feed', ${userId}, 1) RETURNING id, import_type`,
   )
   const topicBatchId = batches.find(batch => batch.import_type === 'topic')!.id
   const rssBatchId = batches.find(batch => batch.import_type === 'rss_feed')!.id
@@ -59,27 +54,19 @@ export async function getMismatchedAdminImportTargetViolationCodes(
   for (const operation of [
     () =>
       write(
-        allowUnannotatedQuery(
-          sql`INSERT INTO admin_import_rows (batch_id, row_index, input_data, topic_id, completed_at) VALUES (${rssBatchId}, 0, '{}'::jsonb, ${topicRows[0]!.id}, CURRENT_TIMESTAMP)`,
-        ),
+        sql`/* getMismatchedAdminImportTargetViolationCodes:insertMismatch */ INSERT INTO admin_import_rows (batch_id, row_index, input_data, topic_id, completed_at) VALUES (${rssBatchId}, 0, '{}'::jsonb, ${topicRows[0]!.id}, CURRENT_TIMESTAMP)`,
       ),
     async () => {
       const { rows } = await write<{ id: string }>(
-        allowUnannotatedQuery(
-          sql`INSERT INTO admin_import_rows (batch_id, row_index, input_data, topic_id, completed_at) VALUES (${topicBatchId}, 0, '{}'::jsonb, ${topicRows[0]!.id}, CURRENT_TIMESTAMP) RETURNING id`,
-        ),
+        sql`/* getMismatchedAdminImportTargetViolationCodes:insertValidTarget */ INSERT INTO admin_import_rows (batch_id, row_index, input_data, topic_id, completed_at) VALUES (${topicBatchId}, 0, '{}'::jsonb, ${topicRows[0]!.id}, CURRENT_TIMESTAMP) RETURNING id`,
       )
       await write(
-        allowUnannotatedQuery(
-          sql`UPDATE admin_import_rows SET batch_id = ${rssBatchId} WHERE id = ${rows[0]!.id}`,
-        ),
+        sql`/* getMismatchedAdminImportTargetViolationCodes:reparentMismatch */ UPDATE admin_import_rows SET batch_id = ${rssBatchId} WHERE id = ${rows[0]!.id}`,
       )
     },
     () =>
       write(
-        allowUnannotatedQuery(
-          sql`UPDATE admin_import_batches SET import_type = 'rss_feed' WHERE id = ${topicBatchId}`,
-        ),
+        sql`/* getMismatchedAdminImportTargetViolationCodes:rewriteBatchType */ UPDATE admin_import_batches SET import_type = 'rss_feed' WHERE id = ${topicBatchId}`,
       ),
   ]) {
     try {
