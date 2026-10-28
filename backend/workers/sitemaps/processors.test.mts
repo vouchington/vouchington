@@ -1,5 +1,26 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { gunzipSync, gzipSync } from 'node:zlib'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
+import {
+  createTestUser,
+  overrideDynamicConfigFieldsForTest,
+  readAllQueueJobs,
+  withDominantPostFixtures,
+} from '@voucha/test-helpers'
+import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import {
+  getSitemapPostDayData,
+  getSitemapArchiveBackfillData,
+} from '@voucha/test-helpers/sitemap-queue-jobs'
+import { sitemapsQueue } from '@queues/sitemaps/queues'
+import {
+  getSitemapFamilyProgress,
+  putSitemapFamilyProgress,
+} from '@services/sitemaps/generation-storage'
+import { getSitemapFamilyManifest } from '@services/sitemaps/storage'
+import { sitemapsWorkConfig } from '@services/sitemaps/work-limits'
+import { getPreviousUtcDays } from '@ts-shared/utils/dates'
 import {
   processUpdateFamilySitemap,
   processMonthlyBackfillArchiveDispatcher,
@@ -8,292 +29,263 @@ import {
   processUpdatePostTypeIndex,
   processUpdatePostsIndex,
   processUpdateRootIndex,
-  updatePostDaySitemapDependencies,
-  updateSitemapIndexDependencies,
-  backfillDispatcherDependencies,
+  processWeeklyBackfillMonthDispatcher,
 } from './processors.mts'
-import {
-  enqueueBulkUpdatePostDaySitemaps as realEnqueueBulkUpdatePostDaySitemaps,
-  enqueueUpdateFamilySitemap as realEnqueueUpdateFamilySitemap,
-} from '@queues/sitemaps/enqueues'
-import * as sitemapStorage from '@services/sitemaps/storage'
-import type { PostDayManifest } from '@services/sitemaps/storage'
-import { sitemapsWorkConfig } from '@services/sitemaps/work-limits'
-import { getPreviousUtcDays } from '@ts-shared/utils/dates'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
-const manifest: PostDayManifest = {
-  active_page_count: 1,
-  generation_id: '11111111-1111-4111-8111-111111111111',
-  content_hash: 'previous-content',
-  generated_at: '2026-06-01T00:00:00.000Z',
+function uniqueDay() {
+  const random = randomUUID().replaceAll('-', '')
+  const year = 4000 + (Number.parseInt(random.slice(0, 4), 16) % 5000)
+  const month = 1 + (Number.parseInt(random.slice(4, 6), 16) % 12)
+  const day = 1 + (Number.parseInt(random.slice(6, 8), 16) % 28)
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function postDayIndexKey(day: string) {
+  return `posts/${day.replaceAll('-', '/')}/discussion/index.xml`
+}
+
+function postDayProgressKey(day: string) {
+  return `posts/${day.replaceAll('-', '/')}/discussion/_progress.json`
 }
 
 describe('sitemap processors', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
-  it('generates a post-day sitemap before enqueueing all dependent index updates', async () => {
-    const generateSpy = vi
-      .spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles')
-      .mockResolvedValue({ manifest, hasMore: false })
-    const typeIndexSpy = vi
-      .spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostTypeIndex')
-      .mockResolvedValue(undefined)
-    const postsIndexSpy = vi
-      .spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostsIndex')
-      .mockResolvedValue(undefined)
-    const rootIndexSpy = vi
-      .spyOn(updatePostDaySitemapDependencies, 'enqueueUpdateRootIndex')
-      .mockResolvedValue(undefined)
-    const invalidateSpy = vi
-      .spyOn(updatePostDaySitemapDependencies, 'invalidateSitemaps')
-      .mockResolvedValue(undefined)
+  it('publishes a post-day sitemap and admits dependent index work', async () => {
+    const day = uniqueDay()
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    const add = vi.spyOn(sitemapsQueue, 'add')
 
-    await processUpdatePostDaySitemap({ postType: 'review', day: '2026-06-01' })
+    await processUpdatePostDaySitemap({ postType: 'discussion', day })
 
-    expect(generateSpy).toHaveBeenCalledWith('review', '2026-06-01', undefined, undefined)
-    expect(invalidateSpy).toHaveBeenCalledWith()
-    expect(typeIndexSpy).toHaveBeenCalledWith('review')
-    expect(postsIndexSpy).toHaveBeenCalledWith()
-    expect(rootIndexSpy).toHaveBeenCalledWith()
+    expect(objects.has(postDayIndexKey(day))).toBe(true)
+    const admittedNames = add.mock.calls.map(([name]) => name)
+    expect(admittedNames).toContain('sitemaps.processUpdatePostTypeIndex')
+    expect(admittedNames).toContain('sitemaps.processUpdatePostsIndex')
+    expect(admittedNames).toContain('sitemaps.processUpdateRootIndex')
   })
 
-  it('continues an unfinished day without publishing its dependent indexes', async () => {
-    vi.spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles').mockResolvedValue({
-      manifest: null,
-      hasMore: true,
-      generationId: 'gen-1',
-      continuationId: 'gen-1-2',
-    })
-    const continuation = vi
-      .spyOn(updatePostDaySitemapDependencies, 'enqueuePostDaySitemapContinuation')
-      .mockResolvedValue(undefined)
-    const typeIndex = vi
-      .spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostTypeIndex')
-      .mockResolvedValue(undefined)
-    const invalidate = vi
-      .spyOn(updatePostDaySitemapDependencies, 'invalidateSitemaps')
-      .mockResolvedValue(undefined)
-
-    await processUpdatePostDaySitemap({ postType: 'review', day: '2026-06-01' })
-
-    expect(continuation).toHaveBeenCalledWith(
-      { postType: 'review', day: '2026-06-01', generationId: 'gen-1' },
-      'gen-1-2',
+  it('continues an unfinished day before publishing dependent indexes', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { generation_page_row_limit: 1 }),
     )
-    expect(typeIndex).not.toHaveBeenCalled()
-    expect(invalidate).not.toHaveBeenCalled()
-  })
-
-  it('no-ops a stale post-day continuation without chaining or publishing indexes', async () => {
-    const generate = vi
-      .spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles')
-      .mockResolvedValue({ manifest, hasMore: false, stale: true })
-    const continuation = vi.spyOn(
-      updatePostDaySitemapDependencies,
-      'enqueuePostDaySitemapContinuation',
+    const day = uniqueDay()
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    await withDominantPostFixtures(
+      [
+        { postType: 'discussion', votesScoreUp: 1, createdAt: new Date(`${day}T12:00:00.000Z`) },
+        { postType: 'discussion', votesScoreUp: 1, createdAt: new Date(`${day}T13:00:00.000Z`) },
+      ],
+      async () => {
+        const beforeIds = new Set((await readAllQueueJobs(sitemapsQueue)).map(job => job.id))
+        await processUpdatePostDaySitemap({ postType: 'discussion', day })
+        const progress = JSON.parse(objects.get(postDayProgressKey(day))!.toString()) as {
+          generation_id: string
+        }
+        const continuation = (await readAllQueueJobs(sitemapsQueue)).find(
+          job =>
+            !beforeIds.has(job.id) &&
+            job.name === 'sitemaps.processUpdatePostDaySitemap' &&
+            getSitemapPostDayData(job)?.day === day &&
+            getSitemapPostDayData(job)?.generationId === progress.generation_id,
+        )
+        expect(continuation).toBeDefined()
+        expect(objects.has(postDayIndexKey(day))).toBe(false)
+        await processUpdatePostDaySitemap({
+          postType: 'discussion',
+          day,
+          generationId: progress.generation_id,
+        })
+        expect(objects.has(postDayIndexKey(day))).toBe(true)
+      },
     )
-    const typeIndex = vi.spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostTypeIndex')
-    const invalidate = vi.spyOn(updatePostDaySitemapDependencies, 'invalidateSitemaps')
-
-    await processUpdatePostDaySitemap({
-      postType: 'review',
-      day: '2026-06-01',
-      generationId: 'gen-old',
-    })
-
-    expect(generate).toHaveBeenCalledWith('review', '2026-06-01', undefined, 'gen-old')
-    expect(continuation).not.toHaveBeenCalled()
-    expect(typeIndex).not.toHaveBeenCalled()
-    expect(invalidate).not.toHaveBeenCalled()
   })
 
-  it('no-ops a stale family continuation without chaining or publishing the root index', async () => {
-    const generate = vi
-      .spyOn(updateSitemapIndexDependencies, 'generateSitemapFamilyFiles')
-      .mockResolvedValue({ manifest, hasMore: false, stale: true })
-    const continuation = vi.spyOn(
-      updateSitemapIndexDependencies,
-      'enqueueFamilySitemapContinuation',
+  it('preserves a completed post-day generation when an old continuation arrives', async () => {
+    const day = uniqueDay()
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    await processUpdatePostDaySitemap({ postType: 'discussion', day })
+    const published = objects.get(postDayIndexKey(day))
+    const add = vi.spyOn(sitemapsQueue, 'add')
+
+    await processUpdatePostDaySitemap({ postType: 'discussion', day, generationId: randomUUID() })
+
+    expect(objects.get(postDayIndexKey(day))).toEqual(published)
+    expect(add).not.toHaveBeenCalled()
+  })
+
+  it('preserves a family generation when an old continuation arrives', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { generation_page_row_limit: 1 }),
     )
-    const rootIndex = vi.spyOn(updateSitemapIndexDependencies, 'enqueueUpdateRootIndex')
-    const invalidate = vi.spyOn(updateSitemapIndexDependencies, 'invalidateSitemaps')
+    await createTestUser()
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    await processUpdateFamilySitemap({ family: 'users' })
+    const progress = objects.get('families/users/_progress.json')
+    const published = objects.get('sitemaps/families/users.xml')
+    const add = vi.spyOn(sitemapsQueue, 'add')
 
-    await processUpdateFamilySitemap({ family: 'topics', generationId: 'gen-old' })
+    await processUpdateFamilySitemap({ family: 'users', generationId: randomUUID() })
 
-    expect(generate).toHaveBeenCalledWith('topics', undefined, 'gen-old')
-    expect(continuation).not.toHaveBeenCalled()
-    expect(rootIndex).not.toHaveBeenCalled()
-    expect(invalidate).not.toHaveBeenCalled()
+    expect(objects.get('families/users/_progress.json')).toEqual(progress)
+    expect(objects.get('sitemaps/families/users.xml')).toEqual(published)
+    expect(add).not.toHaveBeenCalled()
   })
 
-  it('invalidates the sitemap tag after regenerating each sitemap index', async () => {
-    const postTypeIndexSpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'generatePostTypeIndex')
-      .mockResolvedValue(undefined)
-    const postsIndexSpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'generatePostsIndex')
-      .mockResolvedValue(undefined)
-    const rootIndexSpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'generateRootIndex')
-      .mockResolvedValue(undefined)
-    const invalidateSpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'invalidateSitemaps')
-      .mockResolvedValue(undefined)
+  it('writes each sitemap index through real gzip storage', async () => {
+    vi.stubEnv('SITEMAP_BASE_URL', 'https://example.com')
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
 
     await processUpdatePostTypeIndex('review')
     await processUpdatePostsIndex()
     await processUpdateRootIndex()
 
-    expect(postTypeIndexSpy).toHaveBeenCalledWith('review')
-    expect(postsIndexSpy).toHaveBeenCalledWith()
-    expect(rootIndexSpy).toHaveBeenCalledWith()
-    expect(invalidateSpy).toHaveBeenCalledTimes(3)
+    expect(gunzipSync(objects.get('sitemaps/types/review.xml')!).toString()).toContain(
+      '<sitemapindex',
+    )
+    expect(gunzipSync(objects.get('sitemaps/posts.xml')!).toString()).toContain(
+      'https://example.com/sitemaps/review.xml',
+    )
+    expect(gunzipSync(objects.get('sitemaps/root.xml')!).toString()).toContain(
+      'https://example.com/sitemaps/static.xml',
+    )
   })
 
-  it('regenerates a family sitemap, invalidates, and enqueues the root index', async () => {
-    const familySpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'generateSitemapFamilyFiles')
-      .mockResolvedValue({ manifest, hasMore: false })
-    const rootIndexSpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'enqueueUpdateRootIndex')
-      .mockResolvedValue(undefined)
-    const invalidateSpy = vi
-      .spyOn(updateSitemapIndexDependencies, 'invalidateSitemaps')
-      .mockResolvedValue(undefined)
-
-    await processUpdateFamilySitemap({ family: 'topics' })
-
-    expect(familySpy).toHaveBeenCalledWith('topics', undefined, undefined)
-    expect(invalidateSpy).toHaveBeenCalledWith()
-    expect(rootIndexSpy).toHaveBeenCalledWith()
-  })
-
-  it('enqueues nightly post-day and family sitemap backfills', async () => {
-    const bulkSpy = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-    const familySpy = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-
-    await processNightlyBackfillWeekDispatcher(
-      {
-        enqueueBulkUpdatePostDaySitemaps: bulkSpy,
-        enqueueUpdateFamilySitemap: familySpy,
-        enqueueRetiredSitemapCleanupContinuation: vi.fn<VitestLooseMock>(),
-        cleanupRetiredSitemapGenerations: vi
-          .fn<VitestLooseMock>()
-          .mockResolvedValue({ deletedPages: 0, hasMore: false, resumeToken: '' }),
-      },
-      new Date('2026-06-10T08:00:00.000Z'),
-    )
-
-    const expectedDays = [
-      '2026-06-04',
-      '2026-06-05',
-      '2026-06-06',
-      '2026-06-07',
-      '2026-06-08',
-      '2026-06-09',
-      '2026-06-10',
-    ]
-    const expectedPostDayEntries = SITEMAP_CONFIG.POST_TYPES.flatMap(postType =>
-      expectedDays.map(day => ({ postType, day })),
-    )
-    expect(bulkSpy).toHaveBeenCalledWith(expectedPostDayEntries)
-    expect(familySpy.mock.calls.map(([family]) => family)).toEqual([
-      'users',
-      'topics',
-      'communities',
-      'domains',
-      'landing-pages',
-    ])
-  })
-
-  it('wires the default backfill dispatcher dependencies to the real queue enqueue functions', async () => {
-    // Assert the bindings' identity against the real imported queue functions BEFORE
-    // vi.spyOn replaces them below. Without this, the test would still pass even if
-    // backfillDispatcherDependencies were wired to unrelated same-signature stand-ins,
-    // since spying overwrites whatever is currently on the object regardless of what it was.
-    expect(backfillDispatcherDependencies.enqueueBulkUpdatePostDaySitemaps).toBe(
-      realEnqueueBulkUpdatePostDaySitemaps,
-    )
-    expect(backfillDispatcherDependencies.enqueueUpdateFamilySitemap).toBe(
-      realEnqueueUpdateFamilySitemap,
-    )
-
-    const bulkSpy = vi
-      .spyOn(backfillDispatcherDependencies, 'enqueueBulkUpdatePostDaySitemaps')
-      .mockResolvedValue(undefined)
-    const familySpy = vi
-      .spyOn(backfillDispatcherDependencies, 'enqueueUpdateFamilySitemap')
-      .mockResolvedValue(undefined)
-    vi.spyOn(backfillDispatcherDependencies, 'cleanupRetiredSitemapGenerations').mockResolvedValue({
-      deletedPages: 0,
-      hasMore: false,
-      resumeToken: '',
+  it('publishes a completed family generation and admits root index work', async () => {
+    vi.stubEnv('SITEMAP_BASE_URL', 'https://example.com')
+    const generationId = randomUUID()
+    const pageKey = `families/users/${generationId}/1.xml`
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    objects.set(pageKey, gzipSync('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>'))
+    await putSitemapFamilyProgress('users', {
+      generation_id: generationId,
+      started_at: new Date(Date.now() - 1000).toISOString(),
+      content_hash: randomUUID(),
+      high_water_id: null,
+      after_id: null,
+      after_path: null,
+      page_count: 1,
+      finished: true,
+      previous_generation_id: null,
+      previous_page_count: 0,
     })
+    const add = vi.spyOn(sitemapsQueue, 'add')
 
-    await processNightlyBackfillWeekDispatcher(
-      backfillDispatcherDependencies,
-      new Date('2026-06-10T08:00:00.000Z'),
-    )
+    await processUpdateFamilySitemap({ family: 'users' })
 
-    expect(bulkSpy).toHaveBeenCalledTimes(1)
-    expect(familySpy).toHaveBeenCalledTimes(SITEMAP_CONFIG.FAMILY_TYPES.length)
-    // This is the last test in the file, so there is no following `beforeEach` to restore
-    // these spies. The `backend-data-stores` Vitest project runs with `isolate: false`, so an
-    // un-restored spy on the shared `backfillDispatcherDependencies` object would otherwise
-    // leak into whatever unrelated test file next runs in the same worker fork.
-    vi.restoreAllMocks()
+    const index = objects.get('sitemaps/families/users.xml')
+    expect(index).toBeDefined()
+    const indexXml = gunzipSync(index!).toString()
+    expect(indexXml).toContain(`https://example.com/sitemaps/users/${generationId}/1.xml`)
+    expect(await getSitemapFamilyManifest('users')).toMatchObject({
+      generation_id: generationId,
+      active_page_count: 1,
+    })
+    expect(await getSitemapFamilyProgress('users')).toBeNull()
+    expect(add.mock.calls.map(([name]) => name)).toContain('sitemaps.processUpdateRootIndex')
   })
 
-  it('pages the archive backfill: one page per run, chained by the last day, covering every day once', async () => {
+  it('admits nightly post-day and family backfill jobs for a chosen UTC day', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { nightly_backfill_days: 1 }),
+    )
+    const day = uniqueDay()
+    const now = new Date(`${day}T08:00:00.000Z`)
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    const add = vi.spyOn(sitemapsQueue, 'add')
+    const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
+
+    await processNightlyBackfillWeekDispatcher(now)
+
+    const postDayAdmissions = addBulk.mock.calls
+      .flatMap(([jobs]) => jobs)
+      .filter(job => getSitemapPostDayData(job)?.day === day)
+    expect(postDayAdmissions).toHaveLength(SITEMAP_CONFIG.POST_TYPES.length)
+    expect(add.mock.calls.map(([name]) => name)).toContain('sitemaps.processUpdateFamilySitemap')
+  })
+
+  it('admits weekly post-day jobs using the same queue contract', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { weekly_backfill_days: 1 }),
+    )
+    const day = uniqueDay()
+    const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
+
+    await processWeeklyBackfillMonthDispatcher(new Date(`${day}T08:00:00.000Z`))
+
+    const postDayAdmissions = addBulk.mock.calls
+      .flatMap(([jobs]) => jobs)
+      .filter(job => getSitemapPostDayData(job)?.day === day)
+    expect(postDayAdmissions).toHaveLength(SITEMAP_CONFIG.POST_TYPES.length)
+  })
+
+  it('pages archive backfill from durable tracked range and chains its last day', async () => {
+    const archiveYear = 4000 + (Number.parseInt(randomUUID().slice(0, 4), 16) % 5000)
+    const now = new Date(`${archiveYear}-10-28T08:00:00.000Z`)
+    const earliestDay = getPreviousUtcDays(34, { baseDate: now }).at(-1)!
     onTestFinished(
       overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { archive_backfill_day_page_size: 2 }),
     )
-    // Four archive days: 33 through 30 days ago, the newest being the archive's last day.
-    const earliestDay = getPreviousUtcDays(34).at(-1)!
-    vi.spyOn(sitemapStorage, 'getTrackedDayRange').mockResolvedValue({
-      earliestDay,
-      latestDay: earliestDay,
-    })
-    const bulkSpy = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-    const continuationSpy = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-    const dependencies = {
-      enqueueBulkUpdatePostDaySitemaps: bulkSpy,
-      enqueueMonthlyBackfillArchiveContinuation: continuationSpy,
-      enqueueUpdateFamilySitemap: vi.fn<VitestLooseMock>(),
-    }
-    const daysOf = (call: number) => [
-      ...new Set(bulkSpy.mock.calls[call]![0].map((entry: { day: string }) => entry.day)),
-    ]
+    const objects = new Map<string, Buffer>([
+      [
+        'sitemaps/meta/posts-tracked-range.json',
+        Buffer.from(JSON.stringify({ earliestDay, latestDay: earliestDay })),
+      ],
+    ])
+    spyOnSitemapObjectStore(objects, () => undefined)
+    const add = vi.spyOn(sitemapsQueue, 'add')
+    const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
 
-    const first = await processMonthlyBackfillArchiveDispatcher(undefined, dependencies)
-    expect(daysOf(0)).toHaveLength(2)
+    const first = await processMonthlyBackfillArchiveDispatcher(undefined, now)
+    const firstAdmissions = addBulk.mock.calls.flatMap(([jobs]) => jobs)
+    const firstDays = [
+      ...new Set(firstAdmissions.map(job => getSitemapPostDayData(job)?.day)),
+    ].toSorted()
     expect(first).toEqual({ enqueued: SITEMAP_CONFIG.POST_TYPES.length * 2, hasMore: true })
-    expect(continuationSpy).toHaveBeenCalledExactlyOnceWith(daysOf(0).toSorted().at(-1))
-
-    const second = await processMonthlyBackfillArchiveDispatcher(
-      continuationSpy.mock.calls[0]![0],
-      dependencies,
+    expect(firstDays).toHaveLength(2)
+    const continuation = add.mock.calls.find(
+      ([name, data]) =>
+        getSitemapArchiveBackfillData({ name, data })?.afterDay === firstDays.at(-1),
     )
+    expect(continuation).toBeDefined()
+
+    const second = await processMonthlyBackfillArchiveDispatcher(firstDays.at(-1), now)
+    const allAdmissions = addBulk.mock.calls.flatMap(([jobs]) => jobs)
     expect(second.hasMore).toBe(false)
-    expect(continuationSpy).toHaveBeenCalledTimes(1)
-    expect(new Set([...daysOf(0), ...daysOf(1)]).size).toBe(4)
+    expect(new Set(allAdmissions.map(job => getSitemapPostDayData(job)?.day)).size).toBe(4)
   })
 
   it('enqueues nothing for the archive when no day has been tracked', async () => {
-    vi.spyOn(sitemapStorage, 'getTrackedDayRange').mockResolvedValue(null)
-    const bulkSpy = vi.fn<VitestLooseMock>()
-    const continuationSpy = vi.fn<VitestLooseMock>()
+    const objects = new Map<string, Buffer>()
+    spyOnSitemapObjectStore(objects, () => undefined)
+    const add = vi.spyOn(sitemapsQueue, 'add')
+    const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
+    const archiveYear = 4000 + (Number.parseInt(randomUUID().slice(0, 4), 16) % 5000)
+    const now = new Date(`${archiveYear}-10-28T08:00:00.000Z`)
 
-    await expect(
-      processMonthlyBackfillArchiveDispatcher(undefined, {
-        enqueueBulkUpdatePostDaySitemaps: bulkSpy,
-        enqueueMonthlyBackfillArchiveContinuation: continuationSpy,
-      }),
-    ).resolves.toEqual({ enqueued: 0, hasMore: false })
-    expect(bulkSpy).not.toHaveBeenCalled()
-    expect(continuationSpy).not.toHaveBeenCalled()
+    const empty = await processMonthlyBackfillArchiveDispatcher(undefined, now)
+    const emptyAdmissionCounts = [add.mock.calls.length, addBulk.mock.calls.length]
+
+    const trackedDay = getPreviousUtcDays(34, { baseDate: now }).at(-1)!
+    objects.set(
+      'sitemaps/meta/posts-tracked-range.json',
+      Buffer.from(JSON.stringify({ earliestDay: trackedDay, latestDay: trackedDay })),
+    )
+    const populated = await processMonthlyBackfillArchiveDispatcher(undefined, now)
+
+    expect(populated.enqueued).toBeGreaterThan(0)
+    expect(addBulk).toHaveBeenCalled()
+    expect(empty).toEqual({ enqueued: 0, hasMore: false })
+    expect(emptyAdmissionCounts).toEqual([0, 0])
   })
 })

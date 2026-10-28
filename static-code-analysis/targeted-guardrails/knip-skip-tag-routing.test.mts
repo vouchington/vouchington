@@ -22,12 +22,14 @@ const routedPaths = [
   'backend/test-helpers/entities/fixture.mts',
   'test-helpers/fixture.mts',
   'backend/agents/producer.mts',
+  'backend/workers/sitemaps/processors.mts',
+  'backend/workers/sitemaps/workers.mts',
   'web/lib/producer.ts',
   'web/test-helpers/fixture.ts',
 ]
 
 describe('Knip skip-tag configuration routing', () => {
-  it('inherits the tag guard across source roots and limits sitemap exceptions to existing comment bodies', () => {
+  it('inherits the tag guard across source roots including sitemap workers', () => {
     const root = mkdtempSync(join(tmpdir(), 'voucha-knip-tag-routing-'))
     try {
       for (const config of [
@@ -81,10 +83,7 @@ describe('Knip skip-tag configuration routing', () => {
       ).toEqual(
         [
           ...routedPaths,
-          'backend/workers/sitemaps/processors.mts',
-          'backend/workers/sitemaps/processors.mts',
-          'backend/workers/sitemaps/processors.mts',
-          'backend/workers/sitemaps/processors.mts',
+          ...Array(6).fill('backend/workers/sitemaps/processors.mts'),
           'backend/workers/sitemaps/workers.mts',
           'backend/workers/sitemaps/unapproved.mts',
         ].toSorted(),

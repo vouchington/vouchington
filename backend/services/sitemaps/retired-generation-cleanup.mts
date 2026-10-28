@@ -9,26 +9,14 @@ import {
 } from './generation-storage.mts'
 import { getSitemapsWorkLimit } from './work-limits.mts'
 
-export const retiredCleanupDependencies = {
-  deleteRetiredSitemapGeneration,
-  deleteSitemapObjects,
-  getRetiredSitemapCursor,
-  getRetiredSitemapGeneration,
-  listRetiredSitemapGenerationKeys,
-  putRetiredSitemapCursor,
-  putRetiredSitemapGeneration,
-  getSitemapsWorkLimit,
-}
-
 /** One bounded retirement pass; the nightly dispatcher starts it and continuation jobs drain it. */
 export async function cleanupRetiredSitemapGenerations(
   now = new Date(),
-  dependencies = retiredCleanupDependencies,
 ): Promise<{ deletedPages: number; hasMore: boolean; resumeToken: string }> {
-  const pageBudget = dependencies.getSitemapsWorkLimit('retired_generation_delete_page_size')
-  const recordLimit = dependencies.getSitemapsWorkLimit('retired_generation_record_scan_limit')
-  const afterKey = await dependencies.getRetiredSitemapCursor()
-  const listing = await dependencies.listRetiredSitemapGenerationKeys(afterKey, recordLimit)
+  const pageBudget = getSitemapsWorkLimit('retired_generation_delete_page_size')
+  const recordLimit = getSitemapsWorkLimit('retired_generation_record_scan_limit')
+  const afterKey = await getRetiredSitemapCursor()
+  const listing = await listRetiredSitemapGenerationKeys(afterKey, recordLimit)
   let lastCompletedKey = afterKey
   let deletedPages = 0
   let interrupted = false
@@ -36,7 +24,7 @@ export async function cleanupRetiredSitemapGenerations(
 
   for (const key of listing.keys) {
     // oxlint-disable-next-line no-await-in-loop -- each record consumes the remaining run budget before cursor advance
-    const record = await dependencies.getRetiredSitemapGeneration(key)
+    const record = await getRetiredSitemapGeneration(key)
     if (!record) {
       lastCompletedKey = key
       continue
@@ -56,22 +44,22 @@ export async function cleanupRetiredSitemapGenerations(
       (_, index) => `${record.page_prefix}${record.next_page + index}.xml`,
     )
     // oxlint-disable-next-line no-await-in-loop -- deletion must settle before recording page progress
-    await dependencies.deleteSitemapObjects(pageKeys)
+    await deleteSitemapObjects(pageKeys)
     deletedPages += pageKeys.length
     if (lastPage < record.page_count) {
       // oxlint-disable-next-line no-await-in-loop -- persist the partial page before the next scheduled run
-      await dependencies.putRetiredSitemapGeneration({ ...record, next_page: lastPage + 1 })
+      await putRetiredSitemapGeneration({ ...record, next_page: lastPage + 1 })
       interrupted = true
       partialProgress = `${key}@${lastPage + 1}`
       break
     }
     // oxlint-disable-next-line no-await-in-loop -- remove only the generation whose pages were deleted
-    await dependencies.deleteRetiredSitemapGeneration(key)
+    await deleteRetiredSitemapGeneration(key)
     lastCompletedKey = key
   }
 
   const hasMore = listing.hasMore || interrupted
-  await dependencies.putRetiredSitemapCursor(hasMore ? lastCompletedKey : null)
+  await putRetiredSitemapCursor(hasMore ? lastCompletedKey : null)
   // Names the durable state the next job resumes from, so a retried pass derives the same id.
   return { deletedPages, hasMore, resumeToken: `${lastCompletedKey ?? ''}|${partialProgress}` }
 }

@@ -1,71 +1,55 @@
-import { describe, expect, it } from 'vitest'
-import {
-  cleanupRetiredSitemapGenerations,
-  type retiredCleanupDependencies,
-} from './retired-generation-cleanup.mts'
-import type { RetiredSitemapGeneration } from './generation-storage.mts'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
+import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import { sitemapsWorkConfig } from './work-limits.mts'
+import { cleanupRetiredSitemapGenerations } from './retired-generation-cleanup.mts'
+import type { putRetiredSitemapGeneration } from './generation-storage.mts'
+
+type RetiredSitemapGeneration = Parameters<typeof putRetiredSitemapGeneration>[0]
 
 describe('retired sitemap cleanup', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('waits for the cache grace period and deletes only a bounded page', async () => {
-    const key = 'sitemaps/retired/records/11111111-1111-4111-8111-111111111111.json'
-    const records = new Map<string, RetiredSitemapGeneration>([
-      [
-        key,
-        {
-          generation_id: '11111111-1111-4111-8111-111111111111',
-          page_prefix: 'families/topics/11111111-1111-4111-8111-111111111111/',
-          page_count: 3,
-          next_page: 1,
-          retire_after: '2026-10-24T00:00:00.000Z',
-        },
-      ],
-    ])
-    const deleted: string[] = []
-    let cursor: string | null = null
-    const dependencies: typeof retiredCleanupDependencies = {
-      getSitemapsWorkLimit: () => 2,
-      getRetiredSitemapCursor: async () => cursor,
-      putRetiredSitemapCursor: async value => {
-        cursor = value
-      },
-      listRetiredSitemapGenerationKeys: async (afterKey, limit) => {
-        const available = [...records.keys()].filter(candidate => !afterKey || candidate > afterKey)
-        return { keys: available.slice(0, limit), hasMore: available.length > limit }
-      },
-      getRetiredSitemapGeneration: async recordKey => records.get(recordKey) ?? null,
-      putRetiredSitemapGeneration: async record => {
-        records.set(key, record)
-      },
-      deleteRetiredSitemapGeneration: async recordKey => {
-        records.delete(recordKey)
-      },
-      deleteSitemapObjects: async pageKeys => {
-        deleted.push(...pageKeys)
-      },
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, {
+        retired_generation_delete_page_size: 2,
+        retired_generation_record_scan_limit: 1,
+      }),
+    )
+    const generationId = '11111111-1111-4111-8111-111111111111'
+    const recordKey = `sitemaps/retired/records/${generationId}.json`
+    const pagePrefix = `families/topics/${generationId}/`
+    const record: RetiredSitemapGeneration = {
+      generation_id: generationId,
+      page_prefix: pagePrefix,
+      page_count: 3,
+      next_page: 1,
+      retire_after: '2026-10-24T00:00:00.000Z',
     }
-
-    await cleanupRetiredSitemapGenerations(new Date('2026-10-23T00:00:00.000Z'), dependencies)
-    expect(deleted).toEqual([])
-    expect(records.get(key)?.next_page).toBe(1)
-
-    const partial = await cleanupRetiredSitemapGenerations(
-      new Date('2026-10-25T00:00:00.000Z'),
-      dependencies,
-    )
-    expect(partial).toMatchObject({ deletedPages: 2, hasMore: true })
-    expect(deleted).toEqual([
-      'families/topics/11111111-1111-4111-8111-111111111111/1.xml',
-      'families/topics/11111111-1111-4111-8111-111111111111/2.xml',
+    const objects = new Map<string, Buffer>([
+      [recordKey, Buffer.from(JSON.stringify(record))],
+      ...[1, 2, 3].map(page => [`${pagePrefix}${page}.xml`, Buffer.from('page')] as const),
     ])
-    expect(records.get(key)?.next_page).toBe(3)
+    spyOnSitemapObjectStore(objects, () => undefined)
 
-    const final = await cleanupRetiredSitemapGenerations(
-      new Date('2026-10-25T00:00:00.000Z'),
-      dependencies,
-    )
-    expect(final.deletedPages).toBe(1)
-    expect(records.size).toBe(0)
-    expect(deleted.at(-1)).toBe('families/topics/11111111-1111-4111-8111-111111111111/3.xml')
-    expect(final.hasMore).toBe(false)
+    await cleanupRetiredSitemapGenerations(new Date('2026-10-23T00:00:00.000Z'))
+    expect([1, 2, 3].every(page => objects.has(`${pagePrefix}${page}.xml`))).toBe(true)
+    expect(JSON.parse(objects.get(recordKey)!.toString()).next_page).toBe(1)
+
+    const partial = await cleanupRetiredSitemapGenerations(new Date('2026-10-25T00:00:00.000Z'))
+    expect(partial).toMatchObject({ deletedPages: 2, hasMore: true })
+    expect(objects.has(`${pagePrefix}1.xml`)).toBe(false)
+    expect(objects.has(`${pagePrefix}2.xml`)).toBe(false)
+    expect(objects.has(`${pagePrefix}3.xml`)).toBe(true)
+    expect(JSON.parse(objects.get(recordKey)!.toString()).next_page).toBe(3)
+
+    const final = await cleanupRetiredSitemapGenerations(new Date('2026-10-25T00:00:00.000Z'))
+    expect(final).toMatchObject({ deletedPages: 1, hasMore: false })
+    expect(objects.has(`${pagePrefix}3.xml`)).toBe(false)
+    expect(objects.has(recordKey)).toBe(false)
   })
 })

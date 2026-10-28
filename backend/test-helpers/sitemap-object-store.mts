@@ -3,6 +3,7 @@ import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { Readable } from 'node:stream'
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
@@ -34,7 +35,18 @@ export function spyOnSitemapObjectStore<Metadata>(
         throw new NoSuchKey({ message: 'missing object', $metadata: { httpStatusCode: 404 } })
       return { Metadata: { 'sitemap-manifest': JSON.stringify(manifest) } } as never
     }
-    if (command instanceof ListObjectsV2Command) return { Contents: [] } as never
+    if (command instanceof ListObjectsV2Command) {
+      const keyPrefix = logicalKey(command.input.Prefix!)
+      const after = command.input.StartAfter ? logicalKey(command.input.StartAfter) : null
+      const keys = [...objects.keys()]
+        .filter(key => key.startsWith(keyPrefix) && (after === null || key > after))
+        .toSorted()
+      const limit = command.input.MaxKeys ?? 1000
+      return {
+        Contents: keys.slice(0, limit).map(key => ({ Key: `${prefix}${key}` })),
+        IsTruncated: keys.length > limit,
+      } as never
+    }
     if (command instanceof GetObjectCommand) {
       const body = objects.get(logicalKey(command.input.Key!))
       if (!body)
@@ -58,10 +70,21 @@ export function spyOnSitemapObjectStore<Metadata>(
         metadata.set(key, JSON.parse(command.input.Metadata['sitemap-manifest']) as Metadata)
       return {} as never
     }
+    if (command instanceof DeleteObjectsCommand) {
+      for (const object of command.input.Delete?.Objects ?? []) {
+        const key = logicalKey(object.Key!)
+        const failure = rejectDelete(key)
+        if (failure) throw failure
+        objects.delete(key)
+        metadata.delete(key)
+      }
+      return {} as never
+    }
     if (command instanceof DeleteObjectCommand) {
       const failure = rejectDelete(logicalKey(command.input.Key!))
       if (failure) throw failure
       objects.delete(logicalKey(command.input.Key!))
+      metadata.delete(logicalKey(command.input.Key!))
       return {} as never
     }
     throw new Error(`Unexpected S3 command: ${command.constructor.name}`)
