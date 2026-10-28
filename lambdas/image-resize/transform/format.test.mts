@@ -11,7 +11,6 @@ describe('negotiateFormat', () => {
 
   it('should return default format when no Accept header and no requested format', () => {
     expect(negotiateFormat()).toBe('jpeg')
-    expect(negotiateFormat()).toBe('jpeg')
   })
 
   it('should negotiate AVIF when explicitly accepted', () => {
