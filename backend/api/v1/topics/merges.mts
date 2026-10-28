@@ -4,14 +4,15 @@ import {
   currentUserCanMergeTopic,
   getTopicByAnyWithRedirect,
   getTopicsByAnyWithRedirectBatch,
-  mergeTopicAliases,
+  createTopicMergeOperation,
+  getTopicMergeOperation,
 } from '@services/topics'
-import { attachWrittenTopicProvenance } from '@services/content-provenance'
 import app from '../../app.mts'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
+  validateUUIDParam,
 } from '../../response-helpers.mts'
 
 type MergeTopicBody = { destination_id_or_slug: string }
@@ -54,14 +55,35 @@ app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => 
   const target = destinationResult
   ctx.assert(!target.topic_redirect, 409, 'Destination topic has already been merged')
 
-  const merge = await mergeTopicAliases(currentUser, source.topic, target.topic)
-  ctx.setStatus(201)
+  const operation = await createTopicMergeOperation(currentUser, source.topic, target.topic)
+  ctx.setStatus(202)
   ctx.json({
-    topic: await attachWrittenTopicProvenance(merge.destination_topic, currentUser),
     topic_merge: {
-      source_topic_id: merge.source_topic_id,
-      destination_topic_id: merge.destination_topic_id,
-      moved_aliases: merge.moved_aliases,
+      ...operation,
+      status_url: `/api/v1/topics/${operation.source_topic_id}/merges/${operation.id}`,
+    },
+  })
+})
+
+app.route('/api/v1/topics/:sourceIdOrSlug/merges/:operationId').get(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanMergeTopic,
+    'GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId',
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId', {
+    path: ctx.params,
+  })
+  const operationId = validateUUIDParam(ctx, 'operationId')
+  const source = await getTopicByAnyWithRedirect(ctx.params.sourceIdOrSlug!)
+  ctx.assert(source, 404, 'Source topic not found')
+  const sourceId = source.topic_redirect?.source_topic_id ?? source.topic.id
+  const operation = await getTopicMergeOperation(currentUser, sourceId, operationId)
+  ctx.assert(operation, 404, 'Topic merge operation not found')
+  ctx.json({
+    topic_merge: {
+      ...operation,
+      status_url: `/api/v1/topics/${operation.source_topic_id}/merges/${operation.id}`,
     },
   })
 })

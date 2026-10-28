@@ -207,10 +207,6 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__target_user_id
   WHERE target_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_claim_id
-  ON moderator_actions (topic_claim_id) WHERE topic_claim_id IS NOT NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_integrity_flag_id
   ON moderator_actions (report_integrity_flag_id) WHERE report_integrity_flag_id IS NOT NULL;
 
@@ -254,3 +250,5 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__operation_request_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__admin_import_batch_id
   ON moderator_actions (admin_import_batch_id) WHERE admin_import_batch_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_claim_id__id ON moderator_actions(topic_claim_id,id) WHERE topic_claim_id IS NOT NULL;

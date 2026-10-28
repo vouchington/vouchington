@@ -278,3 +278,5 @@ CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__url_id__foreign_key
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__foreign_key
   ON user_referral_program_links (user_id)
   WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__topic__id ON user_referral_program_links(referral_program_topic_id,id);

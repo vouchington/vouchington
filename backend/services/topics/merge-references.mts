@@ -1,11 +1,5 @@
 import { TOPIC_MERGE_REFERENCE_GROUPS } from './merge-reference-inventory.mts'
-import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
-import type { TransactionQuery } from '@data-stores/psql'
-import { buildReferenceMergeCtes, type MergeReferenceTable } from './merge-reference-sql.mts'
-import {
-  buildTopicRelationMergeCtes,
-  buildTopicRelationMergeTargetsSql,
-} from './merge-relations.mts'
+import type { MergeReferenceTable } from './merge-reference-sql.mts'
 
 export const plainReferences = getPlainTopicMergeReferences()
 
@@ -42,58 +36,6 @@ export const collisionReferences: readonly MergeReferenceTable[] = [
   },
   { table: 'topic_votes', columns: ['topic_id'], collisionKey: ['topic_id', 'user_id'] },
 ]
-
-/** Each group is one statement across all of its tables; all share the merge transaction. */
-export async function repointTopicReferences(
-  query: TransactionQuery,
-  sourceId: string,
-  destinationId: string,
-) {
-  // Candidate deletion owns the snapshot cascade; direct snapshot deletion is deliberately blocked.
-  await query(
-    `/* deleteSourceTopicClassifierCandidates */
-    DELETE FROM classifier_candidates WHERE topic_id = $1::uuid`,
-    [sourceId],
-  )
-  await query(
-    `/* mergeTopicPlainReferences */ WITH ${buildReferenceMergeCtes(plainReferences).join(',\n')} SELECT 1`,
-    [sourceId, destinationId],
-  )
-  const { rows } = await query<{
-    kind: 'election' | 'bookmark'
-    entity_relation_id: string | null
-    previous_relation_id: string | null
-    relation_table: string
-    subject_id: string | null
-    object_id: string | null
-  }>(
-    `/* mergeTopicCollisionReferences */ WITH ${[...buildReferenceMergeCtes(collisionReferences), ...buildTopicRelationMergeCtes()].join(',\n')} ${buildTopicRelationMergeTargetsSql()}`,
-    [sourceId, destinationId],
-  )
-  return {
-    relationElectionTargets: rows.flatMap(row =>
-      row.entity_relation_id
-        ? [createEntityRelationElectionTarget(row.entity_relation_id, row.relation_table)]
-        : [],
-    ),
-    previousRelationElectionTargets: rows.flatMap(row =>
-      row.previous_relation_id
-        ? [createEntityRelationElectionTarget(row.previous_relation_id, row.relation_table)]
-        : [],
-    ),
-    bookmarkMoves: rows.flatMap(row =>
-      row.subject_id && row.object_id
-        ? [
-            {
-              relationTable: row.relation_table,
-              subject_id: row.subject_id,
-              object_id: row.object_id,
-            },
-          ]
-        : [],
-    ),
-  }
-}
 
 function getPlainTopicMergeReferences(): readonly MergeReferenceTable[] {
   const columnsByTable = new Map<string, string[]>()

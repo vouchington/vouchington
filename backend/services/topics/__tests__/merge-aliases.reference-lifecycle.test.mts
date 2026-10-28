@@ -13,7 +13,7 @@ import {
   upsertBookmarkAction,
   deleteBookmarkAction,
 } from '../../entity-relation-actions/bookmark.mts'
-import { mergeTopicAliases } from '../merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '../get.mts'
 import { TOPIC_MERGE_REFERENCE_GROUPS } from '../merge-reference-inventory.mts'
 

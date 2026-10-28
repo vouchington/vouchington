@@ -28,10 +28,10 @@ _none_
 
 **Indexes:**
 
-- `idx_rewards_program_topics__company_id`: `CREATE INDEX idx_rewards_program_topics__company_id ON public.rewards_program_topics USING btree (company_topic_id) WHERE (company_topic_id IS NOT NULL)`
+- `idx_rewards_program_topics__company_topic_id__topic_id`: `CREATE INDEX idx_rewards_program_topics__company_topic_id__topic_id ON public.rewards_program_topics USING btree (company_topic_id, topic_id) WHERE (company_topic_id IS NOT NULL)`
 - `rewards_program_topics_pkey`: `CREATE UNIQUE INDEX rewards_program_topics_pkey ON public.rewards_program_topics USING btree (topic_id)`
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF company_topic_id, topic_id ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`
 - `trigger_rewards_program_topics_updated_at`: `CREATE TRIGGER trigger_rewards_program_topics_updated_at BEFORE UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

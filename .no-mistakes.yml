@@ -2494,8 +2494,6 @@ rules:
           reason: First-party portable JWT primitive library published by the repo author.
         - name: '@vouchington/stripe'
           reason: First-party Stripe primitives published by the repo author.
-        - name: '@vouchington/typed-entities'
-          reason: First-party typed-entity alias, hierarchy, hostname, and merge primitives published by the repo author.
         - name: '@vouchington/utils'
           reason: First-party generic utility primitives published by the repo author.
         - name: '@vouchington/uuid-v7'

@@ -192,6 +192,9 @@ older block operation and be deleted by it.
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.
 
+Administrative topic consolidation uses [durable operation progress](../../../../backend/workers/topic-merge/README.md)
+to release writer locks between pages while keeping participants reserved until settlement.
+
 ## Vote-weight recovery
 
 Account age milestones, membership expirations, and family-source changes have separate indexed

@@ -9,7 +9,8 @@ import {
 } from '@voucha/test-helpers'
 import * as publicationLock from '@services/post-publication/lock'
 import { getTopicByAny } from '@services/topics/get'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { settleTopicMergeOperationForTest } from '@voucha/test-helpers/merge-topics'
+import { createTopicMergeOperation } from '@services/topics/merge-operations'
 
 describe('create.generated', () => {
   it('createRssFeed creates a feed with valid URLs and topic', async () => {
@@ -157,7 +158,7 @@ describe('create.generated', () => {
     await creating
   })
 
-  it('rejects an attachment that waits for its topic to merge', async () => {
+  it('rejects an attachment during merge reservation and after source redirect', async () => {
     const user = await createTestUser({ administrator: true })
     const source = await createTestTopic({
       user,
@@ -172,80 +173,22 @@ describe('create.generated', () => {
       getTopicByAny(destination.id),
     ])
     if (!sourceTopic || !destinationTopic) throw new Error('Expected merge topics')
-    const destinationRowLocked = Promise.withResolvers<void>()
-    const releaseDestinationRow = Promise.withResolvers<void>()
-    async function holdDestinationTopicRow(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* createRssFeed merge destination lock test */
-        SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`,
-        [destination.id],
-      )
-      destinationRowLocked.resolve()
-      await releaseDestinationRow.promise
-      await query.commit()
-    }
-    const destinationHolder = holdDestinationTopicRow()
-    await destinationRowLocked.promise
-    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
-    const lockAttachments = publicationLock.lockTopicRssFeedAttachmentLifecycles
-    const sourceLocked = Promise.withResolvers<void>()
-    const attachmentSpy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycles')
-      .mockImplementation(async (query, topicIds) => {
-        await lockAttachments(query, topicIds)
-        if (topicIds.includes(source.id)) sourceLocked.resolve()
-      })
-
-    const merging = mergeTopicAliases(user, sourceTopic, destinationTopic)
-    const mergeOutcome = merging.then(
-      () => undefined,
-      (err: unknown) => err,
-    )
-    let creationOutcome: Promise<unknown> | undefined
-    try {
-      await Promise.race([
-        sourceLocked.promise,
-        mergeOutcome.then(error => {
-          if (error instanceof Error) throw error
-          throw new Error('Merge completed before locking the source attachment', { cause: error })
-        }),
-      ])
-      await expect(contendForSourceAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
-      const creating = createRssFeed({
+    const operation = await createTopicMergeOperation(user, sourceTopic, destinationTopic)
+    const createSourceAttachment = () =>
+      createRssFeed({
         provenance: WEB_PROVENANCE,
         skipRemoteValidation: true,
         rss_feed_url: `https://example.com/attachment-merge-${crypto.randomUUID()}.xml`,
         topic_id: source.id,
-        title: 'Attachment after merge',
+        title: 'Attachment during merge',
       })
-      creationOutcome = creating.then(
-        () => undefined,
-        (err: unknown) => err,
-      )
-      releaseDestinationRow.resolve()
-      const mergeError = await mergeOutcome
-      if (mergeError instanceof Error) throw mergeError
-      if (mergeError !== undefined) throw new Error('Topic merge failed', { cause: mergeError })
-      await expect(creationOutcome).resolves.toMatchObject({
-        status: 422,
-        message: 'Topic not found',
-      })
-    } finally {
-      releaseDestinationRow.resolve()
-      attachmentSpy.mockRestore()
-      await destinationHolder
-      await mergeOutcome
-      await creationOutcome
-    }
-
-    async function contendForSourceAttachmentLifecycle(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* createRssFeed merged attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
-      )
-      await lockAttachment(query, source.id)
-      await query.commit()
-    }
+    await expect(createSourceAttachment()).rejects.toMatchObject({
+      code: 'topic_merge_in_progress',
+    })
+    await settleTopicMergeOperationForTest(user, source.id, operation.id)
+    await expect(createSourceAttachment()).rejects.toMatchObject({
+      status: 422,
+      message: 'Topic not found',
+    })
   })
 })

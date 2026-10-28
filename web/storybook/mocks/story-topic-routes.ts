@@ -1,5 +1,6 @@
 import { combinedSearchGet } from './story-combined-search'
 import { storyText } from './story-mutation-bodies'
+import { resetStoryTopicMerge, storyTopicMergeGet, storyTopicMergePost } from './story-topic-merges'
 
 const emptyPage = { has_next_page: false, end_cursor: null, start_cursor: null }
 const storyAt = '2026-09-26T00:00:00.000Z'
@@ -14,6 +15,7 @@ export function setStoryTopicRoutes(): void {
   nextAlias = 0
   aliasRecords = []
   rssFeed = null
+  resetStoryTopicMerge()
 }
 
 export function clearStoryTopicRoutes(): void {
@@ -76,6 +78,8 @@ export function storyTopicGet(endpoint: string): unknown | undefined {
   const search = combinedSearchGet(endpoint)
   if (search !== undefined) return search
   if (!enabled) return undefined
+  const merge = storyTopicMergeGet(endpoint)
+  if (merge !== undefined) return merge
   if (/^\/api\/v1\/topics\/[^/]+\/aliases$/.test(endpoint)) return aliasList()
   if (/^\/api\/v1\/topics\/[^/]+\/prioritized-referral-links$/.test(endpoint)) {
     return {
@@ -128,17 +132,8 @@ export function storyTopicPost(endpoint: string, body: unknown): unknown | undef
     aliasRecords = [...aliasRecords, ...added]
     return { added }
   }
-  if (/^\/api\/v1\/topics\/[^/]+\/merges$/.test(endpoint)) {
-    const destinationId = storyText(body, 'destination_id_or_slug') || 'topic-story'
-    return {
-      topic: storyTopic(destinationId, { name: 'Destination topic', slug: 'destination-topic' }),
-      topic_merge: {
-        source_topic_id: endpoint.split('/')[4] ?? 'source-topic',
-        destination_topic_id: destinationId,
-        moved_aliases: [],
-      },
-    }
-  }
+  const merge = storyTopicMergePost(endpoint, body)
+  if (merge !== undefined) return merge
   if (/^\/api\/v1\/topics\/[^/]+\/additional-hostnames$/.test(endpoint)) {
     const hostname = storyText(body, 'hostname')
     return {

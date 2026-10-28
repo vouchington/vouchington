@@ -8,8 +8,8 @@ import { ValkeyBloomFilter } from '@data-stores/valkey'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
-import { mergeTopicAliases } from './merge-aliases.mts'
-import { runTopicImageMergeLockRace } from '@voucha/test-helpers/entities/topic-image-merge-lock-order'
+import { settleTopicMergeOperationForTest } from '@voucha/test-helpers/merge-topics'
+import { createTopicMergeOperation } from './merge-operations.mts'
 describe('updateTopic', () => {
   it('rejects image placement changes when a read topic was merged before the update', async () => {
     const user = await createTestUser({ administrator: true })
@@ -32,7 +32,7 @@ describe('updateTopic', () => {
     })
   })
 
-  it('waits for a same-topic merge image lock before locking the topic row', async () => {
+  it('rejects image placement while the topic has a reserved merge and after redirect', async () => {
     const user = await createTestUser({ administrator: true })
     const suffix = randomUUID()
     const destinationId = await insertTestTopic({
@@ -47,15 +47,14 @@ describe('updateTopic', () => {
     })
     const source = await getTopicByAny(sourceId)
     const destination = await getTopicByAny(destinationId)
-    const { mergeResult, updateResult } = await runTopicImageMergeLockRace(
-      sourceId,
-      destinationId,
-      () => mergeTopicAliases(user!, source!, destination!),
-      query =>
-        updateTopic(user!, source!, { logo_image_id: null }, { query, skipSideEffects: true }),
-    )
-    expect(mergeResult.status).toBe('fulfilled')
-    expect(updateResult).toMatchObject({ status: 'rejected', reason: { status: 409 } })
+    const operation = await createTopicMergeOperation(user!, source!, destination!)
+    await expect(updateTopic(user!, source!, { logo_image_id: null })).rejects.toMatchObject({
+      status: 409,
+    })
+    await settleTopicMergeOperationForTest(user!, sourceId, operation.id)
+    await expect(updateTopic(user!, source!, { logo_image_id: null })).rejects.toMatchObject({
+      status: 409,
+    })
   })
 
   it('updates topic name', async () => {

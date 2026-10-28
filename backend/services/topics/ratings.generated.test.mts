@@ -136,7 +136,7 @@ describe('ratings.generated', () => {
       })
     })
 
-    it('skips write when ratings unchanged', async () => {
+    it('preserves the published timestamp when ratings are unchanged', async () => {
       const uuid1 = randomUUID()
       const uuid2 = randomUUID()
       const user = await createTestUser({ username: `test-user-${uuid1}` })

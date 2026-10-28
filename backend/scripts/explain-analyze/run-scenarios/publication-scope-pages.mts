@@ -87,7 +87,7 @@ async function capturePublicationScopePages(): Promise<void> {
     seededRows: { topics: seed.count },
     expectations: [
       { kind: 'maxProcessedRows', relation: 'topics', max: limit },
-      { kind: 'usesIndexes', indexes: ['idx_topics__merged_into_topic_id'], noSort: true },
+      { kind: 'usesIndexes', indexes: ['idx_topics__merged_into_topic_id__id'], noSort: true },
     ],
   })
   await runAndCapture('publication-merged-topic-sources-page', async () => {

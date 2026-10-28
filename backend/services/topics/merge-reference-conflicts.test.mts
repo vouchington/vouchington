@@ -17,13 +17,14 @@ import {
   getTopicMergeFlaggedVotedRelatedTopics,
   seedTopicMergeFlaggedVotedRelatedTopics,
   seedTopicMergeVotedRelatedTopics,
-  withHeldTopicMergeTopicRow,
 } from '@voucha/test-helpers/topic-merge-self-relations'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
 import { seedTopicMergeRetailerCollision } from '@voucha/test-helpers/topic-merge-subtypes'
 import { createVoteIntegrityFlag } from '../vote-integrity/create-flag.mts'
 import { getTopicByAny } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
+import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
+import { processTopicMergeOperationPage } from './merge-operation-page.mts'
+import type { Topic } from './types.mts'
 
 async function createTopics() {
   const admin = await createTestUser({ administrator: true })
@@ -33,6 +34,20 @@ async function createTopics() {
   const destination = await getTopicByAny(destinationRow.id)
   if (!source || !destination) throw new Error('Test topics not found')
   return { admin, source, destination }
+}
+
+async function runRejectedOperation(
+  admin: Awaited<ReturnType<typeof createTestUser>>,
+  source: Topic,
+  destination: Topic,
+) {
+  const operation = await createTopicMergeOperation(admin, source, destination)
+  let generation: number | null = 0
+  for (let page = 0; page < 2000 && generation !== null; page++) {
+    generation = await processTopicMergeOperationPage(operation.id, generation)
+  }
+  expect(generation).toBeNull()
+  return getTopicMergeOperation(admin, source.id, operation.id)
 }
 
 describe('topic merge reference collision preflight', () => {
@@ -49,26 +64,22 @@ describe('topic merge reference collision preflight', () => {
     },
   )
 
-  it('rejects an uncovered subtype-reference unique collision with both conflicting owners', async () => {
+  it('rejects an uncovered subtype-reference unique collision before moving owners', async () => {
     const { admin, source, destination } = await createTopics()
     await seedTopicMergeRetailerCollision(source.id, destination.id)
-    await expect(mergeTopicAliases(admin, source, destination)).rejects.toMatchObject({
-      status: 409,
-      code: 'topic_merge_reference_conflict',
-      source_id: source.id,
-      destination_id: destination.id,
+    await expect(runRejectedOperation(admin, source, destination)).resolves.toMatchObject({
+      status: 'failed',
+      error_code: 'topic_merge_reference_conflict',
     })
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
   })
   it('rejects colliding pending audit flags instead of losing either history row', async () => {
     const { admin, source, destination } = await createTopics()
     const post = await createTestPost({ user: admin })
-    const flags = await seedTopicMergeAuditCollision(source.id, destination.id, post.id, admin.id)
-    await expect(mergeTopicAliases(admin, source, destination)).rejects.toMatchObject({
-      status: 409,
-      code: 'topic_merge_reference_conflict',
-      source_id: flags.sourceFlagId,
-      destination_id: flags.destinationFlagId,
+    await seedTopicMergeAuditCollision(source.id, destination.id, post.id, admin.id)
+    await expect(runRejectedOperation(admin, source, destination)).resolves.toMatchObject({
+      status: 'failed',
+      error_code: 'topic_merge_reference_conflict',
     })
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
   })
@@ -82,12 +93,9 @@ describe('topic merge reference collision preflight', () => {
       admin.id,
     )
 
-    await expect(mergeTopicAliases(admin, child, parent)).rejects.toMatchObject({
-      status: 409,
-      code: 'topic_merge_reference_conflict',
-      source_id: relationId,
-      destination_id: flagId,
-      message: expect.stringContaining(`relation ${relationId}`),
+    await expect(runRejectedOperation(admin, child, parent)).resolves.toMatchObject({
+      status: 'failed',
+      error_code: 'topic_merge_reference_conflict',
     })
     await expect(getTopicByAny(child.id)).resolves.toMatchObject({ id: child.id })
     await expect(getTopicMergeFlaggedVotedRelatedTopics(child.id, relationId)).resolves.toEqual([
@@ -102,54 +110,22 @@ describe('topic merge reference collision preflight', () => {
     ])
   })
 
-  it('rejects a flag committed after preflight while the merge waits for a topic row', async () => {
+  it('refuses a new relation flag while the merge reserves its parent', async () => {
     const { admin, source: child, destination: parent } = await createTopics()
     await seedTopicMergeParentEdges([[child.id, parent.id]])
-    const { relationId, voteId } = await seedTopicMergeVotedRelatedTopics(
-      child.id,
-      parent.id,
-      admin.id,
-    )
-    let outcome: Promise<{ value: unknown } | { error: unknown }> | undefined
-    let flagId: string | undefined
-    try {
-      await withHeldTopicMergeTopicRow(parent.id, async holderProcessId => {
-        outcome = mergeTopicAliases(admin, child, parent).then(
-          value => ({ value }),
-          err => ({ error: err }),
-        )
-        await waitForTestPostgresLockWaiter(holderProcessId, 'mergeTopicAliases lockTopics')
-        const flag = await createVoteIntegrityFlag(
-          'entity_relation',
-          relationId,
-          'velocity_spike',
-          {},
-        )
-        if (!flag) throw new Error('Expected a vote integrity flag for the related topics')
-        flagId = flag.id
-      })
-    } finally {
-      if (outcome) await outcome
+    const { relationId } = await seedTopicMergeVotedRelatedTopics(child.id, parent.id, admin.id)
+    const operation = await createTopicMergeOperation(admin, child, parent)
+    await expect(
+      createVoteIntegrityFlag('entity_relation', relationId, 'velocity_spike', {}),
+    ).rejects.toMatchObject({ code: 'topic_merge_in_progress' })
+    let generation: number | null = 0
+    for (let page = 0; page < 2000 && generation !== null; page++) {
+      generation = await processTopicMergeOperationPage(operation.id, generation)
     }
-    if (!outcome || !flagId) throw new Error('Expected both a merge outcome and a committed flag')
-    expect(await outcome).toMatchObject({
-      error: {
-        status: 409,
-        code: 'topic_merge_reference_conflict',
-        source_id: relationId,
-        destination_id: flagId,
-      },
+    expect(generation).toBeNull()
+    await expect(getTopicMergeOperation(admin, child.id, operation.id)).resolves.toMatchObject({
+      status: 'completed',
     })
-    await expect(getTopicByAny(child.id)).resolves.toMatchObject({ id: child.id })
-    await expect(getTopicMergeFlaggedVotedRelatedTopics(child.id, relationId)).resolves.toEqual([
-      {
-        relation_id: relationId,
-        subject_id: child.id,
-        object_id: parent.id,
-        vote_id: voteId,
-        flag_id: flagId,
-        resolved_at: null,
-      },
-    ])
+    await expect(getTopicMergeFlaggedVotedRelatedTopics(child.id, relationId)).resolves.toEqual([])
   })
 })

@@ -65,6 +65,7 @@ _none_
 - `idx_user_referral_program_links__parent_link_id`: `CREATE INDEX idx_user_referral_program_links__parent_link_id ON public.user_referral_program_links USING btree (parent_link_id) WHERE (parent_link_id IS NOT NULL)`
 - `idx_user_referral_program_links__parent_link_id_active`: `CREATE INDEX idx_user_referral_program_links__parent_link_id_active ON public.user_referral_program_links USING btree (parent_link_id) WHERE ((parent_link_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_user_referral_program_links__program_topic_id__user_id`: `CREATE INDEX idx_user_referral_program_links__program_topic_id__user_id ON public.user_referral_program_links USING btree (referral_program_topic_id, user_id) WHERE ((activated_at IS NOT NULL) AND (deleted_at IS NULL))`
+- `idx_user_referral_program_links__topic__id`: `CREATE INDEX idx_user_referral_program_links__topic__id ON public.user_referral_program_links USING btree (referral_program_topic_id, id)`
 - `idx_user_referral_program_links__unfurl_requested`: `CREATE INDEX idx_user_referral_program_links__unfurl_requested ON public.user_referral_program_links USING btree (unfurl_requested_at, id) WHERE ((unfurl_requested_at IS NOT NULL) AND (unfurl_completed_at IS NULL) AND (unfurl_failed_at IS NULL) AND (deleted_at IS NULL))`
 - `idx_user_referral_program_links__unique`: `CREATE UNIQUE INDEX idx_user_referral_program_links__unique ON public.user_referral_program_links USING btree (user_id, referral_program_topic_id, url_id) WHERE (deleted_at IS NULL)`
 - `idx_user_referral_program_links__url_id`: `CREATE INDEX idx_user_referral_program_links__url_id ON public.user_referral_program_links USING btree (url_id) WHERE (deleted_at IS NULL)`
@@ -74,6 +75,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF referral_program_topic_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')`
 - `trigger_user_referra_program_links_content_provenance_immutable`: `CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_user_referral_program_links_updated_at`: `CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

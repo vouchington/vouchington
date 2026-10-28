@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { getRecommendedTopics } from '@services/recommended-topics'
 import type { PrivateUser } from '@services/users/types'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
 
 describe('get-recommendations.filtering', () => {

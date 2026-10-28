@@ -39,6 +39,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'reconcile-vote-drift',
   'kagi-smallweb-sync',
   'imports-recover-stalled',
+  'topic-merge-recover-stalled',
   'dispatchFindYourFriends',
   'membershipEntitlementEffects',
   'membershipGrantExpiry',

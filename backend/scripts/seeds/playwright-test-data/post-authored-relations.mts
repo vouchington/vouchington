@@ -37,16 +37,16 @@ async function seedPlaywrightAuthoredRelations(query: TransactionQuery): Promise
     `/* seedPlaywrightAuthoredRelations */ INSERT INTO relation__topic__faq__post (subject_id, object_id, created_by_id) VALUES ( '019c64e6-f710-74cb-b36d-130af8ff1067', '019c64e6-f720-7001-a001-000000000001', '019f0000-0000-7000-8000-000000000000' ), ( '019c64e6-f713-7bf3-8b1e-a869aa7c9cf1', '019c64e6-f720-7001-a001-000000000002', '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT DO NOTHING`,
   )
   await query(
-    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__post__category__topic SET votes_score_up = 10, votes_count_up = 10`,
+    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__post__category__topic SET votes_score_up = 10, votes_count_up = 10 WHERE (subject_id, object_id) IN (('019c64e6-f740-7001-a111-000000000001', '019c64e6-f710-74cb-b36d-130af8ff1067'), ('019c64e6-f720-7001-a001-000000000001', '019c64e6-f713-7bf3-8b1e-a869aa7c9cf1'), ('019c64e6-f720-7002-a002-000000000001', '019c64e6-f716-722f-b05c-f4c4f7b93cd0'))`,
   )
   await query(
-    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__post__related__post SET votes_score_up = 10, votes_count_up = 10`,
+    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__post__related__post SET votes_score_up = 10, votes_count_up = 10 WHERE (subject_id, object_id) IN (('019c64e6-f720-7001-a001-000000000001', '019c64e6-f720-7002-a002-000000000001'), ('019c64e6-f720-7001-a001-000000000002', '019c64e6-f720-7001-a001-000000000003'))`,
   )
   await query(
-    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__topic__related__topic SET votes_score_up = 10, votes_count_up = 10`,
+    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__topic__related__topic SET votes_score_up = 10, votes_count_up = 10 WHERE (subject_id, object_id) IN (('019c64e6-f710-74cb-b36d-130af8ff1067', '019c64e6-f713-7bf3-8b1e-a869aa7c9cf1'), ('019c64e6-f713-7bf3-8b1e-a869aa7c9cf1', '019c64e6-f716-722f-b05c-f4c4f7b93cd0'))`,
   )
   await query(
-    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__topic__faq__post SET votes_score_up = 10, votes_count_up = 10`,
+    `/* seedPlaywrightAuthoredRelations */ UPDATE relation__topic__faq__post SET votes_score_up = 10, votes_count_up = 10 WHERE (subject_id, object_id) IN (('019c64e6-f710-74cb-b36d-130af8ff1067', '019c64e6-f720-7001-a001-000000000001'), ('019c64e6-f713-7bf3-8b1e-a869aa7c9cf1', '019c64e6-f720-7001-a001-000000000002'))`,
   )
 }
 

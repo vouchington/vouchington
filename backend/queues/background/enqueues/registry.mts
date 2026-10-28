@@ -47,6 +47,7 @@ import {
   URLS_DOMAINS_BLACKLIST_JOBS,
 } from './urls-domains-blacklist-jobs.mts'
 import { VOTE_AGGREGATION_DOMAIN, VOTE_AGGREGATION_JOBS } from './vote-aggregation-jobs.mts'
+import { TOPIC_MERGE_DOMAIN, TOPIC_MERGE_JOBS } from './topic-merge-jobs.mts'
 
 /** The single source of truth for what the `background` queue runs: domains and their jobs. */
 export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[] = [
@@ -75,6 +76,7 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   IMPORTS_DOMAIN,
   MODERATION_SIGNALS_DOMAIN,
   HOSTNAME_BLOCKING_DOMAIN,
+  TOPIC_MERGE_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -103,6 +105,7 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...IMPORTS_JOBS,
   ...MODERATION_SIGNALS_JOBS,
   ...HOSTNAME_BLOCKING_JOBS,
+  ...TOPIC_MERGE_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))

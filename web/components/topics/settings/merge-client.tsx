@@ -7,11 +7,12 @@ import { TopicAutocomplete } from '@/components/posts/topic-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { mergeTopicAliases } from '@/lib/api/client/topics'
+import { fetchTopic, fetchTopicMergeOperation, mergeTopicAliases } from '@/lib/api/client/topics'
 import { topicManagementHref } from '@/lib/links/entity-href'
 import type { Topic } from '@/types/topics'
 import { canSubmitTopicMerge } from '@/components/admin/merge-topic-submit-readiness'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { TopicMergeResponseBody } from '@/types/api-responses'
 
 export function MergeClient({ topic }: { topic: Topic }) {
   const t = useTranslations()
@@ -20,6 +21,8 @@ export function MergeClient({ topic }: { topic: Topic }) {
   const [destinationTopicName, setDestinationTopicName] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [operation, setOperation] = useState<TopicMergeResponseBody['topic_merge'] | null>(null)
+  const [checking, setChecking] = useState(false)
 
   const canSubmit = canSubmitTopicMerge({
     destinationTopicId,
@@ -46,18 +49,33 @@ export function MergeClient({ topic }: { topic: Topic }) {
     setSubmitting(true)
     try {
       const response = await mergeTopicAliases(topic.id, destinationTopicId)
-      onSuccess(
-        t('extracted.settings.mergeClient.mergedSourcetopicnameIntoDestinationtopicname_4457b386', {
-          sourceTopicName: topic.name,
-          destinationTopicName: response.topic.name,
-        }),
-      )
-      push(topicManagementHref(response.topic, 'settings/aliases'))
-      refresh()
+      setOperation(response.topic_merge)
+      onSuccess(t('settings.topics.merge.queued'))
     } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a merge failure */
       onError(err, { fallback: t('extracted.settings.mergeClient.failedToMergeTopic_774455fd') })
       setSubmitting(false)
+    }
+  }
+
+  const handleCheckStatus = async () => {
+    if (!operation || checking) return
+    setChecking(true)
+    try {
+      const response = await fetchTopicMergeOperation(operation.source_topic_id, operation.id)
+      setOperation(response.topic_merge)
+      if (response.topic_merge.status === 'completed') {
+        onSuccess(t('settings.topics.merge.completed'))
+        const destination = await fetchTopic(response.topic_merge.destination_topic_id)
+        if (destination) {
+          push(topicManagementHref(destination, 'settings/aliases'))
+          refresh()
+        }
+      }
+    } catch (err) {
+      onError(err, { fallback: t('settings.topics.merge.statusFailed') })
+    } finally {
+      setChecking(false)
     }
   }
 
@@ -74,53 +92,76 @@ export function MergeClient({ topic }: { topic: Topic }) {
           topicName: topic.name,
         })}
       </p>
-      <form
-        onSubmit={handleSubmit}
-        className='space-y-4'
-      >
-        <div className='space-y-2'>
-          <Label htmlFor='merge-topic-destination'>
-            {t('extracted.settings.mergeClient.destinationTopic_14dec461')}
-          </Label>
-          <TopicAutocomplete
-            id='merge-topic-destination'
-            label={destinationTopicName ?? ''}
-            value={destinationTopicId}
-            excludeIds={excludeTopicIds}
-            disabled={submitting}
-            clearOnTextEdit
-            onChange={handleDestinationChange}
-          />
-          {!destinationTopicName && (
-            <p className='text-xs text-muted-foreground'>{destinationLabel}</p>
+      {operation ? (
+        <output className='space-y-3'>
+          <p>
+            {t(
+              operation.status === 'failed'
+                ? 'settings.topics.merge.failed'
+                : operation.status === 'completed'
+                  ? 'settings.topics.merge.completed'
+                  : 'settings.topics.merge.queued',
+            )}
+          </p>
+          {(operation.status === 'queued' || operation.status === 'running') && (
+            <Button
+              onClick={handleCheckStatus}
+              loading={checking}
+              disabled={checking}
+            >
+              {t('settings.topics.merge.checkStatus')}
+            </Button>
           )}
-        </div>
-
-        <div className='space-y-2'>
-          <Label htmlFor='merge-topic-confirmation'>
-            {t('extracted.settings.mergeClient.typeTopicnameToConfirm_427f250b', {
-              topicName: topic.name,
-            })}
-          </Label>
-          <Input
-            id='merge-topic-confirmation'
-            data-pw='merge-topic-confirmation-input'
-            value={confirmation}
-            disabled={submitting}
-            onChange={handleConfirmationChange}
-          />
-        </div>
-
-        <Button
-          type='submit'
-          data-pw='merge-topic-submit'
-          variant='destructive'
-          loading={submitting}
-          disabled={!canSubmit}
+        </output>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className='space-y-4'
         >
-          {t('extracted.settings.mergeClient.merge_8851aaa7')}
-        </Button>
-      </form>
+          <div className='space-y-2'>
+            <Label htmlFor='merge-topic-destination'>
+              {t('extracted.settings.mergeClient.destinationTopic_14dec461')}
+            </Label>
+            <TopicAutocomplete
+              id='merge-topic-destination'
+              label={destinationTopicName ?? ''}
+              value={destinationTopicId}
+              excludeIds={excludeTopicIds}
+              disabled={submitting}
+              clearOnTextEdit
+              onChange={handleDestinationChange}
+            />
+            {!destinationTopicName && (
+              <p className='text-xs text-muted-foreground'>{destinationLabel}</p>
+            )}
+          </div>
+
+          <div className='space-y-2'>
+            <Label htmlFor='merge-topic-confirmation'>
+              {t('extracted.settings.mergeClient.typeTopicnameToConfirm_427f250b', {
+                topicName: topic.name,
+              })}
+            </Label>
+            <Input
+              id='merge-topic-confirmation'
+              data-pw='merge-topic-confirmation-input'
+              value={confirmation}
+              disabled={submitting}
+              onChange={handleConfirmationChange}
+            />
+          </div>
+
+          <Button
+            type='submit'
+            data-pw='merge-topic-submit'
+            variant='destructive'
+            loading={submitting}
+            disabled={!canSubmit}
+          >
+            {t('extracted.settings.mergeClient.merge_8851aaa7')}
+          </Button>
+        </form>
+      )}
     </section>
   )
 }

@@ -1620,6 +1620,25 @@
 - `well_known_file`
 - `manual_admin`
 
+## `topic_merge_stages`
+
+- `preflight`
+- `aliases`
+- `subtype_create`
+- `subtypes`
+- `derived`
+- `classifier_cleanup`
+- `references`
+- `collisions`
+- `bookmarks`
+- `relations`
+- `subtype_delete`
+- `vote_aggregation`
+- `finalize`
+- `effects`
+- `cleanup`
+- `cleanup_failed`
+
 ## `topic_types`
 
 - `topic`

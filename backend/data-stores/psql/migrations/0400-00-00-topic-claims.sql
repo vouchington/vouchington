@@ -66,7 +66,6 @@ CREATE INDEX IF NOT EXISTS idx_topic_claims__pending
   WHERE submitted_at IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL;
 
 -- FK-backing indexes
-CREATE INDEX IF NOT EXISTS idx_topic_claims__topic_id ON topic_claims (topic_id);
 CREATE INDEX IF NOT EXISTS idx_topic_claims__verified_by_id ON topic_claims (verified_by_id) WHERE verified_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_topic_claims__rejected_by_id ON topic_claims (rejected_by_id) WHERE rejected_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_topic_claims__revoked_by_id ON topic_claims (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
@@ -96,3 +95,5 @@ COMMENT ON COLUMN topic_claims.verification_token_issued_at IS 'When the domain 
 COMMENT ON COLUMN topic_claims.domain_verified_at IS 'When domain control was successfully verified (DNS or well-known file probe).';
 COMMENT ON COLUMN topic_claims.rejected_by_id IS 'Staff who rejected the claim.';
 COMMENT ON COLUMN topic_claims.revoked_by_id IS 'Staff who revoked the verified claim.';
+
+CREATE INDEX IF NOT EXISTS idx_topic_claims__topic__id ON topic_claims(topic_id,id);

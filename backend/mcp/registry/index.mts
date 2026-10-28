@@ -13,6 +13,7 @@ import { adminEditorialReadTools } from '../admin/editorial-reads.mts'
 import { adminReportTools } from '../admin/reports.mts'
 import { adminClearanceTools } from '../admin/clearances.mts'
 import { adminTopicClaimTools } from '../admin/topic-claims.mts'
+import { adminTopicMergeTools } from '../admin/topic-merges.mts'
 import { adminWarningTools } from '../admin/warnings.mts'
 import { adminUserContextTools } from '../admin/user-context.mts'
 import { adminAccountControlTools } from '../admin/account-controls.mts'
@@ -75,6 +76,7 @@ const adminSourceTools = [
   ...adminReportTools,
   ...adminClearanceTools,
   ...adminTopicClaimTools,
+  ...adminTopicMergeTools,
   ...adminWarningTools,
   ...adminUserContextTools,
   ...adminAccountControlTools,

@@ -6202,5 +6202,10 @@
 {"descriptor":null,"id":"copy.shared.provenance.viaApi"},
 {"descriptor":null,"id":"copy.shared.provenance.viaApp"},
 {"descriptor":null,"id":"copy.shared.provenance.viaMcp"},
-{"descriptor":{"cases":["minute","hour","day","week","month","year"],"kind":"select-plural","numberParameters":[],"selectParameter":"unit","valueParameter":"value"},"id":"copy.shared.timeAgo.relativeDuration"}
+{"descriptor":{"cases":["minute","hour","day","week","month","year"],"kind":"select-plural","numberParameters":[],"selectParameter":"unit","valueParameter":"value"},"id":"copy.shared.timeAgo.relativeDuration"},
+{"descriptor":null,"id":"copy.topics.merge.checkStatus"},
+{"descriptor":null,"id":"copy.topics.merge.completed"},
+{"descriptor":null,"id":"copy.topics.merge.failed"},
+{"descriptor":null,"id":"copy.topics.merge.queued"},
+{"descriptor":null,"id":"copy.topics.merge.statusFailed"}
 ]

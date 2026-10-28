@@ -11,11 +11,13 @@ import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './s
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
 import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operational-cursor-uuid-allowlist.mts'
 import { RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS } from '../../../rss-category-snapshot-uuid-allowlist.mts'
+import { TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS } from '../../../topic-merge-schema-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   ...RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS,
+  ...TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'user_rss_feed_import_row_discoveries.generation',
     'Opaque per-attempt crawl outcome fence; not a durable relationship.',

@@ -54,7 +54,7 @@
     "backend/services/topics/aliases.mts",
     "backend/services/topics/link-topic-alias.mts",
     "backend/services/topics/delete-topic-aliases.mts",
-    "backend/services/topics/merge-aliases.mts",
+    "backend/services/topics/merge-aliases-page.mts",
     "backend/services/topics/claim-topic-alias.mts",
     "backend/services/rss-feed-items/category-publication-changes.mts",
     "backend/services/hostname-blocking/delete-url-relation-page.mts",

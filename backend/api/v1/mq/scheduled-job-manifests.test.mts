@@ -102,6 +102,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/reconcileStoryPostRelatedUrlProjections',
   'background/blacklistDispatcher',
   'background/userDeletionRecovery',
+  'background/topic-merge-recover-stalled',
   'background/voteWeightAgeMilestones',
   'background/voteWeightMembershipExpirations',
   'background/voteWeightFamilySourceChanges',
@@ -161,7 +162,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(81)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(82)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

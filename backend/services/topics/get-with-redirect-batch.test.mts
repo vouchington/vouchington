@@ -2,7 +2,7 @@ import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTopicAliases } from './aliases.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicsByAnyWithRedirectBatch } from './get-with-redirect-batch.mts'
 import { getTopicsByAnyBatch } from './get-batch.mts'
 

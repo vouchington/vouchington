@@ -14,6 +14,7 @@ vi.mock(
 
 import { clientApi } from '../instance'
 import { loadWebApiFixture } from '../../../../test-helpers/api-responses/fixture-loader'
+import { expectApiWrapperCall } from '../../../../test-helpers/api-wrapper'
 import {
   createTopicAliases,
   deleteTopicAlias,
@@ -21,6 +22,7 @@ import {
   fetchTopic,
   linkTopicAlias,
   mergeTopicAliases,
+  fetchTopicMergeOperation,
   unlinkTopicAlias,
 } from '../topics'
 
@@ -35,11 +37,16 @@ describe('topics client API', () => {
 
   it('POSTs topic alias merges to the source merge endpoint', async () => {
     const response = {
-      topic: { id: 'destination-topic' },
       topic_merge: {
+        id: 'merge-operation',
         source_topic_id: 'source-topic',
         destination_topic_id: 'destination-topic',
-        moved_aliases: ['source-slug'],
+        status: 'queued',
+        stage: 'preflight',
+        created_at: '2026-01-01T00:00:00.000Z',
+        completed_at: null,
+        error_code: null,
+        status_url: '/api/v1/topics/source-topic/merges/merge-operation',
       },
     }
     mockPost.mockResolvedValueOnce(response)
@@ -48,6 +55,29 @@ describe('topics client API', () => {
     expect(mockPost).toHaveBeenCalledWith('/api/v1/topics/source-topic/merges', {
       destination_id_or_slug: 'destination-topic',
     })
+  })
+
+  it('reads the admitted operation without resubmitting a merge', async () => {
+    const response: import('@/types/api-responses').TopicMergeResponseBody = {
+      topic_merge: {
+        id: 'merge-operation',
+        source_topic_id: 'source-topic',
+        destination_topic_id: 'destination-topic',
+        status: 'running',
+        stage: 'references',
+        created_at: '2026-01-01T00:00:00.000Z',
+        completed_at: null,
+        error_code: null,
+        status_url: '/api/v1/topics/source-topic/merges/merge-operation',
+      },
+    }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: () => fetchTopicMergeOperation('source-topic', 'merge-operation'),
+      expectedArgs: ['/api/v1/topics/source-topic/merges/merge-operation'],
+    })
+    expect(mockPost).not.toHaveBeenCalled()
   })
 
   it('fetches public topic placement through the detail endpoint', async () => {

@@ -28,6 +28,7 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'membership_refund_operation_attempt_metadata_scans',
   'membership_refunds',
   'membership_verifications',
+  'topic_merge_operations',
   'stripe_events',
   'user_data_requests',
   'user_import_requests',

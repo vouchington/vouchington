@@ -39,6 +39,7 @@ export const REGISTRY_ORDER = [
   'ap-inbox-activities-work-config',
   'user-deletions-work-config',
   'topics-work-config',
+  'topic-merge-work-config',
   'stories-work-config',
   'remote-actors-work-config',
   'posts-work-config',

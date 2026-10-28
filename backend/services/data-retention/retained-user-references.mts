@@ -16,6 +16,8 @@ export const RETAINED_USER_REFERENCES = [
   ['image_surface_placement_activations', 'uploaded_by_id'],
   ['user_deletion_requests', 'user_id'],
   ['user_deletion_requests', 'requested_by_id'],
+  ['topics', 'merged_by_id'],
+  ['topic_merge_operations', 'requested_by_id'],
   ['membership_changes', 'user_id'],
   ['membership_changes', 'changed_by_id'],
   ['membership_grants', 'granted_by_id'],

@@ -8,7 +8,7 @@ import {
   makeNearbyEmbedding,
   makeRandomEmbedding,
 } from '@voucha/test-helpers'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
 
 const mockGetCachedSearchEmbedding = vi.fn<(query: string) => Promise<number[]>>()

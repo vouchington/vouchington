@@ -9,7 +9,7 @@ import {
 import { caches } from '@services/entity-cache/caches'
 import { createTestUser, softDeleteUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getPrivateUserByAny, getPublicUserByAny } from '@services/users/get'
 import { getTopicByAny, getTopicByAnyWithRedirect } from '@services/topics/get'
 import type { PrivateUser, PublicUser } from '@services/users/types'

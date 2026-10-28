@@ -6,7 +6,7 @@ import {
   seedTopicMergeReadyBookmarkBloom,
 } from '@voucha/test-helpers/topic-merge-bookmark-bloom'
 import { getTopicByAny } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 
 describe('topic merge bookmark bloom maintenance', () => {
   const fixture = registerBookmarkBloomFixture()

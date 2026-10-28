@@ -1,22 +1,17 @@
 import { getTopicIdByAnyCached } from '@services/entity-cache/lookups'
+import { randomUUID } from 'node:crypto'
 import { getTopicCacheKeys } from '@services/entity-cache/keys'
-import {
-  beginTransaction,
-  createTestTopic,
-  createTestUser,
-  getTopicRevisionsForTest,
-  insertTestRssFeedDirect,
-} from '@voucha/test-helpers'
+import { createTestTopic, createTestUser, getTopicRevisionsForTest } from '@voucha/test-helpers'
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTopicAliases } from './aliases.mts'
 import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { getTopicByAny, getTopicByAnyWithRedirect, getTopicBySlug } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
+import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
+import { processTopicMergeOperationPage } from './merge-operation-page.mts'
 import { getTopicIds } from './search/get-ids.mts'
 import type { Topic } from './types.mts'
-import * as rssFeedPublication from '@services/post-publication/capture-rss-feeds'
-import * as publicationLock from '@services/post-publication/lock'
 
 async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0]): Promise<Topic> {
   const topic = await createTestTopic(options)
@@ -28,10 +23,13 @@ async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0
 describe('mergeTopicAliases', () => {
   it('records the destination complete alias transition in merge revisions', async () => {
     const admin = await createTestUser({ administrator: true })
-    const source = await createFullTestTopic({ user: admin, name: `Revision source ${Date.now()}` })
+    const source = await createFullTestTopic({
+      user: admin,
+      name: `Revision source ${randomUUID()}`,
+    })
     const destination = await createFullTestTopic({
       user: admin,
-      name: `Revision destination ${Date.now()}`,
+      name: `Revision destination ${randomUUID()}`,
     })
     const sourceAlias = `revision-source-${Math.random().toString(36).slice(2, 8)}`
     const destinationAlias = `revision-destination-${Math.random().toString(36).slice(2, 8)}`
@@ -84,10 +82,13 @@ describe('mergeTopicAliases', () => {
 
   it('resolves source identifiers to the destination with redirect metadata', async () => {
     const admin = await createTestUser({ administrator: true })
-    const source = await createFullTestTopic({ user: admin, name: `Redirect Source ${Date.now()}` })
+    const source = await createFullTestTopic({
+      user: admin,
+      name: `Redirect Source ${randomUUID()}`,
+    })
     const destination = await createFullTestTopic({
       user: admin,
-      name: `Redirect Destination ${Date.now()}`,
+      name: `Redirect Destination ${randomUUID()}`,
     })
     const sourceAlias = `redirect-source-alias-${Math.random().toString(36).slice(2, 8)}`
     await createTopicAliases(source.id, sourceAlias)
@@ -132,12 +133,15 @@ describe('mergeTopicAliases', () => {
   it('rejects self, already-merged source, merged destination, and non-admin users', async () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser()
-    const source = await createFullTestTopic({ user: admin, name: `Conflict Source ${Date.now()}` })
+    const source = await createFullTestTopic({
+      user: admin,
+      name: `Conflict Source ${randomUUID()}`,
+    })
     const destination = await createFullTestTopic({
       user: admin,
-      name: `Conflict Destination ${Date.now()}`,
+      name: `Conflict Destination ${randomUUID()}`,
     })
-    const other = await createFullTestTopic({ user: admin, name: `Conflict Other ${Date.now()}` })
+    const other = await createFullTestTopic({ user: admin, name: `Conflict Other ${randomUUID()}` })
 
     await expect(mergeTopicAliases(admin, source, source)).rejects.toMatchObject({ status: 409 })
     await expect(mergeTopicAliases(user, source, destination)).rejects.toMatchObject({
@@ -151,77 +155,33 @@ describe('mergeTopicAliases', () => {
     })
   })
 
-  it('locks source feed publication scopes before waiting on destination topic rows', async () => {
-    const user = await createTestUser({ administrator: true })
-    const source = await createFullTestTopic({ user, name: `Lock source ${crypto.randomUUID()}` })
-    const destination = await createFullTestTopic({
-      user,
-      name: `Lock destination ${crypto.randomUUID()}`,
+  it('reserves a merge before moving aliases and applies them through committed pages', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const source = await createFullTestTopic({ user: admin })
+    const destination = await createFullTestTopic({ user: admin })
+    const alias = `page-alias-${crypto.randomUUID()}`
+    await createTopicAliases(source.id, alias)
+
+    const operation = await createTopicMergeOperation(admin, source, destination)
+    expect(operation.status).toBe('queued')
+    expect((await getTopicAliasesForTest(source.id)).results).toContain(alias)
+    await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
+
+    let generation = await processTopicMergeOperationPage(operation.id, 0)
+    expect(generation).toBe(1)
+    await expect(getTopicMergeOperation(admin, source.id, operation.id)).resolves.toMatchObject({
+      status: 'running',
     })
-    const feed = await insertTestRssFeedDirect({ topicId: source.id })
-    const topicRowLocked = Promise.withResolvers<void>()
-    const releaseTopicRow = Promise.withResolvers<void>()
-    async function holdDestinationTopicRow(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* mergeTopicAliases feed lock test */ SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`,
-        [destination.id],
-      )
-      topicRowLocked.resolve()
-      await releaseTopicRow.promise
-      await query.commit()
+    expect((await getTopicAliasesForTest(source.id)).results).toContain(alias)
+    for (let page = 0; page < 2000 && generation !== null; page++) {
+      generation = await processTopicMergeOperationPage(operation.id, generation)
     }
-    const holder = holdDestinationTopicRow()
-    await topicRowLocked.promise
-    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
-    const lockAttachments = publicationLock.lockTopicRssFeedAttachmentLifecycles
-    const lockFeeds = rssFeedPublication.lockPostPublicationRssFeedScopes
-    const attachmentHeld = Promise.withResolvers<void>()
-    const feedsHeld = Promise.withResolvers<void>()
-    const attachmentSpy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycles')
-      .mockImplementation(async (query, topicIds) => {
-        await lockAttachments(query, topicIds)
-        if (topicIds.includes(source.id)) attachmentHeld.resolve()
-      })
-    const feedSpy = vi
-      .spyOn(rssFeedPublication, 'lockPostPublicationRssFeedScopes')
-      .mockImplementation(async (query, rssFeedIds) => {
-        await lockFeeds(query, rssFeedIds)
-        if (rssFeedIds.includes(feed.id)) feedsHeld.resolve()
-      })
-
-    const merging = mergeTopicAliases(user, source, destination)
-    try {
-      await attachmentHeld.promise
-      await feedsHeld.promise
-      expect(attachmentSpy).toHaveBeenCalledTimes(1)
-      expect(attachmentSpy.mock.calls[0]?.[1]).toEqual([source.id, destination.id])
-      await expect(contendForAttachmentLifecycleLock()).rejects.toMatchObject({ code: '55P03' })
-      await expect(contendForFeedPublicationLock()).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseTopicRow.resolve()
-      attachmentSpy.mockRestore()
-      feedSpy.mockRestore()
-    }
-    await holder
-    await merging
-
-    async function contendForAttachmentLifecycleLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* mergeTopicAliases attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
-      )
-      await lockAttachment(query, source.id)
-      await query.commit()
-    }
-
-    async function contendForFeedPublicationLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(`/* mergeTopicAliases feed lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockFeeds(query, [feed.id])
-      await query.commit()
-    }
+    expect(generation).toBeNull()
+    await expect(getTopicMergeOperation(admin, source.id, operation.id)).resolves.toMatchObject({
+      status: 'completed',
+    })
+    expect((await getTopicAliasesForTest(destination.id)).results).toContain(alias)
+    await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: destination.id })
   })
 })
 

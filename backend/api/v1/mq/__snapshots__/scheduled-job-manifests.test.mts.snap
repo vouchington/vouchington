@@ -1513,6 +1513,42 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Re-enqueue stalled staged topic merges",
+        "id": "topic-merge-recover-stalled",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "topic-merge-recover-stalled",
+    "template": {
+      "data": {},
+      "name": "topic-merge.recoverStalled",
+      "opts": {
+        "attempts": 2147483647,
+        "backoff": {
+          "delay": 1000,
+          "type": "paged-dispatch-topicMerges",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "topic-merge:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Dispatch due hostname crawl jobs (hourly)",
         "id": "crawl:crawl_hostnames_dispatcher",
         "kind": "scheduled-jobs",
@@ -3516,6 +3552,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueRecoverStalledImports",
+  },
+  {
+    "description": "Re-enqueue stalled staged topic merges",
+    "id": "topic-merge-recover-stalled",
+    "job_name": "topic-merge.recoverStalled",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueTopicMergeRecovery",
   },
   {
     "description": "Dispatch "find your friends" social matching",

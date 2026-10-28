@@ -1,12 +1,14 @@
 import { MODERATION_RETENTION_BOUNDED_TABLES } from './schema-growth-moderation-retention.mts'
 import { FEDERATION_BOUNDED_TABLES } from './schema-growth-bounded-federation.mts'
 import { MODERATION_BOUNDED_TABLES } from './schema-growth-bounded-moderation.mts'
+import { TOPIC_MERGE_BOUNDED_TABLES } from './schema-growth-bounded-topic-merge.mts'
 import { EXTRA_BOUNDED_TABLES_CONTINUED } from './schema-growth-bounded-extra-continued.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ...MODERATION_RETENTION_BOUNDED_TABLES,
   ...MODERATION_BOUNDED_TABLES,
   ...FEDERATION_BOUNDED_TABLES,
+  ...TOPIC_MERGE_BOUNDED_TABLES,
   ['classifier_decision_batch_candidates', 'Old unreferenced snapshots retire in bounded cleanup.'],
   [
     'image_deletion_post_updates',

@@ -7,13 +7,12 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getEntityRelation } from '@voucha/test-helpers/entities/entity-relations'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { POST_CONTENT_EDIT_WINDOW_EXPIRED } from '@modules/on-error/error-codes'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
 import { updatePost } from '../update.mts'
 import { getTopicByAny } from '@services/topics/get'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
@@ -59,7 +58,7 @@ describe('post category topic lifecycle validation', () => {
     const user = await createTestUser()
     const suffix = Math.random().toString(36).slice(2, 12)
     const postId = await insertTestPost({
-      id: getMinUUIDv7ForDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       title: `Expired category edit ${suffix}`,
       markdown: `Expired category edit ${suffix}`,
       createdById: user!.id,

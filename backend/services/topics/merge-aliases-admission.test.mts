@@ -3,12 +3,17 @@ import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { readEnqueuedJob, removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
-import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
+import {
+  getTopicMergeAdmissionCheckpoint,
+  type TopicMergeAdmissionCheckpoint,
+} from '@voucha/test-helpers/topic-merge-admission'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createTopicAliases } from './aliases.mts'
 import { createTopic } from './create.mts'
 import { getTopicByAny } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
+import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
+import { processTopicMergeOperationPage } from './merge-operation-page.mts'
 
 describe('mergeTopicAliases post-commit admission', () => {
   it('waits for alias-update admission after the merge commits', async () => {
@@ -93,7 +98,7 @@ describe('mergeTopicAliases post-commit admission', () => {
     }
   })
 
-  it('keeps a committed merge when alias-update admission fails and reports it once', async () => {
+  it('retries the same effects page after alias-update admission fails', async () => {
     const admin = await createTestUser({ administrator: true })
     const sourceSlug = `failure-source-${randomUUID()}`
     const destinationSlug = `failure-destination-${randomUUID()}`
@@ -109,9 +114,9 @@ describe('mergeTopicAliases post-commit admission', () => {
     const ownedTopicIds = new Set([source.id, destination.id])
     const admissionError = new Error('Injected topic-alias update admission failure')
     const originalAddBulk = rssFeedMaintenance.addBulk
-    const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
     let matchingAdmissions = 0
-    const addBulkSpy = vi.spyOn(rssFeedMaintenance, 'addBulk').mockImplementation(jobs => {
+    let admittedJobs: Awaited<ReturnType<typeof rssFeedMaintenance.addBulk>> | null = null
+    const addBulkSpy = vi.spyOn(rssFeedMaintenance, 'addBulk').mockImplementation(async jobs => {
       if (
         jobs.some(
           job =>
@@ -124,25 +129,56 @@ describe('mergeTopicAliases post-commit admission', () => {
         )
       ) {
         matchingAdmissions += 1
-        return Promise.reject(admissionError)
+        if (matchingAdmissions === 1) throw admissionError
+        admittedJobs = await originalAddBulk.call(rssFeedMaintenance, jobs)
+        return admittedJobs
       }
       return originalAddBulk.call(rssFeedMaintenance, jobs)
     })
 
     try {
-      await expect(mergeTopicAliases(admin!, source, destination)).resolves.toMatchObject({
-        source_topic_id: source!.id,
-        destination_topic_id: destination.id,
+      const operation = await createTopicMergeOperation(admin!, source, destination)
+      let generation: number | null = 0
+      let failedGeneration: number | null = null
+      let beforeFailure: TopicMergeAdmissionCheckpoint | null = null
+      let pageError: unknown = null
+      for (let page = 0; page < 2000 && generation !== null; page++) {
+        const before = await getTopicMergeAdmissionCheckpoint(operation.id)
+        let next: number | null
+        try {
+          next = await processTopicMergeOperationPage(operation.id, generation)
+        } catch (err) {
+          pageError = err
+          failedGeneration = generation
+          beforeFailure = before
+          break
+        }
+        if (next === null) throw new Error('Merge completed before alias-update admission')
+        generation = next
+      }
+      expect(pageError).toBe(admissionError)
+      expect(failedGeneration).not.toBeNull()
+      expect(beforeFailure).toMatchObject({ stage: 'effects', completed_at: null })
+      expect(await getTopicMergeAdmissionCheckpoint(operation.id)).toEqual(beforeFailure)
+      await expect(getTopicMergeOperation(admin!, source.id, operation.id)).resolves.toMatchObject({
+        status: 'running',
+        stage: 'effects',
       })
       expect(await getTopicByAny(source.id)).toMatchObject({ id: destination.id })
       expect(matchingAdmissions).toBe(1)
-      expect(
-        sentryCaptureExceptionMock.mock.calls
-          .slice(reportsBefore)
-          .filter(([reportedError]) => reportedError === admissionError),
-      ).toHaveLength(1)
+      generation = await processTopicMergeOperationPage(operation.id, failedGeneration!)
+      for (let page = 0; page < 2000 && generation !== null; page++) {
+        generation = await processTopicMergeOperationPage(operation.id, generation)
+      }
+      expect(generation).toBeNull()
+      expect(matchingAdmissions).toBe(2)
+      await expect(getTopicMergeOperation(admin!, source.id, operation.id)).resolves.toMatchObject({
+        status: 'completed',
+      })
     } finally {
       addBulkSpy.mockRestore()
+      if (admittedJobs)
+        await removeEnqueuedJobs([Promise.resolve(admittedJobs)], 'processTopicAliasesUpdate')
     }
   })
 })

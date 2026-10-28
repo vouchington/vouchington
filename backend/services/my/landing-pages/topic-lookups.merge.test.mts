@@ -6,7 +6,7 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import { getTopicByAny } from '../../topics/get.mts'
-import { mergeTopicAliases } from '../../topics/merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import {
   getLandingPageReferralLinksByIds,
   getLandingPageTopicsByIds,

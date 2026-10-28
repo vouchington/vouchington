@@ -11,7 +11,6 @@ import type {
   TopicsSearchResponseBody,
   TopicResponseBody,
   TopicMutationResponseBody,
-  TopicMergeResponseBody,
   ListResponse,
 } from '@/types/api-responses'
 import type { Topic, TopicTypes } from '@/types/topics'
@@ -138,14 +137,7 @@ export async function unlinkTopicAlias(topicId: string, aliasId: string): Promis
   return clientApi.delete(`/api/v1/topics/${topicId}/aliases/${aliasId}`)
 }
 
-export async function mergeTopicAliases(
-  sourceTopicId: string,
-  destinationIdOrSlug: string,
-): Promise<TopicMergeResponseBody> {
-  return clientApi.post<TopicMergeResponseBody>(`/api/v1/topics/${sourceTopicId}/merges`, {
-    destination_id_or_slug: destinationIdOrSlug,
-  })
-}
+export { mergeTopicAliases, fetchTopicMergeOperation } from './topic-merges'
 
 export async function fetchSpendingCategoryAttributes(
   topicId: string,

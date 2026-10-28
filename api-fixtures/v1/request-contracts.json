@@ -45790,6 +45790,21 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId": {
+      "path": {
+        "properties": {
+          "operationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceIdOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["sourceIdOrSlug", "operationId"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/topics/aliases": {
       "query": {
         "properties": {

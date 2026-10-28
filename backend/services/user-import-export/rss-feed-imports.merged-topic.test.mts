@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
 import { getTopicByAny } from '@services/topics/get'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import {
   getRssFeedImport,
   processRssFeedImportRow,

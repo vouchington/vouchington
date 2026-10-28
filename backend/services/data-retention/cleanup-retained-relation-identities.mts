@@ -10,6 +10,7 @@ import {
   electedRelationMetadata,
   getElectedRelationTargetColumn,
 } from '@services/users/relation-impact-targets'
+import { topicMergeRelationScratchNames } from '@voucha/types/entities/topic-merge-relation-scratch'
 
 export type RetainedRelationIdentityCleanupPage = {
   relationTable: string
@@ -87,6 +88,15 @@ async function cleanupRelationFamily(
   const metadata = electedRelationMetadata.find(item => item.table_name === relationTable)!
   const owner = `retained_${metadata.table_name}`
   const targetColumn = getElectedRelationTargetColumn(relationTable)
+  // Concrete merge mappings retain old identities until their cache effects are admitted.
+  const topicMergeReferenceSql =
+    metadata.subject_type === 'topic' || metadata.object_type === 'topic'
+      ? `AND NOT EXISTS (
+          SELECT 1 FROM ${topicMergeRelationScratchNames(metadata).mappings} merge_work
+          WHERE merge_work.old_subject_id = locked.subject_id
+            AND merge_work.old_relation_id = locked.id
+        )`
+      : ''
   if (options.query) return withTransactionOptions(options, cleanup)
   await using transaction = await beginTransaction({ client: options.client })
   const result = await cleanup(transaction)
@@ -149,7 +159,8 @@ async function cleanupRelationFamily(
        AND NOT EXISTS (
          SELECT 1 FROM user_deletion_relation_impacts impact
          WHERE impact.subject_id = locked.subject_id AND impact.${targetColumn} = locked.id
-       )`,
+       )
+       ${topicMergeReferenceSql}`,
       [page.map(item => item.subject_id), page.map(item => item.id)],
     )
     const hasMore = candidates.length > pageSize
