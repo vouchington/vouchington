@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Post LLM moderation prompts entity helpers
  */
@@ -18,7 +17,7 @@ export async function insertTestAgentPrompt(options: {
   const activatedAt = options.activated === false ? null : new Date()
 
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestAgentPrompt */
     INSERT INTO agent_prompts (agent_id, prompt, model_name, model_provider, activated_at)
     VALUES (
       ${options.agentId},
@@ -28,7 +27,7 @@ export async function insertTestAgentPrompt(options: {
       ${activatedAt}
     )
     RETURNING id
-  `),
+  `,
   )
   return rows[0].id as string
 }
@@ -80,9 +79,9 @@ export async function hardDeleteTestModerationPrompt(promptId: string): Promise<
 /** Returns the installed stamp trigger definition for structural lock-order tests. */
 export async function getTestModerationTransparencyStampFunctionDefinition(): Promise<string> {
   const { rows } = await read<{ definition: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestModerationTransparencyStampFunctionDefinition */
     SELECT pg_get_functiondef('fn_update_agent_moderation_transparency()'::regprocedure) AS definition
-  `),
+  `,
   )
   return rows[0]!.definition
 }
@@ -90,11 +89,11 @@ export async function getTestModerationTransparencyStampFunctionDefinition(): Pr
 /** Returns the CAP lifecycle lock trigger definition for lock-order regressions. */
 export async function getTestCommunityAgentPromptLockFunctionDefinition(): Promise<string> {
   const { rows } = await read<{ definition: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestCommunityAgentPromptLockFunctionDefinition */
     SELECT pg_get_functiondef(
       'fn_lock_agent_moderation_transparency_community_prompt()'::regprocedure
     ) AS definition
-  `),
+  `,
   )
   return rows[0]!.definition
 }
@@ -107,24 +106,24 @@ export async function getActiveLLMModerationPromptsExcluding(
 ): Promise<unknown[]> {
   if (excludeIds.length === 0) {
     const { rows } = await read(
-      allowUnannotatedQuery(sql`
+      sql`/* getActiveLLMModerationPromptsExcludingEmpty */
       SELECT id
       FROM agent_prompts
       WHERE activated_at IS NOT NULL
         AND deactivated_at IS NULL
-    `),
+    `,
     )
     return rows
   }
 
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getActiveLLMModerationPromptsExcludingIds */
     SELECT id
     FROM agent_prompts
     WHERE activated_at IS NOT NULL
       AND deactivated_at IS NULL
       AND id != ALL(${excludeIds})
-  `),
+  `,
   )
   return rows
 }
