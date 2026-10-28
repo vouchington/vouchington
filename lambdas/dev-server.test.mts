@@ -6,14 +6,14 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 
-import { listen, server } from './dev-server.mts'
+import { startLambdaDevServer } from './test-helpers/dev-server.mts'
 import { PLAYWRIGHT_PODCAST_COVER_URL } from './test-helpers/playwright-image-urls.mts'
 
 const execFile = promisify(execFileCallback)
 
 let origin: string
+let server: http.Server
 
 function request(path: string): Promise<{
   body: Buffer
@@ -40,8 +40,7 @@ function request(path: string): Promise<{
 
 describe('Lambda dev server Playwright fixture', () => {
   beforeAll(async () => {
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
-    origin = `http://127.0.0.1:${port}`
+    ;({ server, origin } = await startLambdaDevServer())
   })
 
   afterAll(async () => {
@@ -96,16 +95,17 @@ describe('Lambda dev server Playwright fixture', () => {
 
 describe('listen', () => {
   it('prints the requested port in the banner once bound', async () => {
-    const target = http.createServer()
+    let target: http.Server | undefined
+    vi.stubEnv('IMAGE_LAMBDA_PORT', '12345')
     const logSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
     try {
-      listen(target, 0)
-      await once(target, 'listening')
+      ;({ server: target } = await startLambdaDevServer())
 
-      expect(logSpy).toHaveBeenCalledWith('Lambda dev server: http://localhost:0')
+      expect(logSpy).toHaveBeenCalledWith('Lambda dev server: http://localhost:12345')
     } finally {
       logSpy.mockRestore()
-      target.close()
+      target?.close()
+      vi.unstubAllEnvs()
     }
   })
 
@@ -120,7 +120,7 @@ describe('listen', () => {
       await expect(
         execFile(process.execPath, [fileURLToPath(new URL('dev-server.mts', import.meta.url))], {
           env: { ...process.env, IMAGE_LAMBDA_PORT: String(port) },
-          timeout: 15_000,
+          timeout: 4_000,
         }),
       ).rejects.toMatchObject({ code: 1, stderr: expect.stringMatching(/EADDRINUSE/) })
     } finally {
