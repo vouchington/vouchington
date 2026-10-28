@@ -5368,6 +5368,7 @@ rules:
     scope: repository
     options:
       defaultBranch: main
+      unanalyzable: report
 
   - name: Actions services avoid fixed host ports
     rule: github-actions-docker-host-ports
@@ -5384,6 +5385,13 @@ rules:
   - name: Actions scripts avoid inline expressions
     rule: github-actions-script-expressions
     scope: repository
+    options:
+      constantContexts:
+        - '^github\.(?:repository|repository_owner|server_url|run_id|run_number|run_attempt|sha|event_name|workspace)$'
+        - '^runner\.(?:os|arch|temp)$'
+        - "^job\\.services\\.[A-Za-z0-9_-]+\\.ports\\['[0-9]+'\\]$"
+        - '^matrix\.shard$'
+        - '^(?:needs|steps)\.[A-Za-z0-9_-]+\.outputs\.shard-total$'
 
   - name: no-mistakes globs match tracked files
     rule: no-mistakes-config
