@@ -106769,7 +106769,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/users/:idOrSlug#self",
       "bodyFile": "responses/native.users.profile.default.json",
-      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.users.profile.default",
       "method": "GET",
       "migratedFrom": [
@@ -107924,7 +107924,7 @@
         "backend/api/v1/copyright-notices/moderator-routes.mts",
         "web/lib/api/client/copyright-notice-association-search.ts"
       ],
-      "path": "/api/v1/copyright-notices/association-targets?q=Claimant",
+      "path": "/api/v1/copyright-notices/association-targets",
       "query": {
         "q": "Claimant"
       },

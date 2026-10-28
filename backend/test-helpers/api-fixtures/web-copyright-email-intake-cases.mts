@@ -42,7 +42,7 @@ export const webCopyrightEmailIntakeApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.copyright.email-notice-association-search',
     method: 'GET',
-    path: '/api/v1/copyright-notices/association-targets?q=Claimant',
+    path: '/api/v1/copyright-notices/association-targets',
     route: {
       routeTemplate: '/api/v1/copyright-notices/association-targets',
     },

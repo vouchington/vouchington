@@ -18,6 +18,7 @@ import * as clientCopyrightEuDisputeSettlements from '../../../lib/api/client/co
 import * as clientCopyrightGuest from '../../../lib/api/client/copyright-guest'
 import * as clientCopyrightNotices from '../../../lib/api/client/copyright-notices'
 import * as clientCopyrightNoticeAssociationSearch from '../../../lib/api/client/copyright-notice-association-search'
+import * as clientCopyrightRepeatInfringer from '../../../lib/api/client/copyright-repeat-infringer'
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
 import * as clientEntityRelations from '../../../lib/api/client/entity-relations'
 import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
@@ -97,6 +98,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     copyrightGuest: clientCopyrightGuest,
     copyrightNotices: clientCopyrightNotices,
     copyrightNoticeAssociationSearch: clientCopyrightNoticeAssociationSearch,
+    copyrightRepeatInfringer: clientCopyrightRepeatInfringer,
     dynamicConfig: clientDynamicConfig,
     entityRelations: clientEntityRelations,
     featureFlags: clientFeatureFlags,
