@@ -155,7 +155,7 @@ describe('usePostgreSQLAdminState', () => {
     const range = { fromDate: '2026-09-01', toDate: '2026-10-01', maxDefaultRows: 100 }
     act(() => result.current.chooseClassifierPartitionAction('createPartitions', range))
     await act(async () => result.current.confirmPartitionAction())
-    expect(mockedEnqueue).toHaveBeenCalledWith('createPartitions', range)
+    expect(mockedEnqueue).toHaveBeenCalledWith('createPartitions', { classifierRange: range })
     expect(result.current.pendingClassifierRange).toBeNull()
   })
 

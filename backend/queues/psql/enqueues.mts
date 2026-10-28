@@ -6,7 +6,6 @@ import { psql } from './queues.mts'
 import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
 export { enqueueAIRetentionContinuations }
 import type {
-  ClassifierPartitionRange,
   PsqlJobs,
   PsqlPartitionJobData,
   PsqlRetentionJobData,
@@ -73,25 +72,29 @@ function createPartitionEnqueue(jobName: 'createPartitions' | 'cleanupPartitions
     queueName: QUEUE_NAME,
     jobName,
   })
-  return async (classifierRange?: ClassifierPartitionRange): EnqueueReturnType => {
-    if (!classifierRange) return enqueue({}, { priority: PRIORITY_DEFAULT })
+  return async (rangeData?: PsqlPartitionJobData): EnqueueReturnType => {
+    if (!rangeData?.classifierRange && !rangeData?.requestRange)
+      return enqueue({}, { priority: PRIORITY_DEFAULT })
+    if (rangeData.classifierRange && rangeData.requestRange)
+      throw new Error('Only one partition range family may be requested')
+    const classifierRange = rangeData.classifierRange
+    const requestRange = rangeData.requestRange
+    const selectedRange = classifierRange ?? requestRange!
+    const family = classifierRange ? 'classifier' : 'request'
     const operation = jobName === 'createPartitions' ? 'create' : 'retire'
-    const jobId = `classifier-range__${operation}__${classifierRange.fromDate}_${classifierRange.toDate}`
+    const jobId = `${family}-range__${operation}__${selectedRange.fromDate}_${selectedRange.toDate}`
     const jobs = await enqueueBulkReactivatingFinished({
       queue: psql,
-      inputs: [classifierRange],
+      inputs: [selectedRange],
       jobIdOf: () => jobId,
       enqueueBulk: async inputs => {
         const added = await Promise.all(
           inputs.map(range =>
-            enqueue(
-              { classifierRange: range },
-              {
-                priority: PRIORITY_DEFAULT,
-                jobId,
-                ordering: { key: 'classifier_partitions', concurrency: 1 },
-              },
-            ),
+            enqueue(classifierRange ? { classifierRange: range } : { requestRange: range }, {
+              priority: PRIORITY_DEFAULT,
+              jobId,
+              ordering: { key: 'operator_partitions', concurrency: 1 },
+            }),
           ),
         )
         return added.filter(job => job !== null)

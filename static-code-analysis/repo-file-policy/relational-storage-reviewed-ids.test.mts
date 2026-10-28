@@ -128,6 +128,23 @@ describe('reviewed token and audit snapshot identifiers', () => {
   })
 
   it.each([
+    ['import_retention_cursors', 'cursor_row_id', 'token, cursor or protocol identifier'],
+    ['import_retention_cursors', 'cursor_discovery_url_id', 'token, cursor or protocol identifier'],
+    [
+      'user_data_request_attempt_retention_cursors',
+      'cursor_request_id',
+      'token, cursor or protocol identifier',
+    ],
+    [
+      'user_data_request_attempt_retention_cursors',
+      'cursor_processing_attempt_id',
+      'token, cursor or protocol identifier',
+    ],
+    [
+      'user_data_request_attempt_retention_cursors',
+      'cursor_upper_id',
+      'token, cursor or protocol identifier',
+    ],
     ['post_votes', 'device_id', 'token, cursor or protocol identifier'],
     ['oauth_authorization_server_events', 'client_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'client_id', 'audit snapshot identifier'],
@@ -142,6 +159,10 @@ describe('reviewed token and audit snapshot identifiers', () => {
     ],
   ])('reports %s.%s as stale once the column gains a foreign key', (table, name, label) => {
     const value = snapshot(table, { [name]: column('uuid') })
+    expect(checkRelationalStorage(value, noFreshness)).toEqual([])
+    expect(
+      checkRelationalStorage(snapshot('new_records', { [name]: column('uuid') }), noFreshness),
+    ).toEqual([expect.stringContaining(`new_records.${name}: UUID reference`)])
     value.tables[table]!.foreignKeys[`${name}_fk`] = foreignKey(name)
     expect(checkRelationalStorage(value)).toEqual(
       expect.arrayContaining([

@@ -137,6 +137,10 @@ CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__unfinished_updated_
 ON user_rss_feed_import_batches (updated_at)
 WHERE completed_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__completed_at__id
+ON user_rss_feed_import_batches (completed_at, id)
+WHERE completed_at IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__created_via_oauth_client_id
 ON user_rss_feed_import_batches (created_via_oauth_client_id)
 WHERE created_via_oauth_client_id IS NOT NULL;
@@ -169,12 +173,16 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
       AND failed_at IS NULL
     )
   ),
+  CONSTRAINT user_rss_feed_import_rows__batch_id__id UNIQUE (batch_id, id),
   CONSTRAINT user_rss_feed_import_rows__batch_row_index UNIQUE (batch_id, row_index)
 );
 
 CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_hard_delete
 BEFORE INSERT OR UPDATE OF rss_feed_id ON user_rss_feed_import_rows
 FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
+CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_completed_batch
+BEFORE INSERT OR UPDATE OF batch_id ON user_rss_feed_import_rows FOR EACH ROW
+EXECUTE FUNCTION fn_reject_completed_import_batch_child('user_rss_feed_import_batches');
 CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_rows_updated_at
 BEFORE UPDATE ON user_rss_feed_import_rows
 FOR EACH ROW
@@ -219,7 +227,8 @@ ALTER TABLE user_import_requests
 
 
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_row_discoveries (
-  import_row_id UUID NOT NULL REFERENCES user_rss_feed_import_rows(id) ON DELETE CASCADE,
+  import_row_id UUID NOT NULL,
+  batch_id UUID NOT NULL,
   discovery_url_id UUID NOT NULL REFERENCES urls(id) ON DELETE CASCADE,
   generation UUID NOT NULL,
   crawl_id UUID REFERENCES crawls(id) ON DELETE SET NULL,
@@ -228,6 +237,20 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_row_discoveries (
   PRIMARY KEY (import_row_id, discovery_url_id),
   CHECK (discovered_feed_url_id IS NULL OR failed_at IS NULL)
 );
+
+ALTER TABLE user_rss_feed_import_row_discoveries
+  ADD CONSTRAINT user_rss_feed_import_row_discoveries_batch_row_fkey
+  FOREIGN KEY (batch_id, import_row_id)
+  REFERENCES user_rss_feed_import_rows(batch_id, id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE user_rss_feed_import_row_discoveries
+  VALIDATE CONSTRAINT user_rss_feed_import_row_discoveries_batch_row_fkey;
+
+CREATE TRIGGER trigger_rss_import_discoveries_guard_completed_batch
+BEFORE INSERT OR UPDATE OF batch_id ON user_rss_feed_import_row_discoveries FOR EACH ROW
+EXECUTE FUNCTION fn_reject_completed_import_batch_child('user_rss_feed_import_batches');
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_row_discoveries__batch_row_url
+ON user_rss_feed_import_row_discoveries (batch_id, import_row_id, discovery_url_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_row_discoveries__discovery_url_id
 ON user_rss_feed_import_row_discoveries (discovery_url_id);
@@ -242,6 +265,7 @@ WHERE discovered_feed_url_id IS NOT NULL;
 
 COMMENT ON TABLE user_rss_feed_import_row_discoveries IS 'Durable per-page HTML feed discovery outcomes for an RSS import row.';
 COMMENT ON COLUMN user_rss_feed_import_row_discoveries.import_row_id IS 'The RSS import row that requested this HTML page discovery.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.batch_id IS 'Owning batch for bounded child-first retention.';
 COMMENT ON COLUMN user_rss_feed_import_row_discoveries.discovery_url_id IS 'HTML page URL whose crawl is pending or completed for feed discovery.';
 COMMENT ON COLUMN user_rss_feed_import_row_discoveries.generation IS 'Stable pending-crawl fence for this import row and page URL.';
 COMMENT ON COLUMN user_rss_feed_import_row_discoveries.crawl_id IS 'Completed crawl used to resolve the feed link, if retained.';
@@ -266,6 +290,13 @@ COMMENT ON COLUMN user_rss_feed_import_rows.rss_feed_id IS 'RSS feed resolved or
 COMMENT ON COLUMN user_rss_feed_import_rows.completed_at IS 'When this row completed with a non-error outcome.';
 COMMENT ON COLUMN user_rss_feed_import_rows.failed_at IS 'When this row reached a terminal error outcome.';
 COMMENT ON COLUMN user_rss_feed_import_rows.error_message IS 'Most recent row processing error, terminal only when outcome is error.';
+
+ALTER TABLE import_retention_cursors
+  ADD CONSTRAINT import_retention_cursors_rss_batch_id_fkey
+  FOREIGN KEY (rss_batch_id) REFERENCES user_rss_feed_import_batches(id)
+  ON DELETE SET NULL NOT VALID;
+ALTER TABLE import_retention_cursors
+  VALIDATE CONSTRAINT import_retention_cursors_rss_batch_id_fkey;
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_user_import_requests__rss_feed_id

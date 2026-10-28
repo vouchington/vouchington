@@ -35,6 +35,8 @@ import {
 } from './cleanup-notification-push-intents.mts'
 import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
 import { cleanupTerminalEmbeddingBatches } from './cleanup-embedding-batches.mts'
+import { cleanupCompletedImportBatches } from './cleanup-import-batches.mts'
+import { cleanupExpiredUserDataRequestAttempts } from './cleanup-user-data-request-attempts.mts'
 import { cleanupOldProviderResponseKeys } from './cleanup-provider-response-keys.mts'
 import { cleanupOldMediaDeliveryChanges } from './cleanup-media-delivery-changes.mts'
 import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
@@ -175,6 +177,9 @@ type DataRetentionCleanupOptions = {
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
   textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
   terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
+  completedAdminImportBatches?: OptionalRetentionLimits<CleanupOptions>
+  completedRssImportBatches?: OptionalRetentionLimits<CleanupOptions>
+  expiredUserDataRequestAttempts?: OptionalRetentionLimits<CleanupOptions>
   oldProviderResponseKeys?: OptionalRetentionLimits<CleanupOptions>
   oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
   classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
@@ -222,6 +227,9 @@ type DataRetentionCleanupResult = {
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
   textEmbeddingCache: CleanupResult
   terminalEmbeddingBatches: CleanupResult
+  completedAdminImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
+  completedRssImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
+  expiredUserDataRequestAttempts: Awaited<ReturnType<typeof cleanupExpiredUserDataRequestAttempts>>
   oldProviderResponseKeys: CleanupResult
   oldMediaDeliveryChanges: CleanupResult
   classifierRecords: ClassifierCleanupResult
@@ -337,6 +345,17 @@ export async function runDataRetentionCleanup(
   const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
     withLimits(options.terminalEmbeddingBatches),
   )
+  const completedAdminImportBatches = await cleanupCompletedImportBatches(
+    'admin',
+    withLimits(options.completedAdminImportBatches),
+  )
+  const completedRssImportBatches = await cleanupCompletedImportBatches(
+    'rss',
+    withLimits(options.completedRssImportBatches),
+  )
+  const expiredUserDataRequestAttempts = await cleanupExpiredUserDataRequestAttempts(
+    withLimits(options.expiredUserDataRequestAttempts),
+  )
   const oldProviderResponseKeys = await cleanupOldProviderResponseKeys(
     withLimits(options.oldProviderResponseKeys),
   )
@@ -407,6 +426,9 @@ export async function runDataRetentionCleanup(
     oldModerationMediaReveals,
     textEmbeddingCache,
     terminalEmbeddingBatches,
+    completedAdminImportBatches,
+    completedRssImportBatches,
+    expiredUserDataRequestAttempts,
     oldProviderResponseKeys,
     oldMediaDeliveryChanges,
     classifierRecords,

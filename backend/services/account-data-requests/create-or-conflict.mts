@@ -52,8 +52,5 @@ export async function createDataRequestOrConflict(
 function isActiveRequestUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const pgError = error as PostgresError
-  return (
-    pgError.code === '23505' &&
-    pgError.constraint === 'idx_user_data_requests__active_per_requester'
-  )
+  return pgError.code === '23505' && pgError.constraint === 'active_user_data_request_claims_pkey'
 }

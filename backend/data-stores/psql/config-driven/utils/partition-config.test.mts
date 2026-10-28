@@ -8,6 +8,7 @@ import {
   REVISION_PARTITION_TABLES,
   USER_KEY_PARTITION_TABLES,
   USER_SESSION_PARTITION_TABLES,
+  USER_DATA_REQUEST_PARTITION_TABLES,
 } from './partition-config.mts'
 
 describe('partition drop policy coverage', () => {
@@ -16,6 +17,7 @@ describe('partition drop policy coverage', () => {
       ...POST_PARTITION_TABLES,
       ...CLASSIFIER_RESULT_PARTITION_TABLES,
       ...USER_SESSION_PARTITION_TABLES,
+      ...USER_DATA_REQUEST_PARTITION_TABLES,
       ...USER_KEY_PARTITION_TABLES,
       ...REVISION_PARTITION_TABLES,
       ...DEFERRED_LEDGER_PARTITION_TABLES,

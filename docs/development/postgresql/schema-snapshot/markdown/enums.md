@@ -833,6 +833,17 @@
 - `topic`
 - `rss_feed`
 
+## `import_retention_families`
+
+- `admin`
+- `rss`
+
+## `import_retention_phases`
+
+- `discoveries`
+- `rows`
+- `batch`
+
 ## `list_visibilities`
 
 - `private`
@@ -1663,6 +1674,10 @@
 - `parent_hostname`
 - `url_blocklist`
 - `email_blocklist`
+
+## `user_data_request_attempt_cleanup_names`
+
+- `expired_attempts`
 
 ## `user_deletion_external_work_kinds`
 

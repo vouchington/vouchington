@@ -301,6 +301,14 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  IMMUTABLE
 ```
 
+## `fn_project_active_user_data_request_claim`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_active_user_data_request_claim()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_activitypub_inbox_delivery_retention`
 
 ```sql
@@ -713,6 +721,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_classifier_run()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_community_prompt_result_configuration()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_completed_import_batch_child`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_completed_import_batch_child()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

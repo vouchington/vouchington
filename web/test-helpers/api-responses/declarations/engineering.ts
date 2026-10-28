@@ -132,9 +132,11 @@ export const ENGINEERING_DECLARATIONS = [
     adminPsqlJobsClassifierRange,
     context =>
       context.client.psql.enqueuePsqlJob('createPartitions', {
-        fromDate: '2020-02-01',
-        toDate: '2020-02-02',
-        maxDefaultRows: 100,
+        classifierRange: {
+          fromDate: '2020-02-01',
+          toDate: '2020-02-02',
+          maxDefaultRows: 100,
+        },
       }),
   ),
   defineWebApiFixture<PsqlJobEnqueueResponse>()(

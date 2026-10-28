@@ -29,6 +29,12 @@ export const POST_PARTITION_TABLES: string[] = [
   'agent_moderations',
 ]
 
+/** Export history and its S3-attempt ledger share UUIDv7 request ranges. */
+export const USER_DATA_REQUEST_PARTITION_TABLES = [
+  'user_data_requests',
+  'user_data_request_attempts',
+] as const
+
 /**
  * Classifier results retain one row per candidate. Topic and story-family ownership use
  * separate parents. All result families range by the UUIDv7 decision batch so batch-scoped replay
@@ -126,6 +132,7 @@ export type PartitionDropPolicy = {
 export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Object.fromEntries(
   [
     ...POST_PARTITION_TABLES,
+    ...USER_DATA_REQUEST_PARTITION_TABLES,
     ...CLASSIFIER_RESULT_PARTITION_TABLES,
     ...USER_SESSION_PARTITION_TABLES,
     ...USER_KEY_PARTITION_TABLES,
@@ -152,6 +159,15 @@ for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
     minimumRetentionDays: 90,
     legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
   }
+}
+
+PARTITION_DROP_POLICIES.user_data_requests = {
+  minimumRetentionDays: 30,
+  legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
+}
+PARTITION_DROP_POLICIES.user_data_request_attempts = {
+  minimumRetentionDays: 30,
+  legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
 }
 
 // Security call audits may be retired only after the privacy-policy window. The legal

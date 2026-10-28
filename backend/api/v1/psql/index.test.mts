@@ -88,4 +88,23 @@ describe('POST /api/v1/psql/jobs', () => {
       .send({ type: 'createPartitions', classifierRange: range })
       .expect(403)
   })
+
+  it('accepts one request-history range and rejects overlapping range families', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const request = createRequest()
+    await request.authenticateAs(administrator)
+    const range = { fromDate: '2020-02-01', toDate: '2020-02-02', maxDefaultRows: 100 }
+    await request
+      .post('/api/v1/psql/jobs')
+      .send({ type: 'createPartitions', requestRange: range })
+      .expect(200)
+    await request
+      .post('/api/v1/psql/jobs')
+      .send({ type: 'cleanupPartitions', requestRange: range })
+      .expect(200)
+    await request
+      .post('/api/v1/psql/jobs')
+      .send({ type: 'createPartitions', requestRange: range, classifierRange: range })
+      .expect(422)
+  })
 })

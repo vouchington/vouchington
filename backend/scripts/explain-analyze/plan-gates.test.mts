@@ -196,14 +196,14 @@ describe('plan expectation registry', () => {
   it('requires a seeded-row declaration for a nonempty unbounded sequential scan', () => {
     const scan = result('post-search-new', {
       'Node Type': 'Seq Scan',
-      'Relation Name': 'admin_import_rows',
+      'Relation Name': 'web_push_endpoint_owners',
       'Actual Rows': 1,
       'Actual Loops': 1,
     })
     expect(() => assertRequiredPlanShape(scan)).toThrow('without a declared seeded row count')
     const empty = result('post-search-new', {
       'Node Type': 'Seq Scan',
-      'Relation Name': 'admin_import_rows',
+      'Relation Name': 'web_push_endpoint_owners',
       'Actual Rows': 0,
       'Actual Loops': 1,
     })

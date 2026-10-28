@@ -5,6 +5,23 @@ import { TOPIC_MERGE_BOUNDED_TABLES } from './schema-growth-bounded-topic-merge.
 import { EXTRA_BOUNDED_TABLES_CONTINUED } from './schema-growth-bounded-extra-continued.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
+  ['admin_import_batches', 'Completed batches retire after a bounded retention window.'],
+  ['admin_import_rows', 'Child-first bounded import cleanup removes completed batch rows.'],
+  ['user_rss_feed_import_batches', 'Completed batches retire after a bounded retention window.'],
+  ['user_rss_feed_import_rows', 'Child-first bounded import cleanup removes completed batch rows.'],
+  [
+    'user_rss_feed_import_row_discoveries',
+    'Child-first bounded import cleanup removes completed batch discoveries.',
+  ],
+  ['import_retention_cursors', 'One transactional cursor for each of two import families.'],
+  [
+    'active_user_data_request_claims',
+    'At most one active request per subject and requester; terminal transitions release the claim.',
+  ],
+  [
+    'user_data_request_attempt_retention_cursors',
+    'One durable composite UUIDv7 scan position for safe export attempt pruning.',
+  ],
   ...MODERATION_RETENTION_BOUNDED_TABLES,
   ...MODERATION_BOUNDED_TABLES,
   ...FEDERATION_BOUNDED_TABLES,

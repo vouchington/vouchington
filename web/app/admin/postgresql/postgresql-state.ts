@@ -1,38 +1,32 @@
 'use client'
-
 import { useEffect, useRef, useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
 import { enqueuePsqlJob, fetchMigrations } from '@/lib/api/client/psql'
 import type { MigrationStatusResponse } from '@/types/api-responses'
-
 export type PartitionAction = 'createPartitions' | 'cleanupPartitions'
 export type ClassifierPartitionRange = { fromDate: string; toDate: string; maxDefaultRows?: number }
+export type RequestPartitionRange = ClassifierPartitionRange
 export type PsqlAction =
   | 'runMigrations'
   | 'runViews'
   | 'runConfigDriven'
   | 'createPartitions'
   | 'cleanupPartitions'
-
 export const PARTITION_ACTION_LABELS: Record<PartitionAction, string> = {
   createPartitions: 'Create Partitions',
   cleanupPartitions: 'Cleanup Partitions',
 }
-
 export const PARTITION_ACTION_DESCRIPTIONS: Record<PartitionAction, string> = {
   createPartitions: 'This will create future monthly partitions for crawl and RSS history tables.',
   cleanupPartitions:
     'This will drop expired partitions that are past their retention period. Dropped partitions cannot be recovered.',
 }
-
 export const PARTITION_ACTION_TOOLTIPS: Record<PartitionAction, string> = {
   createPartitions: 'Creates future monthly crawl and RSS history partitions',
   cleanupPartitions: 'Drops expired partitions that are past their retention period',
 }
-
 type PostgreSQLStreamSnapshot = MigrationStatusResponse | { error: string }
 const STREAM_FALLBACK_INTERVAL_MS = 30_000
-
 export function usePostgreSQLAdminState() {
   const [status, setStatus] = useState<MigrationStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,6 +35,7 @@ export function usePostgreSQLAdminState() {
   const [pendingAction, setPendingAction] = useState<PartitionAction | null>(null)
   const [pendingClassifierRange, setPendingClassifierRange] =
     useState<ClassifierPartitionRange | null>(null)
+  const [pendingRequestRange, setPendingRequestRange] = useState<RequestPartitionRange | null>(null)
   const esRef = useRef<EventSource | null>(null)
   const streamSnapshotAppliedRef = useRef(false)
   const loadDataPendingRef = useRef(false)
@@ -130,10 +125,13 @@ export function usePostgreSQLAdminState() {
     }
   }, [])
 
-  async function handleAction(type: PsqlAction, classifierRange?: ClassifierPartitionRange) {
+  async function handleAction(
+    type: PsqlAction,
+    ranges?: { classifierRange?: ClassifierPartitionRange; requestRange?: RequestPartitionRange },
+  ) {
     setActionLoading(prev => ({ ...prev, [type]: true }))
     try {
-      await enqueuePsqlJob(type, classifierRange)
+      await enqueuePsqlJob(type, ranges)
       onSuccess(`${type} job queued`)
       await loadData()
     } catch (err) {
@@ -147,13 +145,24 @@ export function usePostgreSQLAdminState() {
     if (!pendingAction) return
     const action = pendingAction
     const range = pendingClassifierRange
+    const requestRange = pendingRequestRange
     setPendingAction(null)
     setPendingClassifierRange(null)
-    await handleAction(action, range ?? undefined)
+    setPendingRequestRange(null)
+    await handleAction(
+      action,
+      range || requestRange
+        ? {
+            ...(range ? { classifierRange: range } : {}),
+            ...(requestRange ? { requestRange } : {}),
+          }
+        : undefined,
+    )
   }
 
   function choosePartitionAction(action: PartitionAction | null) {
     setPendingClassifierRange(null)
+    setPendingRequestRange(null)
     setPendingAction(action)
   }
 
@@ -162,12 +171,21 @@ export function usePostgreSQLAdminState() {
     range: ClassifierPartitionRange,
   ) {
     setPendingClassifierRange(range)
+    setPendingRequestRange(null)
+    setPendingAction(action)
+  }
+
+  function chooseRequestPartitionAction(action: PartitionAction, range: RequestPartitionRange) {
+    setPendingClassifierRange(null)
+    setPendingRequestRange(range)
     setPendingAction(action)
   }
 
   return {
     actionLoading,
     chooseClassifierPartitionAction,
+    chooseRequestPartitionAction,
+    pendingRequestRange,
     choosePartitionAction,
     confirmPartitionAction,
     error,

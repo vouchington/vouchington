@@ -3,6 +3,11 @@ import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids
 import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
+  'import-retention-parent',
+  'import-retention-child-continuation',
+  'request-attempt-retention-continuation',
+  'request-attempt-retention-delete',
+  'request-range-retirement-recent',
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
   'upload-cleanup-staged-upper',
   'upload-cleanup-staged-first',

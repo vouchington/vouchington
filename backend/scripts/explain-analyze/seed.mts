@@ -97,6 +97,7 @@ import { seedMembershipChange } from './seed-data/membership-changes.mts'
 import { seedSharedLoaders } from './seed-data/shared-loaders.mts'
 import { seedModerationReportContexts } from './seed-data/moderation-report-contexts.mts'
 import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
+import { seedImportRequestRetention } from './seed-data/import-request-retention.mts'
 
 async function main() {
   assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
@@ -106,6 +107,7 @@ async function main() {
   await seedUserRoleLookups()
   await seedAdminEmails()
   await seedTopicImportAttempts()
+  await seedImportRequestRetention()
   await seedMembershipProducts()
   await seedMemberships()
   await seedMembershipChange()

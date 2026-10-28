@@ -16,6 +16,7 @@ import {
   PARTITION_ACTION_DESCRIPTIONS,
   PARTITION_ACTION_LABELS,
   type ClassifierPartitionRange,
+  type RequestPartitionRange,
   type PartitionAction,
 } from './postgresql-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -34,11 +35,13 @@ export function PartitionConfirmDialog({
   confirmPartitionAction,
   pendingAction,
   pendingClassifierRange,
+  pendingRequestRange,
   setPendingAction,
 }: {
   confirmPartitionAction: () => void
   pendingAction: PartitionAction | null
   pendingClassifierRange: ClassifierPartitionRange | null
+  pendingRequestRange: RequestPartitionRange | null
   setPendingAction: (action: PartitionAction | null) => void
 }) {
   const t = useTranslations()
@@ -62,13 +65,14 @@ export function PartitionConfirmDialog({
     }
   }, [pendingAction])
 
-  const classifierSuffix = pendingClassifierRange
-    ? `__r_${pendingClassifierRange.fromDate.replaceAll('-', '')}_${pendingClassifierRange.toDate.replaceAll('-', '')}`
+  const selectedRange = pendingClassifierRange ?? pendingRequestRange
+  const selectedSuffix = selectedRange
+    ? `__r_${selectedRange.fromDate.replaceAll('-', '')}_${selectedRange.toDate.replaceAll('-', '')}`
     : null
   const refusals =
     partitionStatus?.tables.flatMap(table =>
       table.partitions.flatMap(partition =>
-        partition.drop_refusal && (!classifierSuffix || partition.name.endsWith(classifierSuffix))
+        partition.drop_refusal && (!selectedSuffix || partition.name.endsWith(selectedSuffix))
           ? [{ table: table.name, partition: partition.name, reason: partition.drop_refusal }]
           : [],
       ),
@@ -91,16 +95,22 @@ export function PartitionConfirmDialog({
               ? pendingAction === 'createPartitions'
                 ? 'Create Classifier Range'
                 : 'Retire Classifier Range'
-              : pendingAction
-                ? PARTITION_ACTION_LABELS[pendingAction]
-                : ''}
+              : pendingRequestRange
+                ? pendingAction === 'createPartitions'
+                  ? 'Create Export Request Range'
+                  : 'Retire Export Request Range'
+                : pendingAction
+                  ? PARTITION_ACTION_LABELS[pendingAction]
+                  : ''}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {pendingClassifierRange
               ? `${pendingAction === 'createPartitions' ? 'Seal' : 'Permanently retire'} the three classifier result partitions for ${pendingClassifierRange.fromDate} to ${pendingClassifierRange.toDate} (exclusive). The worker checks row bounds, foreign keys, pending work, and retention before committing.`
-              : pendingAction
-                ? PARTITION_ACTION_DESCRIPTIONS[pendingAction]
-                : ''}
+              : pendingRequestRange
+                ? `${pendingAction === 'createPartitions' ? 'Split' : 'Permanently retire'} the export request and attempt ranges for ${pendingRequestRange.fromDate} to ${pendingRequestRange.toDate} (exclusive). The worker enforces the DEFAULT row cap and checks terminal completion, S3 keys, attempt keys, and retention before a drop.`
+                : pendingAction
+                  ? PARTITION_ACTION_DESCRIPTIONS[pendingAction]
+                  : ''}
           </AlertDialogDescription>
           {pendingAction === 'cleanupPartitions' && statusError && (
             <p role='alert'>Partition status unavailable: {statusError}</p>

@@ -17,8 +17,6 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'users',
 ] as const
 const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
-  'admin_import_batches',
-  'admin_import_rows',
   'community_agent_prompt_revisions',
   'dynamic_configuration_revisions',
   'membership_changes',
@@ -30,11 +28,7 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'membership_verifications',
   'topic_merge_operations',
   'stripe_events',
-  'user_data_requests',
   'user_import_requests',
-  'user_rss_feed_import_batches',
-  'user_rss_feed_import_rows',
-  'user_rss_feed_import_row_discoveries',
   'identity_verification_attempts',
   'vote_integrity_flags',
 ] as const

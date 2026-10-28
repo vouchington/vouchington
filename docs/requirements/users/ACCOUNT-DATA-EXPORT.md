@@ -119,6 +119,15 @@ columns on read: `failed_at` set means `failed`; `completed_at` set with no `s3_
 `expires_at` in the past, means `expired`; `completed_at` set with a live `s3_key` means `ready`;
 `processing_started_at` set (and not yet completed/failed) means `processing`; otherwise `pending`.
 
+Export request history is retained in operator-managed UUIDv7 ranges. There is no automatic
+request-row sweep. The owner can retire a range only after every request in it has reached a
+terminal state beyond the declared minimum and no download object or possible upload key remains.
+The attempt-key ledger is pruned in bounded pages only after the request is terminal, its download
+object reference is cleared, and the last possible upload is older than the export bucket's
+configured storage lifecycle window.
+An unresolved key prevents range retirement. Account deletion clears the subject and requester
+links without giving the retained row any authority over the deleted account.
+
 ## Export Statuses
 
 - `pending`: Job has been enqueued but not started.

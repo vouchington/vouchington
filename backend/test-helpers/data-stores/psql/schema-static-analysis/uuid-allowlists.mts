@@ -13,6 +13,10 @@ import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operation
 import { RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS } from '../../../rss-category-snapshot-uuid-allowlist.mts'
 import { TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS } from '../../../topic-merge-schema-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  [
+    'user_data_requests.processing_attempt_id',
+    'Opaque current export-generation fencing token, not a relationship; object-key attempt history expires independently of owner-retained request history.',
+  ],
   ...AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,

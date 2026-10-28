@@ -13,6 +13,8 @@ import {
   createClassifierResultRange,
   retireClassifierResultRange,
 } from './migration-runner/operator-classifier-partitions.mts'
+import { createUserDataRequestRange } from './migration-runner/operator-user-data-request-partitions.mts'
+import { retireUserDataRequestRange } from './migration-runner/operator-user-data-request-retirement.mts'
 import {
   runConfigDriven as runConfigDrivenFromFolder,
   type RunConfigDrivenOptions,
@@ -32,9 +34,11 @@ type RunViewsOptions = Partial<Omit<PlatformRunViewsOptions, 'folder' | 'writer'
 export {
   cleanupPartitions,
   createClassifierResultRange,
+  createUserDataRequestRange,
   createMonthlyPartitions,
   refreshMaterializedView,
   retireClassifierResultRange,
+  retireUserDataRequestRange,
   type RunConfigDrivenOptions,
 }
 
