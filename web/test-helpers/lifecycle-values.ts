@@ -1,4 +1,4 @@
-import type { LifecycleJson, LifecycleScenarioInput } from './manifest'
+import type { LifecycleJson, LifecycleScenarioInput } from './lifecycle-manifest'
 
 export interface LifecycleObservation {
   visibleState: Record<string, LifecycleJson | undefined>

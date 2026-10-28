@@ -5,7 +5,7 @@ import {
   stringValue,
   type LifecycleAdapter,
 } from './lifecycle-values'
-import type { LifecycleJson } from './manifest'
+import type { LifecycleJson } from './lifecycle-manifest'
 import {
   hasNewIntegrityPenalty,
   isResolvedIntegrityFlag,

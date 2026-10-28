@@ -25,8 +25,8 @@ const BACKEND_EVIDENCE = {
   dispatch: 'backend/data-stores/psql/__tests__/lifecycle-scenarios.test.mts',
 } as const
 const WEB_EVIDENCE = {
-  manifest: 'web/lib/lifecycle-scenarios/manifest.ts',
-  dispatch: 'web/lib/lifecycle-scenarios/adapters.ts',
+  manifest: 'web/test-helpers/lifecycle-manifest.ts',
+  dispatch: 'web/test-helpers/lifecycle-adapters.ts',
 } as const
 export const LIFECYCLE_ADAPTERS = {
   'backend-moderation-appeal-service': {

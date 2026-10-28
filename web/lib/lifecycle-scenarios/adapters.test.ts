@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { webModerationAppealActions } from './adapters'
-import { webIntegrityReconciliation } from './integrity-adapter'
-import type { LifecycleScenarioInput } from './manifest'
-import { webForwardPagination } from './pagination-adapter'
-import { webPrivatePostCollection } from './private-post-adapter'
+import { webModerationAppealActions } from '@/test-helpers/lifecycle-adapters'
+import { webIntegrityReconciliation } from '@/test-helpers/lifecycle-integrity-adapter'
+import type { LifecycleScenarioInput } from '@/test-helpers/lifecycle-manifest'
+import { webForwardPagination } from '@/test-helpers/lifecycle-pagination-adapter'
+import { webPrivatePostCollection } from '@/test-helpers/lifecycle-private-post-adapter'
 
 function scenarioInput(overrides: Partial<LifecycleScenarioInput> = {}): LifecycleScenarioInput {
   return {

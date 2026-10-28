@@ -1,9 +1,9 @@
 import { canResolveModerationAppealAction, type ModerationAppeal } from '@/types/appeals'
 import { isAppealDraftReconciliationComplete } from '@/lib/api/client/appeals'
-import type { LifecycleJson } from './manifest'
-import { webForwardPagination } from './pagination-adapter'
-import { webIntegrityReconciliation } from './integrity-adapter'
-import { webPrivatePostCollection } from './private-post-adapter'
+import type { LifecycleJson } from './lifecycle-manifest'
+import { webForwardPagination } from './lifecycle-pagination-adapter'
+import { webIntegrityReconciliation } from './lifecycle-integrity-adapter'
+import { webPrivatePostCollection } from './lifecycle-private-post-adapter'
 
 const moderationAppealViewerRoles = ['administrator', 'moderator', 'member'] as const
 type LifecycleModerationAppealViewerRole = (typeof moderationAppealViewerRoles)[number]
