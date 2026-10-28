@@ -24,21 +24,21 @@ export async function updateImageStatus(
 
 export async function markImageDeleted(imageId: string) {
   await write(
-    allowUnannotatedQuery(`
+    `/* markImageDeleted */
     UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1
-  `),
+  `,
     [imageId],
   )
 }
 
 export async function markImageModerationFlagged(imageId: string) {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* markImageModerationFlagged */
     UPDATE images
     SET is_flagged_by_openai_omni_moderation = true,
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
-  `),
+  `,
   )
 }
 
@@ -48,13 +48,13 @@ export async function setImageOpenAIModerationResults(
   flagged: boolean,
 ) {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setImageOpenAIModerationResults */
     UPDATE images
     SET openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
         is_flagged_by_openai_omni_moderation = ${flagged},
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
-  `),
+  `,
   )
 }
 
@@ -72,28 +72,28 @@ export async function getImageModerationState(imageId: string): Promise<{
     is_flagged_by_openai_omni_moderation: boolean | null
     openai_omni_moderation_created_at: Date | null
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getImageModerationState */
     SELECT deleted_at, quarantine_pending_at, quarantined_at,
       openai_omni_moderation_results,
       is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     FROM images
     WHERE id = ${imageId}
-  `),
+  `,
   )
   return rows[0] ?? null
 }
 
 export async function markImageComplete(imageId: string) {
   await write(
-    allowUnannotatedQuery(`
+    `/* markImageComplete */
     UPDATE images
     SET upload_started_at = NOW(),
         upload_completed_at = NOW(),
         sha_256 = decode(replace($1::text, '-', '') || replace($1::text, '-', ''), 'hex'),
         s3_key = replace($1::text, '-', '') || replace($1::text, '-', '')
     WHERE id = $1
-  `),
+  `,
     [imageId],
   )
 }
@@ -127,9 +127,7 @@ export async function backdateImageUploadStagedAt(
 
 export async function setImageHashAndProcessing(imageId: string, sha256: Buffer): Promise<void> {
   await write(
-    allowUnannotatedQuery(
-      `UPDATE images SET sha_256 = $1, s3_key = $2, upload_started_at = NOW() WHERE id = $3`,
-    ),
+    `/* setImageHashAndProcessing */ UPDATE images SET sha_256 = $1, s3_key = $2, upload_started_at = NOW() WHERE id = $3`,
     [sha256, sha256.toString('hex'), imageId],
   )
 }
@@ -140,10 +138,10 @@ export async function setImageCompleteWithData(
   data: Record<string, unknown>,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(`UPDATE images
+    `/* setImageCompleteWithData */ UPDATE images
        SET sha_256 = $1, s3_key = $2, upload_started_at = NOW(), upload_completed_at = NOW(),
            data = $3::jsonb
-       WHERE id = $4`),
+       WHERE id = $4`,
     [sha256, sha256.toString('hex'), JSON.stringify(data), imageId],
   )
 }

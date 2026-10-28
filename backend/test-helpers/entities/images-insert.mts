@@ -7,14 +7,14 @@ export async function insertTestImage(userId: string, id?: string): Promise<stri
   const sha256 = randomBytes(32)
   const s3Key = `test/${randomBytes(16).toString('hex')}`
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestImage */
     INSERT INTO images (
       id, created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
       openai_omni_moderation_results, is_flagged_by_openai_omni_moderation, openai_omni_moderation_created_at
     )
     VALUES (COALESCE(${id ?? null}::uuid, uuidv7()), ${userId}, ${sha256}, NOW(), NOW(), '{}', ${s3Key}, '[]'::jsonb, false, NOW())
     RETURNING id
-  `),
+  `,
   )
   return rows[0].id
 }
@@ -43,11 +43,11 @@ export async function insertTestStagedImage(
   options: { id: string; stagedAt: Date },
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestStagedImage */
     INSERT INTO images (id, created_by_id, sha_256, data, s3_key, upload_staged_at)
     VALUES (${options.id}, ${userId}, NULL, '{}', ${options.id}, ${options.stagedAt})
     RETURNING id
-  `),
+  `,
   )
   if (!rows[0]) throw new Error('Staged image fixture was not inserted')
   return rows[0].id

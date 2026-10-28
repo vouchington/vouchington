@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { createHash } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -25,7 +24,7 @@ export async function insertTestPostImage(data: {
     bindingFamily: 'post',
   })
   await query(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestPostImage */
     WITH inserted_post_image AS (
       INSERT INTO post_images (post_id, image_id, order_index, caption)
       VALUES (${data.postId}, ${data.imageId}, ${data.orderIndex ?? 0}, ${data.caption ?? ''})
@@ -44,7 +43,7 @@ export async function insertTestPostImage(data: {
     )
     INSERT INTO image_placements (placement_id, post_id, image_id)
     SELECT placement_id, post_id, image_id FROM missing_binding
-  `),
+  `,
   )
   await query.commit()
   return placementId
@@ -54,11 +53,11 @@ export async function insertPendingTestImage(userId: string): Promise<string> {
   const imageId = v7()
   const tempHash = createHash('sha256').update(imageId).digest()
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertPendingTestImage */
     INSERT INTO images (id, created_by_id, sha_256, data, s3_key)
     VALUES (${imageId}, ${userId}, ${tempHash}, '{}', ${imageId})
     RETURNING id
-  `),
+  `,
   )
   return rows[0].id
 }

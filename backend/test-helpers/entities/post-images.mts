@@ -39,13 +39,13 @@ export async function getTestPostImagePlacement(
     retired_at: Date | null
     retirement_reason: 'asset_deleted' | 'owner_removed' | null
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestPostImagePlacement */
     SELECT placement.id AS placement_id, placement.revision AS placement_revision, placement.retired_at,
       placement.retirement_reason
     FROM image_placements image_placement
     JOIN media_placements placement ON placement.id = image_placement.placement_id
     WHERE image_placement.post_id = ${postId} AND image_placement.image_id = ${imageId}
-  `),
+  `,
   )
   return rows[0] ?? null
 }
