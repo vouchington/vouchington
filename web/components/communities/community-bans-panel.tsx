@@ -48,12 +48,19 @@ export function CommunityBansPanel({ community, initialData }: Props) {
     return liftedAt ? { ...ban, lifted_at: ban.lifted_at ?? liftedAt } : ban
   })
 
-  async function handleLiftBan(banId: string, userId: string) {
+  async function handleLiftBan(userId: string) {
     setLiftingUserId(userId)
     setLiftError(null)
     try {
       await liftBan(community.slug, userId)
-      setLiftedAtByBanId(prev => ({ ...prev, [banId]: new Date().toISOString() }))
+      // The API lifts every active ban for the user; expired and already-lifted rows keep their status.
+      const liftedBanIds = bans.flatMap(ban =>
+        ban.user_id === userId && isBanActive(ban) ? [ban.id] : [],
+      )
+      setLiftedAtByBanId(prev => {
+        const liftedAt = new Date().toISOString()
+        return { ...prev, ...Object.fromEntries(liftedBanIds.map(id => [id, liftedAt])) }
+      })
       setLiftingUserId(null)
       router.refresh()
     } catch (err) {
@@ -145,7 +152,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                     loading={isLifting}
                     disabled={isLifting}
                     data-pw='community-ban-lift'
-                    onClick={() => handleLiftBan(ban.id, ban.user_id)}
+                    onClick={() => handleLiftBan(ban.user_id)}
                   >
                     {isLifting ? 'Lifting…' : 'Lift ban'}
                   </Button>
