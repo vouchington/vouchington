@@ -52,8 +52,3 @@ export interface ListItemsResponseBody {
 export interface ListsContainingResponseBody {
   list_ids: string[]
 }
-
-export interface ReferenceListResponseBody<TResult> {
-  results: TResult[]
-  page_info: PageInfo
-}

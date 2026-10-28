@@ -37,21 +37,7 @@ export const getCommunityModerationAnalytics = cache(
   },
 )
 
-export const getCommunityModerationAnalyticsOrNull = cache(
-  async (
-    idOrSlug: string,
-    options: {
-      range: ModerationAnalyticsRange
-      headers?: Record<string, string>
-    },
-  ): Promise<ModerationAnalytics | null> => {
-    return returnNullForMissingEntity(getCommunityModerationAnalytics(idOrSlug, options), {
-      nullStatusCodes: [403, 404],
-    })
-  },
-)
-
-export const getModerationTransparency = cache(
+const getModerationTransparency = cache(
   async (options: {
     range: ModerationAnalyticsRange
     headers?: Record<string, string>
@@ -80,15 +66,4 @@ export const getCommunityModerationTransparency = cache(
       `/api/v1/communities/${idOrSlug}/moderation-transparency`,
       { searchParams: { range: options.range }, headers: options.headers },
     ),
-)
-
-/** Do not retain a previously loaded paid aggregate after entitlement loss. */
-export const getCommunityModerationTransparencyOrNull = cache(
-  async (
-    idOrSlug: string,
-    options: { range: ModerationAnalyticsRange; headers?: Record<string, string> },
-  ): Promise<ModerationTransparency | null> =>
-    returnNullForMissingEntity(getCommunityModerationTransparency(idOrSlug, options), {
-      nullStatusCodes: [403, 404],
-    }),
 )

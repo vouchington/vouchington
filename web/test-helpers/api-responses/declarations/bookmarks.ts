@@ -11,7 +11,7 @@ import nativeBookmarksTopicsViewedDefault from '../../../../api-fixtures/v1/resp
 import nativeBookmarksUrlsSavedDefault from '../../../../api-fixtures/v1/responses/native.bookmarks.urls.saved.default.json'
 import nativeBookmarksUsersDismissedRecommendationsDefault from '../../../../api-fixtures/v1/responses/native.bookmarks.users.dismissed-recommendations.default.json'
 import nativeBookmarksUsersSubscribedPostsDefault from '../../../../api-fixtures/v1/responses/native.bookmarks.users.subscribed-posts.default.json'
-import type { ReferenceListResponseBody } from '@/types/api-responses/lists'
+import type { ReferenceListResponseBody } from '@/test-helpers/reference-list-fixture-types'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const BOOKMARKS_DECLARATIONS = [
@@ -58,10 +58,10 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.rss-feed-items.saved.default',
     nativeBookmarksRssFeedItemsSavedDefault,
     context =>
-      context.server.rssFeedItems.getUserRssFeedItemBookmarkReferences('user-abc', 'saved', {
-        limit: 25,
-        mediaType: 'article',
-      }),
+      context.rawServer.get<ReferenceListResponseBody<{ id: string }>>(
+        '/api/v1/users/user-abc/rss-feed-items/saved',
+        { searchParams: { media_type: 'article', limit: 25 } },
+      ),
   ),
   defineWebApiFixture<ReferenceListResponseBody<{ id: string }>>()(
     'native.bookmarks.rss-feeds.muted.default',

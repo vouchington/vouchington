@@ -2,20 +2,15 @@ import { describe, it, expect } from 'vitest'
 import {
   compareHref,
   createCommunityPathname,
-  createDomainPathname,
   createPostPathname,
   createUserPathname,
   createUrlPathname,
   domainHref,
   landingPageHref,
   landingPageNamedHref,
-  membershipGrantsHref,
   messagesHref,
   modmailThreadHref,
   myLandingPageHref,
-  myLandingPagesHref,
-  myMembershipHref,
-  plansHref,
   podcastCategoryHref,
   podcastsHref,
   reviewHref,
@@ -65,18 +60,7 @@ describe('entity primitives', () => {
   })
 
   it('builds domain entity paths', () => {
-    expect(createDomainPathname({ hostname: 'example.com' }, '/settings')).toBe(
-      '/domain/example.com/settings',
-    )
     expect(domainHref('example.com')).toBe('/domain/example.com')
-  })
-})
-
-describe('membership hrefs', () => {
-  it('builds membership surface paths', () => {
-    expect(plansHref()).toBe('/plans')
-    expect(myMembershipHref()).toBe('/my/membership')
-    expect(membershipGrantsHref()).toBe('/memberships/grants')
   })
 })
 
@@ -99,7 +83,6 @@ describe('landing page hrefs', () => {
   })
 
   it('builds owner landing page paths', () => {
-    expect(myLandingPagesHref()).toBe('/my/landing-pages')
     expect(myLandingPageHref({ slug: 'bonus' })).toBe('/my/landing-page/bonus')
     expect(myLandingPageHref('bonus', '/analytics')).toBe('/my/landing-page/bonus/analytics')
   })

@@ -1,6 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BOT_CHALLENGE_ACTION_TAG, BOT_CHALLENGE_REQUIRED } from '@ts-shared/utils/bot-challenge'
-import { createAuthRecoveryFetch } from '../auth-recovery-fetch'
+import {
+  BOT_CHALLENGE_ACTION_TAG,
+  BOT_CHALLENGE_REQUIRED,
+  VOUCHA_BOT_CHALLENGE_TOKEN_HEADER,
+} from '@ts-shared/utils/bot-challenge'
+import { authRecoveryFetch } from '../auth-recovery-fetch'
+
+const { solveChallengeMock } = vi.hoisted(() => ({
+  solveChallengeMock: vi.fn<(action: string, signal?: AbortSignal) => Promise<string>>(),
+}))
+
+vi.mock(import('../bot-challenge'), () => ({
+  requestBotChallengeToken: solveChallengeMock,
+}))
 
 function errorResponse(status: number, code: string): Response {
   return new Response(JSON.stringify({ code }), { status })
@@ -8,6 +20,7 @@ function errorResponse(status: number, code: string): Response {
 
 describe('application auth recovery fetch', () => {
   beforeEach(() => {
+    solveChallengeMock.mockReset()
     vi.stubGlobal('navigator', {
       locks: {
         request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
@@ -39,7 +52,7 @@ describe('application auth recovery fetch', () => {
       method: 'POST',
     }
 
-    expect((await createAuthRecoveryFetch()('/api/v1/posts', init)).status).toBe(200)
+    expect((await authRecoveryFetch('/api/v1/posts', init)).status).toBe(200)
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       '/api/v1/posts',
       '/api/v1/session',
@@ -61,9 +74,7 @@ describe('application auth recovery fetch', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ session: { uid: null } })))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createAuthRecoveryFetch()('/api/v1/bookmarks/user/example')).resolves.toBe(
-      original,
-    )
+    await expect(authRecoveryFetch('/api/v1/bookmarks/user/example')).resolves.toBe(original)
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(window.location.assign).not.toHaveBeenCalled()
   })
@@ -75,7 +86,7 @@ describe('application auth recovery fetch', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ session: {} })))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toMatchObject({ status: 502 })
+    await expect(authRecoveryFetch('/api/v1/posts')).rejects.toMatchObject({ status: 502 })
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/posts', '/api/v1/session'])
     expect(window.location.assign).not.toHaveBeenCalled()
   })
@@ -87,7 +98,7 @@ describe('application auth recovery fetch', () => {
       .mockResolvedValueOnce(errorResponse(503, 'UPSTREAM_UNAVAILABLE'))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toMatchObject({ status: 503 })
+    await expect(authRecoveryFetch('/api/v1/posts')).rejects.toMatchObject({ status: 503 })
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/posts', '/api/v1/session'])
     expect(window.location.assign).not.toHaveBeenCalled()
   })
@@ -100,7 +111,7 @@ describe('application auth recovery fetch', () => {
       .mockRejectedValueOnce(transportError)
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toBe(transportError)
+    await expect(authRecoveryFetch('/api/v1/posts')).rejects.toBe(transportError)
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(window.location.assign).not.toHaveBeenCalled()
   })
@@ -114,7 +125,7 @@ describe('application auth recovery fetch', () => {
       .mockRejectedValueOnce(transportError)
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toBe(transportError)
+    await expect(authRecoveryFetch('/api/v1/posts')).rejects.toBe(transportError)
     expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(window.location.assign).not.toHaveBeenCalled()
   })
@@ -131,9 +142,9 @@ describe('application auth recovery fetch', () => {
       })
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(
-      createAuthRecoveryFetch()('/api/v1/posts', { signal: controller.signal }),
-    ).rejects.toBe(cancellation)
+    await expect(authRecoveryFetch('/api/v1/posts', { signal: controller.signal })).rejects.toBe(
+      cancellation,
+    )
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(window.location.assign).not.toHaveBeenCalled()
   })
@@ -142,7 +153,7 @@ describe('application auth recovery fetch', () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(errorResponse(401, 'AUTH_REQUIRED'))
     vi.stubGlobal('fetch', fetchMock)
 
-    expect((await createAuthRecoveryFetch()('/api/v1/session')).status).toBe(401)
+    expect((await authRecoveryFetch('/api/v1/session')).status).toBe(401)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -151,9 +162,29 @@ describe('application auth recovery fetch', () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response)
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createAuthRecoveryFetch()('/api/v1/posts')).resolves.toBe(response)
+    await expect(authRecoveryFetch('/api/v1/posts')).resolves.toBe(response)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(window.location.assign).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not solve or replay an error with a noncanonical challenge action', async () => {
+    const response = new Response(
+      JSON.stringify({ code: BOT_CHALLENGE_REQUIRED, action: 'other' }),
+      { status: 403 },
+    )
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response)
+    vi.stubGlobal('fetch', fetchMock)
+    solveChallengeMock.mockResolvedValue('unused')
+
+    await expect(
+      authRecoveryFetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      }),
+    ).resolves.toBe(response)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(solveChallengeMock).not.toHaveBeenCalled()
   })
 
   it('allows one challenge after one authenticated renewal, preserving the request body', async () => {
@@ -171,12 +202,10 @@ describe('application auth recovery fetch', () => {
       )
       .mockResolvedValueOnce(new Response('{}'))
     vi.stubGlobal('fetch', fetchMock)
-    const solve = vi
-      .fn<(action: string, signal?: AbortSignal) => Promise<string>>()
-      .mockResolvedValue('one-proof')
+    solveChallengeMock.mockResolvedValue('one-proof')
     const init: RequestInit = { method: 'POST', body: 'same-body', credentials: 'include' }
 
-    expect((await createAuthRecoveryFetch(solve)('/api/posts', init)).status).toBe(200)
+    expect((await authRecoveryFetch('/api/posts', init)).status).toBe(200)
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       '/api/posts',
       '/api/v1/session',
@@ -185,6 +214,10 @@ describe('application auth recovery fetch', () => {
     ])
     expect(fetchMock.mock.calls[3]?.[1]?.body).toBe(init.body)
     expect(fetchMock.mock.calls[3]?.[1]?.credentials).toBe(init.credentials)
-    expect(solve).toHaveBeenCalledTimes(1)
+    expect(
+      new Headers(fetchMock.mock.calls[3]?.[1]?.headers).get(VOUCHA_BOT_CHALLENGE_TOKEN_HEADER),
+    ).toBe('one-proof')
+    expect(solveChallengeMock).toHaveBeenCalledWith(BOT_CHALLENGE_ACTION_TAG, undefined)
+    expect(solveChallengeMock).toHaveBeenCalledTimes(1)
   })
 })

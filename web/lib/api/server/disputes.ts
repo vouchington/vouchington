@@ -1,7 +1,6 @@
 import { cache } from 'react'
 import { serverApi } from './instance'
-import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
-import type { ReviewDispute, PostDisputeAnnotation } from '@/types/review-disputes'
+import type { ReviewDispute } from '@/types/review-disputes'
 
 interface DisputesResponse {
   disputes: ReviewDispute[]
@@ -15,16 +14,5 @@ export const getReviewDisputes = cache(
     } = {},
   ): Promise<DisputesResponse> => {
     return serverApi.get<DisputesResponse>('/api/v1/disputes', options)
-  },
-)
-
-export const getPostDisputeAnnotation = cache(
-  async (postId: string): Promise<PostDisputeAnnotation | null> => {
-    const response = await returnNullForMissingEntity(
-      serverApi.get<{ annotation: PostDisputeAnnotation | null }>(
-        `/api/v1/posts/${postId}/dispute-annotation`,
-      ),
-    )
-    return response?.annotation ?? null
   },
 )

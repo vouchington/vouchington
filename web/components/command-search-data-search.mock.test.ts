@@ -110,6 +110,43 @@ describe('search functions', () => {
       expect(result.domains).toEqual([hostname])
       expect(result.communities).toEqual([community])
     })
+
+    it('orders bookmarked posts before neutral and negatively bookmarked posts', async () => {
+      const ids = ['plain', 'saved', 'followed', 'negative', 'proxy-followed', 'muted']
+      mockFetchPosts.mockResolvedValueOnce({
+        results: ids.map(id => ({ id })),
+        posts: Object.fromEntries(ids.map(id => [id, { id, title: id }])),
+        bookmarks: {
+          saved: { save: true },
+          followed: { follow: true },
+          negative: { mute: true, block: true, hide: true },
+          'proxy-followed': { proxy_follow: true },
+          muted: { mute: true },
+        },
+        page_info: { has_next_page: false },
+      })
+      mockFetchTopics.mockResolvedValueOnce(makeTopicsSearchResponse({ topics: [] }))
+      mockFetchRssFeedItems.mockResolvedValueOnce(
+        makeRssFeedItemsFeedResponse({ rssFeedItems: [] }),
+      )
+      mockFetchHostnames.mockResolvedValueOnce({
+        results: [],
+        hostnames: {},
+        page_info: { has_next_page: false },
+      })
+      mockFetchCommunities.mockResolvedValueOnce(makeCommunitiesSearchResponse({ communities: [] }))
+
+      const result = await searchAll('test', signal)
+
+      expect(result.posts.map(item => item.id)).toEqual([
+        'saved',
+        'followed',
+        'proxy-followed',
+        'plain',
+        'negative',
+        'muted',
+      ])
+    })
   })
 
   describe('searchTopicsOnly', () => {

@@ -6,7 +6,6 @@ import type {
   HostnameListResponse,
   HostnamesCompareResponse,
 } from '@/types/hostnames'
-import type { TopHostnamesResponse } from '@/types/api-responses'
 
 interface GetOptions {
   searchParams?: Record<string, string | number | boolean | undefined>
@@ -27,12 +26,6 @@ export const getHostname = cache(
         options,
       ),
     )
-  },
-)
-
-export const getTopHostnames = cache(
-  async (options: GetOptions = {}): Promise<TopHostnamesResponse> => {
-    return serverApi.get<TopHostnamesResponse>('/api/v1/hostnames/top', options)
   },
 )
 

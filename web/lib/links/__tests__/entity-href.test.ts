@@ -7,7 +7,6 @@ import {
   topicApiId,
   userHref,
   communityHref,
-  communityPostsHref,
   communityPendingPostsHref,
   topicTabForPostType,
   userTabForPostType,
@@ -217,12 +216,6 @@ describe('userHref', () => {
 describe('communityHref', () => {
   it('builds the community path from the slug', () => {
     expect(communityHref({ slug: 'my-club' })).toBe('/communities/my-club')
-  })
-})
-
-describe('communityPostsHref', () => {
-  it('builds the canonical community posts path from the slug', () => {
-    expect(communityPostsHref({ slug: 'my-club' })).toBe('/communities/my-club/posts')
   })
 })
 
