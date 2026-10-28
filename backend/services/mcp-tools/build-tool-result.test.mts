@@ -1,5 +1,5 @@
-import { myMessageGroups } from '@voucha/mcp/my-messages'
-import { myHouseholdGroups } from '@voucha/mcp/my-households'
+import { readMyMessagesGroup, manageMyMessagesGroup } from '@voucha/mcp/my-messages'
+import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -219,8 +219,10 @@ describe('tool-local schema references', () => {
 describe('official SDK against the registered MCP catalogs', () => {
   it('accounts for a successful SDK call in every current merged group', () => {
     const current = [
-      ...myMessageGroups,
-      ...myHouseholdGroups,
+      readMyMessagesGroup,
+      manageMyMessagesGroup,
+      readMyHouseholdsGroup,
+      manageMyHouseholdsGroup,
       ...communityModerationGroups,
       ...participationWriteGroups,
       ...userMergedReadingGroups,

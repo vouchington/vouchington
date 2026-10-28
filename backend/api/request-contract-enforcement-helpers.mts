@@ -2,7 +2,7 @@ import type { Application, Context, Handler, RouteBuilder } from '@jongleberry/a
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 import { REQUEST_CONTRACT_EXEMPTIONS } from './request-contract-exemptions-helpers.mts'
 
-export const REQUEST_CONTRACT_VALIDATION_MISSING = 'REQUEST_CONTRACT_VALIDATION_MISSING'
+const REQUEST_CONTRACT_VALIDATION_MISSING = 'REQUEST_CONTRACT_VALIDATION_MISSING'
 
 declare module '@jongleberry/api-server' {
   interface Context {

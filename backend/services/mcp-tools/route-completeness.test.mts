@@ -1,5 +1,5 @@
-import { myMessageGroups } from '@voucha/mcp/my-messages'
-import { myHouseholdGroups } from '@voucha/mcp/my-households'
+import { readMyMessagesGroup, manageMyMessagesGroup } from '@voucha/mcp/my-messages'
+import { readMyHouseholdsGroup, manageMyHouseholdsGroup } from '@voucha/mcp/my-households'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { readFileSync } from 'node:fs'
 import { isDeepStrictEqual } from 'node:util'
@@ -10,7 +10,7 @@ import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
-import { brandTopicClaimGroups } from '@voucha/mcp/brand/topic-claims'
+import { readMyTopicClaimsGroup, manageTopicClaimGroup } from '@voucha/mcp/brand/topic-claims'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type { OAuthResourceAudience } from '@services/oauth-authorization-server/resources'
@@ -80,15 +80,18 @@ const requestContracts = JSON.parse(
 type RouteSource = Pick<Tool, 'roles' | 'meta'> & { schema: Pick<Tool['schema'], 'parameters'> }
 type SourceEntry = { publicName: string; option: string | null; source: RouteSource }
 const mergedGroups = [
-  ...myMessageGroups,
-  ...myHouseholdGroups,
+  readMyMessagesGroup,
+  manageMyMessagesGroup,
+  readMyHouseholdsGroup,
+  manageMyHouseholdsGroup,
   ...participationWriteGroups,
   ...userMergedReadingGroups,
   ...userMergedParticipationGroups,
   ...userMergedAccountGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
-  ...brandTopicClaimGroups,
+  readMyTopicClaimsGroup,
+  manageTopicClaimGroup,
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sourceEntries: SourceEntry[] = [
@@ -184,7 +187,6 @@ describe('MCP route completeness from baseline facts', () => {
       expect(addition.contracts).not.toEqual([])
     }
   })
-
   it('subtracts only copyright decision options when the switch is off', () => {
     const user = {
       id: 'route-completeness',
@@ -241,7 +243,6 @@ describe('MCP route completeness from baseline facts', () => {
           ],
     )
     expect(unmatched).toEqual([])
-
     const currentMatches = new Map<string, number>()
     for (const entries of matches)
       for (const actual of entries) {

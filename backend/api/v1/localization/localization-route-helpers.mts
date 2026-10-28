@@ -53,7 +53,3 @@ export function localizationRoute(
     throw err
   }
 }
-
-export function createLocalizationRoute(getResult: typeof localizationGetResult) {
-  return (ctx: Context): void => localizationRoute(ctx, getResult)
-}

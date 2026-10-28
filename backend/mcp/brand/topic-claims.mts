@@ -145,8 +145,6 @@ export const manageTopicClaimGroup = {
   ],
 }
 
-export const brandTopicClaimGroups = [readMyTopicClaimsGroup, manageTopicClaimGroup]
-
 export const brandTopicClaimTools = [
   createMergedTool(
     readMyTopicClaimsGroup.name,

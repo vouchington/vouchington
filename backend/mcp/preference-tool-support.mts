@@ -58,7 +58,7 @@ export const EMAIL_PREFERENCES_RESULT_SCHEMA = successSchema({
  * Financial-data visibility, consents, federation, processing restriction and the username are
  * deliberately not here: see docs/overview/architecture/mcp/README.md.
  */
-export const SETTING_FIELDS = [
+const SETTING_FIELDS = [
   'follows_visibility',
   'topic_follows_visibility',
   'rss_feed_follows_visibility',

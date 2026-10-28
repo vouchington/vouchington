@@ -16,8 +16,8 @@ import {
 
 import {
   POST_LIST_TYPES,
-  PRIVATE_TOPIC_LIST_TYPES,
   PRIVATE_USER_LIST_TYPES,
+  TOPIC_LIST_TYPES,
   getCollectionRouteConfig,
 } from './collection-route-config.mts'
 import { POST_LIST_TABLES } from '@services/users/profile-collection-tables'
@@ -26,10 +26,14 @@ describe('route-classification reconciliation — backend collection privacy', (
   it('keeps the closed post relation table map aligned with the catalog route list', () => {
     expect(Object.keys(POST_LIST_TABLES).toSorted()).toEqual([...POST_LIST_TYPES].toSorted())
   })
-  describe('PRIVATE_TOPIC_LIST_TYPES alignment', () => {
+  describe('owner-only topic list alignment', () => {
     it('every private topic list type resolves to a private discovery path', () => {
       const userId = 'user-id-123'
-      const notPrivate = [...PRIVATE_TOPIC_LIST_TYPES].filter(
+      const privateTopicListTypes = [...TOPIC_LIST_TYPES].filter(
+        listType => getCollectionRouteConfig('topics', listType).access === 'owner',
+      )
+      expect(privateTopicListTypes.length).toBeGreaterThan(0)
+      const notPrivate = privateTopicListTypes.filter(
         listType => !isPrivateDiscoveryPath(`/user/${userId}/topics/${listType}`),
       )
       expect(notPrivate).toEqual([])

@@ -6,7 +6,8 @@ import getPostAncestorsTool from '../get-post-ancestors.mts'
 import getPostDescendantsTool from '../get-post-descendants.mts'
 import getPostTool from '../get-post.mts'
 import getStoryTool from '../get-story.mts'
-import { MCP_POST_FIELDS, mcpPostSchema } from '../mcp-post-output.mts'
+import { mcpPostSchema } from '../mcp-post-output.mts'
+import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
 import { mcpStoryItemSchema, mcpStorySchema } from '../mcp-story-output.mts'
 import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -46,8 +47,8 @@ describe('post and story read tool output schemas', () => {
   it('takes every post field from the Post contract', () => {
     const properties = propertiesOf(mcpPostSchema())
 
-    expect(Object.keys(properties)).toEqual([...MCP_POST_FIELDS])
-    for (const field of MCP_POST_FIELDS) {
+    expect(Object.keys(properties)).toEqual([...PUBLIC_POST_FIELDS])
+    for (const field of PUBLIC_POST_FIELDS) {
       expect(properties[field]).toEqual(documented('Post', field))
     }
   })

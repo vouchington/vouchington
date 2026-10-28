@@ -53,7 +53,7 @@ export async function toMcpHostnames(rows: ViewHostname[]): Promise<McpHostname[
 }
 
 /** The properties of an `McpHostname`, from the generated hostname contracts. */
-export function mcpHostnameSchema() {
+function mcpHostnameSchema() {
   return closedObject({
     ...pickProperties('PublicViewHostname', ['id', 'hostname', 'topic_id']),
     election: nullable(closedObject(pickProperties('ViewHostnameElection', ELECTION_FIELDS))),
