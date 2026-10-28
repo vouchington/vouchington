@@ -12,6 +12,15 @@ Client components receive display-specific view models, not normalized API respo
 - Stack async RSC children with `SequentialSuspense` or `SequentialAsideSuspense`, not sibling `<Suspense>` boundaries.
 - Forward navigation scrolls to top globally via `<ScrollToTop />`; do not add per-route workarounds.
 
+## Identifiers
+
+UUIDs are API facts, not web identifiers. They leak creation time (UUIDv7) and mean nothing to readers.
+
+- Routes use a slug or unique natural key (username, hostname, URL, owner plus slug) when the entity has one. Only entities with no unique natural key keep an id segment, and their pages still label them from facts.
+- Visible labels never render an id, truncated or full, including as a `?? id` fallback. When the API lacks a label, add it as a non-nullable fact (username, title, slug, name) hydrated per list. A user without a username falls back to the display name, then to a deleted-user label.
+- Inputs never ask for an id. Use an autocomplete picker, or a plain input only for a natural key such as a hostname or URL.
+- Before retargeting a link, `git grep` its pathname helper and confirm the old route keeps an in-app link; otherwise the old page becomes unreachable.
+
 ## Navigation
 
 - Breadcrumbs come from the shared builders (`buildBreadcrumbsForPath` on the server, `useResolvedBreadcrumbs` on the client); never call the internal `buildBreadcrumbs`.
@@ -31,7 +40,6 @@ Client components receive display-specific view models, not normalized API respo
 ## Components And Tests
 
 - React Compiler is enabled. Do not add `useCallback`, `useMemo`, or `React.memo` solely for referential stability; keep them for expensive work, imperative identity, context Provider values, and callback refs with changing state. Values read and written only by event handlers belong in `useRef`.
-- Entity reference fields use autocomplete pickers and display hydrated labels; never ask admins to type a raw id or UUID.
 - `data-testid` is reserved for Storybook play markers and Vitest stubs; production source uses `data-pw`.
 - Navigation destinations in dropdowns are links; actions stay buttons. A `router.push` inside `onClick` makes the item unopenable in a new tab.
 - Entity URLs come from canonical helpers, never hand-built path templates. Visible counts use the shared locale-aware formatters.
