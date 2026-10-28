@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -43,9 +42,7 @@ export async function updateUrlHostnameCrawlable(
   is_crawlable: boolean,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(
-      sql`UPDATE url_hostnames SET is_crawlable = ${is_crawlable} WHERE id = ${hostnameId}`,
-    ),
+    sql`/* updateUrlHostnameCrawlable */ UPDATE url_hostnames SET is_crawlable = ${is_crawlable} WHERE id = ${hostnameId}`,
   )
 }
 
