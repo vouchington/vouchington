@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -33,7 +32,7 @@ export async function insertTestDataPoint(data: {
   if (data.creditLimit != null) structuredData.credit_limit = data.creditLimit
 
   const { rows: postRows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestDataPointPost */
     INSERT INTO posts (
       id,
       post_type,
@@ -59,23 +58,23 @@ export async function insertTestDataPoint(data: {
       'system'
     )
     RETURNING id
-  `),
+  `,
   )
   const postId = postRows[0].id
   await setTestPostClearanceStatus(postId, 'approved', data.createdById)
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestDataPointSlug */
     INSERT INTO post_slugs (post_id, slug)
     VALUES (${postId}, ${data.slug})
-  `),
+  `,
   )
   if (data.topicId) {
     await write(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestDataPointTopic */
       INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
       VALUES (${postId}, ${data.topicId}, 0)
       ON CONFLICT (post_id, topic_id) DO NOTHING
-    `),
+    `,
     )
   }
   return postId
@@ -87,12 +86,12 @@ export async function insertTestDataPoint(data: {
  */
 export async function getPostDataPointTopicIds(postId: string): Promise<string[]> {
   const { rows } = await read<{ topic_id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostDataPointTopicIds */
     SELECT topic_id
     FROM post_data_point_topics
     WHERE post_id = ${postId}
     ORDER BY order_index ASC
-  `),
+  `,
   )
   return rows.map(r => r.topic_id)
 }
