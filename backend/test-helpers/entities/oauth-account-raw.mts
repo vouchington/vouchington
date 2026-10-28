@@ -1,9 +1,8 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import {
   getOAuthTokenPurpose,
-  providerTableConfigs,
+  getOAuthTableConfig,
   type OAuthProvider,
 } from './_oauth-config-support.mts'
 
@@ -21,7 +20,7 @@ export async function getTestOAuthAccountRaw(
   provider: OAuthProvider,
   providerUserId: string,
 ): Promise<RawOAuthAccountRow | null> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   let tokenColumns: string
   if (!config.hasTokenColumns) {
     tokenColumns = `, NULL AS access_token, NULL AS refresh_token, NULL AS access_token_expires_at`
@@ -31,9 +30,9 @@ export async function getTestOAuthAccountRaw(
     tokenColumns = `, access_token_ciphertext AS access_token, NULL AS refresh_token, access_token_expires_at`
   }
   const { rows } = await read<RawOAuthAccountRow>(
-    allowUnannotatedQuery(`SELECT user_id, ${config.emailColumn} AS provider_user_email_address, ${config.dataColumn} AS provider_user_data${tokenColumns}
+    `/* getTestOAuthAccountRaw */ SELECT user_id, ${config.emailColumn} AS provider_user_email_address, ${config.dataColumn} AS provider_user_data${tokenColumns}
      FROM ${config.table}
-     WHERE ${config.providerUserIdColumn} = $1`),
+     WHERE ${config.providerUserIdColumn} = $1`,
     [providerUserId],
   )
   const row = rows[0]

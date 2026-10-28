@@ -22,7 +22,7 @@ export type OAuthAccount = {
   provider_user_data: Record<string, unknown>
 }
 
-type OAuthTableConfig = {
+type OAuthTableConfig = Readonly<{
   table: string
   userIdColumn: string
   providerUserIdColumn: string
@@ -31,10 +31,10 @@ type OAuthTableConfig = {
   hasTokenColumns: boolean
   hasRefreshToken: boolean
   accountIdColumn?: string
-}
+}>
 
-export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
-  facebook: {
+const providerTableConfigs = Object.freeze({
+  facebook: Object.freeze({
     table: 'facebook_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'facebook_user_id',
@@ -43,8 +43,8 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     hasTokenColumns: true,
     hasRefreshToken: false,
     accountIdColumn: 'id',
-  },
-  apple: {
+  }),
+  apple: Object.freeze({
     table: 'apple_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'apple_user_id',
@@ -53,8 +53,8 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     hasTokenColumns: false,
     hasRefreshToken: false,
     accountIdColumn: 'id',
-  },
-  google: {
+  }),
+  google: Object.freeze({
     table: 'google_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'google_user_id',
@@ -63,8 +63,8 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     hasTokenColumns: false,
     hasRefreshToken: false,
     accountIdColumn: 'id',
-  },
-  x: {
+  }),
+  x: Object.freeze({
     table: 'x_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'x_user_id',
@@ -73,8 +73,8 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     hasTokenColumns: true,
     hasRefreshToken: true,
     accountIdColumn: 'id',
-  },
-  linkedin: {
+  }),
+  linkedin: Object.freeze({
     table: 'linkedin_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'linkedin_user_id',
@@ -82,8 +82,8 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataColumn: 'linkedin_user_data',
     hasTokenColumns: true,
     hasRefreshToken: true,
-  },
-  microsoft: {
+  }),
+  microsoft: Object.freeze({
     table: 'microsoft_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'microsoft_user_id',
@@ -92,8 +92,8 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     hasTokenColumns: true,
     hasRefreshToken: true,
     accountIdColumn: 'id',
-  },
-  github: {
+  }),
+  github: Object.freeze({
     table: 'github_accounts',
     userIdColumn: 'user_id',
     providerUserIdColumn: 'github_user_id',
@@ -102,7 +102,14 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     hasTokenColumns: true,
     hasRefreshToken: true,
     accountIdColumn: 'id',
-  },
+  }),
+} satisfies Record<OAuthProvider, OAuthTableConfig>)
+
+export function getOAuthTableConfig(provider: OAuthProvider): OAuthTableConfig {
+  if (typeof provider !== 'string' || !Object.hasOwn(providerTableConfigs, provider)) {
+    throw new Error('Invalid OAuth provider')
+  }
+  return providerTableConfigs[provider]
 }
 
 export function getOAuthTokenPurpose(
