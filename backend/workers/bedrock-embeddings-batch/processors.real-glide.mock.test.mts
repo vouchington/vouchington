@@ -231,14 +231,19 @@ describe('bounded Bedrock batch dispatcher continuations', () => {
     ).resolves.toMatchObject({
       inspected: 1,
       reconciled: 1,
-      hasMore: false,
+      hasMore: true,
     })
     expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)
     expect(BedrockControlClient.send).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ input: { jobIdentifier: jobArns[1] } }),
     )
-    expect(await backgroundCpu.getJob(terminalContinuationId)).toBeNull()
+    const terminal = await backgroundCpu.getJob(terminalContinuationId)
+    expect(terminal).not.toBeNull()
+    if (!terminal) throw new Error('Expected terminal stale-cleanup continuation')
+    await expect(
+      processBedrockEmbeddingsBatchJob(terminal as Job<Record<string, unknown>>),
+    ).resolves.toMatchObject({ inspected: 0, hasMore: false })
     await expect(getTestBatchSummary(ids[0]!)).resolves.toMatchObject({ status: 'submitted' })
     await expect(getTestBatchSummary(ids[1]!)).resolves.toMatchObject({ status: 'submitted' })
   })

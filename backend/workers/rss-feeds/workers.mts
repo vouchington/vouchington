@@ -26,7 +26,7 @@ export const rssFeedsHandlers = [
     if (job.data.remainingBudget === undefined || job.data.asOf === undefined) {
       await job.updateData({ ...job.data, remainingBudget, asOf })
     }
-    if (remainingBudget === 0) return { count: 0 }
+    if (remainingBudget === 0) return { count: 0, rawRowsRead: 0 }
     return processPagedDispatcher(job, {
       dispatcher: 'rss',
       cursorKey: 'lane,id',
@@ -38,6 +38,7 @@ export const rssFeedsHandlers = [
           cursor: job.data.cursor,
           asOf: asOfDate,
           limit,
+          rawBudget: remainingBudget,
         })
         const nextBudget = remainingBudget - result.count
         return {

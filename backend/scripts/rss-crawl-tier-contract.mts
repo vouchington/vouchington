@@ -4,7 +4,7 @@ import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refr
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { updateRssFeedTiming } from '@voucha/test-helpers/entities/rss-feeds-state'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { getRssFeedsToFetch } from '@services/rss-feeds/get-to-fetch'
+import { getRssFeedsToFetch, type RssFeedDispatchCursor } from '@services/rss-feeds/get-to-fetch'
 import {
   getTierSlaMs,
   RSS_FEED_CRAWL_MAX_VALUES,
@@ -51,7 +51,7 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
     assert.ok(expectedTier, 'refreshed MV must contain the owned feed')
     assert.ok(expectedTier.crawl_tier >= 1 && expectedTier.crawl_tier <= 5)
 
-    const initial = await getRssFeedsToFetch({ limit: LIMIT })
+    const initial = await readDispatchPages()
     assert.ok(
       initial.some(feed => feed.id === neverFetched.id),
       'never fetched must be due',
@@ -67,18 +67,16 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
       const asOf = new Date(instant)
       try {
         await updateRssFeedTiming(recentFetched.id, new Date(asOf.getTime() - 8 * DAY_MS))
-        const aged = (await getRssFeedsToFetch({ limit: LIMIT, asOf })).find(
-          feed => feed.id === recentFetched.id,
-        )
+        // no-mistakes-disable-next-line query-reached-per-item: six fixed rollover instants each verify the bounded full-lane dispatch contract.
+        const aged = (await readDispatchPages(asOf)).find(feed => feed.id === recentFetched.id)
         assert.ok(aged, `aged owned feed must be selected at ${instant}`)
         assert.equal(aged.crawl_tier, expectedTier.crawl_tier)
         assert.equal(aged.crawl_score, expectedTier.crawl_score)
         const cutoff = asOf.getTime() - getTierSlaMs(expectedTier.crawl_tier as RssFeedCrawlTier)
         for (const delta of [-1, 0, 1] as const) {
           await updateRssFeedTiming(recentFetched.id, new Date(cutoff + delta))
-          const found = (await getRssFeedsToFetch({ limit: LIMIT, asOf })).find(
-            feed => feed.id === recentFetched.id,
-          )
+          // no-mistakes-disable-next-line query-reached-per-item: three fixed SLA boundary probes per rollover re-read the bounded raw dispatch pages.
+          const found = (await readDispatchPages(asOf)).find(feed => feed.id === recentFetched.id)
           const expectedPriorityGroup =
             delta <= 0 ? 1 : expectedTier.crawl_tier === 1 ? undefined : 2
           assert.equal(
@@ -94,4 +92,20 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
   } finally {
     restoreBudget()
   }
+}
+
+async function readDispatchPages(
+  asOf?: Date,
+): Promise<Awaited<ReturnType<typeof getRssFeedsToFetch>>['feeds']> {
+  const feeds: Awaited<ReturnType<typeof getRssFeedsToFetch>>['feeds'] = []
+  let cursor: RssFeedDispatchCursor | undefined
+  let remaining = LIMIT
+  for (let pageNumber = 0; pageNumber < 20 && remaining > 0; pageNumber++) {
+    const page = await getRssFeedsToFetch({ limit: remaining, rawBudget: remaining, asOf, cursor })
+    feeds.push(...page.feeds)
+    remaining -= page.feeds.length
+    if (!page.nextCursor) break
+    cursor = page.nextCursor
+  }
+  return feeds
 }

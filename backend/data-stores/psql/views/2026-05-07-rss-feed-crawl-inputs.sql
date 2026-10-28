@@ -73,4 +73,7 @@ CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers AS
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_rss_feed_crawl_tiers__rss_feed_id
   ON mv_rss_feed_crawl_tiers (rss_feed_id);
 
+CREATE INDEX IF NOT EXISTS idx_mv_rss_feed_crawl_tiers__tier_rss_feed_id
+  ON mv_rss_feed_crawl_tiers (crawl_tier, rss_feed_id);
+
 COMMENT ON MATERIALIZED VIEW mv_rss_feed_crawl_tiers IS 'Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.';

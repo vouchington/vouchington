@@ -1,6 +1,10 @@
 import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts'
 import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
 import { REPORT_CONTEXT_SEED_ROW_COUNT } from './seed-data/moderation-report-context-counts.mts'
+import {
+  INGESTION_ACCOUNT_ROW_COUNT,
+  INGESTION_BEDROCK_ROW_COUNT,
+} from './seed-data/ingestion-raw-pages.mts'
 
 /** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
 // Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
@@ -56,7 +60,10 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   community_search_counts: 20_261,
   community_list_topics: 1,
   community_members: 2_100,
-  facebook_accounts: 2,
+  facebook_accounts: INGESTION_ACCOUNT_ROW_COUNT + 2,
+  x_accounts: INGESTION_ACCOUNT_ROW_COUNT,
+  github_accounts: INGESTION_ACCOUNT_ROW_COUNT,
+  bedrock_embedding_batches: INGESTION_BEDROCK_ROW_COUNT,
   facebook_friends: 1,
   hostname_votes: 1,
   households: 100,
@@ -108,7 +115,6 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   copyright_restrictions: ANCILLARY_SEED_ROW_UPPER_BOUND,
   copyright_territorial_decisions: ANCILLARY_SEED_ROW_UPPER_BOUND,
   fediverse_instance_topics: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  github_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   github_friends: ANCILLARY_SEED_ROW_UPPER_BOUND,
   google_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   household_members: 101,
@@ -178,6 +184,5 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   user_roles: ANCILLARY_SEED_ROW_UPPER_BOUND,
   user_suspensions: ANCILLARY_SEED_ROW_UPPER_BOUND,
   vote_weight_penalties: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  x_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   x_friends: ANCILLARY_SEED_ROW_UPPER_BOUND,
 }

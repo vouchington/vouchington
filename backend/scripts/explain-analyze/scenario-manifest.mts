@@ -1,3 +1,4 @@
+import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
@@ -16,7 +17,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...(['mv-top-hashtags-refresh', 'mv-rss-feed-crawl-tiers-refresh'] as const),
   ...(['mv-platform-stats-refresh', 'mv-trending-rss-feeds-refresh'] as const),
   ...(['mv-revenue-memberships-refresh', 'mv-revenue-changes-refresh'] as const),
-  'rss-feeds-to-fetch-tiered',
+  ...INGESTION_PAGE_SCENARIO_IDS,
   'post-search-similar-post-new',
   'post-search-similar-post-relevance',
   'post-search-similar-rss-new',

@@ -2,6 +2,8 @@ import { read } from '@data-stores/psql'
 import { getRssFeedsToFetch } from '@services/rss-feeds/get-to-fetch'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { seedUuid } from '../seed-data/common.mts'
+import assert from 'node:assert/strict'
 
 export async function runMaterializedViewRefreshScenarios(): Promise<void> {
   for (const [scenarioId, view] of [
@@ -37,7 +39,34 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
       }
     })
   }
-  await runAndCapture('rss-feeds-to-fetch-tiered', () => getRssFeedsToFetch())
+  await runAndCapture('rss-feeds-to-fetch-tiered', async () => {
+    const page = await getRssFeedsToFetch({
+      limit: 25,
+      rawBudget: 26,
+      asOf: new Date(Date.now() + 2 * 24 * 60 * 60_000),
+      cursor: { lane: 3, afterId: '00000000-0000-0000-0000-000000000000' },
+    })
+    assert.ok(page.rawRowsRead > 0)
+    assert.ok(page.feeds.length > 0)
+  })
+  await runAndCapture('rss-feeds-to-fetch-fallback-page', async () => {
+    const page = await getRssFeedsToFetch({
+      limit: 25,
+      rawBudget: 26,
+      cursor: { lane: 5, afterId: seedUuid(0, '08'), throughId: seedUuid(2499, '08') },
+    })
+    assert.equal(page.rawRowsRead, 26)
+    assert.equal(page.feeds.length, 0)
+    assert.equal(page.nextCursor?.lane, 5)
+  })
+  await runAndCapture('rss-feeds-to-fetch-fallback-tail', async () => {
+    const page = await getRssFeedsToFetch({
+      limit: 25,
+      rawBudget: 26,
+      cursor: { lane: 5, afterId: seedUuid(2000, '08'), throughId: seedUuid(2499, '08') },
+    })
+    assert.ok(page.feeds.length > 0)
+  })
 }
 
 // Measured processed rows + 20%; both custom and generic plans must satisfy these bounds.
@@ -67,8 +96,47 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
 })
 registerScenarioContract('rss-feeds-to-fetch-tiered', {
   expectations: [
-    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 3089 },
-    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 3089 },
+    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 32 },
+    { kind: 'maxProcessedRows', relation: 'urls', max: 32 },
+    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 32 },
+    { kind: 'usesIndexes', indexes: ['rss_feeds_pkey'], queryContains: 'getRssFeedsTiered' },
+    { kind: 'usesIndexes', indexes: ['urls_pkey'], queryContains: 'getRssFeedsTiered' },
+    { kind: 'usesIndexes', indexes: ['url_hostnames_pkey'], queryContains: 'getRssFeedsTiered' },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_mv_rss_feed_crawl_tiers__tier_rss_feed_id'],
+      queryContains: 'getRssFeedsTiered',
+    },
+  ],
+})
+registerScenarioContract('rss-feeds-to-fetch-fallback-page', {
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'urls', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 64 },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_rss_feeds__is_enabled'],
+      queryContains: 'getRssFeedsTiered',
+    },
+  ],
+})
+registerScenarioContract('rss-feeds-to-fetch-fallback-tail', {
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'urls', max: 64 },
+    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 64 },
+    { kind: 'usesIndexes', indexes: ['urls_pkey'], queryContains: 'getRssFeedsTiered' },
+    { kind: 'usesIndexes', indexes: ['url_hostnames_pkey'], queryContains: 'getRssFeedsTiered' },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_rss_feeds__is_enabled'],
+      queryContains: 'getRssFeedsTiered',
+    },
+    { kind: 'usesIndexes', indexes: ['rss_feeds_pkey'], queryContains: 'getRssFeedsTiered' },
   ],
 })
 registerScenarioContract('mv-platform-stats-refresh', {

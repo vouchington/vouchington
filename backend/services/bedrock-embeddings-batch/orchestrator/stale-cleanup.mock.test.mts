@@ -9,6 +9,7 @@ import {
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
 import { runStaleCleanup } from './stale-cleanup.mts'
+import { uuidAfter, uuidBefore } from '@voucha/test-helpers/uuid-before'
 
 vi.mock<typeof import('@modules/aws/bedrock-control')>(
   import('@modules/aws/bedrock-control'),
@@ -27,6 +28,8 @@ function batchId() {
   createdBatchIds.push(id)
   return id
 }
+
+const ownedCursor = (id: string) => ({ afterId: uuidBefore(id), throughId: uuidAfter(id) })
 
 describe('runStaleCleanup', () => {
   beforeEach(() => {
@@ -66,8 +69,50 @@ describe('runStaleCleanup', () => {
     expect(first.nextCursor?.afterId).toBe(ids[0])
     expect(BedrockControlClient.send).toHaveBeenCalledTimes(1)
     const last = await runStaleCleanup(1, first.nextCursor)
-    expect(last).toMatchObject({ inspected: 1, hasMore: false, reconciled: 1 })
+    expect(last).toMatchObject({ inspected: 1, hasMore: true, reconciled: 1 })
+    expect(await runStaleCleanup(1, last.nextCursor)).toMatchObject({
+      inspected: 0,
+      hasMore: false,
+    })
     expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)
+  })
+
+  it('advances the raw cursor across a page with no stale batches', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        batch_listing_page_size: 1,
+      }),
+    )
+    const timestamp = Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000)
+    const ids = [0, 1].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    onTestFinished(() => cleanupTestEmbeddingsBatches(ids))
+    await Promise.all([
+      insertTestEmbeddingsBatch({
+        id: ids[0],
+        jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${ids[0]}`,
+        bedrockStatus: 'Submitted',
+        submittedAt: new Date(),
+      }),
+      insertTestEmbeddingsBatch({
+        id: ids[1],
+        jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${ids[1]}`,
+        bedrockStatus: 'Submitted',
+        submittedAt: new Date(Date.now() - 7_200_000),
+      }),
+    ])
+    vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
+    const first = await runStaleCleanup(1, {
+      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+    })
+    expect(first).toMatchObject({ inspected: 0, hasMore: true })
+    expect(first.nextCursor?.afterId).toBe(ids[0])
+    const second = await runStaleCleanup(1, first.nextCursor)
+    expect(second).toMatchObject({ inspected: 1, hasMore: true, reconciled: 1 })
+    expect(await runStaleCleanup(1, second.nextCursor)).toMatchObject({
+      inspected: 0,
+      hasMore: false,
+    })
   })
 
   it('returns empty result when no batches are stale', async () => {
@@ -79,7 +124,7 @@ describe('runStaleCleanup', () => {
       submittedAt: new Date(Date.now() - 30 * 60 * 1000),
     })
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result).toEqual({ inspected: 0, reconciled: 0, forcedCancellations: [], hasMore: false })
     expect(BedrockControlClient.send).not.toHaveBeenCalled()
@@ -96,7 +141,7 @@ describe('runStaleCleanup', () => {
     // retrieveBedrockBatch in runStaleCleanup + retrieveBedrockBatch in processBatch
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Failed' } as never)
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(1)
     expect(result.reconciled).toBe(1)
@@ -115,7 +160,7 @@ describe('runStaleCleanup', () => {
     })
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Stopped' } as never)
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(1)
     expect(result.reconciled).toBe(1)
@@ -137,7 +182,7 @@ describe('runStaleCleanup', () => {
     // before poll_dispatcher can download and apply results via processBatchPolling.
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(1)
     expect(result.reconciled).toBe(1)
@@ -162,7 +207,7 @@ describe('runStaleCleanup', () => {
       .mockResolvedValueOnce({ status: 'Submitted' } as never)
       .mockResolvedValueOnce({} as never)
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(1)
     expect(result.reconciled).toBe(0)
@@ -188,7 +233,7 @@ describe('runStaleCleanup', () => {
       .mockResolvedValueOnce({ status: 'InProgress' } as never)
       .mockResolvedValueOnce({} as never)
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(1)
     expect(result.forcedCancellations).toHaveLength(1)
@@ -209,7 +254,7 @@ describe('runStaleCleanup', () => {
       .mockResolvedValueOnce({ status: 'Submitted' } as never)
       .mockRejectedValueOnce(new Error('StopModelInvocationJob failed'))
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(1)
     expect(result.reconciled).toBe(0)
@@ -228,7 +273,7 @@ describe('runStaleCleanup', () => {
       submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     })
 
-    const result = await runStaleCleanup(1)
+    const result = await runStaleCleanup(1, ownedCursor(id))
 
     expect(result.inspected).toBe(0)
     expect(BedrockControlClient.send).not.toHaveBeenCalled()

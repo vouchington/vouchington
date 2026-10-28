@@ -3,7 +3,7 @@ import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { getFriendsDispatchLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 
-export type AccountToSync = { id: string }
+export type AccountToSync = { id: string; eligible: boolean }
 export type AccountSyncSweepOptions = {
   sweepStartedAt?: string
   afterId?: string
@@ -49,22 +49,44 @@ export async function getFriendSyncProviderUserId(
   return rows[0]?.provider_user_id ?? null
 }
 
-async function* streamAccounts(provider: FriendSyncProvider, options: AccountSyncSweepOptions) {
+async function* streamAccounts(
+  provider: FriendSyncProvider,
+  options: AccountSyncSweepOptions,
+): AsyncGenerator<AccountToSync, CursorRunResult<AccountToSync>, void> {
   const limits = options.limits ?? getFriendsDispatchLimits()
   const sweepStartedAt = options.sweepStartedAt ?? new Date().toISOString()
   const upperId =
     options.upperId !== undefined ? options.upperId : await getFriendAccountSweepUpperId(provider)
+  if (upperId === null) {
+    const result: CursorRunResult<AccountToSync> = { rowsRead: 0, hasMore: false }
+    options.onComplete?.(result)
+    return result
+  }
   return yield* createAsyncGeneratorFromCursor<AccountToSync>(
-    `/* streamAccountsToSync */ SELECT id
+    `/* streamAccountsToSync */ SELECT id,
+       (created_at <= $3::timestamptz
+        AND user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL
+        ${provider === 'x' ? 'AND (access_token_expires_at IS NULL OR access_token_expires_at > $3::timestamptz OR refresh_token_ciphertext IS NOT NULL)' : ''}
+        AND (friends_synced_at IS NULL OR friends_synced_at < $3::timestamptz - INTERVAL '24 hours')) AS eligible
      FROM ${provider}_accounts
-     WHERE id <= $1::uuid AND ($2::uuid IS NULL OR id > $2::uuid)
-       AND created_at <= $3::timestamptz
-       AND user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL
-       ${provider === 'x' ? 'AND (access_token_expires_at IS NULL OR access_token_expires_at > $3::timestamptz OR refresh_token_ciphertext IS NOT NULL)' : ''}
-       AND (friends_synced_at IS NULL OR friends_synced_at < $3::timestamptz - INTERVAL '24 hours')
-     ORDER BY id`,
-    [upperId, options.afterId ?? null, sweepStartedAt],
-    { batchSize: limits.batchSize, maxRows: limits.maxRows, onComplete: options.onComplete },
+     WHERE id <= $1::uuid AND id > $2::uuid
+     ORDER BY id LIMIT $4`,
+    [
+      upperId,
+      options.afterId ?? '00000000-0000-0000-0000-000000000000',
+      sweepStartedAt,
+      limits.maxRows,
+    ],
+    {
+      batchSize: limits.batchSize,
+      maxRows: limits.maxRows,
+      onComplete: result => {
+        // The inner SQL LIMIT caps physical rows, so an exact-full page needs an empty
+        // continuation instead of the cursor helper's out-of-budget lookahead.
+        result.hasMore = result.rowsRead === limits.maxRows
+        options.onComplete?.(result)
+      },
+    },
   )
 }
 

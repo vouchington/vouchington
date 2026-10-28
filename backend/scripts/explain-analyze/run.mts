@@ -47,6 +47,7 @@ import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-fo
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runRequestContextFoldScenarios } from './run-scenarios/request-context-folds.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
+import { runIngestionRawPageScenarios } from './run-scenarios/ingestion-raw-pages.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
@@ -62,6 +63,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runImageQuarantineScenarios,
   runBloomReconciliationScenarios,
   runMaterializedViewRefreshScenarios,
+  runIngestionRawPageScenarios,
   runHostnameBlocklistScenario,
   runHostnameCrawlSweepScenarios,
   runFeedAndMetricScenarios,

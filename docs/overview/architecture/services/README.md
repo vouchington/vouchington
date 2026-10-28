@@ -48,6 +48,11 @@ flowchart LR
 
 ## Decisions worth knowing
 
+Ingestion services page from immutable source IDs before applying changing eligibility. This keeps
+scheduled reads bounded when most feeds are not due, social accounts were recently synced, or
+Bedrock batches are still fresh. Workers retain the raw position through queue continuations so
+ineligible rows cannot hide later work.
+
 Deleting an image immediately denies delivery and retires its placements. Posts sharing the image
 are reset in independent bounded transactions, so popular images cannot hold every post lock in
 one transaction. A failed page keeps the image unreadable and its source storage intact until
