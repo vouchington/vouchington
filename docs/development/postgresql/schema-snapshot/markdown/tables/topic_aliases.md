@@ -46,7 +46,7 @@ Not partitioned — growth: unbounded.
 - `idx_topic_aliases__search_vector`: `CREATE INDEX idx_topic_aliases__search_vector ON public.topic_aliases USING gin (search_vector)`
 - `idx_topic_aliases__topic_id`: `CREATE INDEX idx_topic_aliases__topic_id ON public.topic_aliases USING btree (topic_id, alias) WHERE (topic_id IS NOT NULL)`
 - `idx_topic_aliases__unlink_requested`: `CREATE INDEX idx_topic_aliases__unlink_requested ON public.topic_aliases USING btree (id) WHERE (unlink_requested_at IS NOT NULL)`
-- `idx_topic_aliases__unlink_topic_id`: `CREATE INDEX idx_topic_aliases__unlink_topic_id ON public.topic_aliases USING btree (unlink_topic_id) WHERE (unlink_topic_id IS NOT NULL)`
+- `idx_topic_aliases__unlink_topic_id`: `CREATE INDEX idx_topic_aliases__unlink_topic_id ON public.topic_aliases USING btree (unlink_topic_id, id) WHERE (unlink_topic_id IS NOT NULL)`
 - `idx_topic_aliases__updated_at_id`: `CREATE INDEX idx_topic_aliases__updated_at_id ON public.topic_aliases USING btree (updated_at, ((id)::text))`
 - `idx_topic_aliases__updated_by_id`: `CREATE INDEX idx_topic_aliases__updated_by_id ON public.topic_aliases USING btree (updated_by_id)`
 - `topic_aliases_alias_key`: `CREATE UNIQUE INDEX topic_aliases_alias_key ON public.topic_aliases USING btree (alias)`
