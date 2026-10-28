@@ -193,6 +193,10 @@ CREATE OR REPLACE TRIGGER trigger_community_members_updated_at
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique ON community_members (community_id, user_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_community_members__active_community_id_id
+  ON community_members (community_id, id)
+  WHERE removed_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__user_id_desc
   ON community_members (user_id, id DESC)
   WHERE removed_at IS NULL;

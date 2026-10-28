@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@data-stores/valkey": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/config": "workspace:^",

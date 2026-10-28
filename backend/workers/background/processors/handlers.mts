@@ -11,6 +11,7 @@ import { activitypubHandlers } from '@workers/activitypub/workers'
 import { adminImportsHandlers } from '@workers/admin-imports/workers'
 import { articleSyncHandlers } from '@workers/article-sync/workers'
 import { cachePurgeHandlers } from '@workers/cache-purge/workers'
+import { communitiesHandlers } from './communities.mts'
 import { blueskyFollowPropagationHandlers } from '@workers/bluesky-follow-propagation/workers'
 import { entityListenersHandlers } from '@workers/entity-listeners/workers'
 import { followerDistributionsHandlers } from '@workers/follower-distributions/workers'
@@ -68,4 +69,5 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...userRssFeedImportsHandlers,
   ...moderationSignalsHandlers,
   ...hostnameBlockingHandlers,
+  ...communitiesHandlers,
 ]

@@ -32,6 +32,13 @@ export function optionalNullableString(record: Record<string, unknown>, key: str
   if (typeof value !== 'string') throw new JobPayloadError(`${key} must be a string or null`)
 }
 
+export function requiredNullableString(record: Record<string, unknown>, key: string): void {
+  const value = record[key]
+  if (value !== null && typeof value !== 'string') {
+    throw new JobPayloadError(`${key} must be a string or null`)
+  }
+}
+
 export function optionalBoolean(record: Record<string, unknown>, key: string): void {
   const value = record[key]
   if (value === undefined) return

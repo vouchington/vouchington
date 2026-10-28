@@ -53,6 +53,12 @@ export type ReconcileEntityData = {
   contentChanged?: boolean
   referrerId?: string
   createdInWindow?: boolean
+  communityInvalidation?: {
+    xmin: string
+    updatedAt: string
+    minimumReplayLsn: string
+    upperBoundMembershipId: string | null
+  }
 }
 
 export type EntityReconciliationDispatchData = {

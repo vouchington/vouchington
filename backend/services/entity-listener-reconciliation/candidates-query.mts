@@ -89,14 +89,22 @@ export function streamEntityReconciliationRows(
         LIMIT ${options.limits.maxRows + 1})
         UNION ALL
         (SELECT * FROM (
-        SELECT 'community', id::text, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::text, NULL::jsonb, updated_at
-        FROM communities
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end} AND deleted_at IS NULL
-        ) repair_source(entity_type, entity_id, changed_at_epoch_us, change_id, details, changed_at)
-        WHERE (changed_at, entity_id, entity_type, change_id IS NULL, COALESCE(change_id, '')) > (COALESCE(to_timestamp(floor(${after?.changedAtEpochUs ?? null}::numeric / 1000000)::double precision) + (${after?.changedAtEpochUs ?? null}::numeric % 1000000)::double precision * INTERVAL '1 microsecond', '-infinity'::timestamptz), ${after?.entityId ?? ''}::text, ${after?.entityType ?? ''}::text, ${after?.changeId === undefined}, ${after?.changeId ?? ''}::text)
-        ORDER BY changed_at, entity_id, change_id
-        LIMIT ${options.limits.maxRows + 1})
+        WITH raw_community_candidates AS MATERIALIZED (
+          SELECT id, xmin::text AS row_xmin, updated_at FROM communities WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
+            AND (updated_at, id::text, 'community'::text, true, ''::text) > (COALESCE(to_timestamp(floor(${after?.changedAtEpochUs ?? null}::numeric / 1000000)::double precision) + (${after?.changedAtEpochUs ?? null}::numeric % 1000000)::double precision * INTERVAL '1 microsecond', '-infinity'::timestamptz), ${after?.entityId ?? ''}::text, ${after?.entityType ?? ''}::text, ${after?.changeId === undefined}, ${after?.changeId ?? ''}::text)
+          ORDER BY updated_at, id::text LIMIT ${options.limits.maxRows + 1})
+        SELECT 'community', community.id::text, floor(extract(epoch FROM community.updated_at) * 1000000)::text, NULL::text, jsonb_build_object(
+            'xmin', community.row_xmin, 'updatedAt', community.updated_at::text,
+            'minimumReplayLsn', CASE WHEN current_setting('transaction_read_only') = 'off' THEN pg_current_wal_insert_lsn()::text
+              WHEN pg_is_in_recovery() THEN pg_last_wal_replay_lsn()::text ELSE '0/0' END,
+            'upperBoundMembershipId', (
+              SELECT member.id FROM community_members member
+              WHERE member.community_id = community.id AND member.removed_at IS NULL
+              ORDER BY member.id DESC LIMIT 1
+            )
+          ), community.updated_at
+        FROM raw_community_candidates community
+        ) repair_source(entity_type, entity_id, changed_at_epoch_us, change_id, details, changed_at))
         UNION ALL
         (SELECT * FROM (
         SELECT 'rss_feed_item', id::text, floor(extract(epoch FROM updated_at) * 1000000)::text,

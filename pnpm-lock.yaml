@@ -5160,6 +5160,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -5251,9 +5254,6 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../../queues/background
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
@@ -6819,6 +6819,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -13148,6 +13151,9 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../../services/communities
       '@services/fediverse-instances':
         specifier: workspace:^
         version: link:../../services/fediverse-instances
@@ -13284,6 +13290,12 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../../services/entity-fetch
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../../services/entity-relations

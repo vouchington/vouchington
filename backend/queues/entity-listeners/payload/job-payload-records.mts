@@ -8,6 +8,7 @@ import {
   optionalNullableString,
   optionalString,
   requiredEnum,
+  requiredNullableString,
   requiredString,
 } from './job-payload-read.mts'
 
@@ -35,6 +36,7 @@ const reconcileKeys = {
   contentChanged: true,
   referrerId: true,
   createdInWindow: true,
+  communityInvalidation: true,
 } as const satisfies Record<keyof ReconcileEntityData, true>
 const entityTypes = {
   user: true,
@@ -127,5 +129,18 @@ export function parseReconcileEntity(data: unknown): Record<string, unknown> {
   optionalBoolean(record, 'contentChanged')
   optionalString(record, 'referrerId')
   optionalBoolean(record, 'createdInWindow')
+  if (record.communityInvalidation !== undefined) {
+    const invalidation = asRecord(record.communityInvalidation, 'communityInvalidation')
+    assertExactKeys(invalidation, [
+      'xmin',
+      'updatedAt',
+      'minimumReplayLsn',
+      'upperBoundMembershipId',
+    ])
+    requiredString(invalidation, 'xmin')
+    requiredString(invalidation, 'updatedAt')
+    requiredString(invalidation, 'minimumReplayLsn')
+    requiredNullableString(invalidation, 'upperBoundMembershipId')
+  }
   return record
 }

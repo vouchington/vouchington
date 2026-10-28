@@ -16566,10 +16566,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_communities__updated_at_id_active": {
+        "idx_communities__updated_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_communities__updated_at_id_active ON public.communities USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_communities__updated_at_id ON public.communities USING btree (updated_at, ((id)::text))",
           "immediate": true,
           "keys": [
             {
@@ -16592,7 +16592,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -20395,6 +20395,38 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_community_members__active_community_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) WHERE (removed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_community_members__community_id": {

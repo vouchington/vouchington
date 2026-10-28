@@ -5,7 +5,7 @@ import { getCommunity } from './get.mts'
 import { currentUserCanDeleteCommunity } from './authorization.mts'
 import type { CommunityMember } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
+import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
@@ -27,16 +27,18 @@ export async function deleteCommunity(
     ],
     query,
   )
-  const { rowCount } = await query(
+  const { rows } = await query<{ id: string }>(
     `/* deleteCommunity */
     UPDATE communities
     SET deleted_at = CURRENT_TIMESTAMP,
         deleted_by_id = $1
     WHERE id = $2
-      AND deleted_at IS NULL`,
+      AND deleted_at IS NULL
+    RETURNING id`,
     [currentUser.id, communityId],
   )
-  if ((rowCount ?? 0) > 0) {
+  const changed = rows.length > 0
+  if (changed) {
     await recordPostPublicationChange(query, {
       scope: { type: 'community', communityId },
       reason: 'community_visibility_changed',
@@ -48,7 +50,7 @@ export async function deleteCommunity(
   await query.commit()
   await Promise.all([
     invalidate.communities(community),
-    invalidateAllCommunityMemberUserMetrics(communityId),
+    changed ? enqueueCommunityMemberMetricInvalidationBestEffort(communityId) : Promise.resolve(),
   ])
   void enqueueRefreshTopHashtags()
 }

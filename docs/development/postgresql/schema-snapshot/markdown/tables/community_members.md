@@ -44,6 +44,7 @@ _none_
 **Indexes:**
 
 - `community_members_pkey`: `CREATE UNIQUE INDEX community_members_pkey ON public.community_members USING btree (id)`
+- `idx_community_members__active_community_id_id`: `CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) WHERE (removed_at IS NULL)`
 - `idx_community_members__community_id`: `CREATE INDEX idx_community_members__community_id ON public.community_members USING btree (community_id)`
 - `idx_community_members__departed`: `CREATE INDEX idx_community_members__departed ON public.community_members USING btree (community_id, removed_at) WHERE (removed_at IS NOT NULL)`
 - `idx_community_members__suspected_ban_evader_source_user_id`: `CREATE INDEX idx_community_members__suspected_ban_evader_source_user_id ON public.community_members USING btree (suspected_ban_evader_source_user_id) WHERE (suspected_ban_evader_source_user_id IS NOT NULL)`

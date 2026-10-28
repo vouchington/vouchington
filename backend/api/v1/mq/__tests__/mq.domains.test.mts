@@ -88,6 +88,7 @@ describe('background queue domain routes', () => {
         'article-sync',
         'bluesky-follow-propagation',
         'cache-purge',
+        'communities',
         'email-digests',
         'entity-listeners',
         'fediverse-instances',

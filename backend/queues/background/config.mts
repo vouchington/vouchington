@@ -45,6 +45,7 @@ export const BACKGROUND_DOMAINS = [
   'moderation-signals',
   'hostname-blocking',
   'topic-merge',
+  'communities',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]
