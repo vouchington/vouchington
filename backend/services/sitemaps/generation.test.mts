@@ -1,6 +1,7 @@
+import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generatePostTypeIndex, generateRootIndex } from './generation.mts'
-import { indexGenerationDependencies } from './index-generation.mts'
+import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { buildPostTypeIndexEntries, buildRootIndexEntries } from './index-entries.mts'
 import type { PostDayManifest } from './storage.mts'
 
@@ -17,6 +18,7 @@ describe('sitemap index generation entries', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
@@ -69,55 +71,41 @@ describe('sitemap index generation entries', () => {
     ])
   })
 
-  it('writes post type indexes from manifest-backed entries', async () => {
-    const dependencies = {
-      ...indexGenerationDependencies,
-      buildPostTypeIndexEntries: vi.fn<VitestLooseMock>().mockResolvedValue([{ loc: 'one' }]),
-      createGzipFileFromUtf8Chunks: vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue({ filePath: '/tmp/type.xml.gz', contentHash: 'hash' }),
-      deleteTemporaryGzipFile: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-      getTrackedDayRange: vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue({ earliestDay: '2026-06-09', latestDay: '2026-06-10' }),
-      putSitemapObjectFile: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-    }
-
-    await generatePostTypeIndex('article', dependencies)
-
-    expect(dependencies.buildPostTypeIndexEntries).toHaveBeenCalledWith('article', [
-      '2026-06-09',
-      '2026-06-10',
+  it('writes a compressed post type index from the tracked range and published manifests', async () => {
+    const objects = new Map<string, Buffer>([
+      [
+        'sitemaps/meta/posts-tracked-range.json',
+        Buffer.from(JSON.stringify({ earliestDay: '2026-06-09', latestDay: '2026-06-10' })),
+      ],
     ])
-    expect(dependencies.putSitemapObjectFile).toHaveBeenCalledWith(
-      'sitemaps/types/article.xml',
-      '/tmp/type.xml.gz',
-      { contentEncoding: 'gzip', contentType: 'application/xml; charset=utf-8' },
-    )
-    expect(dependencies.deleteTemporaryGzipFile).toHaveBeenCalledWith('/tmp/type.xml.gz')
+    const metadata = new Map([['posts/2026/06/10/article/index.xml', manifest]])
+    spyOnSitemapObjectStore(objects, () => undefined, metadata)
+
+    await generatePostTypeIndex('article')
+
+    const compressed = objects.get('sitemaps/types/article.xml')
+    expect(compressed).toBeDefined()
+    const xml = gunzipSync(compressed!).toString()
+    expect(xml).toContain('https://example.com/sitemaps/article/2026-06-10/index.xml')
+    expect(xml).not.toContain('2026-06-09')
   })
 
-  it('writes root indexes after generating static pages and manifest-backed entries', async () => {
-    const dependencies = {
-      ...indexGenerationDependencies,
-      buildRootIndexEntries: vi.fn<VitestLooseMock>().mockResolvedValue([{ loc: 'root' }]),
-      createGzipFileFromUtf8Chunks: vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue({ filePath: '/tmp/root.xml.gz', contentHash: 'hash' }),
-      deleteTemporaryGzipFile: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-      generateStaticPagesSitemap: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-      putSitemapObjectFile: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-    }
+  it('writes compressed static and root indexes with published family links', async () => {
+    const objects = new Map<string, Buffer>()
+    const metadata = new Map([['sitemaps/families/topics.xml', manifest]])
+    spyOnSitemapObjectStore(objects, () => undefined, metadata)
 
-    await generateRootIndex(dependencies)
+    await generateRootIndex()
 
-    expect(dependencies.generateStaticPagesSitemap).toHaveBeenCalledWith()
-    expect(dependencies.buildRootIndexEntries).toHaveBeenCalledWith()
-    expect(dependencies.putSitemapObjectFile).toHaveBeenCalledWith(
-      'sitemaps/root.xml',
-      '/tmp/root.xml.gz',
-      { contentEncoding: 'gzip', contentType: 'application/xml; charset=utf-8' },
-    )
-    expect(dependencies.deleteTemporaryGzipFile).toHaveBeenCalledWith('/tmp/root.xml.gz')
+    const staticIndex = objects.get('sitemaps/static.xml')
+    const rootIndex = objects.get('sitemaps/root.xml')
+    expect(staticIndex).toBeDefined()
+    expect(rootIndex).toBeDefined()
+    expect(gunzipSync(staticIndex!).toString()).toContain('https://example.com/news')
+    const xml = gunzipSync(rootIndex!).toString()
+    expect(xml).toContain('https://example.com/sitemaps/static.xml')
+    expect(xml).toContain('https://example.com/sitemaps/posts.xml')
+    expect(xml).toContain('https://example.com/sitemaps/topics.xml')
+    expect(xml).not.toContain('https://example.com/sitemaps/users.xml')
   })
 })

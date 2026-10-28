@@ -20,7 +20,7 @@ export type SitemapGenerationProgress = {
   previous_generation_id: string | null
   previous_page_count: number
 }
-export type RetiredSitemapGeneration = {
+type RetiredSitemapGeneration = {
   generation_id: string
   page_prefix: string
   page_count: number

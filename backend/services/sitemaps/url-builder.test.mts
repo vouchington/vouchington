@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import {
-  buildFamilySitemapUrl,
-  buildPostUrl,
-  buildSitemapUrl,
-  buildPostSitemapUrl,
-} from './url-builder.mts'
+import { buildFamilySitemapUrl, buildSitemapUrl, buildPostSitemapUrl } from './url-builder.mts'
 import type { SitemapPost } from './types.mts'
 
 describe('URL Builder', () => {
@@ -16,7 +11,7 @@ describe('URL Builder', () => {
     vi.unstubAllEnvs()
   })
 
-  describe('buildPostUrl', () => {
+  describe('buildPostSitemapUrl routes', () => {
     it('should build URL for discussion post', () => {
       const post: SitemapPost = {
         slug: 'test-discussion',
@@ -24,9 +19,9 @@ describe('URL Builder', () => {
         updated_at: new Date('2026-01-25T12:00:00Z'),
       }
 
-      const result = buildPostUrl(post)
+      const result = buildPostSitemapUrl(post)
 
-      expect(result).toBe('https://test.com/discussion/test-discussion')
+      expect(result.loc).toBe('https://test.com/discussion/test-discussion')
     })
 
     it('should build URL for review post', () => {
@@ -36,46 +31,46 @@ describe('URL Builder', () => {
         updated_at: new Date('2026-01-25T12:00:00Z'),
       }
 
-      const result = buildPostUrl(post)
+      const result = buildPostSitemapUrl(post)
 
-      expect(result).toBe('https://test.com/review/test-review')
+      expect(result.loc).toBe('https://test.com/review/test-review')
     })
 
     it('should build canonical route segments for every sitemap post type', () => {
       expect(
-        buildPostUrl({
+        buildPostSitemapUrl({
           slug: 'test-article',
           post_type: 'article',
           updated_at: new Date('2026-01-25T12:00:00Z'),
-        }),
+        }).loc,
       ).toBe('https://test.com/article/test-article')
       expect(
-        buildPostUrl({
+        buildPostSitemapUrl({
           slug: 'test-blog',
           post_type: 'blog_post',
           updated_at: new Date('2026-01-25T12:00:00Z'),
-        }),
+        }).loc,
       ).toBe('https://test.com/blog-post/test-blog')
       expect(
-        buildPostUrl({
+        buildPostSitemapUrl({
           slug: 'test-data-point',
           post_type: 'data_point',
           updated_at: new Date('2026-01-25T12:00:00Z'),
-        }),
+        }).loc,
       ).toBe('https://test.com/data-point/test-data-point')
       expect(
-        buildPostUrl({
+        buildPostSitemapUrl({
           slug: 'test-link',
           post_type: 'link',
           updated_at: new Date('2026-01-25T12:00:00Z'),
-        }),
+        }).loc,
       ).toBe('https://test.com/link/test-link')
       expect(
-        buildPostUrl({
+        buildPostSitemapUrl({
           slug: 'test-story',
           post_type: 'story',
           updated_at: new Date('2026-01-25T12:00:00Z'),
-        }),
+        }).loc,
       ).toBe('https://test.com/story/test-story')
     })
 
@@ -88,9 +83,9 @@ describe('URL Builder', () => {
         updated_at: new Date('2026-01-25T12:00:00Z'),
       }
 
-      const result = buildPostUrl(post)
+      const result = buildPostSitemapUrl(post)
 
-      expect(result).toBe('https://test.com/discussion/test-slug')
+      expect(result.loc).toBe('https://test.com/discussion/test-slug')
     })
   })
 

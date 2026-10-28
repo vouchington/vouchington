@@ -28,54 +28,29 @@ import {
   requireJobString,
 } from './processors/job-data.mts'
 
-const sitemapJobProcessors = {
-  processUpdatePostDaySitemap,
-  processUpdatePostTypeIndex,
-  processUpdatePostsIndex,
-  processUpdateFamilySitemap,
-  processUpdateRootIndex,
-  processNightlyBackfillWeekDispatcher,
-  processWeeklyBackfillMonthDispatcher,
-  processRetiredSitemapCleanup,
-  processMonthlyBackfillArchiveDispatcher,
-}
-
-type SitemapJobProcessors = typeof sitemapJobProcessors
-
-/** @internal Handlers over the processors; tests pass substitute processors to observe the routing. */
-export function createSitemapsHandlers(processors: SitemapJobProcessors = sitemapJobProcessors) {
-  return [
-    backgroundHandler(SITEMAPS_RETIRED_CLEANUP_JOB, () =>
-      processors.processRetiredSitemapCleanup(),
-    ),
-    backgroundHandler(SITEMAPS_POST_DAY_JOB, job =>
-      processors.processUpdatePostDaySitemap({
-        postType: requireJobPostType(job.data?.postType),
-        day: requireJobString(job.data?.day, 'day'),
-        ...optionalGenerationId(job.data?.generationId),
-      }),
-    ),
-    backgroundHandler(SITEMAPS_POST_TYPE_INDEX_JOB, job =>
-      processors.processUpdatePostTypeIndex(requireJobPostType(job.data?.postType)),
-    ),
-    backgroundHandler(SITEMAPS_POSTS_INDEX_JOB, () => processors.processUpdatePostsIndex()),
-    backgroundHandler(SITEMAPS_FAMILY_JOB, job =>
-      processors.processUpdateFamilySitemap({
-        family: requireJobFamily(job.data?.family),
-        ...optionalGenerationId(job.data?.generationId),
-      }),
-    ),
-    backgroundHandler(SITEMAPS_ROOT_INDEX_JOB, () => processors.processUpdateRootIndex()),
-    backgroundHandler(SITEMAPS_NIGHTLY_BACKFILL_JOB, () =>
-      processors.processNightlyBackfillWeekDispatcher(),
-    ),
-    backgroundHandler(SITEMAPS_WEEKLY_BACKFILL_JOB, () =>
-      processors.processWeeklyBackfillMonthDispatcher(),
-    ),
-    backgroundHandler(SITEMAPS_MONTHLY_BACKFILL_JOB, job =>
-      processors.processMonthlyBackfillArchiveDispatcher(job.data?.afterDay),
-    ),
-  ]
-}
-
-export const sitemapsHandlers = createSitemapsHandlers()
+export const sitemapsHandlers = [
+  backgroundHandler(SITEMAPS_RETIRED_CLEANUP_JOB, () => processRetiredSitemapCleanup()),
+  backgroundHandler(SITEMAPS_POST_DAY_JOB, job =>
+    processUpdatePostDaySitemap({
+      postType: requireJobPostType(job.data?.postType),
+      day: requireJobString(job.data?.day, 'day'),
+      ...optionalGenerationId(job.data?.generationId),
+    }),
+  ),
+  backgroundHandler(SITEMAPS_POST_TYPE_INDEX_JOB, job =>
+    processUpdatePostTypeIndex(requireJobPostType(job.data?.postType)),
+  ),
+  backgroundHandler(SITEMAPS_POSTS_INDEX_JOB, () => processUpdatePostsIndex()),
+  backgroundHandler(SITEMAPS_FAMILY_JOB, job =>
+    processUpdateFamilySitemap({
+      family: requireJobFamily(job.data?.family),
+      ...optionalGenerationId(job.data?.generationId),
+    }),
+  ),
+  backgroundHandler(SITEMAPS_ROOT_INDEX_JOB, () => processUpdateRootIndex()),
+  backgroundHandler(SITEMAPS_NIGHTLY_BACKFILL_JOB, () => processNightlyBackfillWeekDispatcher()),
+  backgroundHandler(SITEMAPS_WEEKLY_BACKFILL_JOB, () => processWeeklyBackfillMonthDispatcher()),
+  backgroundHandler(SITEMAPS_MONTHLY_BACKFILL_JOB, job =>
+    processMonthlyBackfillArchiveDispatcher(job.data?.afterDay),
+  ),
+]

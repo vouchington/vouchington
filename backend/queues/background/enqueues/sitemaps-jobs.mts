@@ -20,7 +20,7 @@ const DEFAULTS = {
 export type SitemapArchiveBackfillData = { afterDay?: string }
 
 type PostType = string
-export type SitemapPostDayData = { postType: PostType; day: string; generationId?: string }
+type SitemapPostDayData = { postType: PostType; day: string; generationId?: string }
 
 export const SITEMAPS_POST_DAY_JOB = defineBackgroundJob<SitemapPostDayData>(SITEMAPS_DOMAIN, {
   name: 'processUpdatePostDaySitemap',

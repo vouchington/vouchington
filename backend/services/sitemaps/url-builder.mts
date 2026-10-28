@@ -13,7 +13,7 @@ const SITEMAP_POST_ROUTE_SEGMENTS: Record<SitemapPostType, string> = {
 
 const getBaseUrl = (): string => SITEMAP_CONFIG.BASE_URL.replace(/\/$/, '')
 
-export const buildPostUrl = (post: SitemapPost): string => {
+const buildPostUrl = (post: SitemapPost): string => {
   return `${getBaseUrl()}/${SITEMAP_POST_ROUTE_SEGMENTS[post.post_type]}/${post.slug}`
 }
 
