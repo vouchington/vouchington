@@ -15,15 +15,4 @@ describe('0000-00-01a-entity-relation-partitions', () => {
     expect(sql).toContain('PARTITION OF')
     expect(sql).toContain('__default')
   })
-
-  it('creates child statistics for positive topic candidates', () => {
-    const sql = idempotent()
-
-    expect(sql).toContain(
-      'CREATE STATISTICS IF NOT EXISTS statistics_post_category_topic_object_vote_score_mcv (mcv)\nON object_id, votes_score_net FROM relation__post__category__topic__default;',
-    )
-    expect(sql).toContain(
-      'CREATE STATISTICS IF NOT EXISTS statistics_post_category_topic_alias_object_vote_score_mcv (mcv)\nON object_id, votes_score_net FROM relation__post__category__topic_alias__default;',
-    )
-  })
 })

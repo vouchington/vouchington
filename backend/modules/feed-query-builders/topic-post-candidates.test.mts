@@ -31,6 +31,12 @@ describe('buildTopicPostCandidateSelect', () => {
     expect(select.text).toContain(`FROM ${POST_TOPIC_CATEGORY_RELATION_TABLE}`)
     expect(select.text).toContain(`JOIN ${POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE}`)
     expect(select.text).toContain('UNION ALL')
+    expect(select.text).toContain(
+      '(CASE WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0 THEN rel.object_id END) =',
+    )
+    expect(select.text).toContain(
+      '(CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id',
+    )
     expect(select.values).toEqual(['topic-1', 'topic-1'])
   })
 
@@ -63,6 +69,12 @@ describe('buildUniversalTopicPostCandidatePairsSelect', () => {
     expect(select.text).toContain(`FROM ${POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE}`)
     expect(select.text).toContain('FROM post_review_topic_ratings')
     expect(select.text).toContain('FROM post_data_point_topics')
+    expect(select.text).toContain(
+      '(CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY(',
+    )
+    expect(select.text).toContain(
+      'alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)',
+    )
     expect(select.values).toEqual([
       ['topic-1', 'topic-2'],
       ['topic-1', 'topic-2'],

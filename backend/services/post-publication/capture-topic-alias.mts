@@ -77,7 +77,7 @@ export async function captureDestroyedTopicAliasPostImpacts(
         SELECT relation.subject_id AS post_id
         -- no-mistakes-disable-next-line postgres-required-predicates: reverse alias-object lookup spans subject_id partitions
         FROM relation__post__category__topic_alias relation
-        WHERE relation.object_id = $1::uuid
+        WHERE (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END) = $1::uuid
           AND relation.deleted_at IS NULL
           AND relation.votes_score_net > 0
           AND ($2::uuid IS NULL OR relation.subject_id > $2::uuid)

@@ -28,7 +28,7 @@ export function buildTopicPostCandidateSelect(topicId: string): SQLStatement {
     FROM `
     .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
     .append(sql` rel
-    WHERE rel.object_id = ${topicId}
+    WHERE (CASE WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0 THEN rel.object_id END) = ${topicId}
       AND rel.deleted_at IS NULL
       AND rel.votes_score_net > 0
 
@@ -38,7 +38,7 @@ export function buildTopicPostCandidateSelect(topicId: string): SQLStatement {
     FROM topic_aliases alias
     JOIN `)
     .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE).append(sql` alias_relation
-      ON alias_relation.object_id = alias.id
+      ON (CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id
      AND alias_relation.deleted_at IS NULL
      AND alias_relation.votes_score_net > 0
     WHERE alias.topic_id = ${topicId}
@@ -57,7 +57,7 @@ export function buildUniversalTopicPostCandidatePairsSelect(topicIds: string[]):
     FROM `
     .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
     .append(sql`
-    WHERE object_id = ANY(${topicIds})
+    WHERE (CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY(${topicIds})
       AND deleted_at IS NULL
       AND votes_score_net > 0
 
@@ -66,7 +66,7 @@ export function buildUniversalTopicPostCandidatePairsSelect(topicIds: string[]):
     SELECT relation.subject_id, alias.topic_id
     FROM `)
     .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE).append(sql` relation
-    JOIN topic_aliases alias ON alias.id = relation.object_id
+    JOIN topic_aliases alias ON alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)
     WHERE relation.deleted_at IS NULL AND relation.votes_score_net > 0
       AND alias.topic_id = ANY(${topicIds})
 
