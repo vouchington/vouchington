@@ -176,7 +176,9 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
 export async function explainActivityPubInboxCleanupForTest(query: SQLStatement): Promise<string> {
   {
     await using transaction = await beginTransaction()
-    await transaction(allowUnannotatedQuery(sql`SET LOCAL enable_seqscan = off`))
+    await transaction(
+      sql`/* explainActivityPubInboxCleanupForTest:enableSeqscan */ SET LOCAL enable_seqscan = off`,
+    )
     const { rows } = await transaction<{ 'QUERY PLAN': unknown }>(
       `/* explainActivityPubInboxCleanupForTest */ EXPLAIN (FORMAT JSON) ${query.text}`,
       query.values,
