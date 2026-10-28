@@ -3,10 +3,11 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
 export const aiAgentsQueueMaxValues = { background_response_recovery_concurrency: 8 }
+const aiAgentsQueueDefaults = { background_response_recovery_concurrency: 2 }
 export const aiAgentsQueueConfig = new DynamicConfig({
   key: 'ai-agents-queue-config',
   fieldTypes: { background_response_recovery_concurrency: 'number' },
-  defaultFields: { background_response_recovery_concurrency: 2 },
+  defaultFields: aiAgentsQueueDefaults,
 })
 
 export function getBackgroundResponseRecoveryConcurrency(): number {
@@ -14,7 +15,7 @@ export function getBackgroundResponseRecoveryConcurrency(): number {
     aiAgentsQueueConfig,
     'background_response_recovery_concurrency',
     {
-      defaultValue: aiAgentsQueueConfig.defaultFields.background_response_recovery_concurrency,
+      defaultValue: aiAgentsQueueDefaults.background_response_recovery_concurrency,
       maxValue: aiAgentsQueueMaxValues.background_response_recovery_concurrency,
     },
   )
