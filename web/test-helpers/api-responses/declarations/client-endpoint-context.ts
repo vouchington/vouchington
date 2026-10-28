@@ -8,7 +8,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly adminOAuthClients: Pick<
     typeof import('@/lib/api/client/admin-oauth-clients'),
-    'fetchAdminOAuthClients' | 'unverifyOAuthClient' | 'verifyOAuthClient'
+    'unverifyOAuthClient' | 'verifyOAuthClient'
   >
   readonly apiKeys: Pick<
     typeof import('@/lib/api/client/api-keys'),
@@ -95,10 +95,6 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/feature-flags'),
     'getFeatureFlagsClient'
   >
-  readonly friendRecommendations: Pick<
-    typeof import('@/lib/api/client/friend-recommendations'),
-    'getFriendRecommendations'
-  >
   readonly householdInvitations: typeof import('@/lib/api/client/household-invitations')
   readonly households: Pick<
     typeof import('@/lib/api/client/households'),
@@ -109,7 +105,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly hostnames: Pick<
     typeof import('@/lib/api/client/hostnames'),
-    'createHostname' | 'fetchHostnameBlockOperation' | 'updateHostname'
+    'createHostname' | 'updateHostname'
   >
   readonly memberships: Pick<
     typeof import('@/lib/api/client/memberships'),
@@ -117,7 +113,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly importExport: Pick<
     typeof import('@/lib/api/client/import-export'),
-    'exportTopics' | 'getRssFeedImport' | 'importRssFeeds' | 'importTopics'
+    'exportTopics' | 'importRssFeeds' | 'importTopics'
   >
   readonly modmail: Pick<
     typeof import('@/lib/api/client/modmail'),
@@ -168,10 +164,6 @@ export interface WebFixtureClientEndpointContext {
   readonly psql: Pick<
     typeof import('@/lib/api/client/psql'),
     'enqueuePsqlJob' | 'fetchMigrations' | 'fetchPartitions'
-  >
-  readonly referralClicks: Pick<
-    typeof import('@/lib/api/client/referral-clicks'),
-    'getMyReferralClicksClient'
   >
   readonly referralLinks: Pick<
     typeof import('@/lib/api/client/referral-links'),

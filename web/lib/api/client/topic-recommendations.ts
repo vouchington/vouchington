@@ -3,11 +3,7 @@
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import type { Post } from '@/types/posts'
-import type {
-  PostMutationResponseBody,
-  PostResponseBody,
-  PostsResponseBody,
-} from '@/types/api-responses'
+import type { PostMutationResponseBody, PostResponseBody } from '@/types/api-responses'
 
 export type TopHashtagMapping = 'all' | 'linked' | 'unlinked'
 
@@ -70,24 +66,6 @@ type TopicRecommendationMutationPost = Pick<
 
 export interface TopicRecommendationMutationResponseBody {
   post: TopicRecommendationMutationPost
-}
-
-export async function fetchTopicRecommendations(
-  options: {
-    q?: string
-    status?: 'pending' | 'approved' | 'rejected'
-    limit?: number
-    signal?: AbortSignal
-  } = {},
-): Promise<PostsResponseBody> {
-  return clientApi.get('/api/v1/topic-recommendations', {
-    searchParams: {
-      q: options.q,
-      status: options.status,
-      limit: options.limit,
-    },
-    signal: options.signal,
-  })
 }
 
 export async function fetchTopHashtags(

@@ -13,27 +13,24 @@ export const FRIEND_RECOMMENDATIONS_DECLARATIONS = [
   defineWebApiFixture<FriendRecommendationsResponseBody>()(
     'native.friend-recommendations.default',
     nativeFriendRecommendationsDefault,
-    context => context.client.friendRecommendations.getFriendRecommendations({ limit: 25 }),
-    [context => context.server.my.getMyFriendRecommendations({ limit: 25 })],
+    context => context.server.my.getMyFriendRecommendations({ limit: 25 }),
   ),
   defineWebApiFixture<FriendRecommendationsResponseBody>()(
     'native.friend-recommendations.empty',
     nativeFriendRecommendationsEmpty,
     context =>
-      context.client.friendRecommendations.getFriendRecommendations({
+      context.server.my.getMyFriendRecommendations({
         limit: 25,
         after: secondCursor,
       }),
-    [context => context.server.my.getMyFriendRecommendations({ limit: 25, after: secondCursor })],
   ),
   defineWebApiFixture<FriendRecommendationsResponseBody>()(
     'native.friend-recommendations.second-page',
     nativeFriendRecommendationsSecondPage,
     context =>
-      context.client.friendRecommendations.getFriendRecommendations({
+      context.server.my.getMyFriendRecommendations({
         limit: 25,
         after: firstCursor,
       }),
-    [context => context.server.my.getMyFriendRecommendations({ limit: 25, after: firstCursor })],
   ),
 ] as const satisfies readonly WebApiFixtureDeclaration<string, unknown>[]

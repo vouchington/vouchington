@@ -19,7 +19,6 @@ import {
   getMyMessagesClient,
   getDirectMessageThreadClient,
   sendDirectMessage,
-  getConversationParticipantsClient,
   addConversationParticipant,
   removeConversationParticipant,
   updateConversationParticipantPolicy,
@@ -147,28 +146,6 @@ describe('messages client api helpers', () => {
         text: 'Hello!',
       })
       expect(result).toEqual({ message })
-    })
-  })
-
-  describe('getConversationParticipantsClient', () => {
-    it('GETs /api/v1/my/messages/:id/participants', async () => {
-      const response = { data: [{ user_id: 'user-1' }] }
-      mockGet.mockResolvedValueOnce(response)
-
-      const result = await getConversationParticipantsClient('conv-abc')
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/my/messages/conv-abc/participants')
-      expect(result).toBe(response)
-    })
-
-    it('forwards participant pagination options', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getConversationParticipantsClient('conv-abc', { after: 'opaque', limit: 20 })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/my/messages/conv-abc/participants', {
-        searchParams: { after: 'opaque', limit: 20 },
-      })
     })
   })
 })

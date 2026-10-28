@@ -16,10 +16,8 @@ vi.mock(
 import { clientApi } from '../instance'
 import {
   applyReportAbusePenalty,
-  getReportIntegrityPenaltiesClient,
   getReportIntegrityPenaltyClient,
   getReportIntegrityFlagClient,
-  getReportIntegrityFlagsClient,
   resolveReportIntegrityFlag,
   revokeReportAbusePenalty,
 } from '../report-integrity'
@@ -32,51 +30,6 @@ const mockDelete = vi.mocked(clientApi.delete)
 describe('report-integrity client api helpers', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  describe('getReportIntegrityFlagsClient', () => {
-    it('GETs /api/v1/report-integrity/flags with no params', async () => {
-      const response = {
-        results: [],
-        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      }
-      mockGet.mockResolvedValueOnce(response)
-
-      const result = await getReportIntegrityFlagsClient()
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/flags', { searchParams: {} })
-      expect(result).toBe(response)
-    })
-
-    it('GETs with status param', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getReportIntegrityFlagsClient({ status: 'pending' })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/flags', {
-        searchParams: { status: 'pending' },
-      })
-    })
-
-    it('GETs with after cursor param', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getReportIntegrityFlagsClient({ after: 'cursor-abc' })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/flags', {
-        searchParams: { after: 'cursor-abc' },
-      })
-    })
-
-    it('GETs with both status and after params', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getReportIntegrityFlagsClient({ status: 'resolved', after: 'cursor-xyz' })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/flags', {
-        searchParams: { status: 'resolved', after: 'cursor-xyz' },
-      })
-    })
   })
 
   describe('resolveReportIntegrityFlag', () => {
@@ -93,28 +46,6 @@ describe('report-integrity client api helpers', () => {
         },
       )
       expect(result).toBe(response)
-    })
-  })
-
-  describe('getReportIntegrityPenaltiesClient', () => {
-    it('uses an empty query when no report penalty filters are selected', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getReportIntegrityPenaltiesClient()
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/penalties', {
-        searchParams: {},
-      })
-    })
-
-    it('forwards status and cursor filters to the report penalty collection', async () => {
-      mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-      await getReportIntegrityPenaltiesClient({ status: 'revoked', after: 'cursor-1' })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/penalties', {
-        searchParams: { status: 'revoked', after: 'cursor-1' },
-      })
     })
   })
 

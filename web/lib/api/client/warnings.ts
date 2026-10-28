@@ -92,17 +92,6 @@ function assertWarningTextLimits(body: IssueUserWarningBody): void {
   }
 }
 
-export function getMyWarningsClient(params?: {
-  after?: string | null
-  limit?: number
-}): Promise<UserWarningsResponse> {
-  const searchParams = new URLSearchParams()
-  if (params?.after) searchParams.set('after', params.after)
-  if (params?.limit) searchParams.set('limit', String(params.limit))
-  const qs = searchParams.toString()
-  return clientApi.get<UserWarningsResponse>(`/api/v1/my/warnings${qs ? `?${qs}` : ''}`)
-}
-
 export function getAdminUserWarnings(params: {
   userId: string
   after?: string | null

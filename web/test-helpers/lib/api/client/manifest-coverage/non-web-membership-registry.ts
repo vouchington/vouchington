@@ -1,12 +1,8 @@
 import type { ManifestEndpoint } from './endpoint-registry'
 import {
-  createMicrosoftStoreServiceTickets,
   createMembershipPurchaseIntent,
-  createMembershipVerification,
-  fetchMembershipVerification,
   fetchPlans,
   grantMembership,
-  revokeMembershipGrant,
 } from '../../../../../lib/api/client/memberships'
 
 type EndpointFromClientHelper = (callHelper: () => unknown) => ManifestEndpoint
@@ -18,9 +14,11 @@ export function createNonWebMembershipEndpointRegistry(
     'native.memberships.plans.default': endpointFromClientHelper(() => fetchPlans()),
     'native.memberships.me.default': { method: 'GET', path: '/api/v1/memberships/me' },
     'native.memberships.me.lifecycle.default': { method: 'GET', path: '/api/v1/memberships/me' },
-    'native.memberships.microsoft.service-tickets.default': endpointFromClientHelper(() =>
-      createMicrosoftStoreServiceTickets(),
-    ),
+    'native.memberships.microsoft.service-tickets.default': {
+      method: 'POST',
+      path: '/api/v1/memberships/microsoft-store/service-tickets',
+      requestBody: {},
+    },
     'native.memberships.purchase-intent.apple.default': endpointFromClientHelper(() =>
       createMembershipPurchaseIntent(
         'apple_app_store',
@@ -56,26 +54,32 @@ export function createNonWebMembershipEndpointRegistry(
         '00000000-0000-7000-8000-000000000811',
       ),
     ),
-    'native.memberships.verification.pending.default': endpointFromClientHelper(() =>
-      createMembershipVerification({
+    'native.memberships.verification.pending.default': {
+      method: 'POST',
+      path: '/api/v1/membership-verifications',
+      requestBody: {
         provider: 'apple_app_store',
         purchase_intent_id: '00000000-0000-7000-8000-000000000803',
         idempotency_key: '00000000-0000-7000-8000-000000000807',
         evidence: { signed_transaction: 'fixture-signed-transaction' },
-      }),
-    ),
-    'native.memberships.verification-status.pending.default': endpointFromClientHelper(() =>
-      fetchMembershipVerification('00000000-0000-7000-8000-000000000807'),
-    ),
-    'native.memberships.verification-status.verified.default': endpointFromClientHelper(() =>
-      fetchMembershipVerification('00000000-0000-7000-8000-000000000808'),
-    ),
-    'native.memberships.verification-status.conflict.default': endpointFromClientHelper(() =>
-      fetchMembershipVerification('00000000-0000-7000-8000-000000000809'),
-    ),
-    'native.memberships.verification-status.rejected.default': endpointFromClientHelper(() =>
-      fetchMembershipVerification('00000000-0000-7000-8000-000000000810'),
-    ),
+      },
+    },
+    'native.memberships.verification-status.pending.default': {
+      method: 'GET',
+      path: '/api/v1/membership-verifications/00000000-0000-7000-8000-000000000807',
+    },
+    'native.memberships.verification-status.verified.default': {
+      method: 'GET',
+      path: '/api/v1/membership-verifications/00000000-0000-7000-8000-000000000808',
+    },
+    'native.memberships.verification-status.conflict.default': {
+      method: 'GET',
+      path: '/api/v1/membership-verifications/00000000-0000-7000-8000-000000000809',
+    },
+    'native.memberships.verification-status.rejected.default': {
+      method: 'GET',
+      path: '/api/v1/membership-verifications/00000000-0000-7000-8000-000000000810',
+    },
     'native.memberships.grant.default': endpointFromClientHelper(() =>
       grantMembership(
         '00000000-0000-7000-8000-000000000003',
@@ -84,8 +88,10 @@ export function createNonWebMembershipEndpointRegistry(
         30,
       ),
     ),
-    'native.memberships.grant.delete.default': endpointFromClientHelper(() =>
-      revokeMembershipGrant('00000000-0000-7000-8000-000000000802', 'Incorrect grant'),
-    ),
+    'native.memberships.grant.delete.default': {
+      method: 'DELETE',
+      path: '/api/v1/membership-grants/00000000-0000-7000-8000-000000000802',
+      requestBody: { reason: 'Incorrect grant' },
+    },
   }
 }

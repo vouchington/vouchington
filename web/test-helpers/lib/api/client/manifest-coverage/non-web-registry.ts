@@ -4,7 +4,6 @@ import { grantIdentityVerificationAttempt } from '../../../../../lib/api/client/
 import {
   addConversationParticipant,
   createDirectConversation,
-  getConversationParticipantsClient,
   getDirectMessageThreadClient,
   getMyMessagesClient,
   removeConversationParticipant,
@@ -122,9 +121,10 @@ export const nonWebClientEndpointRegistry: Record<string, ManifestEndpoint> = {
   'native.messages.send.default': endpointFromClientHelper(() =>
     sendDirectMessage('00000000-0000-7000-8000-000000000101', 'Sent from native'),
   ),
-  'native.messages.participants.default': endpointFromClientHelper(() =>
-    getConversationParticipantsClient('00000000-0000-7000-8000-000000000101'),
-  ),
+  'native.messages.participants.default': {
+    method: 'GET',
+    path: '/api/v1/my/messages/00000000-0000-7000-8000-000000000101/participants',
+  },
   'native.messages.participant-add.default': endpointFromClientHelper(() =>
     addConversationParticipant(
       '00000000-0000-7000-8000-000000000101',

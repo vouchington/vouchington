@@ -12,19 +12,6 @@ export interface QueueStats {
   paused: boolean
 }
 
-export interface QueueStatsSummary {
-  totalWaiting: number
-  totalActive: number
-  totalDelayed: number
-  totalCompleted: number
-  totalFailed: number
-  queueCount: number
-}
-
-export function fetchQueueStats(): Promise<{ stats: QueueStatsSummary }> {
-  return clientApi.get<{ stats: QueueStatsSummary }>('/api/v1/mq/stats')
-}
-
 export interface ScheduledJob {
   id: string
   queue_name: string

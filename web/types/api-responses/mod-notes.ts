@@ -18,11 +18,6 @@ export interface UserModerationContext {
   community_removal_count: number | null
 }
 
-export interface UserModNotesListResponse {
-  notes: UserModNote[]
-  page_info: { has_next_page: boolean }
-}
-
 export interface UserModerationContextResponse {
   context: UserModerationContext
   notes: UserModNote[]

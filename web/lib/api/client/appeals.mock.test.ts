@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  getModerationAppealClient,
   listModerationAppealsClient,
   createModerationAppeal,
   updateAppealDraft,
@@ -276,14 +275,5 @@ describe('appeals client api helpers', () => {
         expect(mockGet).toHaveBeenCalledTimes(1)
       },
     )
-
-    it('exposes the single-appeal read through the client boundary', async () => {
-      const appeal = makeAppeal()
-      mockGet.mockResolvedValueOnce({ appeal })
-
-      await expect(getModerationAppealClient('appeal-1')).resolves.toEqual(appeal)
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/appeals/appeal-1')
-    })
   })
 })

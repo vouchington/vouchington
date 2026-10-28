@@ -8,7 +8,6 @@ import type {
   UserResponseBody,
   UsersListResponseBody,
   UsersSearchResponseBody,
-  UserModNotesListResponse,
   UserModerationContextResponse,
   UserModNote,
 } from '@/types/api-responses'
@@ -149,17 +148,6 @@ export function getUserModerationContext(userId: string): Promise<UserModeration
   const safeId = assertPathIdentifier(userId)
   return clientApi.get<UserModerationContextResponse>(
     `/api/v1/users/${encodeURIComponent(safeId)}/moderation-context`,
-  )
-}
-
-export function listUserModNotes(
-  userId: string,
-  options: { after?: string; limit?: number } = {},
-): Promise<UserModNotesListResponse> {
-  const safeId = assertPathIdentifier(userId)
-  return clientApi.get<UserModNotesListResponse>(
-    `/api/v1/users/${encodeURIComponent(safeId)}/mod-notes`,
-    { searchParams: options },
   )
 }
 

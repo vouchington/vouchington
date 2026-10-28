@@ -2,33 +2,10 @@
 
 import { clientApi } from './instance'
 import { assertEncodablePathSegmentIdentifier } from './path-identifiers'
-import type {
-  IntegrityFlagStatusFilter,
-  ReportIntegrityPatchResolution,
-} from '@ts-shared/utils/moderation-catalogs'
+import type { ReportIntegrityPatchResolution } from '@ts-shared/utils/moderation-catalogs'
 
 function encodedIntegrityPathSegment(identifier: string): string {
   return encodeURIComponent(assertEncodablePathSegmentIdentifier(identifier))
-}
-
-export function getReportIntegrityFlagsClient<T>(params?: {
-  status?: IntegrityFlagStatusFilter
-  after?: string
-}): Promise<T> {
-  const searchParams: Record<string, string | undefined> = {}
-  if (params?.status) searchParams.status = params.status
-  if (params?.after) searchParams.after = params.after
-  return clientApi.get<T>('/api/v1/report-integrity/flags', { searchParams })
-}
-
-export function getReportIntegrityPenaltiesClient<T>(params?: {
-  status?: 'active' | 'revoked'
-  after?: string
-}): Promise<T> {
-  const searchParams: Record<string, string | undefined> = {}
-  if (params?.status) searchParams.status = params.status
-  if (params?.after) searchParams.after = params.after
-  return clientApi.get<T>('/api/v1/report-integrity/penalties', { searchParams })
 }
 
 export function getReportIntegrityFlagClient<T>(id: string): Promise<T> {

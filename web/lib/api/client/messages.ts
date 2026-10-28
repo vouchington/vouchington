@@ -71,25 +71,3 @@ export function sendDirectMessage(
     message: { id: string; conversation_id: string; body_text: string; created_at: string }
   }>(`/api/v1/my/messages/${conversationId}/messages`, { text })
 }
-
-export function getConversationParticipantsClient(
-  conversationId: string,
-  options?: { after?: string; limit?: number },
-): Promise<{
-  results: DirectMessageParticipant[]
-  page_info: { has_next_page: boolean; end_cursor: string | null }
-}> {
-  const path = `/api/v1/my/messages/${conversationId}/participants`
-  if (!options) {
-    return clientApi.get<{
-      results: DirectMessageParticipant[]
-      page_info: { has_next_page: boolean; end_cursor: string | null }
-    }>(path)
-  }
-  return clientApi.get<{
-    results: DirectMessageParticipant[]
-    page_info: { has_next_page: boolean; end_cursor: string | null }
-  }>(path, {
-    searchParams: { after: options?.after, limit: options?.limit },
-  })
-}

@@ -14,7 +14,6 @@ vi.mock(
 import {
   fetchBackfills,
   fetchQueueDomains,
-  fetchQueueStats,
   fetchQueues,
   fetchScheduledJobs,
   pauseQueue,
@@ -56,27 +55,6 @@ describe('mq client — queues', () => {
       const result = await fetchQueues()
 
       expect(mockGet).toHaveBeenCalledWith('/api/v1/mq/queues')
-      expect(result).toEqual(mockResponse)
-    })
-  })
-
-  describe('fetchQueueStats', () => {
-    it('GETs the queue stats endpoint', async () => {
-      const mockResponse = {
-        stats: {
-          totalWaiting: 1,
-          totalActive: 2,
-          totalDelayed: 6,
-          totalCompleted: 3,
-          totalFailed: 4,
-          queueCount: 5,
-        },
-      }
-      mockGet.mockResolvedValueOnce(mockResponse)
-
-      const result = await fetchQueueStats()
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/mq/stats')
       expect(result).toEqual(mockResponse)
     })
   })

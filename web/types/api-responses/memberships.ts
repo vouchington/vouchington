@@ -6,7 +6,7 @@ export type MembershipPurchaseProvider =
   | 'google_play'
   | 'microsoft_store'
 
-export type MembershipVerificationReasonCode =
+type MembershipVerificationReasonCode =
   | 'verified'
   | 'competing_direct_source'
   | 'invalid_evidence'

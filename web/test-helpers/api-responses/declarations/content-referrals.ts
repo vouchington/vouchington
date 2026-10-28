@@ -134,8 +134,7 @@ export const CONTENT_REFERRALS_DECLARATIONS = [
   defineWebApiFixture<ReferralClickLogResponseBody>()(
     'web.referral-clicks.mine.default',
     referralClicksMineDefault,
-    context => context.client.referralClicks.getMyReferralClicksClient(),
-    [context => context.server.my.getMyReferralClicks()],
+    context => context.server.my.getMyReferralClicks(),
   ),
   defineWebApiFixture<RssFeedItemsFeedResponseBody>()(
     'web.rss-feed-items.feed.default',
