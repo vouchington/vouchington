@@ -6,13 +6,6 @@ describe('background CPU job lanes', () => {
     expect(crawlOrderingKey('boilerplate_removal', false)).toBe('crawl:boilerplate')
     expect(crawlOrderingKey('crawl_url', false)).toBe('crawl:task')
     expect(crawlOrderingKey('boilerplate_removal_dispatcher', true)).toBe('crawl:dispatch')
-    expect(
-      new Set([
-        crawlOrderingKey('boilerplate_removal', false),
-        crawlOrderingKey('crawl_url', false),
-        crawlOrderingKey('boilerplate_removal_dispatcher', true),
-      ]).size,
-    ).toBe(3)
   })
 
   it('keeps content analysis dispatchers out of its task lane', () => {
