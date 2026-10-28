@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
-import type { DailyAiCostTotal } from '@services/ai-usage'
+import type { getDailyAiCostTotalMicrounits } from '@services/ai-usage'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
+
+type DailyAiCostTotal = Awaited<ReturnType<typeof getDailyAiCostTotalMicrounits>>
 
 function mockJob(
   overrides: { name?: string; data?: Partial<AIAgentJobData> } = {},

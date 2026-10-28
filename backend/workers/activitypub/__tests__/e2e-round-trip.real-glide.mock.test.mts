@@ -2,10 +2,7 @@ import { QueueEvents, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { distributeActivity, deliverActivity } from '../processors/delivery.mts'
-import {
-  deliverActivityToInbox,
-  type DeliverActivityToInboxInput,
-} from '@services/activitypub-delivery'
+import { deliverActivityToInbox } from '@services/activitypub-delivery'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
 import '@services/bookmarks'
 import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
@@ -26,6 +23,8 @@ import {
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair, verifySignature } from '@modules/http-signatures'
 import { createTestPost, createTestUserDirect, readAllQueueJobs } from '@voucha/test-helpers'
+
+type DeliverActivityToInboxInput = Parameters<typeof deliverActivityToInbox>[0]
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 

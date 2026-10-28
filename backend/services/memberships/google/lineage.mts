@@ -12,7 +12,7 @@ import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from '
 import { getOrCreateProviderContextId } from '../provider-context.mts'
 
 const MAX_LINKED_TOKEN_DEPTH = 100
-export type GooglePlayResolvedLineage = {
+type GooglePlayResolvedLineage = {
   rootToken: string
   rootDigest: string
   currentSubscription: GooglePlaySubscriptionV2

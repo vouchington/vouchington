@@ -17,7 +17,7 @@ type MarketingEntry = {
   hasActiveSender: boolean
 }
 
-export type EmailClassificationEntry = TransactionalEntry | MarketingEntry
+type EmailClassificationEntry = TransactionalEntry | MarketingEntry
 
 export const EMAIL_CLASSIFICATIONS: Record<EmailType, EmailClassificationEntry> = {
   processSendCommunityInviteEmail: { classification: 'transactional' },

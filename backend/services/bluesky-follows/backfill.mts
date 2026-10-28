@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
-export type BlueskyFollowPropagationCandidate = {
+type BlueskyFollowPropagationCandidate = {
   followerUserId: string
   followeeUserId: string
 }

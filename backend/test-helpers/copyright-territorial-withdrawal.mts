@@ -3,8 +3,12 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import {
   withdrawCopyrightJurisdictionPolicyApproval,
-  type CopyrightJurisdictionPolicyApproval,
+  type findCurrentCopyrightJurisdictionPolicy,
 } from '../services/copyright-notices/jurisdiction-policy.mts'
+
+type CopyrightJurisdictionPolicyApproval = NonNullable<
+  Awaited<ReturnType<typeof findCurrentCopyrightJurisdictionPolicy>>
+>
 
 /** Isolated-case setup: no approval may remain available for a later intake. */
 export async function withdrawAllTestTerritorialApprovals(

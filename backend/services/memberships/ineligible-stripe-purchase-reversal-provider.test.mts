@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createOrRetrieveIneligiblePurchaseReversalRefund,
   getSucceededIneligiblePurchaseReversalRefund,
-  type IneligiblePurchaseReversalRefundOperations,
 } from './ineligible-stripe-purchase-reversal-provider.mts'
+
+type IneligiblePurchaseReversalRefundOperations = Parameters<
+  typeof createOrRetrieveIneligiblePurchaseReversalRefund
+>[1]
 
 describe('createOrRetrieveIneligiblePurchaseReversalRefund', () => {
   it('returns a settled recorded provider refund without creating another refund', async () => {

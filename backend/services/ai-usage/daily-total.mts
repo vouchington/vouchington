@@ -7,7 +7,7 @@ import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 
 const DAILY_AI_COST_TOTAL_CACHE_TTL_MS = 60_000
 
-export type DailyAiCostTotal = {
+type DailyAiCostTotal = {
   totalMicrounits: number
   // True when any row in the window has pricing_status = 'unpriced' (calcCostMicrounits,
   // @modules/model-providers/pricing.mts, found no pricing-table entry for the model/service-tier

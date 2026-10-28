@@ -14,10 +14,11 @@ import {
   getLatestKnownGooglePlayPurchaseToken,
   resolveGooglePlayTokenLineage,
   tokenDigest,
-  type GooglePlayResolvedLineage,
 } from './lineage.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
+
+type GooglePlayResolvedLineage = Awaited<ReturnType<typeof resolveGooglePlayTokenLineage>>
 
 describe('Google Play token lineage', () => {
   it('keeps a fetched token alias identity and first fetch immutable', async () => {

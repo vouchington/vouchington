@@ -15,8 +15,10 @@ import { addUrl } from '@services/urls/upsert'
 import type { PrivateUser } from '@services/users/types'
 import type { BrowserCrawlResult } from '@services/browser-crawl'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
-import { constructChildUrls, type AmexCardSlug } from './construct-amex-children.mts'
+import { constructChildUrls, type getAmexCardSlugCatalog } from './construct-amex-children.mts'
 import { runReferralLinkUnfurl } from './unfurl.mts'
+
+type AmexCardSlug = Awaited<ReturnType<typeof getAmexCardSlugCatalog>>[number]
 
 describe('runReferralLinkUnfurl', () => {
   let parentProgramId: string

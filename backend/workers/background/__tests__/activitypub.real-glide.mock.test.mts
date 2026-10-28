@@ -11,10 +11,7 @@ import {
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
 } from '@queues/background/enqueues/activitypub-jobs'
 import { background } from '@queues/background/queues'
-import {
-  deliverActivityToInbox,
-  type DeliverActivityToInboxInput,
-} from '@services/activitypub-delivery'
+import { deliverActivityToInbox } from '@services/activitypub-delivery'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
 import { dispatchInboundActivity } from '@services/ap-inbox-activities'
 import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
@@ -29,6 +26,8 @@ import {
   type BackgroundHarness,
 } from '@voucha/test-helpers/real-glide-background'
 import { createBackgroundProcessor } from '../processors.mts'
+
+type DeliverActivityToInboxInput = Parameters<typeof deliverActivityToInbox>[0]
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 

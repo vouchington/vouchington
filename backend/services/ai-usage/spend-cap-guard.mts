@@ -12,7 +12,7 @@ type SpendCapBreachBase = {
   day: string
 }
 
-export type SpendCapBreach =
+type SpendCapBreach =
   | (SpendCapBreachBase & {
       reason: 'cap_exceeded' | 'unpriced_rows'
       totalMicrounits: number

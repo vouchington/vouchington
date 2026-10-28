@@ -11,7 +11,7 @@ import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { RSS_FEED_COLLABORATIVE_CATEGORIZER_USERNAME } from '@services/users/constants'
 import type { BasicUser } from '@services/users/types'
 
-export type CollaborativeTopicLimits = {
+type CollaborativeTopicLimits = {
   plusLimit: number
   proLimit: number
 }

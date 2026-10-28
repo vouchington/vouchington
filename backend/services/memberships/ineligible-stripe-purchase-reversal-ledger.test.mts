@@ -10,11 +10,12 @@ import { createMembership } from './create.mts'
 import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { createIneligiblePurchaseReversalRetryIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
 import { claimPersistedIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
-import {
-  createOrRetrieveIneligiblePurchaseReversalRefund,
-  type IneligiblePurchaseReversalRefundOperations,
-} from './ineligible-stripe-purchase-reversal-provider.mts'
+import { createOrRetrieveIneligiblePurchaseReversalRefund } from './ineligible-stripe-purchase-reversal-provider.mts'
 import { reconcileFailedIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-reconcile.mts'
+
+type IneligiblePurchaseReversalRefundOperations = Parameters<
+  typeof createOrRetrieveIneligiblePurchaseReversalRefund
+>[1]
 
 describe('ineligible Stripe purchase reversal ledger', () => {
   it('keeps identical Stripe subscription IDs isolated by provider application', async () => {

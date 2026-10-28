@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildClassifiedSendParams } from './send-params.mts'
-import {
-  EMAIL_CLASSIFICATIONS,
-  type EmailClassificationEntry,
-  type EmailType,
-} from './registry.mts'
+import { EMAIL_CLASSIFICATIONS, type EmailType } from './registry.mts'
+
+type EmailClassificationEntry = (typeof EMAIL_CLASSIFICATIONS)[EmailType]
 
 describe('EMAIL_CLASSIFICATIONS registry', () => {
   it('has a valid shape for every entry', () => {

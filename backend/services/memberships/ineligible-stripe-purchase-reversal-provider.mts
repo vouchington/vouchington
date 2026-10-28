@@ -3,7 +3,7 @@ import { recordIneligiblePurchaseReversalProviderRefund } from './ineligible-str
 import { createIneligiblePurchaseReversalRetryIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
 import type { ClaimedReversal } from './ineligible-stripe-purchase-reversal-types.mts'
 
-export type IneligiblePurchaseReversalRefundOperations = {
+type IneligiblePurchaseReversalRefundOperations = {
   createRefund: typeof stripeRefunds.createStripeRefund
   retrieveRefund?: typeof stripeRefunds.getStripeRefund
 }

@@ -12,7 +12,7 @@ import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tok
  */
 type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
 
-export type CopyrightRetentionErasureTable = {
+type CopyrightRetentionErasureTable = {
   table: string
   columns: Record<string, CopyrightRetentionErasureKind>
   /** The rows of the table that belong to one notice. */

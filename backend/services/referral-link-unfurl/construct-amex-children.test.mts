@@ -2,11 +2,9 @@ import { beforeAll, describe, it } from 'vitest'
 import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
 import assert from 'node:assert/strict'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
-import {
-  constructChildUrls,
-  getAmexCardSlugCatalog,
-  type AmexCardSlug,
-} from './construct-amex-children.mts'
+import { constructChildUrls, getAmexCardSlugCatalog } from './construct-amex-children.mts'
+
+type AmexCardSlug = Awaited<ReturnType<typeof getAmexCardSlugCatalog>>[number]
 
 describe('constructChildUrls', () => {
   const FINAL_URL =

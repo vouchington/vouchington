@@ -3,13 +3,16 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   advanceMicrosoftStoreSourceRecoveryCursor,
   findRecoverableMicrosoftStoreSourceJobs,
-  MicrosoftStoreSourceRecoveryBatch,
 } from '@services/memberships/microsoft'
 import type {
   enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
 } from '@queues/memberships/enqueues'
 import { recoverMicrosoftStoreSources } from './microsoft-store.mts'
+
+type MicrosoftStoreSourceRecoveryBatch = Awaited<
+  ReturnType<typeof findRecoverableMicrosoftStoreSourceJobs>
+>
 
 describe('recoverMicrosoftStoreSources', () => {
   it('chains a continuation only after the CAS-owning full page advances', async () => {
