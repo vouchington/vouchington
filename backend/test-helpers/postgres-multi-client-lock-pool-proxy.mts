@@ -4,7 +4,7 @@ import { getOptionalRequestClientInfo } from '../modules/request-client-info/ind
 import { createTestPostgresClientLoan, discardTestPostgresClient } from './postgres-client-loan.mts'
 import type { TestPostgresMultiWaitState } from './postgres-multi-client-lock-types.mts'
 
-/** Route one selected Promise checkout per action and leave unrelated clients untouched. */
+/** Route one selected checkout per action and leave unrelated clients untouched. */
 export function installTestPostgresMultiWaitPoolProxy(
   states: TestPostgresMultiWaitState[],
   actionScope: AsyncLocalStorage<object>,
@@ -61,6 +61,58 @@ function installPool(
     requestId === undefined
       ? undefined
       : states.find(state => state.options.requestId === requestId)
+  const prepareLoan = async (
+    client: PoolClient,
+    state: TestPostgresMultiWaitState,
+  ): Promise<PoolClient> => {
+    if (isClosed()) {
+      await discardTestPostgresClient(client)
+      throw closedReason
+    }
+    let loan: ReturnType<typeof createTestPostgresClientLoan> | undefined
+    try {
+      loan = createTestPostgresClientLoan(client, await state.setup!)
+      state.loan = loan
+      await loan.ready
+      if (isClosed()) throw closedReason
+      state.captured.resolve(loan)
+      return client
+    } catch (err) {
+      try {
+        if (loan) await loan.dispose()
+        else await discardTestPostgresClient(client)
+      } catch (cleanupErr) {
+        throw new AggregateError([err, cleanupErr], 'Owned PostgreSQL loan setup failed', {
+          cause: cleanupErr,
+        })
+      }
+      throw err
+    }
+  }
+  async function completeCallbackLoan(
+    client: PoolClient,
+    state: TestPostgresMultiWaitState,
+    callback: (err?: Error, client?: PoolClient, release?: PoolClient['release']) => void,
+  ) {
+    let readyClient: PoolClient
+    try {
+      state.pendingConnect = prepareLoan(client, state)
+      readyClient = await state.pendingConnect
+    } catch (err) {
+      state.captured.reject(err)
+      try {
+        callback(err as Error)
+      } catch (callbackErr) {
+        state.captured.reject(callbackErr)
+      }
+      return
+    }
+    try {
+      callback(undefined, readyClient, readyClient.release)
+    } catch (err) {
+      state.captured.reject(err)
+    }
+  }
   try {
     Object.defineProperty(pool, 'connect', {
       configurable: true,
@@ -76,22 +128,26 @@ function installPool(
           if (!state || state.options.pool !== poolName || state.claimed)
             return Reflect.apply(target, receiver, args)
           if (isClosed()) throw closedReason
-          if (args.some(arg => typeof arg === 'function'))
-            throw new Error('Owned first PostgreSQL checkout must use the Promise overload')
           state.claimed = true
+          if (typeof args[0] === 'function') {
+            const callback = args[0] as (
+              err?: Error,
+              client?: PoolClient,
+              release?: PoolClient['release'],
+            ) => void
+            return Reflect.apply(target, receiver, [
+              (err?: Error, client?: PoolClient, release?: PoolClient['release']) => {
+                if (err || !client) {
+                  if (err) state.captured.reject(err)
+                  return callback(err, client, release)
+                }
+                void completeCallbackLoan(client, state, callback)
+              },
+            ])
+          }
           state.pendingConnect = (
             Reflect.apply(target, receiver, args) as Promise<PoolClient>
-          ).then(async client => {
-            if (isClosed()) {
-              await discardTestPostgresClient(client)
-              throw closedReason
-            }
-            state.loan = createTestPostgresClientLoan(client, await state.setup!)
-            await state.loan.ready
-            if (isClosed()) throw closedReason
-            state.captured.resolve(state.loan)
-            return client
-          })
+          ).then(client => prepareLoan(client, state))
           void state.pendingConnect.catch(state.captured.reject)
           return state.pendingConnect
         },
