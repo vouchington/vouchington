@@ -12,13 +12,37 @@ import {
   setTestBanEvasionFlag,
 } from '@voucha/test-helpers'
 import crypto from 'node:crypto'
-import { getModerationAnalytics, getRangeStart } from './get-moderation-analytics.mts'
+import { getModerationAnalytics } from './get-moderation-analytics.mts'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 
 describe('getModerationAnalytics', () => {
-  it('bounds the all range to the raw moderation retention window', () => {
-    const now = new Date('2026-10-23T12:00:00.000Z')
-    expect(getRangeStart('all', now).toISOString()).toBe('2026-07-25T12:00:00.000Z')
+  it.each([
+    ['7d', 7],
+    ['30d', 30],
+    ['90d', 90],
+    ['all', 90],
+  ] as const)('uses the raw %s rolling analytics window', async (range, days) => {
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    const metrics = await getModerationAnalytics(range, {
+      type: 'community',
+      communityId: community.id,
+    })
+
+    expect(new Date(metrics.period_end).getTime() - new Date(metrics.period_start).getTime()).toBe(
+      days * 24 * 60 * 60 * 1000,
+    )
+  })
+
+  it('starts today analytics at UTC midnight', async () => {
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    const metrics = await getModerationAnalytics('today', {
+      type: 'community',
+      communityId: community.id,
+    })
+
+    expect(metrics.period_start).toBe(`${metrics.period_end.slice(0, 10)}T00:00:00.000Z`)
   })
 
   it('excludes operational audit phases from daily moderation actions and workload', async () => {

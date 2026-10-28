@@ -11,7 +11,7 @@ import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
 const MAX_COMMUNITY_MODERATION_QUESTIONS = 30
 const MAX_COMMUNITY_MODERATION_RULE_CHARACTERS = 40_000
 
-export type CommunityModerationPrompt = { id: string; text: string }
+type CommunityModerationPrompt = { id: string; text: string }
 
 /**
  * The replay identity of one community moderation run: which classifier prompt, model and actor
@@ -37,7 +37,7 @@ export type CommunityModerationRunConfiguration = {
  * what is pinned is exactly what is asked. Prompts past a cap are not sent. Sorted by id so the
  * configuration is deterministic whatever order activation gave them.
  */
-export function selectCommunityModerationPrompts(
+function selectCommunityModerationPrompts(
   prompts: readonly CommunityModerationPrompt[],
 ): CommunityModerationPrompt[] {
   const selected: CommunityModerationPrompt[] = []
