@@ -111,7 +111,7 @@ export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}
   }
 }
 
-export function appendRssFeedItemsPageClauses(query: SQLStatement, safeLimit: number) {
+function appendRssFeedItemsPageClauses(query: SQLStatement, safeLimit: number) {
   query.append(sql`
       ORDER BY deduped_rss_feed_items.published_at DESC, deduped_rss_feed_items.id DESC
       LIMIT `)

@@ -8,8 +8,8 @@ import {
   listTestRssFeedItemCategorySnapshotReconciliations,
 } from '@voucha/test-helpers'
 import {
+  acknowledgeRssFeedItemCategorySnapshot,
   reconcileRssFeedItemCategorySnapshotRows,
-  type RssFeedItemCategorySnapshotReconciliation,
 } from '../category-snapshot-reconciliations.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
@@ -34,9 +34,9 @@ describe('RSS category snapshot notification identity', () => {
     onTestFinished(async () => {
       await Promise.all((await jobs()).map(job => job.remove()))
     })
-    const [first] = (await listTestRssFeedItemCategorySnapshotReconciliations([
-      item!.id,
-    ])) as RssFeedItemCategorySnapshotReconciliation[]
+    const [first] = (await listTestRssFeedItemCategorySnapshotReconciliations([item!.id])) as Array<
+      Parameters<typeof acknowledgeRssFeedItemCategorySnapshot>[0]
+    >
     expect(first!.generation).toBe('1')
     expect(first!.change_id).toMatch(
       /^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/,
@@ -63,7 +63,7 @@ describe('RSS category snapshot notification identity', () => {
     ])
     const [second] = (await listTestRssFeedItemCategorySnapshotReconciliations([
       item!.id,
-    ])) as RssFeedItemCategorySnapshotReconciliation[]
+    ])) as Array<Parameters<typeof acknowledgeRssFeedItemCategorySnapshot>[0]>
     expect(second!.generation).toBe('1')
     expect(second!.change_id).not.toBe(first!.change_id)
     const beforeSecond = new Set((await jobs()).map(job => job.id))

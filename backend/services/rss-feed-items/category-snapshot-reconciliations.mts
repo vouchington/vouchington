@@ -3,7 +3,7 @@ import { write, type QueryExecutor } from '@data-stores/psql'
 import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notifications/enqueues'
 import { upsertRssFeedItemCategories, type RssFeedItemCategoryInput } from './categories.mts'
 
-export type RssFeedItemCategorySnapshotReconciliation = RssFeedItemCategoryInput & {
+type RssFeedItemCategorySnapshotReconciliation = RssFeedItemCategoryInput & {
   change_id: string
   generation: string
 }

@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { FeedBudgetExceededError } from '@services/rss-feeds/feed-budget'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
@@ -57,7 +56,7 @@ describe('RSS feed import row budget', () => {
         isFinalAttempt: false,
         crawlerRssOptions: hangingFetchOptions,
       }),
-    ).rejects.toBeInstanceOf(FeedBudgetExceededError)
+    ).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
 
     const status = await getRssFeedImport(user.id, importId)
     expect(status?.import).toMatchObject({ completed_rows: 0, failed_rows: 0, pending_rows: 1 })
@@ -76,7 +75,7 @@ describe('RSS feed import row budget', () => {
         isFinalAttempt: true,
         crawlerRssOptions: hangingFetchOptions,
       }),
-    ).rejects.toBeInstanceOf(FeedBudgetExceededError)
+    ).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
 
     const status = await getRssFeedImport(user.id, importId)
     expect(status?.import).toMatchObject({ failed_rows: 1, pending_rows: 0 })

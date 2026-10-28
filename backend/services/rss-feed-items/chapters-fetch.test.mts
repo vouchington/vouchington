@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
-import type { ChaptersSafeFetch } from './chapters.mts'
 import type { readResponseBodyAsBuffer } from '@modules/utils/http-body'
 import type { ViewRssFeedItem } from './types.mts'
 
 type ReadResponseBodyOptions = Parameters<typeof readResponseBodyAsBuffer>[0]
 type GetPodcastEpisodeChaptersById =
   (typeof import('./chapters.mts'))['getPodcastEpisodeChaptersById']
+type ChaptersSafeFetch = NonNullable<
+  NonNullable<Parameters<GetPodcastEpisodeChaptersById>[1]>['safeFetch']
+>
 type UnsafeUrlErrorConstructor = (typeof import('ssrf-guard/node'))['UnsafeUrlError']
 
 let getPodcastEpisodeChaptersById: GetPodcastEpisodeChaptersById

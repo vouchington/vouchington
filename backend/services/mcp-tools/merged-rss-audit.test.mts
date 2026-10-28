@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { readTestMcpCallAuditOptions } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { issueTestUserMcpCredential } from '@voucha/test-helpers/mcp-user-credentials'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { insertRssFeedCrawl } from '../rss-feeds/crawls.mts'
+import { insertTestRssFeedCrawl } from '@voucha/test-helpers/entities/rss-feed-crawls'
 
 type McpResponse = {
   result?: { isError?: boolean; structuredContent?: Record<string, unknown>; content?: unknown[] }
@@ -13,10 +13,10 @@ describe('merged RSS feed HTTP audit', () => {
   it('records details success and free crawl denials with the selected option on both rows', async () => {
     const { user, token } = await issueTestUserMcpCredential('api_key', 'rss-feeds:read')
     const feed = await createTestRssFeed({})
-    const crawlId = await insertRssFeedCrawl({
-      rss_feed_id: feed.id,
-      response_code: 200,
-      feed_data: { title: `Audit feed ${crypto.randomUUID()}` },
+    const crawlId = await insertTestRssFeedCrawl({
+      rssFeedId: feed.id,
+      responseCode: 200,
+      feedData: { title: `Audit feed ${crypto.randomUUID()}` },
     })
     const invoke = (option: string, args: Record<string, unknown>) =>
       createRequest()

@@ -4,7 +4,6 @@ import type { TransactionQuery } from '@data-stores/psql'
 import {
   beginTransaction,
   getRssFeedItemSourcePublicationForTest,
-  listTestRssFeedItemCategorySnapshotReconciliations,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
 import { getUrlById } from '@services/urls'
@@ -14,10 +13,7 @@ import { upsertRssFeedItems } from '../upsert.mts'
 import { prepareRssFeedItemsForUpsert } from '../upsert-prepare.mts'
 import { upsertRssFeedItemIdentities } from '../upsert-identities.mts'
 import { upsertRssFeedItemContent, upsertRssFeedItemSources } from '../upsert-queries.mts'
-import {
-  reconcileRssFeedItemCategorySnapshotRows,
-  type RssFeedItemCategorySnapshotReconciliation,
-} from '../category-snapshot-reconciliations.mts'
+import { reconcileRssFeedItemCategorySnapshots } from '../category-snapshot-reconciliations.mts'
 
 describe('RSS feed item concurrent upsert ordering', () => {
   it('dispatches reverse-order identity, content, and source writers on two PostgreSQL clients', async () => {
@@ -221,10 +217,7 @@ function createBarrieredQuery(
 }
 
 async function reconcileOwned(rssFeedItemIds: string[]): Promise<void> {
-  const rows = await listTestRssFeedItemCategorySnapshotReconciliations(rssFeedItemIds)
-  await reconcileRssFeedItemCategorySnapshotRows(
-    rows as RssFeedItemCategorySnapshotReconciliation[],
-  )
+  await reconcileRssFeedItemCategorySnapshots(undefined, rssFeedItemIds)
 }
 
 async function createSharedFeedItems() {

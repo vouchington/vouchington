@@ -6,7 +6,7 @@ import {
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { insertRssFeedCrawl } from '@services/rss-feeds/crawls'
+import { insertTestRssFeedCrawl } from '@voucha/test-helpers/entities/rss-feed-crawls'
 import { describe, expect, it } from 'vitest'
 
 describe('read_rss_feed crawl membership — real DB', () => {
@@ -17,10 +17,10 @@ describe('read_rss_feed crawl membership — real DB', () => {
     const paid = { ...paidUser, membership_plan: 'plus' as const }
     const admin = { ...(await createTestUser({ administrator: true })), membership_plan: null }
     const feed = await createTestRssFeed({ title: `crawl-${crypto.randomUUID()}` })
-    const crawlId = await insertRssFeedCrawl({
-      rss_feed_id: feed.id,
-      response_code: 200,
-      feed_data: { title: 'external crawl' },
+    const crawlId = await insertTestRssFeedCrawl({
+      rssFeedId: feed.id,
+      responseCode: 200,
+      feedData: { title: 'external crawl' },
     })
     const args = { rss_feed_id: feed.id, crawl_id: crawlId }
 

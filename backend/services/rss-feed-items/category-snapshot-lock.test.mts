@@ -3,10 +3,7 @@ import {
   getTestPostgresAdvisoryLockHolderProcessId,
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
-import {
-  RSS_CATEGORY_SNAPSHOT_LOCK_NAMESPACE,
-  withRssFeedItemCategorySnapshotLocks,
-} from './category-snapshot-lock.mts'
+import { withRssFeedItemCategorySnapshotLocks } from './category-snapshot-lock.mts'
 
 describe('RSS feed item category snapshot locks', () => {
   it('releases locks after an operation fails and preserves the original error', async () => {
@@ -21,7 +18,7 @@ describe('RSS feed item category snapshot locks', () => {
 
     await expect(
       getTestPostgresAdvisoryLockHolderProcessId({
-        namespace: RSS_CATEGORY_SNAPSHOT_LOCK_NAMESPACE,
+        namespace: 0x5253,
         key: itemId,
       }),
     ).rejects.toThrow('PostgreSQL did not report the test advisory-lock holder')
@@ -43,7 +40,7 @@ describe('RSS feed item category snapshot locks', () => {
     })
     await firstEntered.promise
     const firstHolderProcessId = await getTestPostgresAdvisoryLockHolderProcessId({
-      namespace: RSS_CATEGORY_SNAPSHOT_LOCK_NAMESPACE,
+      namespace: 0x5253,
       key: itemId,
     })
     const second = withRssFeedItemCategorySnapshotLocks([itemId], async () => {

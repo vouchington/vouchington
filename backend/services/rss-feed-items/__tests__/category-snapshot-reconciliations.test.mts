@@ -13,8 +13,7 @@ import {
   acknowledgeRssFeedItemCategorySnapshot,
   markRssFeedCategorySnapshotsForReconciliation,
   markRssFeedItemCategorySnapshotsForReconciliation,
-  reconcileRssFeedItemCategorySnapshotRows,
-  type RssFeedItemCategorySnapshotReconciliation,
+  reconcileRssFeedItemCategorySnapshots,
 } from '../category-snapshot-reconciliations.mts'
 
 import { upsertRssFeedItems } from '../upsert.mts'
@@ -29,10 +28,7 @@ function itemInput(suffix: string, categories: string[], title = 'Initial title'
 }
 
 async function reconcileOwned(rssFeedItemIds: string[]) {
-  const rows = await listTestRssFeedItemCategorySnapshotReconciliations(rssFeedItemIds)
-  return reconcileRssFeedItemCategorySnapshotRows(
-    rows as RssFeedItemCategorySnapshotReconciliation[],
-  )
+  return reconcileRssFeedItemCategorySnapshots(undefined, rssFeedItemIds)
 }
 
 describe('RSS feed item category snapshot reconciliation', () => {
@@ -226,12 +222,13 @@ describe('RSS feed item category snapshot reconciliation', () => {
     expect(Number(second!.generation)).toBe(Number(first!.generation) + 1)
     expect(second!.change_id).not.toBe(first!.change_id)
 
-    await acknowledgeRssFeedItemCategorySnapshot({
+    const staleSnapshot: Parameters<typeof acknowledgeRssFeedItemCategorySnapshot>[0] = {
       rss_feed_item_id: item!.id,
       categories: first!.categories as string[],
       generation: first!.generation,
       change_id: first!.change_id,
-    })
+    }
+    await acknowledgeRssFeedItemCategorySnapshot(staleSnapshot)
     await expect(getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).resolves.toMatchObject(
       { categories: [secondCategory], generation: second!.generation },
     )
@@ -253,11 +250,9 @@ describe('RSS feed item category snapshot reconciliation', () => {
 
     expect(getRssFeedItemsWorkLimit('category_snapshot_reconciliation_batch_size')).toBe(25)
     await expect(
-      reconcileRssFeedItemCategorySnapshotRows(
-        ordered.slice(
-          0,
-          getRssFeedItemsWorkLimit('category_snapshot_reconciliation_batch_size'),
-        ) as RssFeedItemCategorySnapshotReconciliation[],
+      reconcileRssFeedItemCategorySnapshots(
+        getRssFeedItemsWorkLimit('category_snapshot_reconciliation_batch_size'),
+        itemIds,
       ),
     ).resolves.toEqual({ reconciled: 25 })
     await expect(listTestRssFeedItemCategorySnapshotReconciliations(itemIds)).resolves.toEqual([
@@ -274,14 +269,8 @@ describe('RSS feed item category snapshot reconciliation', () => {
     ])
     await replaceTestRssFeedItemCategorySnapshotReconciliation(poisoned!.id, [1])
 
-    const selected = await listTestRssFeedItemCategorySnapshotReconciliations([
-      poisoned!.id,
-      valid!.id,
-    ])
     await expect(
-      reconcileRssFeedItemCategorySnapshotRows(
-        selected as RssFeedItemCategorySnapshotReconciliation[],
-      ),
+      reconcileRssFeedItemCategorySnapshots(2, [poisoned!.id, valid!.id]),
     ).rejects.toThrow('RSS feed item category snapshot reconciliation failed')
     await expect(
       getTestRssFeedItemCategorySnapshotReconciliation(poisoned!.id),

@@ -1,5 +1,5 @@
 /** A feed ran out of its time budget. It is an ordinary error, so a queue job retries it. */
-export class FeedBudgetExceededError extends Error {
+class FeedBudgetExceededError extends Error {
   override name = 'FeedBudgetExceededError'
 
   constructor() {

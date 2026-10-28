@@ -16,7 +16,7 @@ export function getEffectiveUnreliableStatusCodes(
   return policy?.feed_unreliable_status_codes ?? policy?.hostname_unreliable_status_codes ?? []
 }
 
-export async function getEffectiveFetchUnreliableStatusCodes(
+async function getEffectiveFetchUnreliableStatusCodes(
   policy: RssFeedFetchFailurePolicy | null | undefined,
   fetchHostnameId: string,
 ): Promise<readonly number[]> {
@@ -56,7 +56,7 @@ export async function maybeSoftDeletePermanentFetchErrorForFetch({
   })
 }
 
-export async function maybeSoftDeletePermanentFetchError({
+async function maybeSoftDeletePermanentFetchError({
   error,
   feedUrl,
   rssFeedId,

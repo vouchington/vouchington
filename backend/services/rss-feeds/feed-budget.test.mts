@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FeedBudgetExceededError, raceFeedBudget } from './feed-budget.mts'
+import { raceFeedBudget } from './feed-budget.mts'
 import { resolveProtocolAndClassify } from './resolve-protocol.mts'
 
 describe('raceFeedBudget', () => {
@@ -14,7 +14,7 @@ describe('raceFeedBudget', () => {
   it('rejects at once when the budget is already spent', async () => {
     await expect(
       raceFeedBudget(AbortSignal.abort(), new Promise<never>(() => undefined)),
-    ).rejects.toBeInstanceOf(FeedBudgetExceededError)
+    ).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
   })
 
   it('rejects when the signal aborts while the work cannot be interrupted', async () => {
@@ -22,7 +22,7 @@ describe('raceFeedBudget', () => {
     const raced = raceFeedBudget(controller.signal, new Promise<never>(() => undefined))
     controller.abort()
 
-    await expect(raced).rejects.toBeInstanceOf(FeedBudgetExceededError)
+    await expect(raced).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
   })
 
   it('reports an error the work throws after the abort as the budget error', async () => {
@@ -30,9 +30,9 @@ describe('raceFeedBudget', () => {
     const work = Promise.reject(new Error('socket hang up'))
     controller.abort()
 
-    await expect(raceFeedBudget(controller.signal, work)).rejects.toBeInstanceOf(
-      FeedBudgetExceededError,
-    )
+    await expect(raceFeedBudget(controller.signal, work)).rejects.toMatchObject({
+      name: 'FeedBudgetExceededError',
+    })
   })
 
   it('passes along an error the work throws within the budget', async () => {

@@ -20,7 +20,7 @@ export function toPaidSafeRssFeedCrawl(crawl: RssFeedCrawlSummary): PaidSafeRssF
   return { id: crawl.id, response_code: crawl.response_code, created_at: crawl.created_at }
 }
 
-export async function insertRssFeedCrawl(params: {
+async function insertRssFeedCrawl(params: {
   rss_feed_id: string
   response_code: number
   feed_data?: Record<string, unknown> | null
@@ -71,7 +71,7 @@ function buildRssFeedMetadataChanges(headers: {
   return changes
 }
 
-export function parseRssLastModifiedHeader(lastModified: string | null): Date | null {
+function parseRssLastModifiedHeader(lastModified: string | null): Date | null {
   if (lastModified == null || lastModified.trim() === '') return null
 
   const trimmed = lastModified.trim()

@@ -1,128 +1,131 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { extractFeedLinkFromCrawlLinks } from './discover-feed.mts'
+import {
+  createTestUser,
+  insertTestCrawl,
+  insertTestUrl,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
+import {
+  createPendingRssFeedImportDiscoveryForTest,
+  getRssFeedImportDiscoveriesForTest,
+} from '@voucha/test-helpers/rss-feed-import-rows'
+import type { CrawlerHtmlStructuredObject } from '@services/crawls/types'
+import { completeRssFeedImportDiscovery } from './discover-feed.mts'
 
-const BASE_URL = 'https://example.com/'
+type DiscoveryCase = {
+  name: string
+  links: (baseUrl: string) => CrawlerHtmlStructuredObject | null
+  expected: (baseUrl: string) => string | null
+}
 
-describe('extractFeedLinkFromCrawlLinks', () => {
-  it('returns the RSS feed URL when crawler links include an RSS alternate', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/rss+xml': ['/feed.xml'] } },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/feed.xml')
-  })
+const cases: DiscoveryCase[] = [
+  {
+    name: 'finds an RSS alternate',
+    links: () => ({ alternate: { 'application/rss+xml': ['/feed.xml'] } }),
+    expected: baseUrl => new URL('/feed.xml', baseUrl).href,
+  },
+  {
+    name: 'preserves an absolute href',
+    links: () => ({ alternate: { 'application/rss+xml': ['https://other.example.com/rss'] } }),
+    expected: () => 'https://other.example.com/rss',
+  },
+  {
+    name: 'finds an Atom alternate',
+    links: () => ({ alternate: { 'application/atom+xml': ['/atom.xml'] } }),
+    expected: baseUrl => new URL('/atom.xml', baseUrl).href,
+  },
+  {
+    name: 'finds a JSON Feed alternate',
+    links: () => ({ alternate: { 'application/feed+json': ['/feed.json'] } }),
+    expected: baseUrl => new URL('/feed.json', baseUrl).href,
+  },
+  {
+    name: 'finds an application/json alternate',
+    links: () => ({ alternate: { 'application/json': ['/feed.json'] } }),
+    expected: baseUrl => new URL('/feed.json', baseUrl).href,
+  },
+  {
+    name: 'prefers RSS over Atom',
+    links: () => ({
+      alternate: { 'application/atom+xml': ['/atom.xml'], 'application/rss+xml': ['/rss.xml'] },
+    }),
+    expected: baseUrl => new URL('/rss.xml', baseUrl).href,
+  },
+  {
+    name: 'prefers Atom over JSON Feed',
+    links: () => ({
+      alternate: { 'application/feed+json': ['/feed.json'], 'application/atom+xml': ['/atom.xml'] },
+    }),
+    expected: baseUrl => new URL('/atom.xml', baseUrl).href,
+  },
+  {
+    name: 'accepts a scalar href',
+    links: () => ({ alternate: { 'application/rss+xml': '/feed.xml' } }),
+    expected: baseUrl => new URL('/feed.xml', baseUrl).href,
+  },
+  {
+    name: 'matches MIME type keys without case',
+    links: () => ({ alternate: { 'Application/RSS+XML': ['/feed.xml'] } }),
+    expected: baseUrl => new URL('/feed.xml', baseUrl).href,
+  },
+  {
+    name: 'skips a non-public URL before a public candidate',
+    links: () => ({
+      alternate: { 'application/rss+xml': ['http://localhost/feed.xml', '/feed.xml'] },
+    }),
+    expected: baseUrl => new URL('/feed.xml', baseUrl).href,
+  },
+  {
+    name: 'finds no alternate among canonical links',
+    links: baseUrl => ({ canonical: baseUrl }),
+    expected: () => null,
+  },
+  {
+    name: 'rejects a self link',
+    links: baseUrl => ({ alternate: { 'application/rss+xml': [baseUrl] } }),
+    expected: () => null,
+  },
+  {
+    name: 'handles malformed crawler links',
+    links: () => ({ alternate: ['not-an-object'] }),
+    expected: () => null,
+  },
+  {
+    name: 'handles absent crawler links',
+    links: () => null,
+    expected: () => null,
+  },
+]
 
-  it('resolves absolute href as-is', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/rss+xml': ['https://other.example.com/rss'] } },
-        BASE_URL,
-      ),
-    ).toBe('https://other.example.com/rss')
-  })
+describe('RSS feed discovery from stored HTML crawls', () => {
+  it.each(cases)('$name', async ({ links, expected }) => {
+    const currentUser = await createTestUser()
+    const hostname = `discover-links-${randomUUID()}.example.com`
+    const pageUrl = `https://${hostname}/`
+    const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
+    const pageUrlId = await insertTestUrl({ hostnameId, url: pageUrl })
+    const { rowId, generation } = await createPendingRssFeedImportDiscoveryForTest(
+      currentUser.id,
+      pageUrl,
+      pageUrlId,
+    )
+    const crawlLinks = links(pageUrl)
+    const crawl = await insertTestCrawl({
+      urlId: pageUrlId,
+      statusCode: 200,
+      markdown: 'Feed discovery page',
+      ...(crawlLinks ? { links: crawlLinks } : {}),
+    })
 
-  it('returns an Atom feed URL when only atom link is present', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/atom+xml': ['/atom.xml'] } },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/atom.xml')
-  })
+    await completeRssFeedImportDiscovery(rowId, pageUrlId, generation, {
+      url_id: pageUrlId,
+      crawl_id: crawl.id,
+      response_status_code: 200,
+    })
 
-  it('returns a JSON Feed URL when only feed+json link is present', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/feed+json': ['/feed.json'] } },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/feed.json')
-  })
-
-  it('returns application/json feed when only that type is present', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/json': ['/feed.json'] } },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/feed.json')
-  })
-
-  it('prefers RSS over Atom when both are present', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        {
-          alternate: {
-            'application/atom+xml': ['/atom.xml'],
-            'application/rss+xml': ['/rss.xml'],
-          },
-        },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/rss.xml')
-  })
-
-  it('prefers Atom over feed+json when both are present', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        {
-          alternate: {
-            'application/feed+json': ['/feed.json'],
-            'application/atom+xml': ['/atom.xml'],
-          },
-        },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/atom.xml')
-  })
-
-  it('accepts a scalar href value from crawler links', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/rss+xml': '/feed.xml' } },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/feed.xml')
-  })
-
-  it('is case-insensitive for feed MIME type keys', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'Application/RSS+XML': ['/feed.xml'] } },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/feed.xml')
-  })
-
-  it('skips invalid/non-public URLs and returns the next valid candidate', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        {
-          alternate: {
-            'application/rss+xml': ['http://localhost/feed.xml', '/feed.xml'],
-          },
-        },
-        BASE_URL,
-      ),
-    ).toBe('https://example.com/feed.xml')
-  })
-
-  it('returns null when links do not contain alternate feeds', () => {
-    expect(extractFeedLinkFromCrawlLinks({ canonical: BASE_URL }, BASE_URL)).toBeNull()
-  })
-
-  it('returns null when href resolves to the same URL as the page', () => {
-    expect(
-      extractFeedLinkFromCrawlLinks(
-        { alternate: { 'application/rss+xml': ['https://example.com/'] } },
-        BASE_URL,
-      ),
-    ).toBeNull()
-  })
-
-  it('handles null and malformed crawler links', () => {
-    expect(extractFeedLinkFromCrawlLinks(null, BASE_URL)).toBeNull()
-    expect(extractFeedLinkFromCrawlLinks({ alternate: ['not-an-object'] }, BASE_URL)).toBeNull()
+    const [discovery] = await getRssFeedImportDiscoveriesForTest(rowId)
+    expect(discovery?.discovered_feed_url).toBe(expected(pageUrl))
+    expect(discovery?.failed_at instanceof Date).toBe(expected(pageUrl) === null)
   })
 })

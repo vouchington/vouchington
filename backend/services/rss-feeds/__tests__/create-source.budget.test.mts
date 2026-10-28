@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createSourceFromUrl } from '../create-source.mts'
-import { FeedBudgetExceededError } from '../feed-budget.mts'
 
 let user: PrivateUser
 
@@ -30,7 +29,7 @@ describe('createSourceFromUrl budget', () => {
           controller.abort()
         },
       }),
-    ).rejects.toBeInstanceOf(FeedBudgetExceededError)
+    ).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
 
     expect(limitChecks).toBe(1)
   })
@@ -70,6 +69,6 @@ describe('createSourceFromUrl budget', () => {
     })
     controller.abort()
 
-    await expect(pending).rejects.toBeInstanceOf(FeedBudgetExceededError)
+    await expect(pending).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
   })
 })

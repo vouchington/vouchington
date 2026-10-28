@@ -1,6 +1,6 @@
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
 
-export const RSS_CATEGORY_SNAPSHOT_LOCK_NAMESPACE = 0x5253
+const RSS_CATEGORY_SNAPSHOT_LOCK_NAMESPACE = 0x5253
 
 /** Serializes complete category snapshots for each RSS item across pooled DB sessions. */
 export async function withRssFeedItemCategorySnapshotLocks<Result>(
