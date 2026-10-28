@@ -47,9 +47,6 @@ export function updateCommunityPostTypeSettings(
     input,
   )
 }
-export function deleteCommunity(idOrSlug: string): Promise<void> {
-  return clientApi.delete(`/api/v1/communities/${idOrSlug}`)
-}
 export function joinCommunity(idOrSlug: string): Promise<void> {
   return clientApi.post(`/api/v1/communities/${idOrSlug}/members`)
 }

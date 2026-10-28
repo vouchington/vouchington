@@ -1,16 +1,3 @@
-export function isValidUrl(url: string) {
-  return getValidUrlHref(url) !== null
-}
-
-export function getValidUrlHref(url: string) {
-  try {
-    const parsed = new URL(url)
-    return parsed.href
-  } catch {
-    return null
-  }
-}
-
 /**
  * Mirrors the backend `isHttpUrlWithoutFragment` rule used for free-form
  * landing-page links: http(s) only, a non-empty host, and no fragment. Keeping

@@ -12,10 +12,10 @@ import type {
   CommunityAutomodActionsResponseBody,
   CommunityAutomodFeedbackResponseBody,
   CommunityAutomodSettingsResponseBody,
-  CommunityAutomodSimulationResponseBody,
   CommunityModerationReportsResponseBody,
   CommunityPostTypeSettingsResponseBody,
 } from '@/types/api-responses'
+import type { CommunityAutomodSimulation } from '@/lib/api/client/community-agent-prompts'
 import type { SavedRepliesResponseBody, SavedReply } from '@/lib/api/client/modmail'
 import type { CommunityIssueUserWarningResponse } from '@/lib/api/client/warnings'
 import {
@@ -74,7 +74,7 @@ export const COMMUNITY_AUTOMATION_DECLARATIONS = [
         searchParams: { window: '24h', limit: 25, source: 'agent_moderation' },
       }),
   ),
-  defineWebApiFixture<CommunityAutomodSimulationResponseBody>()(
+  defineWebApiFixture<CommunityAutomodSimulation>()(
     'web.communities.automod-simulate.default',
     communitiesAutomodSimulateDefault,
     context =>

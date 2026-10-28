@@ -20,12 +20,12 @@ import webPaidRssFeedCrawlDefault from '../../../../api-fixtures/v1/responses/we
 import webPaidRssFeedCrawlsDefault from '../../../../api-fixtures/v1/responses/web.paid.rss-feed-crawls.default.json'
 import type { TopicsSearchResponseBody } from '@/lib/api/client/topics'
 import type { TopHashtagsResponseBody } from '@/lib/api/client/topic-recommendations'
-import type { UserTagsResponse } from '@/lib/api/server/topics'
+import type { PublisherTypesResponse, UserTagsResponse } from '@/lib/api/server/topics'
+import type { PodcastEpisodeChaptersResponse } from '@/lib/api/client/podcast-episode-chapters'
 import type {
   ListResponse,
   PostResponseBody,
   PrioritizedReferralLinksResponse,
-  PublisherTypesResponseBody,
   ReferralClickLogResponseBody,
   ReferralLinkFeedResponse,
   RssFeedItemResponseBody,
@@ -33,7 +33,6 @@ import type {
   UserReferralLinkWithDetails,
 } from '@/types/api-responses'
 import type { LandingPageDetailResponseBody } from '@/types/api-responses/memberships-referrals-and-admin'
-import type { PodcastEpisodeChaptersResponseBody } from '@/types/podcast-episode-chapters'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 import { STORY_PAGE_DECLARATIONS } from './story-pages'
@@ -152,7 +151,7 @@ export const CONTENT_REFERRALS_DECLARATIONS = [
     context =>
       context.client.topics.createTopic({ name: 'Tech', slug: 'tech', topic_type: 'topic' }),
   ),
-  defineWebApiFixture<PublisherTypesResponseBody>()(
+  defineWebApiFixture<PublisherTypesResponse>()(
     'web.topics.publisher-types.default',
     topicsPublisherTypesDefault,
     context => context.server.topics.getPublisherTypes(),
@@ -179,7 +178,7 @@ export const CONTENT_REFERRALS_DECLARATIONS = [
         }),
     ],
   ),
-  defineWebApiFixture<PodcastEpisodeChaptersResponseBody>()(
+  defineWebApiFixture<PodcastEpisodeChaptersResponse>()(
     'swift.podcast-episode-chapters.default',
     swiftPodcastEpisodeChaptersDefault,
     context => context.client.podcastEpisodeChapters.fetchPodcastEpisodeChapters('episode-1'),

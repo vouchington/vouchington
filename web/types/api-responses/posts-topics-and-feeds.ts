@@ -52,16 +52,6 @@ export type TopicsResponseBody = PaginatedResponse<TopicSearchResult> & {
   markdown_to_html?: Record<string, string>
 }
 
-interface PublisherTypeTopic {
-  id: string
-  slug: string
-  label: string
-}
-
-export interface PublisherTypesResponseBody {
-  publisher_types: PublisherTypeTopic[]
-}
-
 export interface TopicsSearchResponseBody extends TopicsResponseBody {
   election_votes?: Record<string, ElectionVote>
 }

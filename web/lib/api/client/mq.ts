@@ -55,12 +55,6 @@ export function resumeQueue(name: string): Promise<{ success: boolean }> {
   )
 }
 
-export function retryFailedJobs(name: string): Promise<{ success: boolean; retried: number }> {
-  return clientApi.post<{ success: boolean; retried: number }>(
-    `/api/v1/mq/queues/${encodeURIComponent(name)}/retry-failed`,
-  )
-}
-
 export function fetchScheduledJobs(): Promise<{ jobs: ScheduledJob[] }> {
   return clientApi.get<{ jobs: ScheduledJob[] }>('/api/v1/mq/scheduled-jobs')
 }
