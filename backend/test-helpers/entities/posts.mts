@@ -1,7 +1,9 @@
 import { read, write } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
+import type { BasicUser } from '@voucha/types/entities/user'
+import { buildPrivacyFilter } from '@modules/feed-query-builders/privacy-filter'
 import { setTestPostClearanceStatus } from './post-clearance.mts'
 
 export async function insertTestPost(data: {
@@ -161,8 +163,9 @@ export async function setTestPostContentSha(postIds: string[], sha: Buffer): Pro
   `)
 }
 
-export async function getPostIdsByPrivacyFilter(filter: SQLStatement | null): Promise<string[]> {
+export async function getPostIdsByPrivacyFilter(currentUser?: BasicUser | null): Promise<string[]> {
   const query = sql`/* getPostIdsByPrivacyFilter */ SELECT id FROM posts WHERE`
+  const filter = buildPrivacyFilter('posts', currentUser)
   if (filter) {
     query.append(sql` `).append(filter)
   } else {

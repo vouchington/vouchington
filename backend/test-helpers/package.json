@@ -40,6 +40,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@jongleberry/vurst-markdown": "^0.4.3",
+    "@modules/feed-query-builders": "workspace:^",
     "@modules/http-signatures": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",

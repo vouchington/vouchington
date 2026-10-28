@@ -47,40 +47,45 @@ describe('buildPrivacyFilter — suspended user exclusion', () => {
   })
 
   it("excludes suspended users' posts from anonymous queries", async () => {
-    const filter = buildPrivacyFilter('posts', null)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(null)
 
     expect(ids).not.toContain(suspendedPostId)
     expect(ids).toContain(regularPostId)
   })
 
+  it('treats an omitted viewer as anonymous', async () => {
+    const ids = await getPostIdsByPrivacyFilter()
+    expect(ids).not.toContain(suspendedPostId)
+    expect(ids).toContain(regularPostId)
+  })
+
   it("excludes suspended users' posts from logged-in non-admin queries", async () => {
-    const filter = buildPrivacyFilter('posts', viewer as BasicUser)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(viewer as BasicUser)
 
     expect(ids).not.toContain(suspendedPostId)
     expect(ids).toContain(regularPostId)
   })
 
   it("shows suspended user's own posts to themselves", async () => {
-    const filter = buildPrivacyFilter('posts', suspendedUser as BasicUser)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(suspendedUser as BasicUser)
 
     expect(ids).toContain(suspendedPostId)
   })
 
-  it('shows posts from suspended users to admins (null filter)', () => {
+  it('shows posts from suspended users to admins (null filter)', async () => {
     const filter = buildPrivacyFilter('posts', admin as BasicUser)
 
     // Admins get null filter — no restriction
     expect(filter).toBeNull()
+    const ids = await getPostIdsByPrivacyFilter(admin as BasicUser)
+    expect(ids).toContain(suspendedPostId)
+    expect(ids).toContain(regularPostId)
   })
 
   it('shows posts from suspended users after unsuspend', async () => {
     await unsuspendTestUser(suspendedUser!.id)
 
-    const filter = buildPrivacyFilter('posts', null)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(null)
 
     expect(ids).toContain(suspendedPostId)
 
@@ -120,32 +125,32 @@ describe('buildPrivacyFilter — clearance_status filtering', () => {
   })
 
   it('hides pending post from logged-out users', async () => {
-    const filter = buildPrivacyFilter('posts', null)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(null)
 
     expect(ids).not.toContain(pendingPostId)
     expect(ids).toContain(approvedPostId)
   })
 
   it('hides pending post from other logged-in users', async () => {
-    const filter = buildPrivacyFilter('posts', other as BasicUser)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(other as BasicUser)
 
     expect(ids).not.toContain(pendingPostId)
     expect(ids).toContain(approvedPostId)
   })
 
   it('shows pending post to its creator', async () => {
-    const filter = buildPrivacyFilter('posts', creator as BasicUser)
-    const ids = await getPostIdsByPrivacyFilter(filter)
+    const ids = await getPostIdsByPrivacyFilter(creator as BasicUser)
 
     expect(ids).toContain(pendingPostId)
     expect(ids).toContain(approvedPostId)
   })
 
-  it('returns null filter for admins (sees all posts)', () => {
+  it('returns null filter for admins (sees all posts)', async () => {
     const filter = buildPrivacyFilter('posts', admin as BasicUser)
 
     expect(filter).toBeNull()
+    const ids = await getPostIdsByPrivacyFilter(admin as BasicUser)
+    expect(ids).toContain(pendingPostId)
+    expect(ids).toContain(approvedPostId)
   })
 })
