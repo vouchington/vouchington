@@ -24,7 +24,7 @@
         "defaultMax": 5000,
         "overrideMax": 30000,
         "unknownValues": "finding",
-        "requireReason": false
+        "requireReason": true
       }
     ],
     "no-console": "off",
