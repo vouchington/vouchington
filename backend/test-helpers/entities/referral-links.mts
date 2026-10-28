@@ -111,55 +111,6 @@ export async function softDeleteReferralLink(linkId: string): Promise<void> {
 }
 
 /**
- * Check if a referral link would be included in the dispatch query
- * (active, not recently crawled, hostname crawlable)
- */
-export async function isReferralLinkDispatchable(linkId: string): Promise<boolean> {
-  const { rows } = await read(
-    sql`/* isReferralLinkDispatchable */
-    SELECT urpl.id
-    FROM user_referral_program_links urpl
-    JOIN urls u ON u.id = urpl.url_id
-    JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE urpl.activated_at IS NOT NULL
-      AND urpl.deactivated_at IS NULL
-      AND urpl.deleted_at IS NULL
-      AND h.is_crawlable
-      AND NOT h.is_blocked
-      AND (urpl.last_crawl_success_at IS NULL OR urpl.last_crawl_success_at < NOW() - INTERVAL '7 days')
-      AND (urpl.last_crawl_failure_at IS NULL OR urpl.last_crawl_failure_at < NOW() - INTERVAL '1 hour')
-      AND urpl.id = ${linkId}`,
-  )
-  return rows.length > 0
-}
-
-/**
- * Get hostname grouping for a set of referral links in the dispatch query
- */
-export async function getReferralLinkDispatchRows(
-  linkIds: string[],
-): Promise<{ link_id: string; hostname_id: string; hostname: string }[]> {
-  if (linkIds.length === 0) return []
-  const { rows } = await read(
-    sql`/* getReferralLinkDispatchRows */
-    SELECT urpl.id AS link_id, h.id AS hostname_id, h.hostname
-    FROM user_referral_program_links urpl
-    JOIN urls u ON u.id = urpl.url_id
-    JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE urpl.activated_at IS NOT NULL
-      AND urpl.deactivated_at IS NULL
-      AND urpl.deleted_at IS NULL
-      AND h.is_crawlable
-      AND NOT h.is_blocked
-      AND (urpl.last_crawl_success_at IS NULL OR urpl.last_crawl_success_at < NOW() - INTERVAL '7 days')
-      AND (urpl.last_crawl_failure_at IS NULL OR urpl.last_crawl_failure_at < NOW() - INTERVAL '1 hour')
-      AND urpl.id = ANY(${linkIds})
-    ORDER BY h.id, urpl.id`,
-  )
-  return rows as { link_id: string; hostname_id: string; hostname: string }[]
-}
-
-/**
  * Check if a URL is excluded from HTML crawler tier dispatch
  * (referral links are excluded from Tier 1 and Tier 2)
  */
