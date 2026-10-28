@@ -117,6 +117,24 @@ scheduled run. The worker enqueues another bounded page when work remains, so a 
 within the same cleanup cycle.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
+The ActivityPub inbox replay ledger expires through bounded oldest-eligible pages after the
+configured maximum activity age. Each page locks its admission floor, deletes its rows, advances the
+monotonic floor and commits before the next page. Inbound signed-date admission serializes with
+that short transaction, and no floor lock crosses queue admission or external HTTP.
+
+Outbound activities carry no ledger or floor: their UUIDv7 age is checked when a distribution or
+delivery job runs. An expired activity completes distribution, which settles its Follow or Like row
+so the recovery sweep neither rescans nor resends it.
+
+Active Follow and Like cycles remain live domain facts. Replacement and Undo transitions retire old
+cycle identities; terminal rows expire from that immutable transition time after a configurable
+window longer than every supported replay-age setting. Captured signed requests remain rejected
+through the supported horizon, including when the age setting widens. Reuse of a remote opaque id
+with a newly signed request after terminal retention is outside that finite deduplication guarantee.
+An embedded Undo id must belong to the verified actor's hostname before it can reserve a tombstone.
+Expiring an old Follow cycle clears only the optional cycle pointer, preserving the relation's actor
+and target facts. Terminal follower distribution intents also expire through bounded pages; their
+children cascade from the parent, while unfinished intents remain available for retries.
 
 History retention keeps a durable high-water cursor for age-only referral scrubbing, referral
 expiry, and pending imports. A completed pass advances its fixed age boundary rather than starting

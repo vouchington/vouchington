@@ -1,5 +1,7 @@
 import { getActorKeyId } from '@modules/activitypub-uris'
+import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { wrapHttpForRetry } from '@modules/queue-errors'
+import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import {
   buildActivityJson,
   canDistributeOutboundActivity,
@@ -33,6 +35,21 @@ function isUndoMissingOriginalActivityId(
   return typeof originalActivityId !== 'string' || originalActivityId.trim().length === 0
 }
 
+// Undo ids are UUIDv5 derived from the original activity, so age comes from the original UUIDv7.
+function activityAgeRejectionReason(
+  data: Exclude<DeliverActivityData, { activityType: 'Accept' }> | DistributeActivityData,
+): 'unsupported-activity-id' | 'expired-activity' | null {
+  const activityCreatedAt = getDateFromUUIDv7(
+    data.activityType === 'UndoFollow' || data.activityType === 'UndoLike'
+      ? data.originalActivityId
+      : data.activityId,
+  )
+  if (!activityCreatedAt) return 'unsupported-activity-id'
+  return Date.now() - activityCreatedAt.getTime() > getMaximumActivityAgeDays() * 86_400_000
+    ? 'expired-activity'
+    : null
+}
+
 // Fans a social action out to a bounded page of the acting user's remote followers. The shared
 // paged dispatcher records the page admission before enqueueing the next cursor job.
 export async function distributeActivity(
@@ -49,6 +66,9 @@ export async function distributeActivity(
   if (isUndoMissingOriginalActivityId(data)) {
     return { enqueued: 0, completed: true, reason: 'missing-original-activity-id' as const }
   }
+  // Completed settles the domain row, so recovery never rescans or resends an expired activity.
+  const ageRejection = activityAgeRejectionReason(data)
+  if (ageRejection) return { enqueued: 0, completed: true, reason: ageRejection }
   if (!(await canDistributeOutboundActivity(data, deps))) return { enqueued: 0, completed: true }
 
   const page = await deps.prepareActivityDistributionPage(
@@ -86,6 +106,12 @@ export async function deliverActivity(
 
   if (isUndoMissingOriginalActivityId(data)) {
     return { delivered: false, reason: 'missing-original-activity-id' as const }
+  }
+  // Accept is a direct response with a stable UUIDv5 wire identity, not a distribution job.
+  // Every other production delivery shares the UUIDv7 source event and its maximum age.
+  if (data.activityType !== 'Accept') {
+    const ageRejection = activityAgeRejectionReason(data)
+    if (ageRejection) return { delivered: false, reason: ageRejection }
   }
   const eligibility = await getOutboundActivityDeliveryCredentials(data, deps)
   if ('reason' in eligibility) return { delivered: false, reason: eligibility.reason }

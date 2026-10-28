@@ -70,6 +70,7 @@ function emptyScopedOptions(now: Date) {
     webPushSubscriptionTombstones: emptyWindow,
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
+    federationRetention: { now: new Date(0) },
     textEmbeddingCache: emptyWindow,
     terminalEmbeddingBatches: emptyWindow,
     oldProviderResponseKeys: emptyWindow,
@@ -118,7 +119,13 @@ describe('data retention per-run caps', () => {
       retainedMediaBindingIds: [placementId],
     }
 
-    const result = await runDataRetentionCleanup({ batchSize, maxBatches: 1 }, options)
+    const result = await runDataRetentionCleanup(
+      { batchSize, maxBatches: 1 },
+      {
+        ...options,
+        federationRetention: { now: new Date(0) },
+      },
+    )
 
     expect(relations).toHaveBeenCalledExactlyOnceWith(
       pageSize,
@@ -202,7 +209,10 @@ describe('data retention per-run caps', () => {
     expect(getDataRetentionLimits()).toEqual({ batchSize: 1, maxBatches: 2 })
     const batches = vi.spyOn(cleanupBatches, 'deleteOldReferralAttributionBatch')
     onTestFinished(() => batches.mockRestore())
-    const first = await runDataRetentionCleanup(getDataRetentionLimits(), options)
+    const first = await runDataRetentionCleanup(getDataRetentionLimits(), {
+      ...options,
+      federationRetention: { now: new Date(0) },
+    })
     expect({
       limits: batches.mock.calls.map(call => call[1]),
       result: first.oldReferralAttributions,
@@ -215,7 +225,10 @@ describe('data retention per-run caps', () => {
       (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(Boolean),
     ).toHaveLength(1)
 
-    const second = await runDataRetentionCleanup(getDataRetentionLimits(), options)
+    const second = await runDataRetentionCleanup(getDataRetentionLimits(), {
+      ...options,
+      federationRetention: { now: new Date(0) },
+    })
     expect(second.oldReferralAttributions).toEqual({ deleted: 1, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
       false,
@@ -246,6 +259,7 @@ describe('data retention per-run caps', () => {
           now: window.now,
           maxBatches: 10,
         },
+        federationRetention: { now: new Date(0) },
       },
     )
 

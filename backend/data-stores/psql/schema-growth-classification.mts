@@ -19,11 +19,8 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
 const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'admin_import_batches',
   'admin_import_rows',
-  'activitypub_inbox_activities',
   'community_agent_prompt_revisions',
   'dynamic_configuration_revisions',
-  'follower_distribution_deliveries',
-  'follower_distributions',
   'membership_changes',
   'membership_ineligible_purchase_reversal_refund_scans',
   'membership_ineligible_purchase_reversal_refund_observations',
@@ -44,7 +41,6 @@ const UNBOUNDED_MEMBERSHIP_WORK_ITEMS = [
   'membership_google_play_acknowledgment_work_items',
 ] as const
 const INDEFINITE_EDGE_TABLES = [
-  'activitypub_post_likes',
   'bluesky_follow_records',
   'community_list_posts',
   'community_list_rss_feeds',
@@ -139,6 +135,14 @@ export function buildUnboundedUnpartitionedTables(
             ],
       ),
       ...RETAINED_RELATION_GROWTH_POLICIES,
+      [
+        'activitypub_post_likes',
+        'Active Like cycles track live domain edges; terminal rows expire in bounded indexed pages after a configurable window longer than every supported replay age.',
+      ],
+      [
+        'activitypub_remote_follow_activities',
+        'Active Follow cycles track live domain edges; replaced and undone cycles expire in bounded indexed pages from their terminal timestamp beyond the supported replay age.',
+      ],
       [
         'community_search_counts',
         'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',

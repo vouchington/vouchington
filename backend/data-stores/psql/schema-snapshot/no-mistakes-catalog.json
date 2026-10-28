@@ -1393,7 +1393,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  retained_bytes_delta BIGINT;\n  unverified_rows_delta BIGINT;\n  unverified_bytes_delta BIGINT;\n  counters activitypub_inbox_delivery_storage_counters%ROWTYPE;\nBEGIN\n  SELECT\n    COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM updated_deliveries), 0)\n      - COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM previous_deliveries), 0),\n    COALESCE((SELECT COUNT(*) FROM updated_deliveries WHERE verified_at IS NULL), 0)\n      - COALESCE((SELECT COUNT(*) FROM previous_deliveries WHERE verified_at IS NULL), 0),\n    COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM updated_deliveries WHERE verified_at IS NULL), 0)\n      - COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM previous_deliveries WHERE verified_at IS NULL), 0)\n  INTO retained_bytes_delta, unverified_rows_delta, unverified_bytes_delta;\n\n  UPDATE activitypub_inbox_delivery_storage_counters\n  SET retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,\n      unverified_rows = unverified_rows + unverified_rows_delta,\n      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta\n  WHERE is_singleton\n    AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)\n    AND (\n      unverified_bytes_delta <= 0\n      OR unverified_raw_body_bytes + unverified_bytes_delta <= 268435456\n    )\n  RETURNING * INTO counters;\n\n  IF FOUND THEN\n    RETURN NULL;\n  END IF;\n\n  SELECT * INTO counters\n  FROM activitypub_inbox_delivery_storage_counters\n  WHERE is_singleton;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING\n      ERRCODE = '55000',\n      MESSAGE = 'ActivityPub inbox storage counter singleton is missing';\n  END IF;\n  RAISE EXCEPTION USING\n    ERRCODE = '23514',\n    CONSTRAINT = 'activitypub_inbox_envelopes_unverified_capacity',\n    MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',\n    DETAIL = json_build_object(\n      'unverifiedRows', counters.unverified_rows,\n      'unverifiedRawBodyBytes', counters.unverified_raw_body_bytes,\n      'attemptedRows', unverified_rows_delta,\n      'attemptedRawBodyBytes', unverified_bytes_delta\n    )::TEXT;\nEND;\n$function$\n"
     },
     "fn_project_activitypub_post_likes()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO post_activitypub_like_tallies (post_id, activitypub_likes_score, activitypub_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    activitypub_likes_score = GREATEST(post_activitypub_like_tallies.activitypub_likes_score + v_delta, 0),\n    activitypub_likes_count = GREATEST(post_activitypub_like_tallies.activitypub_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' AND NEW.deleted_at IS NOT NULL THEN\n    RETURN NEW;\n  ELSIF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO post_activitypub_like_tallies (post_id, activitypub_likes_score, activitypub_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    activitypub_likes_score = GREATEST(post_activitypub_like_tallies.activitypub_likes_score + v_delta, 0),\n    activitypub_likes_count = GREATEST(post_activitypub_like_tallies.activitypub_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_capture_notification_push_intent()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO notification_push_intents (user_id, notification_id)\n  VALUES (NEW.user_id, NEW.id)\n  ON CONFLICT (user_id, notification_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -2741,12 +2741,26 @@
     },
     "activitypub_post_likes": {
       "checkConstraints": {
+        "activitypub_post_likes_check": {
+          "definition": "CHECK (((confirmed_at IS NOT NULL) OR (deleted_at IS NOT NULL)))",
+          "validated": true
+        },
         "activitypub_post_likes_like_activitypub_id_check": {
           "definition": "CHECK (((char_length(like_activitypub_id) > 0) AND (char_length(like_activitypub_id) <= 2048)))",
           "validated": true
         }
       },
       "columns": {
+        "confirmed_at": {
+          "comment": "When the original signed Like was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -2758,7 +2772,7 @@
           "ordinalPosition": 5
         },
         "deleted_at": {
-          "comment": "Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_activitypub_post_likes.",
+          "comment": "Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; this immutable terminal timestamp starts bounded retention longer than the supported replay horizon.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
@@ -2778,7 +2792,7 @@
           "ordinalPosition": 1
         },
         "like_activitypub_id": {
-          "comment": "The inbound Like activity's ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_activitypub_post_likes__post_remote_actor before this could collide.",
+          "comment": "External Like URI. Undo-only assertions are actor scoped; receipt of the original Like establishes one global URI owner.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -2808,7 +2822,7 @@
           "ordinalPosition": 3
         }
       },
-      "comment": "Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.",
+      "comment": "Current remote ActivityPub Like cycles and terminal tombstones retained beyond the supported replay horizon. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.",
       "foreignKeys": {
         "activitypub_post_likes_post_id_fkey": {
           "columns": ["post_id"],
@@ -2851,10 +2865,42 @@
           "unique": true,
           "valid": true
         },
-        "idx_activitypub_post_likes__like_activitypub_id": {
+        "idx_activitypub_post_likes__actor_activity": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_activitypub_id) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__actor_activity ON public.activitypub_post_likes USING btree (remote_actor_id, like_activitypub_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "remote_actor_id",
+              "descending": false,
+              "expression": "remote_actor_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "like_activitypub_id",
+              "descending": false,
+              "expression": "like_activitypub_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_post_likes__confirmed_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__confirmed_activity ON public.activitypub_post_likes USING btree (like_activitypub_id) WHERE (confirmed_at IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -2868,7 +2914,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": "(confirmed_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -2929,24 +2975,33 @@
           "unique": true,
           "valid": true
         },
-        "idx_activitypub_post_likes__remote_actor_id": {
+        "idx_activitypub_post_likes__undone_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_post_likes__remote_actor_id ON public.activitypub_post_likes USING btree (remote_actor_id)",
+          "definition": "CREATE INDEX idx_activitypub_post_likes__undone_retention ON public.activitypub_post_likes USING btree (deleted_at, id) WHERE (deleted_at IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "remote_actor_id",
+              "column": "deleted_at",
               "descending": false,
-              "expression": "remote_actor_id",
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(deleted_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -2961,6 +3016,377 @@
       "triggers": {
         "trigger_sync_activitypub_post_likes": {
           "definition": "CREATE TRIGGER trigger_sync_activitypub_post_likes AFTER INSERT OR UPDATE ON public.activitypub_post_likes FOR EACH ROW EXECUTE FUNCTION fn_project_activitypub_post_likes()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "activitypub_remote_follow_activities": {
+      "checkConstraints": {
+        "activitypub_remote_follow_activities_activity_id_check": {
+          "definition": "CHECK (((char_length(activity_id) >= 1) AND (char_length(activity_id) <= 2048)))",
+          "validated": true
+        },
+        "activitypub_remote_follow_activities_check": {
+          "definition": "CHECK (((confirmed_at IS NOT NULL) OR (undone_at IS NOT NULL)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "activity_id": {
+          "comment": "External Follow URI. Undo-only assertions are actor scoped; receipt of the original Follow establishes one global URI owner.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "confirmed_at": {
+          "comment": "When the original signed Follow was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "created_at": {
+          "comment": "Virtual UUIDv7 creation time for per-activity Follow identity; active identities remain while terminal retention is measured from undone_at.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "remote_actor_id": {
+          "comment": "Signing remote actor that sent the Follow.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "target_user_id": {
+          "comment": "Local user targeted by the Follow.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "undone_at": {
+          "comment": "Set by Undo or replacement, including Undo before Follow; never cleared while retained and starts the terminal identity retention window.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        }
+      },
+      "comment": "Per-activity remote Follow identity. Active cycles remain domain facts; terminal cycles expire after their configured replay-safe retention window.",
+      "foreignKeys": {
+        "activitypub_remote_follow_activities_remote_actor_id_fkey": {
+          "columns": ["remote_actor_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "remote_actors",
+          "validated": true
+        },
+        "activitypub_remote_follow_activities_target_user_id_fkey": {
+          "columns": ["target_user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "activitypub_remote_follow_activities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX activitypub_remote_follow_activities_pkey ON public.activitypub_remote_follow_activities USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_remote_follow_activities__confirmed_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_activitypub_remote_follow_activities__confirmed_activity ON public.activitypub_remote_follow_activities USING btree (activity_id) WHERE (confirmed_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "activity_id",
+              "descending": false,
+              "expression": "activity_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(confirmed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_remote_follow_activities__target_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_remote_follow_activities__target_user_id ON public.activitypub_remote_follow_activities USING btree (target_user_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "target_user_id",
+              "descending": false,
+              "expression": "target_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_activitypub_remote_follow_activities__undone_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_remote_follow_activities__undone_retention ON public.activitypub_remote_follow_activities USING btree (undone_at, id) WHERE (undone_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "undone_at",
+              "descending": false,
+              "expression": "undone_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(undone_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_ap_remote_follow_activities__actor_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_ap_remote_follow_activities__actor_activity ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, activity_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "remote_actor_id",
+              "descending": false,
+              "expression": "remote_actor_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "activity_id",
+              "descending": false,
+              "expression": "activity_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_ap_remote_follow_activities__scope_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_ap_remote_follow_activities__scope_id ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, target_user_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "remote_actor_id",
+              "descending": false,
+              "expression": "remote_actor_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "target_user_id",
+              "descending": false,
+              "expression": "target_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "uq_ap_remote_follow_activities__actor_activity": {
+          "columns": ["remote_actor_id", "activity_id"]
+        },
+        "uq_ap_remote_follow_activities__scope_id": {
+          "columns": ["remote_actor_id", "target_user_id", "id"]
+        }
+      }
+    },
+    "activitypub_replay_rejection_floors": {
+      "checkConstraints": {
+        "activitypub_replay_rejection_floors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "is_singleton": {
+          "comment": "Allows one inbound admission boundary.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "rejection_floor_at": {
+          "comment": "Durable admission floor advanced atomically with ledger deletion, including across age-policy changes.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "updated_at": {
+          "comment": "Last time the admission boundary advanced.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Monotonic inbound admission boundary retained after expired ActivityPub replay-ledger rows are deleted.",
+      "foreignKeys": {},
+      "indexes": {
+        "activitypub_replay_rejection_floors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX activitypub_replay_rejection_floors_pkey ON public.activitypub_replay_rejection_floors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_activitypub_replay_rejection_floors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_activitypub_replay_rejection_floors_updated_at BEFORE UPDATE ON public.activitypub_replay_rejection_floors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -46633,6 +47059,29 @@
           ],
           "live": true,
           "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_follower_distributions__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_follower_distributions__retention ON public.follower_distributions USING btree (id) WHERE ((completed_at IS NOT NULL) OR (failed_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((completed_at IS NOT NULL) OR (failed_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -92709,6 +93158,16 @@
           "nullable": true,
           "ordinalPosition": 6
         },
+        "inbound_follow_activity_row_id": {
+          "comment": "Current inbound Follow activity cycle; expiring a terminal identity clears this optional pointer and never authorizes the relation.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "object_id": {
           "comment": "Concrete relation object in users.",
           "dataType": "uuid",
@@ -92732,6 +93191,14 @@
       },
       "comment": "remote_actor follow user relations. <subject> follows <object>",
       "foreignKeys": {
+        "fk_remote_follow__inbound_follow_activity_row_id": {
+          "columns": ["subject_id", "object_id", "inbound_follow_activity_row_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["remote_actor_id", "target_user_id", "id"],
+          "referencedTable": "activitypub_remote_follow_activities",
+          "validated": true
+        },
         "relation__remote_actor__follow__user_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "onDelete": "SET NULL",

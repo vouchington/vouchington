@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
 import { softDeleteEntityRelation, softDeleteEntityRelationsForSubjects } from './delete.mts'
 import { upsertEntityRelation } from './upsert.mts'
@@ -12,6 +13,19 @@ import {
 } from '@voucha/test-helpers'
 
 describe('delete.generated', () => {
+  it('rejects an inbound Follow cycle fence on other relation types', async () => {
+    const metadata = getEntityRelationMetadataOrThrow({
+      subjectType: 'topic',
+      objectType: 'topic',
+      predicate: 'related',
+    })
+    await expect(
+      softDeleteEntityRelation(null, metadata, { id: randomUUID() }, [{ id: randomUUID() }], {
+        expectedInboundFollowActivityRowId: randomUUID(),
+      }),
+    ).rejects.toThrow('Inbound Follow cycle fencing is only supported for remote actor follows')
+  })
+
   it('softDeleteEntityRelation soft-deletes a relation', async () => {
     const user = await createTestUser({ administrator: true })
     const subject = await createTestTopic()

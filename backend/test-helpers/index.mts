@@ -107,6 +107,23 @@ export {
   markUserFollowDeletedBeforeNowForTest,
 } from './sql-follower-distribution.mts'
 export {
+  insertFederationRetentionFixturesForTest,
+  readFederationRetentionFixtureStateForTest,
+  recordFederationInboxActivityReplayForTest,
+  type FederationRetentionFixtureIds,
+} from './federation-retention.mts'
+export {
+  insertFederationInboxReplayForTest,
+  readFederationReplayFloorForTest,
+  advanceFederationReplayFloorForTest,
+  ensureFederationReplayFloorForTest,
+  isReplayFloorLockedForTest,
+  deleteFederationInboxFixturesForTest,
+  deleteFederationInboxActivityForTest,
+  insertFederationReplayDecoyForTest,
+  countFederationReplayDecoyForTest,
+} from './federation-retention-replay.mts'
+export {
   setCommunityLanguageDetectionFieldsForTest,
   setUserLanguageDetectionFieldsForTest,
   type LanguageDetectionStateForTest,

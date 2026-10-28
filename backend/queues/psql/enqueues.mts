@@ -1,7 +1,7 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
-import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
+import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW, PSQL_RETRY_OPTIONS } from './config.mts'
 import { psql } from './queues.mts'
 import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
 export { enqueueAIRetentionContinuations }
@@ -119,8 +119,7 @@ export const enqueueRefreshMaterializedView = (viewName: string): EnqueueReturnT
     {
       priority: PRIORITY_DEFAULT,
       ordering: { key: 'mv_refresh', concurrency: 1 },
-      attempts: 3,
-      backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+      ...PSQL_RETRY_OPTIONS,
     },
   )
 
@@ -134,7 +133,6 @@ export const enqueueRefreshTopHashtags = (): EnqueueReturnType =>
         mode: 'debounce' as const,
       },
       ordering: { key: 'mv_refresh', concurrency: 1 },
-      attempts: 3,
-      backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+      ...PSQL_RETRY_OPTIONS,
     },
   )

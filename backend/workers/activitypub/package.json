@@ -26,6 +26,7 @@
     "@modules/activitypub-inbox-storage-policy": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
     "@modules/queue-errors": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@queues/activitypub": "workspace:^",
     "@queues/background": "workspace:^",
     "@services/activitypub-delivery": "workspace:^",

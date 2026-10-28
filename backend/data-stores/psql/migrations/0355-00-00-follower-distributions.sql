@@ -60,6 +60,13 @@ CREATE INDEX IF NOT EXISTS idx_follower_distributions__incomplete
 ON follower_distributions (id)
 WHERE completed_at IS NULL AND failed_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_follower_distributions__retention
+ON follower_distributions (id)
+WHERE completed_at IS NOT NULL OR failed_at IS NOT NULL;
+
+COMMENT ON INDEX idx_follower_distributions__retention IS 'Supports bounded UUIDv7 keyset retention of completed or failed distributions.';
+
 -- RI-usable indexes for FKs not led by any index above
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__sender_user_id
@@ -135,6 +142,20 @@ ON follower_distribution_selected_recipients (recipient_user_id);
 COMMENT ON TABLE follower_distribution_selected_recipients IS 'Distribution-owned selected recipient snapshot. Delivery identity stays on follower_distribution_deliveries.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.distribution_id IS 'Selected-followers distribution that owns this recipient.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS 'User selected at acceptance. Later unfollows do not remove the row; hard deletion does.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS activitypub_replay_rejection_floors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  rejection_floor_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_activitypub_replay_rejection_floors_updated_at
+BEFORE UPDATE ON activitypub_replay_rejection_floors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE activitypub_replay_rejection_floors IS 'Monotonic inbound admission boundary retained after expired ActivityPub replay-ledger rows are deleted.';
+COMMENT ON COLUMN activitypub_replay_rejection_floors.is_singleton IS 'Allows one inbound admission boundary.';
+COMMENT ON COLUMN activitypub_replay_rejection_floors.rejection_floor_at IS 'Durable admission floor advanced atomically with ledger deletion, including across age-policy changes.';
+COMMENT ON COLUMN activitypub_replay_rejection_floors.updated_at IS 'Last time the admission boundary advanced.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_follower_distribution_recipient_bounds()

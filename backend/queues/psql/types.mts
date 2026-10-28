@@ -1,4 +1,5 @@
 import type { ModerationRecordCleanupKind } from '@voucha/types/entities/moderation-retention'
+import type { TerminalActivityRetentionFamily } from './config.mts'
 
 export type PsqlJobs =
   | 'runMigrations'
@@ -7,6 +8,7 @@ export type PsqlJobs =
   | 'createPartitions'
   | 'cleanupPartitions'
   | 'dataRetentionCleanup'
+  | 'cleanupTerminalActivityIdentities'
   | 'moderationRetentionCleanup'
   | 'aiRetentionContinuation'
   | 'refreshMaterializedView'
@@ -32,6 +34,10 @@ export type PsqlAdminJobType = (typeof PSQL_ADMIN_JOB_TYPES)[number]
 
 export type RefreshMaterializedViewData = {
   viewName: string
+}
+
+export type TerminalActivityRetentionData = {
+  family: TerminalActivityRetentionFamily
 }
 
 export type ModerationRetentionJobData = {

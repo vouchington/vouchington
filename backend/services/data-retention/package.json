@@ -24,6 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
     "@services/classifier-run-revival": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
@@ -41,6 +42,7 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
+    "@modules/activitypub-uris": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",

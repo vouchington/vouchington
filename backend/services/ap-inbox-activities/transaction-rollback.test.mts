@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
 import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
-import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
+import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import {
   createTestPost,
   getEntityRelation,
@@ -51,14 +51,18 @@ describe('inbound ActivityPub transaction rollback', () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const relation = followRelation()
-    await upsertEntityRelation(null, relation, { id: remoteActor.id }, [{ id: user.id }], {
-      origin: 'remote',
+    const followId = `https://remote.example/activities/${randomSuffix()}`
+    await dispatchInboundActivity(remoteActor, {
+      id: followId,
+      type: 'Follow',
+      actor: remoteActor.actor_uri,
+      object: getActorUri(user.id),
     })
     const activity = {
       id: `https://remote.example/activities/${randomSuffix()}`,
       type: 'Undo',
       actor: remoteActor.actor_uri,
-      object: { type: 'Follow', object: getActorUri(user.id) },
+      object: { id: followId, type: 'Follow', object: getActorUri(user.id) },
     }
 
     await expect(
@@ -98,8 +102,9 @@ describe('inbound ActivityPub transaction rollback', () => {
   it('rolls back Undo(Like) and its marker when a later statement aborts', async () => {
     const remoteActor = await createRemoteActorFixture()
     const post = await createTestPost()
+    const likeId = `https://remote.example/activities/${randomSuffix()}`
     await dispatchInboundActivity(remoteActor, {
-      id: `https://remote.example/activities/${randomSuffix()}`,
+      id: likeId,
       type: 'Like',
       actor: remoteActor.actor_uri,
       object: getPostUri(post.id),
@@ -108,7 +113,7 @@ describe('inbound ActivityPub transaction rollback', () => {
       id: `https://remote.example/activities/${randomSuffix()}`,
       type: 'Undo',
       actor: remoteActor.actor_uri,
-      object: { type: 'Like', object: getPostUri(post.id) },
+      object: { id: likeId, type: 'Like', object: getPostUri(post.id) },
     }
 
     await expect(

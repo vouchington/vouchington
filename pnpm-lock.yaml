@@ -2242,6 +2242,16 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../utils
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
+      http-errors:
+        specifier: ^2.0.1
+        version: 2.0.1
+    devDependencies:
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
 
   backend/modules/api-egress-proxy:
     dependencies:
@@ -4304,6 +4314,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/activitypub-uris':
+        specifier: workspace:^
+        version: link:../../modules/activitypub-uris
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -6064,6 +6077,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/ap-inbox-activities':
+        specifier: workspace:^
+        version: link:../ap-inbox-activities
       '@services/classifier-run-revival':
         specifier: workspace:^
         version: link:../classifier-run-revival
@@ -6110,6 +6126,9 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
+      '@modules/activitypub-uris':
+        specifier: workspace:^
+        version: link:../../modules/activitypub-uris
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
@@ -12807,6 +12826,9 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/activitypub':
         specifier: workspace:^
         version: link:../../queues/activitypub

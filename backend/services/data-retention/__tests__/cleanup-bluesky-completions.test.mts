@@ -61,6 +61,7 @@ describe('runDataRetentionCleanup', () => {
       webPushSubscriptionTombstones: emptyWindow,
       oldModerationQueueClaims: emptyWindow,
       oldModerationMediaReveals: emptyWindow,
+      federationRetention: { now: new Date(0) },
       textEmbeddingCache: emptyWindow,
       terminalEmbeddingBatches: emptyWindow,
       oldProviderResponseKeys: emptyWindow,

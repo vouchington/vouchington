@@ -22,6 +22,18 @@ export async function insertPostElectionVote(
   `)
 }
 
+/** Inserts a positive vote whose outbound Like has not been distributed yet. */
+export async function insertPendingOutboundLikeForTest(
+  userId: string,
+  postId: string,
+  id: string,
+): Promise<void> {
+  await write(sql`/* insertPendingOutboundLikeForTest */
+    INSERT INTO post_votes (id, user_id, post_id, score, outbound_activitypub_like_activity_id)
+    VALUES (${id}::uuid, ${userId}, ${postId}, 1, ${id}::uuid)
+  `)
+}
+
 /** Every post election vote row a user has ever written, across all posts. */
 export async function countPostElectionVoteRowsForUser(userId: string): Promise<number> {
   const { rows } = await write<{ count: number }>(sql`/* countPostElectionVoteRowsForUser */

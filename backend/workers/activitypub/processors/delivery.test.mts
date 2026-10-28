@@ -7,8 +7,18 @@ import { deliverActivityToInbox, type buildActivityJson } from '@services/activi
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
-import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
+import {
+  getAcceptActivityId,
+  getUndoFollowActivityId,
+  type DeliverActivityData,
+} from '@queues/activitypub/enqueues/delivery'
+import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
+import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import { deliverActivity } from './delivery.mts'
+
+function expiredActivityId(): string {
+  return getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
+}
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
@@ -16,7 +26,7 @@ const deliverActivityToInboxMock = vi.fn<typeof deliverActivityToInbox>()
 const getActorPrivateKeyPemMock = vi.fn<typeof getActorPrivateKeyPem>()
 
 const FOLLOW_DATA: DeliverActivityData = {
-  activityId: 'activity-1',
+  activityId: mintUUIDv7(),
   activityType: 'Follow',
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
@@ -24,16 +34,16 @@ const FOLLOW_DATA: DeliverActivityData = {
 }
 
 const UNDO_FOLLOW_DATA: DeliverActivityData = {
-  activityId: 'activity-3',
+  activityId: mintUUIDv7(),
   activityType: 'UndoFollow',
-  originalActivityId: 'activity-1',
+  originalActivityId: FOLLOW_DATA.activityId,
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
   inboxUrl: 'https://a.example/inbox',
 }
 
 const LIKE_DATA: DeliverActivityData = {
-  activityId: 'activity-like',
+  activityId: mintUUIDv7(),
   activityType: 'Like',
   sourceUserId: 'user-1',
   targetPostId: 'post-1',
@@ -81,6 +91,48 @@ describe('deliverActivity', () => {
     getActorPrivateKeyPemMock.mockResolvedValue('-----BEGIN PRIVATE KEY-----\nfake\n-----END-----')
     buildActivityJsonMock.mockReturnValue({ type: 'Follow' })
     deliverActivityToInboxMock.mockResolvedValue(undefined)
+  })
+
+  it('keeps direct Accept replies outside the activity-age check', async () => {
+    const accept: DeliverActivityData = {
+      activityType: 'Accept',
+      activityId: getAcceptActivityId({
+        sourceUserId: 'user-1',
+        followActivityId: 'remote-follow',
+      }),
+      sourceUserId: 'user-1',
+      inboxUrl: 'https://a.example/inbox',
+      followActivityId: 'remote-follow',
+      followActorUri: 'https://a.example/users/follower',
+    }
+    expect(await deliverActivity(accept, deliverDeps())).toEqual({ delivered: true })
+    expect(deliverActivityToInboxMock).toHaveBeenCalledOnce()
+  })
+
+  it('delivers an UndoFollow whose own id is derived but whose original Follow is recent', async () => {
+    const undo = {
+      ...UNDO_FOLLOW_DATA,
+      activityId: getUndoFollowActivityId(FOLLOW_DATA.activityId),
+    }
+    expect(await deliverActivity(undo, deliverDeps())).toEqual({ delivered: true })
+  })
+
+  it.each([
+    ['expired Follow', { ...FOLLOW_DATA, activityId: expiredActivityId() }, 'expired-activity'],
+    [
+      'UndoFollow of an expired Follow',
+      { ...UNDO_FOLLOW_DATA, originalActivityId: expiredActivityId() },
+      'expired-activity',
+    ],
+    [
+      'Follow with a non-UUIDv7 id',
+      { ...FOLLOW_DATA, activityId: 'not-uuid-v7' },
+      'unsupported-activity-id',
+    ],
+  ] as const)('drops an %s before opt-in reads or HTTP', async (_name, data, reason) => {
+    expect(await deliverActivity(data, deliverDeps())).toEqual({ delivered: false, reason })
+    expect(isFederationEnabledForUserMock).not.toHaveBeenCalled()
+    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
   })
 
   it.each([

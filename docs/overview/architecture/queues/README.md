@@ -106,6 +106,10 @@ advances pure deletion sweeps; guarded media sweeps retain positions past protec
 Membership retention pages persist their position. A capped run enqueues a retention continuation
 step naming the membership families with more eligible rows, and that step reruns only those
 families, keeping the backlog draining between schedules.
+Terminal ActivityPub identity cleanup can yield the same retained family job while work remains,
+so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
+later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial
+ordering lane, and every pass commits bounded SQL work before yielding.
 
 Hostname blocking records one durable cleanup operation before admitting background work. Its
 continuations page child hostnames, URLs, relations, creator penalties, and recalculation jobs with

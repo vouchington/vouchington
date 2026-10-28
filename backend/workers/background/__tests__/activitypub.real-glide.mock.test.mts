@@ -4,6 +4,7 @@ import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { getActorUri } from '@modules/activitypub-uris'
+import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { generateRsaSha256KeyPair, verifySignature } from '@modules/http-signatures'
 import {
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
@@ -135,7 +136,7 @@ describe('activitypub through the production background processor', () => {
     const source = await createFederatedUser()
     const target = await createFederatedUser()
     const remote = await createRemoteFollower(source.id)
-    const activityId = randomUUID()
+    const activityId = mintUUIDv7()
     const captured: CapturedRequest[] = []
     const started = await startWith(job =>
       processDeliverActivityJob(job, {

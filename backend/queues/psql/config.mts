@@ -51,6 +51,15 @@ export const REFRESH_REVENUE_CHANGES_CRON = '3,8,13,18,23,28,33,38,43,48,53,58 *
 // Daily at 6:00 AM UTC
 export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
 
+export type TerminalActivityRetentionFamily = 'follow' | 'like'
+export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
+
+/** Existing PSQL transient-failure policy, shared by schedules and retained continuations. */
+export const PSQL_RETRY_OPTIONS = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+} satisfies JobOptions
+
 export const MODERATION_RETENTION_JOB_NAME = 'moderationRetentionCleanup'
 export const MODERATION_RETENTION_SCHEDULER_ID = 'moderation-retention-cleanup-daily'
 

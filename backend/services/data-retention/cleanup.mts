@@ -65,6 +65,10 @@ import {
   type NotificationEmailCleanupResult,
 } from './cleanup-notification-email.mts'
 import {
+  cleanupFederationRetention,
+  type FederationRetentionResult,
+} from './cleanup-federation.mts'
+import {
   applyRetentionLimits,
   getRetentionCutoffDate,
   normalizeRetentionDays,
@@ -186,6 +190,10 @@ type DataRetentionCleanupOptions = {
   systemPrunedNotifications?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
   userDeletedNotifications?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
   moderationEmailSends?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  federationRetention?: Omit<
+    Parameters<typeof cleanupFederationRetention>[0],
+    'batchSize' | 'maxBatches'
+  >
 }
 
 type DataRetentionCleanupResult = {
@@ -225,6 +233,7 @@ type DataRetentionCleanupResult = {
   systemPrunedNotifications: NotificationEmailCleanupResult
   userDeletedNotifications: NotificationEmailCleanupResult
   moderationEmailSends: NotificationEmailCleanupResult
+  federationRetention: FederationRetentionResult
 }
 
 export async function runDataRetentionCleanup(
@@ -343,6 +352,10 @@ export async function runDataRetentionCleanup(
       cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications)),
       cleanupModerationEmailSends(withLimits(options.moderationEmailSends)),
     ])
+  const federationRetention = await cleanupFederationRetention({
+    ...limits,
+    ...options.federationRetention,
+  })
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
@@ -395,6 +408,7 @@ export async function runDataRetentionCleanup(
     systemPrunedNotifications,
     userDeletedNotifications,
     moderationEmailSends,
+    federationRetention,
   }
 }
 
