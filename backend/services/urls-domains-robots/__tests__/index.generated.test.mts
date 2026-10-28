@@ -1,50 +1,82 @@
-import { it, expect, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { beforeEach, it, expect, describe, vi } from 'vitest'
+import type { RobotsDependencies } from '../fetch-retry.mts'
 import { fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { insertTestDomainBlacklist } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
-// example.com, example.net, and example.org answer /robots.txt with HTTP 404.
-// fetchRobotsTxtCached turns that into this permissive body.
+// Exercise a controlled HTTP 404 through the public API while keeping the real cache.
+const fetchWithTimeoutSimple = vi.fn<RobotsDependencies['fetchWithTimeoutSimple']>()
+const dependencies = { fetchWithTimeoutSimple }
+let exampleCom: string
+let exampleNet: string
+let exampleOrg: string
 const PERMISSIVE_ROBOTS_TXT = 'User-agent: *\nAllow: /'
 
 describe('index.generated', () => {
+  beforeEach(() => {
+    exampleCom = `${randomUUID()}.example.com`
+    exampleNet = `${randomUUID()}.example.net`
+    exampleOrg = `${randomUUID()}.example.org`
+    fetchWithTimeoutSimple.mockReset().mockResolvedValue(new Response(null, { status: 404 }))
+  })
   it('fetchRobotsTxtCached returns the permissive body for example.com', async () => {
-    await expect(fetchRobotsTxtCached('example.com')).resolves.toBe(PERMISSIVE_ROBOTS_TXT)
+    await expect(fetchRobotsTxtCached(exampleCom, dependencies)).resolves.toBe(
+      PERMISSIVE_ROBOTS_TXT,
+    )
   })
 
   it('fetchRobotsTxtCached repeats the permissive body for example.net', async () => {
-    const first = await fetchRobotsTxtCached('example.net')
-    const second = await fetchRobotsTxtCached('example.net')
+    const first = await fetchRobotsTxtCached(exampleNet, dependencies)
+    const second = await fetchRobotsTxtCached(exampleNet, dependencies)
     expect(first).toBe(PERMISSIVE_ROBOTS_TXT)
     expect(second).toBe(first)
+    expect(fetchWithTimeoutSimple).toHaveBeenCalledExactlyOnceWith(
+      `https://${exampleNet}/robots.txt`,
+      10_000,
+    )
   })
 
   it('isUrlCrawlable returns true for an example.org path', async () => {
-    await expect(isUrlCrawlable('https://example.org/research', 'MyBot/1.0')).resolves.toBe(true)
+    await expect(
+      isUrlCrawlable(`https://${exampleOrg}/research`, 'MyBot/1.0', { dependencies }),
+    ).resolves.toBe(true)
   })
 
   it('isUrlCrawlable returns true for an example.com path a stricter robots.txt might block', async () => {
-    await expect(isUrlCrawlable('https://example.com/admin', 'MyBot/1.0')).resolves.toBe(true)
+    await expect(
+      isUrlCrawlable(`https://${exampleCom}/admin`, 'MyBot/1.0', { dependencies }),
+    ).resolves.toBe(true)
   })
 
   it('isUrlCrawlable allows every user agent when example.net has no robots rules', async () => {
-    const url = 'https://example.net/guide'
-    await expect(isUrlCrawlable(url, 'Googlebot/2.1')).resolves.toBe(true)
-    await expect(isUrlCrawlable(url, 'MyCustomBot/1.0')).resolves.toBe(true)
+    const url = `https://${exampleNet}/guide`
+    await expect(isUrlCrawlable(url, 'Googlebot/2.1', { dependencies })).resolves.toBe(true)
+    await expect(isUrlCrawlable(url, 'MyCustomBot/1.0', { dependencies })).resolves.toBe(true)
   })
 
   it('isUrlCrawlable allows each reserved example domain', async () => {
-    await expect(isUrlCrawlable('https://example.com/', 'MyBot/1.0')).resolves.toBe(true)
-    await expect(isUrlCrawlable('https://example.net/', 'MyBot/1.0')).resolves.toBe(true)
-    await expect(isUrlCrawlable('https://example.org/', 'MyBot/1.0')).resolves.toBe(true)
+    await expect(
+      isUrlCrawlable(`https://${exampleCom}/`, 'MyBot/1.0', { dependencies }),
+    ).resolves.toBe(true)
+    await expect(
+      isUrlCrawlable(`https://${exampleNet}/`, 'MyBot/1.0', { dependencies }),
+    ).resolves.toBe(true)
+    await expect(
+      isUrlCrawlable(`https://${exampleOrg}/`, 'MyBot/1.0', { dependencies }),
+    ).resolves.toBe(true)
   })
 
   it('fetchRobotsTxtCached returns permissive robots.txt on 404', async () => {
-    await expect(fetchRobotsTxtCached('example.org')).resolves.toBe(PERMISSIVE_ROBOTS_TXT)
+    await expect(fetchRobotsTxtCached(exampleOrg, dependencies)).resolves.toBe(
+      PERMISSIVE_ROBOTS_TXT,
+    )
   })
 
   it('isUrlCrawlable allows crawling when robots.txt returns 404', async () => {
-    await expect(isUrlCrawlable('https://example.com/page', 'MyBot/1.0')).resolves.toBe(true)
+    await expect(
+      isUrlCrawlable(`https://${exampleCom}/page`, 'MyBot/1.0', { dependencies }),
+    ).resolves.toBe(true)
   })
 
   it('fetchRobotsTxtCached returns disallow robots.txt for blacklisted domains', async () => {
@@ -54,9 +86,10 @@ describe('index.generated', () => {
     await insertTestDomainBlacklist(testDomain)
     await addDomainsToBloomFilter([testDomain])
 
-    const result = await fetchRobotsTxtCached(testDomain)
+    const result = await fetchRobotsTxtCached(testDomain, dependencies)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
+    expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
   })
 
   it('isUrlCrawlable returns false for blacklisted domains', async () => {
@@ -66,8 +99,9 @@ describe('index.generated', () => {
     await insertTestDomainBlacklist(testDomain)
     await addDomainsToBloomFilter([testDomain])
 
-    const result = await isUrlCrawlable(`https://${testDomain}/page`, 'MyBot/1.0')
+    const result = await isUrlCrawlable(`https://${testDomain}/page`, 'MyBot/1.0', { dependencies })
 
     expect(result).toBe(false)
+    expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
   })
 })
