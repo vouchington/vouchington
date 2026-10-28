@@ -22,6 +22,7 @@ describe('authenticated session recheck deadline', () => {
       did: v7(),
       uid: user.id,
       deviceClass: 'attested',
+      clock,
     })
     const originalRca = initial.sessionToken.payload.rca!
 
@@ -57,6 +58,7 @@ describe('authenticated session recheck deadline', () => {
       did: v7(),
       uid: user.id,
       deviceClass: 'attested',
+      clock,
     })
     const sessionPayload = { ...minted.sessionToken.payload }
     delete sessionPayload.rca
@@ -114,11 +116,13 @@ describe('authenticated session recheck deadline', () => {
         did: v7(),
         uid: user.id,
         deviceClass: 'attested',
+        clock,
       }),
       createDeviceAndSessionTokens({
         did: v7(),
         uid: user.id,
         deviceClass: 'attested',
+        clock,
       }),
     ])
     const originalRca = first.sessionToken.payload.rca!
