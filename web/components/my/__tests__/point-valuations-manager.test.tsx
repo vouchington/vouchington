@@ -12,7 +12,7 @@ import {
 // Imported after the mock helper so its vi.mock factories run first.
 import { PointValuationsManager } from '../point-valuations-manager'
 
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
@@ -34,9 +34,9 @@ describe('PointValuationsManager Integration Flow', () => {
     seedMessages('es', esMessages)
 
     render(
-      <UiLocaleContext.Provider value='es'>
+      <LocaleProvider locale='es'>
         <PointValuationsManager initialData={initialPointValuationData} />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     expect(screen.getByText('0,015 US$ por punto')).toBeInTheDocument()
@@ -47,9 +47,9 @@ describe('PointValuationsManager Integration Flow', () => {
     seedMessages('es', esMessages)
 
     render(
-      <UiLocaleContext.Provider value='es'>
+      <LocaleProvider locale='es'>
         <PointValuationsManager initialData={initialPointValuationData} />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     expect(screen.getByLabelText('Valor por punto')).toBeInTheDocument()

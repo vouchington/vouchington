@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { StoryMeta } from '@/components/news/news-item-cluster-meta'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import type { Story } from '@/types/rss-feed-items'
 
 const publishedAt = '2025-01-15T10:00:00.000Z'
@@ -40,9 +40,9 @@ describe('StoryMeta event date', () => {
     const label = createTranslator(locale, messages)(eventDateKey, { date: localizedDate })
 
     render(
-      <UiLocaleContext.Provider value={locale}>
+      <LocaleProvider locale={locale}>
         <StoryMeta story={story} />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     expect(screen.getByText(label)).toBeInTheDocument()

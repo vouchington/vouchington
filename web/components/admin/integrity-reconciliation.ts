@@ -10,14 +10,6 @@ export function isRevokedIntegrityPenalty(penalty: {
   return Boolean(penalty.revoked_at)
 }
 
-export function classifyIntegrityReconciliation(input: {
-  exactReadSucceeded: boolean
-  mutationConfirmed: boolean
-}): IntegrityReconciliationStatus {
-  if (!input.exactReadSucceeded) return 'unknown'
-  return input.mutationConfirmed ? 'committed' : 'pending'
-}
-
 export async function reconcileIntegrityExactRead<T>(input: {
   getExactState: () => Promise<T>
   mutationConfirmed: (state: T) => boolean
@@ -26,10 +18,7 @@ export async function reconcileIntegrityExactRead<T>(input: {
     const state = await input.getExactState()
     return {
       state,
-      status: classifyIntegrityReconciliation({
-        exactReadSucceeded: true,
-        mutationConfirmed: input.mutationConfirmed(state),
-      }),
+      status: input.mutationConfirmed(state) ? 'committed' : 'pending',
     }
   } catch {
     return { status: 'unknown' }

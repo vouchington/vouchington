@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
 
@@ -88,9 +88,9 @@ describe('SpendingCategoriesManager Integration Flow', () => {
 
   it('submits a comma-decimal spending amount using the active locale', async () => {
     render(
-      <UiLocaleContext.Provider value='es'>
+      <LocaleProvider locale='es'>
         <SpendingCategoriesManager initialData={makeInitialData()} />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     fireEvent.change(screen.getByTestId('mock-topic-autocomplete-input'), {

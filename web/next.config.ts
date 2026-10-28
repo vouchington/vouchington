@@ -8,7 +8,7 @@ import { withBuildMembershipBenefitCatalog } from './with-build-membership-benef
 import { nextBuildPageDataWorkerCount } from './next-build-page-data-worker-count'
 const isTestBuild = process.env.NEXT_TEST_BUILD === '1'
 
-export function assertSecureSharpVersion(version: string): void {
+function assertSecureSharpVersion(version: string): void {
   const parsed = /^(\d+)\.(\d+)\.(\d+)$/.exec(version)
   if (!parsed || (Number(parsed[1]) === 0 && Number(parsed[2]) < 35)) {
     throw new Error(`The web build requires sharp >=0.35.0; found ${version}`)

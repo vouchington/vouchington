@@ -29,7 +29,7 @@ export const postTagTabs: TagRelationTab[] = [
   },
 ]
 
-export const topicTagTabs: TagRelationTab[] = [
+const topicTagTabs: TagRelationTab[] = [
   {
     label: 'extracted.tags.tagRelationConfigs.relatedTopics_aea370bc',
     value: 'topic',

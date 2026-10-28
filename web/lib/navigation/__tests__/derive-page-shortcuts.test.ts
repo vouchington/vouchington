@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { NAV_INTENTS } from '../intents'
-import { DERIVED_PAGE_SHORTCUTS, hrefToDataPw } from '../derive-page-shortcuts'
+import { DERIVED_PAGE_SHORTCUTS } from '../derive-page-shortcuts'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('DERIVED_PAGE_SHORTCUTS parity', () => {
@@ -63,14 +63,6 @@ describe('DERIVED_PAGE_SHORTCUTS parity', () => {
   })
 
   it('derives dataPw from href correctly', () => {
-    expect(hrefToDataPw('/urls')).toBe('search-page-shortcut-urls')
-    expect(hrefToDataPw('/posts/review-queue')).toBe('search-page-shortcut-posts-review-queue')
-    expect(hrefToDataPw('/memberships/grants')).toBe('search-page-shortcut-memberships-grants')
-    expect(hrefToDataPw('/vote-integrity/flags')).toBe('search-page-shortcut-vote-integrity-flags')
-    expect(hrefToDataPw('/vote-integrity/penalties')).toBe(
-      'search-page-shortcut-vote-integrity-penalties',
-    )
-
     // Literal expected dataPw per href, independent of hrefToDataPw, so a regression in the
     // helper's transform (not just its use) is caught rather than re-validated against itself.
     const expectedDataPwByHref: Record<string, string> = {

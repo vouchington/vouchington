@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  getPreconnectOrigin,
-  NO_VARY_SEARCH_HEADER,
-  serializeSpeculationRules,
-} from './navigation-performance'
+import { getPreconnectOrigin, serializeSpeculationRules } from './navigation-performance'
 
 describe('navigation performance helpers', () => {
   it('serializes conservative prefetch-only speculation rules', () => {
@@ -17,7 +13,9 @@ describe('navigation performance helpers', () => {
 
     expect(rules.prefetch).toHaveLength(1)
     expect(rules.prefetch[0]?.eagerness).toBe('conservative')
-    expect(rules.prefetch[0]?.expects_no_vary_search).toBe(NO_VARY_SEARCH_HEADER)
+    expect(rules.prefetch[0]?.expects_no_vary_search).toBe(
+      'params=("utm_source" "utm_medium" "utm_campaign" "utm_term" "utm_content" "gclid" "gbraid" "wbraid" "dclid" "fbclid" "msclkid" "ttclid" "twclid" "srsltid" "igshid" "igsh" "_gl" "mc_cid" "mc_eid"), key-order',
+    )
     expect(rules.prefetch[0]?.where.and).toContainEqual({ href_matches: '/*' })
     expect(rules.prefetch[0]?.where.and).toContainEqual({ not: { href_matches: '/api/*' } })
     expect(rules.prefetch[0]?.where.and).toContainEqual({ not: { href_matches: '/my/*' } })

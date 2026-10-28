@@ -3,7 +3,7 @@ import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { ApiError } from '@vouchington/api-client'
 import type { ListResponse } from '@/types/api-responses'
 import type { OAuthGrant } from '@/types/oauth-apps'
@@ -78,14 +78,14 @@ describe('ConnectedAppsManager', () => {
 
   it('formats the dates in the selected UI locale', () => {
     render(
-      <UiLocaleContext.Provider value='fr'>
+      <LocaleProvider locale='fr'>
         <ConnectedAppsManager
           initialData={{
             results: [{ ...fixtureGrant, last_used_at: usedAt }],
             page_info: lastPage,
           }}
         />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     const consentedAt = formatUtcDate(fixtureGrant.consented_at, 'fr')

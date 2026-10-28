@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { createNoIndexMetadata, createPageMetadata, createRootMetadata } from '../metadata'
-import { OG_RENDERER_VERSION } from '../og-image-url'
 
 const GENERIC_OG_PARAMS = {
   type: 'generic',
@@ -37,7 +36,7 @@ describe('seo metadata helpers', () => {
     expect(height).toBe(630)
     expect(decodeOgImageParams(url)).toEqual({
       ...GENERIC_OG_PARAMS,
-      rendererVersion: OG_RENDERER_VERSION,
+      rendererVersion: 'v3',
     })
 
     expect(metadata.twitter).toMatchObject({ card: 'summary_large_image', images: [url] })
@@ -60,7 +59,7 @@ describe('seo metadata helpers', () => {
     expect(height).toBe(630)
     expect(decodeOgImageParams(url)).toEqual({
       ...GENERIC_OG_PARAMS,
-      rendererVersion: OG_RENDERER_VERSION,
+      rendererVersion: 'v3',
     })
 
     expect(metadata.twitter).toMatchObject({ card: 'summary_large_image', images: [url] })

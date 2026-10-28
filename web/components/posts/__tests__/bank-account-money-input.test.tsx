@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { BankAccountMoneyInput } from '../bank-account-money-input'
 import type { Money } from '@ts-shared/money'
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import { esMessages, frMessages, ptMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
@@ -80,9 +80,9 @@ describe('BankAccountMoneyInput', () => {
     }
 
     render(
-      <UiLocaleContext.Provider value={locale}>
+      <LocaleProvider locale={locale}>
         <LocalizedControlledInput />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     const input = screen.getByLabelText(label)
@@ -228,7 +228,7 @@ describe('BankAccountMoneyInput', () => {
   it('resets a localized incomplete draft when the active locale changes', () => {
     const onChange = vi.fn<(money: Money | null) => void>()
     const { rerender } = render(
-      <UiLocaleContext.Provider value='es'>
+      <LocaleProvider locale='es'>
         <BankAccountMoneyInput
           id='locale-reset-amount'
           label='Locale reset amount'
@@ -236,7 +236,7 @@ describe('BankAccountMoneyInput', () => {
           currency='usd'
           onChange={onChange}
         />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
     const input = screen.getByLabelText('Locale reset amount')
 
@@ -244,7 +244,7 @@ describe('BankAccountMoneyInput', () => {
     expect(input).toHaveValue('12,')
 
     rerender(
-      <UiLocaleContext.Provider value='en'>
+      <LocaleProvider locale='en'>
         <BankAccountMoneyInput
           id='locale-reset-amount'
           label='Locale reset amount'
@@ -252,7 +252,7 @@ describe('BankAccountMoneyInput', () => {
           currency='usd'
           onChange={onChange}
         />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     expect(input).toHaveValue('12')

@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CommentNodeHeader } from '@/components/comments/comment-node-header'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { commentPermalink, deletedCommentNode } from '@/storybook/comments/comment-story-data'
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
@@ -45,7 +45,7 @@ describe('CommentNodeHeader collapsed reply count', () => {
 
   it.each(cases)('formats %s count %s as %s', (locale, childrenCount, expected) => {
     render(
-      <UiLocaleContext.Provider value={locale}>
+      <LocaleProvider locale={locale}>
         <CommentNodeHeader
           childrenCount={childrenCount}
           hideDownCount
@@ -57,7 +57,7 @@ describe('CommentNodeHeader collapsed reply count', () => {
           permalink={commentPermalink}
           username='deleted'
         />
-      </UiLocaleContext.Provider>,
+      </LocaleProvider>,
     )
 
     const count = screen.getByText((_, element) => {

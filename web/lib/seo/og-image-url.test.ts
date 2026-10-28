@@ -6,7 +6,6 @@ import {
   buildLandingOgImageUrl,
   extractTopCategories,
   landingOgDependencies,
-  OG_RENDERER_VERSION,
 } from './og-image-url'
 import type { LandingPageItem, PublicLandingPage } from '@/types/landing-pages'
 
@@ -126,7 +125,7 @@ describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
     expect(params).toEqual({
       type: 'generic',
       ...GENERIC_PARAMS,
-      rendererVersion: OG_RENDERER_VERSION,
+      rendererVersion: 'v3',
     })
   })
 
@@ -144,7 +143,7 @@ describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
       username: 'alice',
       topCategories: ['Travel', 'Tech'],
       dependencies: [],
-      rendererVersion: OG_RENDERER_VERSION,
+      rendererVersion: 'v3',
     })
   })
 

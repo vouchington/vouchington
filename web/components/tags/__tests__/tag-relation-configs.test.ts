@@ -4,13 +4,12 @@ import {
   getTopicTagTabsForTopicType,
   isTopicTagSegment,
   isTopicTagSegmentForTopicType,
-  topicTagTabs,
 } from '../tag-relation-configs'
 
 describe('tag-relation-configs', () => {
   describe('topicTagTabs', () => {
     it('includes a landing_page tab', () => {
-      const tab = topicTagTabs.find(t => t.value === 'landing_page')
+      const tab = getTopicTagTabsForTopicType('rss_feed').find(t => t.value === 'landing_page')
       expect(tab).toBeDefined()
       expect(tab?.predicate).toBe('landing_page')
       expect(tab?.objectType).toBe('url')
@@ -18,7 +17,7 @@ describe('tag-relation-configs', () => {
     })
 
     it('includes a terms_of_service tab', () => {
-      const tab = topicTagTabs.find(t => t.value === 'terms_of_service')
+      const tab = getTopicTagTabsForTopicType('rss_feed').find(t => t.value === 'terms_of_service')
       expect(tab).toBeDefined()
       expect(tab?.predicate).toBe('terms_of_service')
       expect(tab?.objectType).toBe('url')
@@ -26,14 +25,14 @@ describe('tag-relation-configs', () => {
     })
 
     it('includes the original topic, publisher_type, and post tabs', () => {
-      const values = topicTagTabs.map(t => t.value)
+      const values = getTopicTagTabsForTopicType('rss_feed').map(t => t.value)
       expect(values).toContain('topic')
       expect(values).toContain('publisher_type')
       expect(values).toContain('post')
     })
 
     it('includes a category tab', () => {
-      const tab = topicTagTabs.find(t => t.value === 'category')
+      const tab = getTopicTagTabsForTopicType('rss_feed').find(t => t.value === 'category')
       expect(tab).toBeDefined()
       expect(tab?.predicate).toBe('category')
       expect(tab?.objectType).toBe('topic')
@@ -43,7 +42,7 @@ describe('tag-relation-configs', () => {
 
   describe('isTopicTagSegment', () => {
     it('returns true for all topicTagTab values', () => {
-      for (const tab of topicTagTabs) {
+      for (const tab of getTopicTagTabsForTopicType('rss_feed')) {
         expect(isTopicTagSegment(tab.value)).toBe(true)
       }
     })

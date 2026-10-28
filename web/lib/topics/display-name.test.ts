@@ -1,88 +1,47 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  getSourceKindLabel,
-  getRssFeedDisplayTitle,
-  getTopicDisplayName,
-  getTopicDisplayTitle,
-  parseSourceTopicName,
-} from './display-name'
+import { getRssFeedDisplayTitle, getTopicDisplayName, getTopicDisplayTitle } from './display-name'
 
-describe('parseSourceTopicName', () => {
-  it('extracts title and url from terminated format', () => {
-    expect(parseSourceTopicName('Title (https://example.com)')).toEqual({
-      title: 'Title',
-      url: 'https://example.com',
-    })
-  })
-
-  it('handles bare url with no title', () => {
-    expect(parseSourceTopicName('(https://example.com)')).toEqual({
-      title: '',
-      url: 'https://example.com',
-    })
-  })
-
-  it('handles truncated url with no closing paren', () => {
-    expect(parseSourceTopicName('Title (https://example.com')).toEqual({
-      title: 'Title',
-      url: 'https://example.com',
-    })
-  })
-
-  it('handles url with parens in path', () => {
-    expect(parseSourceTopicName('Title (https://en.wikipedia.org/wiki/Foo_(bar))')).toEqual({
-      title: 'Title',
-      url: 'https://en.wikipedia.org/wiki/Foo_(bar)',
-    })
-  })
-
-  it('returns name unchanged when no url present', () => {
-    expect(parseSourceTopicName('Just a name')).toEqual({
-      title: 'Just a name',
-      url: null,
-    })
+describe('source topic titles', () => {
+  it.each([
+    ['Title (https://example.com)', 'Title'],
+    ['(https://example.com)', '(News Source)'],
+    ['Title (https://example.com', 'Title'],
+    ['Title (https://en.wikipedia.org/wiki/Foo_(bar))', 'Title'],
+    ['Just a name', 'Just a name'],
+  ])('renders the public title for %s', (name, expected) => {
+    expect(getTopicDisplayTitle({ name, topic_type: 'rss_feed' })).toBe(expected)
   })
 })
 
-describe('getSourceKindLabel', () => {
-  it('returns YouTube Channel for youtube.com host', () => {
+describe('source kind display labels', () => {
+  it.each([
+    {
+      url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+      feedType: undefined,
+      label: 'YouTube Channel',
+    },
+    { url: 'https://youtu.be/watch?v=abc', feedType: undefined, label: 'YouTube Channel' },
+    { url: null, feedType: 'podcast', label: 'Podcast' },
+    { url: null, feedType: 'video', label: 'Video' },
+    { url: null, feedType: 'article', label: 'News Source' },
+    { url: null, feedType: 'mixed', label: 'News Source' },
+    { url: null, feedType: undefined, label: 'News Source' },
+    {
+      url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+      feedType: 'video',
+      label: 'YouTube Channel',
+    },
+  ] as const)('renders $label for $url / $feedType', ({ url, feedType, label }) => {
     expect(
-      getSourceKindLabel({ url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123' }),
-    ).toBe('YouTube Channel')
-  })
-
-  it('returns YouTube Channel for youtu.be host', () => {
-    expect(getSourceKindLabel({ url: 'https://youtu.be/watch?v=abc' })).toBe('YouTube Channel')
-  })
-
-  it('returns Podcast for podcast feedType', () => {
-    expect(getSourceKindLabel({ url: null, feedType: 'podcast' })).toBe('Podcast')
-  })
-
-  it('returns Video for video feedType', () => {
-    expect(getSourceKindLabel({ url: null, feedType: 'video' })).toBe('Video')
-  })
-
-  it('returns News Source for article feedType', () => {
-    expect(getSourceKindLabel({ url: null, feedType: 'article' })).toBe('News Source')
-  })
-
-  it('returns News Source for mixed feedType', () => {
-    expect(getSourceKindLabel({ url: null, feedType: 'mixed' })).toBe('News Source')
-  })
-
-  it('returns News Source when url is null and no feedType', () => {
-    expect(getSourceKindLabel({ url: null })).toBe('News Source')
-  })
-
-  it('YouTube host wins over feedType', () => {
-    expect(
-      getSourceKindLabel({
-        url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
-        feedType: 'video',
-      }),
-    ).toBe('YouTube Channel')
+      getTopicDisplayName(
+        {
+          name: url ? `Source (${url})` : 'Source',
+          topic_type: 'rss_feed',
+        },
+        { feedType },
+      ),
+    ).toBe(`Source (${label})`)
   })
 })
 

@@ -1,4 +1,4 @@
-export function parseSourceTopicName(name: string): { title: string; url: string | null } {
+function parseSourceTopicName(name: string): { title: string; url: string | null } {
   // Match terminated URL: "Title (https://...)" or "(https://...)" — greedy .* captures URLs with parens
   const terminatedMatch = /^(.*?)\s*\((https?:\/\/.*)\)\s*$/.exec(name)
   if (terminatedMatch) {
@@ -12,7 +12,7 @@ export function parseSourceTopicName(name: string): { title: string; url: string
   return { title: name, url: null }
 }
 
-export function getSourceKindLabel({
+function getSourceKindLabel({
   url,
   feedType,
 }: {

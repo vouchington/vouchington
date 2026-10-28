@@ -51,7 +51,7 @@ export function scopeResourceGroups(
   return groups
 }
 
-export function scopeResourceRows(
+function scopeResourceRows(
   catalog: readonly ScopeCatalogEntry[],
   surface: ScopeCredentialSurface,
   audiences: readonly ScopeAudience[],

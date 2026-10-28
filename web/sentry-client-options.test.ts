@@ -4,36 +4,53 @@ import {
   RUNTIME_PUBLIC_CONFIG_READY_EVENT,
   type RuntimePublicConfig,
 } from './lib/runtime-public-config'
-import {
-  createSentryClientInitOptions,
-  initializeSentryClient,
-  type SentryInitOptions,
-} from './sentry-client-options'
+import { initializeSentryClient, type SentryInitOptions } from './sentry-client-options'
 
-describe('createSentryClientInitOptions', () => {
+describe('initialized Sentry options', () => {
   it('uses the configured runtime-public web DSN in deployed environments', () => {
-    const options = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({
-        environment: 'production',
-        sentryDsn: 'https://public@example.test/123',
-      }),
-    })
+    const init = vi.fn<(options: SentryInitOptions) => void>()
+    initializeSentryClient(
+      init,
+      {
+        getRuntimePublicConfig: () => ({
+          environment: 'production',
+          sentryDsn: 'https://public@example.test/123',
+        }),
+      },
+      window,
+    )
+    expect(init).toHaveBeenCalledOnce()
+    const options = init.mock.calls[0]![0]
 
     expect(options).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
   })
 
   it('fails closed for a deployed runtime without a valid runtime-public web DSN', () => {
-    const options = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({ environment: 'production', sentryDsn: 'not-a-dsn' }),
-    })
+    const init = vi.fn<(options: SentryInitOptions) => void>()
+    initializeSentryClient(
+      init,
+      {
+        getRuntimePublicConfig: () => ({ environment: 'production', sentryDsn: 'not-a-dsn' }),
+      },
+      window,
+    )
+    expect(init).toHaveBeenCalledOnce()
+    const options = init.mock.calls[0]![0]
 
     expect(options).toMatchObject({ dsn: undefined, enabled: false })
   })
 
   it('stays disabled when the runtime public config bootstrap is absent', () => {
-    const options = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({}),
-    })
+    const init = vi.fn<(options: SentryInitOptions) => void>()
+    initializeSentryClient(
+      init,
+      {
+        getRuntimePublicConfig: () => ({}),
+      },
+      window,
+    )
+    expect(init).toHaveBeenCalledOnce()
+    const options = init.mock.calls[0]![0]
 
     expect(options.enabled).toBe(false)
   })
@@ -41,12 +58,19 @@ describe('createSentryClientInitOptions', () => {
   it.each(['staging', 'production'] as const)(
     'enables reporting for the deployed environment %s',
     environment => {
-      const options = createSentryClientInitOptions({
-        getRuntimePublicConfig: () => ({
-          environment,
-          sentryDsn: 'https://public@example.test/123',
-        }),
-      })
+      const init = vi.fn<(options: SentryInitOptions) => void>()
+      initializeSentryClient(
+        init,
+        {
+          getRuntimePublicConfig: () => ({
+            environment,
+            sentryDsn: 'https://public@example.test/123',
+          }),
+        },
+        window,
+      )
+      expect(init).toHaveBeenCalledOnce()
+      const options = init.mock.calls[0]![0]
 
       expect(options.enabled).toBe(true)
       expect(options.environment).toBe(environment)
@@ -54,26 +78,47 @@ describe('createSentryClientInitOptions', () => {
   )
 
   it('stays disabled for a non-deployed environment value', () => {
-    const options = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({ environment: 'development' }),
-    })
+    const init = vi.fn<(options: SentryInitOptions) => void>()
+    initializeSentryClient(
+      init,
+      {
+        getRuntimePublicConfig: () => ({ environment: 'development' }),
+      },
+      window,
+    )
+    expect(init).toHaveBeenCalledOnce()
+    const options = init.mock.calls[0]![0]
 
     expect(options.enabled).toBe(false)
   })
 
   it('sets no replay sample rates because no replay integration is registered', () => {
-    const options = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({ environment: 'production' }),
-    })
+    const init = vi.fn<(options: SentryInitOptions) => void>()
+    initializeSentryClient(
+      init,
+      {
+        getRuntimePublicConfig: () => ({ environment: 'production' }),
+      },
+      window,
+    )
+    expect(init).toHaveBeenCalledOnce()
+    const options = init.mock.calls[0]![0]
 
     expect(options).not.toHaveProperty('replaysSessionSampleRate')
     expect(options).not.toHaveProperty('replaysOnErrorSampleRate')
   })
 
   it('tags a 5xx ApiError with the gateway request id and ignores other request id text', async () => {
-    const options = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({ environment: 'production' }),
-    })
+    const init = vi.fn<(options: SentryInitOptions) => void>()
+    initializeSentryClient(
+      init,
+      {
+        getRuntimePublicConfig: () => ({ environment: 'production' }),
+      },
+      window,
+    )
+    expect(init).toHaveBeenCalledOnce()
+    const options = init.mock.calls[0]![0]
     const requestId = '11111111-1111-4111-8111-111111111111'
     const event = {
       tags: { surface: 'post' },

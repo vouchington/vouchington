@@ -75,5 +75,3 @@ export function getActiveTopLevelTab(pathname: string, usernameOrId: string): To
 export function getTopLevelTabHref(tab: TopLevelTabConfig, usernameOrId: string): string {
   return tab.firstHref(usernameOrId)
 }
-
-export { TOP_LEVEL_TABS }
