@@ -91,7 +91,9 @@ describe('dispatch', () => {
         ownedIds.includes((job.data as { linkId: string }).linkId),
     )
     assert.deepEqual(
-      jobs.map(job => job.data).toSorted((a, b) => a.linkId.localeCompare(b.linkId)),
+      jobs
+        .map(job => job.data as { linkId: string })
+        .toSorted((a, b) => a.linkId.localeCompare(b.linkId)),
       [first, second]
         .map(link => ({ linkId: link.id, urlId: link.url_id, referralProgramId }))
         .toSorted((a, b) => a.linkId.localeCompare(b.linkId)),
