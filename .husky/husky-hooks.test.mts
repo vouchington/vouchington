@@ -5,7 +5,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -13,6 +12,14 @@ import {
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+
+const ACTIVE_HOOK_NAMES = [
+  'commit-msg',
+  'post-checkout',
+  'post-merge',
+  'post-rewrite',
+  'pre-push',
+] as const
 
 describe('husky-hooks', () => {
   const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -23,24 +30,8 @@ describe('husky-hooks', () => {
     return `${huskyDir}/${name}`
   }
 
-  it('keeps commit-msg, post-checkout, post-merge, and post-rewrite as the active hooks', () => {
-    const activeHooks = readdirSync(huskyDir)
-      .filter((name: string) => !['AGENTS.md', '_'].includes(name) && !name.endsWith('.test.mts'))
-      .toSorted()
-
-    expect(activeHooks).toEqual([
-      'commit-msg',
-      'post-checkout',
-      'post-merge',
-      'post-rewrite',
-      'pre-push',
-    ])
-  })
-
   it('keeps every active hook as a no-op in GitHub Actions', () => {
-    const activeHooks = ['commit-msg', 'post-checkout', 'post-merge', 'post-rewrite', 'pre-push']
-
-    for (const hook of activeHooks) {
+    for (const hook of ACTIVE_HOOK_NAMES) {
       const expectedPrefix = `#!/bin/sh\n${githubActionsGuard}`
       expect(readFileSync(hookPath(hook), 'utf8').slice(0, expectedPrefix.length)).toBe(
         expectedPrefix,

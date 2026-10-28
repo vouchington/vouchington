@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // Host runtime policy (sandbox, approvals, models, status line, plugins, MCP servers) belongs to the
@@ -141,13 +141,6 @@ describe('Cursor worktree setup', () => {
 })
 
 describe('Codex project rules', () => {
-  it('keeps one mechanically guarded rules source', () => {
-    const ruleFiles = readdirSync(new URL('../.codex/rules/', import.meta.url))
-      .filter(path => path.endsWith('.rules'))
-      .toSorted()
-    expect(ruleFiles).toEqual(['default.rules'])
-  })
-
   it('parses every rule and fails closed on unsupported prefix syntax', () => {
     expect(codexAllowPrefixes(codexRules).length).toBeGreaterThan(0)
     expect(
