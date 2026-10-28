@@ -11,7 +11,7 @@ import {
 } from './merge-preflight.mts'
 import type { Topic } from './types.mts'
 
-export type TopicMergeOperationStatus = 'queued' | 'running' | 'completed' | 'failed'
+type TopicMergeOperationStatus = 'queued' | 'running' | 'completed' | 'failed'
 
 export type PublicTopicMergeOperation = {
   id: string

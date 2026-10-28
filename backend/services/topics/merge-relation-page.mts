@@ -26,7 +26,6 @@ import { processTopicMergeRelationFinalizationPage } from './merge-relation-page
 
 export {
   initialTopicMergeRelationCursor,
-  topicMergeRelationWorkTables,
   processTopicMergeRelationPreflightPage,
   readTopicMergeRelationEffectTargets,
 }

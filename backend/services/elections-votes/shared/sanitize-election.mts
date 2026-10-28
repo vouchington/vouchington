@@ -11,7 +11,7 @@ import { isAdminUser } from '@services/users'
  * Non-UGC content (topics, hostnames, RSS feed items, entity relations) shows
  * downvote counts to all users without sanitization.
  */
-export function canSeeDownvotes(currentUser: PrivateUser | null): boolean {
+function canSeeDownvotes(currentUser: PrivateUser | null): boolean {
   if (!currentUser) return false
   if (isAdminUser(currentUser)) return true
   return currentUser.membership_plan != null

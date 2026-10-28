@@ -17,7 +17,7 @@ const TOPIC_PARENT_RELATION_TABLE = getEntityRelationTableNameOrThrow({
 })
 
 // Keyset order on the child id, which the (object_id, subject_id) reverse index serves directly.
-export const TOPIC_CHILD_ID_PAGE_QUERY = `/* getTopicChildIdPage */
+const TOPIC_CHILD_ID_PAGE_QUERY = `/* getTopicChildIdPage */
     SELECT subject_id
     FROM ${TOPIC_PARENT_RELATION_TABLE}
     WHERE object_id = $1

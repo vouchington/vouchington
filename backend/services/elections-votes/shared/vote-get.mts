@@ -45,7 +45,7 @@ export async function getElectionVoteByUser(
   return votes[0] ?? null
 }
 
-export function electionVotesByUserForEntityCursorScope(
+function electionVotesByUserForEntityCursorScope(
   config: EntityElectionConfig,
   userId: string,
   entityId: string,
@@ -82,7 +82,7 @@ export async function getElectionVotesByUserForEntity(
   return { results: mapCurrentVotes(config, pageRows), page_info }
 }
 
-export function electionVotesByElectionIdCursorScope(
+function electionVotesByElectionIdCursorScope(
   config: EntityElectionConfig,
   entityId: string,
 ): string {

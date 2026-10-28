@@ -17,7 +17,7 @@ const POLICY_CHOICES: Record<ElectionVotePolicy, readonly ElectionVoteChoice[]> 
   moderation: ['accurate', 'inaccurate'],
 }
 
-export const POLICY_SCORES: Record<
+const POLICY_SCORES: Record<
   ElectionVotePolicy,
   Record<string, ElectionVoteScore>
 > = ELECTION_VOTE_POLICY_SCORES
