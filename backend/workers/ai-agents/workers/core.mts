@@ -2,6 +2,7 @@ import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
+import { isOpenAIRateLimitError } from '@vouchington/ai/openai'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
@@ -72,7 +73,12 @@ export async function processAIAgentWorkerJob(
 ): Promise<unknown> {
   const dependencies = { ...defaultDeps, ...deps }
   const responseContext = createBackgroundResponseJobContext(job)
-  if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
+  try {
+    if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
+  } catch (err: unknown) {
+    if (isOpenAIRateLimitError(err)) return dependencies.handleOpenAIRateLimit(err, job)
+    throw err
+  }
 
   // Daily spend ceiling (#8773) before the OpenAI-error catch. reconcile-* jobs stay exempt so they
   // can still cancel orphaned billed responses. A breach parks only this job until the queried day

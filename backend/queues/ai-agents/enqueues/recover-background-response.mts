@@ -1,10 +1,14 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
+import {
+  AI_AGENTS_QUEUE_NAME,
+  AI_AGENTS_DEFAULTS,
+  AGENT_PRIORITY,
+  getBackgroundResponseRecoveryConcurrency,
+} from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { BackgroundResponseJobData, JobBackgroundResponse } from '../types.mts'
 
 export const BACKGROUND_RESPONSE_RECOVERY_DELAY_MS = 3 * 60_000
-const BACKGROUND_RESPONSE_RECOVERY_CONCURRENCY = 2
 
 export function backgroundResponseRecoveryJobId(responseId: string): string {
   return `ai_background_response_recovery_${responseId}`
@@ -33,7 +37,7 @@ export function enqueueRecoverBackgroundResponse(response: JobBackgroundResponse
       priority: AGENT_PRIORITY['recover-background-response'],
       ordering: {
         key: 'ai_background_response_recovery',
-        concurrency: BACKGROUND_RESPONSE_RECOVERY_CONCURRENCY,
+        concurrency: getBackgroundResponseRecoveryConcurrency(),
       },
     },
   )

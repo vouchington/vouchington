@@ -1,4 +1,25 @@
+import { DynamicConfig } from '@data-stores/valkey-core/dynamic-config'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
+export const aiAgentsQueueMaxValues = { background_response_recovery_concurrency: 8 }
+export const aiAgentsQueueConfig = new DynamicConfig({
+  key: 'ai-agents-queue-config',
+  fieldTypes: { background_response_recovery_concurrency: 'number' },
+  defaultFields: { background_response_recovery_concurrency: 2 },
+})
+
+export function getBackgroundResponseRecoveryConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    aiAgentsQueueConfig,
+    'background_response_recovery_concurrency',
+    {
+      defaultValue: aiAgentsQueueConfig.defaultFields.background_response_recovery_concurrency,
+      maxValue: aiAgentsQueueMaxValues.background_response_recovery_concurrency,
+    },
+  )
+}
+
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },

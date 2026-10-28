@@ -2816,6 +2816,9 @@ importers:
 
   backend/queues/ai-agents:
     dependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -2834,10 +2837,10 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.13.0
+        version: 0.13.0
     devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -6187,6 +6190,9 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
