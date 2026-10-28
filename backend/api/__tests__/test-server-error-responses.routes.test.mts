@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   formatRecordedServerErrorResponses,
@@ -74,23 +74,30 @@ describe('API test server 5xx capture', () => {
     expect(recorded.at(-1)!.url).toBe(`/overflow/${MAX_RECORDED_SERVER_ERROR_RESPONSES}`)
   })
 
-  // Runs last: vi.resetModules() repoints the shared test server at a fresh app instance.
-  it('shares one buffer with a server helper re-evaluated by vi.resetModules()', async () => {
-    vi.resetModules()
-    const fresh = await import('@voucha/test-helpers/api/server')
-    const { default: freshApp } = await import('@voucha/api/app')
+  // Runs last: the reset repoints the shared server; cold fixture setup has its own hook budget.
+  describe('after the server helper is re-evaluated', () => {
     const resetPath = '/api/v1/__tests__/server-error-responses-reset-boom'
-    freshApp.route(resetPath).get(() => {
-      throw new Error('thrown after module reset')
+    let freshCreateRequest: typeof createRequest
+
+    beforeEach(async () => {
+      vi.resetModules()
+      const fresh = await import('@voucha/test-helpers/api/server')
+      const { default: freshApp } = await import('@voucha/api/app')
+      freshApp.route(resetPath).get(() => {
+        throw new Error('thrown after module reset')
+      })
+      freshCreateRequest = fresh.createRequest
     })
 
-    await fresh.createRequest().get(resetPath).expect(500)
+    it('shares one buffer with a server helper re-evaluated by vi.resetModules()', async () => {
+      await freshCreateRequest().get(resetPath).expect(500)
 
-    expect(takeRecordedServerErrorResponses()).toEqual([
-      expect.objectContaining({
-        url: expect.stringContaining(resetPath),
-        body: expect.objectContaining({ message: 'thrown after module reset' }),
-      }),
-    ])
+      expect(takeRecordedServerErrorResponses()).toEqual([
+        expect.objectContaining({
+          url: expect.stringContaining(resetPath),
+          body: expect.objectContaining({ message: 'thrown after module reset' }),
+        }),
+      ])
+    })
   })
 })
