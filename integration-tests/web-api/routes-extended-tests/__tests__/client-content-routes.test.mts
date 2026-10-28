@@ -6,8 +6,10 @@ import {
   insertTestRssFeedDirect,
 } from '../../../../backend/test-helpers/index.mts'
 import { rssFeedsQueue } from '../../../../backend/queues/rss-feeds/queues.mts'
-import { getRssFeedImport } from '@/test-helpers/integration-client-reads'
+import { createIntegrationClientReads } from '@/test-helpers/integration-client-reads'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
+
+const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
 function unset(target: object, key: string) {
   delete (target as Record<string, unknown>)[key]
@@ -35,7 +37,7 @@ describe('client-content-routes', () => {
       })
       expect(result.status_url).toBe(`/api/v1/my/import/rss-feeds/${result.import.id}`)
       const status = await harness.withClientRuntime(
-        () => getRssFeedImport(result.import.id),
+        () => integrationClientReads.getRssFeedImport(result.import.id),
         harness.adminCookieHeader,
       )
       expect(status.import.id).toBe(result.import.id)
