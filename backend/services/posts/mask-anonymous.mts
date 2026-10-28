@@ -15,7 +15,7 @@ export function canViewAnonymousAuthor(
   return currentUser?.id === post.created_by_id
 }
 
-export function maskAnonymousPost<T extends MaskablePost>(
+function maskAnonymousPost<T extends MaskablePost>(
   post: T | null | undefined,
   currentUser?: PrivateUser | null,
 ): T | null | undefined {

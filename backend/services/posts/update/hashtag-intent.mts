@@ -57,7 +57,7 @@ export async function prepareLockedHashtagIntentChanges(
   return getHashtagIntentChanges(post, intent.change, changes, options)
 }
 
-export async function getHashtagIntentChanges(
+async function getHashtagIntentChanges(
   post: Post,
   change: PostHashtagIntent['change'],
   changes: UpdatePostChanges,

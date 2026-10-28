@@ -103,9 +103,7 @@ export function getPostHashtagKeys(updates: CreatePostUpdates): string[] {
   return [...new Set(getPostHashtagOccurrences(updates).map(occurrence => occurrence.key))]
 }
 
-export function getOrderedHashtagAliasClaims(
-  occurrences: HashtagOccurrence[],
-): HashtagOccurrence[] {
+function getOrderedHashtagAliasClaims(occurrences: HashtagOccurrence[]): HashtagOccurrence[] {
   const firstOccurrenceByKey = new Map<string, HashtagOccurrence>()
   for (const occurrence of occurrences) {
     if (!firstOccurrenceByKey.has(occurrence.key)) {

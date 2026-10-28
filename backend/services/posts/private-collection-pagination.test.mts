@@ -4,8 +4,6 @@ import {
   appendPrivatePostCollectionCursorBoundary,
   appendPrivatePostCollectionOrder,
   PRIVATE_POST_COLLECTION_CURSOR_ORDER_SCOPE,
-  PRIVATE_POST_COLLECTION_ORDER,
-  PRIVATE_POST_COLLECTION_PAGINATION,
 } from './private-collection-pagination.mts'
 
 describe('private post collection pagination order', () => {
@@ -17,20 +15,6 @@ describe('private post collection pagination order', () => {
     })
     appendPrivatePostCollectionOrder(query)
 
-    expect(PRIVATE_POST_COLLECTION_ORDER).toEqual([
-      expect.objectContaining({
-        sqlExpression: 'relation.created_at',
-        cursorScopeField: 'created-at',
-      }),
-      expect.objectContaining({
-        sqlExpression: 'relation.object_id',
-        cursorScopeField: 'object-id',
-      }),
-    ])
-    expect(PRIVATE_POST_COLLECTION_PAGINATION).toMatchObject({
-      direction: 'DESC',
-      boundaryOperator: '<',
-    })
     expect(query.sql).toContain(
       'AND (relation.created_at, relation.object_id) < (TO_TIMESTAMP(?::numeric / 1000000), ?::uuid)',
     )

@@ -31,10 +31,7 @@ export async function lockActivePostAuthorImageAdmission(
 }
 
 /** Also records the image-delivery "authority started" marker in the same statement. */
-export async function assertActivePostAuthor(
-  query: TransactionQuery,
-  creatorId: string,
-): Promise<void> {
+async function assertActivePostAuthor(query: TransactionQuery, creatorId: string): Promise<void> {
   const statement = sql`/* createPost:activeAuthor */
       SELECT id, `
   statement.append(imageDeliveryAuthorityStartedSql())
