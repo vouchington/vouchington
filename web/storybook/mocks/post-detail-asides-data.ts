@@ -3,7 +3,6 @@ import { topics } from '@/storybook/entities/fixtures/topics'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import type { EntityRelation } from '@/lib/api/entity-relations'
 import type { PrioritizedReferralLinksResponse } from '@/types/api-responses'
-import type { HnDiscussionThread } from '@/lib/hn-discussions/search'
 
 export const postAsideTopicRelations: EntityRelation[] = [
   {
@@ -64,13 +63,3 @@ export function postAsideReferralResponse(programId: string): PrioritizedReferra
     },
   }
 }
-
-export const postAsideHnThreads: HnDiscussionThread[] = [
-  {
-    objectID: '424242',
-    title: 'Show HN: Community discussion',
-    score: 12,
-    commentCount: 3,
-    itemUrl: 'https://news.ycombinator.com/item?id=424242',
-  },
-]

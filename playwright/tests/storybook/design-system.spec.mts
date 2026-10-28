@@ -50,7 +50,6 @@ test.describe('Storybook design system component stories', () => {
     await expect(page.getByTestId('card-title')).toBeVisible()
     await expect(page.getByTestId('card-description')).toBeVisible()
     await expect(page.getByTestId('card-content')).toBeVisible()
-    await expect(page.getByTestId('card-footer')).toBeVisible()
   })
 
   test('renders shared link and tooltip button', async ({ page }) => {
@@ -126,7 +125,6 @@ test.describe('Storybook design system component stories', () => {
 
     await openStory(page, 'design-system-brand--logo-marks')
     await expect(page.getByTestId('voucha-logo')).toBeVisible()
-    await expect(page.getByTestId('voucha-icon')).toBeVisible()
   })
 
   test('renders entity list item components', async ({ page }) => {

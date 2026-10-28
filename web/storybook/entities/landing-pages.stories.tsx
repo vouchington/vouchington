@@ -2,18 +2,13 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { PublicLandingPageView } from '@/components/landing-pages/public-landing-page'
-import { LandingPagesManager } from '@/components/my/landing-pages-manager'
+import { LandingPagesIndex } from '@/components/my/landing-pages-index'
 import { ProfileLinkForm } from '@/components/my/profile-link-form'
 import { ReferralCtaAside } from '@/components/referral-cta-aside'
 import { ReferralLinksAsideContent } from '@/components/referral-links/referral-links-aside-content'
 import { ReferralLinkForm } from '@/components/referral-links/referral-link-form'
 import { EntityStoryFrame, AsideStack, StoryCard } from './entity-story-frame'
-import {
-  landingPageCandidates,
-  landingPageWithItems,
-  publicLandingPage,
-  storyCurrentUser,
-} from './entity-fixtures'
+import { landingPageWithItems, publicLandingPage, storyCurrentUser } from './entity-fixtures'
 
 const t = createTranslator('en', await loadJsonMessages('en'))
 
@@ -28,12 +23,10 @@ type Story = StoryObj<typeof meta>
 export const NoUsername: Story = {
   parameters: { auth: { currentUser: { ...storyCurrentUser, username: null } } },
   render: () => (
-    <EntityStoryFrame title='Landing pages manager — no username'>
-      <LandingPagesManager
+    <EntityStoryFrame title='Landing pages — no username'>
+      <LandingPagesIndex
         username={null}
         initialPages={[]}
-        initialSelectedPage={null}
-        candidates={landingPageCandidates}
       />
     </EntityStoryFrame>
   ),
@@ -42,14 +35,12 @@ export const NoUsername: Story = {
 export const ListPage: Story = {
   render: () => (
     <EntityStoryFrame
-      title='Landing pages manager'
+      title='Landing pages'
       aside={LandingPageAsides}
     >
-      <LandingPagesManager
+      <LandingPagesIndex
         username={storyCurrentUser.username ?? null}
         initialPages={[landingPageWithItems]}
-        initialSelectedPage={landingPageWithItems}
-        candidates={landingPageCandidates}
       />
     </EntityStoryFrame>
   ),

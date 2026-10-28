@@ -1,4 +1,4 @@
-import type { ReviewDispute, PostDisputeAnnotation } from '@/types/review-disputes'
+import type { ReviewDispute } from '@/types/review-disputes'
 import type { TopicClaim } from '@/types/topic-claims'
 
 export const pendingDispute: ReviewDispute = {
@@ -90,14 +90,6 @@ export const memberData = {
     } satisfies ReviewDispute,
   ],
   page_info: { has_next_page: false, end_cursor: null },
-}
-
-export const annotation: PostDisputeAnnotation = {
-  id: 'annotation-1',
-  post_id: 'post-2',
-  review_dispute_id: 'dispute-2',
-  body_text: 'The reviewed party disputes the APR figure; the issuer confirms 18% APR.',
-  created_at: '2026-05-30T08:00:00.000Z',
 }
 
 export const verifiedClaim: TopicClaim = {

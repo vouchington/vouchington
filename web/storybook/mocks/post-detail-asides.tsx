@@ -1,14 +1,12 @@
 'use client'
 
 import { createContext, useContext, type ReactNode } from 'react'
-
 import { FollowContextCard } from '@/components/social/follow-context-card'
+import { HnDiscussionsAside } from '@/components/asides/hn-discussions-aside'
 import { PostRelatedTopicsAsideContent } from '@/components/tags/post-related-topics-aside-content'
 import { PostRelatedPostsAsideContent } from '@/components/tags/post-related-posts-aside-content'
 import { PostRelatedUrlsAsideContent } from '@/components/tags/post-related-urls-aside-content'
 import { ReferralLinksAsideContent } from '@/components/referral-links/referral-links-aside-content'
-import { HnDiscussionsAsideContent } from '@/components/asides/hn-discussions-aside'
-import { collectHnDiscussionUrls } from '@/lib/hn-discussions/normalize-url'
 import { useAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getTopicTypeSlug } from '@/types/topics'
@@ -20,11 +18,9 @@ import {
   postAsidePostRelations,
   postAsideUrlRelations,
   postAsideReferralResponse,
-  postAsideHnThreads,
 } from './post-detail-asides-data'
 
 const EMPTY_EXTRA_URLS: Array<string | null | undefined> = []
-
 const HnPreferenceContext = createContext(false)
 
 export function PostAsideFixturePreferences({
@@ -142,13 +138,18 @@ export function HnDiscussionsPostAside({
   post: Post
 }) {
   const importHackerNews = useContext(HnPreferenceContext)
-  // Only canonical owned posts have related URLs; extra URLs retain production normalization.
+  const { currentUser } = useAuth()
   const relatedUrls = posts.some(candidate => candidate.id === post.id)
-    ? postAsideUrlRelations.map(relation => relation.object_data.url)
+    ? postAsideUrlRelations.flatMap(relation => {
+        const url = relation.object_data.url
+        return typeof url === 'string' ? [url] : []
+      })
     : []
-  const urls = collectHnDiscussionUrls(
-    [...extraUrls, ...relatedUrls].map(url => (typeof url === 'string' ? url : null)),
+
+  return (
+    <HnDiscussionsAside
+      enabled={importHackerNews && currentUser !== null}
+      urls={[...extraUrls, ...relatedUrls]}
+    />
   )
-  if (!importHackerNews || urls.length === 0) return null
-  return <HnDiscussionsAsideContent threads={postAsideHnThreads} />
 }

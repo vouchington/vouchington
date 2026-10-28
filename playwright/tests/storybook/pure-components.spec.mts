@@ -28,8 +28,8 @@ test.describe('Storybook pure component stories', () => {
     await expect(page.getByTestId('rss-feed-link')).toHaveCount(2)
     await expect(page.getByTestId('rss-feed-link').first()).toBeVisible()
     await expect(page.getByTestId('separator')).toBeVisible()
-    await expect(page.getByTestId('search-input-shell')).toHaveCount(2)
-    await expect(page.getByTestId('search-input-shell').first()).toBeVisible()
+    await expect(page.getByTestId('search-input-shell')).toHaveCount(1)
+    await expect(page.getByTestId('search-input-shell')).toBeVisible()
     await expect(page.getByTestId('input').first()).toBeVisible()
   })
 
@@ -165,14 +165,8 @@ test.describe('Storybook pure component stories', () => {
     await expect(page.getByTestId('upgrade-membership-aside-content')).toBeVisible()
   })
 
-  test('renders dispute annotation and topic-claim review actions', async ({ page }) => {
+  test('renders topic-claim review actions', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
-    await openStory(page, 'entities-admin-review-disputes--status-card')
-    await expect(page.getByTestId('dispute-status-card')).toBeVisible()
-
-    await openStory(page, 'entities-admin-review-disputes--annotation')
-    await expect(page.getByTestId('dispute-annotation')).toBeVisible()
 
     await openStory(page, 'entities-admin-review-disputes--claim-review-pending')
     await expect(page.getByTestId('topic-claim-review')).toBeVisible()

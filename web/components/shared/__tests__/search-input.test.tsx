@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { SearchInput, SearchInputShell } from '../search-input'
+import { SearchInput } from '../search-input'
 
 describe('SearchInput', () => {
   it('renders a search icon', () => {
@@ -119,38 +119,5 @@ describe('SearchInput', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
     expect(mockClear).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('SearchInputShell', () => {
-  it('renders children', () => {
-    render(
-      <SearchInputShell>
-        <input
-          aria-label='Inner search'
-          placeholder='inner'
-        />
-      </SearchInputShell>,
-    )
-    expect(screen.getByPlaceholderText('inner')).toBeDefined()
-  })
-
-  it('renders a Search icon', () => {
-    const { container } = render(
-      <SearchInputShell>
-        <span>content</span>
-      </SearchInputShell>,
-    )
-    const svg = container.querySelector('svg')
-    expect(svg).toBeTruthy()
-  })
-
-  it('allows a custom data-pw hook', () => {
-    const { container } = render(
-      <SearchInputShell data-pw='topic-chip-search-shell'>
-        <span>content</span>
-      </SearchInputShell>,
-    )
-    expect(container.querySelector('[data-pw="topic-chip-search-shell"]')).not.toBeNull()
   })
 })

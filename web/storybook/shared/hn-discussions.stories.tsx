@@ -1,14 +1,25 @@
 import type { ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import {
-  HnDiscussionsAside,
-  HnDiscussionsAsideContent,
-} from '@/components/asides/hn-discussions-aside'
+import { HnDiscussionsAside } from '@/components/asides/hn-discussions-aside'
 import { HnDiscussionsPreference } from '@/components/my/hn-discussions-preference'
-import type { HnDiscussionThread } from '@/lib/hn-discussions/search'
+import { expect } from 'storybook/test'
+import {
+  getHnDiscussionsStoryResponse,
+  waitForHnDiscussionTitle,
+} from '@/test-helpers/hn-discussions-story-fixture'
 
 const meta = {
   title: 'Shared/HnDiscussions',
+  beforeEach() {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (input, init) => {
+      const response = getHnDiscussionsStoryResponse(input)
+      return response ? Promise.resolve(response) : originalFetch.call(globalThis, input, init)
+    }
+    return () => {
+      globalThis.fetch = originalFetch
+    }
+  },
 } satisfies Meta
 
 export default meta
@@ -19,23 +30,6 @@ const Frame = ({ children }: { children: ReactNode }) => (
     <div className='mx-auto max-w-3xl space-y-6'>{children}</div>
   </main>
 )
-
-const storyThreads: HnDiscussionThread[] = [
-  {
-    objectID: '424242',
-    title: 'Show HN: A points card with no annual fee',
-    score: 312,
-    commentCount: 147,
-    itemUrl: 'https://news.ycombinator.com/item?id=424242',
-  },
-  {
-    objectID: '424243',
-    title: 'Ask HN: Best travel card for Europe?',
-    score: 88,
-    commentCount: 63,
-    itemUrl: 'https://news.ycombinator.com/item?id=424243',
-  },
-]
 
 export const PreferenceOff: Story = {
   render: () => (
@@ -61,15 +55,15 @@ export const PreferenceOn: Story = {
         initialEnabled
         userId='storybook-user'
       />
+      <HnDiscussionsAside
+        enabled
+        urls={['https://example.com/story']}
+      />
     </Frame>
   ),
-}
-
-export const AsideWithThreads: Story = {
-  render: () => (
-    <Frame>
-      <h1 className='text-2xl font-bold'>Related Hacker News threads</h1>
-      <HnDiscussionsAsideContent threads={storyThreads} />
-    </Frame>
-  ),
+  play: async ({ canvasElement }) => {
+    const title = await waitForHnDiscussionTitle(canvasElement)
+    await expect(title).toHaveTextContent('Show HN: Community discussion')
+    await expect(title).toHaveAttribute('href', 'https://news.ycombinator.com/item?id=424242')
+  },
 }

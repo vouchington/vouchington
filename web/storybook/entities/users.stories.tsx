@@ -5,7 +5,6 @@ import { UserLink } from '@/components/users/user-link'
 import { UserProfileLinks } from '@/components/users/profile-links'
 import { UserList, UserListItem } from '@/components/users/user-list'
 import { UserSearchListItemContent } from '@/components/users/user-search-list-item-content'
-import { UserSearchResultCard } from '@/components/users/user-search-result-card'
 import { UserProfileHeader } from '@/components/users/user-profile-header'
 import { UserProfileTabs } from '@/components/users/user-profile-tabs'
 import { Input } from '@/components/ui/input'
@@ -50,17 +49,6 @@ export const ListPage: Story = {
         users={publicUsers}
         emptyTitle='No users found'
         emptyDescription='Try a different search.'
-      />
-    </EntityStoryFrame>
-  ),
-}
-
-export const SearchResultCard: Story = {
-  render: () => (
-    <EntityStoryFrame title='User search result'>
-      <UserSearchResultCard
-        user={publicUsers[0]!}
-        currentUserId={storyCurrentUser.id}
       />
     </EntityStoryFrame>
   ),

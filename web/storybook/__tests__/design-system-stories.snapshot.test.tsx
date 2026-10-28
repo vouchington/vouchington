@@ -57,7 +57,6 @@ describe('design system Storybook coverage', () => {
           'Tag Autocomplete (Posts)',
           'Tag Autocomplete (URLs)',
           'User Autocomplete',
-          'Post Autocomplete',
         ],
       },
       {
@@ -91,7 +90,6 @@ describe('design system Storybook coverage', () => {
         },
         {
           "expectedTextPresent": [
-            true,
             true,
             true,
             true,

@@ -47,34 +47,3 @@ export function VouchaWordmarkIcon({ className, ...props }: BrandIconProps) {
   )
 }
 /* oxlint-enable jsx-a11y/prefer-tag-over-role */
-
-export function VouchaMarkIcon({ className, ...props }: BrandIconProps) {
-  return (
-    <svg
-      xmlns='http://www.w3.org/2000/svg'
-      viewBox='0 0 32 32'
-      width='32'
-      height='32'
-      className={className}
-      {...props}
-      aria-hidden='true'
-    >
-      <path
-        d='M4 5 L16 27 L28 5'
-        stroke='currentColor'
-        strokeWidth='3'
-        fill='none'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M10 16 L16 27 L28 11'
-        stroke='currentColor'
-        strokeWidth='3'
-        fill='none'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}

@@ -12,6 +12,10 @@ import { posts } from '@/storybook/entities/fixtures/posts'
 import { topics } from '@/storybook/entities/fixtures/topics'
 import { userHref } from '@/lib/links/entity-href'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
+import {
+  getHnDiscussionsStoryResponse,
+  waitForHnDiscussionTitle,
+} from '@/test-helpers/hn-discussions-story-fixture'
 
 const discussion = posts.find(post => post.post_type === 'discussion')!
 const review = posts.find(post => post.post_type === 'review')!
@@ -22,7 +26,19 @@ const referralReview = {
     { ...review.review_topic_ratings![0]!, topic: referralTopic, topic_id: referralTopic.id },
   ],
 }
-const meta = { title: 'Tags/Post Detail Aside Fixtures' } satisfies Meta
+const meta = {
+  title: 'Tags/Post Detail Aside Fixtures',
+  beforeEach() {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (input, init) => {
+      const response = getHnDiscussionsStoryResponse(input)
+      return response ? Promise.resolve(response) : originalFetch.call(globalThis, input, init)
+    }
+    return () => {
+      globalThis.fetch = originalFetch
+    }
+  },
+} satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -113,13 +129,9 @@ export const HackerNewsEnabled: Story = {
     </StoryFrame>
   ),
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('[data-pw="hn-discussions-title"]')).toHaveTextContent(
-      'Show HN: Community discussion',
-    )
-    await expect(canvasElement.querySelector('[data-pw="hn-discussions-title"]')).toHaveAttribute(
-      'href',
-      'https://news.ycombinator.com/item?id=424242',
-    )
+    const title = await waitForHnDiscussionTitle(canvasElement)
+    await expect(title).toHaveTextContent('Show HN: Community discussion')
+    await expect(title).toHaveAttribute('href', 'https://news.ycombinator.com/item?id=424242')
   },
 }
 

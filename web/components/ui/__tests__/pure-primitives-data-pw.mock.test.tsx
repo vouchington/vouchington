@@ -52,7 +52,7 @@ import { Alert, AlertDescription, AlertTitle } from '../alert'
 import { Avatar, AvatarFallback, AvatarImage } from '../avatar'
 import { Badge } from '../badge'
 import { Button } from '../button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../card'
 import { CheckboxCard } from '../checkbox-card'
 import { Input } from '../input'
 import { Kbd, KbdGroup } from '../kbd'
@@ -97,17 +97,9 @@ describe('pure ui primitive data-pw contracts', () => {
           <CardDescription>Description</CardDescription>
         </CardHeader>
         <CardContent>Content</CardContent>
-        <CardFooter>Footer</CardFooter>
       </Card>,
     )
-    for (const id of [
-      'card',
-      'card-header',
-      'card-title',
-      'card-description',
-      'card-content',
-      'card-footer',
-    ]) {
+    for (const id of ['card', 'card-header', 'card-title', 'card-description', 'card-content']) {
       expect(container.querySelector(`[data-pw="${id}"]`)).not.toBeNull()
     }
   })

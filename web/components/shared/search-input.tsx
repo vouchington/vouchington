@@ -18,7 +18,7 @@ interface SearchInputShellProps {
  * Bordered row with leading Search icon — wraps any input element.
  * Use this when you need the visual shell around a non-standard input (e.g. cmdk CommandInput).
  */
-export function SearchInputShell({
+function SearchInputShell({
   children,
   className,
   'data-pw': dataPw = 'search-input-shell',

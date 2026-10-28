@@ -64,11 +64,3 @@ export interface ReviewDispute {
     }
   }
 }
-
-export interface PostDisputeAnnotation {
-  id: string
-  post_id: string
-  review_dispute_id: string | null
-  body_text: string
-  created_at: string
-}

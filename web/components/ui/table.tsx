@@ -49,21 +49,6 @@ function TableBody({
 }
 TableBody.displayName = 'TableBody'
 
-function TableFooter({
-  className,
-  ref,
-  ...props
-}: React.HTMLAttributes<HTMLTableSectionElement> & { ref?: React.Ref<HTMLTableSectionElement> }) {
-  return (
-    <tfoot
-      ref={ref}
-      className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
-      {...props}
-    />
-  )
-}
-TableFooter.displayName = 'TableFooter'
-
 function TableRow({
   className,
   ref,
@@ -118,19 +103,4 @@ function TableCell({
 }
 TableCell.displayName = 'TableCell'
 
-function TableCaption({
-  className,
-  ref,
-  ...props
-}: React.HTMLAttributes<HTMLTableCaptionElement> & { ref?: React.Ref<HTMLTableCaptionElement> }) {
-  return (
-    <caption
-      ref={ref}
-      className={cn('mt-4 text-sm text-muted-foreground', className)}
-      {...props}
-    />
-  )
-}
-TableCaption.displayName = 'TableCaption'
-
-export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption }
+export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell }

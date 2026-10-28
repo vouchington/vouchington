@@ -21,7 +21,7 @@ export function HnDiscussionsAside({
   return <HnDiscussionsAsideBody pageUrlKey={pageUrlKey} />
 }
 
-export function HnDiscussionsAsideContent({ threads }: { threads: HnDiscussionThread[] }) {
+function HnDiscussionsAsideContent({ threads }: { threads: HnDiscussionThread[] }) {
   const t = useTranslations()
   const uiLocale = useUiLocale()
   if (threads.length === 0) return null

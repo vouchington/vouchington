@@ -17,7 +17,7 @@ interface SubmitSourceDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function SubmitSourceDialog({ open, onOpenChange }: SubmitSourceDialogProps) {
+function SubmitSourceDialog({ open, onOpenChange }: SubmitSourceDialogProps) {
   const t = useTranslations()
   return (
     <Dialog

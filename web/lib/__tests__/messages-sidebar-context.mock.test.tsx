@@ -11,10 +11,7 @@ import {
   useOptionalMessagesSidebar,
   type MessagesSidebarPageInfo,
 } from '@/lib/messages-sidebar-context'
-import {
-  MessagesSidebarProvider,
-  SignedInMessagesSidebarProvider,
-} from '@/lib/messages-sidebar-provider'
+import { SignedInMessagesSidebarProvider } from '@/lib/messages-sidebar-provider'
 import type { DirectConversation } from '@/types/messages'
 
 function makeConversation(overrides?: Partial<DirectConversation>): DirectConversation {
@@ -36,10 +33,14 @@ function makePageInfo(
 }
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <MessagesSidebarProvider>{children}</MessagesSidebarProvider>
+  <SignedInMessagesSidebarProvider>{children}</SignedInMessagesSidebarProvider>
 )
 
-describe('MessagesSidebarProvider', () => {
+describe('SignedInMessagesSidebarProvider state', () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true })
+  })
+
   it('provides initial empty state', () => {
     const { result } = renderHook(() => useOptionalMessagesSidebar(), { wrapper })
     expect(result.current?.conversations).toEqual([])

@@ -4,9 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -30,7 +28,6 @@ const invoices = [
 export const InvoiceTable: Story = {
   render: () => (
     <Table>
-      <TableCaption>A list of recent invoices.</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead className='w-28'>Invoice</TableHead>
@@ -51,12 +48,6 @@ export const InvoiceTable: Story = {
           </TableRow>
         ))}
       </TableBody>
-      <TableFooter>
-        <TableRow>
-          <TableCell colSpan={3}>Total</TableCell>
-          <TableCell className='text-right'>$1,200.00</TableCell>
-        </TableRow>
-      </TableFooter>
     </Table>
   ),
 }

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth/context'
 import type { DirectConversation } from '@/types/messages'
 import { MessagesSidebarContext, type MessagesSidebarPageInfo } from './messages-sidebar-context'
 
-export function MessagesSidebarProvider({ children }: { children: ReactNode }) {
+function MessagesSidebarProvider({ children }: { children: ReactNode }) {
   const [conversations, setConversations] = useState<DirectConversation[]>([])
   const [pageInfo, setPageInfo] = useState<MessagesSidebarPageInfo | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)

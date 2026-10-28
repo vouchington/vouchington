@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { addFreeformLinkItem } from './controller-add-items'
+import { addFreeformLinkItem, addTopicGroupLandingPageItem } from './controller-add-items'
 
 describe('addFreeformLinkItem', () => {
   it('adds a link item to the draft list and returns true', () => {
@@ -92,5 +92,70 @@ describe('addFreeformLinkItem', () => {
     })
 
     expect(result).toBe(true)
+  })
+})
+
+describe('addTopicGroupLandingPageItem', () => {
+  it('adds the selected review and referral entries for the chosen topic', () => {
+    const review = {
+      id: 'review-1',
+      title: 'Useful review',
+      declared_language: 'en',
+      lingua_rs_detected_language: 'en',
+      slug: 'useful-review',
+      markdown: '',
+      created_at: '',
+      review_topic_ratings: [
+        {
+          topic_id: 'topic-1',
+          topic_name: 'Topic one',
+          topic_slug: 'topic-one',
+          rating: 5,
+          order_index: 0,
+        },
+      ],
+    }
+    const referralLink = {
+      id: 'referral-1',
+      referral_program_id: 'topic-1',
+      referral_program_name: 'Topic one',
+      referral_program_slug: 'topic-one',
+      label: 'Referral',
+      url: 'https://example.com/referral',
+    }
+    const setDraftItems =
+      vi.fn<Parameters<typeof addTopicGroupLandingPageItem>[0]['setDraftItems']>()
+    const onAdded = vi.fn<() => void>()
+
+    addTopicGroupLandingPageItem({
+      candidates: { profile_links: [], reviews: [review], referral_links: [referralLink] },
+      itemOptions: {
+        availableProfileLinks: [],
+        availableReviews: [],
+        availableReferralLinks: [],
+        availableGroupReviews: [review],
+        availableGroupReferralLinks: [referralLink],
+        topicOptions: [
+          { id: 'topic-1', name: 'Topic one', slug: 'topic-one', topic_type: 'topic' },
+        ],
+      },
+      onAdded,
+      selectedGroupReferralIds: ['referral-1'],
+      selectedGroupReviewIds: ['review-1'],
+      selectedTopicId: 'topic-1',
+      setDraftItems,
+    })
+
+    expect(onAdded).toHaveBeenCalledOnce()
+    const update = setDraftItems.mock.calls[0]![0]
+    expect(update).toBeTypeOf('function')
+    if (typeof update !== 'function') throw new Error('Expected a draft item update function')
+    const [group] = update([])
+    if (!group || group.type !== 'topic_group') throw new Error('Expected a topic group draft item')
+    expect(group.topic.id).toBe('topic-1')
+    expect(group.entries).toEqual([
+      { id: expect.any(String), type: 'review', review },
+      { id: expect.any(String), type: 'referral_link', referral_link: referralLink },
+    ])
   })
 })
