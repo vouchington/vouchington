@@ -17,6 +17,7 @@ Client components receive display-specific view models, not normalized API respo
 UUIDs are API facts, not web identifiers. They leak creation time (UUIDv7) and mean nothing to readers.
 
 - Routes use a slug or unique natural key (username, hostname, URL, owner plus slug) when the entity has one. Only entities with no unique natural key keep an id segment, and their pages still label them from facts.
+- The slug or natural key is canonical, but a route keyed by one still accepts the UUID as a fallback and permanently redirects it to the canonical URL, so old or pasted id links keep working. In-app links always emit the canonical form.
 - Visible labels never render an id, truncated or full, including as a `?? id` fallback. When the API lacks a label, add it as a non-nullable fact (username, title, slug, name) hydrated per list. A user without a username falls back to the display name, then to a deleted-user label.
 - Inputs never ask for an id. Use an autocomplete picker, or a plain input only for a natural key such as a hostname or URL.
 - Before retargeting a link, `git grep` its pathname helper and confirm the old route keeps an in-app link; otherwise the old page becomes unreachable.
