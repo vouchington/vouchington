@@ -1,24 +1,10 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Entity relations helpers
  */
 
 import { read, write } from '@data-stores/psql'
-import {
-  entityRelationMetadatum,
-  getEntityRelationVoteTableName,
-} from '@voucha/types/entities/entity-relations-metadata'
+import { getTestEntityRelationTable } from './entity-relation-fixture-tables.mts'
 import sql from 'sql-template-strings'
-
-const ALLOWED_RELATION_TABLES = new Set(
-  entityRelationMetadatum.map(relation => relation.table_name),
-)
-
-function validateRelationTable(tableName: string): void {
-  if (!ALLOWED_RELATION_TABLES.has(tableName)) {
-    throw new Error(`Invalid relation table name: ${tableName}`)
-  }
-}
 
 function buildWhereClause(subjectId: string, objectId: string): ReturnType<typeof sql> {
   return sql`subject_id = ${subjectId} AND object_id = ${objectId}`
@@ -29,15 +15,13 @@ export async function insertEntityRelation(
   subjectId: string,
   objectId: string,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   await write(
-    allowUnannotatedQuery(
-      sql`INSERT INTO `
-        .append(tableName)
-        .append(
-          sql` (subject_id, object_id) VALUES (${subjectId}, ${objectId}) ON CONFLICT DO NOTHING`,
-        ),
-    ),
+    sql`/* insertEntityRelation */ INSERT INTO `
+      .append(relationTable)
+      .append(
+        sql` (subject_id, object_id) VALUES (${subjectId}, ${objectId}) ON CONFLICT DO NOTHING`,
+      ),
   )
 }
 
@@ -47,15 +31,13 @@ export async function updateTestEntityRelationCreatedAt(
   objectId: string,
   createdAt: Date,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    allowUnannotatedQuery(
-      sql`UPDATE `
-        .append(tableName)
-        .append(sql` SET created_at = ${createdAt} WHERE `)
-        .append(whereClause),
-    ),
+    sql`/* updateTestEntityRelationCreatedAt */ UPDATE `
+      .append(relationTable)
+      .append(sql` SET created_at = ${createdAt} WHERE `)
+      .append(whereClause),
   )
 }
 
@@ -64,34 +46,15 @@ export async function getEntityRelation(
   subjectId: string,
   objectId: string,
 ): Promise<unknown[]> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   const { rows } = await read(
     sql`/* getEntityRelation */ SELECT * FROM `
-      .append(tableName)
+      .append(relationTable)
       .append(sql` WHERE `)
       .append(whereClause),
   )
   return rows
-}
-
-export async function getEntityRelationVoteStorageRows(
-  entityRelationIds: string[],
-): Promise<Array<{ entity_relation_id: string; storage_table: string }>> {
-  const selects = entityRelationMetadatum.flatMap(metadata =>
-    metadata.election
-      ? [
-          `SELECT entity_relation_id, tableoid::regclass::text AS storage_table
-          FROM ${getEntityRelationVoteTableName(metadata)}
-          WHERE entity_relation_id = ANY($1::uuid[])`,
-        ]
-      : [],
-  )
-  const { rows } = await read(
-    `/* getEntityRelationVoteStorageRows */ ${selects.join(' UNION ALL ')} ORDER BY entity_relation_id`,
-    [entityRelationIds],
-  )
-  return rows as Array<{ entity_relation_id: string; storage_table: string }>
 }
 
 export async function setTestEntityRelationIdAndScore(
@@ -101,15 +64,13 @@ export async function setTestEntityRelationIdAndScore(
   id: string,
   votesScoreUp: number,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    allowUnannotatedQuery(
-      sql`UPDATE `
-        .append(tableName)
-        .append(sql` SET id = ${id}, votes_score_up = ${votesScoreUp} WHERE `)
-        .append(whereClause),
-    ),
+    sql`/* setTestEntityRelationIdAndScore */ UPDATE `
+      .append(relationTable)
+      .append(sql` SET id = ${id}, votes_score_up = ${votesScoreUp} WHERE `)
+      .append(whereClause),
   )
 }
 
@@ -118,11 +79,11 @@ export async function hardDeleteEntityRelationTest(
   subjectId: string,
   objectId: string,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
     sql`/* hardDeleteEntityRelationTest */ DELETE FROM `
-      .append(tableName)
+      .append(relationTable)
       .append(sql`
     WHERE `)
       .append(whereClause),
@@ -135,10 +96,10 @@ export async function softDeleteEntityRelationTest(
   objectId: string,
   deletedById?: string,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   const updateQuery = sql`/* softDeleteEntityRelationTest */ UPDATE `
-    .append(tableName)
+    .append(relationTable)
     .append(sql` SET deleted_at = CURRENT_TIMESTAMP`)
   if (deletedById) updateQuery.append(sql`, deleted_by_id = ${deletedById}`)
   updateQuery.append(sql` WHERE `).append(whereClause)
@@ -151,15 +112,13 @@ export async function setEntityRelationDeletedAt(
   objectId: string,
   deletedAt: Date,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    allowUnannotatedQuery(
-      sql`UPDATE `
-        .append(tableName)
-        .append(sql` SET deleted_at = ${deletedAt} WHERE `)
-        .append(whereClause),
-    ),
+    sql`/* setEntityRelationDeletedAt */ UPDATE `
+      .append(relationTable)
+      .append(sql` SET deleted_at = ${deletedAt} WHERE `)
+      .append(whereClause),
   )
 }
 
@@ -169,16 +128,16 @@ export async function setEntityRelationCreatedAt(
   objectId: string,
   createdAt: Date,
 ): Promise<void> {
-  validateRelationTable(tableName)
+  const relationTable = getTestEntityRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    allowUnannotatedQuery(
-      sql`UPDATE `
-        .append(tableName)
-        .append(sql` SET created_at = ${createdAt} WHERE `)
-        .append(whereClause),
-    ),
+    sql`/* setEntityRelationCreatedAt */ UPDATE `
+      .append(relationTable)
+      .append(sql` SET created_at = ${createdAt} WHERE `)
+      .append(whereClause),
   )
 }
 
 export { getMentionRowsForRelationTable } from './entity-relation-mentions.mts'
+
+export { getEntityRelationVoteStorageRows } from './entity-relation-vote-storage.mts'

@@ -1,4 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  getEntityRelation,
+  hardDeleteEntityRelationTest,
+  insertEntityRelation,
+  setEntityRelationCreatedAt,
+  setEntityRelationDeletedAt,
+  setTestEntityRelationIdAndScore,
+  softDeleteEntityRelationTest,
+  updateTestEntityRelationCreatedAt,
+} from './entities/entity-relations.mts'
+import {
+  getLatestTestEntityRelationVoteScore,
+  insertTestEntityRelationVote,
+  readTestEntityRelationUserVotePage,
+} from './entities/entity-relation-votes.mts'
 import { countTestRelationRows } from './data-stores/psql/moderation-admission-relations.mts'
 import {
   hasTestRetainedIdentityRoot,
@@ -31,6 +46,75 @@ describe('test fixture selector guards', () => {
       await expect(readTestRetainedRelationTraversalBound(relationTable, 10)).rejects.toThrow(
         'Unknown elected relation table:',
       )
+    },
+  )
+
+  const relationSelectors = [
+    { name: 'insert', run: (table: string) => insertEntityRelation(table, 'unused', 'unused') },
+    { name: 'read', run: (table: string) => getEntityRelation(table, 'unused', 'unused') },
+    {
+      name: 'hard delete',
+      run: (table: string) => hardDeleteEntityRelationTest(table, 'unused', 'unused'),
+    },
+    {
+      name: 'soft delete',
+      run: (table: string) => softDeleteEntityRelationTest(table, 'unused', 'unused'),
+    },
+    {
+      name: 'creation time',
+      run: (table: string) => setEntityRelationCreatedAt(table, 'unused', 'unused', new Date(0)),
+    },
+    {
+      name: 'updated creation time',
+      run: (table: string) =>
+        updateTestEntityRelationCreatedAt(table, 'unused', 'unused', new Date(0)),
+    },
+    {
+      name: 'deletion time',
+      run: (table: string) => setEntityRelationDeletedAt(table, 'unused', 'unused', new Date(0)),
+    },
+    {
+      name: 'score',
+      run: (table: string) =>
+        setTestEntityRelationIdAndScore(table, 'unused', 'unused', 'unused', 1),
+    },
+    {
+      name: 'vote insert',
+      run: (relationTable: string) =>
+        insertTestEntityRelationVote({
+          relationTable,
+          relationId: 'unused',
+          subjectId: 'unused',
+          userId: 'unused',
+          score: 1,
+        }),
+    },
+    {
+      name: 'vote score',
+      run: (relationTable: string) =>
+        getLatestTestEntityRelationVoteScore({
+          relationTable,
+          relationId: 'unused',
+          userId: 'unused',
+        }),
+    },
+    {
+      name: 'vote page',
+      run: (table: string) => readTestEntityRelationUserVotePage('unused', table, { limit: 1 }),
+    },
+  ]
+
+  it.each(relationSelectors)('$name rejects an inherited selector before SQL', async ({ run }) => {
+    await expect(run('__proto__')).rejects.toThrow('Invalid')
+  })
+
+  it.each(relationSelectors)(
+    '$name rejects a non-string selector without coercion',
+    async ({ run }) => {
+      const coerce = vi.fn<() => string>(() => 'relation__post__category__topic')
+      const key = { [Symbol.toPrimitive]: coerce }
+      await expect(run(key as unknown as string)).rejects.toThrow(/relation/)
+      expect(coerce).not.toHaveBeenCalled()
     },
   )
 

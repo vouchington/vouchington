@@ -13,6 +13,7 @@ import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { getEntityRelationElectionVote } from '../votes-get.mts'
 import { upsertEntityRelationElectionVotes } from '../votes-upsert.mts'
 
@@ -262,11 +263,22 @@ describe('upsert.generated (votes)', () => {
     await expect(
       getEntityRelationElectionVote(user.id, topicPostRelation.id!),
     ).resolves.toMatchObject({ entity_id: topicPostRelation.id, choice: 'dispute' })
+    const relationIds = [topicPostRelation.id!, postTopicRelation.id!]
+    const { result: storageRows, queries } = await withCapturedTestQueries(() =>
+      getEntityRelationVoteStorageRows(relationIds),
+    )
+    // Every elected family must remain in the fixed UNION, including families with no owned rows.
+    expect(queries).toHaveLength(1)
+    const storageQuery = queries[0]!
+    expect(storageQuery.values).toEqual([relationIds])
     expect(
-      (await getEntityRelationVoteStorageRows([topicPostRelation.id!, postTopicRelation.id!]))
-        .map(row => row.storage_table)
-        .toSorted(),
-    ).toEqual([
+      [...storageQuery.text.matchAll(/FROM (relation__\w+__votes)\n/g)].map(match => match[1]),
+    ).toEqual(
+      entityRelationMetadatum
+        .filter(metadata => metadata.election)
+        .map(row => `${row.table_name}__votes`),
+    )
+    expect(storageRows.map(row => row.storage_table).toSorted()).toEqual([
       'relation__post__category__topic__votes__default',
       'relation__topic__related__post__votes__default',
       'relation__topic__related__post__votes__default',
