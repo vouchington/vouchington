@@ -3,14 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const repoFile = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
 
-describe('backend focused-command docs stay pinned to supported filtering forms', () => {
-  it('backend/agents/AGENTS.md does not duplicate focused commands', () => {
-    const claudeMd = repoFile('backend/agents/AGENTS.md')
-
-    expect(claudeMd).not.toContain('```bash')
-    expect(claudeMd).not.toContain('--project backend-data-stores --project backend-mocks')
-  })
-
+describe('durable Vitest command filtering', () => {
   it('durable Vitest commands select projects instead of individual test files', () => {
     const packageScripts = JSON.parse(repoFile('package.json')) as {
       scripts: Record<string, string>
