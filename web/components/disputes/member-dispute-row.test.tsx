@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { MemberDisputeRow } from './member-dispute-row'
 import type { ReviewDispute } from '@/types/review-disputes'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
@@ -48,7 +48,7 @@ describe('MemberDisputeRow', () => {
   })
 
   it('translates the redacted review fallback', async () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <table>

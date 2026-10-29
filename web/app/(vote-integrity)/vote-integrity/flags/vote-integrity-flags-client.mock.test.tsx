@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { VoteIntegrityFlagsClient } from './vote-integrity-flags-client'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const mockReplace = vi.fn<VitestLooseMock>()
@@ -106,7 +106,7 @@ describe('VoteIntegrityFlagsClient', () => {
   })
 
   it('translates a type-code fallback instead of showing a raw flag type', async () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <VoteIntegrityFlagsClient

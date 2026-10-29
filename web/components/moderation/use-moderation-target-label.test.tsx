@@ -2,12 +2,12 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { useModerationTargetLabel } from './use-moderation-target-label'
 
 describe('moderation entity type labels', () => {
   it('shows nouns for every API entity type in the active locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <span>
@@ -64,7 +64,7 @@ describe('moderation target fallback labels', () => {
     ['[deleted content]', 'Contenido eliminado'],
     ['[Private content]', 'Contenido privado'],
   ])('renders %s as localized display text', (code, expected) => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <TargetLabel code={code} />

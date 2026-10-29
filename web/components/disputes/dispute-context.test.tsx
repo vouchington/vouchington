@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { DisputeContext } from './dispute-context'
 import { makeDispute } from '@/test-helpers/disputes-client-fixtures'
@@ -99,7 +99,7 @@ describe('DisputeContext', () => {
   })
 
   it('translates the redacted review fallback and keeps its id out of view', async () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <DisputeContext

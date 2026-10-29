@@ -1,4 +1,3 @@
-export { attachIntegrityLabelRows } from './attach-label-rows.mts'
 export {
   attachReportIntegrityFlagLabels,
   attachVoteIntegrityFlagLabels,

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { ReportIntegrityFlagsClient } from '../report-integrity-flags-client'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('ReportIntegrityFlagsClient — rendering', () => {
@@ -153,7 +153,7 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
   })
 
   it('translates a type-code fallback while retaining the target id only for actions', async () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <ReportIntegrityFlagsClient
