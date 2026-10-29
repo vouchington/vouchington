@@ -29,7 +29,7 @@ async function revenueFor(membershipRows: ReturnType<typeof revenueRow>[]) {
     ],
   } as never)
   return getRevenue('30d', new Date(), undefined, DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT, {
-    read: mockRead,
+    read: mockRead as never,
   })
 }
 
