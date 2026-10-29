@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -8,10 +7,10 @@ import sql from 'sql-template-strings'
 // does not need.
 export async function insertLocalTestGoogleAccount(googleUserId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertLocalTestGoogleAccount */
     INSERT INTO google_accounts (google_user_id, google_user_data)
     VALUES (${googleUserId}, '{}')
-  `),
+  `,
   )
 }
 
@@ -20,9 +19,9 @@ export async function connectLocalTestGoogleAccount(
   googleUserId: string,
 ): Promise<void> {
   const { rowCount } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* connectLocalTestGoogleAccount */
     UPDATE google_accounts SET user_id = ${userId} WHERE google_user_id = ${googleUserId}
-  `),
+  `,
   )
   if (!rowCount) {
     throw new Error(`connectLocalTestGoogleAccount: no google account found for ${googleUserId}`)

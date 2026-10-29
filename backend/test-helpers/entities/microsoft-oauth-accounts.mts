@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import type { OAuthAccount } from './_oauth-config-support.mts'
 
@@ -8,7 +7,7 @@ export async function insertTestMicrosoftOAuthAccount(
   providerUserEmailAddress: string | null = null,
 ): Promise<OAuthAccount> {
   const { rows } = await write<OAuthAccount>(
-    allowUnannotatedQuery(`
+    `/* insertTestMicrosoftOAuthAccount */
       INSERT INTO microsoft_accounts (
         microsoft_user_id,
         microsoft_user_email_address,
@@ -22,7 +21,7 @@ export async function insertTestMicrosoftOAuthAccount(
         id AS account_id,
         microsoft_user_email_address AS provider_user_email_address,
         microsoft_user_data AS provider_user_data
-    `),
+    `,
     [providerUserId, providerUserEmailAddress, accountId],
   )
   return rows[0]
