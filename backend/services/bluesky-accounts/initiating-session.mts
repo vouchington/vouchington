@@ -1,4 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
+import createHttpError from 'http-errors'
+import sql from 'sql-template-strings'
 import { assertOAuthAccountConnectionUserActive } from '@services/oauth-accounts'
 import {
   lockActiveAccountSession,
@@ -54,11 +56,17 @@ export async function lockCurrentBlueskyInitiatingSession(
     authorizationId,
     query,
   )
-  if (
-    authorization?.attached ||
-    !authorization?.unexpired ||
-    authorization.initiating_session_id !== currentSession.sid
-  ) {
+  if (!authorization?.unexpired || authorization.initiating_session_id !== currentSession.sid) {
+    throw sessionReloginRequired()
+  }
+  if (authorization.attached) {
+    // A competing consumer can finish while we wait for the same live actor's locks.
+    // Only its consumed, exact completion becomes 404; attached flows never authorize a retry.
+    const { rows } = await query(sql`/* lockCurrentBlueskyInitiatingSession:completion */
+      SELECT account_link_authorization_id FROM bluesky_link_completions
+      WHERE account_link_authorization_id = ${authorizationId} AND user_id = ${currentUserId}`)
+    if (rows.length === 0)
+      throw createHttpError(404, 'Bluesky link completion not found or expired')
     throw sessionReloginRequired()
   }
   return currentSession.sid

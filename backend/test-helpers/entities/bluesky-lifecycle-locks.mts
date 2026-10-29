@@ -29,3 +29,13 @@ export async function holdTestUserSuspensionTransaction(
   await suspended
   return { release: releaseTransaction, completed }
 }
+
+/** Keeps a completion beside an attached authorization to prove it cannot admit another link. */
+export async function attachTestBlueskyAuthorizationWithLiveCompletion(
+  flowId: string,
+): Promise<void> {
+  await using query = await beginTransaction()
+  await query(sql`/* attachTestBlueskyAuthorizationWithLiveCompletion */
+    UPDATE bluesky_link_authorizations SET attached_at = clock_timestamp() WHERE id = ${flowId}`)
+  await query.commit()
+}
