@@ -12,7 +12,7 @@ import {
   recordCopyrightEmailParse,
 } from '../../../services/copyright-notices/index.mts'
 import { admitCopyrightEmailCorrespondence } from '../../../services/copyright-notices/email-correspondence-admission.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../../../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '../../copyright-email-intake-link.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 
 export async function createTestCopyrightStaff(): Promise<PrivateUser> {

@@ -1,7 +1,7 @@
 import type pg from 'pg'
 import { writePool } from '@data-stores/psql'
 import { appendCopyrightEmailIntakeRecommendation } from '../services/copyright-notices/email-recommendations.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { markTestCopyrightNoticeErasedAndCommit } from './copyright-email-manual-association.mts'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 

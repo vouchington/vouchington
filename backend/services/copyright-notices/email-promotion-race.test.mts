@@ -22,7 +22,7 @@ import {
 } from './email-thread-ancestors.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 describe('copyright email promotion and threading serialization', () => {
   it('waits for a pending ancestor token claim before locking or linking its descendant', async () => {

@@ -3,7 +3,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '../services/users/types.mts'
 import sql from 'sql-template-strings'
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'
-import { copyrightJurisdictionPolicyLockKey } from '../services/copyright-notices/jurisdiction-policy.mts'
+import { copyrightJurisdictionPolicyLockKey } from './copyright-jurisdiction-policy-lock.mts'
 import { withApiRequestQueryOptions } from './api/server.mts'
 import { readCopyrightStaffQueueWindow, type QueuePage } from './copyright-staff-queue-walk.mts'
 

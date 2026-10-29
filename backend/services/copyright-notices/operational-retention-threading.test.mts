@@ -23,10 +23,8 @@ import {
 } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import {
-  linkCopyrightEmailIntakeToNotice,
-  recordCopyrightEmailThreadReferences,
-} from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
+import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { sweepCopyrightCaseThreads } from './operational-retention-threading.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000

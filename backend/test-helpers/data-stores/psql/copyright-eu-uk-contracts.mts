@@ -1,7 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { lockCopyrightJurisdictionPolicy } from '../../../services/copyright-notices/jurisdiction-policy.mts'
+import { lockCopyrightJurisdictionPolicy } from '../../copyright-jurisdiction-policy-lock.mts'
 
 export type CopyrightTerritorialContractShape = {
   accepted_at: Date | null
