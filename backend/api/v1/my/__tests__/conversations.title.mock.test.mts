@@ -114,20 +114,20 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   })
 
   it('returns 429 and does not call the model when the daily spend cap is breached', async () => {
-    await withReservedAiUsageDay(0, async () => {
-      const suffix = crypto.randomUUID().slice(0, 8)
-      const conv = await createConversation(user.id, '')
-      await createTestConversationMessage({
-        conversationId: conv.id,
-        createdById: user.id,
-        content: {
-          role: 'user',
-          content: `Hello, what is the weather? ${suffix}`,
-        },
-      })
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const suffix = crypto.randomUUID().slice(0, 8)
+    const conv = await createConversation(user.id, '')
+    await createTestConversationMessage({
+      conversationId: conv.id,
+      createdById: user.id,
+      content: {
+        role: 'user',
+        content: `Hello, what is the weather? ${suffix}`,
+      },
+    })
 
-      const request = createRequest()
-      await request.authenticateAs(user)
+    await withReservedAiUsageDay(0, async () => {
       await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(429)
 
       expect(generateJson).not.toHaveBeenCalled()
@@ -137,11 +137,11 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   it('returns 200 with the local "New Conversation" fallback for an empty conversation even when the spend cap is breached', async () => {
     // Reproduces #8773 Finding 3: the route's no-messages path never calls the model, so the
     // spend cap must not gate it -- a breached cap should never turn this free fallback into a 429.
-    await withReservedAiUsageDay(0, async () => {
-      const conv = await createConversation(user.id, '')
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const conv = await createConversation(user.id, '')
 
-      const request = createRequest()
-      await request.authenticateAs(user)
+    await withReservedAiUsageDay(0, async () => {
       const response = await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(200)
 
       expect(response.body.conversation.title).toBe('New Conversation')

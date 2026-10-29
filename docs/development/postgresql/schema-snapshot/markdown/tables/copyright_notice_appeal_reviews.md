@@ -51,3 +51,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_appeal_reviews_immutable`: `CREATE TRIGGER trigger_copyright_appeal_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
 - `trigger_copyright_appeal_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_appeal_reviews_require_actor BEFORE INSERT ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`

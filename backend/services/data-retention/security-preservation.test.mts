@@ -18,7 +18,7 @@ import { sourcePlan } from './security-record-plans.mts'
 describe('security evidence preservation', () => {
   it('uses six calendar years for rationale retention, including leap days', () => {
     expect(
-      sourcePlan('copyright_rationales_noncase', new Date('2032-02-29T12:34:56.000Z')).cutoffAt,
+      sourcePlan('copyright_rationales_attempts', new Date('2032-02-29T12:34:56.000Z')).cutoffAt,
     ).toEqual(new Date('2026-02-28T12:34:56.000Z'))
     expect(
       sourcePlan('copyright_rationales_erased', new Date('2030-03-01T12:34:56.000Z')).cutoffAt,
@@ -51,7 +51,7 @@ describe('security evidence preservation', () => {
     const now = new Date()
     const olderAt = new Date(Date.UTC(now.getUTCFullYear() - 7, 0, 1))
     const youngerAt = new Date(Date.UTC(now.getUTCFullYear() - 5, 0, 1))
-    const cutoff = sourcePlan('copyright_rationales_noncase', now).cutoffAt
+    const cutoff = sourcePlan('copyright_rationales_attempts', now).cutoffAt
     await using query = await beginTransaction()
     const [olderId, youngerId] = await insertTestRationaleAgePair(
       query,

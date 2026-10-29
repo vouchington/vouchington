@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
+import { persistRecoveredCopyrightAssessment } from './form-reviews-recovered-assessment.mts'
 import {
   queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
@@ -27,35 +28,27 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
     FROM copyright_notice_form_intake_reviews review
     JOIN copyright_notice_form_intakes intake
       ON intake.id = review.copyright_notice_form_intake_id
+    JOIN copyright_notice_submissions submission
+      ON submission.id = intake.copyright_notice_submission_id
     WHERE NOT review.is_accepted
       AND (
         review.reviewed_by_id IS NOT NULL AND (
-          NOT EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments assessment
-            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-              AND NOT assessment.is_substantially_compliant
-              AND assessment.assessed_by_id IS NOT NULL
-              AND NOT EXISTS (
-                SELECT 1 FROM copyright_notice_submission_assessments newer
-                WHERE newer.supersedes_assessment_id = assessment.id
-              )
-          ) OR EXISTS (
+          NOT (submission.current_assessment_is_substantially_compliant IS NOT DISTINCT FROM false
+            AND submission.current_assessed_by_id IS NOT NULL) OR EXISTS (
             SELECT 1 FROM copyright_restrictions restriction
-            JOIN copyright_notice_submission_assessments assessment
-              ON assessment.id = restriction.authorizing_assessment_id
-            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-              AND assessment.assessed_by_id IS NULL
-              AND assessment.copyright_notice_form_screening_id IS NOT NULL
+            JOIN copyright_notice_submission_assessment_identities authority
+              ON authority.id = restriction.authorizing_assessment_id
+            WHERE authority.copyright_notice_submission_id = submission.id
+              AND restriction.is_authorizing_assessment_automated
               AND restriction.lifted_at IS NULL
               AND restriction.human_review_action IS NULL
           )
         ) OR review.reviewed_by_id IS NULL AND EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments assessment
-          JOIN copyright_restrictions restriction
-            ON restriction.authorizing_assessment_id = assessment.id
-          WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-            AND assessment.assessed_by_id IS NULL
-            AND assessment.copyright_notice_form_screening_id IS NOT NULL
+          SELECT 1 FROM copyright_restrictions restriction
+          JOIN copyright_notice_submission_assessment_identities authority
+            ON authority.id = restriction.authorizing_assessment_id
+          WHERE authority.copyright_notice_submission_id = submission.id
+            AND restriction.is_authorizing_assessment_automated
             AND restriction.lifted_at IS NULL
             AND restriction.human_review_action IS NULL
         )
@@ -81,7 +74,9 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
   }>(sql`/* recoverRejectedCopyrightFormReviewEffect:state */
     SELECT intake.copyright_notice_id AS notice_id,
       intake.copyright_notice_submission_id AS submission_id, review.reviewed_at, review.reviewed_by_id,
-      assessment.id AS assessment_id, assessment.assessed_by_id, assessment.is_substantially_compliant
+      submission.current_assessment_identity_id AS assessment_id,
+      submission.current_assessed_by_id AS assessed_by_id,
+      submission.current_assessment_is_substantially_compliant AS is_substantially_compliant
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
@@ -89,12 +84,6 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     JOIN copyright_notice_form_intake_reviews review
       ON review.copyright_notice_form_intake_id = intake.id
       AND NOT review.is_accepted
-    LEFT JOIN copyright_notice_submission_assessments assessment
-      ON assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
-      )
     WHERE intake.id = ${intakeId}
     FOR UPDATE OF notice, submission, intake, review
   `)
@@ -107,30 +96,18 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     state.reviewed_by_id !== null &&
     (state.is_substantially_compliant !== false || state.assessed_by_id === null)
   ) {
-    const { rows: recoveredAssessment } = await transaction<{
-      id: string
-    }>(sql`/* recoverRejectedCopyrightFormReviewEffect:assessment */
-      INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
-        supersedes_assessment_id
-      ) VALUES (
-        ${state.submission_id}, ${state.reviewed_at}, ${state.reviewed_by_id}, false,
-        ${state.assessment_id}
-      ) RETURNING id
-    `)
-    await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:event */
-      INSERT INTO copyright_notice_lifecycle_changes (
-        copyright_notice_id, change_type, changed_by_id,
-        copyright_notice_submission_assessment_id, recovery_source
-      ) VALUES (
-        ${state.notice_id}, 'submission_assessed', ${state.reviewed_by_id},
-        ${recoveredAssessment[0]!.id}, 'durable_review'
-      )
-    `)
+    const recoveredAssessmentId = await persistRecoveredCopyrightAssessment(
+      transaction,
+      state.notice_id,
+      state.submission_id,
+      state.reviewed_at,
+      state.reviewed_by_id,
+      state.assessment_id,
+    )
     await recordClaimantMisuseEvent(transaction, {
       noticeId: state.notice_id,
       recordedAt: state.reviewed_at,
-      event: { outcome: 'notice_rejected', assessmentId: recoveredAssessment[0]!.id },
+      event: { outcome: 'notice_rejected', assessmentId: recoveredAssessmentId },
     })
   }
   await createCopyrightClaimantDecisionNoticeInTransaction(

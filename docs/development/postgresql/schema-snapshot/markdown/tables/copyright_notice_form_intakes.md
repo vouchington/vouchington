@@ -51,3 +51,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_form_intakes_immutable`: `CREATE TRIGGER trigger_copyright_form_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id')`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`

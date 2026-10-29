@@ -31,7 +31,7 @@ export async function cleanupSecuritySourcePageInTransaction(
     source === 'oauth_native_mints' ||
     source === 'oauth_clients' ||
     source === 'copyright_rationales_erased' ||
-    source === 'copyright_rationales_noncase'
+    source === 'copyright_rationales_attempts'
   const keyset = idKeyed
     ? '($2::uuid IS NULL OR target.id > $2::uuid)'
     : `($2::timestamptz IS NULL OR (${plan.keyAt}, target.id) > ($2::timestamptz, $3::uuid))`
@@ -43,7 +43,7 @@ export async function cleanupSecuritySourcePageInTransaction(
     : [plan.cutoffAt, cursor.cursor_at, cursor.cursor_id, batchSize + 1]
   const limitParameter = idKeyed ? '$3::integer' : '$4::integer'
   const needsAccountLocks =
-    source === 'copyright_rationales_noncase' ||
+    source === 'copyright_rationales_attempts' ||
     source === 'oauth_events' ||
     source === 'oauth_native_mints'
   const page = await query<{ id: string; key_at: string }>(
@@ -60,7 +60,7 @@ export async function cleanupSecuritySourcePageInTransaction(
   if (needsAccountLocks && scanned.length > 0) {
     const scannedIds = scanned.map(row => row.id)
     const lockedIds =
-      source === 'copyright_rationales_noncase'
+      source === 'copyright_rationales_attempts'
         ? await lockCopyrightRationaleRetentionPage(query, scannedIds)
         : await lockOAuthRetentionPageAccounts(
             query,
@@ -84,7 +84,7 @@ export async function cleanupSecuritySourcePageInTransaction(
       [plan.cutoffAt.toISOString()],
     )
   }
-  if (source === 'copyright_rationales_erased' || source === 'copyright_rationales_noncase') {
+  if (source === 'copyright_rationales_erased' || source === 'copyright_rationales_attempts') {
     await query(
       `/* authorizeCopyrightRationaleRetention */ SELECT set_config('app.copyright_rationale_retention_cutoff', $1, true)`,
       [plan.cutoffAt.toISOString()],

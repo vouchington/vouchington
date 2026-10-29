@@ -30,8 +30,7 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
     received_at: Date
     ai_guidance: boolean
   }>(sql`/* createCopyrightEmailIntakeResponseInTransaction:facts */
-    SELECT received_at, EXISTS (SELECT 1 FROM copyright_notice_email_intake_recommendations
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}) AS ai_guidance
+    SELECT received_at, recommendation_completed_at IS NOT NULL AS ai_guidance
     FROM copyright_notice_email_intakes WHERE id = ${input.intakeId}
   `)
   const rejectedText =
@@ -42,7 +41,7 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
   const deliveryKind: CopyrightEmailIntakeDeliveryKind = `email_intake_${input.responseKind}`
   await transaction(sql`/* createCopyrightEmailIntakeResponseInTransaction */
     INSERT INTO copyright_notice_delivery_work_items (
-      id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
+      id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (
       ${id}, ${input.intakeId}, 'correspondent', ${deliveryKind}, 'email',

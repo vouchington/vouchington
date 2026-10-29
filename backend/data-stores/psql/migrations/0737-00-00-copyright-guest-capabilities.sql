@@ -3,8 +3,18 @@
 -- thread correlation do not create a row.
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE copyright_notice_guest_capabilities (
+CREATE TABLE copyright_notice_guest_capability_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT copyright_guest_capability_identity_notice_key UNIQUE (id, copyright_notice_id)
+);
+CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice
+  ON copyright_notice_guest_capability_identities (copyright_notice_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_guest_capabilities (
+  id uuid PRIMARY KEY,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   token_hash text NOT NULL UNIQUE CHECK (char_length(token_hash) BETWEEN 1 AND 256),
   issued_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -13,6 +23,9 @@ CREATE TABLE copyright_notice_guest_capabilities (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT copyright_guest_capability_notice_key UNIQUE (id, copyright_notice_id),
+  CONSTRAINT fk_copyright_guest_capabilities__identity
+    FOREIGN KEY (id, copyright_notice_id)
+    REFERENCES copyright_notice_guest_capability_identities (id, copyright_notice_id) ON DELETE RESTRICT,
   CONSTRAINT copyright_guest_capability_expiry_cap
     CHECK (expires_at - uuid_extract_timestamp(id) <= interval '30 days')
 );
@@ -22,8 +35,37 @@ CREATE OR REPLACE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at
 BEFORE UPDATE ON copyright_notice_guest_capabilities
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE FUNCTION fn_update_copyright_guest_capability_activity() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    -- Expired unused capability material may retire; its completed lifetime stays on the case.
+    UPDATE copyright_notices notice
+    SET last_guest_capability_activity_at = GREATEST(
+      notice.last_guest_capability_activity_at, OLD.updated_at,
+      CASE WHEN OLD.revoked_at IS NULL THEN OLD.expires_at ELSE NULL END)
+    WHERE notice.id = OLD.copyright_notice_id;
+    RETURN OLD;
+  END IF;
+  -- Planned future expiry belongs to the live capability, not the monotonic activity clock.
+  UPDATE copyright_notices notice
+  SET last_guest_capability_activity_at = GREATEST(
+    notice.last_guest_capability_activity_at, NEW.updated_at)
+  WHERE notice.id = NEW.copyright_notice_id;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_record_copyright_guest_capability_activity
+AFTER INSERT OR UPDATE OR DELETE ON copyright_notice_guest_capabilities
+FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_guest_capability_activity();
+
 CREATE INDEX idx_copyright_notice_guest_capabilities__notice
   ON copyright_notice_guest_capabilities (copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_guest_capabilities__notice_updated
+  ON copyright_notice_guest_capabilities (copyright_notice_id, updated_at);
+CREATE INDEX idx_cpyrght_ntc_gst_cpblts__notice_expires_live
+  ON copyright_notice_guest_capabilities (copyright_notice_id, expires_at)
+  WHERE revoked_at IS NULL;
 CREATE INDEX idx_copyright_notice_guest_capabilities__issued_by
   ON copyright_notice_guest_capabilities (issued_by_id) WHERE issued_by_id IS NOT NULL;
 
@@ -37,7 +79,7 @@ ALTER TABLE copyright_notice_submissions
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_guest_capability_fk
   FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id)
-  REFERENCES copyright_notice_guest_capabilities (id, copyright_notice_id) ON DELETE RESTRICT NOT VALID;
+  REFERENCES copyright_notice_guest_capability_identities (id, copyright_notice_id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_guest_capability_fk;
 
@@ -48,7 +90,11 @@ CREATE TABLE copyright_notice_urgent_filings (
   classified_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(copyright_notice_submission_id)) VIRTUAL);
 
-COMMENT ON TABLE copyright_notice_guest_capabilities IS 'Hashed, expiring, revocable capability for one copyright notice. Possession of mail or a thread is not a row.';
+COMMENT ON TABLE copyright_notice_guest_capability_identities IS 'Retained identity of a guest capability cited by legal lifecycle history; never authorizes guest access.';
+COMMENT ON COLUMN copyright_notice_guest_capability_identities.id IS 'Original capability identity retained after its live token row is pruned.';
+COMMENT ON COLUMN copyright_notice_guest_capability_identities.copyright_notice_id IS 'Case scope of the retained capability identity.';
+COMMENT ON COLUMN copyright_notice_guest_capability_identities.created_at IS 'Issue time derived from the retained UUIDv7 capability identity.';
+COMMENT ON TABLE copyright_notice_guest_capabilities IS 'Live hashed, expiring, revocable capability for one copyright notice. Possession of mail or a thread is not a row.';
 COMMENT ON COLUMN copyright_notice_guest_capabilities.copyright_notice_id IS 'The one copyright notice this capability authorizes.';
 COMMENT ON COLUMN copyright_notice_guest_capabilities.token_hash IS 'Keyed digest of the guest capability token. The raw token is shown once and is never stored.';
 COMMENT ON COLUMN copyright_notice_guest_capabilities.issued_by_id IS 'Copyright staff member who issued this capability; NULL after account deletion.';

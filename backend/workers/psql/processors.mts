@@ -10,11 +10,19 @@ import {
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
-import { runDataRetentionCleanup, runVoteRetentionCleanupPage } from '@services/data-retention'
+import {
+  runCopyrightOperationalRetentionCleanup,
+  runDataRetentionCleanup,
+  runVoteRetentionCleanupPage,
+} from '@services/data-retention'
 import {
   unfinishedClassifierSweeps,
   unfinishedMembershipFamilies,
 } from './processors/retention-sweeps.mts'
+import {
+  enqueueVoteRetentionContinuationIfNeeded,
+  requireVoteRetentionSelection,
+} from './processors/vote-retention.mts'
 import { createHash } from 'node:crypto'
 import {
   enqueueAIRetentionContinuations,
@@ -35,11 +43,17 @@ import {
   type RefreshMaterializedViewData,
   type VoteRetentionContinuationData,
 } from '@queues/psql/types'
+import {
+  processCopyrightRetentionContinuation,
+  unfinishedCopyrightFamilies,
+} from './processors/copyright-retention.mts'
 
 type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
   createPartitions: typeof createMonthlyPartitions
   dataRetentionCleanup: typeof runDataRetentionCleanup
+  copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
+  enqueueDataRetentionCleanupContinuation: typeof enqueueDataRetentionCleanupContinuation
   enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
   voteRetentionCleanupPage: typeof runVoteRetentionCleanupPage
   enqueueDataRetentionContinuation: typeof enqueueDataRetentionContinuation
@@ -82,9 +96,17 @@ export default async function processPsql(
     case 'dataRetentionCleanup': {
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()
+      const copyrightFamilies = data?.continuation?.copyrightFamilies
+      if (copyrightFamilies) {
+        return processCopyrightRetentionContinuation(data!.continuation!, {
+          cleanup: dependencies?.copyrightRetentionCleanup,
+          enqueue: dependencies?.enqueueDataRetentionCleanupContinuation,
+        })
+      }
       const cleanup = dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup
       const result = data?.continuation
         ? await cleanup(getDataRetentionLimits(), {
+            activeCopyrightFamilies: [],
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
             ...(data.continuation.userPurge
@@ -100,9 +122,24 @@ export default async function processPsql(
       }
       const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
       const activeMembershipFamilies = unfinishedMembershipFamilies(result)
+      const activeCopyrightFamilies = unfinishedCopyrightFamilies(result)
       const userPurge = result.softDeletedUsers.hasMore
         ? result.softDeletedUsers.userPurge
         : undefined
+      if (!data?.continuation && activeCopyrightFamilies.length > 0) {
+        if (!jobId) throw new Error('Copyright retention continuation needs the current job ID')
+        const runId = createHash('sha256').update(jobId).digest('hex')
+        await (
+          dependencies?.enqueueDataRetentionCleanupContinuation ??
+          enqueueDataRetentionCleanupContinuation
+        )({
+          runId,
+          step: 1,
+          activeClassifierSweeps: [],
+          activeMembershipFamilies: [],
+          copyrightFamilies: activeCopyrightFamilies,
+        })
+      }
       if (
         activeClassifierSweeps.length > 0 ||
         activeMembershipFamilies.length > 0 ||
@@ -110,7 +147,10 @@ export default async function processPsql(
       ) {
         if (!jobId) throw new Error('Data retention continuation needs the current job ID')
         const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
-        await enqueueDataRetentionCleanupContinuation({
+        await (
+          dependencies?.enqueueDataRetentionCleanupContinuation ??
+          enqueueDataRetentionCleanupContinuation
+        )({
           runId,
           step: (data?.continuation?.step ?? 0) + 1,
           activeClassifierSweeps,
@@ -120,26 +160,27 @@ export default async function processPsql(
       }
       // Cleanup continuations rerun the same bounded families, so only the first run chains vote pages.
       if (!data?.continuation) {
-        await enqueueVoteRetentionContinuationIfNeeded(result, jobId, dependencies)
+        await enqueueVoteRetentionContinuationIfNeeded(
+          result,
+          jobId,
+          dependencies?.enqueueDataRetentionContinuation,
+        )
       }
       return result
     }
     case 'continueVoteRetentionCleanup': {
-      if (
-        !data ||
-        !Array.isArray(data.voteTables) ||
-        typeof data.userAgentStrings !== 'boolean' ||
-        typeof data.voteIntegrityDetails !== 'boolean'
-      ) {
-        throw new Error('continueVoteRetentionCleanup job requires family selection')
-      }
+      const selection = requireVoteRetentionSelection(data)
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()
       const result = await (dependencies?.voteRetentionCleanupPage ?? runVoteRetentionCleanupPage)(
         getDataRetentionLimits(),
-        data as VoteRetentionContinuationData,
+        selection,
       )
-      await enqueueVoteRetentionContinuationIfNeeded(result, jobId, dependencies)
+      await enqueueVoteRetentionContinuationIfNeeded(
+        result,
+        jobId,
+        dependencies?.enqueueDataRetentionContinuation,
+      )
       return result
     }
     case 'refreshMaterializedView': {
@@ -153,26 +194,4 @@ export default async function processPsql(
     default:
       throw new Error(`Unknown job: ${jobName}`)
   }
-}
-
-type VoteRetentionResult = Awaited<ReturnType<typeof runVoteRetentionCleanupPage>>
-
-async function enqueueVoteRetentionContinuationIfNeeded(
-  result: VoteRetentionResult,
-  jobId: string | undefined,
-  dependencies?: Partial<ProcessPsqlDependencies>,
-): Promise<void> {
-  const next: VoteRetentionContinuationData = {
-    voteTables: result.supersededVoteBallots.flatMap(page =>
-      page.hasMore ? [page.voteTable] : [],
-    ),
-    userAgentStrings: result.orphanedUserAgentStrings.hasMore,
-    voteIntegrityDetails: result.voteIntegrityDetails.hasMore,
-  }
-  if (next.voteTables.length === 0 && !next.userAgentStrings && !next.voteIntegrityDetails) return
-  if (!jobId) throw new Error('vote retention job requires an id for continuation')
-  await (dependencies?.enqueueDataRetentionContinuation ?? enqueueDataRetentionContinuation)(
-    jobId,
-    next,
-  )
 }

@@ -12,7 +12,6 @@ export async function readTestCopyrightAssessmentCreatedAt(submissionId: string)
   return rows[0].created_at
 }
 
-/** Appends a staff-entered submission that no moderator has reviewed or assessed yet. */
 export async function insertUnreviewedCopyrightSubmission(input: {
   noticeId: string
   kind: 'appeal' | 'counter_notice' | 'court_or_ccb_hold'
@@ -55,26 +54,36 @@ export async function insertOpenCopyrightDeadline(input: {
   targetId?: string
 }): Promise<string> {
   const earliestRestorationAt = new Date(input.escalationAt.getTime() - 4 * 24 * 60 * 60 * 1000)
-  const { rows } = await write<{ id: string }>(sql`/* insertOpenCopyrightDeadline */
+  const { rows } = await write<{
+    id: string
+    assessment_id: string
+    submission_id: string
+  }>(sql`/* insertOpenCopyrightDeadline */
     WITH submission AS (
       INSERT INTO copyright_notice_submissions (
         copyright_notice_id, kind, received_at, source_kind, body_ciphertext
       ) VALUES (
         ${input.noticeId}, 'counter_notice', CURRENT_TIMESTAMP, 'staff', ${`counter-${randomUUID()}`}
       ) RETURNING id
+    ), assessment_identity AS (
+      INSERT INTO copyright_notice_submission_assessment_identities (
+        copyright_notice_id, copyright_notice_submission_id
+      ) SELECT ${input.noticeId}, id FROM submission
+      RETURNING id, copyright_notice_submission_id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       )
-      SELECT id, CURRENT_TIMESTAMP, ${input.actorUserId}, true FROM submission
+      SELECT id, copyright_notice_submission_id, CURRENT_TIMESTAMP, ${input.actorUserId}, true
+        FROM assessment_identity
       RETURNING id, copyright_notice_submission_id
     ), assessment_target AS (
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
-        copyright_notice_submission_assessment_id, copyright_notice_target_id
+        copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
       ) SELECT id, ${input.targetId}::uuid FROM assessment WHERE ${input.targetId}::uuid IS NOT NULL
     ), deadline AS (
       INSERT INTO copyright_notice_deadlines (
-        copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
+        copyright_notice_id, qualifying_counter_notice_assessment_identity_id, earliest_restoration_at,
         escalation_at, restoration_deadline_at
       )
       SELECT ${input.noticeId}, id, ${earliestRestorationAt}, ${input.escalationAt},
@@ -82,16 +91,25 @@ export async function insertOpenCopyrightDeadline(input: {
       FROM assessment RETURNING id
     ), review AS (
       INSERT INTO copyright_notice_counter_notice_reviews (
-        copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+        copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
         copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       )
       SELECT assessment.copyright_notice_submission_id, assessment.id, deadline.id,
         CURRENT_TIMESTAMP, ${input.actorUserId}, true, ${`rationale-${randomUUID()}`}
       FROM assessment CROSS JOIN deadline
     )
-    SELECT id FROM deadline`)
+    SELECT deadline.id, assessment.id AS assessment_id,
+      assessment.copyright_notice_submission_id AS submission_id
+    FROM deadline CROSS JOIN assessment`)
   const deadlineId = rows[0]?.id
   if (!deadlineId) throw new Error('Copyright deadline was not inserted')
+  await write(sql`/* insertOpenCopyrightDeadline:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${rows[0]!.assessment_id},
+      current_assessment_is_substantially_compliant = true,
+      current_assessed_at = CURRENT_TIMESTAMP, current_assessed_by_id = ${input.actorUserId}
+    WHERE id = ${rows[0]!.submission_id}
+  `)
   return deadlineId
 }
 
@@ -176,7 +194,7 @@ export async function attachCopyrightPagingDeadlineTarget(input: {
         CURRENT_TIMESTAMP, 'confirm', imposed_by_id
         FROM copyright_restrictions WHERE id = ${input.restrictionId}
     ) INSERT INTO copyright_notice_counter_notice_assessment_targets (
-      copyright_notice_submission_assessment_id, copyright_notice_target_id
-    ) SELECT qualifying_counter_notice_assessment_id, ${input.targetId}
+      copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
+    ) SELECT qualifying_counter_notice_assessment_identity_id, ${input.targetId}
       FROM copyright_notice_deadlines WHERE id = ${input.deadlineId}`)
 }

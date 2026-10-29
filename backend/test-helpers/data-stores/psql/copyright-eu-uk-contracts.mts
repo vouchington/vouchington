@@ -75,15 +75,17 @@ export async function readTerritorialClockColumnNames(): Promise<string[]> {
  * table may remain. */
 export async function readTerritorialContractTableNames(): Promise<string[]> {
   const { rows } = await read<{ table_name: string }>(sql`/* readTerritorialContractTableNames */
-    SELECT table_name
-    FROM information_schema.tables
-    WHERE table_schema = 'public' AND (
-      table_name LIKE 'copyright_eu_%'
-      OR table_name LIKE 'copyright_uk_%'
-      OR table_name LIKE 'copyright_territorial_%'
-      OR table_name LIKE 'copyright_jurisdiction_policy_%'
-    )
-    ORDER BY table_name
+    SELECT relation.relname AS table_name
+    FROM pg_class relation
+    JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+    WHERE namespace.nspname = 'public' AND NOT relation.relispartition
+      AND relation.relkind IN ('r', 'p') AND (
+        relation.relname LIKE 'copyright_eu_%'
+        OR relation.relname LIKE 'copyright_uk_%'
+        OR relation.relname LIKE 'copyright_territorial_%'
+        OR relation.relname LIKE 'copyright_jurisdiction_policy_%'
+      )
+    ORDER BY relation.relname
   `)
   return rows.map(row => row.table_name)
 }

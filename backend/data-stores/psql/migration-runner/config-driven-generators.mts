@@ -53,6 +53,10 @@ const generators: Record<string, () => Promise<SqlGeneratorModule>> = {
     import('../config-driven/0635-00-05-seed-story-clustering-classifier.mts'),
   '0635-00-06-seed-autotagger-agent-classifier.mts': () =>
     import('../config-driven/0635-00-06-seed-autotagger-agent-classifier.mts'),
+  '0743-00-01-copyright-rationale-retention.mts': () =>
+    import('../config-driven/0743-00-01-copyright-rationale-retention.mts'),
+  '0737-00-01-copyright-history-partitions.mts': () =>
+    import('../config-driven/0737-00-01-copyright-history-partitions.mts'),
 }
 
 export async function readCanonicalConfigDrivenGenerator(file: string): Promise<string> {

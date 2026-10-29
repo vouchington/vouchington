@@ -46,6 +46,9 @@ export async function reviewCopyrightFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
+  // A review must enter the case before thread cleanup rechecks its blocker proof.
+  await transaction(sql`/* reviewCopyrightFormIntake:lockNotice */
+    SELECT id FROM copyright_notices WHERE id = ${intake.notice_id} FOR KEY SHARE`)
   const { rows: reviewRows } = await transaction<{ is_accepted: boolean }>(
     sql`/* reviewCopyrightFormIntake:existing */
       SELECT is_accepted FROM copyright_notice_form_intake_reviews
@@ -146,13 +149,11 @@ async function getCurrentAssessment(
     copyright_notice_form_screening_id: string | null
   }>(
     sql`/* reviewCopyrightFormIntake:assessment */
-      SELECT assessment.id, assessment.is_substantially_compliant, assessment.copyright_notice_form_screening_id
-      FROM copyright_notice_submission_assessments assessment
-      WHERE assessment.copyright_notice_submission_id = ${submissionId}
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments newer
-          WHERE newer.supersedes_assessment_id = assessment.id
-        )`,
+      SELECT current_assessment_identity_id AS id,
+        current_assessment_is_substantially_compliant AS is_substantially_compliant,
+        current_assessment_form_screening_id AS copyright_notice_form_screening_id
+      FROM copyright_notice_submissions
+      WHERE id = ${submissionId} AND current_assessment_identity_id IS NOT NULL`,
   )
   return rows[0] ?? null
 }

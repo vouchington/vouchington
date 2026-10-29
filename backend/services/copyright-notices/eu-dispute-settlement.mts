@@ -4,7 +4,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertBoundedText } from './territorial-fields.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
 export type EuDisputeSettlementResult =
   | 'decided_for_recipient'
@@ -38,17 +37,16 @@ export async function recordEuDisputeSettlementReferral(
     'referred_by_party is required',
   )
   await using transaction = await beginTransaction()
-  const parentQuery = sql`/* recordEuDisputeSettlementReferral:decision */
-    SELECT decision.id, receipt.requester_user_id
-    FROM copyright_territorial_decisions decision
+  const { rows } = await transaction<{ id: string; requester_user_id: string | null }>(sql`
+    /* recordEuDisputeSettlementReferral:decision */
+    SELECT notice.current_territorial_decision_identity_id AS id,
+      receipt.requester_user_id
+    FROM copyright_notices notice
     JOIN copyright_territorial_notice_receipts receipt
-      ON receipt.copyright_notice_id = decision.copyright_notice_id
-      AND receipt.jurisdiction = decision.jurisdiction
-    WHERE decision.copyright_notice_id = ${noticeId} AND decision.jurisdiction = 'eu_dsa'
-      AND `
-  parentQuery.append(territorialDecisionIsLiveSql())
-  parentQuery.append(sql` FOR UPDATE OF decision`)
-  const { rows } = await transaction<{ id: string; requester_user_id: string | null }>(parentQuery)
+      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
+    WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'
+      AND notice.current_territorial_decision_identity_id IS NOT NULL
+    FOR UPDATE OF notice`)
   const parent = rows[0]
   assert(parent, 404, 'EU copyright decision not found')
   if (input.referredByParty === 'notifier') {

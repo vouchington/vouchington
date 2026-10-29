@@ -132,7 +132,7 @@ describe('security record cleanup', () => {
     const now = new Date()
     const recordedAt = new Date(Date.UTC(now.getUTCFullYear() - 7, 0, 1))
     const rationaleId = await insertTestAccountCopyrightRationale(subject.id, actor.id, recordedAt)
-    const cutoff = sourcePlan('copyright_rationales_noncase', now).cutoffAt
+    const cutoff = sourcePlan('copyright_rationales_attempts', now).cutoffAt
     {
       await using eligibility = await beginTransaction()
       expect(await testRationaleRetentionEligible(eligibility, rationaleId, cutoff)).toBe(true)

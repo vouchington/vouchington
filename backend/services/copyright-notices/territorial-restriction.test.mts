@@ -57,7 +57,7 @@ describe('territorial restriction commitment and enforcement', () => {
       ).rejects.toThrow('temporary enforcement interruption')
       const decisions = await readTestTerritorialDecisions(scene.noticeId)
       expect(decisions).toHaveLength(1)
-      const assessmentId = decisions[0]?.copyright_notice_submission_assessment_id
+      const assessmentId = decisions[0]?.copyright_notice_submission_assessment_identity_id
       if (!assessmentId) throw new Error('Decision assessment was not committed')
       expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.targets).toHaveLength(1)
       expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(
@@ -147,7 +147,7 @@ describe('territorial restriction commitment and enforcement', () => {
         }),
       ).rejects.toThrow('second target still owed')
       const decision = (await readTestTerritorialDecisions(scene.noticeId))[0]
-      const assessmentId = decision?.copyright_notice_submission_assessment_id
+      const assessmentId = decision?.copyright_notice_submission_assessment_identity_id
       if (!assessmentId) throw new Error('Decision assessment was not committed')
       const before = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       expect(before?.targets).toHaveLength(2)

@@ -1,11 +1,7 @@
 import { read } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import {
-  aiGuidanceSql,
-  automatedAssessmentSql,
-  automaticRestrictionSql,
-} from './automated-assessment-sql.mts'
+import { aiGuidanceSql, automaticRestrictionSql } from './automated-assessment-sql.mts'
 import type { DsaCopyrightNoticeFigures } from './eu-reporting-figure-types.mts'
 import { DSA_COPYRIGHT_NOTICE_JURISDICTIONS } from './eu-reporting-population.mts'
 import { inAreaTrustedFlaggerMatchSql } from './trusted-flagger-match.mts'
@@ -40,14 +36,11 @@ export async function readDsaCopyrightNoticeFigures(
             WHERE target.copyright_notice_id = notice.id)
           ELSE 1 END AS items,
         (`)
-    .append(aiGuidanceSql('notice'))
-    .append(sql` OR EXISTS (
+    .append(aiGuidanceSql('notice')).append(sql` OR EXISTS (
           SELECT 1 FROM copyright_notice_submissions submission
-          JOIN copyright_notice_submission_assessments assessment
-            ON assessment.copyright_notice_submission_id = submission.id
           WHERE submission.copyright_notice_id = notice.id AND submission.kind = 'notice'
-            AND (`)
-    .append(automatedAssessmentSql('assessment')).append(sql`)
+            AND submission.current_assessment_form_screening_id IS NOT NULL
+            AND submission.current_assessment_is_substantially_compliant
         )) AS automated
       FROM copyright_notices notice
       WHERE notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])

@@ -83,11 +83,10 @@ export async function selectTerritorialStaffComplaintPages(
         SELECT request.copyright_territorial_decision_id AS decision_id, request.id,
           request.idempotency_key, request.filed_by,
           request.submitted_by_id, request.received_at, request.explanation_ciphertext,
-          redress_decision.id AS redress_decision_id, redress_decision.decided_at AS redress_decided_at,
-          redress_decision.staff_disposition, redress_decision.rationale_ciphertext
+          request.current_staff_decision_identity_id AS redress_decision_id,
+          request.decided_at AS redress_decided_at,
+          request.staff_disposition, request.rationale_ciphertext
         FROM copyright_territorial_redress_requests request
-        LEFT JOIN copyright_territorial_redress_decisions redress_decision
-          ON redress_decision.copyright_territorial_redress_request_id = request.id
         WHERE request.copyright_territorial_decision_id = listed.decision_id`
     if (options.afterId) statement.append(sql` AND request.id > ${options.afterId}`)
     statement.append(sql`

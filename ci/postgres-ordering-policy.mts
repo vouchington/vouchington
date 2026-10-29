@@ -56,6 +56,8 @@ export const expectedDirectiveInventory = [
   'backend/services/bedrock-embeddings-batch/orchestrator/save.mts:1',
   'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
   'backend/services/communities/list-items/add.mts:1',
+  // Delivery batches take sorted case locks before the ordered blocker generation rows.
+  'backend/services/copyright-notices/delivery-intent-batch.mts:1',
   'backend/services/crawl-chunks/create.mts:1',
   // Replay cleanup locks the floor before an ordered ledger page and waits on older rows.
   'backend/services/data-retention/cleanup-activitypub-replay.mts:1',

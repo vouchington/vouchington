@@ -164,9 +164,8 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
   })
 
   it('returns 429 and does not call the provider when the daily spend cap is breached', async () => {
+    const { testRun } = await createPrompt()
     await withReservedAiUsageDay(0, async () => {
-      const { testRun } = await createPrompt()
-
       await testRun({ text: 'Sample content to moderate' }).expect(429)
 
       expect(provider).not.toHaveBeenCalled()

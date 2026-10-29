@@ -1,6 +1,7 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
 import { AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './ai-retention-uuid-allowlists.mts'
 import { CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './classifier-run-allowlists.mts'
+import { COPYRIGHT_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './copyright-retention-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
 import { MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS } from './moderation-cleanup-uuid-allowlists.mts'
@@ -21,9 +22,14 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...VOTE_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
+  ...COPYRIGHT_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   ...RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS,
   ...TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS,
+  [
+    'copyright_notice_email_thread_retirements.retired_before_intake_bound',
+    'Synthetic exclusive UUIDv7 intake-age boundary blocks replay of retired sources, not a relation.',
+  ],
   [
     'user_rss_feed_import_row_discoveries.generation',
     'Opaque per-attempt crawl outcome fence; not a durable relationship.',

@@ -2,6 +2,7 @@ import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations
 import { buildUnboundedUnpartitionedTables as buildPlatformUnboundedTables } from '@vouchington/utils/schema-growth'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
 import { RETAINED_RELATION_GROWTH_POLICIES } from './schema-growth-retained-identities.mts'
+import { COPYRIGHT_RETENTION_UNBOUNDED_TABLES } from './schema-growth-classification-copyright.mts'
 const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'communities',
   'conversations',
@@ -127,6 +128,7 @@ export function buildUnboundedUnpartitionedTables(
         'copyright_decision_rationales',
         'Admitted legal decision attempts grow with case and review activity; preservation holds can extend the six-calendar-year retention window, while target and retention indexes keep reads selective.',
       ],
+      ...COPYRIGHT_RETENTION_UNBOUNDED_TABLES,
       [
         'oauth_grant_retention_anchors',
         'One non-authorizing retained identity per OAuth grant; live grants persist, and ended anchors remain until consent evidence expires.',

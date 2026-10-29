@@ -11,6 +11,7 @@ import sql from 'sql-template-strings'
 import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import {
   copyrightEmailIntakePurpose,
+  ErasedCopyrightEmailIntakeReplay,
   type CopyrightEmailIntake,
   type CopyrightEmailIntakeForAgent,
 } from './email-intakes.mts'
@@ -43,9 +44,16 @@ export async function recordCopyrightEmailParse(
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   await using transaction = await beginTransaction()
   // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
-  await transaction(sql`/* recordCopyrightEmailParse:lock */
-    SELECT id FROM copyright_notice_email_intakes WHERE id = ${intake.id} FOR UPDATE
+  const { rows: liveRows } = await transaction<{
+    id: string
+  }>(sql`/* recordCopyrightEmailParse:lock */
+    SELECT id FROM copyright_notice_email_intakes
+    WHERE id = ${intake.id} AND raw_storage_object_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = ${intake.id} AND receipt.erased_at IS NULL)
+    FOR UPDATE
   `)
+  if (liveRows.length === 0) throw new ErasedCopyrightEmailIntakeReplay()
   const { rowCount } = await transaction(sql`/* recordCopyrightEmailParse */
     INSERT INTO copyright_notice_email_intake_parses (
       copyright_notice_email_intake_id, status, sender_email_ciphertext,
@@ -90,8 +98,8 @@ export async function recordCopyrightEmailParse(
       await transaction<CopyrightEmailSesVerdicts>(sql`/* recordCopyrightEmailParse:receiptEligibility */
       SELECT spf_verdict AS spf, dkim_verdict AS dkim, dmarc_verdict AS dmarc, spam_verdict AS spam, virus_verdict AS virus
       FROM copyright_notice_email_intakes WHERE id = ${intake.id}
-        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews
-          WHERE copyright_notice_email_intake_id = ${intake.id})
+        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+          WHERE receipt.id = ${intake.id} AND receipt.review_decision IS NULL)
     `)
     if (verdicts[0] && isAuthenticatedCopyrightEmail(verdicts[0]))
       await createCopyrightEmailIntakeResponseInTransaction(
@@ -139,10 +147,12 @@ export async function getCopyrightEmailIntakeForAgent(
         parse.sender_email_ciphertext, parse.sender_name_ciphertext,
         parse.subject_ciphertext, parse.body_ciphertext
       FROM copyright_notice_email_intakes intake
+      JOIN copyright_notice_email_intake_receipts receipt
+        ON receipt.id = intake.id AND receipt.erased_at IS NULL
       LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
       JOIN copyright_notice_email_intake_parses parse
         ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
-      WHERE intake.id = ${intakeId} LIMIT 1`,
+      WHERE intake.id = ${intakeId} AND intake.raw_storage_object_id IS NOT NULL LIMIT 1`,
   )
   const intake = rows[0]
   if (!intake) {

@@ -1,5 +1,4 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tokens.mts'
 
 /**
@@ -10,9 +9,9 @@ import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tok
  * - `hex64`: a 64-character lookup token becomes a per-row digest, NULL stays NULL.
  * - `digest`: a 32-byte identity digest becomes a per-row digest.
  */
-type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
+export type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
 
-type CopyrightRetentionErasureTable = {
+export type CopyrightRetentionErasureTable = {
   table: string
   columns: Record<string, CopyrightRetentionErasureKind>
   /** The rows of the table that belong to one notice. */
@@ -38,6 +37,8 @@ const emailIntakesOf = (id: string) =>
     WHERE copyright_notice_id = ${id})`
 const viaEmailIntakes = (id: string) =>
   sql`copyright_notice_email_intake_id IN `.append(emailIntakesOf(id))
+const viaEmailReceipts = (id: string) =>
+  sql`copyright_notice_email_intake_receipt_id IN `.append(emailIntakesOf(id))
 const table = (
   name: string,
   columns: CopyrightRetentionErasureTable['columns'],
@@ -53,6 +54,8 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
       claimant_display_name: 'redact',
       claimant_contact_ciphertext: 'redact',
       work_description: 'redact',
+      territorial_rationale_ciphertext: 'redact',
+      territorial_public_explanation_ciphertext: 'redact',
     },
     id => sql`id = ${id}`,
   ),
@@ -75,8 +78,23 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   ),
   table('copyright_notice_form_intake_reviews', { rationale_ciphertext: 'redact' }, viaFormIntakes),
   table('copyright_notice_evidence_artifacts', { storage_object_id: 'null' }, viaSubmissions),
-  table('copyright_notice_email_intakes', { raw_storage_object_id: 'null' }, id =>
-    sql`id IN `.append(emailIntakesOf(id)),
+  table(
+    'copyright_notice_email_intake_receipts',
+    { review_rationale_ciphertext: 'redact' },
+    id =>
+      sql`id IN (SELECT own_link.copyright_notice_email_intake_id
+      FROM copyright_notice_email_intake_notice_links own_link
+      WHERE own_link.copyright_notice_id = ${id}
+        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other_link
+          WHERE other_link.copyright_notice_email_intake_id = own_link.copyright_notice_email_intake_id
+            AND other_link.copyright_notice_id <> ${id}
+            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
+              WHERE erased.copyright_notice_id = other_link.copyright_notice_id)))`,
+  ),
+  table(
+    'copyright_notice_email_intakes',
+    { raw_storage_object_id: 'null', current_recommendation_output_ciphertext: 'redact' },
+    id => sql`id IN `.append(emailIntakesOf(id)),
   ),
   table(
     'copyright_notice_email_intake_parses',
@@ -102,16 +120,20 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     exclusiveCaseThreadTokenScopeSql,
   ),
   table('copyright_notice_email_thread_references', { token_id: 'null' }, viaEmailIntakes),
-  table('copyright_notice_email_intake_notice_links', { matched_token_id: 'null' }),
+  table('copyright_notice_email_intake_notice_links', {
+    matched_token_id: 'null',
+    correspondence_rationale_ciphertext: 'redact',
+    correspondence_manual_fallback_reason_ciphertext: 'redact',
+  }),
   table(
     'copyright_notice_email_intake_recommendations',
     { structured_output_ciphertext: 'redact' },
-    viaEmailIntakes,
+    viaEmailReceipts,
   ),
   table(
     'copyright_notice_email_intake_reviews',
     { rationale_ciphertext: 'redact' },
-    viaEmailIntakes,
+    viaEmailReceipts,
   ),
   table('copyright_notice_email_correspondence_reviews', {
     rationale_ciphertext: 'redact',
@@ -131,6 +153,12 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     'copyright_restriction_administrator_lifts',
     { rationale_ciphertext: 'redact' },
     viaRestrictions,
+  ),
+  table(
+    'copyright_restrictions',
+    { administrator_lift_rationale_ciphertext: 'redact' },
+    id =>
+      sql`copyright_notice_target_id IN (SELECT id FROM copyright_notice_targets WHERE copyright_notice_id = ${id})`,
   ),
   table(
     'copyright_notice_counter_notice_reviews',
@@ -160,33 +188,10 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
       sql`copyright_notice_delivery_work_item_id IN (SELECT id FROM copyright_notice_delivery_work_items
         WHERE copyright_notice_id = ${id})`,
   ),
-  table('copyright_notice_lifecycle_change_rationales', { review_rationale_ciphertext: 'redact' }),
+  table('copyright_notice_lifecycle_changes', { review_rationale_ciphertext: 'redact' }),
   table('copyright_decision_rationales', { rationale_ciphertext: 'redact' }, id =>
-    sql`copyright_notice_id = ${id} OR copyright_notice_email_intake_id IN `.append(
+    sql`copyright_notice_id = ${id} OR copyright_notice_email_intake_receipt_id IN `.append(
       emailIntakesOf(id),
     ),
   ),
 ]
-
-const OVERWRITE: Record<CopyrightRetentionErasureKind, (column: string) => string> = {
-  redact: column =>
-    `CASE WHEN ${column} IS NULL THEN NULL ELSE '${COPYRIGHT_ERASED_CIPHERTEXT}' END`,
-  null: () => 'NULL',
-  hex64: column =>
-    `CASE WHEN ${column} IS NULL THEN NULL
-      ELSE encode(sha256(convert_to('erased:' || id::text, 'UTF8')), 'hex') END`,
-  digest: () => `sha256(convert_to('erased:' || id::text, 'UTF8'))`,
-}
-
-/** The in-place overwrite of one table's rows for a notice. Names come only from the spec above. */
-export function eraseCopyrightRetentionTableSql(
-  spec: CopyrightRetentionErasureTable,
-  noticeId: string,
-): SQLStatement {
-  const assignments = Object.entries(spec.columns)
-    .map(([column, kind]) => `${column} = ${OVERWRITE[kind](column)}`)
-    .join(', ')
-  return sql`/* eraseCopyrightRetentionTable */`
-    .append(`\n    UPDATE ${spec.table} SET ${assignments} WHERE `)
-    .append(spec.scope(noticeId))
-}

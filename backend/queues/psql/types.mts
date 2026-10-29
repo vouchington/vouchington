@@ -61,6 +61,18 @@ export const AI_RETENTION_FAMILIES = [
 export type AIRetentionFamily = (typeof AI_RETENTION_FAMILIES)[number]
 export type AIRetentionContinuationData = { family: AIRetentionFamily }
 
+export const COPYRIGHT_RETENTION_FAMILIES = [
+  'copyrightFormScreeningAttempts',
+  'copyrightActionAttempts',
+  'copyrightDeliveryAttempts',
+  'copyrightGuestCapabilities',
+  'copyrightUnlinkedEmailIntakes',
+  'copyrightCaseThreads',
+  'copyrightOrphanEmailThreadTokens',
+] as const
+
+export type CopyrightRetentionFamily = (typeof COPYRIGHT_RETENTION_FAMILIES)[number]
+
 /** UTC calendar boundaries for one operator-managed, half-open UUIDv7 batch range. */
 export type ClassifierPartitionRange = {
   fromDate: string
@@ -79,6 +91,8 @@ export type PsqlRetentionJobData = {
     step: number
     activeClassifierSweeps: string[]
     activeMembershipFamilies: string[]
+    /** A copyright continuation runs only these pending families, without another daily sweep. */
+    copyrightFamilies?: CopyrightRetentionFamily[]
     /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
     userPurge?: { userId: string; communityId: string; afterModeratorId: string }
   }

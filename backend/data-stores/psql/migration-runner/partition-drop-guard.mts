@@ -4,6 +4,7 @@ import {
 } from '@vouchington/postgres/partitions'
 import type { PartitionDropPolicy } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
+import { copyrightHistoryHoldProbe } from './copyright-history-hold-probe.mts'
 
 export type PartitionDropRefusal =
   | 'no-declared-retention'
@@ -30,14 +31,20 @@ export function getPartitionDropAgeRefusal(
   referenceDate: Date,
 ): PartitionDropRefusal | null {
   const minimum = policy?.minimumRetentionDays
-  if (
-    minimum == null ||
-    !Number.isFinite(minimum) ||
-    minimum < 0 ||
-    !candidate.upperBound ||
-    !Number.isFinite(candidate.upperBound.getTime())
-  )
+  const minimumMonths = policy?.minimumRetentionMonths
+  if (!candidate.upperBound || !Number.isFinite(candidate.upperBound.getTime()))
     return 'no-declared-retention'
+  if (!Number.isFinite(referenceDate.getTime())) return 'no-declared-retention'
+  if (minimumMonths !== undefined) {
+    if (!Number.isSafeInteger(minimumMonths) || minimumMonths < 0) return 'no-declared-retention'
+    const cutoff = Date.UTC(
+      referenceDate.getUTCFullYear(),
+      referenceDate.getUTCMonth() - minimumMonths,
+      1,
+    )
+    return candidate.upperBound.getTime() > cutoff ? 'inside-retention' : null
+  }
+  if (minimum == null || !Number.isFinite(minimum) || minimum < 0) return 'no-declared-retention'
   const cutoff = referenceDate.getTime() - minimum * 86_400_000
   return candidate.upperBound.getTime() > cutoff ? 'inside-retention' : null
 }
@@ -74,6 +81,9 @@ export async function getPartitionDropStatusRefusals(
             WHERE candidate_row.${column} = hold.account_user_id LIMIT 1)
         LIMIT 1
       ) THEN 'legal-hold'`)
+    }
+    if (policy.copyrightHistory) {
+      checks.push(`WHEN ${copyrightHistoryHoldProbe(candidate.table, partition)} THEN 'legal-hold'`)
     }
     const inFlightChecks = (policy.inFlightPredicates ?? []).map(
       predicate => `EXISTS (SELECT 1 FROM ${partition} WHERE ${predicate} LIMIT 1)`,
@@ -125,6 +135,12 @@ export async function getPartitionDropRefusal(
           LIMIT 1
         )
       LIMIT 1`)
+    if (rows.length > 0) return 'legal-hold'
+  }
+
+  if (policy.copyrightHistory) {
+    const { rows } = await query(`/* getPartitionDropRefusal:copyrightLegalHold */
+      SELECT 1 WHERE ${copyrightHistoryHoldProbe(candidate.table, partition)}`)
     if (rows.length > 0) return 'legal-hold'
   }
 

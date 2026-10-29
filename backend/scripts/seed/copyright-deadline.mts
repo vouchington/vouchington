@@ -52,6 +52,11 @@ export async function seedCopyrightDeadline(input: {
         ${encryptSecret(JSON.stringify(COUNTER_NOTICE), copyrightSubmissionPurpose(submissionId))}
       )
     `)
+    await transaction(sql`/* seedCopyrightDeadline:assessmentIdentity */
+      INSERT INTO copyright_notice_submission_assessment_identities (
+        id, copyright_notice_id, copyright_notice_submission_id
+      ) VALUES (${assessmentId}, ${input.noticeId}, ${submissionId})
+    `)
     await transaction(sql`/* seedCopyrightDeadline:assessment */
       INSERT INTO copyright_notice_submission_assessments (
         id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
@@ -60,9 +65,17 @@ export async function seedCopyrightDeadline(input: {
         ${input.reviewerId}, true
       )
     `)
+    await transaction(sql`/* seedCopyrightDeadline:currentAssessment */
+      UPDATE copyright_notice_submissions
+      SET current_assessment_identity_id = ${assessmentId},
+        current_assessment_is_substantially_compliant = true,
+        current_assessed_at = ${now}::timestamptz - INTERVAL '19 days',
+        current_assessed_by_id = ${input.reviewerId}
+      WHERE id = ${submissionId}
+    `)
     await transaction(sql`/* seedCopyrightDeadline:deadline */
       INSERT INTO copyright_notice_deadlines (
-        id, copyright_notice_id, qualifying_counter_notice_assessment_id,
+        id, copyright_notice_id, qualifying_counter_notice_assessment_identity_id,
         earliest_restoration_at, escalation_at, restoration_deadline_at
       ) VALUES (
         ${deadlineId}, ${input.noticeId}, ${assessmentId},
@@ -72,7 +85,7 @@ export async function seedCopyrightDeadline(input: {
     `)
     await transaction(sql`/* seedCopyrightDeadline:counterNoticeReview */
       INSERT INTO copyright_notice_counter_notice_reviews (
-        copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+        copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
         copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       ) VALUES (
         ${submissionId}, ${assessmentId}, ${deadlineId}, ${now}::timestamptz - INTERVAL '19 days',

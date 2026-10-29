@@ -92,6 +92,9 @@ export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.
 export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'
 export { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
+export { sweepCopyrightOperationalRetention } from './operational-retention.mts'
+export { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
+export { sweepCopyrightCaseThreads } from './operational-retention-threading.mts'
 export {
   currentUserCanApproveCopyrightJurisdictionPolicy,
   getCopyrightJurisdictionAvailability,

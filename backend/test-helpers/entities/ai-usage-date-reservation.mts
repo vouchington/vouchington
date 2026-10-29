@@ -3,8 +3,9 @@ import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const TEST_AI_USAGE_WINDOW_START_MS = Date.parse('8000-01-01T00:00:00.000Z')
-const TEST_AI_USAGE_WINDOW_END_MS = Date.parse('9000-01-01T00:00:00.000Z')
+// Historical slots isolate global quota totals without advancing shared UUIDv7 monotonic state.
+const TEST_AI_USAGE_WINDOW_START_MS = Date.parse('1990-01-01T00:00:00.000Z')
+const TEST_AI_USAGE_WINDOW_END_MS = Date.parse('2010-01-01T00:00:00.000Z')
 const TEST_AI_USAGE_MAX_LOCK_ATTEMPTS = 16
 const TEST_AI_USAGE_CONTROL_SLOT = 16
 const TEST_AI_USAGE_SLOT_DAYS = 3

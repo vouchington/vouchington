@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { createPartitionRetirementFailureFixture } from '@voucha/test-helpers/partition-retirement-failure'
+import {
+  createCopyrightPartitionRetirementRecorder,
+  createPartitionRetirementFailureFixture,
+} from '@voucha/test-helpers/partition-retirement-failure'
 import { write } from '../setup.mts'
+import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
   cleanupPartitions,
@@ -49,6 +53,66 @@ describe('monthly partition retirement', () => {
     expect(outcomes.length).toBeGreaterThan(0)
     expect(outcomes.every(outcome => outcome.outcome === 'refused')).toBe(true)
     expect(outcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
+  })
+
+  it('discovers bootstrapped copyright monthly children and preserves all ten inside six years', async () => {
+    const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
+    const candidates = await listMonthlyDropCandidates(write)
+    const copyright = candidates.filter(candidate => tables.includes(candidate.table))
+    expect(new Set(copyright.map(candidate => candidate.table))).toEqual(new Set(tables))
+    expect(copyright.every(candidate => candidate.upperBound instanceof Date)).toBe(true)
+
+    const outcomes = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'))
+    const copyrightOutcomes = outcomes.filter(outcome => tables.includes(outcome.table))
+    expect(copyrightOutcomes).toHaveLength(copyright.length)
+    expect(copyrightOutcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
+  })
+
+  it('routes all ten copyright children through guarded cleanup only at 72 calendar months', async () => {
+    const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
+    const before = createCopyrightPartitionRetirementRecorder(tables)
+    const refusals = await cleanupPartitions(
+      new Date('2026-02-28T23:59:59.999Z'),
+      before.query,
+      before.begin,
+    )
+    expect(refusals).toHaveLength(tables.length)
+    expect(refusals.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
+    expect(
+      before.statements.some(statement => statement.includes('retireMonthlyPartition:drop')),
+    ).toBe(false)
+
+    const boundary = createCopyrightPartitionRetirementRecorder(tables)
+    const routed = await cleanupPartitions(
+      new Date('2026-03-01T00:00:00.000Z'),
+      boundary.query,
+      boundary.begin,
+    )
+    expect(routed).toHaveLength(tables.length)
+    expect(routed.every(outcome => outcome.outcome === 'dropped')).toBe(true)
+    const holdLocks = boundary.statements.flatMap((statement, index) =>
+      statement.includes('cleanupPartitions:lockHolds') ? [index] : [],
+    )
+    const holdChecks = boundary.statements.flatMap((statement, index) =>
+      statement.includes('getPartitionDropRefusal:copyrightLegalHold') ? [index] : [],
+    )
+    const partyLocks = boundary.statements.flatMap((statement, index) =>
+      statement.includes('cleanupPartitions:lockCopyrightParties') ? [index] : [],
+    )
+    const parentLocks = boundary.statements.flatMap((statement, index) =>
+      statement.includes('cleanupPartitions:lockParent') ? [index] : [],
+    )
+    expect(partyLocks).toHaveLength(tables.length)
+    expect(partyLocks.every((index, position) => index < parentLocks[position]!)).toBe(true)
+    expect(holdLocks).toHaveLength(tables.length)
+    expect(holdChecks).toHaveLength(tables.length)
+    expect(holdLocks.every((index, position) => index < holdChecks[position]!)).toBe(true)
+    expect(
+      boundary.statements.filter(statement => statement.includes('retireMonthlyPartition:detach')),
+    ).toHaveLength(tables.length)
+    expect(
+      boundary.statements.filter(statement => statement.includes('retireMonthlyPartition:drop')),
+    ).toHaveLength(tables.length)
   })
 
   it('refuses retirement and rolls back owned writes when acquiring its lock fails', async () => {

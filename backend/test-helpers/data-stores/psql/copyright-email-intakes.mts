@@ -13,7 +13,7 @@ export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
   }>(sql`/* readCopyrightEmailIntakeReview */
     SELECT decision, promoted_copyright_notice_id
     FROM copyright_notice_email_intake_reviews
-    WHERE copyright_notice_email_intake_id = ${intakeId}`)
+    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}`)
   return rows
 }
 
@@ -39,7 +39,7 @@ export async function readCopyrightEmailIntakeReviewRecord(intakeId: string): Pr
       copyright_notice_email_intake_recommendation_id AS recommendation_id,
       promoted_copyright_notice_id
     FROM copyright_notice_email_intake_reviews
-    WHERE copyright_notice_email_intake_id = ${intakeId}`)
+    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}`)
   return rows
 }
 
@@ -86,7 +86,7 @@ export async function readCopyrightEmailIntakeResponses(intakeId: string): Promi
   }>(sql`/* readCopyrightEmailIntakeResponses */
     SELECT id, delivery_kind, state
     FROM copyright_notice_delivery_work_items
-    WHERE copyright_notice_email_intake_id = ${intakeId}`)
+    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}`)
   return rows
 }
 
@@ -114,7 +114,7 @@ export async function readCopyrightEmailIntakeReplyTiming(intakeId: string, inte
   }>(sql`/* readCopyrightEmailIntakeReplyTiming */
     SELECT failed_at, bounced_at, CURRENT_TIMESTAMP AS observed_at
     FROM copyright_notice_delivery_work_items
-    WHERE id = ${intentId} AND copyright_notice_email_intake_id = ${intakeId}
+    WHERE id = ${intentId} AND copyright_notice_email_intake_receipt_id = ${intakeId}
       AND delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')`)
   const timing = rows[0]
   if (!timing) throw new Error('Owned copyright email reply was not found')

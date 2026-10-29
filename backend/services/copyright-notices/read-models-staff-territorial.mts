@@ -4,7 +4,6 @@ import { decryptCopyrightText } from './erased-ciphertext.mts'
 import type { CopyrightStaffTerritorialCase } from './read-models-staff-territorial-types.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { selectTerritorialStaffRecipients } from './read-models-staff-territorial-recipients.mts'
 import { selectTerritorialStaffComplaintPages } from './read-models-staff-territorial-complaints.mts'
 import { selectEuStaffSettlementPages } from './read-models-eu-settlements.mts'
@@ -47,33 +46,26 @@ export async function selectStaffTerritorialCases(
         EXISTS (SELECT 1 FROM copyright_territorial_escalations escalation
           WHERE escalation.copyright_territorial_notice_acknowledgment_id = acknowledgment.id
         ) AS escalated,
-        decision.id AS decision_id, decision.outcome, decision.decided_at,
-        decision.rationale_ciphertext, decision.public_explanation_ciphertext,
-        CASE WHEN decision.outcome = 'no_action' THEN reopened.decided_at ELSE NULL END AS reopened_at
+        notice.current_territorial_decision_identity_id AS decision_id,
+        notice.territorial_decision_outcome AS outcome,
+        notice.territorial_decided_at AS decided_at,
+        notice.territorial_rationale_ciphertext AS rationale_ciphertext,
+        notice.territorial_public_explanation_ciphertext AS public_explanation_ciphertext,
+        CASE WHEN notice.territorial_decision_outcome = 'no_action'
+          THEN reopened.decided_at ELSE NULL END AS reopened_at
       FROM copyright_territorial_notice_receipts receipt
       JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
       LEFT JOIN copyright_territorial_notice_acknowledgments acknowledgment
         ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
       LEFT JOIN LATERAL (
-        SELECT decision.id, decision.outcome, decision.decided_at,
-          decision.rationale_ciphertext, decision.public_explanation_ciphertext
-        FROM copyright_territorial_decisions decision
-        WHERE decision.copyright_notice_id = receipt.copyright_notice_id
-          AND decision.jurisdiction = receipt.jurisdiction AND `.append(
-      territorialDecisionIsLiveSql(),
-    ).append(sql` LIMIT 1
-      ) decision ON true
-      LEFT JOIN LATERAL (
-        SELECT min(redress.decided_at) AS decided_at
+        SELECT min(request.decided_at) AS decided_at
         FROM copyright_territorial_redress_requests request
-        JOIN copyright_territorial_redress_decisions redress
-          ON redress.copyright_territorial_redress_request_id = request.id
-        WHERE request.copyright_territorial_decision_id = decision.id
-          AND redress.staff_disposition = 'revoke'
+        WHERE request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
+          AND request.staff_disposition = 'revoke'
       ) reopened ON true
       WHERE receipt.copyright_notice_id = ANY(${noticeIds}::uuid[])
         AND receipt.jurisdiction = notice.jurisdiction
-      ORDER BY receipt.copyright_notice_id`),
+      ORDER BY receipt.copyright_notice_id`,
   )
   const receipts = new Map<string, (typeof rows)[number]>()
   for (const row of rows) if (!receipts.has(row.notice_id)) receipts.set(row.notice_id, row)

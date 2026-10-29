@@ -174,7 +174,8 @@ describe('ordinary copyright hold restoration', () => {
       ).resolves.toBe('blocked')
       if (authority === 'superseded') {
         const assessment = applied?.assessments.find(
-          record => record.id === applied.deadlines[0]?.qualifying_counter_notice_assessment_id,
+          record =>
+            record.id === applied.deadlines[0]?.qualifying_counter_notice_assessment_identity_id,
         )
         if (!assessment) throw new Error('Original counter-notice assessment disappeared')
         await appendCopyrightSubmissionAssessment({

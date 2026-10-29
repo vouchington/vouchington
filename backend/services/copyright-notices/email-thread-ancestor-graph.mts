@@ -15,13 +15,13 @@ export async function readBoundedCopyrightEmailAncestorIds(
     WITH RECURSIVE reached(reply_id, ancestor_id) AS (
       SELECT ${replyId}::uuid, ${replyId}::uuid
       UNION
-      SELECT edge.reply_message_intake_id, edge.ancestor_message_intake_id
+      SELECT edge.reply_message_intake_receipt_id, edge.ancestor_message_intake_receipt_id
       FROM reached child
       JOIN LATERAL (
-        SELECT reply_message_intake_id, ancestor_message_intake_id
+        SELECT reply_message_intake_receipt_id, ancestor_message_intake_receipt_id
         FROM copyright_notice_email_message_ancestors
-        WHERE reply_message_intake_id = child.ancestor_id
-        ORDER BY ancestor_message_intake_id
+        WHERE reply_message_intake_receipt_id = child.ancestor_id
+        ORDER BY ancestor_message_intake_receipt_id
         LIMIT ${maxRows + 1}
       ) edge ON true
     )

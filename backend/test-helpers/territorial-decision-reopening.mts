@@ -80,7 +80,7 @@ export async function readTerritorialDecisionReopeningFacts(
     await Promise.all([
       read<TerritorialDecisionReopeningFacts['decisions'][number]>(sql`
         /* readTerritorialDecisionReopeningFacts:decisions */
-        SELECT id, outcome, copyright_notice_submission_assessment_id AS assessment_id,
+        SELECT id, outcome, copyright_notice_submission_assessment_identity_id AS assessment_id,
           supersedes_decision_id
         FROM copyright_territorial_decisions
         WHERE copyright_notice_id = ${noticeId}

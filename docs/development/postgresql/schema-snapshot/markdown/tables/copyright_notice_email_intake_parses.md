@@ -48,4 +48,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_email_parse_active_receipt`: `CREATE TRIGGER trigger_copyright_email_parse_active_receipt BEFORE INSERT ON public.copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_email_parses_immutable`: `CREATE TRIGGER trigger_copyright_email_parses_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`

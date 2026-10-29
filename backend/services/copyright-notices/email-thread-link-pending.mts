@@ -30,13 +30,13 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
       SELECT graph_intake.intake_id
       FROM graph_intakes graph_intake
       JOIN copyright_notice_email_message_ancestors edge
-        ON edge.reply_message_intake_id = graph_intake.intake_id
+        ON edge.reply_message_intake_receipt_id = graph_intake.intake_id
       LEFT JOIN copyright_notice_email_intake_notice_links ancestor_link
-        ON ancestor_link.copyright_notice_email_intake_id = edge.ancestor_message_intake_id
+        ON ancestor_link.copyright_notice_email_intake_id = edge.ancestor_message_intake_receipt_id
       WHERE (
-        edge.ancestor_message_intake_id <> ${input.initialIntakeId}
+        edge.ancestor_message_intake_receipt_id <> ${input.initialIntakeId}
         AND NOT EXISTS (
-          SELECT 1 FROM descendants earlier WHERE earlier.intake_id = edge.ancestor_message_intake_id
+          SELECT 1 FROM descendants earlier WHERE earlier.intake_id = edge.ancestor_message_intake_receipt_id
         )
         AND ancestor_link.copyright_notice_id IS DISTINCT FROM ${input.noticeId}
       ) OR EXISTS (
@@ -49,7 +49,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
   linkQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`descendant.intake_id`))
   linkQuery.append(sql` OR (NOT EXISTS (
     SELECT 1 FROM copyright_notice_email_message_ancestors retained_edge
-    WHERE retained_edge.reply_message_intake_id = descendant.intake_id
+    WHERE retained_edge.reply_message_intake_receipt_id = descendant.intake_id
   ) AND `)
   linkQuery.append(copyrightEmailOwnMessageIdIsAmbiguousSql(sql`descendant.intake_id`))
   linkQuery.append(sql`)
@@ -57,16 +57,16 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     blocked(intake_id) AS (
       SELECT intake_id FROM blocked_seeds
       UNION
-      SELECT edge.reply_message_intake_id
+      SELECT edge.reply_message_intake_receipt_id
       FROM blocked blocked_intake
       JOIN copyright_notice_email_message_ancestors edge
-        ON edge.ancestor_message_intake_id = blocked_intake.intake_id
-      JOIN graph_intakes graph_intake ON graph_intake.intake_id = edge.reply_message_intake_id
+        ON edge.ancestor_message_intake_receipt_id = blocked_intake.intake_id
+      JOIN graph_intakes graph_intake ON graph_intake.intake_id = edge.reply_message_intake_receipt_id
     )
     INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
     )
-    SELECT descendant.intake_id, ${input.noticeId}, 'thread'
+    SELECT descendant.intake_id, ${input.noticeId}, 'thread', 'pending'
     FROM descendants descendant
     WHERE NOT EXISTS (
       SELECT 1 FROM blocked blocked_intake WHERE blocked_intake.intake_id = descendant.intake_id
@@ -75,15 +75,4 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
   await transaction(linkQuery)
-  await transaction(sql`/* linkPendingCopyrightEmailRepliesInTransaction:reviews */
-    INSERT INTO copyright_notice_email_correspondence_reviews (
-      copyright_notice_email_intake_id, copyright_notice_id, action
-    )
-    SELECT link.copyright_notice_email_intake_id, link.copyright_notice_id, 'pending'
-    FROM copyright_notice_email_intake_notice_links link
-    WHERE link.copyright_notice_id = ${input.noticeId} AND link.link_kind = 'thread'
-      AND link.copyright_notice_email_intake_id = ANY(${[...input.descendantIntakeIds]}::uuid[])
-    ORDER BY link.copyright_notice_email_intake_id
-    ON CONFLICT (copyright_notice_email_intake_id, action) DO NOTHING
-  `)
 }

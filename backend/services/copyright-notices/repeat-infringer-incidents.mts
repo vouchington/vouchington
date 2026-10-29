@@ -9,7 +9,7 @@ import {
   anyReversalSourceSql,
   statutoryRestorationSourceSql,
 } from './restriction-reversal-sources-sql.mts'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { recordCopyrightRepeatInfringerTargetProvenance } from './repeat-infringer-target-provenance.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
@@ -64,11 +64,10 @@ export async function syncCopyrightRepeatInfringerIncidents(
     ), desired AS (
       SELECT owners.account_user_id,
         NOT EXISTS (
-          SELECT 1 FROM copyright_repeat_infringer_dispositions disposition
-          JOIN copyright_repeat_infringer_incidents incident
-            ON incident.id = disposition.copyright_repeat_infringer_incident_id
+          SELECT 1 FROM copyright_repeat_infringer_incidents incident
           WHERE incident.copyright_notice_id = ${noticeId}
             AND incident.account_user_id = owners.account_user_id
+            AND incident.current_disposition IS NOT NULL
         ) AS is_operative
       FROM owners
     ), upserted AS (
@@ -99,17 +98,31 @@ export async function syncCopyrightRepeatInfringerIncidents(
   if (accountIds.length === 0) return
   await transaction(sql`
     /* syncCopyrightRepeatInfringerIncidents:openReview */
-    INSERT INTO copyright_repeat_infringer_reviews (account_user_id, opened_at)
-    SELECT incident.account_user_id, CURRENT_TIMESTAMP
-    FROM copyright_repeat_infringer_incidents incident
-    JOIN users live_account
-      ON live_account.id = incident.account_user_id AND live_account.deleted_at IS NULL
-    JOIN UNNEST(${accountIds}::uuid[]) AS candidate(id)
-      ON incident.account_user_id = candidate.id
-    WHERE incident.is_operative
-    GROUP BY incident.account_user_id
-    HAVING count(*) >= 2
-    ON CONFLICT (account_user_id) WHERE outcome IS NULL DO NOTHING
+    WITH eligible AS (
+      SELECT incident.account_user_id
+      FROM copyright_repeat_infringer_incidents incident
+      JOIN users live_account
+        ON live_account.id = incident.account_user_id AND live_account.deleted_at IS NULL
+      JOIN UNNEST(${accountIds}::uuid[]) AS candidate(id)
+        ON incident.account_user_id = candidate.id
+      LEFT JOIN copyright_repeat_infringer_account_states account_state
+        ON account_state.account_user_id = incident.account_user_id
+      WHERE incident.is_operative AND account_state.current_open_review_identity_id IS NULL
+      GROUP BY incident.account_user_id
+      HAVING count(*) >= 2
+    ), identities AS (
+      INSERT INTO copyright_repeat_infringer_review_identities (account_user_id)
+      SELECT account_user_id FROM eligible
+      RETURNING id, account_user_id
+    ), opened AS (
+      INSERT INTO copyright_repeat_infringer_account_states (
+        account_user_id, current_open_review_identity_id
+      ) SELECT account_user_id, id FROM identities
+      ON CONFLICT (account_user_id) DO UPDATE
+      SET current_open_review_identity_id = EXCLUDED.current_open_review_identity_id
+      WHERE copyright_repeat_infringer_account_states.current_open_review_identity_id IS NULL
+      RETURNING account_user_id, current_open_review_identity_id
+    ) SELECT count(*) FROM opened
   `)
 }
 
@@ -131,14 +144,31 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   const identity = identities[0]
   assert(identity, 404, 'Copyright repeat-infringer incident not found')
   await lockCopyrightRepeatInfringerNoticeAccounts(identity.copyright_notice_id, transaction)
-  const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
+  const { rows } = await transaction<{
+    copyright_notice_id: string
+    current_disposition: CopyrightRepeatInfringerDisposition | null
+  }>(sql`
     /* recordCopyrightRepeatInfringerDisposition */
-    SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents
+    SELECT copyright_notice_id, current_disposition FROM copyright_repeat_infringer_incidents
     WHERE id = ${input.incidentId}
     FOR UPDATE
   `)
   const incident = rows[0]
   assert(incident, 404, 'Copyright repeat-infringer incident not found')
+  assert(
+    !incident.current_disposition,
+    409,
+    'Copyright repeat-infringer incident already has a disposition',
+  )
+  await transaction(sql`
+    /* recordCopyrightRepeatInfringerDisposition:current */
+    UPDATE copyright_repeat_infringer_incidents
+    SET is_operative = false,
+      current_disposition = ${input.disposition},
+      current_disposition_recorded_at = ${input.recordedAt},
+      current_disposition_recorded_by_id = ${input.currentUser.id}
+    WHERE id = ${input.incidentId}
+  `)
   const { rows: inserted } = await transaction<{ id: string }>(sql`
     /* recordCopyrightRepeatInfringerDisposition:insert */
     INSERT INTO copyright_repeat_infringer_dispositions (
@@ -149,7 +179,6 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
       ${encryptSecret(input.rationale, `copyright-repeat-infringer-disposition:${input.incidentId}`)},
       ${input.recordedAt}, ${input.currentUser.id}
     )
-    ON CONFLICT (copyright_repeat_infringer_incident_id) DO NOTHING
     RETURNING id
   `)
   assert(inserted[0], 409, 'Copyright repeat-infringer incident already has a disposition')

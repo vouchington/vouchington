@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 
 /**
  * Deletes one page of old, superseded, unreferenced delivery transitions, except those of a

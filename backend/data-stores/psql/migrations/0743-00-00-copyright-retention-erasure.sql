@@ -20,7 +20,7 @@ CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR D
 CREATE OR REPLACE FUNCTION fn_copyright_retention_erasable_columns(table_name text)
 RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
   SELECT CASE table_name
-    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']
+    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description', 'territorial_rationale_ciphertext', 'territorial_public_explanation_ciphertext']
     WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']
     WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']
     WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']
@@ -28,25 +28,27 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
     WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']
     WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']
-    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']
+    WHEN 'copyright_notice_email_intake_receipts' THEN ARRAY['review_rationale_ciphertext']
+    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id', 'current_recommendation_output_ciphertext']
     WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']
     WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']
     WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']
     WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']
-    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']
+    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id', 'correspondence_rationale_ciphertext', 'correspondence_manual_fallback_reason_ciphertext']
     WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']
     WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']
     WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']
     WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']
+    WHEN 'copyright_restrictions' THEN ARRAY['administrator_lift_rationale_ciphertext']
     WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']
     WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']
     WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']
-    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']
+    WHEN 'copyright_notice_lifecycle_changes' THEN ARRAY['review_rationale_ciphertext']
     WHEN 'copyright_decision_rationales' THEN ARRAY['rationale_ciphertext']
   END
 $$;
@@ -79,7 +81,7 @@ BEGIN
     WHERE notice.id = NEW.copyright_notice_id
       OR notice.id IN (
         SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)
     ORDER BY notice.id
   LOOP
     PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
@@ -88,7 +90,7 @@ BEGIN
     WHERE erased.copyright_notice_id = NEW.copyright_notice_id
       OR erased.copyright_notice_id IN (
         SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)) THEN
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)) THEN
     RETURN NULL;
   END IF;
   RETURN NEW;
@@ -99,66 +101,6 @@ CREATE TRIGGER trigger_copyright_decision_rationales_skip_erased
 BEFORE INSERT ON copyright_decision_rationales
 FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale();
 COMMENT ON FUNCTION fn_reject_erased_copyright_decision_rationale() IS 'Serializes with case erasure and suppresses fresh legal rationale ciphertext after an erasure marker exists, without suppressing the security attempt.';
-
--- Copyright rationale rows are bounded. Case-scoped rows retire only after the existing case
--- erasure has redacted them; noncase decisions retire after six calendar years of terminal inactivity.
-CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
-  rationale copyright_decision_rationales,
-  cutoff_at TIMESTAMPTZ
-)
-RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
-  WITH retention_bound AS (
-    SELECT LEAST(
-      cutoff_at,
-      ((transaction_timestamp() AT TIME ZONE 'UTC') - INTERVAL '6 years') AT TIME ZONE 'UTC'
-    ) AS eligible_before_at
-  )
-  SELECT uuid_extract_timestamp(rationale.id) < retention_bound.eligible_before_at AND (
-    (rationale.copyright_notice_id IS NOT NULL
-      AND rationale.rationale_ciphertext = 'erased'
-      AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-        WHERE erasure.copyright_notice_id = rationale.copyright_notice_id))
-    OR (rationale.copyright_notice_email_intake_id IS NOT NULL AND (
-      (rationale.rationale_ciphertext = 'erased'
-        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
-            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-              WHERE erasure.copyright_notice_id = link.copyright_notice_id)))
-      OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-            WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)
-        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-          WHERE review.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
-            AND review.decision = 'rejected' AND review.reviewed_at < retention_bound.eligible_before_at)
-        AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
-          WHERE delivery.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
-            AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= retention_bound.eligible_before_at)))
-    ))
-    OR (rationale.copyright_repeat_infringer_review_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews review
-        WHERE review.id = rationale.copyright_repeat_infringer_review_id
-          AND review.outcome IN ('no_action', 'warning', 'reinstatement')
-          AND review.outcome_at < retention_bound.eligible_before_at
-          AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds hold
-            WHERE hold.account_user_id = review.account_user_id AND hold.released_at IS NULL)))
-    OR (rationale.account_user_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews terminal_review
-        WHERE terminal_review.account_user_id = rationale.account_user_id
-          AND terminal_review.outcome = 'reinstatement'
-          AND terminal_review.outcome_at < retention_bound.eligible_before_at)
-      AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds hold
-        WHERE hold.account_user_id = rationale.account_user_id
-          AND (hold.released_at IS NULL OR hold.released_at >= retention_bound.eligible_before_at))
-      AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident
-        WHERE incident.account_user_id = rationale.account_user_id
-          AND (incident.is_operative OR incident.created_at >= retention_bound.eligible_before_at))
-      AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews review
-        WHERE review.account_user_id = rationale.account_user_id
-          AND (review.outcome IS NULL OR review.outcome_at >= retention_bound.eligible_before_at)))
-  ) FROM retention_bound
-$$;
 
 CREATE OR REPLACE FUNCTION fn_reject_copyright_decision_rationale_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -189,5 +131,4 @@ CREATE OR REPLACE TRIGGER trigger_copyright_decision_rationales_immutable
 BEFORE UPDATE OR DELETE ON copyright_decision_rationales
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation();
 
-COMMENT ON FUNCTION fn_copyright_decision_rationale_retention_eligible(copyright_decision_rationales, timestamptz) IS 'True after case erasure or after the approved six-calendar-year noncase terminal window, bounded by the server clock even if the caller supplies a later cutoff, with open reviews and preservation holds excluded.';
 COMMENT ON FUNCTION fn_reject_copyright_decision_rationale_mutation() IS 'Permits only controlled case redaction or bounded retention deletion of eligible legal rationale.';

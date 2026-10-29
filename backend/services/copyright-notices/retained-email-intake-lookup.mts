@@ -44,6 +44,8 @@ export async function lookupRetainedCopyrightEmailIntakes(
       parse.sender_email_ciphertext, link.copyright_notice_id AS linked_notice_id,
       to_char(intake.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_received_at
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt
+      ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_email_intake_notice_links link

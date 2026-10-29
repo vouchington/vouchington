@@ -49,10 +49,10 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     JOIN copyright_notice_targets t ON t.copyright_notice_id = n.id
     JOIN copyright_restrictions r ON r.copyright_notice_target_id = t.id
     JOIN copyright_notice_deadlines d ON d.copyright_notice_id = n.id
-    JOIN copyright_notice_submission_assessments assessment
-      ON assessment.id = d.qualifying_counter_notice_assessment_id
+    JOIN copyright_notice_submission_assessment_identities assessment
+      ON assessment.id = d.qualifying_counter_notice_assessment_identity_id
     JOIN copyright_notice_counter_notice_assessment_targets assessment_target
-      ON assessment_target.copyright_notice_submission_assessment_id = assessment.id
+      ON assessment_target.copyright_notice_submission_assessment_identity_id = assessment.id
       AND assessment_target.copyright_notice_target_id = t.id
     JOIN copyright_notice_submissions counter_notice
       ON counter_notice.id = assessment.copyright_notice_submission_id
@@ -62,11 +62,8 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       AND r.id = ${input.restrictionId}
       AND d.id = ${input.deadlineId}
       AND counter_notice.kind = 'counter_notice'
-      AND assessment.is_substantially_compliant
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer_assessment
-        WHERE newer_assessment.supersedes_assessment_id = assessment.id
-      )
+      AND counter_notice.current_assessment_identity_id = assessment.id
+      AND counter_notice.current_assessment_is_substantially_compliant
     FOR UPDATE OF n, t, r, d
   `)
   const locked = rows[0]

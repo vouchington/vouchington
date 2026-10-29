@@ -70,7 +70,9 @@ export async function rejectCopyrightEmailIntake(input: {
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
-    WHERE intake.id = ${input.intakeId}
+    WHERE intake.id = ${input.intakeId} AND intake.raw_storage_object_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = intake.id AND receipt.erased_at IS NULL)
     FOR UPDATE OF intake
   `)
   const intake = rows[0]
@@ -79,12 +81,12 @@ export async function rejectCopyrightEmailIntake(input: {
   await assertRecommendationScope(transaction, input.recommendationId, input.intakeId)
   const { rows: decisions } = await transaction<{ decision: string; response_id: string | null }>(
     sql`/* rejectCopyrightEmailIntake:existing */
-      SELECT review.decision, response.id AS response_id
-      FROM copyright_notice_email_intake_reviews review
+      SELECT receipt.review_decision AS decision, response.id AS response_id
+      FROM copyright_notice_email_intake_receipts receipt
       LEFT JOIN copyright_notice_delivery_work_items response
-        ON response.copyright_notice_email_intake_id = review.copyright_notice_email_intake_id
+        ON response.copyright_notice_email_intake_receipt_id = receipt.id
         AND response.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')
-      WHERE review.copyright_notice_email_intake_id = ${input.intakeId}`,
+      WHERE receipt.id = ${input.intakeId} AND receipt.review_decision IS NOT NULL`,
   )
   const decision = decisions[0]
   assert(decision?.decision !== 'approved', 409, 'Copyright email intake was already approved')
@@ -104,21 +106,28 @@ export async function rejectCopyrightEmailIntake(input: {
     422,
     'reply_email is only accepted while the intake has no parsed sender',
   )
+  const rationaleCiphertext = encryptSecret(
+    JSON.stringify({
+      rationale: input.rationale,
+      manual_fallback_reason: input.manualFallbackReason,
+    }),
+    copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
+  )
   await transaction(sql`/* rejectCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id,
+      copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id,
       reviewed_at, reviewed_by_id, decision, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      'rejected', ${encryptSecret(
-        JSON.stringify({
-          rationale: input.rationale,
-          manual_fallback_reason: input.manualFallbackReason,
-        }),
-        copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
-      )}
+      'rejected', ${rationaleCiphertext}
     )
   `)
+  await transaction(sql`/* rejectCopyrightEmailIntake:currentDecision */
+    UPDATE copyright_notice_email_intake_receipts SET
+      review_decision = 'rejected', reviewed_at = CURRENT_TIMESTAMP,
+      reviewed_by_id = ${input.currentUser.id},
+      review_rationale_ciphertext = ${rationaleCiphertext}
+    WHERE id = ${input.intakeId}`)
   const recipientEmail = parsedSender ?? replyEmail
   const response = recipientEmail
     ? await createCopyrightEmailIntakeResponseInTransaction(
@@ -154,9 +163,9 @@ async function assertNoThreadCorrespondenceDecision(
       AND link.link_kind = 'thread'
     UNION ALL
     SELECT 1
-    FROM copyright_notice_email_correspondence_reviews review
-    WHERE review.copyright_notice_email_intake_id = ${intakeId}
-      AND review.action IN ('admitted', 'rejected')
+    FROM copyright_notice_email_intake_notice_links decided_link
+    WHERE decided_link.copyright_notice_email_intake_id = ${intakeId}
+      AND decided_link.correspondence_action IN ('admitted', 'rejected')
     LIMIT 1
   `)
   assert(!rows[0], 409, 'Thread-linked copyright email cannot be rejected as an initial intake')
@@ -170,8 +179,8 @@ async function assertRecommendationScope(
   if (!recommendationId) return
   const { rows } = await transaction<{ id: string }>(
     sql`/* rejectCopyrightEmailIntake:recommendation */
-      SELECT id FROM copyright_notice_email_intake_recommendations
-      WHERE id = ${recommendationId} AND copyright_notice_email_intake_id = ${intakeId}`,
+      SELECT id FROM copyright_notice_email_intake_recommendation_identities
+      WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}`,
   )
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')
 }

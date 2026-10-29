@@ -36,7 +36,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const { rows: formAuthorities } = await transaction<{
     copyright_notice_submission_id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:formAuthority */
-    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessments WHERE id = ${input.assessmentId}
+    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessment_identities WHERE id = ${input.assessmentId}
   `)
   if (formAuthorities[0])
     await lockAssessmentForm(formAuthorities[0].copyright_notice_submission_id, transaction)
@@ -80,18 +80,18 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
           AND NOT review.is_accepted
       ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql())
       .append(sql` AS territorial_revoked
-    FROM copyright_notice_submission_assessments assessment
-    JOIN copyright_notice_submissions submission
-      ON submission.id = assessment.copyright_notice_submission_id
+    FROM copyright_notice_submissions submission
+    CROSS JOIN LATERAL (
+      SELECT submission.current_assessment_identity_id AS id,
+        submission.id AS copyright_notice_submission_id,
+        submission.current_assessed_by_id AS assessed_by_id,
+        submission.current_assessment_is_substantially_compliant AS is_substantially_compliant,
+        submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id
+    ) assessment
     WHERE assessment.id = ${input.assessmentId}
       AND submission.copyright_notice_id = ${input.noticeId}
       AND submission.kind = 'notice'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
-      )
-    FOR UPDATE OF assessment, submission
+    FOR UPDATE OF submission
   `),
   )
   const assessment = assessmentRows[0]
@@ -118,10 +118,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const { rows } =
     await transaction<CopyrightRestrictionRecord>(sql`/* acceptCopyrightNoticeAndImposeRestriction */
     INSERT INTO copyright_restrictions (
-      copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id,
+      copyright_notice_target_id, authorizing_assessment_id,
+      is_authorizing_assessment_automated, imposed_at, imposed_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
     ) VALUES (
-      ${input.targetId}, ${input.assessmentId}, ${input.imposedAt}, ${input.imposedById},
+      ${input.targetId}, ${input.assessmentId},
+      ${assessment.copyright_notice_form_screening_id !== null},
+      ${input.imposedAt}, ${input.imposedById},
       ${input.imposedById ? input.imposedAt : null}, ${input.imposedById ? 'confirm' : null},
       ${input.imposedById}
     )

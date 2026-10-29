@@ -155,7 +155,7 @@ export async function resolveCopyrightDeadlineIfComplete(
         FROM copyright_notice_counter_notice_assessment_targets assessment_target
         JOIN copyright_restrictions restriction
           ON restriction.copyright_notice_target_id = assessment_target.copyright_notice_target_id
-        WHERE assessment_target.copyright_notice_submission_assessment_id = deadline.qualifying_counter_notice_assessment_id
+        WHERE assessment_target.copyright_notice_submission_assessment_identity_id = deadline.qualifying_counter_notice_assessment_identity_id
           AND restriction.lifted_at IS NULL
       )
   `)

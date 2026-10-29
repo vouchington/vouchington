@@ -140,17 +140,16 @@ async function selectLifecycleChanges(
   const { rows } =
     await transaction<CopyrightLifecycleEventRecord>(sql`/* selectCopyrightLifecycleChanges */
     SELECT change.id, change.copyright_notice_id, change.change_type, change.changed_by_id,
-      change.copyright_notice_submission_id, change.copyright_notice_submission_assessment_id,
+      change.copyright_notice_submission_id, change.copyright_notice_submission_assessment_identity_id,
       change.copyright_notice_evidence_artifact_id, change.copyright_notice_correspondence_id,
       change.copyright_notice_legal_hold_assessment_id, change.copyright_notice_legal_hold_resolution_id,
       change.copyright_notice_deadline_id, change.copyright_restriction_id,
       change.copyright_notice_action_intent_id, change.copyright_notice_email_intake_id,
       change.copyright_notice_delivery_work_item_id, change.media_delivery_registry_record_id,
       change.copyright_notice_guest_capability_id, change.review_action,
-      rationale.review_rationale_ciphertext, change.is_counter_notice_accepted,
+      change.review_rationale_ciphertext, change.is_counter_notice_accepted,
       change.recovery_source, change.replay_reason, change.created_at
     FROM copyright_notice_lifecycle_changes change
-    LEFT JOIN copyright_notice_lifecycle_change_rationales rationale ON rationale.id = change.review_rationale_id
     WHERE change.copyright_notice_id = ${noticeId} ORDER BY change.id
   `)
   return rows

@@ -244,13 +244,15 @@ describe('copyright submission moderator reviews', () => {
     const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
     expect(aggregate?.deadlines).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ qualifying_counter_notice_assessment_id: result.assessmentId }),
+        expect.objectContaining({
+          qualifying_counter_notice_assessment_identity_id: result.assessmentId,
+        }),
       ]),
     )
     expect(aggregate?.counterNoticeReviews).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          copyright_notice_submission_assessment_id: result.assessmentId,
+          copyright_notice_submission_assessment_identity_id: result.assessmentId,
           is_accepted: true,
         }),
       ]),

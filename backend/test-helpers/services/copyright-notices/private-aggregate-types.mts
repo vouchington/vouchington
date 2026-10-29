@@ -25,7 +25,7 @@ export type CopyrightAppealRecommendationRecord = {
 export type CopyrightNoticeDeadlineRecord = {
   id: string
   copyright_notice_id: string
-  qualifying_counter_notice_assessment_id: string
+  qualifying_counter_notice_assessment_identity_id: string
   earliest_restoration_at: Date
   escalation_at: Date
   restoration_deadline_at: Date
@@ -39,7 +39,7 @@ export type CopyrightLifecycleEventRecord = {
   change_type: string
   changed_by_id: string | null
   copyright_notice_submission_id: string | null
-  copyright_notice_submission_assessment_id: string | null
+  copyright_notice_submission_assessment_identity_id: string | null
   copyright_notice_evidence_artifact_id: string | null
   copyright_notice_correspondence_id: string | null
   copyright_notice_legal_hold_assessment_id: string | null
@@ -83,7 +83,7 @@ export type CopyrightAppealReviewRecord = {
 export type CopyrightCounterNoticeReviewRecord = {
   id: string
   copyright_notice_submission_id: string
-  copyright_notice_submission_assessment_id: string
+  copyright_notice_submission_assessment_identity_id: string
   copyright_notice_deadline_id: string | null
   reviewed_at: Date
   reviewed_by_id: string | null

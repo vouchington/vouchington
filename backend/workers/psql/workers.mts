@@ -53,7 +53,10 @@ async function processPsqlJob(job: Job): Promise<unknown> {
     undefined,
     job.id,
   )
-  if (job.name === DATA_RETENTION_JOB_NAME) {
+  if (
+    job.name === DATA_RETENTION_JOB_NAME &&
+    !(job.data as PsqlRetentionJobData).continuation?.copyrightFamilies
+  ) {
     await admitPendingTerminalActivityRetention(
       result as Awaited<ReturnType<typeof runDataRetentionCleanup>>,
     )

@@ -22,11 +22,13 @@ describe('copyright EU and UK contract schema', () => {
       'copyright_eu_transparency_reports',
       'copyright_jurisdiction_policy_approvals',
       'copyright_jurisdiction_policy_withdrawals',
+      'copyright_territorial_decision_identities',
       'copyright_territorial_decisions',
       'copyright_territorial_escalations',
       'copyright_territorial_notice_acknowledgments',
       'copyright_territorial_notice_receipts',
       'copyright_territorial_notice_routings',
+      'copyright_territorial_redress_decision_identities',
       'copyright_territorial_redress_decisions',
       'copyright_territorial_redress_requests',
     ])

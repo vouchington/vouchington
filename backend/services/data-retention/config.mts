@@ -15,6 +15,12 @@ export type DataRetentionConfig = {
   ses_bounce_retention_days: number
   ai_retention_page_size: number
   ai_retention_max_pages_per_run: number
+  copyright_form_screening_attempt_days: number
+  copyright_action_attempt_days: number
+  copyright_delivery_attempt_days: number
+  copyright_guest_capability_days: number
+  copyright_unlinked_email_intake_days: number
+  copyright_email_thread_reply_days: number
 }
 
 /** The per-cleanup limits one retention run applies. Every cleanup in the run takes both. */
@@ -39,6 +45,12 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   ses_bounce_retention_days: 90,
   ai_retention_page_size: 500,
   ai_retention_max_pages_per_run: 10,
+  copyright_form_screening_attempt_days: 180,
+  copyright_action_attempt_days: 180,
+  copyright_delivery_attempt_days: 180,
+  copyright_guest_capability_days: 90,
+  copyright_unlinked_email_intake_days: 90,
+  copyright_email_thread_reply_days: 180,
 }
 
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
@@ -55,6 +67,12 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   ses_bounce_retention_days: 365,
   ai_retention_page_size: 500,
   ai_retention_max_pages_per_run: 10,
+  copyright_form_screening_attempt_days: 3_650,
+  copyright_action_attempt_days: 3_650,
+  copyright_delivery_attempt_days: 3_650,
+  copyright_guest_capability_days: 3_650,
+  copyright_unlinked_email_intake_days: 3_650,
+  copyright_email_thread_reply_days: 3_650,
 }
 
 export const dataRetentionConfig = new DynamicConfig({
@@ -73,18 +91,24 @@ export const dataRetentionConfig = new DynamicConfig({
     ai_retention_page_size: 'number',
     ai_retention_max_pages_per_run: 'number',
     vote_integrity_detail_days: 'number',
+    copyright_form_screening_attempt_days: 'number',
+    copyright_action_attempt_days: 'number',
+    copyright_delivery_attempt_days: 'number',
+    copyright_guest_capability_days: 'number',
+    copyright_unlinked_email_intake_days: 'number',
+    copyright_email_thread_reply_days: 'number',
   },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
 
 export function getDataRetentionLimits(): DataRetentionLimits {
   return {
-    batchSize: readField('batch_size'),
-    maxBatches: readField('max_batches_per_run'),
+    batchSize: readDataRetentionField('batch_size'),
+    maxBatches: readDataRetentionField('max_batches_per_run'),
   }
 }
 
-function readField(field: keyof DataRetentionConfig): number {
+export function readDataRetentionField(field: keyof DataRetentionConfig): number {
   return getBoundedPositiveIntegerField(dataRetentionConfig, field, {
     defaultValue: DEFAULT_DATA_RETENTION_CONFIG[field],
     maxValue: DATA_RETENTION_MAX_VALUES[field],
@@ -92,43 +116,43 @@ function readField(field: keyof DataRetentionConfig): number {
 }
 
 export function getTopicImportAttemptDeletionBatchSize(): number {
-  return readField('topic_import_attempt_batch_size')
+  return readDataRetentionField('topic_import_attempt_batch_size')
 }
 
 export function getPartitionStatusProbeLimit(): number {
-  return readField('partition_status_probe_limit')
+  return readDataRetentionField('partition_status_probe_limit')
 }
 
 export function getClassifierRetentionDays(): number {
-  return Math.max(90, readField('classifier_retention_days'))
+  return Math.max(90, readDataRetentionField('classifier_retention_days'))
 }
 
 export function getModerationRecordCleanupLimits(): DataRetentionLimits {
   return {
-    batchSize: readField('moderation_batch_size'),
-    maxBatches: readField('moderation_max_batches_per_run'),
+    batchSize: readDataRetentionField('moderation_batch_size'),
+    maxBatches: readDataRetentionField('moderation_max_batches_per_run'),
   }
 }
 
 export function getSesBounceRetentionDays(): number {
-  return readField('ses_bounce_retention_days')
+  return readDataRetentionField('ses_bounce_retention_days')
 }
 
 export function getAIRetentionPageLimits(): DataRetentionLimits {
   return {
-    batchSize: readField('ai_retention_page_size'),
-    maxBatches: readField('ai_retention_max_pages_per_run'),
+    batchSize: readDataRetentionField('ai_retention_page_size'),
+    maxBatches: readDataRetentionField('ai_retention_max_pages_per_run'),
   }
 }
 
 export function getCommunityPurgeBatchSize(): number {
-  return readField('community_purge_batch_size')
+  return readDataRetentionField('community_purge_batch_size')
 }
 
 export function getCommunityModeratorScanPageSize(): number {
-  return readField('community_moderator_scan_page_size')
+  return readDataRetentionField('community_moderator_scan_page_size')
 }
 
 export function getVoteIntegrityDetailRetentionDays(): number {
-  return readField('vote_integrity_detail_days')
+  return readDataRetentionField('vote_integrity_detail_days')
 }

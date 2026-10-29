@@ -64,8 +64,11 @@ async function getRawEvidenceRecord(intakeId: string): Promise<RawEvidenceRecord
   await using transaction = await beginTransaction()
   const { rows } = await transaction<RawEvidenceRecord>(sql`/* getCopyrightEmailRawEvidence */
     SELECT object.storage_key AS raw_storage_key,
-      (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size, raw_sha256, virus_verdict
+      (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type,
+      intake.raw_byte_size, intake.raw_sha256, intake.virus_verdict
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt
+      ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
     WHERE intake.id = ${intakeId}
   `)

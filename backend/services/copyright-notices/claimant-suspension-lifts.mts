@@ -21,11 +21,11 @@ function suspendedClaimantPendingRestrictionSql(): SQLStatement {
       AND suspension.lifted_at IS NULL AND suspension.suspended_by_id IS NOT NULL
     JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
     JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    JOIN copyright_notice_submission_assessments assessment
+    JOIN copyright_notice_submission_assessment_identities assessment
       ON assessment.id = restriction.authorizing_assessment_id
+      AND assessment.copyright_notice_id = notice.id
     WHERE restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
-      AND assessment.assessed_by_id IS NULL
-      AND assessment.copyright_notice_form_screening_id IS NOT NULL`)
+      AND restriction.is_authorizing_assessment_automated`)
 }
 
 /** Candidate selection is not authority: each notice is rechecked under its suspension and locks. */

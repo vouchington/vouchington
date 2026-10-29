@@ -39,7 +39,9 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
   const { rows } = await transaction<{ amazon_ses_message_id: string }>(
     sql`/* recordCopyrightEmailIntakeLegalProcess:lock */
       SELECT amazon_ses_message_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId}
+      WHERE id = ${input.intakeId} AND raw_storage_object_id IS NOT NULL
+        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+          WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
       FOR UPDATE`,
   )
   const intake = rows[0]
@@ -47,20 +49,27 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
   await assertNoInitialIntakeThreadBarrier(transaction, input.intakeId)
   const { rows: decisions } = await transaction(
     sql`/* recordCopyrightEmailIntakeLegalProcess:existing */
-      SELECT 1 FROM copyright_notice_email_intake_reviews
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}`,
+      SELECT 1 FROM copyright_notice_email_intake_receipts
+      WHERE id = ${input.intakeId} AND review_decision IS NOT NULL`,
   )
   assert(!decisions[0], 409, 'Copyright email intake was already decided')
+  const rationaleCiphertext = encryptSecret(
+    JSON.stringify({ rationale: reason, manual_fallback_reason: null }),
+    copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
+  )
   await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, reviewed_at, reviewed_by_id, decision, rationale_ciphertext
+      copyright_notice_email_intake_receipt_id, reviewed_at, reviewed_by_id, decision, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'legal_process',
-      ${encryptSecret(
-        JSON.stringify({ rationale: reason, manual_fallback_reason: null }),
-        copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
-      )}
+      ${rationaleCiphertext}
     )
   `)
+  await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess:currentDecision */
+    UPDATE copyright_notice_email_intake_receipts SET
+      review_decision = 'legal_process', reviewed_at = CURRENT_TIMESTAMP,
+      reviewed_by_id = ${input.currentUser.id},
+      review_rationale_ciphertext = ${rationaleCiphertext}
+    WHERE id = ${input.intakeId}`)
   await transaction.commit()
 }

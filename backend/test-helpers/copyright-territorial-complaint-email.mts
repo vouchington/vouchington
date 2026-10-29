@@ -43,9 +43,16 @@ export async function createTestThreadedTerritorialComplaintEmail(input: {
 
 export async function readTestTerritorialComplaintEmailRecords(noticeId: string) {
   const [{ rows: requests }, { rows: submissions }] = await Promise.all([
-    read<{ id: string; submitted_by_id: string | null; received_at: Date }>(sql`
+    read<{
+      id: string
+      submitted_by_id: string | null
+      received_at: Date
+      challenged_decision_outcome: 'restrict' | 'no_action'
+      authorizing_assessment_identity_id: string | null
+    }>(sql`
       /* readTestTerritorialComplaintEmailRecords:requests */
-      SELECT id, submitted_by_id, received_at
+      SELECT id, submitted_by_id, received_at,
+        challenged_decision_outcome, authorizing_assessment_identity_id
       FROM copyright_territorial_redress_requests
       WHERE copyright_notice_id = ${noticeId}
       ORDER BY id

@@ -11,16 +11,26 @@ export async function createCopyrightEmailQueueWalkFixtures() {
   const messageIds = ids.slice(1).map(() => `ses-walk-${crypto.randomUUID()}`)
   const { rows } = await write<{ id: string; amazon_ses_message_id: string }>(sql`
     /* createCopyrightEmailQueueWalkFixtures */
+    WITH owned AS (
+      INSERT INTO copyright_notice_email_intake_receipts
+        (id, amazon_ses_message_id, raw_sha256, raw_storage_key_sha256, raw_byte_size)
+      SELECT owned.id, owned.message_id, seed.raw_sha256, sha256(convert_to(owned.message_id, 'UTF8')),
+        seed.raw_byte_size
+      FROM copyright_notice_email_intakes seed
+      CROSS JOIN unnest(${ids.slice(1)}::uuid[], ${messageIds}::text[]) AS owned(id, message_id)
+      WHERE seed.id = ${seed.id}
+      RETURNING id, amazon_ses_message_id
+    )
     INSERT INTO copyright_notice_email_intakes (
       id, amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256,
       raw_media_type_id, raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict,
       spam_verdict, virus_verdict
     )
-    SELECT owned.id, owned.message_id, seed.received_at, seed.raw_storage_object_id,
+    SELECT owned.id, owned.amazon_ses_message_id, seed.received_at, seed.raw_storage_object_id,
       seed.raw_sha256, seed.raw_media_type_id, seed.raw_byte_size, seed.spf_verdict,
       seed.dkim_verdict, seed.dmarc_verdict, seed.spam_verdict, seed.virus_verdict
     FROM copyright_notice_email_intakes seed
-    CROSS JOIN unnest(${ids.slice(1)}::uuid[], ${messageIds}::text[]) AS owned(id, message_id)
+    CROSS JOIN owned
     WHERE seed.id = ${seed.id}
     RETURNING id, amazon_ses_message_id
   `)

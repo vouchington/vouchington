@@ -26,9 +26,10 @@ function sharedParentUuidv7(parentTable: string) {
 }
 
 const COMPANION_ID_POLICIES = [
+  ['copyright_notice_email_intakes', sharedParentUuidv7('copyright_notice_email_intake_receipts')],
   [
-    'copyright_notice_lifecycle_change_rationales',
-    sharedParentUuidv7('copyright_notice_lifecycle_changes'),
+    'copyright_notice_guest_capabilities',
+    sharedParentUuidv7('copyright_notice_guest_capability_identities'),
   ],
 ] as const
 

@@ -42,6 +42,19 @@ export async function createCopyrightDeliveryIntents(
     return true
   })
   const unique = inputs.filter((_, index) => firstOfKey[index])
+  // A batch may span cases. Take case and generation locks in case-id order before the
+  // per-row blocker triggers, avoiding cross-case generation lock inversion.
+  const caseIds = [...new Set(unique.map(input => input.noticeId))].toSorted()
+  if (caseIds.length > 1) {
+    await transaction(sql`/* lockCopyrightDeliveryBatchNotices */
+      SELECT id FROM copyright_notices WHERE id = ANY(${caseIds}::uuid[])
+      ORDER BY id FOR KEY SHARE`)
+    await transaction(sql`/* lockCopyrightDeliveryBatchBlockerGenerations */
+      /* no-mistakes: deadlock-safe -- copyright_notice_id is the primary key; case locks were already taken in the same order. */
+      SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations
+      WHERE copyright_notice_id = ANY(${caseIds}::uuid[])
+      ORDER BY copyright_notice_id FOR UPDATE`)
+  }
   const { rows: inserted } = await transaction<KeyedIntent>(
     sql`/* createCopyrightDeliveryIntents */
     INSERT INTO copyright_notice_delivery_work_items (

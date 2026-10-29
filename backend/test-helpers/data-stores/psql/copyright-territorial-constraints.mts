@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { withRolledBackTerritorialTransaction } from './copyright-eu-uk-contracts.mts'
+import { insertTerritorialConstraintDecision } from '../../copyright-territorial-decision-fixture.mts'
 
 type Jurisdiction = 'eu_dsa' | 'uk'
 
@@ -91,23 +92,6 @@ async function insertAcknowledgment(
   return acknowledgment.id
 }
 
-async function insertDecision(
-  transaction: TransactionQuery,
-  noticeId: string,
-  jurisdiction: Jurisdiction,
-): Promise<string> {
-  const { rows } = await transaction<{ id: string }>(sql`/* insertTerritorialDecision */
-    INSERT INTO copyright_territorial_decisions (
-      copyright_notice_id, jurisdiction, outcome, automation_disclosure,
-      rationale_ciphertext, public_explanation_ciphertext
-    ) VALUES (${noticeId}, ${jurisdiction}, 'no_action', 'human', 'rationale', 'explanation')
-    RETURNING id
-  `)
-  const decision = rows[0]
-  if (!decision) throw new Error('missing decision fixture')
-  return decision.id
-}
-
 async function insertComplaint(transaction: TransactionQuery, noticeId: string): Promise<string> {
   const { rows } = await transaction<{ id: string }>(sql`/* insertEuSupervisedComplaint */
     INSERT INTO copyright_eu_supervised_complaints (
@@ -142,7 +126,7 @@ export async function rejectEuReceiptWithUkApproval(): Promise<void> {
 export async function rejectUkDecisionForEuNotice(): Promise<void> {
   await withRolledBackTerritorialTransaction(async transaction => {
     const eu = await insertNotice(transaction, 'eu_dsa')
-    await insertDecision(transaction, eu.noticeId, 'uk')
+    await insertTerritorialConstraintDecision(transaction, eu.noticeId, 'uk', eu.userId)
   })
 }
 
@@ -159,12 +143,17 @@ export async function rejectRedressForAnotherNoticesDecision(): Promise<void> {
   await withRolledBackTerritorialTransaction(async transaction => {
     const first = await insertNotice(transaction, 'eu_dsa')
     const second = await insertNoticeSibling(transaction, 'eu_dsa')
-    const decisionId = await insertDecision(transaction, second, 'eu_dsa')
+    const decisionId = await insertTerritorialConstraintDecision(
+      transaction,
+      second,
+      'eu_dsa',
+      first.userId,
+    )
     await transaction(sql`/* rejectRedressForAnotherNoticesDecision */
       INSERT INTO copyright_territorial_redress_requests (
-        copyright_notice_id, jurisdiction, copyright_territorial_decision_id, filed_by, idempotency_key,
+        copyright_notice_id, jurisdiction, copyright_territorial_decision_id, challenged_decision_outcome, filed_by, idempotency_key,
         explanation_ciphertext
-      ) VALUES (${first.noticeId}, 'eu_dsa', ${decisionId}, 'notifier', ${randomUUID()}, 'explanation')
+      ) VALUES (${first.noticeId}, 'eu_dsa', ${decisionId}, 'no_action', 'notifier', ${randomUUID()}, 'explanation')
     `)
   })
 }

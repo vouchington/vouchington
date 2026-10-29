@@ -113,6 +113,10 @@ advances pure deletion sweeps; guarded media sweeps retain positions past protec
 Membership retention pages persist their position. A capped run enqueues a retention continuation
 step naming the membership families with more eligible rows, and that step reruns only those
 families, keeping the backlog draining between schedules.
+Copyright operational retention uses the same serialized PostgreSQL maintenance lane. Its
+continuations name only the unfinished copyright families, so their bounded pages drain without
+rerunning unrelated daily cleanup. A failed child admission fails the parent job for retry; the
+stable child identity lets that retry reuse an already admitted continuation.
 Terminal ActivityPub identity cleanup can yield the same retained family job while work remains,
 so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
 later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial

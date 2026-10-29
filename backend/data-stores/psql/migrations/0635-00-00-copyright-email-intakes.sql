@@ -3,21 +3,97 @@
 -- intentionally separate from a legal case because email cannot safely identify a target until a
 -- moderator verifies the agent's extraction.
 
+CREATE TABLE copyright_notice_email_intake_receipts (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
+  raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
+  raw_storage_key_sha256 bytea NOT NULL CHECK (octet_length(raw_storage_key_sha256) = 32),
+  raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
+  erased_at timestamptz,
+  review_decision copyright_notice_email_intake_review_decisions,
+  review_rationale_ciphertext text
+    CHECK (char_length(review_rationale_ciphertext) BETWEEN 1 AND 1048576),
+  reviewed_at timestamptz,
+  reviewed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT chk_copyright_email_intake_receipts__review_result CHECK (
+    (review_decision IS NULL AND reviewed_at IS NULL AND reviewed_by_id IS NULL AND review_rationale_ciphertext IS NULL)
+    OR (review_decision IS NOT NULL AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL AND review_rationale_ciphertext IS NOT NULL))
+);
+COMMENT ON TABLE copyright_notice_email_intake_receipts IS 'Minimal SES replay identity retained after an unlinked private intake and its evidence are erased; this row never authorizes access to an intake.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.amazon_ses_message_id IS 'Stable opaque SES delivery identifier reserved against re-admission after erasure.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_sha256 IS 'Digest of the original MIME used to reject a reused SES delivery identifier.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_storage_key_sha256 IS 'Digest of the original object key used to reject changed replay evidence without keeping the key.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_byte_size IS 'Original MIME size used to reject changed replay evidence.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.erased_at IS 'Time the private intake began operational erasure; the replay identity survives.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_rationale_ciphertext IS 'Final initial-review explanation encrypted with the receipt-owned immutable SES message identity; retained independently of finite review history.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result, retained independently of finite review history.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
+
+CREATE FUNCTION fn_reject_copyright_email_receipt_current_review()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'copyright email replay receipt is retained' USING ERRCODE = 'check_violation';
+  END IF;
+  IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
+    RETURN NEW;
+  END IF;
+  IF (to_jsonb(OLD) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'review_rationale_ciphertext', 'erased_at'])
+      IS DISTINCT FROM
+     (to_jsonb(NEW) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'review_rationale_ciphertext', 'erased_at'])
+    OR (OLD.erased_at IS NOT NULL AND NEW.erased_at IS DISTINCT FROM OLD.erased_at)
+    OR (OLD.review_decision IS NOT NULL AND ROW(NEW.review_decision, NEW.reviewed_at, NEW.reviewed_by_id, NEW.review_rationale_ciphertext)
+      IS DISTINCT FROM ROW(OLD.review_decision, OLD.reviewed_at, OLD.reviewed_by_id, OLD.review_rationale_ciphertext))
+    OR (OLD.review_decision IS NULL AND NEW.review_decision IS NOT NULL AND OLD.erased_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'copyright email receipt identity and completed review are immutable' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_email_receipts_current_review
+  BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_receipts
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_receipt_current_review();
+
+CREATE TABLE copyright_notice_email_intake_recommendation_identities (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_email_intake_receipt_id uuid NOT NULL REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
+  input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
+  prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT uq_copyright_email_recommendation_identities__receipt_id UNIQUE (copyright_notice_email_intake_receipt_id, id),
+  CONSTRAINT uq_copyright_email_recommendation_identities__dedup UNIQUE (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
+);
+COMMENT ON TABLE copyright_notice_email_intake_recommendation_identities IS 'Minimal durable recommendation identity for exact replay and reviewed provenance; no advisory output or authorization.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.copyright_notice_email_intake_receipt_id IS 'Receipt whose agent input yielded this recommendation identity.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.input_sha256 IS 'Input digest used only for exact recommendation replay.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.prompt_version IS 'Prompt version used only for exact recommendation replay.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intakes (
-  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  id uuid PRIMARY KEY REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
   received_at timestamptz NOT NULL,
   raw_storage_object_id uuid,
   raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
   raw_media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
+  current_recommendation_identity_id uuid,
+  current_recommendation_output_ciphertext text CHECK (char_length(current_recommendation_output_ciphertext) BETWEEN 1 AND 1048576),
+  recommendation_completed_at timestamptz,
   spf_verdict email_security_verdicts NOT NULL CHECK (spf_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   dkim_verdict email_security_verdicts NOT NULL CHECK (dkim_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   dmarc_verdict email_security_verdicts NOT NULL CHECK (dmarc_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   spam_verdict email_security_verdicts NOT NULL CHECK (spam_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   virus_verdict email_security_verdicts NOT NULL CHECK (virus_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT fk_copyright_email_intakes__current_recommendation_identity
+    FOREIGN KEY (id, current_recommendation_identity_id)
+    REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT,
+  CONSTRAINT chk_copyright_email_intakes__current_recommendation CHECK (
+    (current_recommendation_identity_id IS NULL AND current_recommendation_output_ciphertext IS NULL AND recommendation_completed_at IS NULL)
+    OR (current_recommendation_identity_id IS NOT NULL AND recommendation_completed_at IS NOT NULL)));
 ALTER TABLE copyright_notice_email_intakes
   ADD CONSTRAINT fk_copyright_notice_email_intakes__raw_storage_object
   FOREIGN KEY (raw_storage_object_id) REFERENCES copyright_notice_storage_objects(id)
@@ -71,49 +147,82 @@ CREATE TABLE copyright_notice_email_intake_attachments (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_recommendations__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_receipt_id uuid NOT NULL CONSTRAINT fk_copyright_email_recommendations__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   input_sha256 bytea NOT NULL CONSTRAINT chk_copyright_notice_email_intake_recommendations__input_sha256 CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CONSTRAINT chk_copyright_notice_email_intake_recommendatio__prompt_version CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
   structured_output_ciphertext text NOT NULL CONSTRAINT chk_copyr_notic_email_intak_recom__structured_output_ciphertext CHECK (char_length(structured_output_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_cop_not_ema_int_rec__intake_id__input_sha256__prompt_version UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version),
-  CONSTRAINT uq_copyright_notice_email_intake_recommendations__intake_id__id UNIQUE (copyright_notice_email_intake_id, id)
-);
+  CONSTRAINT fk_copyright_email_recommendations__identity
+    FOREIGN KEY (copyright_notice_email_intake_receipt_id, id)
+    REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT,
+  CONSTRAINT uq_copyright_notice_email_intake_recommendations__intake_id__id UNIQUE (copyright_notice_email_intake_receipt_id, id)
+) PARTITION BY RANGE (id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_reviews__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_receipt_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_reviews__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid,
   reviewed_at timestamptz NOT NULL,
-  reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   decision copyright_notice_email_intake_review_decisions NOT NULL CHECK (decision IN ('approved', 'rejected', 'legal_process')),
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_email_intake_reviews__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
-  promoted_copyright_notice_id uuid CONSTRAINT uq_copyr_notic_email_intak_review__promoted_copyright_notice_id UNIQUE CONSTRAINT fk_copyri_notice_email_intake_review__promoted_copyright_notice REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  promoted_copyright_notice_id uuid CONSTRAINT fk_copyri_notice_email_intake_review__promoted_copyright_notice REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_copyright_notice_email_intake_reviews__intake_id UNIQUE (copyright_notice_email_intake_id),
   CHECK ((decision = 'approved') = (promoted_copyright_notice_id IS NOT NULL)),
   CONSTRAINT fk_copyright_email_reviews__recommendation_intake
-    FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id)
-    REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT
-);
+    FOREIGN KEY (copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id)
+    REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT
+) PARTITION BY RANGE (id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_attachments__intake ON copyright_notice_email_intake_attachments(copyright_notice_email_intake_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_email_intake_recommendations__intake ON copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id DESC);
+CREATE INDEX idx_copyright_notice_email_intake_recommendations__intake ON copyright_notice_email_intake_recommendations(copyright_notice_email_intake_receipt_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_email_intake_reviews__intake ON copyright_notice_email_intake_reviews(copyright_notice_email_intake_id, id DESC);
+CREATE INDEX idx_copyright_notice_email_intake_reviews__intake ON copyright_notice_email_intake_reviews(copyright_notice_email_intake_receipt_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_email_intake_reviews__promoted_notice
+  ON copyright_notice_email_intake_reviews(promoted_copyright_notice_id, id)
+  WHERE promoted_copyright_notice_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_email_intake_reviews__reviewer ON copyright_notice_email_intake_reviews(reviewed_by_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_reviews__recommendation ON copyright_notice_email_intake_reviews(copyright_notice_email_intake_recommendation_id) WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_copyright_email_intakes_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE FUNCTION fn_reject_copyright_email_intake_current_recommendation()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF current_setting('app.copyright_operational_retention', true) = 'on' THEN RETURN OLD; END IF;
+    RAISE EXCEPTION 'copyright email intake deletion requires operational retention' USING ERRCODE = 'check_violation';
+  END IF;
+  IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
+    RETURN NEW;
+  END IF;
+  IF (to_jsonb(OLD) - ARRAY['current_recommendation_identity_id', 'current_recommendation_output_ciphertext', 'recommendation_completed_at'])
+    IS DISTINCT FROM
+    (to_jsonb(NEW) - ARRAY['current_recommendation_identity_id', 'current_recommendation_output_ciphertext', 'recommendation_completed_at'])
+    OR NEW.current_recommendation_identity_id IS NULL
+    OR NEW.current_recommendation_output_ciphertext IS NULL
+    OR NEW.recommendation_completed_at IS NULL
+    OR NEW.recommendation_completed_at < COALESCE(OLD.recommendation_completed_at, '-infinity'::timestamptz) THEN
+    RAISE EXCEPTION 'copyright email intake current recommendation is the only mutable live result' USING ERRCODE = 'check_violation';
+  END IF;
+  PERFORM 1 FROM copyright_notice_email_intake_receipts receipt
+    WHERE receipt.id = NEW.id AND receipt.erased_at IS NULL FOR SHARE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'erased copyright email intake cannot accept a recommendation' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE UPDATE OR DELETE
+  ON copyright_notice_email_intakes FOR EACH ROW
+  EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -159,12 +268,15 @@ COMMENT ON COLUMN copyright_notice_email_intake_attachments.content_id_ciphertex
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.media_type_id IS 'Declared attachment media type.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.byte_size IS 'Decoded attachment byte size.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.sha256 IS 'SHA-256 digest computed while streaming the attachment.';
-COMMENT ON COLUMN copyright_notice_email_intake_recommendations.copyright_notice_email_intake_id IS 'Email intake evaluated by this advisory recommendation.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendations.copyright_notice_email_intake_receipt_id IS 'Retained intake receipt identity evaluated by this advisory recommendation; it does not authorize a deleted intake.';
+COMMENT ON COLUMN copyright_notice_email_intakes.current_recommendation_identity_id IS 'Retained identity of the current advisory result while the private intake remains live.';
+COMMENT ON COLUMN copyright_notice_email_intakes.current_recommendation_output_ciphertext IS 'Encrypted current advisory result; detailed agent history may expire independently.';
+COMMENT ON COLUMN copyright_notice_email_intakes.recommendation_completed_at IS 'When the current advisory result completed; current dispatch state does not depend on history rows.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.input_sha256 IS 'Digest of the exact sanitized extraction input.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.prompt_version IS 'Versioned extraction and recommendation prompt.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.model IS 'Model identifier recorded for recommendation provenance.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.structured_output_ciphertext IS 'Encrypted bounded agent extraction and recommendation.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_id IS 'Email intake reviewed by a moderator.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_receipt_id IS 'Retained intake receipt identity reviewed by a moderator; the review remains after private source erasure.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_recommendation_id IS 'Optional advisory recommendation reviewed as provenance.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_at IS 'Moderator-supplied review completion timestamp.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_by_id IS 'Staff member who decided the intake; erased on account deletion.';
@@ -185,3 +297,10 @@ CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON copyright_notice_email_intake_attachments (media_type_id);
+
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.id IS 'Published UUIDv7 recommendation identity, not an authorization grant.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.created_at IS 'Identity creation time derived from its UUIDv7 id.';
+
+CREATE INDEX idx_copyright_notice_email_intake_receipts__reviewed_by
+  ON copyright_notice_email_intake_receipts (reviewed_by_id)
+  WHERE reviewed_by_id IS NOT NULL;

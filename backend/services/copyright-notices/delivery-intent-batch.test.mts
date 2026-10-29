@@ -50,4 +50,20 @@ describe('delivery intent batches', () => {
       ),
     ).rejects.toMatchObject({ status: 409 })
   })
+
+  it('keeps a reversed multi-case batch mapped to each notice', async () => {
+    const firstNoticeId = (await createSignedInCopyrightForm(1)).intake.copyright_notice_id
+    const secondNoticeId = (await createSignedInCopyrightForm(1)).intake.copyright_notice_id
+    const user = await createTestUser()
+    const [earlier, later] = [firstNoticeId, secondNoticeId].toSorted()
+    const inputs = [
+      posterIntent(later!, user.id, `intent-batch:${crypto.randomUUID()}`),
+      posterIntent(earlier!, user.id, `intent-batch:${crypto.randomUUID()}`),
+    ]
+    await using transaction = await beginTransaction()
+    const intents = await createCopyrightDeliveryIntents(inputs, transaction)
+
+    expect(intents.map(intent => intent.copyright_notice_id)).toEqual([later, earlier])
+    expect(intents[0]!.id).not.toBe(intents[1]!.id)
+  })
 })

@@ -1,4 +1,15 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
+import type { PrivateUser } from '@services/users/types'
+
+export type AssessmentInput = {
+  submissionId: string
+  assessedAt: Date
+  currentUser: PrivateUser | null
+  substantiallyCompliant: boolean
+  supersedesAssessmentId?: string | null
+  targetIds?: string[]
+  copyrightFormScreeningId?: string
+}
 
 export type CopyrightJurisdiction = FiniteValue<'copyright_jurisdictions'>
 export type CopyrightHumanReviewAction = FiniteValue<'copyright_review_actions'>

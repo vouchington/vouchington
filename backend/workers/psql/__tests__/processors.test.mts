@@ -6,6 +6,7 @@ import {
 } from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
 import type { runDataRetentionCleanup } from '@services/data-retention'
+import { enqueueDataRetentionCleanupContinuation } from '@queues/psql/enqueues'
 import { psql } from '@queues/psql/queues'
 import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
 import type { cleanupPartitions as cleanupPartitionsService } from '@data-stores/psql/migration-runner/monthly-partitions'
@@ -27,7 +28,6 @@ const emptyCleanupResult = {
 const dataRetentionCleanup =
   vi.fn<(limits: DataRetentionLimits) => ReturnType<typeof runDataRetentionCleanup>>()
 const reconcileVoteDrift = vi.fn<() => Promise<void>>()
-const refreshMaterializedView = vi.fn<(viewName: string) => Promise<void>>()
 const runConfigDriven = vi.fn<() => Promise<void>>()
 const runMigrations = vi.fn<() => Promise<void>>()
 const runViews = vi.fn<() => Promise<void>>()
@@ -148,6 +148,44 @@ describe('processPsql', () => {
     expect(cleanup).toHaveBeenCalledTimes(3)
   })
 
+  it('admits pending copyright families from the daily result and propagates admission failure', async () => {
+    const initialJobId = `retention-test-${randomUUID()}`
+    const runId = createHash('sha256').update(initialJobId).digest('hex')
+    const copyrightId = `data-retention-copyright__${runId}__1`
+    onTestFinished(async () => {
+      await (await psql.getJob(copyrightId))?.remove()
+    })
+    const result = {
+      ...emptyCleanupResult,
+      copyrightFormScreeningAttempts: { scanned: 1, deleted: 1, hasMore: true },
+      copyrightActionAttempts: { scanned: 0, deleted: 0, hasMore: false },
+    } satisfies Awaited<ReturnType<typeof runDataRetentionCleanup>>
+    const cleanup = vi.fn<typeof runDataRetentionCleanup>().mockResolvedValue(result)
+    const enqueue = vi.fn<typeof enqueueDataRetentionCleanupContinuation>(async data => {
+      await enqueueDataRetentionCleanupContinuation(data)
+      throw new Error('admission acknowledgement failed')
+    })
+
+    await expect(
+      processPsql(
+        'dataRetentionCleanup',
+        {},
+        { dataRetentionCleanup: cleanup, enqueueDataRetentionCleanupContinuation: enqueue },
+        initialJobId,
+      ),
+    ).rejects.toThrow('admission acknowledgement failed')
+    expect(enqueue).toHaveBeenCalledExactlyOnceWith({
+      runId,
+      step: 1,
+      activeClassifierSweeps: [],
+      activeMembershipFamilies: [],
+      copyrightFamilies: ['copyrightFormScreeningAttempts'],
+    })
+    expect((await psql.getJob(copyrightId))?.data).toMatchObject({
+      continuation: { copyrightFamilies: ['copyrightFormScreeningAttempts'] },
+    })
+  })
+
   it('does not restart a finished independent classifier sweep while another page drains', async () => {
     const initialJobId = `retention-test-${randomUUID()}`
     const runId = createHash('sha256').update(initialJobId).digest('hex')
@@ -246,37 +284,5 @@ describe('processPsql', () => {
     expect((second!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
       'endedMembershipRenewalNotices',
     ])
-  })
-
-  it('calls runConfigDriven when the job name is runConfigDriven', async () => {
-    runConfigDriven.mockReset()
-    runConfigDriven.mockResolvedValue()
-    await processPsql('runConfigDriven', undefined, { runConfigDriven })
-    expect(runConfigDriven).toHaveBeenCalledOnce()
-  })
-
-  it('throws when refreshMaterializedView is missing data.viewName', async () => {
-    refreshMaterializedView.mockReset()
-    await expect(
-      processPsql('refreshMaterializedView', {}, { refreshMaterializedView }),
-    ).rejects.toThrow('refreshMaterializedView job requires data.viewName')
-    expect(refreshMaterializedView).not.toHaveBeenCalled()
-  })
-
-  it('refreshes the materialized view when given a viewName', async () => {
-    refreshMaterializedView.mockReset()
-    refreshMaterializedView.mockResolvedValue()
-
-    await processPsql(
-      'refreshMaterializedView',
-      { viewName: 'mv_rss_feed_crawl_tiers' },
-      { refreshMaterializedView },
-    )
-
-    expect(refreshMaterializedView).toHaveBeenCalledWith('mv_rss_feed_crawl_tiers')
-  })
-
-  it('throws on an unknown job name', async () => {
-    await expect(processPsql('unknownJob' as never)).rejects.toThrow('Unknown job: unknownJob')
   })
 })

@@ -22,9 +22,11 @@ export function copyrightPlacementPartiesSql(
     parties.append(sql` AND post.created_by_id <> ${DELETED_USER_ID} AND EXISTS (
     SELECT 1 FROM users account WHERE account.id = post.created_by_id
       AND account.deleted_at IS NULL)`)
-  parties.append(sql`
+  parties
+    .append(sql`
     UNION ALL
-    SELECT CASE WHEN ${live} THEN surface.user_id
+    SELECT CASE WHEN `)
+    .append(live ? sql`TRUE` : sql`FALSE`).append(sql` THEN surface.user_id
       ELSE target.surface_owner_user_id END AS user_id,
       'profile_owner'::text AS basis
     FROM image_surface_placements surface
@@ -36,9 +38,11 @@ export function copyrightPlacementPartiesSql(
     parties.append(sql` AND EXISTS (
     SELECT 1 FROM users account WHERE account.id = surface.user_id
       AND account.deleted_at IS NULL)`)
-  parties.append(sql`
+  parties
+    .append(sql`
     UNION ALL
-    SELECT CASE WHEN ${live} THEN link.user_id
+    SELECT CASE WHEN `)
+    .append(live ? sql`TRUE` : sql`FALSE`).append(sql` THEN link.user_id
       ELSE target.surface_owner_user_id END AS user_id,
       'profile_owner'::text AS basis
     FROM image_surface_placements surface

@@ -254,7 +254,7 @@ export async function reviewCopyrightCounterNotice(input: {
     deadline_id: string | null
   }>(sql`/* reviewCopyrightCounterNotice:existing */
     SELECT submission.copyright_notice_id, review.is_accepted,
-      review.copyright_notice_submission_assessment_id AS assessment_id,
+      review.copyright_notice_submission_assessment_identity_id AS assessment_id,
       review.copyright_notice_deadline_id AS deadline_id
     FROM copyright_notice_counter_notice_reviews review
     JOIN copyright_notice_submissions submission
@@ -295,21 +295,34 @@ export async function reviewCopyrightCounterNotice(input: {
   assert(submission.jurisdiction === 'us_dmca', 422, 'Only US DMCA counter-notices are supported')
   const reviewedAt = new Date()
   const aiAssisted = await copyrightSubmissionHasGuidance(input.submissionId, transaction)
+  const { rows: identityRows } = await transaction<{ id: string }>(sql`
+    /* reviewCopyrightCounterNotice:assessmentIdentity */
+    INSERT INTO copyright_notice_submission_assessment_identities (
+      copyright_notice_id, copyright_notice_submission_id
+    ) VALUES (${submission.copyright_notice_id}, ${input.submissionId}) RETURNING id
+  `)
   const { rows: assessmentRows } = await transaction<{
     id: string
   }>(sql`/* reviewCopyrightCounterNotice:assessment */
     INSERT INTO copyright_notice_submission_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
-    ) VALUES (${input.submissionId}, ${reviewedAt}, ${input.currentUser.id}, ${input.is_accepted})
+      id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+    ) VALUES (${identityRows[0]!.id}, ${input.submissionId}, ${reviewedAt}, ${input.currentUser.id}, ${input.is_accepted})
     RETURNING id
   `)
   const assessment = assessmentRows[0]
   assert(assessment, 500, 'Counter-notice assessment was not recorded')
+  await transaction(sql`/* reviewCopyrightCounterNotice:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${assessment.id},
+      current_assessment_is_substantially_compliant = ${input.is_accepted},
+      current_assessed_at = ${reviewedAt}, current_assessed_by_id = ${input.currentUser.id}
+    WHERE id = ${input.submissionId}
+  `)
   let deadlineId: string | null = null
   if (input.is_accepted) {
     await transaction(sql`/* reviewCopyrightCounterNotice:targets */
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
-        copyright_notice_submission_assessment_id, copyright_notice_target_id
+        copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
       ) SELECT ${assessment.id}, unnest(${submission.target_ids}::uuid[])
     `)
     const window = calculateUsCounterNoticeRestorationWindow(submission.received_at)
@@ -317,7 +330,7 @@ export async function reviewCopyrightCounterNotice(input: {
       id: string
     }>(sql`/* reviewCopyrightCounterNotice:deadline */
       INSERT INTO copyright_notice_deadlines (
-        copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
+        copyright_notice_id, qualifying_counter_notice_assessment_identity_id, earliest_restoration_at,
         escalation_at, restoration_deadline_at
       ) VALUES (${submission.copyright_notice_id}, ${assessment.id}, ${window.earliest_restoration_at},
         ${window.escalation_at}, ${window.restoration_deadline_at})
@@ -336,7 +349,7 @@ export async function reviewCopyrightCounterNotice(input: {
   }
   await transaction(sql`/* reviewCopyrightCounterNotice:record */
     INSERT INTO copyright_notice_counter_notice_reviews (
-      copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+      copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
       copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
     ) VALUES (${input.submissionId}, ${assessment.id}, ${deadlineId}, ${reviewedAt},
       ${input.currentUser.id}, ${input.is_accepted},

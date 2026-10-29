@@ -6094,9 +6094,6 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
-      '@services/media-delivery-safety':
-        specifier: workspace:^
-        version: link:../media-delivery-safety
       '@services/moderation-appeals':
         specifier: workspace:^
         version: link:../moderation-appeals

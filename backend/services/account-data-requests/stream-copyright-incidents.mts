@@ -9,11 +9,10 @@ import sql from 'sql-template-strings'
 export function streamCopyrightRepeatInfringerIncidents(userId: string) {
   return createAsyncGeneratorFromCursor(sql`/* streamCopyrightRepeatInfringerIncidents */
     SELECT incident.id AS incident_id, incident.copyright_notice_id AS notice_id,
-      incident.is_operative, incident.created_at, disposition.disposition,
-      disposition.recorded_at AS disposition_recorded_at
+      incident.is_operative, incident.created_at,
+      incident.current_disposition AS disposition,
+      incident.current_disposition_recorded_at AS disposition_recorded_at
     FROM copyright_repeat_infringer_incidents incident
-    LEFT JOIN copyright_repeat_infringer_dispositions disposition
-      ON disposition.copyright_repeat_infringer_incident_id = incident.id
     WHERE incident.account_user_id = ${userId}
     ORDER BY incident.id
   `)
@@ -25,9 +24,23 @@ export function streamCopyrightRepeatInfringerIncidents(userId: string) {
  */
 export function streamCopyrightRepeatInfringerReviews(userId: string) {
   return createAsyncGeneratorFromCursor(sql`/* streamCopyrightRepeatInfringerReviews */
-    SELECT review.id AS review_id, review.opened_at, review.outcome, review.outcome_at
+    SELECT review.copyright_repeat_infringer_review_identity_id AS review_id,
+      review.opened_at, review.outcome, review.outcome_at
     FROM copyright_repeat_infringer_reviews review
-    WHERE review.account_user_id = ${userId} AND review.outcome IS NOT NULL
-    ORDER BY review.id
+    WHERE review.account_user_id = ${userId}
+    UNION ALL
+    SELECT account_state.current_decided_review_identity_id AS review_id,
+      identity.created_at AS opened_at,
+      account_state.current_outcome AS outcome,
+      account_state.current_outcome_at AS outcome_at
+    FROM copyright_repeat_infringer_account_states account_state
+    JOIN copyright_repeat_infringer_review_identities identity
+      ON identity.id = account_state.current_decided_review_identity_id
+    WHERE account_state.account_user_id = ${userId}
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_repeat_infringer_reviews review
+        WHERE review.copyright_repeat_infringer_review_identity_id = identity.id
+      )
+    ORDER BY review_id
   `)
 }

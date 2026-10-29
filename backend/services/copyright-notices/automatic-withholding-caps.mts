@@ -41,9 +41,12 @@ export async function checkAutomaticWithholdingCaps(
   }
   const { rows: claimantRows } = await transaction<{ total: number }>(sql`
     /* checkAutomaticWithholdingCaps:claimant */
+    -- cross-partition: the legal assessment time is independent of the UUIDv7 insertion clock;
+    -- an id bound could omit a qualifying assessment when the clocks differ.
     SELECT count(DISTINCT assessment.id)::int AS total
     FROM copyright_notices notice
     JOIN copyright_notice_submissions submission ON submission.copyright_notice_id = notice.id
+    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     WHERE notice.claimant_user_id = ${input.claimantId}
@@ -61,12 +64,14 @@ export async function checkAutomaticWithholdingCaps(
   if (input.thresholds.posterDailyCap === 0) return 'poster_daily_cap'
   const { rows: overCap } = await transaction<{ user_id: string }>(sql`
     /* checkAutomaticWithholdingCaps:poster */
+    -- cross-partition: assessed_at, not the UUIDv7 insertion time, defines this rolling cap.
     SELECT post.created_by_id AS user_id
     FROM posts post
     JOIN image_placements image_placement ON image_placement.post_id = post.id
     JOIN copyright_notice_targets target ON target.placement_id = image_placement.placement_id
     JOIN copyright_notice_submissions submission
       ON submission.copyright_notice_id = target.copyright_notice_id
+    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     WHERE post.created_by_id = ANY(${posterIds}::uuid[])

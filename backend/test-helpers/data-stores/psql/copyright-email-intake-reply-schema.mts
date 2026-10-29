@@ -27,12 +27,20 @@ export async function createCopyrightEmailIntakeRow(): Promise<string> {
   const mediaTypeId = await upsertMediaTypes('message/rfc822')
   await using transaction = await beginTransaction()
   const objectId = await upsertCopyrightStorageObjectId(`email/${randomUUID()}.eml`, transaction)
+  const sesMessageId = `ses-${randomUUID()}`
+  const { rows: receiptRows } = await transaction<{
+    id: string
+  }>(sql`/* createCopyrightEmailIntakeReplyReceipt */
+    INSERT INTO copyright_notice_email_intake_receipts
+      (amazon_ses_message_id, raw_sha256, raw_storage_key_sha256, raw_byte_size)
+    VALUES (${sesMessageId}, ${Buffer.alloc(32, 1)}, ${Buffer.alloc(32, 2)}, 1)
+    RETURNING id`)
   const { rows } = await transaction<{ id: string }>(sql`/* createCopyrightEmailIntakeRow */
     INSERT INTO copyright_notice_email_intakes (
-      amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256, raw_media_type_id, raw_byte_size,
+      id, amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256, raw_media_type_id, raw_byte_size,
       spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
     ) VALUES (
-      ${`ses-${randomUUID()}`}, CURRENT_TIMESTAMP, ${objectId},
+      ${receiptRows[0]!.id}, ${sesMessageId}, CURRENT_TIMESTAMP, ${objectId},
       ${Buffer.alloc(32, 1)}, ${mediaTypeId}, 1,
       'pass', 'pass', 'pass', 'pass', 'pass'
     ) RETURNING id`)
@@ -44,7 +52,7 @@ function insertReply(overrides: Partial<ReplyRow>) {
   const row = { ...validReply, ...overrides }
   return write<{ id: string }>(sql`/* insertCopyrightEmailIntakeReplyRow */
     INSERT INTO copyright_notice_delivery_work_items (
-      copyright_notice_id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
+      copyright_notice_id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (
       ${row.noticeId}, ${row.intakeId}, ${row.role}, ${row.kind}, ${row.channel},
@@ -78,7 +86,7 @@ export const rejectSameReplyKindForIntake = (intakeId: string) => insertReply({ 
 
 export const rejectReplyIntakeReassignment = (intentId: string, otherIntakeId: string) =>
   write(sql`/* rejectCopyrightReplyIntakeReassignment */
-    UPDATE copyright_notice_delivery_work_items SET copyright_notice_email_intake_id = ${otherIntakeId}
+    UPDATE copyright_notice_delivery_work_items SET copyright_notice_email_intake_receipt_id = ${otherIntakeId}
     WHERE id = ${intentId}`)
 
 export const rejectReplyBodyMutation = (intentId: string) =>

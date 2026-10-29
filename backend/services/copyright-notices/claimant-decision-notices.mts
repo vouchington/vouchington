@@ -45,6 +45,15 @@ export async function buildCopyrightClaimantDecisionDelivery(
     input.noticeId,
     transaction,
   )
+  const key = `copyright-decision:${input.noticeId}:${input.event}:claimant`
+  const { rows: alreadyDelivered } =
+    await transaction(sql`/* buildCopyrightClaimantDecisionDelivery:replay */
+    SELECT 1 FROM copyright_notice_delivery_work_items
+    WHERE copyright_notice_id = ${input.noticeId}
+      AND delivery_kind = 'claimant_decision_notice'
+      AND idempotency_key = ANY(${[key, `${key}:email`]}::text[])
+    LIMIT 1`)
+  if (alreadyDelivered[0]) return null
   const flags = await selectCopyrightClaimantDecisionFlags(input.noticeId, transaction)
   if (!claimantDecisionIsOwed(flags, input.event)) return null
   const facts = await selectCopyrightStatementFacts(input.noticeId, transaction, input)

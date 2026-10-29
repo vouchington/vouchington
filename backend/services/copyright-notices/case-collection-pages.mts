@@ -15,7 +15,6 @@ import {
   selectTerritorialStaffComplaints,
   territorialComplaintCursorScope,
 } from './read-models-staff-territorial-complaints.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
 export async function listCopyrightTerritorialComplaints(
   currentUser: PrivateUser,
@@ -25,24 +24,18 @@ export async function listCopyrightTerritorialComplaints(
   assertNotSuspended(currentUser)
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Copyright review staff required')
   await using transaction = await beginTransaction()
-  const statement = sql`/* listCopyrightTerritorialComplaints:case */
-    SELECT notice.jurisdiction, decision.id AS decision_id, decision.decided_at
-    FROM copyright_notices notice
-    JOIN copyright_territorial_notice_receipts receipt
-      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
-    LEFT JOIN LATERAL (
-      SELECT decision.id, decision.decided_at FROM copyright_territorial_decisions decision
-      WHERE decision.copyright_notice_id = notice.id
-        AND decision.jurisdiction = notice.jurisdiction AND `
-  statement.append(territorialDecisionIsLiveSql())
-  statement.append(sql` LIMIT 1
-    ) decision ON true
-    WHERE notice.id = ${noticeId} AND notice.jurisdiction IN ('eu_dsa', 'uk')`)
   const { rows } = await transaction<{
     jurisdiction: 'eu_dsa' | 'uk'
     decision_id: string | null
     decided_at: Date | null
-  }>(statement)
+  }>(sql`/* listCopyrightTerritorialComplaints:case */
+    SELECT notice.jurisdiction,
+      notice.current_territorial_decision_identity_id AS decision_id,
+      notice.territorial_decided_at AS decided_at
+    FROM copyright_notices notice
+    JOIN copyright_territorial_notice_receipts receipt
+      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
+    WHERE notice.id = ${noticeId} AND notice.jurisdiction IN ('eu_dsa', 'uk')`)
   const parent = rows[0]
   assert(parent, 404, 'Territorial copyright notice not found')
   if (options.after) assert(parent.decision_id, 400, 'Invalid cursor format')

@@ -27,21 +27,12 @@ export async function listCopyrightRepeatInfringerAccountsForNotice(
       incident.id AS incident_id,
       incident.is_operative,
       open_review.id AS open_review_id,
-      EXISTS (
-        SELECT 1 FROM copyright_repeat_infringer_reviews terminated
-        WHERE terminated.account_user_id = incident.account_user_id
-          AND terminated.outcome = 'terminate'
-          AND NOT EXISTS (
-            SELECT 1 FROM copyright_repeat_infringer_reviews reinstated
-            WHERE reinstated.account_user_id = terminated.account_user_id
-              AND reinstated.outcome = 'reinstatement'
-              AND reinstated.outcome_at > terminated.outcome_at
-          )
-      ) AS termination_in_effect
+      COALESCE(account_state.is_termination_in_effect, false) AS termination_in_effect
     FROM copyright_repeat_infringer_incidents incident
-    LEFT JOIN copyright_repeat_infringer_reviews open_review
-      ON open_review.account_user_id = incident.account_user_id
-      AND open_review.outcome IS NULL
+    LEFT JOIN copyright_repeat_infringer_account_states account_state
+      ON account_state.account_user_id = incident.account_user_id
+    LEFT JOIN copyright_repeat_infringer_review_identities open_review
+      ON open_review.id = account_state.current_open_review_identity_id
     WHERE incident.copyright_notice_id = ${noticeId}
     ORDER BY incident.account_user_id
   `)

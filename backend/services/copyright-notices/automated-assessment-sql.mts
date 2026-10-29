@@ -8,11 +8,7 @@ export function automatedAssessmentSql(assessmentAlias = 'assessment'): SQLState
 }
 
 export function automaticRestrictionSql(restrictionAlias = 'restriction'): SQLStatement {
-  return sql``
-    .append(`EXISTS (SELECT 1 FROM copyright_notice_submission_assessments automated_assessment
-    WHERE automated_assessment.id = ${checkedAlias(restrictionAlias)}.authorizing_assessment_id AND (`)
-    .append(automatedAssessmentSql('automated_assessment'))
-    .append('))')
+  return sql``.append(`${checkedAlias(restrictionAlias)}.is_authorizing_assessment_automated`)
 }
 
 /** Guidance means an actual result exists, never merely a pending or failed execution. */
@@ -22,9 +18,12 @@ export function aiGuidanceSql(noticeAlias = 'notice'): SQLStatement {
     JOIN copyright_notice_form_intakes guidance_intake ON guidance_intake.copyright_notice_submission_id = guidance_submission.id
     JOIN copyright_notice_form_screenings guidance_screening ON guidance_screening.copyright_notice_form_intake_id = guidance_intake.id
     WHERE guidance_submission.copyright_notice_id = ${notice}.id)
-    OR EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews guidance_review
-      JOIN copyright_notice_email_intake_recommendations guidance_recommendation ON guidance_recommendation.copyright_notice_email_intake_id = guidance_review.copyright_notice_email_intake_id
-      WHERE guidance_review.promoted_copyright_notice_id = ${notice}.id)
+    OR EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links guidance_link
+      JOIN copyright_notice_email_intakes guidance_intake
+        ON guidance_intake.id = guidance_link.copyright_notice_email_intake_id
+      WHERE guidance_link.copyright_notice_id = ${notice}.id
+        AND guidance_link.link_kind = 'initial'
+        AND guidance_intake.recommendation_completed_at IS NOT NULL)
     OR EXISTS (SELECT 1 FROM copyright_notice_submissions guidance_appeal
       JOIN copyright_notice_appeal_recommendations guidance_recommendation ON guidance_recommendation.copyright_notice_submission_id = guidance_appeal.id
       WHERE guidance_appeal.copyright_notice_id = ${notice}.id)

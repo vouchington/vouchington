@@ -17,11 +17,19 @@ export async function insertCopyrightArtifactWithoutStorageObject(noticeId: stri
 /** Attempts a distinct SES intake whose original MIME bytes have no object identity. */
 export async function insertCopyrightIntakeWithoutStorageObject(intakeId: string): Promise<void> {
   await write(sql`/* insertCopyrightIntakeWithoutStorageObject */
+    WITH receipt AS (
+      INSERT INTO copyright_notice_email_intake_receipts
+        (amazon_ses_message_id, raw_sha256, raw_storage_key_sha256, raw_byte_size)
+      SELECT ${`missing-storage-${randomUUID()}`}, raw_sha256,
+        sha256(convert_to(id::text, 'UTF8')), raw_byte_size
+      FROM copyright_notice_email_intakes WHERE id = ${intakeId}
+      RETURNING id, amazon_ses_message_id
+    )
     INSERT INTO copyright_notice_email_intakes (
-      amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256, raw_media_type_id,
+      id, amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256, raw_media_type_id,
       raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
     )
-    SELECT ${`missing-storage-${randomUUID()}`}, received_at, NULL, raw_sha256, raw_media_type_id,
+    SELECT receipt.id, receipt.amazon_ses_message_id, received_at, NULL, raw_sha256, raw_media_type_id,
       raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
-    FROM copyright_notice_email_intakes WHERE id = ${intakeId}`)
+    FROM copyright_notice_email_intakes seed CROSS JOIN receipt WHERE seed.id = ${intakeId}`)
 }

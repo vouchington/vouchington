@@ -2,7 +2,6 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { inAreaTrustedFlaggerMatchSql } from './trusted-flagger-match.mts'
 
 /**
@@ -15,7 +14,11 @@ export function copyrightStaffQueueKeysSql({
   now,
   paging = false,
   trustedFlaggerBoost = false,
-}: { now?: Date; paging?: boolean; trustedFlaggerBoost?: boolean } = {}): SQLStatement {
+}: {
+  now?: Date
+  paging?: boolean
+  trustedFlaggerBoost?: boolean
+} = {}): SQLStatement {
   if (now && !Number.isFinite(now.getTime()))
     throw new TypeError('Copyright queue clock must be valid')
   return sql`
@@ -30,48 +33,31 @@ export function copyrightStaffQueueKeysSql({
       WHERE review.id IS NULL
         AND (submission.source_kind = 'guest_form' OR NOT EXISTS (
           SELECT 1 FROM copyright_notice_form_screening_attempts execution
-          JOIN copyright_notice_submission_assessments assessment
-            ON assessment.copyright_notice_submission_id = submission.id
-              AND assessment.copyright_notice_form_screening_id = execution.copyright_notice_form_screening_id
           WHERE execution.copyright_notice_form_intake_id = intake.id
             AND fn_current_copyright_form_screening(submission.id, execution.copyright_notice_form_screening_id)
-            AND assessment.is_substantially_compliant AND NOT EXISTS (
-              SELECT 1 FROM copyright_notice_submission_assessments newer
-              WHERE newer.supersedes_assessment_id = assessment.id
-            )
+            AND submission.current_assessment_form_screening_id = execution.copyright_notice_form_screening_id
+            AND submission.current_assessment_is_substantially_compliant
         ))
       UNION ALL
       SELECT receipt.copyright_notice_id, 'territorial_notice_review', receipt.received_at
       FROM copyright_territorial_notice_receipts receipt
-      WHERE NOT EXISTS (
-        SELECT 1 FROM copyright_territorial_decisions decision
-        WHERE decision.copyright_notice_id = receipt.copyright_notice_id
-          AND decision.jurisdiction = receipt.jurisdiction
-      )
+      JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
+      WHERE notice.current_territorial_decision_identity_id IS NULL
       UNION ALL
-      SELECT decision.copyright_notice_id, 'territorial_decision_reopened',
-        min(redress.decided_at) AS since
-      FROM copyright_territorial_decisions decision
+      SELECT notice.id, 'territorial_decision_reopened',
+        min(request.decided_at) AS since
+      FROM copyright_notices notice
       JOIN copyright_territorial_redress_requests request
-        ON request.copyright_territorial_decision_id = decision.id
-      JOIN copyright_territorial_redress_decisions redress
-        ON redress.copyright_territorial_redress_request_id = request.id
-      WHERE decision.outcome = 'no_action' AND redress.staff_disposition = 'revoke'
-        AND `
-    .append(territorialDecisionIsLiveSql())
-    .append(sql`
-      GROUP BY decision.copyright_notice_id
+        ON request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
+      WHERE notice.territorial_decision_outcome = 'no_action'
+        AND request.staff_disposition = 'revoke'
+      GROUP BY notice.id
       UNION ALL
       SELECT request.copyright_notice_id, 'territorial_redress_review', request.received_at
       FROM copyright_territorial_redress_requests request
-      JOIN copyright_territorial_decisions decision
-        ON decision.id = request.copyright_territorial_decision_id
-      WHERE NOT EXISTS (
-        SELECT 1 FROM copyright_territorial_redress_decisions redress_decision
-        WHERE redress_decision.copyright_territorial_redress_request_id = request.id
-      ) AND `)
-    .append(territorialDecisionIsLiveSql())
-    .append(sql`
+      JOIN copyright_notices notice ON notice.id = request.copyright_notice_id
+      WHERE request.staff_disposition IS NULL
+        AND notice.current_territorial_decision_identity_id = request.copyright_territorial_decision_id
       UNION ALL
       SELECT target.copyright_notice_id, 'restriction_review', restriction.imposed_at
       FROM copyright_restrictions restriction
@@ -114,7 +100,7 @@ export function copyrightStaffQueueKeysSql({
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.state = 'failed'
       UNION ALL
-      `)
+      `
     .append(
       // Includes the automated assessments the switch, an earlier on-period or a suspended claimant is
       // holding back, so staff see them.
@@ -162,6 +148,8 @@ export function copyrightStaffQueueKeysSql({
         min(open_item.since) AS waiting_since,
         array_agg(DISTINCT open_item.reason ORDER BY open_item.reason) AS reasons
       FROM open_item
+      `)
+    .append(sql`
       GROUP BY open_item.copyright_notice_id
     )
   `)

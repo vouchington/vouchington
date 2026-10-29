@@ -93,7 +93,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
     // empirically against the dev DB, constant regardless of shift magnitude. That drift is
     // irrelevant to production (a real createdAt is always minutes old, never spanning a DST
     // change) but would flip a midnight-adjacent anchor to the wrong day depending on which
-    // calendar month the random future day lands on. Noon keeps a wide, deterministic margin.
+    // calendar month the random reserved day lands on. Noon keeps a wide, deterministic margin.
     const requestDay = await reserveDay()
     const insertDay = new Date(Date.parse(`${requestDay}T00:00:00.000Z`) + 24 * 60 * 60 * 1000)
       .toISOString()

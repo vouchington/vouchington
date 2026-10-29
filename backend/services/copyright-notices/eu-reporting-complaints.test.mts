@@ -1,10 +1,12 @@
+import { insertTestHistoricalTerritorialComplaint } from '@voucha/test-helpers/copyright-territorial-historical-complaint'
+import {
+  createTestExpiredTerritorialDecisionHistory,
+  decideTestExpiredTerritorialRedress,
+} from '@voucha/test-helpers/copyright-expired-territorial-history'
 import { describe, expect, it } from 'vitest'
 import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-participant-cases'
 import { createTestReportingTrustedEuCase } from '@voucha/test-helpers/dsa-report-figure-fixtures'
-import {
-  createTestHistoricalEuDecisionWindow,
-  insertTestHistoricalTerritorialComplaint,
-} from '@voucha/test-helpers/copyright-territorial-historical-window'
+import { createTestHistoricalEuDecisionWindow } from '@voucha/test-helpers/copyright-territorial-historical-window'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './index.mts'
@@ -17,6 +19,18 @@ const period = () => ({
 
 describe('DSA copyright complaint aggregates', () => {
   useCopyrightIntakeEnvironment()
+
+  it('counts a recent redress from retained results after challenged history expires', async () => {
+    const scene = await createTestExpiredTerritorialDecisionHistory('no_action')
+    await decideTestExpiredTerritorialRedress(scene.requestId, 'maintain')
+    const { start, end } = period()
+    const figures = await readDsaCopyrightComplaintFigures(start, end, [scene.noticeId])
+    expect(figures.complaints_by_submitter.notifier).toBe(1)
+    expect(figures.complaints_by_decision_type.no_action).toMatchObject({
+      received: 1,
+      upheld: 1,
+    })
+  })
 
   it('reports reviewer filings from their stored role even before a staff outcome exists', async () => {
     const { start, end } = period()

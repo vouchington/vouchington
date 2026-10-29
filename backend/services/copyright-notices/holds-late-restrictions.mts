@@ -30,7 +30,8 @@ export async function activateLateCopyrightLegalHoldRestrictions(
     /* activateLateCopyrightLegalHoldRestrictions */
     WITH prior AS (
       SELECT DISTINCT ON (restriction.copyright_notice_target_id)
-        restriction.copyright_notice_target_id, restriction.authorizing_assessment_id
+        restriction.copyright_notice_target_id, restriction.authorizing_assessment_id,
+        restriction.is_authorizing_assessment_automated
       FROM copyright_restrictions restriction
       WHERE restriction.copyright_notice_target_id = ANY(${targetIds}::uuid[])
         AND restriction.lifted_at IS NOT NULL
@@ -38,9 +39,11 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       ORDER BY restriction.copyright_notice_target_id, restriction.imposed_at DESC, restriction.id DESC
     ), inserted AS (
       INSERT INTO copyright_restrictions (
-        copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id,
+        copyright_notice_target_id, authorizing_assessment_id,
+        is_authorizing_assessment_automated, imposed_at, imposed_by_id,
         human_reviewed_at, human_review_action, human_reviewed_by_id
-      ) SELECT target.id, prior.authorizing_assessment_id, CURRENT_TIMESTAMP, NULL, NULL, NULL, NULL
+      ) SELECT target.id, prior.authorizing_assessment_id,
+          prior.is_authorizing_assessment_automated, CURRENT_TIMESTAMP, NULL, NULL, NULL, NULL
       FROM copyright_notice_targets target JOIN prior ON prior.copyright_notice_target_id = target.id
       WHERE target.id = ANY(${targetIds}::uuid[])
       ORDER BY target.id ASC NULLS LAST

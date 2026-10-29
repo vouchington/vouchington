@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { acquireTestAiUsageDateReservation, insertTestAiUsageRecord } from '@voucha/test-helpers'
+import { createAuthenticatedTestSession } from '@voucha/test-helpers/authenticated-session'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { acquireTestAiUsageDateReservationControlSlot } from '@voucha/test-helpers/entities/ai-usage-date-reservation'
 import {
@@ -22,6 +25,23 @@ describe('acquireTestAiUsageDateReservation', () => {
     })
 
     expect(first.day).not.toBe(second.day)
+    expect(Date.parse(first.day)).toBeLessThan(Date.now())
+    expect(Date.parse(second.day)).toBeLessThan(Date.now())
+  })
+
+  it('does not advance authenticated fixture ids beyond the restored real clock', async () => {
+    const user = await createTestUser()
+    const before = Date.now()
+    await withReservedAiUsageDay(1000, async () => {
+      await createAuthenticatedTestSession(user)
+    })
+    const tokens = await createAuthenticatedTestSession(user)
+    const timestamp = Number.parseInt(
+      tokens.deviceToken.payload.did.replaceAll('-', '').slice(0, 12),
+      16,
+    )
+    expect(timestamp).toBeGreaterThanOrEqual(before)
+    expect(timestamp).toBeLessThanOrEqual(Date.now())
   })
 
   it('does not recycle a released ordinary day or reuse its cached ledger total', async () => {

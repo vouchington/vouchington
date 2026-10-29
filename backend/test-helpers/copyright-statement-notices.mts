@@ -3,7 +3,10 @@ import { beginTransaction, read, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { copyrightCorrespondencePurpose } from '../services/copyright-notices/correspondence.mts'
-import { selectCopyrightStatementFacts } from '../services/copyright-notices/statement-of-reasons-facts.mts'
+import {
+  selectCopyrightStatementFacts,
+  type CopyrightStatementAuthority,
+} from '../services/copyright-notices/statement-of-reasons-facts.mts'
 import { createCopyrightReviewOutcomeNoticesInTransaction } from '../services/copyright-notices/review-outcome-notices.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from '../services/copyright-notices/claimant-decision-notices.mts'
 
@@ -45,6 +48,28 @@ export async function readTestCopyrightStatementFacts(noticeId: string, restrict
   const facts = await selectCopyrightStatementFacts(noticeId, transaction, { restrictionId })
   await transaction.commit()
   return facts
+}
+
+/** Reads an exact authority through the real facts service without exposing a SQL transaction to tests. */
+export async function readTestCopyrightStatementAuthorityFacts(
+  noticeId: string,
+  authority: CopyrightStatementAuthority,
+) {
+  await using transaction = await beginTransaction()
+  const facts = await selectCopyrightStatementFacts(noticeId, transaction, authority)
+  await transaction.commit()
+  return facts
+}
+
+/** Replays an already admitted poster statement against its original restriction authority. */
+export async function replayTestCopyrightPosterRestriction(input: {
+  noticeId: string
+  targetId: string
+  restrictionId: string
+}) {
+  await using transaction = await beginTransaction()
+  await createCopyrightPosterNoticesInTransaction({ ...input, event: 'restricted' }, transaction)
+  await transaction.commit()
 }
 
 export async function replayTestCopyrightStatementNotices(

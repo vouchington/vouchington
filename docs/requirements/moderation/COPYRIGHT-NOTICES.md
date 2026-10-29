@@ -159,12 +159,33 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 
 ## Evidence retention
 
+The daily operational cleanup separately expires screening and transport attempts, unused guest
+capabilities, and case-exclusive email threading after the case has no open work and its reply
+window has passed. A per-case intake-age high-water prevents old SES replays from rebuilding
+expired references while fresh email can still thread through an eligible case. An unlinked email
+intake loses its original object and private MIME parse and attachment data after inactivity; a
+minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
+the first object-version delete, and the receipt blocks new processing while bounded cleanup
+continues. Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
+intake. Final legal and staff outcomes live on their owning case, receipt, or redress request for
+that owner's lifetime, including the decision, retained decider identity, decision time, and final
+redress result. The six-year policy includes EU and UK lifecycle and staff-review history and
+records advisor review with owner approval.
+Detailed lifecycle, assessment, recommendation, and review history expires through guarded monthly partition
+retirement after the owner-approved six-year window. Recommendation history also expires when
+its private intake was erased earlier; retained review provenance cannot keep the full agent
+output indefinitely. Retained identities preserve protocol
+references without authorizing deleted records. Form intakes are created with a required notice
+foreign key, so there is no unlinked form-intake state to sweep.
+
 GDPR and UK GDPR need a retention period and real deletion or anonymisation when it ends. The US
 side must keep records for the repeat-infringer policy (17 USC 512(i)), restoration (512(g)), the
 three-year limitation period (17 USC 507(b)), and litigation holds. A sweep reconciles the two. It
 is off by default and deletes nothing until the owner approves a period.
 
-- Only `us_dmca` cases are swept; EU and UK records are kept.
+- The private-evidence erasure sweep applies to `us_dmca` cases. EU and UK case outcomes remain
+  available while their owning rows exist; their detailed history follows the separate six-year
+  partition window.
 - A case is never swept while any blocker exists: open queue work, an open deadline, an active
   restriction, an operative incident, a pending delivery, a live guest capability, an unresolved
   hold, a pending thread-linked email reply, or a preservation hold on a party account. Resolving

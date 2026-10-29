@@ -93,7 +93,7 @@ describe('blocked copyright restoration recovery', () => {
         record => record.id === scene.restore.copyright_notice_deadline_id,
       )
       const assessment = aggregate?.assessments.find(
-        record => record.id === deadline?.qualifying_counter_notice_assessment_id,
+        record => record.id === deadline?.qualifying_counter_notice_assessment_identity_id,
       )
       if (!assessment) throw new Error('Original counter-notice assessment disappeared')
       await appendCopyrightSubmissionAssessment({

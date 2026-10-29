@@ -6,7 +6,7 @@ export function heldCopyrightDeadlineSql(): SQLStatement {
   const restrictedTargets = sql`
     SELECT deadline_target.copyright_notice_target_id
     FROM copyright_notice_counter_notice_assessment_targets deadline_target
-    WHERE deadline_target.copyright_notice_submission_assessment_id = deadline.qualifying_counter_notice_assessment_id
+    WHERE deadline_target.copyright_notice_submission_assessment_identity_id = deadline.qualifying_counter_notice_assessment_identity_id
       AND EXISTS (
         SELECT 1 FROM copyright_restrictions active_restriction
         WHERE active_restriction.copyright_notice_target_id = deadline_target.copyright_notice_target_id

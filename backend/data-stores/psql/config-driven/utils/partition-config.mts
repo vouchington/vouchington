@@ -1,11 +1,4 @@
-/**
- * Centralized configuration for tables that require partitions.
- *
- * This is the single source of truth for which tables need time-based partitions.
- * Used by both:
- * - Config-driven migrations (initial partition creation)
- * - Monthly scheduled job (ongoing partition creation for crawl and RSS history tables)
- */
+/** Shared bootstrap, maintenance, and retirement configuration for partitioned tables. */
 
 import type { MonthlyPartitionTableConfig } from '@vouchington/postgres/partitions'
 
@@ -16,10 +9,7 @@ function monthlyPartitionTable(
   return { table, ...overrides }
 }
 
-/**
- * Posts tables - partitioned by UUIDv7 timestamp
- * Default partition, split by adding explicit range partitions when needed
- */
+/** UUIDv7 post tables start with a default child and split on demand. */
 export const POST_PARTITION_TABLES: string[] = [
   'posts',
   'post_review_topic_ratings',
@@ -54,6 +44,22 @@ export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
 export const RSS_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   monthlyPartitionTable('rss_feed_crawls', { retentionDays: 30, futureMonths: 2 }),
 ]
+
+/** Detailed copyright transitions and staff decisions expire by whole calendar month. */
+export const COPYRIGHT_HISTORY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
+  'copyright_notice_lifecycle_changes',
+  'copyright_territorial_decisions',
+  'copyright_territorial_redress_decisions',
+  'copyright_notice_submission_assessments',
+  'copyright_notice_email_intake_recommendations',
+  'copyright_notice_email_intake_reviews',
+  'copyright_notice_email_correspondence_reviews',
+  'copyright_restriction_administrator_lifts',
+  'copyright_repeat_infringer_dispositions',
+  'copyright_repeat_infringer_reviews',
+].map(table =>
+  monthlyPartitionTable(table, { pastMonths: 12, futureMonths: 2, retentionDays: 2192 }),
+)
 
 /**
  * Session tables - partitioned by UUIDv7 JWT sid/id
@@ -116,14 +122,19 @@ export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
+  ...COPYRIGHT_HISTORY_PARTITION_TABLES,
 ]
 
 export type PartitionDropPolicy = {
   /** Null refuses every drop until the table owner specifies a minimum. */
   minimumRetentionDays: number | null
+  /** Calendar-month minimum for monthly legal history; overrides approximate day windows. */
+  minimumRetentionMonths?: number
   legalBasis?: string
   /** A partition-column FK to the held account's retained user identity. */
   legalHoldAccountColumn?: string
+  /** History row is preserved by a legal hold on a copyright case party or review account. */
+  copyrightHistory?: true
   /** Each predicate must have a matching partial index on the partition parent. */
   inFlightPredicates?: readonly string[]
 }
@@ -151,6 +162,15 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
     ...(config.table === 'crawl_chunks' && {
       inFlightPredicates: ['bedrock_nova_multimodal_v1_embedding_created_at IS NULL'],
     }),
+  }
+}
+
+for (const config of COPYRIGHT_HISTORY_PARTITION_TABLES) {
+  PARTITION_DROP_POLICIES[config.table] = {
+    minimumRetentionDays: config.retentionDays ?? null,
+    minimumRetentionMonths: 72,
+    legalBasis: 'docs/requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention',
+    copyrightHistory: true,
   }
 }
 

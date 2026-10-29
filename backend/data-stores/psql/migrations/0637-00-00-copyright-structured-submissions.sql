@@ -43,7 +43,7 @@ CREATE INDEX idx_copyright_notice_submission_targets__target ON copyright_notice
 ALTER TABLE copyright_restrictions
   ADD CONSTRAINT fk_copyright_restrictions__authorizing_assessment
   FOREIGN KEY (copyright_notice_id, authorizing_assessment_id)
-  REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id)
+  REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id)
   ON DELETE RESTRICT NOT VALID;
 
 ALTER TABLE copyright_restrictions
@@ -57,6 +57,12 @@ ALTER TABLE copyright_notice_submission_assessments
 
 ALTER TABLE copyright_notice_submission_assessments
   VALIDATE CONSTRAINT fk_copyright_assessments__form_screening;
+
+ALTER TABLE copyright_notice_submissions
+  ADD CONSTRAINT fk_copyright_notice_submissions__current_form_screening
+  FOREIGN KEY (current_assessment_form_screening_id)
+  REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_submissions VALIDATE CONSTRAINT fk_copyright_notice_submissions__current_form_screening;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__authorizing_assessment ON copyright_restrictions(authorizing_assessment_id);
@@ -73,11 +79,16 @@ BEGIN
   END IF;
   IF NOT EXISTS (
     SELECT 1
-    FROM copyright_notice_submission_assessments assessment
+    FROM copyright_notice_submission_assessment_identities assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
     WHERE assessment.id = NEW.authorizing_assessment_id
-      AND assessment.is_substantially_compliant
+      AND assessment.copyright_notice_id = (
+        SELECT target.copyright_notice_id FROM copyright_notice_targets target
+        WHERE target.id = NEW.copyright_notice_target_id
+      )
+      AND submission.current_assessment_identity_id = assessment.id
+      AND submission.current_assessment_is_substantially_compliant
       AND submission.kind = 'notice'
       AND (
         submission.source_kind <> 'guest_form'
@@ -89,10 +100,6 @@ BEGIN
           WHERE intake.copyright_notice_submission_id = submission.id
             AND review.is_accepted
         )
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
       )
   ) THEN
     RAISE EXCEPTION 'copyright restriction requires a current compliant notice assessment in the same case'
@@ -122,3 +129,7 @@ COMMENT ON COLUMN copyright_notice_submission_requests.copyright_notice_submissi
 COMMENT ON COLUMN copyright_notice_submission_requests.requester_user_id IS 'Authenticated affected poster making the request.';
 COMMENT ON COLUMN copyright_notice_submission_requests.idempotency_key IS 'Caller-generated UUID preventing duplicate response admission.';
 COMMENT ON COLUMN copyright_notice_submission_requests.request_sha256 IS 'Digest used to reject conflicting reuse of an idempotency key.';
+
+CREATE INDEX idx_copyright_notice_submissions__current_form_screening
+  ON copyright_notice_submissions (current_assessment_form_screening_id)
+  WHERE current_assessment_form_screening_id IS NOT NULL;

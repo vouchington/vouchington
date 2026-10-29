@@ -550,6 +550,14 @@
 - `proceeding_ended`
 - `superseded`
 
+## `copyright_notice_legal_retention_phases`
+
+- `claimant`
+- `submissions`
+- `incidents`
+- `targets`
+- `done`
+
 ## `copyright_notice_lifecycle_change_recovery_sources`
 
 - `durable_review`
@@ -596,6 +604,16 @@
 - `guest_capability_revoked`
 - `guest_capability_revoked_by_withdrawal`
 
+## `copyright_notice_operational_retention_kinds`
+
+- `form_screening_attempts`
+- `action_attempts`
+- `delivery_attempts`
+- `guest_capabilities`
+- `unlinked_email_intakes`
+- `email_thread_references`
+- `orphan_email_thread_tokens`
+
 ## `copyright_notice_submission_kinds`
 
 - `complaint`
@@ -612,6 +630,14 @@
 - `guest_form`
 - `email`
 - `staff`
+
+## `copyright_notice_thread_retention_phases`
+
+- `references`
+- `reply_edges`
+- `ancestor_edges`
+- `unlinked_reply_edges`
+- `unlinked_ancestor_edges`
 
 ## `copyright_repeat_infringer_disposition_kinds`
 
@@ -1619,7 +1645,7 @@
 - `github_friends`
 - `x_friends`
 - `copyright_rationales_erased`
-- `copyright_rationales_noncase`
+- `copyright_rationales_attempts`
 
 ## `spending_frequencies`
 

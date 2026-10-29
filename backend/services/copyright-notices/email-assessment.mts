@@ -9,14 +9,10 @@ export async function getOrCreateEmailAssessment(
   admitted: { noticeId: string; submissionId: string },
 ): Promise<{ id: string }> {
   const { rows } = await write<{ id: string }>(sql`/* getOrCreateEmailAssessment:existing */
-    SELECT assessment.id
-    FROM copyright_notice_submission_assessments assessment
-    WHERE assessment.copyright_notice_submission_id = ${admitted.submissionId}
-      AND assessment.is_substantially_compliant
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
-      )
+    SELECT current_assessment_identity_id AS id
+    FROM copyright_notice_submissions
+    WHERE id = ${admitted.submissionId}
+      AND current_assessment_is_substantially_compliant
   `)
   if (rows[0]) return rows[0]
   try {
@@ -30,14 +26,10 @@ export async function getOrCreateEmailAssessment(
     if (!isConflict(err)) throw err
     const { rows: concurrent } = await write<{ id: string }>(
       sql`/* getOrCreateEmailAssessment:concurrent */
-        SELECT id FROM copyright_notice_submission_assessments
-        WHERE copyright_notice_submission_id = ${admitted.submissionId}
-          AND is_substantially_compliant
-          AND NOT EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments newer
-            WHERE newer.supersedes_assessment_id = copyright_notice_submission_assessments.id
-          )
-        ORDER BY id DESC LIMIT 1`,
+        SELECT current_assessment_identity_id AS id
+        FROM copyright_notice_submissions
+        WHERE id = ${admitted.submissionId}
+          AND current_assessment_is_substantially_compliant`,
     )
     assert(concurrent[0], 409, 'Copyright email assessment conflicted without a current result')
     return concurrent[0]

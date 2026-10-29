@@ -51,3 +51,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_staydown_matches_updated_at`: `CREATE TRIGGER trigger_copyright_staydown_matches_updated_at BEFORE UPDATE ON public.copyright_staydown_matches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_staydown_matches FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`

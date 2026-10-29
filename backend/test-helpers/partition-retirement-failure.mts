@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { beginTransaction, write } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import { createTestUser } from './entities/users.mts'
 import { rejectQuery } from './injected-failures.mts'
 
@@ -39,4 +40,36 @@ export async function createPartitionRetirementFailureFixture() {
     }
   }
   return { begin, statements, originalMarkdown, readMarkdown }
+}
+
+/** Record operator DDL routing while owning only an otherwise empty real transaction. */
+export function createCopyrightPartitionRetirementRecorder(tables: readonly string[]) {
+  const statements: string[] = []
+  const query: QueryExecutor = async input => {
+    statements.push(typeof input === 'string' ? input : input.text)
+    return {
+      rows: tables.map(table => ({
+        parent_table: table,
+        partition_table: `${table}__p_2020_02`,
+      })) as never[],
+      rowCount: tables.length,
+      command: 'SELECT',
+      oid: 0,
+      fields: [],
+    }
+  }
+  const begin: typeof beginTransaction = async () => {
+    const transaction = await beginTransaction()
+    const record: QueryExecutor = async input => {
+      statements.push(typeof input === 'string' ? input : input.text)
+      return { rows: [], rowCount: 0, command: 'ALTER', oid: 0, fields: [] }
+    }
+    return Object.assign(record, {
+      client: transaction.client,
+      commit: () => transaction.commit(),
+      rollback: () => transaction.rollback(),
+      [Symbol.asyncDispose]: () => transaction[Symbol.asyncDispose](),
+    })
+  }
+  return { query, begin, statements }
 }

@@ -54,7 +54,8 @@ export async function searchCopyrightStaffEmailIntakes(
   const intakeIds = options.intakeIds ? [...options.intakeIds] : null
   const query = sql`/* searchCopyrightStaffEmailIntakes */
     SELECT intake.id, intake.received_at, COALESCE(parse.status::text, 'unparsed') AS parse_status,
-      recommendation.id AS recommendation_id, link.link_kind, link.copyright_notice_id AS linked_notice_id,
+      intake.current_recommendation_identity_id AS recommendation_id,
+      link.link_kind, link.copyright_notice_id AS linked_notice_id,
       reply.state AS reply_state, COALESCE(reply.bounced_at, reply.failed_at, reply.updated_at) AS reply_since,
       to_char(
         intake.received_at AT TIME ZONE 'UTC',
@@ -67,15 +68,16 @@ export async function searchCopyrightStaffEmailIntakes(
   query.append(copyrightEmailReplyReferenceSql())
   query.append(sql` AS has_reply_reference
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt
+      ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id
-    LEFT JOIN LATERAL (SELECT id FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_delivery_work_items reply
-      ON reply.copyright_notice_email_intake_id = intake.id
+      ON reply.copyright_notice_email_intake_receipt_id = intake.id
       AND reply.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information') AND reply.state IN ('failed', 'bounced')
-    WHERE (`)
+    WHERE intake.raw_storage_object_id IS NOT NULL AND (`)
   query.append(copyrightEmailIntakeAwaitingReviewSql())
   query.append(sql` OR reply.id IS NOT NULL)`)
   if (intakeIds) query.append(sql` AND intake.id = ANY(${intakeIds}::uuid[])`)

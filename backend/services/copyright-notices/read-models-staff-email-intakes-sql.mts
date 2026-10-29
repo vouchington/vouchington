@@ -8,18 +8,15 @@ import sql, { type SQLStatement } from 'sql-template-strings'
  */
 export function copyrightEmailIntakeAwaitingReviewSql(): SQLStatement {
   return sql`
-    NOT EXISTS (
-      SELECT 1 FROM copyright_notice_email_intake_reviews awaiting_review
-      WHERE awaiting_review.copyright_notice_email_intake_id = intake.id
+    EXISTS (
+      SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+      WHERE receipt.id = intake.id AND receipt.review_decision IS NULL
     )
     AND NOT EXISTS (
       SELECT 1 FROM copyright_notice_email_intake_notice_links awaiting_link
       WHERE awaiting_link.copyright_notice_email_intake_id = intake.id
-        AND (awaiting_link.link_kind <> 'thread' OR EXISTS (
-          SELECT 1 FROM copyright_notice_email_correspondence_reviews awaiting_decision
-          WHERE awaiting_decision.copyright_notice_email_intake_id = intake.id
-            AND awaiting_decision.action IN ('admitted', 'rejected')
-        ))
+        AND (awaiting_link.link_kind <> 'thread'
+          OR awaiting_link.correspondence_action IN ('admitted', 'rejected'))
     )
   `
 }

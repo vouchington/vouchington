@@ -10,7 +10,10 @@ export async function insertGuestLifecycleCounterDeadline(input: {
   escalationAt: Date
   restorationDeadlineAt: Date
 }): Promise<void> {
-  await write(sql`/* insertGuestLifecycleCounterDeadline */
+  const { rows } = await write<{
+    assessment_id: string
+    submission_id: string
+  }>(sql`/* insertGuestLifecycleCounterDeadline */
     WITH counter_notice AS (
       INSERT INTO copyright_notice_submissions (
         copyright_notice_id, kind, received_at, source_kind, body_ciphertext
@@ -18,18 +21,34 @@ export async function insertGuestLifecycleCounterDeadline(input: {
         ${input.noticeId}, 'counter_notice', ${input.receivedAt}, 'signed_in_form',
         ${input.bodyCiphertext}
       ) RETURNING id
+    ), assessment_identity AS (
+      INSERT INTO copyright_notice_submission_assessment_identities (
+        copyright_notice_id, copyright_notice_submission_id
+      ) SELECT ${input.noticeId}, id FROM counter_notice
+      RETURNING id, copyright_notice_submission_id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
-      ) SELECT id, ${input.receivedAt}, ${input.actorId}, true FROM counter_notice
-      RETURNING id
-    )
-    INSERT INTO copyright_notice_deadlines (
-      copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
+        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+      ) SELECT id, copyright_notice_submission_id, ${input.receivedAt}, ${input.actorId}, true
+        FROM assessment_identity
+      RETURNING id, copyright_notice_submission_id
+    ), deadline AS (
+      INSERT INTO copyright_notice_deadlines (
+      copyright_notice_id, qualifying_counter_notice_assessment_identity_id, earliest_restoration_at,
       escalation_at, restoration_deadline_at
     ) SELECT ${input.noticeId}, id, ${input.earliestRestorationAt}, ${input.escalationAt},
       ${input.restorationDeadlineAt}
-    FROM assessment
+    FROM assessment RETURNING id
+    ) SELECT assessment.id AS assessment_id,
+        assessment.copyright_notice_submission_id AS submission_id
+      FROM assessment CROSS JOIN deadline
+  `)
+  await write(sql`/* insertGuestLifecycleCounterDeadline:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${rows[0]!.assessment_id},
+      current_assessment_is_substantially_compliant = true,
+      current_assessed_at = ${input.receivedAt}, current_assessed_by_id = ${input.actorId}
+    WHERE id = ${rows[0]!.submission_id}
   `)
 }
 
@@ -40,15 +59,30 @@ export async function insertGuestLifecycleRestriction(input: {
   actorId: string
 }): Promise<void> {
   await write(sql`/* insertGuestLifecycleRestriction */
-    WITH assessment AS (
+    WITH assessment_identity AS (
+      INSERT INTO copyright_notice_submission_assessment_identities (
+        copyright_notice_id, copyright_notice_submission_id
+      ) SELECT copyright_notice_id, id FROM copyright_notice_submissions
+        WHERE id = ${input.submissionId}
+      RETURNING id, copyright_notice_submission_id
+    ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
-      ) VALUES (${input.submissionId}, ${input.receivedAt}, ${input.actorId}, true)
-      RETURNING id
+        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+      ) SELECT id, copyright_notice_submission_id, ${input.receivedAt}, ${input.actorId}, true
+        FROM assessment_identity
+      RETURNING id, copyright_notice_submission_id
+    ), current_assessment AS (
+      UPDATE copyright_notice_submissions submission
+      SET current_assessment_identity_id = assessment.id,
+        current_assessment_is_substantially_compliant = true,
+        current_assessed_at = ${input.receivedAt}, current_assessed_by_id = ${input.actorId}
+      FROM assessment WHERE submission.id = assessment.copyright_notice_submission_id
+      RETURNING assessment.id
     )
     INSERT INTO copyright_restrictions (
       copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id
-    ) SELECT ${input.targetId}, id, ${input.receivedAt}, ${input.actorId} FROM assessment
+    ) SELECT ${input.targetId}, id, ${input.receivedAt}, ${input.actorId}
+      FROM current_assessment assessment
   `)
 }
 

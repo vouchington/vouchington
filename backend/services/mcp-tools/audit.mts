@@ -147,8 +147,8 @@ export async function recordMcpCallAudit(
     await query(
       `/* recordMcpCallAudit:legalRationales */
        INSERT INTO copyright_decision_rationales
-         (id, copyright_notice_id, copyright_notice_email_intake_id,
-          copyright_repeat_infringer_review_id, account_user_id, recorded_by_id,
+         (id, copyright_notice_id, copyright_notice_email_intake_receipt_id,
+          copyright_repeat_infringer_review_identity_id, account_user_id, recorded_by_id,
           tool_name, rationale_ciphertext)
        SELECT event.id,
          COALESCE(notice.id, form_intake.copyright_notice_id, submission.copyright_notice_id,
@@ -168,7 +168,7 @@ export async function recordMcpCallAudit(
          ON event.kind = 'repeat_incident' AND repeat_incident.id = event.target_id
        LEFT JOIN copyright_notice_email_intakes email_intake
          ON event.kind = 'email_intake' AND email_intake.id = event.target_id
-       LEFT JOIN copyright_repeat_infringer_reviews repeat_review
+       LEFT JOIN copyright_repeat_infringer_review_identities repeat_review
          ON event.kind = 'repeat_review' AND repeat_review.id = event.target_id
        LEFT JOIN retained_user_identities account_user
          ON event.kind = 'account_user' AND account_user.id = event.target_id

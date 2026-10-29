@@ -1,29 +1,22 @@
 import sql from 'sql-template-strings'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 
-/** A territorial decision remains live until a successor cites it. */
-export function territorialDecisionIsLiveSql(alias = 'decision'): ReturnType<typeof sql> {
-  if (!/^[a-z_][a-z0-9_]*$/.test(alias)) throw new Error('Invalid territorial decision alias')
-  return sql``.append(`NOT EXISTS (
-    SELECT 1 FROM copyright_territorial_decisions successor
-    WHERE successor.supersedes_decision_id = ${alias}.id
-  )`)
-}
-
 export function selectTerritorialRedressParent(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
 ) {
   return sql`/* submitTerritorialCopyrightRedress:decision */
-    SELECT decision.id, decision.decided_at, decision.outcome, receipt.requester_user_id
-    FROM copyright_territorial_decisions decision
+    SELECT notice.current_territorial_decision_identity_id AS id,
+      notice.territorial_decided_at AS decided_at,
+      notice.territorial_decision_outcome AS outcome,
+      notice.territorial_authorizing_assessment_identity_id AS authorizing_assessment_identity_id,
+      receipt.requester_user_id
+    FROM copyright_notices notice
     JOIN copyright_territorial_notice_receipts receipt
-      ON receipt.copyright_notice_id = decision.copyright_notice_id
-      AND receipt.jurisdiction = decision.jurisdiction
-    WHERE decision.copyright_notice_id = ${noticeId} AND decision.jurisdiction = ${jurisdiction}
-      AND `
-    .append(territorialDecisionIsLiveSql())
-    .append(sql` FOR UPDATE OF decision`)
+      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
+    WHERE notice.id = ${noticeId} AND notice.jurisdiction = ${jurisdiction}
+      AND notice.current_territorial_decision_identity_id IS NOT NULL
+    FOR UPDATE OF notice`
 }
 
 export function selectExistingTerritorialRedressRequest(
@@ -44,6 +37,8 @@ export function insertTerritorialRedressRequest(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
   decisionId: string,
+  decisionOutcome: 'restrict' | 'no_action',
+  authorizingAssessmentIdentityId: string | null,
   actorId: string | null,
   filedBy: 'notifier' | 'poster' | 'reviewer',
   idempotencyKey: string,
@@ -51,10 +46,12 @@ export function insertTerritorialRedressRequest(
 ) {
   return sql`/* submitTerritorialCopyrightRedress */
     INSERT INTO copyright_territorial_redress_requests (
-      copyright_notice_id, jurisdiction, copyright_territorial_decision_id, submitted_by_id,
+      copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
+      challenged_decision_outcome, authorizing_assessment_identity_id, submitted_by_id,
       filed_by, idempotency_key, explanation_ciphertext
     ) VALUES (
-      ${noticeId}, ${jurisdiction}, ${decisionId}, ${actorId}, ${filedBy}, ${idempotencyKey},
+      ${noticeId}, ${jurisdiction}, ${decisionId}, ${decisionOutcome},
+      ${authorizingAssessmentIdentityId}, ${actorId}, ${filedBy}, ${idempotencyKey},
       ${explanationCiphertext}
     )
     RETURNING id`
@@ -66,23 +63,24 @@ export function selectTerritorialRedressRequest(
   noticeId: string,
 ) {
   return sql`/* recordTerritorialCopyrightRedressDecision:request */
-    SELECT request.id, request.copyright_territorial_decision_id, `.append(
-    territorialDecisionIsLiveSql(),
-  ).append(sql` AS decision_is_live
+    SELECT request.id, request.copyright_territorial_decision_id,
+      notice.current_territorial_decision_identity_id = request.copyright_territorial_decision_id
+        AS decision_is_live
     FROM copyright_territorial_redress_requests request
-    JOIN copyright_territorial_decisions decision
-      ON decision.id = request.copyright_territorial_decision_id
+    JOIN copyright_notices notice ON notice.id = request.copyright_notice_id
     WHERE request.id = ${redressId} AND request.copyright_notice_id = ${noticeId}
-      AND request.jurisdiction = ${jurisdiction} FOR UPDATE OF request`)
+      AND request.jurisdiction = ${jurisdiction} FOR UPDATE OF request`
 }
 
 export function selectExistingTerritorialRedressDecision(redressId: string) {
   return sql`/* recordTerritorialCopyrightRedressDecision:existing */
-    SELECT id FROM copyright_territorial_redress_decisions
-    WHERE copyright_territorial_redress_request_id = ${redressId}`
+    SELECT current_staff_decision_identity_id AS id
+    FROM copyright_territorial_redress_requests
+    WHERE id = ${redressId} AND current_staff_decision_identity_id IS NOT NULL`
 }
 
 export function insertTerritorialRedressDecision(
+  decisionId: string,
   redressId: string,
   actorId: string,
   disposition: string,
@@ -90,8 +88,8 @@ export function insertTerritorialRedressDecision(
 ) {
   return sql`/* recordTerritorialCopyrightRedressDecision */
     INSERT INTO copyright_territorial_redress_decisions (
-      copyright_territorial_redress_request_id, decided_by_id, staff_disposition,
+      id, copyright_territorial_redress_request_id, decided_by_id, staff_disposition,
       rationale_ciphertext
-    ) VALUES (${redressId}, ${actorId}, ${disposition}, ${rationaleCiphertext})
+    ) VALUES (${decisionId}, ${redressId}, ${actorId}, ${disposition}, ${rationaleCiphertext})
     RETURNING id, decided_at, staff_disposition`
 }

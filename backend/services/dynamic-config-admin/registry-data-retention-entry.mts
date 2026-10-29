@@ -91,5 +91,43 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.classifier_retention_days,
       integer: true,
     },
+    copyright_form_screening_attempt_days: {
+      description: 'Keep prior copyright form screening attempts for this many days.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_form_screening_attempt_days,
+      integer: true,
+    },
+    copyright_action_attempt_days: {
+      description: 'Keep prior terminal copyright action executions for this many days.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_action_attempt_days,
+      integer: true,
+    },
+    copyright_delivery_attempt_days: {
+      description: 'Keep prior terminal copyright delivery executions for this many days.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_delivery_attempt_days,
+      integer: true,
+    },
+    copyright_guest_capability_days: {
+      description: 'Keep expired unused copyright guest capabilities for this many days.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_guest_capability_days,
+      integer: true,
+    },
+    copyright_unlinked_email_intake_days: {
+      description:
+        'Keep unlinked copyright email intakes after their last activity for this many days.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_unlinked_email_intake_days,
+      integer: true,
+    },
+    copyright_email_thread_reply_days: {
+      description:
+        'Keep copyright email thread references for this many days after a case becomes inactive.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_email_thread_reply_days,
+      integer: true,
+    },
   },
 })

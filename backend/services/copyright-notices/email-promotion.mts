@@ -59,7 +59,9 @@ async function admitCopyrightEmailIntake(
   await using transaction = await beginTransaction()
   const { rows: existing } = await transaction<{ id: string }>(sql`
     /* promoteCopyrightEmailIntake:exists */
-    SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId}
+    SELECT intake.id FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+    WHERE intake.id = ${input.intakeId} AND receipt.erased_at IS NULL
   `)
   assert(existing[0], 404, 'Copyright email intake not found')
   const graph = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)
@@ -113,7 +115,7 @@ async function admitCopyrightEmailIntake(
     WHERE intake.id = ${input.intakeId}
   `)
   const intake = intakeRows[0]
-  assert(intake, 404, 'Copyright email intake not found')
+  assert(intake?.raw_storage_object_id, 404, 'Copyright email intake not found')
   await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
@@ -122,12 +124,15 @@ async function admitCopyrightEmailIntake(
     submission_id: string | null
   }>(
     sql`/* promoteCopyrightEmailIntake:priorPromotion */
-      SELECT review.decision, review.promoted_copyright_notice_id, submission.id AS submission_id
-      FROM copyright_notice_email_intake_reviews review
+      SELECT receipt.review_decision AS decision,
+        link.copyright_notice_id AS promoted_copyright_notice_id, submission.id AS submission_id
+      FROM copyright_notice_email_intake_receipts receipt
+      LEFT JOIN copyright_notice_email_intake_notice_links link
+        ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
       LEFT JOIN copyright_notice_submissions submission
-        ON submission.copyright_notice_id = review.promoted_copyright_notice_id
+        ON submission.copyright_notice_id = link.copyright_notice_id
         AND submission.kind = 'notice'
-      WHERE copyright_notice_email_intake_id = ${intake.id}
+      WHERE receipt.id = ${intake.id} AND receipt.review_decision IS NOT NULL
     `,
   )
   const prior = priorPromotions[0]
@@ -229,9 +234,9 @@ async function assertNoThreadCorrespondenceDecision(
       AND link.link_kind = 'thread'
     UNION ALL
     SELECT 1
-    FROM copyright_notice_email_correspondence_reviews review
-    WHERE review.copyright_notice_email_intake_id = ${intakeId}
-      AND review.action IN ('admitted', 'rejected')
+    FROM copyright_notice_email_intake_notice_links decided_link
+    WHERE decided_link.copyright_notice_email_intake_id = ${intakeId}
+      AND decided_link.correspondence_action IN ('admitted', 'rejected')
     LIMIT 1
   `)
   assert(!rows[0], 409, 'Thread-linked copyright email cannot be approved as an initial intake')
@@ -246,8 +251,8 @@ async function assertRecommendationScope(
   const { rows } = await transaction<{
     id: string
   }>(sql`/* promoteCopyrightEmailIntake:recommendation */
-    SELECT id FROM copyright_notice_email_intake_recommendations
-    WHERE id = ${recommendationId} AND copyright_notice_email_intake_id = ${intakeId}
+    SELECT id FROM copyright_notice_email_intake_recommendation_identities
+    WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}
   `)
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')
 }
@@ -303,19 +308,26 @@ async function recordEmailPromotion(
     INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
     VALUES (${submission.id}, ${intake.raw_storage_object_id}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
   `)
+  const rationaleCiphertext = encryptSecret(
+    JSON.stringify({
+      rationale: input.rationale,
+      manual_fallback_reason: input.manualFallbackReason,
+    }),
+    purpose,
+  )
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
+      copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
       reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_id
     ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'approved',
-      ${encryptSecret(
-        JSON.stringify({
-          rationale: input.rationale,
-          manual_fallback_reason: input.manualFallbackReason,
-        }),
-        purpose,
-      )}, ${noticeId})
+      ${rationaleCiphertext}, ${noticeId})
   `)
+  await transaction(sql`/* promoteCopyrightEmailIntake:currentDecision */
+    UPDATE copyright_notice_email_intake_receipts SET
+      review_decision = 'approved', reviewed_at = CURRENT_TIMESTAMP,
+      reviewed_by_id = ${input.currentUser.id},
+      review_rationale_ciphertext = ${rationaleCiphertext}
+    WHERE id = ${intake.id}`)
   const { rows: initialLinks } = await transaction<{ copyright_notice_email_intake_id: string }>(
     sql`/* promoteCopyrightEmailIntake:initialThreadLink */
     INSERT INTO copyright_notice_email_intake_notice_links (
@@ -339,7 +351,7 @@ async function recordEmailPromotion(
   const { rows: arrivalReceipt } = await transaction<{
     id: string
   }>(sql`/* recordEmailPromotion:arrivalReceipt */
-    SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_id = ${intake.id}
+    SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
       AND delivery_kind = 'email_intake_received' AND state NOT IN ('failed', 'bounced')
   `)
   const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(

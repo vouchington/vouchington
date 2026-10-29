@@ -13,7 +13,7 @@ BEGIN
     RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id
-    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id
+    OR NEW.copyright_notice_email_intake_receipt_id IS DISTINCT FROM OLD.copyright_notice_email_intake_receipt_id
     OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id
     OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id
     OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role

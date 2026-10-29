@@ -1,25 +1,15 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import type {
+  AssessmentInput,
   CopyrightNoticeSubmissionAssessmentRecord,
   CopyrightSubmissionKind,
   CopyrightSubmissionSourceKind,
 } from './types.mts'
-
-export type AssessmentInput = {
-  submissionId: string
-  assessedAt: Date
-  currentUser: PrivateUser | null
-  substantiallyCompliant: boolean
-  supersedesAssessmentId?: string | null
-  targetIds?: string[]
-  copyrightFormScreeningId?: string
-}
 
 export async function appendCopyrightSubmissionAssessmentInTransaction(
   input: AssessmentInput,
@@ -34,9 +24,10 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     copyright_notice_id: string
     kind: CopyrightSubmissionKind
     source_kind: CopyrightSubmissionSourceKind
+    current_assessment_identity_id: string | null
     automated_statutory_fields_complete: boolean
   }>(sql`/* appendCopyrightSubmissionAssessment:lockSubmission */
-    SELECT s.copyright_notice_id, s.kind, s.source_kind,
+    SELECT s.copyright_notice_id, s.kind, s.source_kind, s.current_assessment_identity_id,
       intake.requester_user_id IS NOT NULL
         AND n.jurisdiction = 'us_dmca'
         AND char_length(n.claimant_contact_ciphertext) > 0
@@ -106,30 +97,26 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     422,
     'Counter-notice assessment targets must be unique',
   )
-  const { rows: currentRows } = await transaction<{
-    id: string
-  }>(sql`/* appendCopyrightSubmissionAssessment:current */
-    SELECT a.id
-    FROM copyright_notice_submission_assessments a
-    WHERE a.copyright_notice_submission_id = ${input.submissionId}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = a.id
-      )
-    FOR UPDATE OF a
-  `)
-  const current = currentRows[0]
+  const current = submissionRows[0].current_assessment_identity_id
   assert(
-    input.supersedesAssessmentId ? current?.id === input.supersedesAssessmentId : !current,
+    input.supersedesAssessmentId ? current === input.supersedesAssessmentId : !current,
     409,
     'Assessment must extend the current assessment tip',
   )
+  const { rows: identityRows } = await transaction<{ id: string }>(sql`
+    /* appendCopyrightSubmissionAssessment:identity */
+    INSERT INTO copyright_notice_submission_assessment_identities
+      (copyright_notice_id, copyright_notice_submission_id)
+    VALUES (${submissionRows[0].copyright_notice_id}, ${input.submissionId})
+    RETURNING id
+  `)
+  const assessmentId = identityRows[0]!.id
   const { rows } = await transaction(sql`/* appendCopyrightSubmissionAssessment */
     INSERT INTO copyright_notice_submission_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
+      id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
       supersedes_assessment_id, copyright_notice_form_screening_id
     ) VALUES (
-      ${input.submissionId}, ${input.assessedAt}, ${input.currentUser?.id ?? null}, ${input.substantiallyCompliant},
+      ${assessmentId}, ${input.submissionId}, ${input.assessedAt}, ${input.currentUser?.id ?? null}, ${input.substantiallyCompliant},
       ${input.supersedesAssessmentId ?? null}, ${input.copyrightFormScreeningId ?? null}
     )
     RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
@@ -137,6 +124,15 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
   assert(assessment, 500, 'Failed to append copyright submission assessment')
+  await transaction(sql`/* appendCopyrightSubmissionAssessment:currentResult */
+    UPDATE copyright_notice_submissions SET
+      current_assessment_identity_id = ${assessment.id},
+      current_assessment_is_substantially_compliant = ${input.substantiallyCompliant},
+      current_assessed_at = ${input.assessedAt},
+      current_assessed_by_id = ${input.currentUser?.id ?? null},
+      current_assessment_form_screening_id = ${input.copyrightFormScreeningId ?? null}
+    WHERE id = ${input.submissionId}
+  `)
   if (
     input.currentUser !== null &&
     !input.substantiallyCompliant &&
@@ -160,7 +156,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     const { rows: scopedTargets } = await transaction<{ id: string }>(
       sql`/* appendCopyrightSubmissionAssessment:scopeCounterNoticeTargets */
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
-        copyright_notice_submission_assessment_id, copyright_notice_target_id
+        copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
       )
       SELECT ${assessment.id}, target.id
       FROM copyright_notice_targets target
@@ -179,9 +175,9 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     await transaction(sql`/* appendCopyrightSubmissionAssessment:cancelDeadline */
       UPDATE copyright_notice_deadlines
       SET cancelled_at = ${input.assessedAt}
-      WHERE qualifying_counter_notice_assessment_id IN (
+      WHERE qualifying_counter_notice_assessment_identity_id IN (
         SELECT id
-        FROM copyright_notice_submission_assessments
+        FROM copyright_notice_submission_assessment_identities
         WHERE copyright_notice_submission_id = ${input.submissionId}
       )
         AND resolved_at IS NULL AND cancelled_at IS NULL
@@ -189,7 +185,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
   }
   await transaction(sql`/* appendCopyrightSubmissionAssessment:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_assessment_id)
+      copyright_notice_submission_assessment_identity_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, ${assessment.id})
   `)
   return assessment

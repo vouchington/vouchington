@@ -71,6 +71,9 @@ CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON copyright_n
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_screening_attempt_rewind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on' THEN
+    RETURN OLD;
+  END IF;
   IF TG_OP = 'DELETE' OR OLD.completed_at IS NOT NULL OR OLD.failed_at IS NOT NULL
     OR (to_jsonb(NEW) - ARRAY['execution_started_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'execution_token'])
       IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['execution_started_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'execution_token'])
@@ -180,7 +183,7 @@ COMMENT ON COLUMN copyright_notice_form_screenings.rationale_ciphertext IS 'Encr
 COMMENT ON COLUMN copyright_notice_form_screenings.guidance_ciphertext IS 'Encrypted strictly validated moderator guidance: summary, section 512(c)(3) element checklist, risk notes, and advisory suggested action. Staff-visible only; no workflow predicate reads it.';
 
 
-COMMENT ON TABLE copyright_notice_form_screening_attempts IS 'One monotonic row per screening attempt; current authority comes only from the latest attempt for an intake.';
+COMMENT ON TABLE copyright_notice_form_screening_attempts IS 'Monotonic screening executions; current authority and numbering come from the latest attempt, while older terminal attempts expire under bounded operational retention.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.copyright_notice_form_intake_id IS 'Concrete intake whose screening attempts share the form-review fence.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.attempt_number IS 'Monotonic intake-local attempt number; retries append rather than reset earlier attempts.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.copyright_notice_form_screening_id IS 'Immutable result selected on successful completion of this attempt.';
