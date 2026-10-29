@@ -8,7 +8,7 @@ import {
 import { createApplication } from './create.mts'
 import { searchApplications } from './get.mts'
 import { getApplicationQuestions, setApplicationQuestions } from './questions.mts'
-import { archiveCommunity } from '../archive.mts'
+import { archiveCommunities } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 
@@ -83,7 +83,7 @@ describe('index', () => {
         userId: owner.id,
         role: 'owner',
       })
-      await archiveCommunity(archivedCommunity.id, null)
+      await archiveCommunities([archivedCommunity.id], null)
 
       await expect(
         setApplicationQuestions(owner.id, archivedCommunity.id, [

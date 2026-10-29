@@ -27,15 +27,6 @@ const updateCommunityAndSetArchiveStateDependencies: UpdateCommunityAndSetArchiv
     enqueueCommunityMemberMetricInvalidationBestEffort,
   }
 
-export async function archiveCommunity(
-  communityId: string,
-  archivedById: string | null,
-  options?: QueryOptions,
-): Promise<CommunityWithOwner | null> {
-  const [archived] = await archiveCommunities([communityId], archivedById, options)
-  return archived ?? null
-}
-
 /** Archives every active community in one UPDATE and one publication-fence statement. */
 export async function archiveCommunities(
   communityIds: readonly string[],
@@ -108,7 +99,7 @@ export async function setCommunityArchiveState(
 
   if (archive) assert(!currentCommunity.archived_at, 409, 'Community is already archived')
   const written = archive
-    ? await archiveCommunity(communityId, currentUser.id, options)
+    ? ((await archiveCommunities([communityId], currentUser.id, options))[0] ?? null)
     : await unarchiveCommunity(communityId, options)
   const updated = written ?? (await getCommunity(communityId, { ...options, readOnly: false }))
   assert(updated, 404, 'Community not found after archive update')

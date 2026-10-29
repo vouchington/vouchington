@@ -5,7 +5,7 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import { archiveCommunity } from '@services/communities/archive'
+import { archiveCommunities } from '@services/communities/archive'
 import {
   AI_GENERATED_MODERATOR_SLUG,
   disableCommunityAutoTaggerAgent,
@@ -178,7 +178,7 @@ describe('community auto taggers', () => {
       userId: owner.id,
       role: 'owner',
     })
-    await archiveCommunity(community.id, owner.id)
+    await archiveCommunities([community.id], owner.id)
 
     await expect(
       enableCommunityAutoTaggerAgent(

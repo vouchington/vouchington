@@ -8,7 +8,7 @@ import {
   listTestCommunityApplicationAnswers,
 } from '@voucha/test-helpers'
 import { banUserFromCommunity } from '../bans/create.mts'
-import { archiveCommunity } from '../archive.mts'
+import { archiveCommunities } from '../archive.mts'
 import { createApplication } from './create.mts'
 import { searchApplications, getApplication } from './get.mts'
 import { getPendingApplicationForUser } from './pending.mts'
@@ -289,7 +289,7 @@ describe('application answers', () => {
     })
 
     const community = await ownedCommunity(owner)
-    await archiveCommunity(community.id, null)
+    await archiveCommunities([community.id], null)
     await expect(
       createApplication(applicant.id, WEB_PROVENANCE, community.id, { 'not-a-question': 'x' }),
     ).rejects.toMatchObject({

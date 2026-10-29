@@ -6,7 +6,7 @@ import {
   insertTestCommunityMember,
   type TestCommunityAgentPrompt,
 } from '@voucha/test-helpers'
-import { archiveCommunity } from '@services/communities/archive'
+import { archiveCommunities } from '@services/communities/archive'
 import { updateCommunityAgentPrompt } from './update.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
@@ -87,7 +87,7 @@ describe('update', () => {
         createdById: user.id,
         prompt: 'Archived prompt',
       })
-      await archiveCommunity(archivedCommunity.id, user.id)
+      await archiveCommunities([archivedCommunity.id], user.id)
 
       await expect(
         updateCommunityAgentPrompt(user, archivedPrompt, { prompt: 'nope' }),

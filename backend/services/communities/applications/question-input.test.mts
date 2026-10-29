@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import {
-  assertApplicationQuestionInputs,
-  MAX_APPLICATION_QUESTION_OPTIONS,
-} from './question-input.mts'
+import { assertApplicationQuestionInputs } from './question-input.mts'
+
+const MAX_OPTIONS = 32_768
 
 describe('application question input bounds', () => {
   it('rejects a select question with more than 32,768 options', () => {
-    const options = Array.from({ length: MAX_APPLICATION_QUESTION_OPTIONS + 1 }, (_, i) => `o${i}`)
+    const options = Array.from({ length: MAX_OPTIONS + 1 }, (_, i) => `o${i}`)
 
     expect(() =>
       assertApplicationQuestionInputs([{ question: 'Pick', field_type: 'multi_select', options }]),
@@ -14,8 +13,7 @@ describe('application question input bounds', () => {
   })
 
   it('accepts a select question with exactly 32,768 options', () => {
-    expect(MAX_APPLICATION_QUESTION_OPTIONS).toBe(32_768)
-    const options = Array.from({ length: MAX_APPLICATION_QUESTION_OPTIONS }, (_, i) => `o${i}`)
+    const options = Array.from({ length: MAX_OPTIONS }, (_, i) => `o${i}`)
     expect(() =>
       assertApplicationQuestionInputs([{ question: 'Pick', field_type: 'multi_select', options }]),
     ).not.toThrow()

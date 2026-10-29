@@ -9,7 +9,7 @@ import {
   addVerifiedEmailForUser,
 } from '@voucha/test-helpers'
 
-import { archiveCommunity } from '../../archive.mts'
+import { archiveCommunities } from '../../archive.mts'
 import { getCommunityOrThrow } from '../../get.mts'
 import { loadCommunityWithViewer } from '../../load-with-viewer.mts'
 import { joinCommunity } from '../join.mts'
@@ -121,7 +121,7 @@ describe('index', () => {
         userId: owner.id,
         role: 'owner',
       })
-      await archiveCommunity(archivedComm.id, null)
+      await archiveCommunities([archivedComm.id], null)
       const user = await createTestUser()
       await expect(
         joinCommunity(user.id, await getCommunityOrThrow(archivedComm.id)),
@@ -181,7 +181,7 @@ describe('index', () => {
           role: 'member',
         }),
       ])
-      await archiveCommunity(archivedCommunity.id, owner.id)
+      await archiveCommunities([archivedCommunity.id], owner.id)
 
       await expect(
         leaveCommunity(user.id, await loadCommunityWithViewer(archivedCommunity.id, user.id)),

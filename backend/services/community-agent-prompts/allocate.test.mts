@@ -5,7 +5,7 @@ import {
   insertTestCommunityAgentPrompt,
   createTestMembership,
 } from '@voucha/test-helpers'
-import { archiveCommunity } from '@services/communities/archive'
+import { archiveCommunities } from '@services/communities/archive'
 import {
   allocateCommunityAgentPromptSlot,
   deallocateCommunityAgentPromptSlot,
@@ -70,7 +70,7 @@ describe('allocate', () => {
         communityId: c.id,
         createdById: plusUser.id,
       })
-      await archiveCommunity(c.id, plusUser.id)
+      await archiveCommunities([c.id], plusUser.id)
 
       await expect(allocateCommunityAgentPromptSlot(plusUser.id, p)).rejects.toMatchObject({
         status: 403,
@@ -187,7 +187,7 @@ describe('allocate', () => {
         createdById: plusUser.id,
         slotAllocated: true,
       })
-      await archiveCommunity(c.id, plusUser.id)
+      await archiveCommunities([c.id], plusUser.id)
 
       await deallocateCommunityAgentPromptSlot(plusUser.id, p)
 
@@ -212,7 +212,7 @@ describe('allocate', () => {
         createdById: plusUser.id,
       })
 
-      await archiveCommunity(archivedCommunity.id, plusUser.id)
+      await archiveCommunities([archivedCommunity.id], plusUser.id)
       await deallocateCommunityAgentPromptSlot(plusUser.id, archivedPrompt)
       await allocateCommunityAgentPromptSlot(plusUser.id, reusablePrompt)
 

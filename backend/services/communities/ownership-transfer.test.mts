@@ -7,7 +7,7 @@ import {
   insertTestCommunityMember,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { archiveCommunity } from './archive.mts'
+import { archiveCommunities } from './archive.mts'
 import { getCommunityOrThrow } from './get.mts'
 import { getCommunityMember } from './members/get.mts'
 import { initiateOwnershipTransfer } from './ownership-transfer.mts'
@@ -111,7 +111,7 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await archiveCommunity(community.id, owner.id)
+    await archiveCommunities([community.id], owner.id)
 
     await expect(
       initiateOwnershipTransfer(owner.id, await getCommunityOrThrow(community.id), moderator.id),

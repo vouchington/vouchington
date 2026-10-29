@@ -17,7 +17,7 @@ import {
 } from './create.mts'
 import { redeemInviteCode } from './redeem.mts'
 import { getCommunityMember } from '../members/get.mts'
-import { archiveCommunity } from '../archive.mts'
+import { archiveCommunities } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 import { loadCommunityWithViewer } from '../load-with-viewer.mts'
@@ -169,7 +169,7 @@ describe('index', () => {
         userId: owner.id,
         role: 'owner',
       })
-      await archiveCommunity(archivedCommunity.id, null)
+      await archiveCommunities([archivedCommunity.id], null)
 
       const invitee = await createTestUser()
       await expect(
@@ -260,7 +260,7 @@ describe('index', () => {
         invitedById: owner.id,
         invitedUserId: invitee.id,
       })
-      await archiveCommunity(archivedComm.id, null)
+      await archiveCommunities([archivedComm.id], null)
       await expect(redeemInviteCode(invitee.id, invite.code)).rejects.toMatchObject({ status: 403 })
     })
 
