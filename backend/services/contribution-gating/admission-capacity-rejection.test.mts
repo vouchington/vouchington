@@ -1,18 +1,42 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import type { TransactionQuery } from '@data-stores/psql'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import {
+  assertContributionAdmissionCapacityOrReject,
   RejectedContributionAdmissionCapacityError,
-  runContributionAdmissionCapacityCheckOrReject,
 } from './admission-capacity-rejection.mts'
+import type { ContributionPolicy } from './policy.mts'
 
-describe('runContributionAdmissionCapacityCheckOrReject', () => {
+const POLICY: ContributionPolicy = {
+  global: {
+    short: { limit: 1, windowSeconds: 3_600 },
+    daily: { limit: 1, windowSeconds: 86_400 },
+  },
+  type: {
+    short: { limit: 1, windowSeconds: 3_600 },
+    daily: { limit: 1, windowSeconds: 86_400 },
+  },
+}
+
+function failingQuery(failure: Error): TransactionQuery {
+  return vi.fn<() => Promise<never>>(async () =>
+    Promise.reject(failure),
+  ) as unknown as TransactionQuery
+}
+
+describe('assertContributionAdmissionCapacityOrReject', () => {
   it('wraps a quota rejection and retains its original reason', async () => {
     const quotaError = Object.assign(new Error('quota exhausted'), {
       code: CONTRIBUTION_QUOTA_EXCEEDED,
     })
 
     await expect(
-      runContributionAdmissionCapacityCheckOrReject(async () => Promise.reject(quotaError)),
+      assertContributionAdmissionCapacityOrReject(
+        failingQuery(quotaError),
+        crypto.randomUUID(),
+        'discussion',
+        POLICY,
+      ),
     ).rejects.toMatchObject({
       constructor: RejectedContributionAdmissionCapacityError,
       reason: quotaError,
@@ -23,7 +47,12 @@ describe('runContributionAdmissionCapacityCheckOrReject', () => {
     const failure = new Error('database unavailable')
 
     await expect(
-      runContributionAdmissionCapacityCheckOrReject(async () => Promise.reject(failure)),
+      assertContributionAdmissionCapacityOrReject(
+        failingQuery(failure),
+        crypto.randomUUID(),
+        'discussion',
+        POLICY,
+      ),
     ).rejects.toBe(failure)
   })
 })
