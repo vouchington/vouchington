@@ -7,7 +7,6 @@ import {
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { CatalogMessage, LocalizationLeaf } from '@vouchington/localization'
 import type { LocalizationDatabase } from '@vouchington/localization-compiler'
 
@@ -20,19 +19,11 @@ let jsonMessages: CatalogMessage[] | undefined
 let database: LocalizationDatabase | undefined
 let databasePath: string | undefined
 
-export function resolveEmailCatalogDirectory(moduleUrl = import.meta.url): string {
-  const moduleDirectory = dirname(fileURLToPath(moduleUrl))
+function resolveEmailCatalogDirectory(): string {
+  const moduleDirectory = import.meta.dirname
   const packageDirectory =
     basename(moduleDirectory) === 'dist' ? dirname(moduleDirectory) : moduleDirectory
   return join(packageDirectory, '..', 'localization', 'catalog')
-}
-
-export function resetEmailCatalogCache(): void {
-  batches.clear()
-  jsonMessages = undefined
-  database?.close()
-  database = undefined
-  databasePath = undefined
 }
 
 export function emailCopy(locale: string, family: string): EmailTranslator {
