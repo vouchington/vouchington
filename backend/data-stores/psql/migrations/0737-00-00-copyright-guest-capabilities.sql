@@ -6,6 +6,7 @@
 CREATE TABLE copyright_notice_guest_capability_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT copyright_guest_capability_identity_notice_key UNIQUE (id, copyright_notice_id)
 );
 CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice
@@ -68,6 +69,7 @@ CREATE TABLE copyright_notice_urgent_filings (
 COMMENT ON TABLE copyright_notice_guest_capability_identities IS 'Retained identity of a guest capability cited by legal lifecycle history; never authorizes guest access.';
 COMMENT ON COLUMN copyright_notice_guest_capability_identities.id IS 'Original capability identity retained after its live token row is pruned.';
 COMMENT ON COLUMN copyright_notice_guest_capability_identities.copyright_notice_id IS 'Case scope of the retained capability identity.';
+COMMENT ON COLUMN copyright_notice_guest_capability_identities.created_at IS 'Issue time derived from the retained UUIDv7 capability identity.';
 COMMENT ON TABLE copyright_notice_guest_capabilities IS 'Live hashed, expiring, revocable capability for one copyright notice. Possession of mail or a thread is not a row.';
 COMMENT ON COLUMN copyright_notice_guest_capabilities.copyright_notice_id IS 'The one copyright notice this capability authorizes.';
 COMMENT ON COLUMN copyright_notice_guest_capabilities.token_hash IS 'Keyed digest of the guest capability token. The raw token is shown once and is never stored.';

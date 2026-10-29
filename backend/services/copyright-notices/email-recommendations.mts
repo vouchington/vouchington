@@ -39,15 +39,24 @@ async function appendWithCurrentLink(
   if (noticeId)
     await transaction(sql`/* appendCopyrightEmailIntakeRecommendation:lockNotice */
       SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR KEY SHARE`)
-  const { rows } = await transaction<{ amazon_ses_message_id: string }>(sql`
+  const { rows } = await transaction<{
+    amazon_ses_message_id: string
+    has_raw_source: boolean
+  }>(sql`
       /* appendCopyrightEmailIntakeRecommendation:lockIntake */
-      SELECT amazon_ses_message_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId} AND raw_storage_object_id IS NOT NULL
-        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-          WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
-      FOR UPDATE`)
+      SELECT intake.amazon_ses_message_id,
+        intake.raw_storage_object_id IS NOT NULL AS has_raw_source
+      FROM copyright_notice_email_intakes intake
+      WHERE intake.id = ${input.intakeId}
+      FOR UPDATE OF intake`)
   const intake = rows[0]
   assert(intake, 404, 'Copyright email intake not found')
+  if (!intake.has_raw_source) return false
+  const { rows: activeReceipts } = await transaction(sql`
+      /* appendCopyrightEmailIntakeRecommendation:lockReceipt */
+      SELECT id FROM copyright_notice_email_intake_receipts
+      WHERE id = ${input.intakeId} AND erased_at IS NULL FOR SHARE`)
+  if (!activeReceipts[0]) return false
   const { rows: currentLinks } = await transaction<{ copyright_notice_id: string }>(sql`
       /* appendCopyrightEmailIntakeRecommendation:recheckLink */
       SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
@@ -59,7 +68,9 @@ async function appendWithCurrentLink(
     ) SELECT source.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
       ${encryptSecret(JSON.stringify(input.structuredOutput), copyrightEmailIntakePurpose(intake.amazon_ses_message_id))}
     FROM copyright_notice_email_intakes source
-    WHERE source.id = ${input.intakeId}
+    WHERE source.id = ${input.intakeId} AND source.raw_storage_object_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+        WHERE receipt.id = source.id AND receipt.erased_at IS NULL)
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links link
         JOIN copyright_notice_retention_erasures erased

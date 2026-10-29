@@ -26,7 +26,7 @@ export async function createCopyrightEmailQueueWalkFixtures() {
       raw_media_type_id, raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict,
       spam_verdict, virus_verdict
     )
-    SELECT owned.id, owned.message_id, seed.received_at, seed.raw_storage_object_id,
+    SELECT owned.id, owned.amazon_ses_message_id, seed.received_at, seed.raw_storage_object_id,
       seed.raw_sha256, seed.raw_media_type_id, seed.raw_byte_size, seed.spf_verdict,
       seed.dkim_verdict, seed.dmarc_verdict, seed.spam_verdict, seed.virus_verdict
     FROM copyright_notice_email_intakes seed

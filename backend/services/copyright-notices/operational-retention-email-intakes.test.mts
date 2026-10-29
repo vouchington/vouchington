@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { writeCopyrightEmailDuringErasure } from '@voucha/test-helpers/copyright-email-retention-lock-order'
+import {
+  waitForCopyrightEmailMarkerBeforeWriter,
+  writeCopyrightEmailDuringErasure,
+} from '@voucha/test-helpers/copyright-email-retention-lock-order'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import {
@@ -18,6 +21,7 @@ import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyri
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
+import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
@@ -50,6 +54,30 @@ describe('copyright operational email intake retention', () => {
         sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
       }),
     ).rejects.toBeInstanceOf(ErasedCopyrightEmailIntakeReplay)
+  })
+  it('returns false when a recommendation waits for a committed erasure marker', async () => {
+    const intake = await createRetentionParsedEmail('recommendation-after-erasure-marker')
+    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const { erasure, appended } = await waitForCopyrightEmailMarkerBeforeWriter(
+      intake.id,
+      () =>
+        sweepUnlinkedCopyrightEmailIntakes({
+          now: future(91),
+          retentionDays: 90,
+          childLimit: 2,
+          maxBatches: 1,
+        }),
+      () =>
+        appendCopyrightEmailIntakeRecommendation({
+          intakeId: intake.id,
+          inputSha256: Buffer.alloc(32, 8),
+          promptVersion: 'marker-race',
+          model: 'test-model',
+          structuredOutput: { summary: 'Late recommendation' },
+        }),
+    )
+    expect(erasure).toMatchObject({ scanned: 1, erased: 1, hasMore: true })
+    expect(appended).toBe(false)
   })
   it('keeps the replay fence if a database child write fails after S3 deletion', async () => {
     const intake = await createRetentionParsedEmail('post-s3-database-failure')

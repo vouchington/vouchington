@@ -1,5 +1,13 @@
 export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
   [
+    'copyright_notice_operational_retention_cursors',
+    'The finite copyright operational-retention family enum permits one durable keyset cursor per family.',
+  ],
+  [
+    'copyright_notice_retention_generations',
+    'The checked singleton records one global legal-preservation change generation.',
+  ],
+  [
     'stripe_event_processing_work_items',
     'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
   ],

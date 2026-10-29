@@ -38,6 +38,8 @@ const emailIntakesOf = (id: string) =>
     WHERE copyright_notice_id = ${id})`
 const viaEmailIntakes = (id: string) =>
   sql`copyright_notice_email_intake_id IN `.append(emailIntakesOf(id))
+const viaEmailReceipts = (id: string) =>
+  sql`copyright_notice_email_intake_receipt_id IN `.append(emailIntakesOf(id))
 const table = (
   name: string,
   columns: CopyrightRetentionErasureTable['columns'],
@@ -106,12 +108,12 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   table(
     'copyright_notice_email_intake_recommendations',
     { structured_output_ciphertext: 'redact' },
-    viaEmailIntakes,
+    viaEmailReceipts,
   ),
   table(
     'copyright_notice_email_intake_reviews',
     { rationale_ciphertext: 'redact' },
-    viaEmailIntakes,
+    viaEmailReceipts,
   ),
   table('copyright_notice_email_correspondence_reviews', {
     rationale_ciphertext: 'redact',
