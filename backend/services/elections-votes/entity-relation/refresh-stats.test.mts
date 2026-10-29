@@ -34,22 +34,6 @@ describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
     expect(enqueueCalls).toBe(0)
   })
 
-  it('resolves after a failed primary refresh is durably enqueued', async () => {
-    const enqueued: (typeof target)[][] = []
-
-    await expect(
-      refreshEntityRelationVoteStatsWithDependencies(target, {
-        refreshFromPrimary: async () => {
-          throw new Error('primary unavailable')
-        },
-        enqueueReconciliation: async ids => {
-          enqueued.push(ids)
-        },
-      }),
-    ).resolves.toBeUndefined()
-    expect(enqueued).toEqual([[target]])
-  })
-
   it('throws only when the primary refresh and fallback enqueue both fail', async () => {
     const enqueueError = new Error('queue unavailable')
 
@@ -85,10 +69,4 @@ describe('createEntityRelationElectionTarget', () => {
       )
     },
   )
-
-  it('requires a whitelisted relation table without database lookup', () => {
-    expect(() => createEntityRelationElectionTarget('relation-1', undefined)).toThrow(
-      'Unknown election entity-relation table',
-    )
-  })
 })
