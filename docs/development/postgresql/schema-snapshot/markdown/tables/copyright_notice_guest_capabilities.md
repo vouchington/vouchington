@@ -49,4 +49,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_notice_guest_capabilities_updated_at`: `CREATE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
-- `trigger_record_copyright_guest_capability_activity`: `CREATE TRIGGER trigger_record_copyright_guest_capability_activity AFTER INSERT OR UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_guest_capability_activity()`
+- `trigger_record_copyright_guest_capability_activity`: `CREATE TRIGGER trigger_record_copyright_guest_capability_activity AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_guest_capability_activity()`
