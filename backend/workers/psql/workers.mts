@@ -1,6 +1,6 @@
 import { cleanupActivityPubTerminalIdentities } from '@services/data-retention/cleanup-activitypub-tombstones'
 import { cleanupOperationalTombstones } from '@services/data-retention/cleanup-operational-tombstones'
-import { createDeletedConversationRetentionHandlers } from './processors/deleted-conversation-retention.mts'
+import { createOperationalTombstoneRetentionHandlers } from './processors/operational-tombstone-retention.mts'
 import { psql as psqlQueue } from '@queues/psql/queues'
 import { createPsqlRetentionDispatcher } from './processors/retention-dispatch.mts'
 import type { runDataRetentionCleanup } from '@services/data-retention'
@@ -34,7 +34,7 @@ const processTerminalActivityRetention = createTerminalActivityRetentionProcesso
   cleanupActivityPubTerminalIdentities,
 )
 const processAIRetentionContinuation = createAIRetentionContinuationProcessor()
-const deletedConversationRetention = createDeletedConversationRetentionHandlers(
+const operationalTombstoneRetention = createOperationalTombstoneRetentionHandlers(
   psqlQueue,
   cleanupOperationalTombstones,
 )
@@ -74,8 +74,8 @@ async function processPsqlJob(job: Job): Promise<unknown> {
 export const psql = createWorker(
   QUEUE_NAME,
   createPsqlRetentionDispatcher({
-    processRetained: deletedConversationRetention.processRetained,
-    admitPending: deletedConversationRetention.admitPending,
+    processRetained: operationalTombstoneRetention.processRetained,
+    admitPending: operationalTombstoneRetention.admitPending,
     processDefault: processPsqlJob,
   }),
   {

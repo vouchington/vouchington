@@ -17,7 +17,10 @@ import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
 import type { cleanupOperationalTombstones } from '@services/data-retention/cleanup-operational-tombstones'
-import { deletedConversationRetentionJobId } from '@queues/psql/config'
+import { operationalTombstoneRetentionJobId } from '@queues/psql/config'
+
+const deletedConversationRetentionJobId =
+  operationalTombstoneRetentionJobId('deleted_conversations')
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -144,7 +147,10 @@ describe('deleted conversation native continuation', () => {
       expect(admitted?.opts).toMatchObject({
         attempts: 3,
         backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        ordering: { key: 'psql:deleted-conversation-retention', concurrency: 1 },
+        ordering: {
+          key: 'psql:operational-tombstone-retention:deleted_conversations',
+          concurrency: 1,
+        },
       })
       release.resolve()
       await expect(completed).resolves.toBe('completed')
@@ -168,6 +174,39 @@ describe('deleted conversation native continuation', () => {
       expect((await harness.queue.getJob(deletedConversationRetentionJobId))?.attemptsMade).toBe(0)
     } finally {
       release.resolve()
+      await harness.close()
+    }
+  })
+
+  it('admits each productive operational family and leaves stalled families for the next daily pass', async () => {
+    const processed: string[] = []
+    const cleanupFamily: typeof cleanupOperationalTombstones = async family => {
+      processed.push(family)
+      return { deleted: 0, hasMore: false, continuation: null, stalled: false }
+    }
+    const pending = { deleted: 0, hasMore: true, continuation: null, stalled: false }
+    const harness = await openDeletedConversationRetentionQueueForTest(cleanupFamily, async () => ({
+      staleRemoteActors: pending,
+      appAttestationKeys: pending,
+      feedHostnameBlocks: { ...pending, stalled: true },
+    }))
+    try {
+      const actorDone = harness.nextTerminal('remote_actors')
+      const attestationDone = harness.nextTerminal('app_attestation_keys')
+      await expect(harness.runDaily()).resolves.toBe('completed')
+      await expect(actorDone).resolves.toBe('completed')
+      await expect(attestationDone).resolves.toBe('completed')
+      expect(processed.toSorted()).toEqual(['app_attestation_keys', 'remote_actors'])
+      expect(
+        await harness.queue.getJob(operationalTombstoneRetentionJobId('feed_hostname_blocks')),
+      ).toBeNull()
+      for (const family of ['remote_actors', 'app_attestation_keys'] as const)
+        expect(
+          (await harness.queue.getJob(operationalTombstoneRetentionJobId(family)))?.opts,
+        ).toMatchObject({
+          ordering: { key: `psql:operational-tombstone-retention:${family}`, concurrency: 1 },
+        })
+    } finally {
       await harness.close()
     }
   })

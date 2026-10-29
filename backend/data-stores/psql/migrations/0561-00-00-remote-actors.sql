@@ -39,11 +39,12 @@ CREATE INDEX IF NOT EXISTS idx_remote_actors__cache_retention
   ON remote_actors (fetched_at, id) WHERE deleted_at IS NULL;
 DO $$ BEGIN
   CREATE TYPE operational_tombstone_retention_names AS ENUM (
-    'remote_actors', 'deleted_conversations'
+    'remote_actors', 'feed_hostname_blocks', 'other_hostname_blocks',
+    'deleted_conversations'
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-COMMENT ON TYPE operational_tombstone_retention_names IS 'Sweep families that must advance past protected old records.';
+COMMENT ON TYPE operational_tombstone_retention_names IS 'Sweep families that must advance past protected old records or staged hostname dependencies.';
 
 CREATE TABLE IF NOT EXISTS operational_tombstone_retention_cursors (
   cleanup_name operational_tombstone_retention_names PRIMARY KEY,
@@ -57,8 +58,8 @@ CREATE TABLE IF NOT EXISTS operational_tombstone_retention_cursors (
 CREATE OR REPLACE TRIGGER trigger_operational_tombstone_retention_cursors_updated_at
 BEFORE UPDATE ON operational_tombstone_retention_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-COMMENT ON TABLE operational_tombstone_retention_cursors IS 'Durable keyset positions only for old actor or conversation rows that remain protected while a sweep advances.';
-COMMENT ON COLUMN operational_tombstone_retention_cursors.cleanup_name IS 'Remote actor or deleted conversation protected-row sweep.';
+COMMENT ON TABLE operational_tombstone_retention_cursors IS 'Durable keyset positions for actor, hostname-block, and conversation rows that remain protected while a sweep advances.';
+COMMENT ON COLUMN operational_tombstone_retention_cursors.cleanup_name IS 'Actor, hostname-block, or deleted-conversation protected-row sweep.';
 COMMENT ON COLUMN operational_tombstone_retention_cursors.cursor_at IS 'Exact timestamp keyset position, preserved at PostgreSQL microsecond precision.';
 COMMENT ON COLUMN operational_tombstone_retention_cursors.cursor_record_id IS 'Deletion-stable UUIDv7 tie-breaker position, not an entity reference or foreign key.';
 COMMENT ON COLUMN operational_tombstone_retention_cursors.sweep_cutoff_at IS 'Fixed age cutoff for the unfinished pass.';

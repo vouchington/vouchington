@@ -1,6 +1,7 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import { psqlQueueConfig } from './enqueues/ordering-config.mts'
+import type { OperationalTombstoneFamily } from './types.mts'
 import type { JobOptions } from 'glide-mq'
 
 export const QUEUE_NAME = 'psql'
@@ -59,15 +60,16 @@ export const REFRESH_REVENUE_CHANGES_CRON = '3,8,13,18,23,28,33,38,43,48,53,58 *
 export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
 
 export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
-export const DELETED_CONVERSATION_RETENTION_JOB_NAME = 'cleanupDeletedConversations'
-export const deletedConversationRetentionJobId = 'psql__deleted_conversation_retention'
-export const DELETED_CONVERSATION_RETENTION_ORDERING_MAX = 1
+export const OPERATIONAL_TOMBSTONE_RETENTION_JOB_NAME = 'cleanupOperationalTombstones'
+export const operationalTombstoneRetentionJobId = (family: OperationalTombstoneFamily): string =>
+  `psql__operational_tombstone_retention__${family}`
+export const OPERATIONAL_TOMBSTONE_RETENTION_ORDERING_MAX = 1
 
-export function getDeletedConversationRetentionConcurrency(): number {
+export function getOperationalTombstoneRetentionConcurrency(): number {
   return getBoundedPositiveIntegerField(
     psqlQueueConfig,
-    'deleted_conversation_retention_concurrency',
-    { defaultValue: 1, maxValue: DELETED_CONVERSATION_RETENTION_ORDERING_MAX },
+    'operational_tombstone_retention_concurrency',
+    { defaultValue: 1, maxValue: OPERATIONAL_TOMBSTONE_RETENTION_ORDERING_MAX },
   )
 }
 
@@ -103,14 +105,16 @@ export function getModerationRetentionJobOptions(): JobOptions {
   }
 }
 
-export function getDeletedConversationRetentionJobOptions(): JobOptions {
+export function getOperationalTombstoneRetentionJobOptions(
+  family: OperationalTombstoneFamily,
+): JobOptions {
   return {
     ...PSQL_RETRY_OPTIONS,
-    jobId: deletedConversationRetentionJobId,
+    jobId: operationalTombstoneRetentionJobId(family),
     priority: PRIORITY_DEFAULT,
     ordering: {
-      key: 'psql:deleted-conversation-retention',
-      concurrency: getDeletedConversationRetentionConcurrency(),
+      key: `psql:operational-tombstone-retention:${family}`,
+      concurrency: getOperationalTombstoneRetentionConcurrency(),
     },
   }
 }

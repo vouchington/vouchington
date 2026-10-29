@@ -12,6 +12,7 @@ export type PsqlJobs =
   | 'aiRetentionContinuation'
   | 'continueVoteRetentionCleanup'
   | 'cleanupDeletedConversations'
+  | 'cleanupOperationalTombstones'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -40,6 +41,17 @@ export type RefreshMaterializedViewData = {
 export type TerminalActivityRetentionData = {
   family: 'follow' | 'like'
 }
+
+export const OPERATIONAL_TOMBSTONE_FAMILIES = [
+  'activitypub_post_likes',
+  'remote_actors',
+  'feed_hostname_blocks',
+  'other_hostname_blocks',
+  'deleted_conversations',
+  'app_attestation_keys',
+] as const
+export type OperationalTombstoneFamily = (typeof OPERATIONAL_TOMBSTONE_FAMILIES)[number]
+export type OperationalTombstoneRetentionData = { family: OperationalTombstoneFamily }
 
 export type ModerationRetentionJobData = {
   rootJobId?: string

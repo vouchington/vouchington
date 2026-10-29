@@ -30,13 +30,20 @@ export async function acceptActivityPubInboxDelivery(
         request_digest, request_method, request_target, expected_host, signature_header, digest_header, date_header,
         content_type_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname, remote_actor_id, verified_at, sender_allowed_at
-      ) VALUES (
+      ) SELECT
         ${requestDigest}, ${envelope.requestMethod}, ${envelope.requestTarget}, ${envelope.expectedHost},
         ${envelope.signatureHeader}, ${envelope.digestHeader}, ${envelope.dateHeader},
         ${envelope.contentTypeHeader ?? null}, ${envelope.rawBody}, ${envelope.claimedActivityId},
         ${envelope.claimedActivityType}, ${envelope.claimedActorUri}, ${envelope.senderHostname},
-        ${verifiedRemoteActorId ?? null}, ${verifiedAt}, ${verifiedAt}
-      )
+        live_actor.id,
+        CASE WHEN live_actor.id IS NOT NULL THEN ${verifiedAt}::timestamptz END,
+        CASE WHEN live_actor.id IS NOT NULL THEN ${verifiedAt}::timestamptz END
+      FROM (SELECT 1) requested
+      LEFT JOIN LATERAL (
+        SELECT id FROM remote_actors
+        WHERE id = ${verifiedRemoteActorId ?? null} AND deleted_at IS NULL
+        FOR SHARE
+      ) live_actor ON true
       ON CONFLICT (request_digest) DO UPDATE
       SET request_digest = EXCLUDED.request_digest
       RETURNING WITH (OLD AS old, NEW AS new)

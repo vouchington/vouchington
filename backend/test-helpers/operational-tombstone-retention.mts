@@ -2,7 +2,11 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 
-type Family = 'remote_actors' | 'deleted_conversations'
+type Family =
+  | 'remote_actors'
+  | 'feed_hostname_blocks'
+  | 'other_hostname_blocks'
+  | 'deleted_conversations'
 
 export async function resetOperationalRetentionCursorForTest(
   query: TransactionQuery,

@@ -79,12 +79,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'follower_distributions.cursor_recipient_id',
   // A deleted operational row leaves its UUIDv7 keyset tie-breaker in the cursor.
   'operational_tombstone_retention_cursors.cursor_record_id',
-  'post_publication_dirty_work.cursor_key_id',
-  'post_publication_dirty_work.cursor_post_id',
-  'post_publication_dirty_work.cursor_topic_id',
-  'post_publication_identity_bridge_cleanup_cursors.cursor_identity_id',
-  'post_publication_identity_snapshot_cleanup_cursors.cursor_snapshot_id',
-  'post_publication_reconciliation_audit_cursors.cursor_post_id',
   'retained_identity_cleanup_cursors.cursor_identity_id',
   'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
   // This is the retained binding's primary key, not a pointer to the deletable live placement.

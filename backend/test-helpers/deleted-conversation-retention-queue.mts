@@ -3,12 +3,13 @@ import { Worker, type Job } from 'glide-mq'
 import { createQueue, closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
-  deletedConversationRetentionJobId,
+  operationalTombstoneRetentionJobId,
   DATA_RETENTION_JOB_NAME,
   PRIORITY_DEFAULT,
 } from '../queues/psql/config.mts'
-import { createDeletedConversationRetentionHandlers } from '../workers/psql/processors/deleted-conversation-retention.mts'
+import { createOperationalTombstoneRetentionHandlers } from '../workers/psql/processors/operational-tombstone-retention.mts'
 import type { cleanupOperationalTombstones } from '../services/data-retention/cleanup-operational-tombstones.mts'
+import type { OperationalTombstoneFamily } from '../queues/psql/types.mts'
 import { createPsqlRetentionDispatcher } from '../workers/psql/processors/retention-dispatch.mts'
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
@@ -16,13 +17,15 @@ import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 export async function openDeletedConversationRetentionQueueForTest(
   cleanupFamily: typeof cleanupOperationalTombstones,
   runDailyCleanup: () => Promise<
-    Parameters<ReturnType<typeof createDeletedConversationRetentionHandlers>['admitPending']>[0]
+    Partial<
+      Parameters<ReturnType<typeof createOperationalTombstoneRetentionHandlers>['admitPending']>[0]
+    >
   >,
 ) {
   const name = `deleted_conversation_retention_${randomUUID()}`
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
   const queue = createQueue(name, { priorityKind: 'ranked' })
-  const { admit, admitPending, processRetained } = createDeletedConversationRetentionHandlers(
+  const { admit, admitPending, processRetained } = createOperationalTombstoneRetentionHandlers(
     queue,
     cleanupFamily,
   )
@@ -31,7 +34,17 @@ export async function openDeletedConversationRetentionQueueForTest(
     processDefault: async job => {
       if (job.name !== DATA_RETENTION_JOB_NAME)
         throw new Error('Unexpected fixture maintenance job')
-      return runDailyCleanup()
+      const result = await runDailyCleanup()
+      const idle = { deleted: 0, hasMore: false, continuation: null }
+      return {
+        undoneActivityPubLikes: idle,
+        staleRemoteActors: idle,
+        feedHostnameBlocks: idle,
+        otherHostnameBlocks: idle,
+        deletedConversations: idle,
+        appAttestationKeys: idle,
+        ...result,
+      }
     },
     admitPending,
   })
@@ -78,14 +91,15 @@ export async function openDeletedConversationRetentionQueueForTest(
   }
   return {
     queue,
-    admit,
+    admit: (families: OperationalTombstoneFamily[] = ['deleted_conversations']) => admit(families),
     runDaily: async () => {
       const id = randomUUID()
       const completed = nextTerminal(id)
       await queue.add(DATA_RETENTION_JOB_NAME, {}, { jobId: id, priority: PRIORITY_DEFAULT })
       return completed
     },
-    nextTerminal: () => nextTerminal(deletedConversationRetentionJobId),
+    nextTerminal: (family: OperationalTombstoneFamily = 'deleted_conversations') =>
+      nextTerminal(operationalTombstoneRetentionJobId(family)),
     close,
   }
 }
