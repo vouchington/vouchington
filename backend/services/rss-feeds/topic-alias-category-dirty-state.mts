@@ -28,9 +28,9 @@ function buildTopicAliasCategoryMappingDirtyRowsQuery(
   if (!topicAliasIds) {
     return sql`/* getTopicAliasCategoryMappingDirtyRows */
     SELECT reconciliation.topic_alias_id, reconciliation.alias, reconciliation.generation,
-      reconciliation.phase, reconciliation.scan_upper_item_id,
-      reconciliation.scan_upper_feed_id, reconciliation.after_item_id,
-      reconciliation.after_category_identity_id, reconciliation.after_feed_id
+      reconciliation.phase, reconciliation.sweep_upper_bound_item_id,
+      reconciliation.sweep_upper_bound_feed_id, reconciliation.cursor_item_id,
+      reconciliation.cursor_category_identity_id, reconciliation.cursor_feed_id
     FROM topic_alias_category_mapping_reconciliations reconciliation
     WHERE reconciliation.unlink_requested_at IS NULL
     ORDER BY reconciliation.updated_at, reconciliation.topic_alias_id
@@ -38,9 +38,9 @@ function buildTopicAliasCategoryMappingDirtyRowsQuery(
   }
   return sql`/* getTopicAliasCategoryMappingDirtyRows */
     SELECT reconciliation.topic_alias_id, reconciliation.alias, reconciliation.generation,
-      reconciliation.phase, reconciliation.scan_upper_item_id,
-      reconciliation.scan_upper_feed_id, reconciliation.after_item_id,
-      reconciliation.after_category_identity_id, reconciliation.after_feed_id
+      reconciliation.phase, reconciliation.sweep_upper_bound_item_id,
+      reconciliation.sweep_upper_bound_feed_id, reconciliation.cursor_item_id,
+      reconciliation.cursor_category_identity_id, reconciliation.cursor_feed_id
     FROM topic_alias_category_mapping_reconciliations reconciliation
     WHERE reconciliation.topic_alias_id = ANY(${topicAliasIds}::uuid[])
       AND reconciliation.unlink_requested_at IS NULL
@@ -55,27 +55,27 @@ export async function checkpointTopicAliasCategoryMappingDirtyRow(
   const { rowCount } = await write(
     `/* checkpointTopicAliasCategoryMappingDirtyRow */
      UPDATE topic_alias_category_mapping_reconciliations
-     SET phase = $3::smallint, scan_upper_item_id = $4::uuid,
-       scan_upper_feed_id = $5::uuid, after_item_id = $6::uuid,
-       after_category_identity_id = $7::uuid, after_feed_id = $8::uuid
+     SET phase = $3::smallint, sweep_upper_bound_item_id = $4::uuid,
+       sweep_upper_bound_feed_id = $5::uuid, cursor_item_id = $6::uuid,
+       cursor_category_identity_id = $7::uuid, cursor_feed_id = $8::uuid
      WHERE topic_alias_id = $1::uuid AND generation = $2::bigint
        AND phase = $9::smallint
-       AND after_item_id IS NOT DISTINCT FROM $10::uuid
-       AND after_category_identity_id IS NOT DISTINCT FROM $11::uuid
-       AND after_feed_id IS NOT DISTINCT FROM $12::uuid`,
+       AND cursor_item_id IS NOT DISTINCT FROM $10::uuid
+       AND cursor_category_identity_id IS NOT DISTINCT FROM $11::uuid
+       AND cursor_feed_id IS NOT DISTINCT FROM $12::uuid`,
     [
       candidate.topic_alias_id,
       candidate.generation,
       cursor.phase,
-      cursor.scan_upper_item_id,
-      cursor.scan_upper_feed_id,
-      cursor.after_item_id,
-      cursor.after_category_identity_id,
-      cursor.after_feed_id,
+      cursor.sweep_upper_bound_item_id,
+      cursor.sweep_upper_bound_feed_id,
+      cursor.cursor_item_id,
+      cursor.cursor_category_identity_id,
+      cursor.cursor_feed_id,
       candidate.phase,
-      candidate.after_item_id,
-      candidate.after_category_identity_id,
-      candidate.after_feed_id,
+      candidate.cursor_item_id,
+      candidate.cursor_category_identity_id,
+      candidate.cursor_feed_id,
     ],
   )
   return rowCount === 1
@@ -103,16 +103,16 @@ export async function acknowledgeTopicAliasCategoryMappingDirtyRow(
       WHERE topic_alias_id = $1
         AND generation = $2
         AND phase = $3::smallint
-        AND after_item_id IS NOT DISTINCT FROM $4::uuid
-        AND after_category_identity_id IS NOT DISTINCT FROM $5::uuid
-        AND after_feed_id IS NOT DISTINCT FROM $6::uuid`,
+        AND cursor_item_id IS NOT DISTINCT FROM $4::uuid
+        AND cursor_category_identity_id IS NOT DISTINCT FROM $5::uuid
+        AND cursor_feed_id IS NOT DISTINCT FROM $6::uuid`,
     [
       candidate.topic_alias_id,
       candidate.generation,
       candidate.phase,
-      candidate.after_item_id,
-      candidate.after_category_identity_id,
-      candidate.after_feed_id,
+      candidate.cursor_item_id,
+      candidate.cursor_category_identity_id,
+      candidate.cursor_feed_id,
     ],
   )
   return rowCount === 1

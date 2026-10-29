@@ -31,11 +31,11 @@ async function captureRawPhase(
   indexName: string,
 ): Promise<void> {
   const emptyCursor = {
-    scan_upper_item_id: null,
-    scan_upper_feed_id: null,
-    after_item_id: null,
-    after_category_identity_id: null,
-    after_feed_id: null,
+    sweep_upper_bound_item_id: null,
+    sweep_upper_bound_feed_id: null,
+    cursor_item_id: null,
+    cursor_category_identity_id: null,
+    cursor_feed_id: null,
   }
   const label = `topic-alias-raw-phase-${phase}`
   registerScenarioContract(label, {

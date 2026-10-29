@@ -873,11 +873,11 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   unlink_requested_at TIMESTAMPTZ,
   phase SMALLINT NOT NULL DEFAULT 0 CHECK (phase BETWEEN 0 AND 3),
-  scan_upper_item_id UUID,
-  scan_upper_feed_id UUID,
-  after_item_id UUID,
-  after_category_identity_id UUID,
-  after_feed_id UUID,
+  sweep_upper_bound_item_id UUID,
+  sweep_upper_bound_feed_id UUID,
+  cursor_item_id UUID,
+  cursor_category_identity_id UUID,
+  cursor_feed_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -932,11 +932,11 @@ BEGIN
       unlink_requested_at = EXCLUDED.unlink_requested_at,
       generation = topic_alias_category_mapping_reconciliations.generation + 1,
       phase = 0,
-      scan_upper_item_id = NULL,
-      scan_upper_feed_id = NULL,
-      after_item_id = NULL,
-      after_category_identity_id = NULL,
-      after_feed_id = NULL;
+      sweep_upper_bound_item_id = NULL,
+      sweep_upper_bound_feed_id = NULL,
+      cursor_item_id = NULL,
+      cursor_category_identity_id = NULL,
+      cursor_feed_id = NULL;
 
   IF TG_OP = 'DELETE' THEN
     RETURN OLD;
@@ -957,8 +957,11 @@ COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.alias IS 'Canonic
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.generation IS 'Monotonic transition generation used to prevent stale workers from acknowledging newer alias ownership changes.';
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.unlink_requested_at IS 'Copied alias unlink request timestamp while the dedicated unlink phase owns category cleanup; NULL is selectable work.';
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.phase IS 'Raw category stream for this alias generation: authored item, text item, text feed, or complete.';
-COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.scan_upper_item_id IS 'Fixed highest item ID admitted by this generation; the nil UUID means there were no items.';
-COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.scan_upper_feed_id IS 'Fixed highest feed ID admitted by this generation; the nil UUID means there were no feeds.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.sweep_upper_bound_item_id IS 'Fixed highest item ID admitted by this generation; the nil UUID means there were no items.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.sweep_upper_bound_feed_id IS 'Fixed highest feed ID admitted by this generation; the nil UUID means there were no feeds.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.cursor_item_id IS 'Last raw item key scanned by this generation; the cursor may outlive the item and keeps empty pages progressing.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.cursor_category_identity_id IS 'Category identity tie breaker within the last raw item key scanned; a deleted identity does not prevent progress.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.cursor_feed_id IS 'Last raw feed key scanned by this generation; the cursor may outlive the feed and keeps empty pages progressing.';
 
 --------------------------------------------------------------------------------
 -- retailer_topics

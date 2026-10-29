@@ -7,11 +7,11 @@ export type AliasCategoryPhase = 0 | 1 | 2 | 3
 
 export type AliasCategoryCursor = {
   phase: AliasCategoryPhase
-  scan_upper_item_id: string | null
-  scan_upper_feed_id: string | null
-  after_item_id: string | null
-  after_category_identity_id: string | null
-  after_feed_id: string | null
+  sweep_upper_bound_item_id: string | null
+  sweep_upper_bound_feed_id: string | null
+  cursor_item_id: string | null
+  cursor_category_identity_id: string | null
+  cursor_feed_id: string | null
 }
 
 export type AliasCategoryRawRow = {
@@ -38,8 +38,9 @@ export async function readAliasCategoryRawPage(
     throw new RangeError('Invalid category page size')
   if (cursor.phase === 3) return { rows: [], cursor, hasMore: false }
 
-  const upperItemId = cursor.scan_upper_item_id ?? (await readUpperId(query, 'rss_feed_items'))
-  const upperFeedId = cursor.scan_upper_feed_id ?? (await readUpperId(query, 'rss_feeds'))
+  const upperItemId =
+    cursor.sweep_upper_bound_item_id ?? (await readUpperId(query, 'rss_feed_items'))
+  const upperFeedId = cursor.sweep_upper_bound_feed_id ?? (await readUpperId(query, 'rss_feeds'))
   let rows: AliasCategoryRawRow[]
   const textIdentityId = cursor.phase === 0 ? null : await readCategoryIdentityId(query, alias)
   if (cursor.phase === 0) {
@@ -56,8 +57,8 @@ export async function readAliasCategoryRawPage(
       [
         aliasId,
         upperItemId,
-        cursor.after_item_id ?? MAX_UUID,
-        cursor.after_category_identity_id ?? MAX_UUID,
+        cursor.cursor_item_id ?? MAX_UUID,
+        cursor.cursor_category_identity_id ?? MAX_UUID,
         pageSize + 1,
       ],
     )
@@ -72,7 +73,7 @@ export async function readAliasCategoryRawPage(
          AND category.rss_feed_item_id > $3::uuid
        ORDER BY category.rss_feed_item_id
        LIMIT $4::integer`,
-      [textIdentityId, upperItemId, cursor.after_item_id ?? NIL_UUID, pageSize + 1],
+      [textIdentityId, upperItemId, cursor.cursor_item_id ?? NIL_UUID, pageSize + 1],
     )
     rows = result.rows
   } else {
@@ -85,7 +86,7 @@ export async function readAliasCategoryRawPage(
          AND category.rss_feed_id > $3::uuid
        ORDER BY category.rss_feed_id
        LIMIT $4::integer`,
-      [textIdentityId, upperFeedId, cursor.after_feed_id ?? NIL_UUID, pageSize + 1],
+      [textIdentityId, upperFeedId, cursor.cursor_feed_id ?? NIL_UUID, pageSize + 1],
     )
     rows = result.rows
   }
@@ -97,12 +98,12 @@ export async function readAliasCategoryRawPage(
     rows: selected,
     cursor: {
       phase: nextPhase,
-      scan_upper_item_id: upperItemId,
-      scan_upper_feed_id: upperFeedId,
-      after_item_id: moreInPhase ? (last?.rss_feed_item_id ?? null) : null,
-      after_category_identity_id:
+      sweep_upper_bound_item_id: upperItemId,
+      sweep_upper_bound_feed_id: upperFeedId,
+      cursor_item_id: moreInPhase ? (last?.rss_feed_item_id ?? null) : null,
+      cursor_category_identity_id:
         moreInPhase && cursor.phase === 0 ? (last?.category_identity_id ?? null) : null,
-      after_feed_id: moreInPhase ? (last?.rss_feed_id ?? null) : null,
+      cursor_feed_id: moreInPhase ? (last?.rss_feed_id ?? null) : null,
     },
     hasMore: nextPhase !== 3,
   }
