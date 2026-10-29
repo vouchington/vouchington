@@ -15,7 +15,7 @@ export function createTestPostgresClientLoan(client: PoolClient, lock: TestHeldP
   const release = client.release
   const observation =
     lock.kind === 'advisory'
-      ? observeTestAdvisoryLockNotice(client, lock.tag)
+      ? observeTestAdvisoryLockNotice(client, lock.tag, undefined, lock.waiterMode)
       : observeTestTransactionLockNotice(client, lock.transactionId)
   const ended = trackTestPostgresClientEnd(client)
   let requested = false

@@ -5,10 +5,12 @@ import {
 } from '@voucha/test-helpers/entities/oauth-client-management'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { startPausedTestUserSoftDeletion } from '@voucha/test-helpers/entities/user-deletion'
+import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import {
-  getTestPostgresAdvisoryLockHolderProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers/postgres-lock-wait'
+  createTestPostgresMultiWait,
+  type TestPostgresMultiWaitAction,
+} from '@voucha/test-helpers/postgres-multi-client-lock-observer'
+import { withTestOAuthOperationWaiting } from '@voucha/test-helpers/oauth-client-lock-race'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { exchangeOAuthAuthorizationCode } from './index.mts'
 import { validateOAuthAccessToken } from './access-tokens.mts'
@@ -18,31 +20,26 @@ describe('OAuth authority and account-deletion lock races', () => {
     const user = await createTestUserDirect()
     const flow = await createTestApprovedOAuthAuthorization(user)
     const deletion = await startPausedTestUserSoftDeletion(user.id)
-    const exchangeOutcome = exchangeOAuthAuthorizationCode({
-      clientId: flow.client.client_id,
-      code: flow.code,
-      codeVerifier: flow.verifier,
-      redirectUri: flow.redirectUri,
-    }).then(
-      () => ({ success: true }),
-      (err: unknown) => ({ success: false, error: err }),
-    )
-    try {
-      await waitForTestPostgresLockWaiter(
-        deletion.holderProcessId,
-        '/* lockOAuthParticipantUsers */',
-      )
-      deletion.release()
-      await deletion.completed
-      await expect(exchangeOutcome).resolves.toMatchObject({
-        success: false,
-        error: { code: 'invalid_grant' },
-      })
-    } finally {
-      deletion.release()
-      await deletion.completed
-      await exchangeOutcome
-    }
+    const exchangeOutcome = await withTestOAuthOperationWaiting({
+      holderProcessId: deletion.holderProcessId,
+      lock: { kind: 'advisory', key: user.id.toLowerCase(), waiterMode: 'shared' },
+      waiterQueryMarker: '/* lockOAuthParticipantUsers */',
+      releaseHolder: async () => {
+        deletion.release()
+        await deletion.completed
+      },
+      start: () =>
+        exchangeOAuthAuthorizationCode({
+          clientId: flow.client.client_id,
+          code: flow.code,
+          codeVerifier: flow.verifier,
+          redirectUri: flow.redirectUri,
+        }).then(
+          () => ({ success: true }),
+          (err: unknown) => ({ success: false, error: err }),
+        ),
+    })
+    expect(exchangeOutcome).toMatchObject({ success: false, error: { code: 'invalid_grant' } })
   })
 
   it('rechecks an app owner after waiting for its deletion fence', async () => {
@@ -51,63 +48,81 @@ describe('OAuth authority and account-deletion lock races', () => {
     const flow = await createTestApprovedOAuthAuthorization(user)
     await assignTestOAuthClientOwner(flow.client.client_id, owner.id)
     const deletion = await startPausedTestUserSoftDeletion(owner.id)
-    const exchangeOutcome = exchangeOAuthAuthorizationCode({
-      clientId: flow.client.client_id,
-      code: flow.code,
-      codeVerifier: flow.verifier,
-      redirectUri: flow.redirectUri,
-    }).then(
-      () => ({ success: true }),
-      (err: unknown) => ({ success: false, error: err }),
-    )
-    try {
-      await waitForTestPostgresLockWaiter(
-        deletion.holderProcessId,
-        '/* lockOAuthParticipantUsers */',
-      )
-      deletion.release()
-      await deletion.completed
-      await expect(exchangeOutcome).resolves.toMatchObject({
-        success: false,
-        error: { code: 'invalid_client' },
-      })
-    } finally {
-      deletion.release()
-      await deletion.completed
-      await exchangeOutcome
-    }
+    const exchangeOutcome = await withTestOAuthOperationWaiting({
+      holderProcessId: deletion.holderProcessId,
+      lock: { kind: 'advisory', key: owner.id.toLowerCase(), waiterMode: 'shared' },
+      waiterQueryMarker: '/* lockOAuthParticipantUsers */',
+      releaseHolder: async () => {
+        deletion.release()
+        await deletion.completed
+      },
+      start: () =>
+        exchangeOAuthAuthorizationCode({
+          clientId: flow.client.client_id,
+          code: flow.code,
+          codeVerifier: flow.verifier,
+          redirectUri: flow.redirectUri,
+        }).then(
+          () => ({ success: true }),
+          (err: unknown) => ({ success: false, error: err }),
+        ),
+    })
+    expect(exchangeOutcome).toMatchObject({ success: false, error: { code: 'invalid_client' } })
   })
 
   it('leaves an OAuth-issued credential unusable when deletion waits behind OAuth', async () => {
     const user = await createTestUserDirect()
     const flow = await createTestApprovedOAuthAuthorization(user)
     const clientUpdate = await startPausedTestOAuthClientUpdate(flow.client.client_id)
-    const exchange = exchangeOAuthAuthorizationCode({
-      clientId: flow.client.client_id,
-      code: flow.code,
-      codeVerifier: flow.verifier,
-      redirectUri: flow.redirectUri,
-    })
-    let deletion: ReturnType<typeof startPausedTestUserSoftDeletion> | undefined
+    await using wait = await createTestPostgresMultiWait()
+    const oauthWaiter = await wait.start(
+      {
+        holderProcessId: clientUpdate.holderProcessId,
+        lock: { kind: 'transaction' },
+        pool: 'write',
+        queryMarker: '/* authenticateLockedOAuthClient */',
+        releaseHolder: async () => {
+          clientUpdate.release()
+          await clientUpdate.completed
+        },
+      },
+      () =>
+        exchangeOAuthAuthorizationCode({
+          clientId: flow.client.client_id,
+          code: flow.code,
+          codeVerifier: flow.verifier,
+          redirectUri: flow.redirectUri,
+        }),
+    )
     let pausedDeletion: Awaited<ReturnType<typeof startPausedTestUserSoftDeletion>> | undefined
+    let deletionWaiter:
+      | TestPostgresMultiWaitAction<Awaited<ReturnType<typeof startPausedTestUserSoftDeletion>>>
+      | undefined
     try {
-      await waitForTestPostgresLockWaiter(
-        clientUpdate.holderProcessId,
-        '/* authenticateLockedOAuthClient */',
-      )
+      await oauthWaiter.waitForLock()
       const oauthProcessId = await getTestPostgresAdvisoryLockHolderProcessId({
         key: user.id,
         mode: 'shared',
       })
-      deletion = startPausedTestUserSoftDeletion(user.id)
-      await waitForTestPostgresLockWaiter(
-        oauthProcessId,
-        '/* startPausedTestUserSoftDeletion:lock */',
+      deletionWaiter = await wait.start(
+        {
+          holderProcessId: oauthProcessId,
+          lock: { kind: 'advisory', key: user.id, holderMode: 'shared', waiterMode: 'exclusive' },
+          pool: 'write',
+          queryMarker: '/* startPausedTestUserSoftDeletion:lock */',
+          // The OAuth transaction releases this shared lock after the client row is freed.
+          releaseHolder: async () => {
+            clientUpdate.release()
+            await clientUpdate.completed
+          },
+        },
+        () => startPausedTestUserSoftDeletion(user.id),
       )
+      await deletionWaiter.waitForLock()
       clientUpdate.release()
-      const tokens = await exchange
+      const tokens = await oauthWaiter.operation
       await clientUpdate.completed
-      pausedDeletion = await deletion
+      pausedDeletion = await deletionWaiter.operation
       pausedDeletion.release()
       await pausedDeletion.completed
       await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
@@ -116,7 +131,7 @@ describe('OAuth authority and account-deletion lock races', () => {
       try {
         await clientUpdate.completed
       } finally {
-        pausedDeletion ??= deletion ? await deletion : undefined
+        pausedDeletion ??= await deletionWaiter?.operation.catch(() => undefined)
         pausedDeletion?.release()
         await pausedDeletion?.completed
       }

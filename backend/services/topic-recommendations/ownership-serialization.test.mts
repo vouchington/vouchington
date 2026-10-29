@@ -5,9 +5,10 @@ import {
   createTestUser,
   getTestPostgresBackendProcessId,
   getUrlHostnameTopicId,
-  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { withApprovalHostnameWait } from '@voucha/test-helpers/topic-recommendation-hostname-lock-race'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
 import { createTopicRecommendation } from './create-topic-recommendation.mts'
@@ -67,23 +68,16 @@ describe('hostname ownership serialization against approval', () => {
         recommendation.id,
         { query: holder },
       )
-      const pid = await getTestPostgresBackendProcessId(holder)
-      await using waiter = await beginTransaction()
-      const pending =
-        operation === 'add'
-          ? addAdditionalHostname(otherTopic.id, hostname, admin.id, { query: waiter })
-          : removeAdditionalHostname(otherTopic.id, hostnameId, { query: waiter })
-      const settled = pending.then(
-        () => null,
-        (err: unknown) => err,
+      const settled = await withApprovalHostnameWait(holder, hostnameId, () =>
+        (operation === 'add'
+          ? addAdditionalHostname(otherTopic.id, hostname, admin.id)
+          : removeAdditionalHostname(otherTopic.id, hostnameId)
+        ).then(
+          () => null,
+          (err: unknown) => err,
+        ),
       )
-      try {
-        await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
-      } finally {
-        await holder.commit()
-      }
-      expect(await settled).toBeNull()
-      await waiter.commit()
+      expect(settled).toBeNull()
       expect(await getUrlHostnameTopicId(hostnameId)).toBe(
         operation === 'add' ? otherTopic.id : null,
       )
@@ -108,18 +102,8 @@ describe('hostname ownership serialization against approval', () => {
         recommendation.id,
         { query: holder },
       )
-      const pid = await getTestPostgresBackendProcessId(holder)
       const link = kind === 'primary' ? setTopicHostnameLink : linkHostnameToSourceTopic
-      const pending = link(otherTopic.id, hostnameId).then(
-        () => null,
-        (err: unknown) => err,
-      )
-      try {
-        await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
-      } finally {
-        await holder.commit()
-      }
-      expect(await pending).toBeNull()
+      await withApprovalHostnameWait(holder, hostnameId, () => link(otherTopic.id, hostnameId))
       expect((await getTopicByAny(otherTopic.id))?.hostname_id).toBe(hostnameId)
       expect(await getUrlHostnameTopicId(hostnameId)).toBe(
         kind === 'primary' ? otherTopic.id : null,
@@ -142,17 +126,10 @@ describe('hostname ownership serialization against approval', () => {
       recommendation.id,
       { query: holder },
     )
-    const pid = await getTestPostgresBackendProcessId(holder)
-    const pending = upsertUrlHostnames(admin.id, [hostname]).then(
-      value => ({ value }),
-      (err: unknown) => ({ error: err }),
+    const pending = await withApprovalHostnameWait(holder, hostnameId, () =>
+      upsertUrlHostnames(admin.id, [hostname]),
     )
-    try {
-      await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
-    } finally {
-      await holder.commit()
-    }
-    expect(await pending).toEqual({ value: new Map([[hostname, hostnameId]]) })
+    expect(pending).toEqual(new Map([[hostname, hostnameId]]))
     expect((await getUrlHostnameByAny(hostname))?.publicly_introduced_at).toBeInstanceOf(Date)
     expect(
       (
@@ -184,25 +161,38 @@ describe('hostname ownership serialization against approval', () => {
       )
       const pid = await getTestPostgresBackendProcessId(holder)
       const subject = operation === 'delete' ? approved.topic : otherTopic
-      const pending = (
+      const pending =
         operation === 'delete'
-          ? softDeleteEntityRelation(admin, landing, subject, [{ id: urlId }])
-          : writeEntityRelations(landing, admin, [{ subject, object: { id: urlId } }], {
-              vote: false,
-            })
-      ).then(
-        () => null,
-        (err: unknown) => err,
-      )
-      try {
-        await waitForTestPostgresLockWaiter(
-          pid,
-          operation === 'delete' ? 'lockTopicRssFeedAttachmentLifecycles' : 'lockHostnameOwnership',
-        )
-      } finally {
-        await holder.commit()
-      }
-      expect(await pending).toBeNull()
+          ? await withTestOwnedPostgresWait(
+              {
+                holderProcessId: pid,
+                pool: 'write',
+                lock: {
+                  kind: 'advisory',
+                  key: `topic-rss-feed-attachment:${subject.id.toLowerCase()}`,
+                },
+                queryMarker: 'lockTopicRssFeedAttachmentLifecycles',
+                releaseHolder: () => holder[Symbol.asyncDispose](),
+              },
+              async waitForLock => {
+                const deleting = softDeleteEntityRelation(admin, landing, subject, [{ id: urlId }])
+                await waitForLock(deleting)
+                await holder.commit()
+                return deleting.then(
+                  () => null,
+                  (err: unknown) => err,
+                )
+              },
+            )
+          : await withApprovalHostnameWait(holder, hostnameId, () =>
+              writeEntityRelations(landing, admin, [{ subject, object: { id: urlId } }], {
+                vote: false,
+              }).then(
+                () => null,
+                (err: unknown) => err,
+              ),
+            )
+      expect(pending).toBeNull()
       const relations = await getEntityRelations('topic', subject.id, 'landing_page', 'url', {
         viewer: { kind: 'anonymous' },
       })

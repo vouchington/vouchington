@@ -6,9 +6,9 @@ import {
   getEntityRelation,
   getTestPostgresBackendProcessId,
   insertTestPost,
-  waitForTestPostgresLockWaiter,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { getActiveLandingPageHostnameClaims } from '@voucha/test-helpers/hostname-ownership'
 import { blockHostnameInTransaction } from '../hostname-blocking/block-hostname.mts'
 import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
@@ -42,20 +42,28 @@ describe('URL relation local policy after ownership waits', () => {
       await using holder = await beginTransaction()
       await blockHostnameInTransaction(admin.id, parentId, holder, { penalizeCreators: false })
       const pid = await getTestPostgresBackendProcessId(holder)
-      const claiming = (
-        kind === 'upsert'
-          ? upsertEntityRelation(admin, landing, topic, [{ id: url.id }])
-          : writeEntityRelations(landing, admin, [{ subject: topic, object: { id: url.id } }])
-      ).then(
-        () => null,
-        (err: unknown) => err,
+      const claiming = await withTestOwnedPostgresWait(
+        {
+          holderProcessId: pid,
+          pool: 'write',
+          lock: { kind: 'advisory', key: parentId.toLowerCase() },
+          queryMarker: 'lockHostnameOwnership',
+          releaseHolder: () => holder[Symbol.asyncDispose](),
+        },
+        async waitForLock => {
+          const claim =
+            kind === 'upsert'
+              ? upsertEntityRelation(admin, landing, topic, [{ id: url.id }])
+              : writeEntityRelations(landing, admin, [{ subject: topic, object: { id: url.id } }])
+          await waitForLock(claim)
+          await holder.commit()
+          return claim.then(
+            () => null,
+            (err: unknown) => err,
+          )
+        },
       )
-      try {
-        await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
-      } finally {
-        await holder.commit()
-      }
-      expect(await claiming).toMatchObject({ status: 422, message: 'URL hostname is blocked' })
+      expect(claiming).toMatchObject({ status: 422, message: 'URL hostname is blocked' })
       expect(await getActiveLandingPageHostnameClaims([url.hostname.id])).toEqual([])
     },
   )
@@ -90,19 +98,28 @@ describe('URL relation local policy after ownership waits', () => {
       penalizeCreators: false,
     })
     const pid = await getTestPostgresBackendProcessId(holder)
-    const relating = upsertEntityRelation(administrator, postRelatedUrl, { id: postId }, [
-      { id: url.id },
-    ]).then(
-      () => null,
-      (err: unknown) => err,
+    const relating = await withTestOwnedPostgresWait(
+      {
+        holderProcessId: pid,
+        pool: 'write',
+        lock: { kind: 'advisory', key: parentId.toLowerCase() },
+        queryMarker: 'lockHostnameOwnership',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const relation = upsertEntityRelation(administrator, postRelatedUrl, { id: postId }, [
+          { id: url.id },
+        ])
+        await waitForLock(relation)
+        await holder.commit()
+        return relation.then(
+          () => null,
+          (err: unknown) => err,
+        )
+      },
     )
-    try {
-      await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
-    } finally {
-      await holder.commit()
-    }
 
-    expect(await relating).toMatchObject({ status: 422, message: 'URL hostname is blocked' })
+    expect(relating).toMatchObject({ status: 422, message: 'URL hostname is blocked' })
     await expect(getEntityRelation(postRelatedUrl.table_name, postId, url.id)).resolves.toEqual([])
   })
 })

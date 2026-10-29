@@ -8,7 +8,7 @@ import {
   insertTestLandingPagesInPromotionOrder,
   holdTestLandingPageUserLock,
 } from '@voucha/test-helpers/landing-page-default'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 
 describe('setMyLandingPageDefault', () => {
   it('promotes a heap row preceding the current default without a unique-index collision', async () => {
@@ -27,13 +27,21 @@ describe('setMyLandingPageDefault', () => {
     const first = await createMyLandingPage(user.id, { title: 'First', slug: 'first' })
     const second = await createMyLandingPage(user.id, { title: 'Second', slug: 'second' })
     await using lock = await holdTestLandingPageUserLock(user.id)
-    const promotion = setMyLandingPageDefault(user.id, second.id)
-    try {
-      await waitForTestPostgresLockWaiter(lock.processId, 'lockUserLandingPages')
-    } finally {
-      await lock.release()
-    }
-    await promotion
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: lock.processId,
+        pool: 'write',
+        lock: { kind: 'advisory32', key: user.id },
+        queryMarker: 'lockUserLandingPages',
+        releaseHolder: () => lock[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const promotion = setMyLandingPageDefault(user.id, second.id)
+        await waitForLock(promotion)
+        await lock.release()
+        await promotion
+      },
+    )
     await Promise.all([
       setMyLandingPageDefault(user.id, first.id),
       setMyLandingPageDefault(user.id, second.id),
@@ -59,15 +67,23 @@ describe('setMyLandingPageDefault', () => {
     const first = await createMyLandingPage(user.id, { title: 'First', slug: 'first' })
     const second = await createMyLandingPage(user.id, { title: 'Second', slug: 'second' })
     await using lock = await holdTestLandingPageUserLock(user.id)
-    const deletion = deleteMyLandingPage(user.id, first.id)
     let promotion: ReturnType<typeof setMyLandingPageDefault> | undefined
-    try {
-      await waitForTestPostgresLockWaiter(lock.processId, 'lockUserLandingPages')
-      promotion = setMyLandingPageDefault(user.id, second.id)
-    } finally {
-      await lock.release()
-    }
-    await Promise.all([deletion, promotion])
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: lock.processId,
+        pool: 'write',
+        lock: { kind: 'advisory32', key: user.id },
+        queryMarker: 'lockUserLandingPages',
+        releaseHolder: () => lock[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const deletion = deleteMyLandingPage(user.id, first.id)
+        await waitForLock(deletion)
+        promotion = setMyLandingPageDefault(user.id, second.id)
+        await lock.release()
+        await Promise.all([deletion, promotion])
+      },
+    )
     expect(
       (await listLandingPagesForUser(user.id)).filter(page => page.is_default).map(page => page.id),
     ).toEqual([second.id])

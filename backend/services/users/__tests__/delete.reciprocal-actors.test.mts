@@ -5,7 +5,7 @@ import {
   holdTestRetainedUserIdentityLocks,
   listTestUserDeletionRequestActorIds,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
-import { waitForTestPostgresBlockedLockChain } from '@voucha/test-helpers/postgres-lock-wait'
+import { createTestPostgresMultiWait } from '@voucha/test-helpers/postgres-multi-client-lock-observer'
 import { TestUserDeletionWriterAborted } from '@voucha/test-helpers/entities/user-deletion'
 import { deleteUser } from '../delete.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
@@ -20,7 +20,6 @@ describe('deleteUser reciprocal administrator deletions', () => {
     // other is blocked behind it on a users-row lock. Abort and join that rollback before
     // awaiting the deletions so cleanup cannot race the open lock.
     const gate = await holdTestRetainedUserIdentityLocks([first.id, second.id])
-    const settled = Promise.allSettled([deleteUser(first, second), deleteUser(second, first)])
     const aborted = gate.completed.then(
       () => {
         throw new Error('Expected the retained-identity lock to abort before cleanup')
@@ -29,17 +28,40 @@ describe('deleteUser reciprocal administrator deletions', () => {
         if (!(err instanceof TestUserDeletionWriterAborted)) throw err
       },
     )
-    try {
-      await waitForTestPostgresBlockedLockChain(
-        gate.holderProcessId,
-        '/* createUserDeletionRequest:validateUsers */',
-        ['/* deleteUser:lockUserRow */', '/* deleteUser:lockActorUserRow */'],
-      )
-    } finally {
-      gate.abort()
-      await aborted
-    }
-    const outcomes = await settled
+    let releasing: Promise<void> | undefined
+    const releaseGate = () =>
+      (releasing ??= (async () => {
+        gate.abort()
+        await aborted
+      })())
+    await using waits = await createTestPostgresMultiWait()
+    const direct = await waits.start(
+      {
+        holderProcessId: gate.holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: '/* createUserDeletionRequest:validateUsers */',
+        releaseHolder: releaseGate,
+      },
+      () => deleteUser(first, second),
+    )
+    await direct.waitForLock()
+    const indirect = await waits.start(
+      {
+        holderProcessId: await direct.waiterProcessId(),
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker:
+          first.id.toLowerCase() < second.id.toLowerCase()
+            ? '/* deleteUser:lockUserRow */'
+            : '/* deleteUser:lockActorUserRow */',
+        releaseHolder: releaseGate,
+      },
+      () => deleteUser(second, first),
+    )
+    await indirect.waitForLock()
+    await releaseGate()
+    const outcomes = await Promise.allSettled([direct.operation, indirect.operation])
 
     expect(outcomes.map(outcome => outcome.status)).toEqual(['fulfilled', 'fulfilled'])
     const [secondDeletion, firstDeletion] = outcomes.map(outcome =>

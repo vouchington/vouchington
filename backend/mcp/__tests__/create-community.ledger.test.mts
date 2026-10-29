@@ -10,7 +10,7 @@ import {
 import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
   countTestCommunitiesCreatedBy,
   holdTestAdmissionReservationLock,
@@ -183,18 +183,26 @@ describe('delegated create ledger — real store', () => {
 
     // The retry waits on the reservation lock; the holder frees the key before it gets the lock.
     await using lock = await holdTestAdmissionReservationLock(key.actorId, key.idempotencyKey)
-    const retry = admitDelegatedCreate({ ...base, execute: createIn })
-    const settled = retry.then(
-      () => 'created',
-      (err: unknown) => err,
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: lock.processId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'claimContributionAdmission.reservation',
+        releaseHolder: () => lock[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const retry = admitDelegatedCreate({ ...base, execute: createIn })
+        await waitForLock(retry)
+        await lock.deleteAndRelease()
+        expect(
+          await retry.then(
+            () => 'created',
+            (err: unknown) => err,
+          ),
+        ).toBeInstanceOf(Error)
+      },
     )
-    try {
-      await waitForTestPostgresLockWaiter(lock.processId, 'claimContributionAdmission.reservation')
-    } finally {
-      await lock.deleteAndRelease()
-    }
-
-    expect(await settled).toBeInstanceOf(Error)
     expect(await countTestCommunitiesCreatedBy(user.id)).toBe(0)
     await admitDelegatedCreate({ ...base, execute: createIn })
     expect(await countTestCommunitiesCreatedBy(user.id)).toBe(1)

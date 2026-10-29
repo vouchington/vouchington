@@ -5,6 +5,7 @@ import sql from 'sql-template-strings'
 export async function getFirstTestHostnameOwnershipLockKey(
   query: TransactionQuery,
   hostnameId: string,
+  holderProcessId?: number,
 ): Promise<string> {
   const { rows } = await query<{ id: string }>(sql`/* getFirstTestHostnameOwnershipLockKey */
     WITH RECURSIVE hostname_names(hostname) AS (
@@ -17,7 +18,8 @@ export async function getFirstTestHostnameOwnershipLockKey(
     WHERE candidate.hostname IN (SELECT hostname FROM hostname_names)
       AND EXISTS (
         SELECT 1 FROM pg_locks held
-        WHERE held.pid = pg_backend_pid() AND held.locktype = 'advisory'
+        WHERE held.pid = COALESCE(${holderProcessId ?? null}::integer, pg_backend_pid())
+          AND held.locktype = 'advisory'
           AND held.database = (SELECT oid FROM pg_database WHERE datname = current_database())
           AND held.granted AND held.mode = 'ExclusiveLock' AND held.objsubid = 1
           AND held.classid::bigint = ((hashtextextended(candidate.id::text, 0) >> 32) & 4294967295)

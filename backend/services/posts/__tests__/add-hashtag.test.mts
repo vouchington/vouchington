@@ -12,8 +12,8 @@ import {
   getTopicAliasIdForTest,
   insertTestPost,
   insertTestTopic,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { POST_CONTENT_EDIT_WINDOW_EXPIRED, TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
@@ -35,7 +35,6 @@ describe('addPostHashtag', () => {
   beforeAll(async () => {
     creator = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
   })
-
   it('retains topic and hashtag categories while creating a canonical alias', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const topicId = await insertTestTopic({
@@ -73,7 +72,6 @@ describe('addPostHashtag', () => {
       ]),
     )
   })
-
   it('reuses an existing canonical alias and applies its vote before returning', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const tag = `existing-${suffix}`
@@ -100,7 +98,6 @@ describe('addPostHashtag', () => {
       (await getPostHashtagSourcesForTest(post.id)).filter(source => source.alias === tag),
     ).toHaveLength(1)
   })
-
   it('rejects a final category cap breach without creating an alias', async () => {
     const restore = overrideDynamicConfigFieldsForTest(manualTagLimitConfig, { free: 3 })
     try {
@@ -230,17 +227,24 @@ describe('addPostHashtag', () => {
     await using holder = await beginTransaction()
     await lockPostPublication(holder, post.id)
     const holderPid = await getTestPostgresBackendProcessId(holder)
-    const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
-    try {
-      await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
-      const replacement = updatePost(creator, post, {
-        categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
-      })
-      await holder.commit()
-      await Promise.all([additive, replacement])
-    } finally {
-      await holder.commit()
-    }
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: holderPid,
+        pool: 'write',
+        lock: { kind: 'advisory', key: `post:${post.id.toLowerCase()}` },
+        queryMarker: 'lockPostPublicationCaptures',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
+        await waitForLock(additive)
+        const replacement = updatePost(creator, post, {
+          categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
+        })
+        await holder.commit()
+        await Promise.all([additive, replacement])
+      },
+    )
 
     expect(await getPostHashtagSourcesForTest(post.id)).toEqual([
       {
@@ -260,17 +264,24 @@ describe('addPostHashtag', () => {
     await using holder = await beginTransaction()
     await lockPostPublication(holder, post.id)
     const holderPid = await getTestPostgresBackendProcessId(holder)
-    const replacement = updatePost(creator, post, {
-      categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
-    })
-    try {
-      await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationScope')
-      const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
-      await holder.commit()
-      await Promise.all([replacement, additive])
-    } finally {
-      await holder.commit()
-    }
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: holderPid,
+        pool: 'write',
+        lock: { kind: 'advisory', key: `post:${post.id.toLowerCase()}` },
+        queryMarker: 'lockPostPublicationScope',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const replacement = updatePost(creator, post, {
+          categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
+        })
+        await waitForLock(replacement)
+        const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
+        await holder.commit()
+        await Promise.all([replacement, additive])
+      },
+    )
 
     expect(await getPostHashtagSourcesForTest(post.id)).toEqual([
       {

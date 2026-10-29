@@ -5,7 +5,7 @@ import { startPausedTestOAuthCodeLock } from '@voucha/test-helpers/entities/oaut
 import { assignTestOAuthClientOwner } from '@voucha/test-helpers/entities/oauth-client-management'
 import { getTestOAuthCredentialStorage } from '@voucha/test-helpers/entities/oauth-authorization-server'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { createTestPostgresMultiWait } from '@voucha/test-helpers/postgres-multi-client-lock-observer'
 import {
   createTestApprovedOAuthAuthorization,
   TEST_OAUTH_RESOURCE,
@@ -39,38 +39,55 @@ describe('OAuth participant lifecycle lock concurrency', () => {
     let secondExchange: ReturnType<typeof exchangeOAuthAuthorizationCode> | undefined
     try {
       secondCodeLock = await startPausedTestOAuthCodeLock(second.code)
-      firstExchange = exchangeOAuthAuthorizationCode({
-        clientId: first.client.client_id,
-        code: first.code,
-        codeVerifier: first.verifier,
-        redirectUri: first.redirectUri,
-      })
-      void firstExchange.catch(() => undefined)
-      await waitForTestPostgresLockWaiter(
-        firstCodeLock.holderProcessId,
-        '/* lockAuthorizationCode */',
-        'advisoryLock',
+      await using wait = await createTestPostgresMultiWait()
+      const firstWaiter = await wait.start(
+        {
+          holderProcessId: firstCodeLock.holderProcessId,
+          lock: { kind: 'transaction' },
+          pool: 'write',
+          queryMarker: '/* lockAuthorizationCode */',
+          releaseHolder: async () => {
+            firstCodeLock.release()
+            await firstCodeLock.completed
+          },
+        },
+        () =>
+          (firstExchange = exchangeOAuthAuthorizationCode({
+            clientId: first.client.client_id,
+            code: first.code,
+            codeVerifier: first.verifier,
+            redirectUri: first.redirectUri,
+          })),
       )
-      secondExchange = exchangeOAuthAuthorizationCode({
-        clientId: first.client.client_id,
-        code: second.code,
-        codeVerifier: second.verifier,
-        redirectUri: first.redirectUri,
-      })
-      void secondExchange.catch(() => undefined)
-      await waitForTestPostgresLockWaiter(
-        secondCodeLock.holderProcessId,
-        '/* lockAuthorizationCode */',
-        'advisoryLock',
+      await firstWaiter.waitForLock()
+      const secondWaiter = await wait.start(
+        {
+          holderProcessId: secondCodeLock!.holderProcessId,
+          lock: { kind: 'transaction' },
+          pool: 'write',
+          queryMarker: '/* lockAuthorizationCode */',
+          releaseHolder: async () => {
+            secondCodeLock!.release()
+            await secondCodeLock!.completed
+          },
+        },
+        () =>
+          (secondExchange = exchangeOAuthAuthorizationCode({
+            clientId: first.client.client_id,
+            code: second.code,
+            codeVerifier: second.verifier,
+            redirectUri: first.redirectUri,
+          })),
       )
+      await secondWaiter.waitForLock()
       secondCodeLock.release()
-      const secondTokens = await secondExchange
+      const secondTokens = await secondWaiter.operation
       expect(secondTokens.access_token).toMatch(/^voucha_access_/)
       expect(await getTestOAuthCredentialStorage({ authorizationCode: first.code })).toMatchObject({
         authorizationCodeConsumed: false,
       })
       firstCodeLock.release()
-      const firstTokens = await firstExchange
+      const firstTokens = await firstWaiter.operation
       expect(firstTokens.access_token).toMatch(/^voucha_access_/)
     } finally {
       firstCodeLock.release()

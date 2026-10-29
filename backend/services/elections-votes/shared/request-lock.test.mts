@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getPsqlPoolConfiguration } from '@data-stores/psql/pool-config'
-import {
-  getTestPostgresAdvisoryLockHolderProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers'
 import { injectTestElectionVoteRequestUnlockFault } from '@voucha/test-helpers/election-vote-request-lock'
 import { probeWritePool } from '@voucha/test-helpers/write-pool-probe'
 import { withElectionVoteRequestLock } from './request-lock.mts'
@@ -57,24 +55,32 @@ describe('withElectionVoteRequestLock', () => {
       key: requestKey,
     })
 
-    const second = withElectionVoteRequestLock(
-      'post',
-      'SAME-USER',
-      entityId.toUpperCase(),
-      async () => {
-        executionOrder.push('second')
-        secondEntered.resolve()
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: firstHolderProcessId,
+        pool: 'advisory',
+        lock: { kind: 'advisory', key: requestKey },
+        queryMarker: 'lockElectionVoteRequest',
+        releaseHolder: async () => releaseFirst.resolve(),
+      },
+      async waitForLock => {
+        const second = withElectionVoteRequestLock(
+          'post',
+          'SAME-USER',
+          entityId.toUpperCase(),
+          async () => {
+            executionOrder.push('second')
+            secondEntered.resolve()
+          },
+        )
+        await waitForLock(second)
+        expect(executionOrder).toEqual(['first'])
+        releaseFirst.resolve()
+        await secondEntered.promise
+        await Promise.all([first, second])
+        expect(executionOrder).toEqual(['first', 'second'])
       },
     )
-
-    await waitForTestPostgresLockWaiter(firstHolderProcessId, 'lockElectionVoteRequest')
-    expect(executionOrder).toEqual(['first'])
-
-    releaseFirst.resolve()
-    await secondEntered.promise
-    await Promise.all([first, second])
-
-    expect(executionOrder).toEqual(['first', 'second'])
   })
 
   it('rethrows a handler failure only after releasing its request lock', async () => {

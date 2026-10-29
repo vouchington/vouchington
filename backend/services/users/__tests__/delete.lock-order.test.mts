@@ -4,7 +4,7 @@ import {
   holdTestUserRowLock,
   isTestUserRowLocked,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import type { PrivateUser } from '../types.mts'
 import { deleteUser } from '../delete.mts'
 
@@ -25,31 +25,50 @@ describe('deleteUser user-row lock order', () => {
   it('locks a lower-id actor before waiting on a higher-id target', async () => {
     const { lower: actor, higher: target } = await createAdministratorsByAscendingId()
     const holder = await holdTestUserRowLock(target.id)
-    const deletion = deleteUser(actor, target)
-    try {
-      await waitForTestPostgresLockWaiter(holder.holderProcessId, '/* deleteUser:lockUserRow */')
-      expect(await isTestUserRowLocked(actor.id, 'update')).toBe(true)
-    } finally {
-      holder.release()
-      await holder.completed
-    }
-    await deletion
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: holder.holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: '/* deleteUser:lockUserRow */',
+        releaseHolder: async () => {
+          holder.release()
+          await holder.completed
+        },
+      },
+      async waitForLock => {
+        const deletion = deleteUser(actor, target)
+        await waitForLock(deletion)
+        expect(await isTestUserRowLocked(actor.id, 'update')).toBe(true)
+        holder.release()
+        await holder.completed
+        await deletion
+      },
+    )
   })
 
   it('locks a lower-id target before waiting on a higher-id actor', async () => {
     const { lower: target, higher: actor } = await createAdministratorsByAscendingId()
     const holder = await holdTestUserRowLock(actor.id)
-    const deletion = deleteUser(actor, target)
-    try {
-      await waitForTestPostgresLockWaiter(
-        holder.holderProcessId,
-        '/* deleteUser:lockActorUserRow */',
-      )
-      expect(await isTestUserRowLocked(target.id, 'update')).toBe(true)
-    } finally {
-      holder.release()
-      await holder.completed
-    }
-    await deletion
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: holder.holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: '/* deleteUser:lockActorUserRow */',
+        releaseHolder: async () => {
+          holder.release()
+          await holder.completed
+        },
+      },
+      async waitForLock => {
+        const deletion = deleteUser(actor, target)
+        await waitForLock(deletion)
+        expect(await isTestUserRowLocked(target.id, 'update')).toBe(true)
+        holder.release()
+        await holder.completed
+        await deletion
+      },
+    )
   })
 })

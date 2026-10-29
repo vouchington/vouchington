@@ -16,8 +16,14 @@ export function observeTestAdvisoryLockNotice(
   client: LockNoticeClient,
   lockTag: string,
   eligible: () => boolean = () => true,
+  mode: 'exclusive' | 'shared' = 'exclusive',
 ) {
-  return observeTestPostgresLockNotice(client, lockTag, 'ExclusiveLock', eligible)
+  return observeTestPostgresLockNotice(
+    client,
+    lockTag,
+    mode === 'shared' ? 'ShareLock' : 'ExclusiveLock',
+    eligible,
+  )
 }
 
 export function observeTestTransactionLockNotice(

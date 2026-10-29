@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   createTestTopic,
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
   beginTransaction,
 } from '@voucha/test-helpers'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
+import { getFirstTestHostnameOwnershipLockKey } from '@voucha/test-helpers/hostname-ownership'
 import { createTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
@@ -80,21 +80,29 @@ describe('approval hostname conflicts', () => {
     const host = { id: ids.get(hostname)!, hostname }
     await using holder = await beginTransaction()
     await createTopicRecommendationRelations(admin, topic, [host], { query: holder })
-    const holderPid = await getTestPostgresBackendProcessId(holder)
-    await using claimTx = await beginTransaction()
+    const heldHostnameKey = await getFirstTestHostnameOwnershipLockKey(holder, host.id)
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'advisory64', key: heldHostnameKey },
+      selected: {
+        marker: '/* lockHostnameOwnership */',
+        binding: { index: 0, value: [host.id.toLowerCase()] },
+      },
+    })
     const claim = createTopicRecommendationRelations(otherAdmin, competitor, [host], {
-      query: claimTx,
+      query: waiter.query,
     }).then(
       () => {
         throw new Error('The competing hostname claim should have been rejected')
       },
       (err: unknown) => err,
     )
-    await waitForTestPostgresLockWaiter(holderPid, 'lockHostnameOwnership')
+    await waiter.waitForLock(claim)
     await holder.commit()
     await expect(claim).resolves.toMatchObject({
       status: 422,
       message: `Hostname ${hostname} is already associated with another topic`,
     })
+    await waiter.query.commit()
   })
 })

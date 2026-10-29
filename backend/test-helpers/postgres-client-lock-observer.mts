@@ -1,13 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
-import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { onTestFinished } from 'vitest'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 import {
   createTestPostgresClientLoan,
-  discardTestPostgresClient,
   reserveTestPostgresObserver,
 } from './postgres-client-loan.mts'
+import { installTestOwnedPostgresPoolProxy } from './postgres-client-lock-pool-proxy.mts'
 import {
   assertTestOwnedPostgresWait,
   getTestOwnedPostgresLock,
@@ -17,7 +16,7 @@ import {
 
 const actionScope = new AsyncLocalStorage<object>()
 
-/** Own the first selected pool's Promise checkout of this action or actual HTTP request. */
+/** Observe every Promise checkout in this action or actual HTTP request until the target wait. */
 export async function withTestOwnedPostgresWait<Result>(
   options: TestOwnedPostgresWaitOptions,
   action: (waitForLock: (operation: Promise<unknown>) => Promise<void>) => Promise<Result>,
@@ -26,16 +25,20 @@ export async function withTestOwnedPostgresWait<Result>(
   const token = {}
   const cancelled = Promise.withResolvers<never>()
   const captured = Promise.withResolvers<ReturnType<typeof createTestPostgresClientLoan>>()
+  const operationRegistered = Promise.withResolvers<{
+    outcome: Promise<PromiseSettledResult<unknown>[]>
+  }>()
   void cancelled.promise.catch(() => {})
   void captured.promise.catch(() => {})
+  void operationRegistered.promise.catch(() => {})
   const closedReason = new Error('Owned PostgreSQL observation closed before completion')
   let closed = false
   let entered = false
   let cleanupReported = false
   let observerLoan: ReturnType<typeof reserveTestPostgresObserver> | undefined
   let setup: Promise<TestHeldPostgresLock> | undefined
-  let pendingConnect: Promise<PoolClient> | undefined
-  let loan: ReturnType<typeof createTestPostgresClientLoan> | undefined
+  const pendingConnects: Promise<PoolClient>[] = []
+  const loans: ReturnType<typeof createTestPostgresClientLoan>[] = []
   let operationOutcome: Promise<PromiseSettledResult<unknown>[]> | undefined
   let callbackOutcome: Promise<PromiseSettledResult<Result>[]> | undefined
   let snapshot: Promise<void> | undefined
@@ -52,6 +55,7 @@ export async function withTestOwnedPostgresWait<Result>(
     closed = true
     cancelled.reject(closedReason)
     captured.reject(closedReason)
+    operationRegistered.reject(closedReason)
     return (cleaning ??= (async () => {
       const failures = new Set<unknown>()
       try {
@@ -64,12 +68,9 @@ export async function withTestOwnedPostgresWait<Result>(
       for (const result of callbackResults)
         if (result.status === 'rejected' && result.reason !== closedReason)
           failures.add(result.reason)
-      await Promise.allSettled([observerLoan?.ready, setup, pendingConnect, snapshot])
-      try {
-        await loan?.dispose()
-      } catch (err) {
-        failures.add(err)
-      }
+      await Promise.allSettled([observerLoan?.ready, setup, ...pendingConnects, snapshot])
+      const disposals = await Promise.allSettled(loans.map(loan => loan.dispose()))
+      for (const result of disposals) if (result.status === 'rejected') failures.add(result.reason)
       try {
         restorePool?.()
       } catch (err) {
@@ -104,12 +105,12 @@ export async function withTestOwnedPostgresWait<Result>(
   async function waitForLock(operation: Promise<unknown>): Promise<void> {
     if (operationOutcome) throw new Error('Owned PostgreSQL action was registered more than once')
     operationOutcome = Promise.allSettled([operation])
+    operationRegistered.resolve({ outcome: operationOutcome })
     const settledEarly = operationOutcome.then(([result]) => {
       if (result?.status === 'rejected') throw result.reason
       throw new Error('Owned action settled without its native lock wait')
     })
     const observed = await Promise.race([captured.promise, settledEarly, cancelled.promise])
-    await Promise.race([observed.wait(operationOutcome), cancelled.promise])
     const observer = observerLoan?.client
     if (closed || !observer) throw closedReason
     const { processId } = await observed.ready
@@ -133,48 +134,20 @@ export async function withTestOwnedPostgresWait<Result>(
         setup = getTestOwnedPostgresLock(reservedObserver, options)
         const targetLock = await setup
         requireOpen()
-        const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
-        const original = pool.connect
-        let claimed = false
-        Object.defineProperty(pool, 'connect', {
-          configurable: true,
-          enumerable: descriptor?.enumerable ?? true,
-          writable: true,
-          value: new Proxy(original, {
-            apply(target, receiver, args) {
-              const owned =
-                actionScope.getStore() === token ||
-                (options.requestId !== undefined &&
-                  getOptionalRequestClientInfo()?.requestId === options.requestId)
-              if (!owned || claimed) return Reflect.apply(target, receiver, args)
-              // Pool.query uses the callback overload internally. Let pre-read queries pass through
-              // and observe the first explicit Promise checkout (the transaction under test).
-              if (args.some(arg => typeof arg === 'function'))
-                return Reflect.apply(target, receiver, args)
-              requireOpen()
-              claimed = true
-              pendingConnect = (Reflect.apply(target, receiver, args) as Promise<PoolClient>).then(
-                async client => {
-                  if (closed) {
-                    await discardTestPostgresClient(client)
-                    throw closedReason
-                  }
-                  loan = createTestPostgresClientLoan(client, targetLock)
-                  await loan.ready
-                  requireOpen()
-                  captured.resolve(loan)
-                  return client
-                },
-              )
-              void pendingConnect.catch(captured.reject)
-              return pendingConnect
-            },
-          }),
+        restorePool = installTestOwnedPostgresPoolProxy({
+          pool,
+          actionScope,
+          token,
+          requestId: options.requestId,
+          requireOpen,
+          isClosed: () => closed,
+          closedReason,
+          targetLock,
+          operationRegistered: operationRegistered.promise,
+          captured,
+          pendingConnects,
+          loans,
         })
-        restorePool = () => {
-          if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
-          else Reflect.deleteProperty(pool, 'connect')
-        }
         callbackOutcome = Promise.allSettled([
           Promise.resolve().then(() => actionScope.run(token, () => action(waitForLock))),
         ])
