@@ -12,7 +12,7 @@ export const NATIVE_RESOURCE_LOCALES = ['en', 'es', 'fr', 'pt'] as const
 export type NativeResourceLocale = (typeof NATIVE_RESOURCE_LOCALES)[number]
 export type NativeCatalogs = Readonly<Record<NativeResourceLocale, Catalog>>
 
-export function createNativeCatalogs(
+function createNativeCatalogs(
   loadLocale: (locale: NativeResourceLocale, consumers: readonly LocalizationConsumer[]) => Catalog,
 ): NativeCatalogs {
   const cache: Partial<Record<NativeResourceLocale, Catalog>> = {}

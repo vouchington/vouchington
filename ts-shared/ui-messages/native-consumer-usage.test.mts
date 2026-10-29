@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
-import {
-  canonicalNativeKey,
-  validateNativeConsumerUsage,
-  type NativeProductSource,
-} from './native-consumer-usage.mts'
+import { validateNativeConsumerUsage, type NativeProductSource } from './native-consumer-usage.mts'
 
 function entry(
   key: string,
@@ -242,15 +238,13 @@ describe('native consumer usage manifest', () => {
   })
 
   it('maps generated descriptor variants back to their manifest leaf', () => {
-    expect(canonicalNativeKey('counts.items.__plural.one')).toBe('counts.items')
-    expect(canonicalNativeKey('counts.items.__select.member.other')).toBe('counts.items')
     expect(() =>
       validateNativeConsumerUsage(
         [entry('counts.items', ['dotnet'])],
         [
           source(
             'dotnet-clients/src/Voucha.Client.App/Feature.xaml',
-            '<Label Text="{DynamicResource counts.items.__plural.one}" />',
+            '<Label Text="{DynamicResource counts.items.__plural.one}" /><Label Text="{DynamicResource counts.items.__select.member.other}" />',
           ),
         ],
       ),

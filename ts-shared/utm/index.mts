@@ -11,9 +11,9 @@ const SHORTCODE_MAP: Record<string, string> = {
   rd: 'reddit',
 }
 
-const { resolveSource: resolveUtmSource, extractFromUrl: extractUtmParams } = createUtmParser({
+const { resolveSource: resolveUtmSource } = createUtmParser({
   sourceAliases: SHORTCODE_MAP,
   fallbackSourceParam: 'ref',
 })
 
-export { extractUtmParams, resolveUtmSource }
+export { resolveUtmSource }

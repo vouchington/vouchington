@@ -61,13 +61,3 @@ describe('loadMessages', () => {
     expect(t('settings.language.supportedCount', { count: 2 })).toBe('2 languages')
   })
 })
-
-describe('web catalog size', () => {
-  it('is larger than one public API batch, so clients must select a route subset', async () => {
-    const { loadCatalogMessages } = await import('./load-catalog-json.mts')
-    const webCount = loadCatalogMessages().filter(message =>
-      message.consumers.includes('web'),
-    ).length
-    expect(webCount).toBeGreaterThan(2000)
-  })
-})

@@ -1,15 +1,12 @@
 /* eslint-disable max-lines -- The contract table is intentionally centralized for cross-surface review. */
 
 import {
-  envContractsByName as groupEnvContractsByName,
   envContractManifest,
-  envNamesBySensitivity,
-  envNamesForSurface as findEnvNamesForSurface,
   groupEnvContracts as group,
   normalizeEnvContractGroups,
 } from '@vouchington/utils/env-contract'
 
-export type EnvVarSensitivity = 'internal' | 'public' | 'secret'
+type EnvVarSensitivity = 'internal' | 'public' | 'secret'
 
 export type EnvVarSourceOfTruth =
   | 'cloudflare-worker'
@@ -19,7 +16,7 @@ export type EnvVarSourceOfTruth =
   | 'runtime-public-config'
   | 'web-build'
 
-export type EnvVarSurface =
+type EnvVarSurface =
   | 'cloudflare-staging-vars'
   | 'ecs-backend-environment'
   | 'ecs-backend-rollout-secret'
@@ -34,14 +31,6 @@ export type EnvVarSurface =
   | 'local-worker'
   | 'local-worktree'
   | 'web-build-arg'
-
-export interface EnvVarContract {
-  key: string
-  name: string
-  sensitivity: EnvVarSensitivity
-  sourceOfTruth: EnvVarSourceOfTruth
-  surfaces: readonly EnvVarSurface[]
-}
 
 export interface EnvVarContractGroup {
   sourceOfTruth: EnvVarSourceOfTruth
@@ -440,24 +429,4 @@ export function collectTypedEnvContractEntries(): typeof typedEnvContractEntries
 
 export function collectTypedEnvVarConstants(): typeof typedEnvVarConstants {
   return typedEnvVarConstants
-}
-
-export function envNamesForSurface(surface: EnvVarSurface): readonly string[] {
-  return findEnvNamesForSurface(ENV_VAR_CONTRACT, surface)
-}
-
-export function envContractsByName(): ReadonlyMap<string, readonly EnvVarContract[]> {
-  return groupEnvContractsByName(ENV_VAR_CONTRACT)
-}
-
-export function knownPublicEnvNames(): readonly string[] {
-  return namesBySensitivity('public')
-}
-
-export function knownSecretEnvNames(): readonly string[] {
-  return namesBySensitivity('secret')
-}
-
-function namesBySensitivity(sensitivity: EnvVarSensitivity): readonly string[] {
-  return envNamesBySensitivity(ENV_VAR_CONTRACT, sensitivity).toSorted((a, b) => a.localeCompare(b))
 }

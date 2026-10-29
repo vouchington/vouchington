@@ -4,11 +4,13 @@ import {
   ENV_VAR_CONTRACT,
   collectTypedEnvContractEntries,
   collectTypedEnvVarConstants,
+} from './index.mts'
+import {
   envContractsByName,
   envNamesForSurface,
   knownPublicEnvNames,
   knownSecretEnvNames,
-} from './index.mts'
+} from '../test-helpers/env-contract.mts'
 
 describe('environment contract', () => {
   it('exposes a normalized entry for every surface assignment', () => {

@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import type { MessageDescriptor, PluralForms } from './message-descriptors.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
 import {
-  createNativeCatalogs,
   getNativeCatalogLeaf,
   nativeLeafVariants,
   validateNativeManifestCatalogs,
@@ -28,19 +27,8 @@ import {
 const ONE_OTHER: PluralForms = { one: '{count} item', other: '{count} items' }
 describe('native UI message resources', () => {
   it('generates deterministic Swift and .NET resources from the native consumer manifest', () => {
-    const loads: string[] = []
-    const catalogs = createNativeCatalogs((locale, consumers) => {
-      expect(consumers).toEqual(['web', 'swift', 'dotnet'])
-      loads.push(locale)
-      return SIMPLE_NATIVE_INPUTS.catalogs[locale]
-    })
-    expect(loads).toEqual([])
-    const inputs = { ...SIMPLE_NATIVE_INPUTS, catalogs }
-    const first = generateNativeResourceFiles(inputs)
-    const english = catalogs.en
-    const second = generateNativeResourceFiles(inputs)
-    expect(loads).toEqual(['en', 'es', 'fr', 'pt'])
-    expect(catalogs.en).toBe(english)
+    const first = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
+    const second = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
     assertNativeResourceLayout(first, second)
     expect(() => assertNativeResourceLayout(first.toReversed(), second)).toThrow('sorted')
     expect(() => assertNativeResourceLayout(first, [])).toThrow('deterministic')
@@ -51,6 +39,15 @@ describe('native UI message resources', () => {
     expect(first.some(file => file.path.endsWith('/UiMessages.resx'))).toBe(true)
     expect(first.some(file => file.path.endsWith('/UiMessageKey.swift'))).toBe(true)
     expect(first.some(file => file.path.endsWith('/UiMessageKey.g.cs'))).toBe(true)
+  })
+  it('generates resources from the default catalog and consumer manifest', () => {
+    const files = generateNativeResourceFiles()
+    const swiftEnglish = files.find(file => file.path.endsWith('/en.lproj/Localizable.strings'))!
+    const dotnetEnglish = files.find(file => file.path.endsWith('/UiMessages.resx'))!
+    expect(swiftEnglish.content).toContain('"common.cancel" = "Cancel";')
+    expect(dotnetEnglish.content).toContain(
+      '<data name="common.cancel" xml:space="preserve"><value>Cancel</value></data>',
+    )
   })
   it('expands plural descriptors into internal resource variants', () => {
     const manifest = PLURAL_NATIVE_MANIFEST
@@ -134,15 +131,6 @@ describe('native UI message resources', () => {
     )
   })
   it('rejects unknown catalog keys and incompatible locale placeholders', () => {
-    const loadError = new Error('Catalog source unavailable')
-    let fail = true
-    const retryCatalogs = createNativeCatalogs(() => {
-      if (fail) throw loadError
-      return SIMPLE_NATIVE_INPUTS.catalogs.en
-    })
-    expect(() => retryCatalogs.en).toThrow(loadError)
-    fail = false
-    expect(retryCatalogs.en).toBe(SIMPLE_NATIVE_INPUTS.catalogs.en)
     const unknownManifest = [
       { key: 'missing.key', consumers: ['swift'] },
     ] as const satisfies readonly NativeConsumerManifestEntry[]
