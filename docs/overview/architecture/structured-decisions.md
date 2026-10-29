@@ -1,9 +1,8 @@
 # Structured decisions
 
 `@modules/structured-decisions` is the provider-neutral boundary for native Noul, Choice, and Score
-decisions. OpenAI Decisions (`gpt-6-luna`) is the default provider because its usage draws on the
-credits included with our Codex plan; TypeSafe's Jev, reached through OpenRouter, stays a
-selectable fallback. Later classifier work owns candidate selection, persistence, thresholding, and
+decisions. OpenAI Decisions (`gpt-6-luna`) is the default provider; TypeSafe's Jev, reached
+through OpenRouter, stays a selectable fallback. Later classifier work owns candidate selection, persistence, thresholding, and
 side effects; this module owns only a strict remote call and normalized result.
 
 ```mermaid
