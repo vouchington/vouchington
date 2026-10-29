@@ -98,7 +98,10 @@ export async function readTestAiUsageRetentionCursor(): Promise<{
     WHERE is_singleton = true
   `)
   // The cleanup job creates the row on first use.
-  return { cursorId: rows[0]?.cursor_id ?? null, sweepUpperBoundId: rows[0]?.sweep_upper_bound_id ?? null }
+  return {
+    cursorId: rows[0]?.cursor_id ?? null,
+    sweepUpperBoundId: rows[0]?.sweep_upper_bound_id ?? null,
+  }
 }
 
 export async function hasTestClassifierIdentity(id: string): Promise<boolean> {

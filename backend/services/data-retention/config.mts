@@ -170,5 +170,5 @@ export function getVoteIntegrityDetailRetentionDays(): number {
 }
 
 export function getAiUsageRawRetentionDays(): number {
-  return Math.max(180, readField('ai_usage_raw_retention_days'))
+  return Math.max(180, readDataRetentionField('ai_usage_raw_retention_days'))
 }
