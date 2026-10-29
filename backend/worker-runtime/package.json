@@ -21,8 +21,10 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/graceful-shutdown": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
+    "@queues/heartbeat": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/api-keys": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",

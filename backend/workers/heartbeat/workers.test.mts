@@ -1,7 +1,7 @@
 import type { Job } from 'glide-mq'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 
-import { enqueueGlideMqStats } from '@queues/heartbeat/enqueues'
+import { enqueueGlideMqStats, enqueueHeartbeat } from '@queues/heartbeat/enqueues'
 import type { HeartbeatData, HeartbeatResult } from '@queues/heartbeat/types'
 import { heartbeat as heartbeatWorker } from './workers.mts'
 
@@ -20,6 +20,23 @@ describe('heartbeat worker', () => {
 
       expect(job.name).toBe('publish-glidemq-stats')
       expect(job.returnvalue).toMatchObject({ processedAt: expect.any(Number) })
+    } finally {
+      completed.stop()
+    }
+  })
+
+  it('completes a liveness heartbeat with its enqueue time', async () => {
+    const completed = trackCompletedHeartbeats()
+    try {
+      const enqueued = await enqueueHeartbeat()
+      if (!enqueued) throw new Error('Expected an enqueued heartbeat')
+      const job = await completed.job(enqueued.id)
+
+      expect(job.name).toBe('heartbeat')
+      expect(job.returnvalue).toMatchObject({
+        enqueuedAt: expect.any(Number),
+        processedAt: expect.any(Number),
+      })
     } finally {
       completed.stop()
     }

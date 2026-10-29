@@ -2,6 +2,7 @@ import type { JobOptions } from 'glide-mq'
 
 export const QUEUE_NAME = 'heartbeat'
 export const GLIDE_MQ_STATS_JOB_NAME = 'publish-glidemq-stats' as const
+export const HEARTBEAT_JOB_NAME = 'heartbeat' as const
 
 export const GLIDE_MQ_STATS_JOB_OPTIONS = {
   attempts: 3,

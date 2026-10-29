@@ -12726,12 +12726,18 @@ importers:
 
   backend/worker-runtime:
     dependencies:
+      '@data-stores/graceful-shutdown':
+        specifier: workspace:^
+        version: link:../data-stores/graceful-shutdown
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../modules/worker-queue-inventory
+      '@queues/heartbeat':
+        specifier: workspace:^
+        version: link:../queues/heartbeat
       '@services/analytics':
         specifier: workspace:^
         version: link:../services/analytics
