@@ -5,7 +5,7 @@ import { clearRequestCurrentUser } from '@modules/utils/request-context'
 import { validateUsername } from '@modules/utils'
 import onError from '@modules/on-error'
 import { getPrivateUserByAny } from '@services/users'
-import { commitUserFieldUpdate } from '@services/users/update-username-publication'
+import { commitUserUpdateOperation } from '@services/users/update-username-publication'
 import { ensureDefaultLandingPage } from './landing-pages/index.mts'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 import { syncImageSurfacePlacement } from '@services/media-delivery-safety'
@@ -15,10 +15,10 @@ export async function updateUsername(userId: string, username: string): Promise<
   const validated = validateUsername(username)
   const existing = await getPrivateUserByAny(validated)
   assert(!existing || existing.id === userId, 422, `Username ${username} is already taken`)
-  const input = sql`/* updateUsername */ UPDATE users SET username = ${validated}`
+  const input = sql`UPDATE users SET username = ${validated}`
   input.append(sql` WHERE id = ${userId} AND deleted_at IS NULL`)
   input.append(sql` RETURNING WITH (OLD AS prior) prior.username AS previous_username`)
-  await commitUserFieldUpdate(userId, input, validated)
+  await commitUserUpdateOperation(userId, 'identity', input, validated)
   clearRequestCurrentUser(userId)
   void enqueueOnUserUpdated(userId)
   ensureDefaultLandingPage(userId, validated).catch(onError)

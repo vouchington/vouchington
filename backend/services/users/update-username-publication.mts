@@ -1,14 +1,38 @@
-import { beginTransaction, write, type QueryInput } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import type { SQLStatement } from 'sql-template-strings'
 import {
   lockAuthorPublicationLifecycle,
   recordPostPublicationChange,
 } from '@services/post-publication'
 
-export async function commitUserFieldUpdate(userId: string, input: QueryInput, username?: string) {
-  if (username === undefined) return write(input).then(() => undefined)
+export async function commitUserUpdateOperation(
+  userId: string,
+  kind: 'fields' | 'identity',
+  input: SQLStatement,
+  username: string | undefined,
+) {
+  const text = input.text
+  const values = [...input.values]
+  if (kind === 'fields' && username === undefined)
+    return write(`/* updateUserFields */ ${text}`, values).then(() => undefined)
   await using query = await beginTransaction()
   await lockAuthorPublicationLifecycle(query, userId)
-  const { rows } = await query<{ previous_username: string | null }>(input)
+  let result: { rows: { previous_username: string | null }[] }
+  switch (kind) {
+    case 'fields':
+      result = await query<{ previous_username: string | null }>(
+        `/* updateUserFields */ ${text}`,
+        values,
+      )
+      break
+    case 'identity':
+      result = await query<{ previous_username: string | null }>(
+        `/* updateUsername */ ${text}`,
+        values,
+      )
+      break
+  }
+  const { rows } = result
   const previousUsername = rows[0]?.previous_username ?? null
   const changed = rows.length > 0 && previousUsername !== username
   const scope = { type: 'author' as const, authorUserId: userId }
