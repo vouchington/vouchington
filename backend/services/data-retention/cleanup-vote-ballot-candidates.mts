@@ -41,6 +41,7 @@ export async function listVoteBallotSupersederCandidates(
          SELECT 1 FROM ${table} older
          WHERE older.${entityColumn} = vote.${entityColumn}
            AND older.user_id = vote.user_id AND older.id < vote.id
+           ${table === 'post_votes' ? 'AND older.ballot_retention_deferred_at IS NULL' : ''}
          LIMIT 1
        ) AS has_older
      FROM ${table} vote

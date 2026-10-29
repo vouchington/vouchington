@@ -152,7 +152,8 @@ Vote ballots keep their request metadata (IP address, device, session, user agen
 vote-integrity evidence. Daily retention deletes ballots superseded more than 90 days ago, always
 keeping the newest ballot per entity and user, and advances a durable frontier over aged superseding
 ballots with a fixed sweep end. An unfinished superseder is selected again from that bounded range
-until its older choices are drained. User-agent cleanup reads a
+until its older choices are drained. Pending outbound ActivityPub ballot sources remain available
+through the supported replay window; a separate indexed due page removes them afterward. User-agent cleanup reads a
 bounded orphan-candidate set populated when a lookup row is created or when a session or deleted
 ballot releases it; a row still referenced by a session or ballot is retired and requeued if its final
 reference ends later. Continuation jobs carry only unfinished families. Integrity flags keep

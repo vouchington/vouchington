@@ -64,15 +64,14 @@ export async function upsertAgentModerationElectionVotes(
   // Sort by agentModerationId for deterministic index-lock acquisition order (prevents ABBA deadlocks).
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
-  // Upsert user agent into lookup table if provided (counts as the 1st of 2 allowed DB calls)
-  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, options)
-
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
     await lockAgentModerationVoteMutation(
       query,
       userId,
       values.map(vote => vote.agentModerationId),
     )
+    // Hold the lookup row's key-share lock until this ballot insert commits.
+    const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, { query })
     const { rows: previousVotes } = await query<{
       agent_moderation_id: string
       score: ElectionVoteScore
