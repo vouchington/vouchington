@@ -77,7 +77,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const hidden = new Set(postItems.filter((_, index) => !threads[index]))
       return {
         success: true,
-        results: page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
+        results: await Promise.all(
+          page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
+        ),
         // The cursor comes from the unfiltered page, so it advances past every hidden item.
         page_info: page.page_info,
       }

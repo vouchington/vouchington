@@ -50,6 +50,7 @@ export type CommunityApplicationsResponseBody = {
   results: Array<{ __entity_type: 'community_application'; id: string }>
   page_info: PageInfo
   community_applications: Record<string, CommunityApplication>
+  users: Record<string, PublicUser>
 }
 
 export type CommunityApplicationQuestionsResponseBody = {

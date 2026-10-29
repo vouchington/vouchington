@@ -89,13 +89,14 @@ export async function toMcpLists(
   return Promise.all((await attachListProvenance(lists, null, options)).map(toMcpList))
 }
 
-export function toMcpListItem(item: ListItem): McpListItem {
+/** Labels may contain authored titles or content snippets, so sanitize them at the MCP boundary. */
+export async function toMcpListItem(item: ListItem): Promise<McpListItem> {
   return {
     id: item.id,
     list_id: item.list_id,
     item_type: item.item_type,
     entity_id: item.entity_id,
-    entity_label: item.entity_label,
+    entity_label: await sanitizedTitle(item.entity_label),
     order_index: item.order_index,
     media_type: item.media_type,
     created_at: iso(item.created_at),

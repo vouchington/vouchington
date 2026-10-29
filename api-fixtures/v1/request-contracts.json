@@ -14004,6 +14004,41 @@
       ],
       "type": "object"
     },
+    "CommunityApplicationsResponseBody": {
+      "additionalProperties": false,
+      "properties": {
+        "community_applications": {
+          "additionalProperties": {
+            "$ref": "#/components/schemas/CommunityApplication"
+          },
+          "type": "object"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "__entity_type": {
+                "const": "community_application"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["__entity_type", "id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "users": {
+          "$ref": "#/components/schemas/Record_string_PublicUser"
+        }
+      },
+      "required": ["results", "page_info", "community_applications", "users"],
+      "type": "object"
+    },
     "CommunityApplicationQuestion": {
       "additionalProperties": false,
       "properties": {
@@ -51752,7 +51787,7 @@
       "$ref": "#/components/schemas/ListCommunityAgentPromptHistoryResult"
     },
     "GET:/api/v1/communities/:idOrSlug/applications": {
-      "$ref": "#/components/schemas/Record_string_unknown"
+      "$ref": "#/components/schemas/CommunityApplicationsResponseBody"
     },
     "GET:/api/v1/communities/:idOrSlug/invites": {
       "$ref": "#/components/schemas/Record_string_unknown"

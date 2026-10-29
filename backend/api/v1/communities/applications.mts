@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import type { CommunityApplicationsResponseBody } from '../../response-types/communities.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -49,7 +50,7 @@ app
       id: a.id,
     }))
 
-    const output: Record<string, unknown> = {
+    const output: CommunityApplicationsResponseBody = {
       results: searchResults,
       page_info: result.page_info,
       community_applications: indexById(result.results),

@@ -19917,32 +19917,15 @@
               "type": "object",
               "anyOf": [
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
+                    "community_applications": {
+                      "additionalProperties": {
+                        "additionalProperties": false,
                         "properties": {
                           "__entity_type": {
                             "const": "community_application"
                           },
-                          "id": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["__entity_type", "id"],
-                        "additionalProperties": false
-                      }
-                    },
-                    "page_info": {
-                      "$ref": "#/$defs/S5"
-                    },
-                    "community_applications": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "additionalProperties": false,
-                        "properties": {
                           "answers": {
                             "$ref": "#/$defs/S3"
                           },
@@ -19978,6 +19961,7 @@
                           }
                         },
                         "required": [
+                          "__entity_type",
                           "answers",
                           "approved_at",
                           "community_id",
@@ -19991,14 +19975,34 @@
                           "user_id"
                         ],
                         "type": "object"
-                      }
+                      },
+                      "type": "object"
+                    },
+                    "page_info": {
+                      "$ref": "#/$defs/S5"
+                    },
+                    "results": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "__entity_type": {
+                            "const": "community_application"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["__entity_type", "id"],
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
                     "users": {
                       "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["results", "page_info", "community_applications", "users"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
                   "type": "object",
