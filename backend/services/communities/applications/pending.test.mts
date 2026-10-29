@@ -8,15 +8,12 @@ import {
 import { createApplication } from './create.mts'
 import { getPendingApplicationForUser, getPendingApplicationCommunityIds } from './pending.mts'
 import type { PrivateUser } from '@services/users/types'
-import type { Community } from '../types.mts'
 
 describe('pending applications', () => {
   let owner: PrivateUser
-  let privateCommunity: Community
 
   beforeAll(async () => {
     owner = await createTestUser()
-    privateCommunity = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
   })
 
   it('uses a supplied transaction for both pending application reads', async () => {
@@ -56,6 +53,7 @@ describe('pending applications', () => {
       expect(result!.community_id).toBe(community.id)
       expect(result!.approved_at).toBeNull()
       expect(result!.rejected_at).toBeNull()
+      expect(result!.message).toBeNull()
     })
 
     it('returns null for a different community', async () => {
@@ -139,24 +137,6 @@ describe('pending applications', () => {
       expect(application).not.toBeNull()
       const { message: applicationMessage } = application!
       expect(applicationMessage).toBe(expectedMessage)
-    })
-
-    it('stores null message when not provided', async () => {
-      const user = await createTestUser()
-      const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
-
-      await createApplication(user.id, WEB_PROVENANCE, community.id, {})
-
-      const application = await getPendingApplicationForUser(community.id, user.id)
-      expect(application).not.toBeNull()
-      const { message: applicationMessage } = application!
-      expect(applicationMessage).toBeNull()
-    })
-  })
-
-  describe('ignored setup community', () => {
-    it('privateCommunity is usable as shared fixture', () => {
-      expect(privateCommunity.visibility).toBe('private')
     })
   })
 })
