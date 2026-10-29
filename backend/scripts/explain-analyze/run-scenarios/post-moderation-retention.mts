@@ -22,7 +22,7 @@ const options = {
 export async function runPostModerationRetentionScenarios(): Promise<void> {
   await write(`/* resetExplainPostModerationRetentionCursors */
     UPDATE post_moderation_retention_cursors
-    SET cursor_record_id = NULL, sweep_lower_bound_record_id = NULL,
+    SET cursor_record_id = NULL, cursor_lower_bound_record_id = NULL,
         sweep_upper_bound_record_id = NULL
     WHERE kind IN ('superseded_versions', 'pass_evidence')`)
   registerScenarioContract('post-moderation-version-retention-page', {

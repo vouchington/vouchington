@@ -17,11 +17,11 @@ export async function cleanupPostModerationLedgerPage(
   )
   const { rows: cursors } = await query<{
     cursor_record_id: string | null
-    sweep_lower_bound_record_id: string | null
+    cursor_lower_bound_record_id: string | null
     sweep_upper_bound_record_id: string | null
   }>(
     `/* cleanupPostModerationLedgerPage.lockCursor */
-     SELECT cursor_record_id, sweep_lower_bound_record_id, sweep_upper_bound_record_id
+     SELECT cursor_record_id, cursor_lower_bound_record_id, sweep_upper_bound_record_id
      FROM post_moderation_retention_cursors
      WHERE kind = $1::post_moderation_retention_kinds FOR UPDATE`,
     [kind],
@@ -31,8 +31,8 @@ export async function cleanupPostModerationLedgerPage(
   // A caller can narrow the window, or increase retention while a pass is pending. Never
   // reuse progress wholly outside that window or a cutoff newer than the current policy allows.
   const resume =
-    cursor.sweep_lower_bound_record_id !== null &&
-    cursor.sweep_lower_bound_record_id <= lowerId &&
+    cursor.cursor_lower_bound_record_id !== null &&
+    cursor.cursor_lower_bound_record_id <= lowerId &&
     cursor.sweep_upper_bound_record_id !== null &&
     cursor.sweep_upper_bound_record_id > lowerId &&
     cursor.sweep_upper_bound_record_id <= requestedUpperId &&
@@ -132,7 +132,7 @@ export async function cleanupPostModerationLedgerPage(
     `/* cleanupPostModerationLedgerPage.checkpoint */
      UPDATE post_moderation_retention_cursors
      SET cursor_record_id = $2::uuid, sweep_upper_bound_record_id = $3::uuid,
-         sweep_lower_bound_record_id = $4::uuid
+         cursor_lower_bound_record_id = $4::uuid
      WHERE kind = $1::post_moderation_retention_kinds`,
     [kind, hasMore ? page.at(-1)!.id : null, hasMore ? upperId : null, hasMore ? lowerId : null],
   )

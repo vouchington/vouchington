@@ -82,7 +82,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS post_moderation_retention_cursors (
   kind post_moderation_retention_kinds PRIMARY KEY,
   cursor_record_id UUID,
-  sweep_lower_bound_record_id UUID,
+  cursor_lower_bound_record_id UUID,
   sweep_upper_bound_record_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -94,7 +94,7 @@ CREATE TRIGGER trigger_post_moderation_retention_cursors_updated_at
 COMMENT ON TABLE post_moderation_retention_cursors IS 'Durable UUIDv7 positions for bounded post moderation ledger retention.';
 COMMENT ON COLUMN post_moderation_retention_cursors.kind IS 'Ledger stream whose progress this row records.';
 COMMENT ON COLUMN post_moderation_retention_cursors.cursor_record_id IS 'Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.';
-COMMENT ON COLUMN post_moderation_retention_cursors.sweep_lower_bound_record_id IS 'Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.';
+COMMENT ON COLUMN post_moderation_retention_cursors.cursor_lower_bound_record_id IS 'Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.';
 COMMENT ON COLUMN post_moderation_retention_cursors.sweep_upper_bound_record_id IS 'Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.';
 COMMENT ON COLUMN post_moderation_retention_cursors.updated_at IS 'Time of the last committed progress update.';
 
