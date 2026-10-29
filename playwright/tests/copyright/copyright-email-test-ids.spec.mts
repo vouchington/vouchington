@@ -16,11 +16,13 @@ import { appendCopyrightEmailIntakeRecommendation } from '../../../backend/servi
 
 const QUEUE_ENDPOINT = '/api/v1/copyright-email-intakes/review-queue'
 
-async function openQueueItem(page: Page, name: string) {
+async function openQueueItem(page: Page, intakeId: string) {
   const staff = await createTestUser({ administrator: true })
   await loginAsMfaUser(page, staff.id)
   await navigateTo(page, '/copyright/email-review')
-  const item = page.getByRole('button', { name, exact: true })
+  const item = page
+    .getByTestId('copyright-email-queue-item-select')
+    .and(page.locator(`[data-intake-id="${intakeId}"]`))
   await revealOwnedQueueItem(page, item, QUEUE_ENDPOINT)
   return item
 }
@@ -36,7 +38,7 @@ test('an email with an agent recommendation lets staff add and remove hosted ima
     model: 'test-model',
     structuredOutput: {},
   })
-  const item = await openQueueItem(page, `Initial intake ${intake.id}`)
+  const item = await openQueueItem(page, intake.id)
   await item.click()
   await page.getByTestId('copyright-email-approval-add-hosted-image').click()
   await expect(
@@ -46,7 +48,7 @@ test('an email with an agent recommendation lets staff add and remove hosted ima
 
 test('staff can start and cancel recording an email as legal process', async ({ page }) => {
   const intake = await createParsedCopyrightEmailIntake()
-  const item = await openQueueItem(page, `Initial intake ${intake.id}`)
+  const item = await openQueueItem(page, intake.id)
   await item.click()
   await page.getByTestId('copyright-email-legal-process-action-open-confirm').click()
   await expect(page.getByTestId('copyright-email-legal-process-action-confirm')).toBeAttached()
@@ -56,7 +58,7 @@ test('staff can start and cancel recording an email as legal process', async ({ 
 test('a declined email whose reply failed can be retried after confirming', async ({ page }) => {
   const declined = await declineTestCopyrightEmailIntake()
   await failTestCopyrightDeliveryIntent(declined.intentId)
-  const item = await openQueueItem(page, `Initial intake ${declined.intakeId}`)
+  const item = await openQueueItem(page, declined.intakeId)
   await page
     .getByRole('listitem')
     .filter({ has: item })
@@ -74,7 +76,7 @@ test('a reply to an admitted email offers admit and reject correspondence', asyn
     inReplyTo: [messageId],
     replyReferences: [messageId],
   })
-  const item = await openQueueItem(page, `Matched correspondence ${reply.intakeId}`)
+  const item = await openQueueItem(page, reply.intakeId)
   await item.click()
   await expect(page.getByTestId('copyright-email-correspondence-actions-admit')).toBeAttached()
   await expect(page.getByTestId('copyright-email-correspondence-actions-reject')).toBeAttached()
@@ -86,7 +88,7 @@ test('a reply that matches no case can be associated with a notice by staff', as
     inReplyTo: [copyrightEmailMessageId()],
     replyReferences: [copyrightEmailMessageId()],
   })
-  const item = await openQueueItem(page, `Unresolved reply ${reply.intakeId}`)
+  const item = await openQueueItem(page, reply.intakeId)
   await item.click()
   await expect(
     page.getByTestId('copyright-email-notice-association-associate-notice'),
