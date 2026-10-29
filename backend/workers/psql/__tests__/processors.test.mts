@@ -189,6 +189,7 @@ describe('processPsql', () => {
       step: 1,
       activeClassifierSweeps: [],
       activeMembershipFamilies: [],
+      activePostModerationKinds: [],
       copyrightFamilies: ['copyrightFormScreeningAttempts'],
     })
     expect((await psql.getJob(copyrightId))?.data).toMatchObject({
