@@ -23,6 +23,7 @@ import {
   getClassifierRetentionDays,
   getDataRetentionLimits,
   readDataRetentionField,
+  getPostModerationRetentionDays,
   getTopicImportAttemptDeletionBatchSize,
   type DataRetentionLimits,
 } from './config.mts'
@@ -124,6 +125,11 @@ import {
 } from './cleanup-vote-integrity-details.mts'
 import { cleanupOperationalTombstones } from './cleanup-operational-tombstones.mts'
 import type { OperationalTombstoneCleanupResult } from './cleanup-operational-tombstone-types.mts'
+import {
+  cleanupPostModerationLedger,
+  type PostModerationLedgerCleanupResult,
+  type PostModerationRetentionKind,
+} from './cleanup-post-moderation-ledger.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -204,6 +210,10 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  postModerationLedger?: Partial<DataRetentionLimits> & {
+    now?: Date
+    kinds?: readonly PostModerationRetentionKind[]
+  }
   textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
   terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
   completedAdminImportBatches?: OptionalRetentionLimits<CleanupOptions>
@@ -266,6 +276,7 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  postModerationLedger: PostModerationLedgerCleanupResult
   textEmbeddingCache: CleanupResult
   terminalEmbeddingBatches: CleanupResult
   completedAdminImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
@@ -498,6 +509,10 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const postModerationLedger = await cleanupPostModerationLedger({
+    ...withLimits(options.postModerationLedger),
+    retentionDays: getPostModerationRetentionDays(),
+  })
   const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
   const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
     withLimits(options.terminalEmbeddingBatches),
@@ -623,6 +638,7 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    postModerationLedger,
     textEmbeddingCache,
     terminalEmbeddingBatches,
     completedAdminImportBatches,

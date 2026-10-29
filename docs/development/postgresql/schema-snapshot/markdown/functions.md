@@ -133,6 +133,30 @@ CREATE OR REPLACE FUNCTION public.fn_create_oauth_authorization_exchange_transit
  LANGUAGE plpgsql
 ```
 
+## `fn_create_post_moderation_disposition_retention_due`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_disposition_retention_due()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_create_post_moderation_retention_post_hash_work_item`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_hash_work_item()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_create_post_moderation_retention_post_work_item(p_post_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_item(p_post_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_user_individual_household`
 
 ```sql
@@ -1643,6 +1667,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_oauth_grant_retention_anchor()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_post_moderation_version_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_post_moderation_version_retention()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

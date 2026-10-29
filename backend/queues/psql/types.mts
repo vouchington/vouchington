@@ -1,4 +1,7 @@
-import type { ModerationRecordCleanupKind } from '@voucha/types/entities/moderation-retention'
+import type {
+  ModerationRecordCleanupKind,
+  PostModerationRetentionKind,
+} from '@voucha/types/entities/moderation-retention'
 
 export type PsqlJobs =
   | 'runMigrations'
@@ -111,6 +114,7 @@ export type PsqlRetentionJobData = {
     activeMembershipFamilies: string[]
     /** A copyright continuation runs only these pending families, without another daily sweep. */
     copyrightFamilies?: CopyrightRetentionFamily[]
+    activePostModerationKinds: PostModerationRetentionKind[]
     /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
     userPurge?: { userId: string; communityId: string; afterModeratorId: string }
   }

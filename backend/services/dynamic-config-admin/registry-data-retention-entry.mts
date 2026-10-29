@@ -129,5 +129,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.copyright_email_thread_reply_days,
       integer: true,
     },
+    post_moderation_retention_days: {
+      description:
+        'Minimum age of a successor before deleting its previous post moderation version, and age before clearing current automated pass evidence.',
+      minValue: 90,
+      maxValue: DATA_RETENTION_MAX_VALUES.post_moderation_retention_days,
+      integer: true,
+    },
   },
 })

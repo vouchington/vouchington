@@ -50,6 +50,12 @@ const settled = {
   oldPendingNotificationPushIntents: continuationDone,
   oldModerationQueueClaims: { ...done, cursorId: null },
   oldModerationMediaReveals: { ...done, cursorId: null },
+  postModerationLedger: {
+    deletedVersions: 0,
+    clearedPassEvidence: 0,
+    hasMore: false,
+    remainingKinds: [],
+  },
   textEmbeddingCache: done,
   terminalEmbeddingBatches: done,
   completedAdminImportBatches: continuationDone,

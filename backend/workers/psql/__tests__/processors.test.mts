@@ -13,8 +13,17 @@ import type { cleanupPartitions as cleanupPartitionsService } from '@data-stores
 
 const cleanupPartitions = vi.fn<typeof cleanupPartitionsService>()
 const createPartitions = vi.fn<() => Promise<void>>()
+const noPostModerationRetention: Awaited<
+  ReturnType<typeof runDataRetentionCleanup>
+>['postModerationLedger'] = {
+  deletedVersions: 0,
+  clearedPassEvidence: 0,
+  hasMore: false,
+  remainingKinds: [],
+}
 const noAIRetention = {
   softDeletedUsers: { deleted: 0, hasMore: false },
+  postModerationLedger: noPostModerationRetention,
   ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
 }
 const emptyCleanupResult = {
@@ -180,6 +189,7 @@ describe('processPsql', () => {
       step: 1,
       activeClassifierSweeps: [],
       activeMembershipFamilies: [],
+      activePostModerationKinds: [],
       copyrightFamilies: ['copyrightFormScreeningAttempts'],
     })
     expect((await psql.getJob(copyrightId))?.data).toMatchObject({
@@ -249,6 +259,7 @@ describe('processPsql', () => {
         ...emptyCleanupResult,
         classifierRecords: {},
         softDeletedUsers: { deleted: 0, hasMore: false },
+        postModerationLedger: noAIRetention.postModerationLedger,
         textEmbeddingCache: { hasMore: false },
         terminalEmbeddingBatches: { hasMore: false },
         oldMediaDeliveryChanges: { hasMore: false },

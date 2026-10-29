@@ -98,7 +98,7 @@ import { seedSharedLoaders } from './seed-data/shared-loaders.mts'
 import { seedModerationReportContexts } from './seed-data/moderation-report-contexts.mts'
 import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
 import { seedImportRequestRetention } from './seed-data/import-request-retention.mts'
-
+import { seedPostModerationRetention } from './seed-data/post-moderation-retention.mts'
 async function main() {
   assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
   await cleanupPublicationScopePages()
@@ -130,6 +130,7 @@ async function main() {
   await seedTopicParentRelations(500)
   await seedPosts(100_000)
   await seedPostCreationModerationBypass()
+  await seedPostModerationRetention()
   await seedSemanticPosts()
   await seedPostFeedShares()
   await seedUserRemovedPlatformPosts()
@@ -193,7 +194,6 @@ async function main() {
   console.log('\nSeed complete.')
   process.exit(0)
 }
-
 main().catch(err => {
   console.error(err)
   process.exit(1)

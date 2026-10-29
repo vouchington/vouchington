@@ -5227,6 +5227,10 @@ rules:
         - pattern: _(history|change_logs|audit_logs)$
           message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
       allow:
+        - object: table:post_moderation_retention_post_work_items
+          reason: >-
+            This per-post idempotent database-only recheck is serialized by the post row and its
+            work item transaction lock; it needs no lease or attempt fence and is deleted on completion.
         - object: table:oauth_authorization_server_events
           reason: >-
             Consent and revocation events reject every UPDATE and ordinary DELETE. Their

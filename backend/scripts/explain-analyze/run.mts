@@ -56,6 +56,7 @@ import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
+import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 
 // A failing step is recorded and the run continues, so one run reports every failure.
@@ -80,6 +81,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runViewDrivenReadScenarios,
   runTopicImportAttemptScenarios,
   runImportRequestRetentionScenarios,
+  runPostModerationRetentionScenarios,
   runHotPathLoaderScenarios,
   runSharedLoaderScenarios,
   runMembershipRefundScenarios,

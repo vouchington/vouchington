@@ -47,6 +47,7 @@ import {
   type VoteRetentionContinuationData,
 } from '@queues/psql/types'
 import {
+  admitCopyrightRetentionContinuation,
   processCopyrightRetentionContinuation,
   unfinishedCopyrightFamilies,
 } from './processors/copyright-retention.mts'
@@ -112,6 +113,7 @@ export default async function processPsql(
             activeCopyrightFamilies: [],
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
+            postModerationLedger: { kinds: data.continuation.activePostModerationKinds },
             ...(data.continuation.userPurge
               ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
               : {}),
@@ -126,38 +128,29 @@ export default async function processPsql(
       const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
       const activeMembershipFamilies = unfinishedMembershipFamilies(result)
       const activeCopyrightFamilies = unfinishedCopyrightFamilies(result)
+      const activePostModerationKinds = result.postModerationLedger.remainingKinds
+      const enqueueCleanup =
+        dependencies?.enqueueDataRetentionCleanupContinuation ??
+        enqueueDataRetentionCleanupContinuation
       const userPurge = result.softDeletedUsers.hasMore
         ? result.softDeletedUsers.userPurge
         : undefined
-      if (!data?.continuation && activeCopyrightFamilies.length > 0) {
-        if (!jobId) throw new Error('Copyright retention continuation needs the current job ID')
-        const runId = createHash('sha256').update(jobId).digest('hex')
-        await (
-          dependencies?.enqueueDataRetentionCleanupContinuation ??
-          enqueueDataRetentionCleanupContinuation
-        )({
-          runId,
-          step: 1,
-          activeClassifierSweeps: [],
-          activeMembershipFamilies: [],
-          copyrightFamilies: activeCopyrightFamilies,
-        })
-      }
+      if (!data?.continuation)
+        await admitCopyrightRetentionContinuation(activeCopyrightFamilies, jobId, enqueueCleanup)
       if (
         activeClassifierSweeps.length > 0 ||
         activeMembershipFamilies.length > 0 ||
+        activePostModerationKinds.length > 0 ||
         result.softDeletedUsers.hasMore
       ) {
         if (!jobId) throw new Error('Data retention continuation needs the current job ID')
         const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
-        await (
-          dependencies?.enqueueDataRetentionCleanupContinuation ??
-          enqueueDataRetentionCleanupContinuation
-        )({
+        await enqueueCleanup({
           runId,
           step: (data?.continuation?.step ?? 0) + 1,
           activeClassifierSweeps,
           activeMembershipFamilies,
+          activePostModerationKinds,
           ...(userPurge ? { userPurge } : {}),
         })
       }

@@ -1156,6 +1156,9 @@
     "post_moderation_disposition_types": {
       "values": ["pass", "review", "reject", "incomplete"]
     },
+    "post_moderation_retention_kinds": {
+      "values": ["superseded_versions", "pass_evidence"]
+    },
     "post_moderation_sources": {
       "values": ["openai_omni", "spam_detection", "staff"]
     },
@@ -1456,6 +1459,15 @@
     },
     "fn_create_oauth_authorization_exchange_transition": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_oauth_authorization_exchange_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.exchange_claim_id IS NOT DISTINCT FROM NEW.exchange_claim_id THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.exchange_claim_id IS NOT NULL THEN\n    INSERT INTO oauth_authorization_exchange_attempt_results (\n      oauth_authorization_exchange_attempt_id, completed_at, failed_at,\n      abandoned_at, rejected_at, expired_at, callback_error\n    )\n    SELECT id,\n      CASE WHEN NEW.completion_ready_at IS NOT NULL AND NEW.rejected_at IS NULL\n        AND NEW.expired_at IS NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.exchange_claim_id IS NULL AND NEW.completion_ready_at IS NULL\n        AND NEW.rejected_at IS NULL AND NEW.expired_at IS NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.exchange_claim_id IS NOT NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.rejected_at IS NOT NULL THEN NEW.rejected_at END,\n      CASE WHEN NEW.expired_at IS NOT NULL THEN NEW.expired_at END,\n      NEW.callback_error\n    FROM oauth_authorization_exchange_attempts\n    WHERE oauth_authorization_id = NEW.id AND exchange_claim_id = OLD.exchange_claim_id;\n  END IF;\n  IF NEW.exchange_claim_id IS NOT NULL THEN\n    INSERT INTO oauth_authorization_exchange_attempts (\n      oauth_authorization_id, attempt_number, exchange_claim_id\n    )\n    SELECT NEW.id, COALESCE(MAX(attempt_number), 0) + 1, NEW.exchange_claim_id\n    FROM oauth_authorization_exchange_attempts WHERE oauth_authorization_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_create_post_moderation_disposition_retention_due": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_disposition_retention_due()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.disposition = 'pass' AND NEW.source <> 'staff'\n     AND NEW.evidence <> '{}'::jsonb THEN\n    NEW.retention_due_at := uuid_extract_timestamp(NEW.id);\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_create_post_moderation_retention_post_hash_work_item": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_hash_work_item()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM post_moderation_versions\n    WHERE post_id = NEW.id AND retention_hash_blocked_at IS NOT NULL LIMIT 1\n  ) THEN\n    PERFORM fn_create_post_moderation_retention_post_work_item(NEW.id);\n  END IF;\n  RETURN NULL;\nEND $function$\n"
+    },
+    "fn_create_post_moderation_retention_post_work_item(p_post_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_item(p_post_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO post_moderation_retention_post_work_items (post_id) VALUES (p_post_id)\n  ON CONFLICT (post_id) DO UPDATE\n  SET cursor_version_record_id = '00000000-0000-0000-0000-000000000000',\n      cursor_processing_version_record_id = NULL,\n      cursor_disposition_record_id = '00000000-0000-0000-0000-000000000000',\n      changed_at = CURRENT_TIMESTAMP;\nEND $function$\n"
     },
     "fn_create_user_individual_household": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -2020,6 +2032,9 @@
     },
     "fn_update_parent_notice_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE notice_id UUID;\nBEGIN\n  IF NEW.copyright_notice_id IS NULL THEN\n    EXECUTE format('SELECT copyright_notice_id FROM %I.%I WHERE id = $1',\n      TG_TABLE_SCHEMA, TG_ARGV[0]) INTO notice_id\n      USING (to_jsonb(NEW) ->> TG_ARGV[1])::uuid;\n    IF notice_id IS NULL AND to_jsonb(NEW) ->> TG_ARGV[1] IS NOT NULL THEN\n      RAISE EXCEPTION '% parent % does not exist', TG_TABLE_NAME, TG_ARGV[0]\n        USING ERRCODE = 'foreign_key_violation';\n    END IF;\n    NEW.copyright_notice_id := notice_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_post_moderation_version_retention": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_post_moderation_version_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  predecessor_id UUID;\n  successor_id UUID;\n  successor_at TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    SELECT id INTO predecessor_id FROM post_moderation_versions\n    WHERE post_id = NEW.post_id AND id < NEW.id ORDER BY id DESC LIMIT 1;\n    SELECT id INTO successor_id FROM post_moderation_versions\n    WHERE post_id = NEW.post_id AND id > NEW.id ORDER BY id LIMIT 1;\n    IF successor_id IS NOT NULL THEN\n      successor_at := uuid_extract_timestamp(successor_id);\n      UPDATE post_moderation_versions\n      SET retention_successor_at = successor_at, retention_due_at = successor_at\n      WHERE id = NEW.id;\n    END IF;\n    IF predecessor_id IS NOT NULL THEN\n      UPDATE post_moderation_versions\n      SET retention_due_at = CASE\n            WHEN retention_successor_at IS NOT NULL AND retention_due_at IS NULL THEN NULL\n            ELSE uuid_extract_timestamp(NEW.id) END,\n          retention_successor_at = uuid_extract_timestamp(NEW.id)\n      WHERE id = predecessor_id;\n    END IF;\n  ELSE\n    SELECT id INTO predecessor_id FROM post_moderation_versions\n    WHERE post_id = OLD.post_id AND id < OLD.id ORDER BY id DESC LIMIT 1;\n    SELECT id INTO successor_id FROM post_moderation_versions\n    WHERE post_id = OLD.post_id AND id > OLD.id ORDER BY id LIMIT 1;\n    IF predecessor_id IS NOT NULL THEN\n      successor_at := CASE WHEN successor_id IS NULL THEN NULL\n        ELSE uuid_extract_timestamp(successor_id) END;\n      UPDATE post_moderation_versions version\n      SET retention_due_at = CASE\n            WHEN successor_at IS NULL THEN NULL\n            WHEN version.retention_successor_at IS NOT NULL AND version.retention_due_at IS NULL\n              THEN NULL\n            ELSE successor_at END,\n          retention_successor_at = successor_at,\n          retention_hash_blocked_at = CASE\n            WHEN successor_at IS NULL AND NOT EXISTS (\n              SELECT 1 FROM post_moderation_dispositions disposition\n              WHERE disposition.version_id = version.id\n                AND disposition.disposition = 'pass' AND disposition.source <> 'staff'\n                AND disposition.evidence <> '{}'::jsonb\n                AND disposition.retention_due_at IS NULL LIMIT 1\n            ) THEN NULL ELSE version.retention_hash_blocked_at END\n      WHERE version.id = predecessor_id;\n    END IF;\n  END IF;\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_update_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -84334,7 +84349,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "attempt_id": {
@@ -84356,7 +84371,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "disposition": {
@@ -84372,7 +84387,7 @@
         },
         "evidence": {
           "collation": null,
-          "comment": "Bounded private evidence for moderation staff; never part of public post contracts.",
+          "comment": "Bounded private staff evidence; aged current automated passes are cleared without changing their outcome.",
           "defaultExpression": "'{}'::jsonb",
           "generated": null,
           "generatedExpression": null,
@@ -84403,6 +84418,17 @@
           "ordinalPosition": 6,
           "type": "text"
         },
+        "retention_due_at": {
+          "collation": null,
+          "comment": "Indexed pass-evidence candidate marker, absent when evidence is cleared or the version is dormant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
         "source": {
           "collation": null,
           "comment": "Automated or staff source that made this disposition.",
@@ -84426,7 +84452,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Append-only typed moderation outcomes with bounded internal evidence.",
+      "comment": "Typed moderation outcomes whose pass evidence is cleared after retention; decision columns remain immutable.",
       "foreignKeys": {
         "post_moderation_dispositions_actor_user_id_fkey": {
           "columns": ["actor_user_id"],
@@ -84439,8 +84465,8 @@
         },
         "post_moderation_dispositions_attempt_id_version_id_source_fkey": {
           "columns": ["attempt_id", "version_id", "source"],
-          "definition": "FOREIGN KEY (attempt_id, version_id, source) REFERENCES post_moderation_attempts(id, version_id, source) ON DELETE RESTRICT",
-          "onDelete": "restrict",
+          "definition": "FOREIGN KEY (attempt_id, version_id, source) REFERENCES post_moderation_attempts(id, version_id, source) ON DELETE CASCADE",
+          "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["id", "version_id", "source"],
           "referencedTable": "post_moderation_attempts",
@@ -84473,6 +84499,87 @@
             }
           ],
           "predicate": "(actor_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_dispositions__retention_blocked": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_dispositions__retention_blocked ON public.post_moderation_dispositions USING btree (version_id, id) WHERE ((disposition = 'pass'::post_moderation_disposition_types) AND (source <> 'staff'::post_moderation_sources) AND (evidence <> '{}'::jsonb) AND (retention_due_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "version_id",
+              "descending": false,
+              "expression": "version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((disposition = 'pass'::post_moderation_disposition_types) AND (source <> 'staff'::post_moderation_sources) AND (evidence <> '{}'::jsonb) AND (retention_due_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_dispositions__retention_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_dispositions__retention_due ON public.post_moderation_dispositions USING btree (retention_due_at, id) WHERE (retention_due_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "retention_due_at",
+              "descending": false,
+              "expression": "retention_due_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(retention_due_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_dispositions__retention_version_page": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_dispositions__retention_version_page ON public.post_moderation_dispositions USING btree (version_id, id) WHERE ((disposition = 'pass'::post_moderation_disposition_types) AND (source <> 'staff'::post_moderation_sources) AND (evidence <> '{}'::jsonb))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "version_id",
+              "descending": false,
+              "expression": "version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((disposition = 'pass'::post_moderation_disposition_types) AND (source <> 'staff'::post_moderation_sources) AND (evidence <> '{}'::jsonb))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -84587,13 +84694,299 @@
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_post_moderation_dispositions_retention_due": "CREATE TRIGGER trigger_post_moderation_dispositions_retention_due BEFORE INSERT ON public.post_moderation_dispositions FOR EACH ROW EXECUTE FUNCTION fn_create_post_moderation_disposition_retention_due()"
+      },
       "uniqueConstraints": {
         "post_moderation_dispositions_attempt_id_key": {
           "columns": ["attempt_id"],
           "definition": "UNIQUE (attempt_id)"
         }
       }
+    },
+    "post_moderation_retention_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_due_at": {
+          "collation": null,
+          "comment": "Due-time component of the active indexed candidate keyset.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "cursor_lower_bound_record_id": {
+          "collation": null,
+          "comment": "Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "cursor_policy_version_record_id": {
+          "collation": null,
+          "comment": "Last dormant version examined for the active policy-revision recheck.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "cursor_record_id": {
+          "collation": null,
+          "comment": "Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "kind": {
+          "collation": null,
+          "comment": "Ledger stream whose progress this row records.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "post_moderation_retention_kinds"
+        },
+        "observed_policy_revision": {
+          "collation": null,
+          "comment": "Code policy revision whose one-time dormant-version recheck is complete or in progress.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "policy_sweep_completed_at": {
+          "collation": null,
+          "comment": "Completion time of the observed policy revision recheck.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "sweep_upper_bound_record_id": {
+          "collation": null,
+          "comment": "Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Time of the last committed progress update.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable UUIDv7 positions for bounded post moderation ledger retention.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "post_moderation_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_moderation_retention_cursors_pkey ON public.post_moderation_retention_cursors USING btree (kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["kind"],
+        "definition": "PRIMARY KEY (kind)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_moderation_retention_cursors_updated_at": "CREATE TRIGGER trigger_post_moderation_retention_cursors_updated_at BEFORE UPDATE ON public.post_moderation_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "post_moderation_retention_post_work_items": {
+      "checkConstraints": {},
+      "columns": {
+        "changed_at": {
+          "collation": null,
+          "comment": "Time the latest signal restarted this post work.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "cursor_disposition_record_id": {
+          "collation": null,
+          "comment": "Last pass disposition examined within the next blocked version; a work position, not an entity reference.",
+          "defaultExpression": "'00000000-0000-0000-0000-000000000000'::uuid",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "cursor_processing_version_record_id": {
+          "collation": null,
+          "comment": "Version whose disposition subpage is in progress; a deletion-stable work position, not a relationship.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "cursor_version_record_id": {
+          "collation": null,
+          "comment": "Last fully examined blocked version for this post; a work position, not an entity reference.",
+          "defaultExpression": "'00000000-0000-0000-0000-000000000000'::uuid",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Post whose current digest changed or whose newly dormant row needs a recheck.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Time this work item last changed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Per-post bounded hash-change reconsideration of dormant moderation ledger rows.",
+      "foreignKeys": {
+        "post_moderation_retention_post_work_items_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_post_moderation_retention_post_work_items__changed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_retention_post_work_items__changed ON public.post_moderation_retention_post_work_items USING btree (changed_at, post_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "changed_at",
+              "descending": false,
+              "expression": "changed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "post_moderation_retention_post_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_moderation_retention_post_work_items_pkey ON public.post_moderation_retention_post_work_items USING btree (post_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["post_id"],
+        "definition": "PRIMARY KEY (post_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_moderation_retention_post_work_items_updated_at": "CREATE TRIGGER trigger_post_moderation_retention_post_work_items_updated_at BEFORE UPDATE ON public.post_moderation_retention_post_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
     },
     "post_moderation_versions": {
       "checkConstraints": {
@@ -84620,7 +85013,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "deadline_at": {
@@ -84666,6 +85059,39 @@
           "nullable": false,
           "ordinalPosition": 2,
           "type": "uuid"
+        },
+        "retention_due_at": {
+          "collation": null,
+          "comment": "Indexed successor-time candidate marker, absent while the version is dormant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "retention_hash_blocked_at": {
+          "collation": null,
+          "comment": "A dormant version or pass disposition needs reconsideration after the post digest or policy changes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "retention_successor_at": {
+          "collation": null,
+          "comment": "UUIDv7 time of the earliest same-post successor; deletion still checks that successor under lock.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Immutable moderation generations keyed by canonical post content and policy revision.",
@@ -84704,6 +85130,80 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_versions__retention_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_versions__retention_due ON public.post_moderation_versions USING btree (retention_due_at, id) WHERE (retention_due_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "retention_due_at",
+              "descending": false,
+              "expression": "retention_due_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(retention_due_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_versions__retention_hash_policy": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_versions__retention_hash_policy ON public.post_moderation_versions USING btree (id) WHERE (retention_hash_blocked_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(retention_hash_blocked_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_versions__retention_hash_post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_versions__retention_hash_post ON public.post_moderation_versions USING btree (post_id, id) WHERE (retention_hash_blocked_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(retention_hash_blocked_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -84771,7 +85271,9 @@
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_post_moderation_versions_retention": "CREATE TRIGGER trigger_post_moderation_versions_retention AFTER INSERT OR DELETE ON public.post_moderation_versions FOR EACH ROW EXECUTE FUNCTION fn_update_post_moderation_version_retention()"
+      },
       "uniqueConstraints": {
         "uq_post_modera_versio__post_id__content_sha256__policy_revision": {
           "columns": ["post_id", "content_sha256", "policy_revision"],
@@ -88748,6 +89250,7 @@
       "triggers": {
         "trigger_posts_content_provenance_immutable": "CREATE TRIGGER trigger_posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_posts_creation_source_url_id_immutable": "CREATE TRIGGER trigger_posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()",
+        "trigger_posts_post_moderation_retention_hash": "CREATE TRIGGER trigger_posts_post_moderation_retention_hash AFTER UPDATE OF llm_moderation_content_sha256 ON public.posts FOR EACH ROW WHEN ((old.llm_moderation_content_sha256 IS DISTINCT FROM new.llm_moderation_content_sha256)) EXECUTE FUNCTION fn_create_post_moderation_retention_post_hash_work_item()",
         "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_post_id, root_post_id, broadcast, privacy, is_anonymous, community_id, clearance_changed_at, clearance_version, clearance_changed_by_id, clearance_public_reason_code, clearance_is_platform_override, has_creation_moderation_bypass, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_register_retained_post_identity": "CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post')",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_posts_search_vector()"
