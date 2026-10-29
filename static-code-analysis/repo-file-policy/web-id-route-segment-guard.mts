@@ -2,7 +2,9 @@ import { webIdRouteSegmentAllowlist } from './web-id-route-segment-allowlist.mts
 
 const ID_SEGMENT_RE = /^\[(?:\.\.\.)?(?:id|[A-Za-z]+Id|[a-z]+(?:_[a-z]+)*_id)\]$/
 const ROUTE_GROUP_RE = /^\(.+\)$/
-const ALLOWLIST_FILE = 'static-code-analysis/repo-file-policy/web-id-route-segment-allowlist.mts'
+export const webIdRouteSegmentAllowlistFile =
+  'static-code-analysis/repo-file-policy/web-id-route-segment-allowlist.mts'
+const ALLOWLIST_FILE = webIdRouteSegmentAllowlistFile
 
 /** Route patterns (route groups removed) of every id-looking dynamic segment in `trackedFiles`. */
 export function collectIdRouteSegments(trackedFiles: readonly string[]): Set<string> {
