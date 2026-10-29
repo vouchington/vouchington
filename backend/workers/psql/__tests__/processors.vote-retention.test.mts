@@ -12,7 +12,6 @@ const emptyCleanupResult = {
   textEmbeddingCache: { hasMore: false },
   terminalEmbeddingBatches: { hasMore: false },
   oldMediaDeliveryChanges: { hasMore: false },
-  oldProviderResponseKeys: { hasMore: false },
   supersededVoteBallots: [],
   orphanedUserAgentStrings: { hasMore: false },
   voteIntegrityDetails: { hasMore: false },

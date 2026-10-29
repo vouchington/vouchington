@@ -55,7 +55,6 @@ const settled = {
   completedAdminImportBatches: continuationDone,
   completedRssImportBatches: continuationDone,
   expiredUserDataRequestAttempts: continuationDone,
-  oldProviderResponseKeys: done,
   oldMediaDeliveryChanges: done,
   classifierRecords: {
     runCandidates: scannedDone,
