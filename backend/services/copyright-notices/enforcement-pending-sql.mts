@@ -50,7 +50,7 @@ export function pendingCopyrightEnforcementSql(
         WHERE newer.supersedes_assessment_id = assessment.id
       )
       AND NOT `)
-    .append(territorialAssessmentRevokedSql)
+    .append(territorialAssessmentRevokedSql())
     .append(sql`
       AND NOT EXISTS (
         SELECT 1 FROM copyright_restrictions restriction

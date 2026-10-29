@@ -30,7 +30,7 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
   }>(
     sql`/* createCopyrightRestoreIntentForReversalInTransaction:lock */
     SELECT notice.id AS copyright_notice_id, target.placement_id, restriction.lifted_at, `.append(
-      anyReversalSourceSql,
+      anyReversalSourceSql(),
     ).append(sql` AS reversal_authorized
     FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id

@@ -135,10 +135,15 @@ describe('independent copyright reversal sources', () => {
 
     it('removes its confirmed entry at the lift and cannot register it again', async () => {
       const fixture = await createTestCopyrightImageFixture('topic-logo-image')
-      const { noticeId, restrictions } = await createTestLiftNotice([fixture])
-      expect(await readCopyrightStaydownEntries(noticeId)).toEqual([
-        expect.objectContaining({ copyright_restriction_id: restrictions[0]!.id }),
-      ])
+      const sibling = await createTestCopyrightImageFixture('user-profile-image')
+      // Exercise the bulk registration path and keep an unrelated restriction active.
+      const { noticeId, restrictions } = await createTestLiftNotice([fixture, sibling])
+      expect(await readCopyrightStaydownEntries(noticeId)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ copyright_restriction_id: restrictions[0]!.id }),
+          expect.objectContaining({ copyright_restriction_id: restrictions[1]!.id }),
+        ]),
+      )
       const administrator = await createTestUserDirect({ administrator: true })
       await liftCopyrightRestrictionWithoutSetter({
         currentUser: administrator,
@@ -147,9 +152,10 @@ describe('independent copyright reversal sources', () => {
         rationale: 'Withdraw the provider decision.',
         liftedAt: new Date(),
       })
-      expect(await readCopyrightStaydownEntries(noticeId)).toEqual([])
+      const remaining = [expect.objectContaining({ copyright_restriction_id: restrictions[1]!.id })]
+      expect(await readCopyrightStaydownEntries(noticeId)).toEqual(remaining)
       await replayTestLiftConfirmationConsequences(noticeId)
-      expect(await readCopyrightStaydownEntries(noticeId)).toEqual([])
+      expect(await readCopyrightStaydownEntries(noticeId)).toEqual(remaining)
     })
   })
 

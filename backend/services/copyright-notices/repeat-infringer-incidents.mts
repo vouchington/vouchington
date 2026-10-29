@@ -24,9 +24,9 @@ export async function syncCopyrightRepeatInfringerIncidents(
     WITH eligible_targets AS (
       SELECT target.*,
         NOT (`
-  statement.append(anyReversalSourceSql)
+  statement.append(anyReversalSourceSql())
   statement.append(sql`) AND NOT (`)
-  statement.append(statutoryRestorationSourceSql)
+  statement.append(statutoryRestorationSourceSql())
   statement.append(sql`) AS is_operative_restriction
       FROM copyright_notice_targets target
       JOIN copyright_restrictions restriction

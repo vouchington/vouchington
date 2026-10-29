@@ -78,7 +78,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
           ON review.copyright_notice_form_intake_id = intake.id
         WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
           AND NOT review.is_accepted
-      ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql)
+      ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql())
       .append(sql` AS territorial_revoked
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission
