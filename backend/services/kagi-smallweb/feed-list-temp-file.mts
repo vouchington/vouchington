@@ -10,7 +10,7 @@ import { sortAndDiff } from './feed-list-sort.mts'
 
 const FEED_LIST_DIRECTORY_PREFIX = 'kagi-feed-list-'
 const FEED_LIST_RUN_DIRECTORY = /^kagi-feed-list-\d+-/
-export const FEED_LIST_DIRECTORY_MAX_AGE_MS = 60 * 60 * 1000
+const FEED_LIST_DIRECTORY_MAX_AGE_MS = 60 * 60 * 1000
 
 export type FeedListChunkSource = {
   chunks: Readable

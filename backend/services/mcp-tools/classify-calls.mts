@@ -23,7 +23,7 @@ const AUDITED_METHODS: ReadonlySet<string> = new Set([
 
 // A larger JSON-RPC batch is refused on an audited surface instead of writing an unbounded number
 // of audit rows for one request.
-export const MAX_AUDITED_MCP_MESSAGES = 25
+const MAX_AUDITED_MCP_MESSAGES = 25
 
 type UserForClassification = {
   id: string

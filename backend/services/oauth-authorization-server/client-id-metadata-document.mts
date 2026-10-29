@@ -22,7 +22,7 @@ import {
   type ValidatedClientIdMetadata,
 } from './client-id-metadata-cache.mts'
 
-export const CLIENT_ID_METADATA_MAX_SIZE_BYTES = 5 * 1024
+const CLIENT_ID_METADATA_MAX_SIZE_BYTES = 5 * 1024
 const CLIENT_ID_METADATA_REQUEST_TIMEOUT_MS = 5_000
 export const CLIENT_ID_METADATA_BODY_TIMEOUT_MS = 5_000
 

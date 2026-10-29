@@ -33,11 +33,7 @@ function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {
   })
 }
 
-import {
-  getDomainRateLimitRemainingMs,
-  IMMEDIATE_RETRY_RATE_LIMIT_MS,
-  setDomainRateLimited,
-} from '../domain-rate-limit.mts'
+import { getDomainRateLimitRemainingMs, setDomainRateLimited } from '../domain-rate-limit.mts'
 
 import {
   CrawlerRateLimitError,
@@ -115,7 +111,7 @@ describe('crawl-url.errors', () => {
 
       const remainingMs = await getDomainRateLimitRemainingMs(url!.hostname.id)
       expect(remainingMs).toBeGreaterThan(0)
-      expect(remainingMs).toBeLessThanOrEqual(IMMEDIATE_RETRY_RATE_LIMIT_MS)
+      expect(remainingMs).toBeLessThanOrEqual(1_000)
     })
   })
 

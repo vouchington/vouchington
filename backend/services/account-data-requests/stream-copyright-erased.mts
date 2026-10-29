@@ -3,9 +3,9 @@ import { decryptSecret } from '@modules/token-secrets'
 /**
  * What the copyright retention sweep leaves in a ciphertext column it has erased. This package
  * cannot import `@services/copyright-notices` (that package depends on `@services/users`, which
- * depends on this one), so a test in `backend/api` pins the value to `COPYRIGHT_ERASED_CIPHERTEXT`.
+ * depends on this one), so it uses the marker the sweep writes without importing that package.
  */
-export const EXPORT_COPYRIGHT_ERASED_CIPHERTEXT = 'erased'
+const EXPORT_COPYRIGHT_ERASED_CIPHERTEXT = 'erased'
 
 /** Written into an export cell whose content the retention sweep has erased. */
 export const EXPORT_COPYRIGHT_ERASED_TEXT = '[erased by the retention policy]'

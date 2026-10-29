@@ -7,7 +7,7 @@ const setDomainRateLimitScript = registerScript(
 )
 
 const DEFAULT_RATE_LIMIT_MS = 60_000 // 1 minute fallback when no Retry-After header
-export const IMMEDIATE_RETRY_RATE_LIMIT_MS = 1_000
+const IMMEDIATE_RETRY_RATE_LIMIT_MS = 1_000
 
 function key(hostnameId: string) {
   return `${KEY_PREFIX}:{${hostnameId}}`

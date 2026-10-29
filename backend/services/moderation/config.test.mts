@@ -7,7 +7,6 @@ import {
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 import {
-  DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD,
   getAiGeneratedConfidenceThreshold,
   getFreshAiGeneratedConfidenceThreshold,
   moderationConfig,
@@ -21,7 +20,7 @@ describe('getAiGeneratedConfidenceThreshold', () => {
 
   afterEach(async () => {
     overrideDynamicConfigFieldsForTest(moderationConfig, {
-      ai_generated_confidence_threshold: DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD,
+      ai_generated_confidence_threshold: 0.95,
     })
   })
 
@@ -30,7 +29,7 @@ describe('getAiGeneratedConfidenceThreshold', () => {
   })
 
   it('returns the default when no override is set', () => {
-    expect(getAiGeneratedConfidenceThreshold()).toBe(DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD)
+    expect(getAiGeneratedConfidenceThreshold()).toBe(0.95)
   })
 
   it('returns a valid DynamicConfig override', async () => {
@@ -45,7 +44,7 @@ describe('getAiGeneratedConfidenceThreshold', () => {
       key: createDynamicConfigTestKey('moderation-threshold'),
       fieldTypes: { ai_generated_confidence_threshold: 'number' },
       defaultFields: {
-        ai_generated_confidence_threshold: DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD,
+        ai_generated_confidence_threshold: 0.95,
       },
     })
     try {
@@ -54,9 +53,7 @@ describe('getAiGeneratedConfidenceThreshold', () => {
         ai_generated_confidence_threshold: '0.973',
       })
       await expect(getFreshAiGeneratedConfidenceThreshold(config)).resolves.toBe(0.973)
-      expect(config.getFields().ai_generated_confidence_threshold).toBe(
-        DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD,
-      )
+      expect(config.getFields().ai_generated_confidence_threshold).toBe(0.95)
     } finally {
       await dynamicConfigPrimaryValkeyClient.unlink([config.key])
       await config.close()
@@ -65,11 +62,11 @@ describe('getAiGeneratedConfidenceThreshold', () => {
 
   it('falls back to the default when override is above range', async () => {
     overrideDynamicConfigFieldsForTest(moderationConfig, { ai_generated_confidence_threshold: 1.5 })
-    expect(getAiGeneratedConfidenceThreshold()).toBe(DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD)
+    expect(getAiGeneratedConfidenceThreshold()).toBe(0.95)
   })
 
   it('falls back to the default when override is below range', async () => {
     overrideDynamicConfigFieldsForTest(moderationConfig, { ai_generated_confidence_threshold: -1 })
-    expect(getAiGeneratedConfidenceThreshold()).toBe(DEFAULT_AI_GENERATED_CONFIDENCE_THRESHOLD)
+    expect(getAiGeneratedConfidenceThreshold()).toBe(0.95)
   })
 })

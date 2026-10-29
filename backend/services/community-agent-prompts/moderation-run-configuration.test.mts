@@ -7,8 +7,6 @@ import {
 } from '@voucha/test-helpers'
 import { setTestCommunityAutomodAction } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import {
-  MAX_COMMUNITY_MODERATION_QUESTIONS,
-  MAX_COMMUNITY_MODERATION_RULE_CHARACTERS,
   resolveCommunityModerationRunConfiguration,
   selectCommunityModerationPrompts,
 } from './moderation-run-configuration.mts'
@@ -26,9 +24,7 @@ describe('selectCommunityModerationPrompts', () => {
   })
 
   it('caps one call at thirty questions and drops the ones past the cap', () => {
-    const prompts = Array.from({ length: MAX_COMMUNITY_MODERATION_QUESTIONS + 5 }, (_, index) =>
-      promptWith(index),
-    )
+    const prompts = Array.from({ length: 35 }, (_, index) => promptWith(index))
 
     const selected = selectCommunityModerationPrompts(prompts)
 
@@ -45,8 +41,7 @@ describe('selectCommunityModerationPrompts', () => {
   })
 
   it('accepts a call that is exactly at the character cap', () => {
-    const half = MAX_COMMUNITY_MODERATION_RULE_CHARACTERS / 2
-    const prompts = [promptWith(0, half), promptWith(1, half)]
+    const prompts = [promptWith(0, 20_000), promptWith(1, 20_000)]
 
     expect(selectCommunityModerationPrompts(prompts)).toHaveLength(2)
     expect(selectCommunityModerationPrompts([...prompts, promptWith(2, 1)])).toHaveLength(2)

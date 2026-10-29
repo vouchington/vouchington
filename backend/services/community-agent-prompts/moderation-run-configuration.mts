@@ -8,8 +8,8 @@ import { getActiveCommunityModerationClassifier } from './active-community-moder
 import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
 
 /** Per-call bounds of the single-call path: a fail-safe, not a product limit; slot caps are unchanged. */
-export const MAX_COMMUNITY_MODERATION_QUESTIONS = 30
-export const MAX_COMMUNITY_MODERATION_RULE_CHARACTERS = 40_000
+const MAX_COMMUNITY_MODERATION_QUESTIONS = 30
+const MAX_COMMUNITY_MODERATION_RULE_CHARACTERS = 40_000
 
 export type CommunityModerationPrompt = { id: string; text: string }
 

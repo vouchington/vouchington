@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { EXPORT_COPYRIGHT_ERASED_CIPHERTEXT } from '@services/account-data-requests/stream-copyright-erased'
+import {
+  decryptExportedCopyrightJson,
+  decryptExportedCopyrightText,
+  EXPORT_COPYRIGHT_ERASED_TEXT,
+} from '@services/account-data-requests/stream-copyright-erased'
 import { sweepCopyrightEvidenceRetention } from '@services/copyright-notices'
-import { COPYRIGHT_ERASED_CIPHERTEXT } from '@services/copyright-notices/erased-ciphertext'
 import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -58,6 +61,15 @@ describe('account data export after the copyright retention sweep', () => {
     })
 
     expect(result).toEqual({ erased: 1, ineligible: 0, failed: [] })
+    const erasedColumns = await readCopyrightRetentionColumns(erasedCase.noticeId)
+    const textCiphertext = erasedColumns.copyright_notices?.[0]?.claimant_contact_ciphertext
+    const jsonCiphertext = erasedColumns.copyright_notice_submissions?.[0]?.body_ciphertext
+    if (typeof textCiphertext !== 'string' || typeof jsonCiphertext !== 'string')
+      throw new Error('retention fixture did not retain erased ciphertext')
+    expect(decryptExportedCopyrightText(textCiphertext, 'unused purpose')).toBe(
+      EXPORT_COPYRIGHT_ERASED_TEXT,
+    )
+    expect(decryptExportedCopyrightJson(jsonCiphertext, 'unused purpose')).toBeNull()
     const claimant = await readAccountExport(claimantId)
     const poster = await readAccountExport(posterId)
     for (const file of OWN_FILING_FILES) {
@@ -77,9 +89,5 @@ describe('account data export after the copyright retention sweep', () => {
     expect(poster.rows('copyright-repeat-infringer-incidents.csv')).toEqual(
       posterBefore.rows('copyright-repeat-infringer-incidents.csv'),
     )
-  })
-
-  it('keeps the export package reading the same erased marker the sweep writes', () => {
-    expect(EXPORT_COPYRIGHT_ERASED_CIPHERTEXT).toBe(COPYRIGHT_ERASED_CIPHERTEXT)
   })
 })

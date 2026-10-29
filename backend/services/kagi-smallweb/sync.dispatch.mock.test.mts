@@ -7,11 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { numberedLine } from './feed-list-lines.mts'
 import { sortAndDiff } from './feed-list-sort.mts'
-import {
-  createFeedListDirectory,
-  FEED_LIST_DIRECTORY_MAX_AGE_MS,
-  removeFeedListDirectory,
-} from './feed-list-temp-file.mts'
+import { createFeedListDirectory, removeFeedListDirectory } from './feed-list-temp-file.mts'
 import { processFeedEntry } from './process-feed-entry.mts'
 import { dispatchKagiSmallWeb } from './sync.mts'
 import { FEED_LIST_SOURCES } from './sources.mts'
@@ -108,7 +104,7 @@ describe('processFeedEntry', () => {
 describe('dispatchKagiSmallWeb', () => {
   it('returns disabled when kagi import is not enabled', async () => {
     const expired = await createFeedListDirectory()
-    const old = new Date(Date.now() - FEED_LIST_DIRECTORY_MAX_AGE_MS - 5_000)
+    const old = new Date(Date.now() - 60 * 60_000 - 5_000)
     await utimes(expired, old, old)
     try {
       const result = await dispatchKagiSmallWeb()
