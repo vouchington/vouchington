@@ -12645,8 +12645,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.13.0)
       '@vouchington/stripe':
-        specifier: ^0.1.0
-        version: 0.1.0(stripe@23.0.0(@types/node@26.6.5))
+        specifier: ^0.1.1
+        version: 0.1.1(stripe@23.0.1(@types/node@26.6.5))
       '@vouchington/utils':
         specifier: ^0.10.2
         version: 0.10.2
