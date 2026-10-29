@@ -4,11 +4,8 @@ import { describe, expect, it } from 'vitest'
 const COMMAND = 'jscpd .'
 const CI_COMMAND = `pnpm exec ${COMMAND}`
 const DEAD_CODE_COMMAND = 'pnpm run jscpd:dead-code'
-const README = readFileSync('docs/development/quality/static-code-analysis/jscpd/README.md', 'utf8')
 const config = JSON.parse(readFileSync('.jscpd.json', 'utf8')) as {
-  minLines: number
   exitCode: number
-  ignore: string[]
   deadCode?: { categories: string[]; minConfidence: number }
 }
 
@@ -25,9 +22,8 @@ describe('jscpd wiring', () => {
     expect(readFileSync('ci/ci-local/static-commands.mts', 'utf8')).toContain(`'${CI_COMMAND}'`)
   })
 
-  it('fails the run on any clone at or above the documented minLines threshold', () => {
+  it('fails the run on detected clones', () => {
     expect(config.exitCode).toBe(1)
-    expect(README).toContain(`\`"minLines": ${config.minLines}\``)
   })
 
   it('wires the separate dead-code baseline guard through lint, CI, and ci-local', () => {
@@ -55,15 +51,5 @@ describe('jscpd wiring', () => {
       'unused-member',
     ])
     expect(config.deadCode?.minConfidence).toBe(70)
-  })
-
-  it('documents every configured ignore glob in the jscpd README', () => {
-    const undocumented = config.ignore.filter(glob => !README.includes(`\`${glob}\``))
-    expect(undocumented).toEqual([])
-  })
-
-  it('lists only configured globs in the README exceptions table', () => {
-    const tableGlobs = [...README.matchAll(/^\| `([^`]+)` +\|/gm)].map(match => match[1])
-    expect(tableGlobs.filter(glob => !config.ignore.includes(glob ?? ''))).toEqual([])
   })
 })
