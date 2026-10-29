@@ -86,7 +86,15 @@
       "work_description": "Original photograph."
     },
     {
-      "action_intents": [],
+      "action_intents": [
+        {
+          "action": "withhold",
+          "failure_message": "Storage unavailable",
+          "id": "00000000-0000-7000-8000-000000000825",
+          "state": "failed",
+          "target_id": "00000000-0000-7000-8000-000000000805"
+        }
+      ],
       "appeals": [],
       "claimant": {
         "contact": "claimant@example.test",
@@ -176,6 +184,7 @@
           "match_kind": "perceptual",
           "matched_at": "2026-07-01T11:45:00.000Z",
           "registered_image_id": "00000000-0000-7000-8000-000000000820",
+          "target_id": "00000000-0000-7000-8000-000000000805",
           "uploaded_by_id": "00000000-0000-7000-8000-000000000821",
           "uploaded_by_username": "photo-author"
         },
@@ -187,12 +196,23 @@
           "match_kind": "exact",
           "matched_at": "2026-07-01T11:50:00.000Z",
           "registered_image_id": "00000000-0000-7000-8000-000000000820",
+          "target_id": "00000000-0000-7000-8000-000000000805",
           "uploaded_by_id": "00000000-0000-7000-8000-000000000824",
           "uploaded_by_username": null
         }
       ],
       "staydown_matches_has_more": false,
-      "targets": [],
+      "targets": [
+        {
+          "hosted_use_url": "https://voucha.ai/discussion/original-photograph",
+          "id": "00000000-0000-7000-8000-000000000805",
+          "image_id": "00000000-0000-7000-8000-000000000820",
+          "placement_key": "image-placement:00000000-0000-7000-8000-000000000826",
+          "placement_revision": 1,
+          "provenance": null,
+          "surface": "post-image"
+        }
+      ],
       "waiting_since": "2026-07-01T12:00:00.000Z",
       "work_description": "Original photograph."
     }

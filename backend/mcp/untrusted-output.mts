@@ -16,6 +16,8 @@ const UNTRUSTED_FIELDS = new Set([
   'note',
   'reporter_username',
   'username',
+  'account_username',
+  'uploaded_by_username',
   'verified_display_name',
   'text',
   'appeal_reason',

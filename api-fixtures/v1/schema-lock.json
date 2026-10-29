@@ -363,7 +363,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default", "web.copyright.staff-queue.territorial"],
-      "hash": "ecfe3169a16ae96151db062eb864938882011171aff5c6aecd1b3f26e603fb9a"
+      "hash": "003a245a950976a8fac8a811714da90a520fb81ce4bea44e766b1504c34dcb26"
     },
     "GET:/api/v1/copyright-trusted-flaggers": {
       "fixtureIds": ["copyright.trusted-flaggers.list"],
@@ -3299,7 +3299,7 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "fbe968434ac6f6fd0ee49517b7891934c0087f6675c6001bf5cdee10103049e3"
+      "hash": "192f0ce3575e2d0022667a2235af16e04ac7c7e2c8c48885359bc42bba9e0e8a"
     },
     "web.copyright.staff-queue.territorial": {
       "fixtureIds": ["web.copyright.staff-queue.territorial"],

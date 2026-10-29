@@ -119,7 +119,13 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
       },
     ],
     action_intents: [
-      { id: 'action-1', action: 'withhold', state: 'failed', failure_message: 'Storage timeout' },
+      {
+        id: 'action-1',
+        target_id: 'target-1',
+        action: 'withhold',
+        state: 'failed',
+        failure_message: 'Storage timeout',
+      },
     ],
     delivery_intents: [
       {
@@ -149,6 +155,7 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
         id: 'match-1',
         image_id: 'image-9',
         registered_image_id: 'image-1',
+        target_id: 'target-1',
         uploaded_by_id: 'user-uploader',
         uploaded_by_username: 'photographer',
         image_placement: null,

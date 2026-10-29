@@ -154,6 +154,7 @@ export type CopyrightStaffQueueItem = {
   }>
   action_intents: Array<{
     id: string
+    target_id: string
     action: 'withhold' | 'restore'
     state: 'pending' | 'claimed' | 'completed' | 'stale' | 'blocked' | 'failed'
     failure_message: string | null

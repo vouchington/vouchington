@@ -4,6 +4,12 @@ import { suspendTestUser } from '@voucha/test-helpers/entities/users'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createCopyrightNoticeForManualAssociation } from '@voucha/test-helpers/copyright-email-manual-association'
 import { randomUUID } from 'node:crypto'
+import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
+import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { recordCopyrightStaydownExactMatch } from '@services/copyright-notices/staydown-matches'
 import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import { ALL_TOOLS } from '../registry/index.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -73,5 +79,92 @@ describe('copyright association search REST and MCP parity', () => {
     expect(mcpNotice?.work_description).toContain(workDescription)
     if (!tool.meta?.outputSchema) throw new Error('Association search output schema missing')
     expect(findSchemaViolation(tool.meta.outputSchema, result)).toBeNull()
+  })
+})
+
+describe('copyright username aliases at the MCP boundary', () => {
+  useCopyrightIntakeEnvironment()
+  useStaydownMatching()
+
+  it('marks account and uploader usernames while preserving REST facts and MCP schemas', async () => {
+    const administrator = await createTestUser({ extraRoles: ['administrator'] })
+    const username = `copyright_${randomUUID().replaceAll('-', '')}`.slice(0, 30)
+    const poster = await createTestUser({ username })
+    const uploaderUsername = `uploader_${randomUUID().replaceAll('-', '')}`.slice(0, 30)
+    const uploader = await createTestUser({ username: uploaderUsername })
+    const { notice } = await createClearScreenedForm(1, { poster })
+    const noticeId = notice.intake.copyright_notice_id
+    const request = createRequest()
+    await request.authenticateAs(administrator)
+    await request
+      .post(`/api/v1/copyright-form-intakes/${notice.intake.id}/reviews`)
+      .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
+      .expect(200)
+    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+    const imageId = aggregate!.targets[0]!.image_id
+    await recordCopyrightStaydownExactMatch({ imageId, uploadedById: uploader.id })
+
+    const accountsResponse = await request
+      .get(`/api/v1/copyright-notices/${noticeId}/repeat-infringer-accounts`)
+      .expect(200)
+    const restAccount = accountsResponse.body.copyright_repeat_infringer_accounts.find(
+      (row: { account_user_id: string }) => row.account_user_id === poster.id,
+    )
+    expect(restAccount).toMatchObject({
+      account_user_id: poster.id,
+      account_username: username,
+    })
+    const accountsTool = readTool<{ id: string }>('list_repeat_infringer_accounts')
+    const accountsResult = (await accountsTool.function(administrator)({
+      id: noticeId,
+    })) as {
+      copyright_repeat_infringer_accounts: Array<{
+        account_user_id: string
+        account_username: string | null
+      }>
+    }
+    const mcpAccount = accountsResult.copyright_repeat_infringer_accounts.find(
+      row => row.account_user_id === poster.id,
+    )
+    expect(mcpAccount).toMatchObject({
+      ...restAccount,
+      account_username: expect.stringContaining('<external-content'),
+    })
+    expect(mcpAccount?.account_username).toContain(username)
+    if (!accountsTool.meta?.outputSchema) throw new Error('Repeat accounts output schema missing')
+    expect(findSchemaViolation(accountsTool.meta.outputSchema, accountsResult)).toBeNull()
+
+    const after = await readCopyrightStaffQueueCursorBefore([noticeId])
+    const queueResponse = await request
+      .get('/api/v1/copyright-notices/review-queue')
+      .query({ after, limit: 1 })
+      .expect(200)
+    const restCase = queueResponse.body.copyright_notices[0]
+    expect(restCase).toMatchObject({ id: noticeId })
+    const restMatch = restCase.staydown_matches.find(
+      (row: { image_id: string }) => row.image_id === imageId,
+    )
+    expect(restMatch).toMatchObject({
+      uploaded_by_id: uploader.id,
+      uploaded_by_username: uploaderUsername,
+    })
+    const queueTool = readTool<{ after: string; limit: number }>('list_copyright_review_queue')
+    const queueResult = (await queueTool.function(administrator)({ after, limit: 1 })) as {
+      copyright_notices: Array<{
+        id: string
+        staydown_matches: Array<{ image_id: string; uploaded_by_username: string | null }>
+      }>
+    }
+    expect(queueResult.copyright_notices[0]).toMatchObject({ id: noticeId })
+    const mcpMatch = queueResult.copyright_notices[0]!.staydown_matches.find(
+      row => row.image_id === imageId,
+    )
+    expect(mcpMatch).toMatchObject({
+      ...restMatch,
+      uploaded_by_username: expect.stringContaining('<external-content'),
+    })
+    expect(mcpMatch?.uploaded_by_username).toContain(uploaderUsername)
+    if (!queueTool.meta?.outputSchema) throw new Error('Staff queue output schema missing')
+    expect(findSchemaViolation(queueTool.meta.outputSchema, queueResult)).toBeNull()
   })
 })

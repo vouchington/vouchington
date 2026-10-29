@@ -19,13 +19,13 @@ export async function selectStaffStaydownMatches(
   >(sql`
     /* getPendingCopyrightStaffCase:staydownMatches */
     SELECT requested.notice_id AS copyright_notice_id, match.id, match.image_id,
-      match.registered_image_id, match.uploaded_by_id, match.match_kind,
+      match.registered_image_id, match.target_id, match.uploaded_by_id, match.match_kind,
       match.hamming_distance, match.matched_at, uploader.username AS uploaded_by_username,
       COALESCE(post_candidate.placement_id, surface_candidate.placement_id) AS candidate_placement_id
     FROM unnest(${noticeIds}::uuid[]) AS requested(notice_id)
     CROSS JOIN LATERAL (
       SELECT staydown_match.id, staydown_match.image_id,
-        entry.image_id AS registered_image_id,
+        entry.image_id AS registered_image_id, target.id AS target_id,
         staydown_match.uploaded_by_id, staydown_match.match_kind,
         staydown_match.hamming_distance, staydown_match.created_at AS matched_at
       FROM copyright_staydown_matches staydown_match

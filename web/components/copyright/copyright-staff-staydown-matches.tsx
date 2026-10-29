@@ -36,57 +36,75 @@ export function CopyrightStaffStaydownMatches({
   return (
     <section className='space-y-2'>
       <h3 className='font-medium'>Possible re-uploads</h3>
-      {notice.staydown_matches.map(match => (
-        <div
-          className='flex items-center justify-between gap-2 text-sm'
-          key={match.id}
-        >
-          <span>
-            {describeMatch(match)}{' '}
-            {match.uploaded_by_username ? (
-              <Link
-                href={userHref({ id: match.uploaded_by_id, username: match.uploaded_by_username })}
-              >
-                @{match.uploaded_by_username}
-              </Link>
-            ) : (
-              'A former member'
-            )}{' '}
-            uploaded this image <TimeAgo date={match.matched_at} />.{' '}
-            {match.image_placement ? (
-              <a
-                href={getPlacementImageUrl(
-                  match.image_placement.placement_id,
-                  match.image_placement.placement_revision,
-                  match.image_placement.image_id,
-                  { width: 1200 },
-                )}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='underline'
-              >
-                Inspect matching image
-              </a>
-            ) : (
-              <span className='text-muted-foreground'>
-                No inspectable published image is available.
-              </span>
-            )}
-          </span>
-          <Button
-            data-pw='copyright-staff-staydown-matches-mark-reviewed'
-            disabled={pending}
-            onClick={() =>
-              submitRecovery(
-                () => reviewCopyrightStaydownMatch(notice.id, match.id),
-                'Possible re-upload marked reviewed.',
-              )
-            }
+      {notice.staydown_matches.map(match => {
+        const target = notice.targets.find(target => target.id === match.target_id)
+        return (
+          <div
+            className='flex items-center justify-between gap-2 text-sm'
+            key={match.id}
           >
-            Mark reviewed
-          </Button>
-        </div>
-      ))}
+            <span>
+              {describeMatch(match)}{' '}
+              {target ? (
+                <a
+                  href={target.hosted_use_url}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='underline'
+                >
+                  Original hosted use: {target.hosted_use_url}
+                </a>
+              ) : (
+                'Original hosted use unavailable.'
+              )}{' '}
+              {match.uploaded_by_username ? (
+                <Link
+                  href={userHref({
+                    id: match.uploaded_by_id,
+                    username: match.uploaded_by_username,
+                  })}
+                >
+                  @{match.uploaded_by_username}
+                </Link>
+              ) : (
+                'A former member'
+              )}{' '}
+              uploaded this image <TimeAgo date={match.matched_at} />.{' '}
+              {match.image_placement ? (
+                <a
+                  href={getPlacementImageUrl(
+                    match.image_placement.placement_id,
+                    match.image_placement.placement_revision,
+                    match.image_placement.image_id,
+                    { width: 1200 },
+                  )}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='underline'
+                >
+                  Inspect matching image
+                </a>
+              ) : (
+                <span className='text-muted-foreground'>
+                  No inspectable published image is available.
+                </span>
+              )}
+            </span>
+            <Button
+              data-pw='copyright-staff-staydown-matches-mark-reviewed'
+              disabled={pending}
+              onClick={() =>
+                submitRecovery(
+                  () => reviewCopyrightStaydownMatch(notice.id, match.id),
+                  'Possible re-upload marked reviewed.',
+                )
+              }
+            >
+              Mark reviewed
+            </Button>
+          </div>
+        )
+      })}
       {notice.staydown_matches_has_more && (
         <p className='text-muted-foreground text-sm'>
           More matches are waiting. Review these to see the next ones.

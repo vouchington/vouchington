@@ -32,10 +32,12 @@ type QueueCase = {
   id: string
   reasons: string[]
   waiting_since: string
+  action_intents: Array<{ id: string; target_id: string }>
   staydown_matches: Array<{
     id: string
     image_id: string
     registered_image_id: string
+    target_id: string
     uploaded_by_id: string
     uploaded_by_username: string | null
     image_placement: { image_id: string; placement_id: string; placement_revision: number } | null
@@ -66,7 +68,15 @@ async function createMatchedCase() {
   const uploader = await createTestUser()
   await recordCopyrightStaydownExactMatch({ imageId, uploadedById: uploader.id })
   const [match] = await readCopyrightStaydownMatches(noticeId)
-  return { noticeId, moderator, staff, imageId, uploader, matchId: match!.id }
+  return {
+    noticeId,
+    moderator,
+    staff,
+    imageId,
+    uploader,
+    targetId: aggregate!.targets[0]!.id,
+    matchId: match!.id,
+  }
 }
 
 async function readQueuedCase(staff: StaffRequest, noticeId: string) {
@@ -102,11 +112,13 @@ describe('copyright staydown staff review', () => {
       id: matched.noticeId,
       reasons: expect.arrayContaining(['staydown_review']),
       waiting_since: expect.any(String),
+      action_intents: [expect.objectContaining({ target_id: matched.targetId })],
       staydown_matches: [
         {
           id: matched.matchId,
           image_id: matched.imageId,
           registered_image_id: matched.imageId,
+          target_id: matched.targetId,
           uploaded_by_id: matched.uploader.id,
           uploaded_by_username: matched.uploader.username,
           image_placement: null,

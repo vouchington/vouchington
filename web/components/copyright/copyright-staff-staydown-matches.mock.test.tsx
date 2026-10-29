@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reviewCopyrightStaydownMatch } from '@/lib/api/client/copyright-staydown'
+import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
@@ -59,6 +60,27 @@ describe('CopyrightStaffQueue possible re-uploads', () => {
     await waitFor(() => expect(mockReview).toHaveBeenCalledWith('case-123', 'match-2'))
   })
 
+  it('associates a match with its original hosted use by target ID despite reversed target order', () => {
+    const notice = makeNotice()
+    notice.targets = makeBusyUsStaffCase()
+      .targets.map(target => ({ ...target, image_id: 'registered-1' }))
+      .toReversed()
+    notice.staydown_matches = [{ ...notice.staydown_matches[0]!, target_id: 'target-1' }]
+    render(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [notice],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
+      />,
+    )
+    expect(
+      screen.getByRole('link', {
+        name: 'Original hosted use: https://voucha.ai/discussion/park-photo',
+      }),
+    ).toHaveAttribute('href', 'https://voucha.ai/discussion/park-photo')
+  })
+
   it('keeps a deleted uploader anonymous without exposing retained IDs', () => {
     const notice = makeNotice()
     notice.staydown_matches = [{ ...notice.staydown_matches[1]!, uploaded_by_username: null }]
@@ -72,6 +94,7 @@ describe('CopyrightStaffQueue possible re-uploads', () => {
     )
 
     expect(screen.getByText(/A former member/)).toBeInTheDocument()
+    expect(screen.getByText(/Original hosted use unavailable/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Inspect matching image' })).toBeNull()
     expect(screen.queryByText('user-2')).toBeNull()
     expect(screen.queryByText('upload-2')).toBeNull()
@@ -112,6 +135,7 @@ function makeNotice(): CopyrightStaffQueueItem {
         id: 'match-1',
         image_id: 'upload-1',
         registered_image_id: 'registered-1',
+        target_id: 'target-1',
         uploaded_by_id: 'user-1',
         uploaded_by_username: 'photographer',
         image_placement: {
@@ -127,6 +151,7 @@ function makeNotice(): CopyrightStaffQueueItem {
         id: 'match-2',
         image_id: 'upload-2',
         registered_image_id: 'registered-1',
+        target_id: 'target-1',
         uploaded_by_id: 'user-2',
         uploaded_by_username: 'photographer',
         image_placement: null,

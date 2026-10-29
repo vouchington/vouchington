@@ -7,8 +7,8 @@ import {
   CopyrightStaffComplaint,
   CopyrightStaffCorrespondence,
   CopyrightStaffCounterNotices,
-  CopyrightStaffIntentRecovery,
 } from './copyright-staff-case-detail'
+import { CopyrightStaffIntentRecovery } from './copyright-staff-intent-recovery'
 import { CopyrightStaffFormReview } from './copyright-staff-case-form-review'
 import { CopyrightStaffGuestCapability } from './copyright-staff-guest-capability'
 import { CopyrightStaffInformationRequests } from './copyright-staff-information-requests'
@@ -122,20 +122,41 @@ function CopyrightStaffRestrictionReviews({
   rationale,
   submit,
 }: ReviewProps) {
-  return notice.restrictions.map(restriction =>
-    restriction.status === 'pending_review' ? (
-      <ReviewButtons
+  return notice.restrictions.map(restriction => {
+    if (restriction.status !== 'pending_review') return null
+    const target = notice.targets.find(item => item.id === restriction.target_id)
+    return (
+      <section
         key={restriction.id}
-        pending={pending}
-        canSubmit={canSubmit}
-        submit={submit}
-        approve={() => reviewCopyrightRestriction(notice.id, restriction.id, 'confirm', rationale)}
-        reject={() => reviewCopyrightRestriction(notice.id, restriction.id, 'reverse', rationale)}
-        heading='Pending restriction review'
-        description='Affected hosted material'
-        approveLabel='Confirm restriction'
-        rejectLabel='Reverse restriction'
-      />
-    ) : null,
-  )
+        className='space-y-2'
+        aria-label={`Restriction review for ${target?.hosted_use_url ?? 'unavailable hosted material'}`}
+      >
+        <p className='text-sm'>
+          {target ? (
+            <a
+              className='underline'
+              href={target.hosted_use_url}
+            >
+              {target.hosted_use_url}
+            </a>
+          ) : (
+            'Hosted material reference unavailable.'
+          )}
+        </p>
+        <ReviewButtons
+          pending={pending}
+          canSubmit={canSubmit}
+          submit={submit}
+          approve={() =>
+            reviewCopyrightRestriction(notice.id, restriction.id, 'confirm', rationale)
+          }
+          reject={() => reviewCopyrightRestriction(notice.id, restriction.id, 'reverse', rationale)}
+          heading='Pending restriction review'
+          description='Affected hosted material'
+          approveLabel='Confirm restriction'
+          rejectLabel='Reverse restriction'
+        />
+      </section>
+    )
+  })
 }

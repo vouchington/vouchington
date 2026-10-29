@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { reviewedStaffCase } from './native-copyright-staff-form-review.mts'
 import { nativeCopyrightApiFixtureCases } from './native-copyright-cases.mts'
 import { webCopyrightEmailIntakeApiFixtureCases } from './web-copyright-email-intake-cases.mts'
 
@@ -36,12 +37,30 @@ describe('native copyright fixtures', () => {
   it('publishes inspectable staydown matches and unavailable context to Swift and .NET consumers', () => {
     const fixture = findFixture('web.copyright.staff-queue.default')
     expect(fixture.consumers).toEqual(expect.arrayContaining(['swift-core', 'dotnet-core']))
+    const body = fixture.body as { copyright_notices: Array<typeof reviewedStaffCase> }
+    const notice = body.copyright_notices.find(notice => notice.staydown_matches.length > 0)!
+    expect(notice).toBeDefined()
+    for (const reference of [...notice.action_intents, ...notice.staydown_matches]) {
+      const target = notice.targets.find(target => target.id === reference.target_id)
+      expect(target).toMatchObject({
+        image_id: '00000000-0000-7000-8000-000000000820',
+        hosted_use_url: 'https://voucha.ai/discussion/original-photograph',
+      })
+    }
+    for (const match of notice.staydown_matches) {
+      const target = notice.targets.find(target => target.id === match.target_id)
+      expect(target?.image_id).toBe(match.registered_image_id)
+    }
     expect(fixture.body).toMatchObject({
       copyright_notices: expect.arrayContaining([
         expect.objectContaining({
+          action_intents: [
+            expect.objectContaining({ target_id: '00000000-0000-7000-8000-000000000805' }),
+          ],
           staydown_matches: [
             expect.objectContaining({
               uploaded_by_username: 'photo-author',
+              target_id: '00000000-0000-7000-8000-000000000805',
               image_placement: {
                 image_id: '00000000-0000-7000-8000-000000000819',
                 placement_id: expect.any(String),

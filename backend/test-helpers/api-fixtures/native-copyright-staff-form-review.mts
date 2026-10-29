@@ -23,7 +23,17 @@ export const reviewedStaffCase = {
   jurisdiction: 'us_dmca',
   claimant: { display_name: 'Claimant', contact: 'claimant@example.test', misuse: null },
   work_description: 'Original photograph.',
-  targets: [],
+  targets: [
+    {
+      id: '00000000-0000-7000-8000-000000000805',
+      image_id: '00000000-0000-7000-8000-000000000820',
+      placement_key: 'image-placement:00000000-0000-7000-8000-000000000826',
+      placement_revision: 1,
+      surface: 'post-image',
+      provenance: null,
+      hosted_use_url: 'https://voucha.ai/discussion/original-photograph',
+    },
+  ],
   evidence: [],
   form_review: {
     intake_id: '00000000-0000-7000-8000-000000000816',
@@ -44,13 +54,22 @@ export const reviewedStaffCase = {
   appeals: [],
   counter_notices: [],
   legal_holds: [],
-  action_intents: [],
+  action_intents: [
+    {
+      id: '00000000-0000-7000-8000-000000000825',
+      target_id: '00000000-0000-7000-8000-000000000805',
+      action: 'withhold',
+      state: 'failed',
+      failure_message: 'Storage unavailable',
+    },
+  ],
   delivery_intents: [],
   staydown_matches: [
     {
       id: '00000000-0000-7000-8000-000000000818',
       image_id: '00000000-0000-7000-8000-000000000819',
       registered_image_id: '00000000-0000-7000-8000-000000000820',
+      target_id: '00000000-0000-7000-8000-000000000805',
       uploaded_by_id: '00000000-0000-7000-8000-000000000821',
       uploaded_by_username: 'photo-author',
       image_placement: {
@@ -66,6 +85,7 @@ export const reviewedStaffCase = {
       id: '00000000-0000-7000-8000-000000000823',
       image_id: '00000000-0000-7000-8000-000000000820',
       registered_image_id: '00000000-0000-7000-8000-000000000820',
+      target_id: '00000000-0000-7000-8000-000000000805',
       uploaded_by_id: '00000000-0000-7000-8000-000000000824',
       uploaded_by_username: null,
       image_placement: null,

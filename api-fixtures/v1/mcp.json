@@ -43891,9 +43891,12 @@
                                 "stale"
                               ],
                               "type": "string"
+                            },
+                            "target_id": {
+                              "type": "string"
                             }
                           },
-                          "required": ["action", "failure_message", "id", "state"],
+                          "required": ["action", "failure_message", "id", "state", "target_id"],
                           "type": "object"
                         },
                         "type": "array"
@@ -44613,7 +44616,10 @@
                               "type": "string"
                             },
                             "uploaded_by_username": {
-                              "$ref": "#/$defs/S1"
+                              "$ref": "#/$defs/S2"
+                            },
+                            "target_id": {
+                              "type": "string"
                             }
                           },
                           "required": [
@@ -44624,6 +44630,7 @@
                             "match_kind",
                             "matched_at",
                             "registered_image_id",
+                            "target_id",
                             "uploaded_by_id",
                             "uploaded_by_username"
                           ],
@@ -45426,10 +45433,10 @@
                       "account_username": {
                         "anyOf": [
                           {
-                            "type": "null"
+                            "type": "string"
                           },
                           {
-                            "type": "string"
+                            "type": "null"
                           }
                         ]
                       },

@@ -17557,7 +17557,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "ecfe3169a16ae96151db062eb864938882011171aff5c6aecd1b3f26e603fb9a",
+      "hash": "003a245a950976a8fac8a811714da90a520fb81ce4bea44e766b1504c34dcb26",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -18750,6 +18750,12 @@
                                   }
                                 ]
                               }
+                            },
+                            "target_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
                             }
                           },
                           "type": "object"
@@ -19742,6 +19748,12 @@
                               }
                             },
                             "registered_image_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "target_id": {
                               "required": true,
                               "schema": {
                                 "type": "string"
@@ -107729,7 +107741,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "fbe968434ac6f6fd0ee49517b7891934c0087f6675c6001bf5cdee10103049e3",
+        "hash": "192f0ce3575e2d0022667a2235af16e04ac7c7e2c8c48885359bc42bba9e0e8a",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {
