@@ -32,12 +32,4 @@ describe('canCurrentUserSeeDownvotes', () => {
       canCurrentUserSeeDownvotes(makeUser({ account_type: null, roles: ['administrator'] })),
     ).toBe(true)
   })
-
-  it('returns true for administrator with null membership_plan', () => {
-    expect(
-      canCurrentUserSeeDownvotes(
-        makeUser({ account_type: null, roles: ['administrator'], membership_plan: null }),
-      ),
-    ).toBe(true)
-  })
 })

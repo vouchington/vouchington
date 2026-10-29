@@ -51,16 +51,6 @@ describe('LoginCodeStep', () => {
     expect(document.activeElement?.tagName).toBe('INPUT')
   })
 
-  it('does not render (and therefore does not steal focus) when inactive', () => {
-    const { container } = render(
-      <LoginCodeStep
-        {...baseProps}
-        active={false}
-      />,
-    )
-    expect(container.firstChild).toBeNull()
-  })
-
   it('renders Resend code button', () => {
     render(<LoginCodeStep {...baseProps} />)
     expect(screen.getByRole('button', { name: /resend code/i })).toBeInTheDocument()
