@@ -54,13 +54,6 @@ describe('registered admin read projections', () => {
     const pages = await invoke('list_user_landing_pages', { user_id: user.id, limit: 1 })
     expect(pages.isError).not.toBe(true)
     expect(JSON.stringify(pages.structuredContent)).toContain(page.landingPageId)
-    const identity = await invoke('get_landing_page_identity', { page_id: page.landingPageId })
-    expect(identity.isError).not.toBe(true)
-    expect(identity.structuredContent).toEqual({
-      owner_user_id: user.id,
-      owner_username: user.username,
-      page_slug: page.slug,
-    })
     const analytics = await invoke('get_landing_page_analytics', {
       username: user.username,
       slug: page.slug,
@@ -73,6 +66,27 @@ describe('registered admin read projections', () => {
         slug: expect.stringContaining(page.slug),
       },
       analytics: { conversion_funnel: { total_signups: 0 } },
+    })
+    expect(await readStaffActionHistory(admin.id)).toEqual(history)
+  })
+
+  it('resolves a landing page UUID to its owner and slug without audit writes', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const user = await createTestUser()
+    const page = await createTestLandingPage(user.id, 'Synthetic identity lookup page')
+    const history = await readStaffActionHistory(admin.id)
+    const identity = await callMcpTool(
+      'get_landing_page_identity',
+      { page_id: page.landingPageId },
+      { ...admin, membership_plan: null },
+      ['editorial:read'],
+      ADMIN_MCP_SERVER_CONFIG,
+    )
+    expect(identity.isError).not.toBe(true)
+    expect(identity.structuredContent).toEqual({
+      owner_user_id: user.id,
+      owner_username: user.username,
+      page_slug: page.slug,
     })
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
   })
