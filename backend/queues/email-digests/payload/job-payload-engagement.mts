@@ -14,6 +14,13 @@ import {
   topicsVariableKeys,
 } from './job-payload-contract.mts'
 import { JobPayloadError } from '@queues/emails/payload/job-payload-error'
+import {
+  assertExactKeys,
+  asRecord,
+  optionalNullableString,
+  optionalString,
+  requiredString,
+} from '@queues/emails/payload/job-payload-read'
 
 const communityCountKeyList: string[] = []
 for (const [key, kind] of Object.entries(communityItemVariableKeys)) {
@@ -52,7 +59,7 @@ function listVariables<T>(
   allowed: Record<keyof T & string, unknown>,
   readItem: (item: unknown) => void,
 ): Record<string, unknown> {
-  const record = asRecord(data)
+  const record = asRecord(data, 'variables')
   assertExactKeys(record, Object.keys(allowed))
   requiredString(record, 'settingsUrl')
   requiredString(record, 'unsubscribeUrl')
@@ -66,7 +73,7 @@ function listVariables<T>(
 }
 
 function topicItem(item: unknown): void {
-  const record = asRecord(item)
+  const record = asRecord(item, 'variables')
   assertExactKeys(record, Object.keys(topicItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
@@ -74,7 +81,7 @@ function topicItem(item: unknown): void {
 }
 
 function referralItem(item: unknown): void {
-  const record = asRecord(item)
+  const record = asRecord(item, 'variables')
   assertExactKeys(record, Object.keys(referralItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
@@ -82,7 +89,7 @@ function referralItem(item: unknown): void {
 }
 
 function sourceItem(item: unknown): void {
-  const record = asRecord(item)
+  const record = asRecord(item, 'variables')
   assertExactKeys(record, Object.keys(sourceItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
@@ -90,7 +97,7 @@ function sourceItem(item: unknown): void {
 }
 
 function moderationVariables(data: unknown): Record<string, unknown> {
-  const record = asRecord(data)
+  const record = asRecord(data, 'variables')
   assertExactKeys(record, Object.keys(moderationVariableKeys))
   requiredString(record, 'generatedForDate')
   requiredString(record, 'dispatchTimeZone')
@@ -105,7 +112,7 @@ function moderationVariables(data: unknown): Record<string, unknown> {
 }
 
 function communityItem(item: unknown): void {
-  const record = asRecord(item)
+  const record = asRecord(item, 'variables')
   assertExactKeys(record, Object.keys(communityItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
@@ -118,37 +125,6 @@ function communityItem(item: unknown): void {
       throw new JobPayloadError(`${key} must be a number`)
     }
   }
-}
-
-function asRecord(data: unknown): Record<string, unknown> {
-  if (!isRecord(data)) throw new JobPayloadError('variables must be an object')
-  return data
-}
-
-function isRecord(data: unknown): data is Record<string, unknown> {
-  return data !== null && typeof data === 'object' && !Array.isArray(data)
-}
-
-function assertExactKeys(record: Record<string, unknown>, allowed: readonly string[]): void {
-  for (const key of Object.keys(record)) {
-    if (!allowed.includes(key)) throw new JobPayloadError(`unexpected property ${key}`)
-  }
-}
-
-function requiredString(record: Record<string, unknown>, key: string): void {
-  if (typeof record[key] !== 'string') throw new JobPayloadError(`${key} must be a string`)
-}
-
-function optionalString(record: Record<string, unknown>, key: string): void {
-  const value = record[key]
-  if (value === undefined) return
-  if (typeof value !== 'string') throw new JobPayloadError(`${key} must be a string`)
-}
-
-function optionalNullableString(record: Record<string, unknown>, key: string): void {
-  const value = record[key]
-  if (value === undefined || value === null) return
-  if (typeof value !== 'string') throw new JobPayloadError(`${key} must be a string or null`)
 }
 
 function optionalNumber(record: Record<string, unknown>, key: string): void {
