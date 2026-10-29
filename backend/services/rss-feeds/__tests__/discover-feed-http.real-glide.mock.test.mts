@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { randomUUID } from 'node:crypto'
 import { Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
@@ -13,7 +14,6 @@ import { dispatchUserRssFeedImport } from '../../user-import-export/rss-feed-imp
 import {
   getRssFeedImport,
   processRssFeedImportRow,
-  submitRssFeedImport,
 } from '../../user-import-export/rss-feed-imports.mts'
 import { processCrawlerJob } from '../../../workers/crawler/processors.mts'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -43,7 +43,7 @@ async function runHtmlImport(options: {
   const { hostname } = options
   const pageUrl = `${options.inputProtocol ?? 'https:'}//${hostname}/blog`
   const feedUrl = `${options.inputProtocol === 'http:' ? 'http:' : 'https:'}//${hostname}/feed.xml`
-  const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
+  const submitted = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [pageUrl])
   const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
   const crawlsSettled = Promise.withResolvers<Job[]>()
   const rowsSettled = Promise.withResolvers<void>()

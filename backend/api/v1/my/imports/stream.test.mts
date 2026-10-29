@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -5,7 +6,6 @@ import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createImportBatch } from '@services/admin-imports/create-batch'
 import { updateRowCompleted } from '@services/admin-imports/update-row-status'
-import { submitRssFeedImport } from '@services/user-import-export/rss-feed-imports'
 import { updateRssFeedImportRowCompleted } from '@services/user-import-export/rss-feed-import-row-updates'
 import type { PrivateUser } from '@services/users/types'
 
@@ -112,7 +112,7 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
   })
 
   it('streams progress for async user RSS import IDs', async () => {
-    const submitted = await submitRssFeedImport(
+    const submitted = await createRssFeedImportBatchForTest(
       user,
       WEB_PROVENANCE,
       ['https://user-rss-stream-test.example.com/rss'],
@@ -162,7 +162,7 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
 
   it('emits done for already-completed async user RSS import IDs', async () => {
     const rssFeed = await createTestRssFeed({})
-    const submitted = await submitRssFeedImport(
+    const submitted = await createRssFeedImportBatchForTest(
       user,
       WEB_PROVENANCE,
       ['https://completed-user-rss-stream-test.example.com/rss'],

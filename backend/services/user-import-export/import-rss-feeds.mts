@@ -146,7 +146,7 @@ async function isUserFollowingRssFeed(userId: string, rssFeedId: string): Promis
   return rows.length > 0
 }
 
-export async function recordRssFeedImportRequest(
+async function recordRssFeedImportRequest(
   userId: string,
   inputValue: string,
   rssFeedId: string,

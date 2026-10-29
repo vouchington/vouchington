@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { randomUUID } from 'node:crypto'
 import { Queue, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
@@ -16,7 +17,6 @@ import {
   getFirstRssFeedImportRowId,
   getRssFeedImportDiscoveriesForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
-import { submitRssFeedImport } from '../../user-import-export/rss-feed-imports.mts'
 import { processCrawlerJob } from '../../../workers/crawler/processors.mts'
 import { completeRssFeedImportDiscovery, discoverFeedUrlFromHtml } from '../discover-feed.mts'
 import { RssFeedDiscoveryPendingError } from '../discovery-pending.mts'
@@ -32,7 +32,7 @@ describe('crawler import discovery completion', () => {
   it('replays a pending crawl with the same generation after redispatch', async () => {
     const user = await createTestUser()
     const pageUrl = `https://discovery-replay-${randomUUID()}.example.com/blog`
-    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
+    const submitted = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [pageUrl])
     const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
     try {
       await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(

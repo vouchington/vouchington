@@ -1,12 +1,9 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
-import {
-  getRssFeedImport,
-  processRssFeedImportRow,
-  submitRssFeedImport,
-} from './rss-feed-imports.mts'
+import { getRssFeedImport, processRssFeedImportRow } from './rss-feed-imports.mts'
 // The external feed transport waits for the production deadline's abort signal.
 const hangingFetchOptions = {
   dependencies: {
@@ -38,7 +35,7 @@ describe('RSS feed import row budget', () => {
   })
 
   async function submitOneFeed(): Promise<{ importId: string; rowId: string }> {
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [
+    const created = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [
       `https://hangs-${crypto.randomUUID()}.example.com/rss`,
     ])
     return {

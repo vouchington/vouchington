@@ -1,3 +1,4 @@
+import { topicImportIdempotencyKeyForTest } from '@voucha/test-helpers/entities/topic-import-idempotency'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -15,10 +16,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 
 import { getRssFeedImport } from '@services/user-import-export/rss-feed-imports'
-import {
-  admitImportedTopicRecommendation,
-  stableTopicImportIdempotencyKey,
-} from '@services/user-import-export/admit-topic-recommendation'
+import { admitImportedTopicRecommendation } from '@services/user-import-export/admit-topic-recommendation'
 import { prepareTopicInput } from '@services/user-import-export/import-topics-queries'
 import {
   claimContributionAdmission,
@@ -108,7 +106,7 @@ describe('POST /api/v1/my/import/topics', () => {
     }
     const claim = await claimContributionAdmission(
       administrator.id,
-      stableTopicImportIdempotencyKey(administrator.id, importAttemptId, input.slug),
+      topicImportIdempotencyKeyForTest(administrator.id, importAttemptId, input.slug),
       recommendationIntent,
       {
         route: 'my.import.topics.recommendation',

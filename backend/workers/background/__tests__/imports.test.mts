@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { afterAll, afterEach, describe, expect, it, onTestFinished } from 'vitest'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { adminImportsWorkConfig } from '@queues/admin-imports/config'
@@ -18,7 +19,6 @@ import { dispatchAdminTopicImport } from '@services/admin-imports/dispatch-batch
 import { userImportExportConfig } from '@services/user-import-export/config'
 import { dispatchUserRssFeedImport } from '@services/user-import-export/rss-feed-import-dispatch'
 import { updateRssFeedImportRowFailed } from '@services/user-import-export/rss-feed-import-row-updates'
-import { submitRssFeedImport } from '@services/user-import-export/rss-feed-imports'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   deleteDynamicConfigFieldsForTest,
@@ -99,7 +99,7 @@ describe('imports background domain', () => {
     )
     const user = await createTestUser()
     const stamp = Date.now()
-    const submitted = await submitRssFeedImport(
+    const submitted = await createRssFeedImportBatchForTest(
       user,
       WEB_PROVENANCE,
       Array.from({ length: 5 }, (_, index) => `https://paged-${stamp}-${index}.example.com/rss`),

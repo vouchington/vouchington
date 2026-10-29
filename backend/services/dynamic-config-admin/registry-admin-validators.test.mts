@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { dynamicConfigRegistry } from './registry.mts'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
 import { RSS_FEED_CRAWL_MAX_VALUES } from '@services/rss-feeds/crawl-config'
-import { DEFAULT_USER_IMPORT_EXPORT_CONFIG } from '@services/user-import-export/config'
+import { getUserImportExportConfig } from '@services/user-import-export/config'
 import { normalizeFields } from '@vouchington/dynamic-config'
 import { DynamicConfigValidationError, validateDynamicConfigUpdate } from 'valkyries/dynamic-config'
 
-const VALID_USER_IMPORT_EXPORT_FIELDS = { ...DEFAULT_USER_IMPORT_EXPORT_CONFIG }
+const VALID_USER_IMPORT_EXPORT_FIELDS = { ...getUserImportExportConfig() }
 
 const VALID_RSS_FEED_CRAWL_FIELDS = {
   should_ignore_robots_txt: true,

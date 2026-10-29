@@ -57,7 +57,7 @@ export async function admitImportedTopicRecommendation(
 }
 
 /** UUID-shaped identity stable for one actor's retry of one slug within one import attempt. */
-export function stableTopicImportIdempotencyKey(
+function stableTopicImportIdempotencyKey(
   actorId: string,
   importAttemptId: string,
   topicSlug: string,

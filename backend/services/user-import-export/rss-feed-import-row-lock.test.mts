@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -13,11 +14,7 @@ import {
   observeRssFeedImportRowLockForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
 import { importSingleRssFeed } from './import-rss-feeds.mts'
-import {
-  getRssFeedImport,
-  processRssFeedImportRow,
-  submitRssFeedImport,
-} from './rss-feed-imports.mts'
+import { getRssFeedImport, processRssFeedImportRow } from './rss-feed-imports.mts'
 import { RssFeedImportRowBusyError, withRssFeedImportRowLock } from './rss-feed-import-row-lock.mts'
 
 describe('RSS feed import row serialization', () => {
@@ -44,7 +41,7 @@ describe('RSS feed import row serialization', () => {
 
   it('blocks only the claimed row and processes it once released', async () => {
     const user = await createTestUser()
-    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [
+    const submitted = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [
       'not-a-feed-url',
       'also-not-a-feed-url',
     ])

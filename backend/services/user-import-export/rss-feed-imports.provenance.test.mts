@@ -3,6 +3,7 @@
  * the submitting request's provenance, and the job records it on every feed the import creates
  * instead of falling back to `system`.
  */
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
@@ -18,11 +19,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import {
-  getRssFeedImport,
-  processRssFeedImportRow,
-  submitRssFeedImport,
-} from './rss-feed-imports.mts'
+import { getRssFeedImport, processRssFeedImportRow } from './rss-feed-imports.mts'
 
 const feedFetchOptions = {
   dependencies: {
@@ -51,7 +48,7 @@ describe('user RSS feed import provenance', () => {
 
   async function submitAndProcess(provenance: ContentProvenance) {
     const importUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const created = await submitRssFeedImport(importUser, provenance, [newFeedUrl()], {
+    const created = await createRssFeedImportBatchForTest(importUser, provenance, [newFeedUrl()], {
       should_follow_imported_feeds: false,
     })
     await processRssFeedImportRow(
@@ -87,8 +84,12 @@ describe('user RSS feed import provenance', () => {
     const web: ContentProvenance = { createdVia: 'web', oauthClientId: null }
     const mcp: ContentProvenance = { createdVia: 'mcp', oauthClientId }
     const [webImport, mcpImport] = await Promise.all([
-      submitRssFeedImport(user, web, [newFeedUrl()], { should_follow_imported_feeds: false }),
-      submitRssFeedImport(user, mcp, [newFeedUrl()], { should_follow_imported_feeds: false }),
+      createRssFeedImportBatchForTest(user, web, [newFeedUrl()], {
+        should_follow_imported_feeds: false,
+      }),
+      createRssFeedImportBatchForTest(user, mcp, [newFeedUrl()], {
+        should_follow_imported_feeds: false,
+      }),
     ])
 
     await Promise.all(
@@ -129,7 +130,7 @@ describe('user RSS feed import provenance', () => {
   })
 
   it('keeps the stored provenance immutable', async () => {
-    const created = await submitRssFeedImport(
+    const created = await createRssFeedImportBatchForTest(
       user,
       { createdVia: 'api', oauthClientId },
       [newFeedUrl()],
@@ -152,7 +153,7 @@ describe('user RSS feed import provenance', () => {
 
   it('rejects an OAuth client on a channel that cannot name one', async () => {
     await expect(
-      submitRssFeedImport(
+      createRssFeedImportBatchForTest(
         user,
         { createdVia: 'web', oauthClientId } as unknown as ContentProvenance,
         [newFeedUrl()],
@@ -162,15 +163,19 @@ describe('user RSS feed import provenance', () => {
 
   it('rejects an OAuth client that does not exist', async () => {
     await expect(
-      submitRssFeedImport(user, { createdVia: 'mcp', oauthClientId: randomUUID() }, [newFeedUrl()]),
+      createRssFeedImportBatchForTest(user, { createdVia: 'mcp', oauthClientId: randomUUID() }, [
+        newFeedUrl(),
+      ]),
     ).rejects.toMatchObject({ code: '23503' })
   })
 
   it('keeps an OAuth client that submitted an import', async () => {
     const submittingClientId = await insertContentProvenanceOAuthClient()
-    await submitRssFeedImport(user, { createdVia: 'mcp', oauthClientId: submittingClientId }, [
-      newFeedUrl(),
-    ])
+    await createRssFeedImportBatchForTest(
+      user,
+      { createdVia: 'mcp', oauthClientId: submittingClientId },
+      [newFeedUrl()],
+    )
 
     await expect(deleteContentProvenanceOAuthClient(submittingClientId)).rejects.toMatchObject({
       code: '23001',

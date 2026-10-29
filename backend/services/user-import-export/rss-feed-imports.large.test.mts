@@ -1,10 +1,11 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { randomUUID } from 'node:crypto'
 import { onTestFinished, describe, expect, it } from 'vitest'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { userImportExportConfig } from './config.mts'
-import { getRssFeedImport, submitRssFeedImport } from './rss-feed-imports.mts'
+import { getRssFeedImport } from './rss-feed-imports.mts'
 
 describe('large RSS feed imports', () => {
   it('stores an import above 500 URLs in bounded insert chunks and lists it in row order', async () => {
@@ -21,7 +22,7 @@ describe('large RSS feed imports', () => {
       (_, index) => `https://scale-import-${suffix}-${index}.example.com/rss`,
     )
 
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
+    const created = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, urls, {
       should_follow_imported_feeds: false,
     })
     const inputs: string[] = []
@@ -52,7 +53,7 @@ describe('large RSS feed imports', () => {
       { length: 5 },
       (_, index) => `https://page-import-${suffix}-${index}.example.com/rss`,
     )
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
+    const created = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, urls, {
       should_follow_imported_feeds: false,
     })
 

@@ -1,3 +1,4 @@
+import { topicImportIdempotencyKeyForTest } from '@voucha/test-helpers/entities/topic-import-idempotency'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserWithAge,
@@ -11,10 +12,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
 import { deletePendingRecommendation } from '@services/topic-recommendations'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
-import {
-  admitImportedTopicRecommendation,
-  stableTopicImportIdempotencyKey,
-} from './admit-topic-recommendation.mts'
+import { admitImportedTopicRecommendation } from './admit-topic-recommendation.mts'
 import { importTopics } from './import-topics.mts'
 
 describe('topic import admission', () => {
@@ -38,7 +36,7 @@ describe('topic import admission', () => {
     await expect(
       getContributionAdmissionPolicyRevisionForTest({
         actorId: user.id,
-        idempotencyKey: stableTopicImportIdempotencyKey(user.id, importAttemptId, slug),
+        idempotencyKey: topicImportIdempotencyKeyForTest(user.id, importAttemptId, slug),
       }),
     ).resolves.toBe('capacity-exempt')
   })

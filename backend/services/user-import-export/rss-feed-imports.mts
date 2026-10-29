@@ -46,7 +46,7 @@ function dedupedImportUrls(urls: string[]): string[] {
   return deduped
 }
 
-export async function submitRssFeedImport(
+async function submitRssFeedImport(
   currentUser: BasicUser,
   provenance: ContentProvenance,
   urls: string[],
