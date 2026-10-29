@@ -117,7 +117,7 @@ describe('CopyrightNoticeForm', () => {
         'https://voucha.ai/discussion/hosted-material',
       )
     })
-    fireEvent.click(screen.getByLabelText('Hosted image 2: Image 2'))
+    fireEvent.click(await screen.findByLabelText('Hosted image 2: Image 2'))
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Claimant' } })
     fireEvent.change(screen.getByLabelText('Mailing address'), { target: { value: '1 Main St' } })
     fireEvent.change(screen.getByLabelText('Email address'), {
