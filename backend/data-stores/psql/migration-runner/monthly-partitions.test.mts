@@ -3,15 +3,15 @@ import {
   createCopyrightPartitionRetirementRecorder,
   createPartitionRetirementFailureFixture,
 } from '@voucha/test-helpers/partition-retirement-failure'
+import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
 import { write } from '../setup.mts'
 import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
-  listMonthlyDropCandidatePage,
-  listMonthlyDropCandidates,
   retireMonthlyPartitionCandidate,
+  retirePartitionsSequentially,
 } from './monthly-partitions.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
@@ -34,17 +34,17 @@ describe('createMonthlyPartitions', () => {
 
 describe('monthly partition retirement', () => {
   it('reads one catalog page at a time using its durable keyset position', async () => {
-    const first = await listMonthlyDropCandidatePage(write, 1)
+    const first = await listMonthlyDropCandidates(write, 1)
     expect(first.candidates).toHaveLength(1)
     expect(first.hasMore).toBe(true)
     expect(first.nextCursor).toBeDefined()
-    const second = await listMonthlyDropCandidatePage(write, 1, first.nextCursor)
+    const second = await listMonthlyDropCandidates(write, 1, first.nextCursor)
     expect(second.candidates).toHaveLength(1)
     expect(second.candidates[0]?.partition).not.toBe(first.candidates[0]?.partition)
   })
 
   it('discovers managed children in dependency order from the live catalog', async () => {
-    const candidates = await listMonthlyDropCandidates(write)
+    const { candidates } = await listMonthlyDropCandidates(write)
     const chunkIndices = candidates.flatMap((candidate, index) =>
       candidate.table === 'crawl_chunks' ? [index] : [],
     )
@@ -68,12 +68,14 @@ describe('monthly partition retirement', () => {
 
   it('discovers bootstrapped copyright monthly children and preserves all ten inside six years', async () => {
     const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
-    const candidates = await listMonthlyDropCandidates(write)
+    const { candidates } = await listMonthlyDropCandidates(write, 50)
     const copyright = candidates.filter(candidate => tables.includes(candidate.table))
     expect(new Set(copyright.map(candidate => candidate.table))).toEqual(new Set(tables))
     expect(copyright.every(candidate => candidate.upperBound instanceof Date)).toBe(true)
 
-    const outcomes = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'))
+    const { outcomes } = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'), {
+      limit: 50,
+    })
     const copyrightOutcomes = outcomes.filter(outcome => tables.includes(outcome.table))
     expect(copyrightOutcomes).toHaveLength(copyright.length)
     expect(copyrightOutcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
@@ -82,10 +84,15 @@ describe('monthly partition retirement', () => {
   it('routes all ten copyright children through guarded cleanup only at 72 calendar months', async () => {
     const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
     const before = createCopyrightPartitionRetirementRecorder(tables)
-    const refusals = await cleanupPartitions(
-      new Date('2026-02-28T23:59:59.999Z'),
-      before.query,
-      before.begin,
+    const beforeCandidates = await listMonthlyDropCandidates(before.query)
+    const refusals = await retirePartitionsSequentially(
+      beforeCandidates.candidates,
+      candidate =>
+        retireMonthlyPartitionCandidate(
+          candidate,
+          new Date('2026-02-28T23:59:59.999Z'),
+          before.begin,
+        ),
     )
     expect(refusals).toHaveLength(tables.length)
     expect(refusals.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
@@ -94,10 +101,15 @@ describe('monthly partition retirement', () => {
     ).toBe(false)
 
     const boundary = createCopyrightPartitionRetirementRecorder(tables)
-    const routed = await cleanupPartitions(
-      new Date('2026-03-01T00:00:00.000Z'),
-      boundary.query,
-      boundary.begin,
+    const boundaryCandidates = await listMonthlyDropCandidates(boundary.query)
+    const routed = await retirePartitionsSequentially(
+      boundaryCandidates.candidates,
+      candidate =>
+        retireMonthlyPartitionCandidate(
+          candidate,
+          new Date('2026-03-01T00:00:00.000Z'),
+          boundary.begin,
+        ),
     )
     expect(routed).toHaveLength(tables.length)
     expect(routed.every(outcome => outcome.outcome === 'dropped')).toBe(true)

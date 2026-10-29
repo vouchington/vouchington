@@ -3,9 +3,9 @@ import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
-  listMonthlyDropCandidates,
   retireMonthlyPartitionCandidate,
 } from '@data-stores/psql/migration-runner/monthly-partitions'
+import { listMonthlyDropCandidates } from '@data-stores/psql/migration-runner/monthly-partition-candidates'
 import { getTopicRevisionsForTest } from '@voucha/test-helpers/entities/topic-revisions'
 import {
   createTestTopicRevisionRetirementChild,
@@ -99,8 +99,9 @@ describe('monthly topic revisions', () => {
       ).padStart(2, '0')}`,
     )
     expect(
-      (await listMonthlyDropCandidates()).filter(candidate => candidate.table === 'topic_revisions')
-        .length,
+      (await listMonthlyDropCandidates()).candidates.filter(
+        candidate => candidate.table === 'topic_revisions',
+      ).length,
     ).toBeGreaterThanOrEqual(4)
     await expect(createMonthlyPartitions()).resolves.toBeUndefined()
   })
@@ -117,7 +118,7 @@ describe('monthly topic revisions', () => {
     try {
       await seedTestHistoricalTopicRevision(topicId, admin.id)
       expect(await getTopicRevisionsForTest(topicId)).toHaveLength(1)
-      const candidates = await listMonthlyDropCandidates()
+      const { candidates } = await listMonthlyDropCandidates()
       expect(candidates.some(candidate => candidate.partition === fixture.partition)).toBe(true)
 
       const result = await cleanupPartitions(new Date('2013-01-15T00:00:00.000Z'), { limit: 50 })

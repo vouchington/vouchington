@@ -13,14 +13,7 @@ const MAX_PARTITION_CLEANUP_LIMIT = 50
 
 export async function listMonthlyDropCandidates(
   query: QueryExecutor = write,
-): Promise<PartitionDropCandidate[]> {
-  const page = await listMonthlyDropCandidatePage(query, MAX_PARTITION_CLEANUP_LIMIT)
-  return page.candidates
-}
-
-export async function listMonthlyDropCandidatePage(
-  query: QueryExecutor,
-  limit: number,
+  limit: number = MAX_PARTITION_CLEANUP_LIMIT,
   after?: PartitionCleanupCursor,
 ): Promise<{
   candidates: PartitionDropCandidate[]
@@ -31,7 +24,7 @@ export async function listMonthlyDropCandidatePage(
     throw new Error('Monthly partition page limit is outside the supported range')
   const managed = filterRetainedMonthlyPartitionTables(ALL_MONTHLY_PARTITION_TABLES)
   const { rows } = await query(
-    `/* listMonthlyDropCandidatePage */
+    `/* listMonthlyDropCandidates */
       SELECT parent.relname::text AS parent_table,
              child.relname::text AS partition_table,
              managed.priority

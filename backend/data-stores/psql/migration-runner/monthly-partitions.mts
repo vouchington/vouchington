@@ -20,13 +20,8 @@ import {
   type PartitionDropRefusal,
 } from './partition-drop-guard.mts'
 import {
-  listMonthlyDropCandidatePage,
-  type PartitionCleanupCursor,
-} from './monthly-partition-candidates.mts'
-
-export {
   listMonthlyDropCandidates,
-  listMonthlyDropCandidatePage,
+  type PartitionCleanupCursor,
 } from './monthly-partition-candidates.mts'
 
 export type PartitionDropOutcome = {
@@ -52,7 +47,7 @@ export async function cleanupPartitions(
   referenceDate: Date = new Date(),
   options: { limit?: number; after?: PartitionCleanupCursor; query?: QueryExecutor } = {},
 ): Promise<PartitionCleanupPage> {
-  const page = await listMonthlyDropCandidatePage(
+  const page = await listMonthlyDropCandidates(
     options.query ?? write,
     options.limit ?? DEFAULT_PARTITION_CLEANUP_LIMIT,
     options.after,
