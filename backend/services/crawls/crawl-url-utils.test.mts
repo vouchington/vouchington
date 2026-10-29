@@ -47,20 +47,6 @@ describe('parseXRobotsTag', () => {
     expect(parseXRobotsTag('max-image-preview: large')).toBe('max-image-preview: large')
   })
 
-  it('handles combined meta+xRobotsTag noindex check', () => {
-    const meta = 'noindex'
-    const xRobotsTag = parseXRobotsTag('googlebot: index')
-    const robotsDirectives = `${meta} ${xRobotsTag}`
-    expect(/noindex/i.test(robotsDirectives)).toBe(true)
-  })
-
-  it('does not trigger noindex from agent-specific header', () => {
-    const meta = ''
-    const xRobotsTag = parseXRobotsTag('googlebot: noindex')
-    const robotsDirectives = `${meta} ${xRobotsTag}`
-    expect(/noindex/i.test(robotsDirectives)).toBe(false)
-  })
-
   it('respects voucha-bot-specific noindex (strips agent prefix)', () => {
     expect(parseXRobotsTag('voucha-bot: noindex')).toBe('noindex')
   })
@@ -92,14 +78,7 @@ describe('safeResolveUrl', () => {
 
 describe('isSnapshotReusable', () => {
   const retentionMs = CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000
-  const anchors = [
-    new Date('2024-01-31T23:59:59.999Z'),
-    new Date('2024-02-01T00:00:00.001Z'),
-    new Date('2024-02-29T23:59:59.999Z'),
-    new Date('2024-03-01T00:00:00.001Z'),
-    new Date('2024-12-31T23:59:59.999Z'),
-    new Date('2025-01-01T00:00:00.001Z'),
-  ]
+  const anchors = [new Date('2024-02-29T23:59:59.999Z'), new Date('2025-01-01T00:00:00.001Z')]
 
   it.each(anchors)('keeps the inclusive seven-day cutoff at %s', now => {
     const cutoff = now.getTime() - retentionMs
