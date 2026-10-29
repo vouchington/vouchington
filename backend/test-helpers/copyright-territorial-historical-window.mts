@@ -9,7 +9,6 @@ import {
   openCopyrightSecrets,
 } from '../services/copyright-notices/encryption-keys.mts'
 import sql from 'sql-template-strings'
-import { v7 as uuidv7 } from 'uuid'
 import { lockCopyrightJurisdictionPolicy } from './copyright-jurisdiction-policy-lock.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 import { getTerritorialInformedWindow } from '../services/copyright-notices/territorial-informed-at.mts'
