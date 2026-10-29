@@ -97,9 +97,7 @@ export type TestAiUsageRecordRow = {
 
 /**
  * Looks up the most recent ai_usage_records row for a given agent + post, or null if none
- * exists yet. Every real recordAiUsage call site fires it without awaiting (cost recording must
- * never fail the request it's billing for), so the insert can land after the triggering call has
- * already resolved -- pair this with pollUntilNotNull rather than reading once immediately after.
+ * exists yet. Wait for the owned recording operation to complete before checking this snapshot.
  */
 export async function findAiUsageRecordForPost(
   postId: string,

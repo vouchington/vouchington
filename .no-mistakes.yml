@@ -1819,9 +1819,6 @@ rules:
   - name: Vitest tests do not poll or wait on timers
     rule: forbidden-calls
     scope: repository
-    # Remaining polling violations are tracked by #2145.
-    exclude:
-      - 'backend/test-helpers/polling.test.mts'
     options:
       roots:
         - vitest: true
@@ -1845,26 +1842,10 @@ rules:
         - exact: vi.waitFor
         - exact: vi.waitUntil
         - exact: expect.poll
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: waitForCondition
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: waitForConditionThenObliterate
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: pollUntilNotNull
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: waitForQueueJobs
 
   - name: Test helpers and vitest setup do not invoke real timers or polls
     rule: forbidden-calls
     scope: repository
-    # Remaining polling violations are tracked by #2145.
-    exclude:
-      - 'backend/test-helpers/polling.mts'
-      - 'backend/test-helpers/polling.test.mts'
     options:
       roots:
         - glob:
@@ -1901,18 +1882,6 @@ rules:
         - exact: vi.waitFor
         - exact: vi.waitUntil
         - exact: expect.poll
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: waitForCondition
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: waitForConditionThenObliterate
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: pollUntilNotNull
-        - function:
-            file: backend/test-helpers/polling.mts
-            symbol: waitForQueueJobs
 
   - name: Playwright tests do not poll on timers
     rule: forbidden-calls

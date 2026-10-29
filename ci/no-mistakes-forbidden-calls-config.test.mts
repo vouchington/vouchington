@@ -25,15 +25,6 @@ const pollTargets = [
   { exact: 'vi.waitFor' },
   { exact: 'vi.waitUntil' },
   { exact: 'expect.poll' },
-  { function: { file: 'backend/test-helpers/polling.mts', symbol: 'waitForCondition' } },
-  {
-    function: {
-      file: 'backend/test-helpers/polling.mts',
-      symbol: 'waitForConditionThenObliterate',
-    },
-  },
-  { function: { file: 'backend/test-helpers/polling.mts', symbol: 'pollUntilNotNull' } },
-  { function: { file: 'backend/test-helpers/polling.mts', symbol: 'waitForQueueJobs' } },
 ]
 
 function withoutBaseline(rule: ForbiddenCallsRule): Omit<ForbiddenCallsRule, 'exclude'> {
@@ -73,8 +64,6 @@ describe('no-mistakes forbidden-calls config', () => {
       rules.filter(candidate => candidate.exclude !== undefined).map(candidate => candidate.name),
     ).toEqual([
       'Only canonical API routes may start an SSE response',
-      'Vitest tests do not poll or wait on timers',
-      'Test helpers and vitest setup do not invoke real timers or polls',
     ])
     for (const candidate of rules) {
       if (candidate.exclude === undefined) continue
