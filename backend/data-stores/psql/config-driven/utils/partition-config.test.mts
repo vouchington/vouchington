@@ -44,6 +44,7 @@ describe('partition drop policy coverage', () => {
       expect(PARTITION_DROP_POLICIES[table]?.legalHoldAccountColumn).toBe('post_author_user_id')
     }
     expect(PARTITION_DROP_POLICIES.post_clearance_changes?.retirementReferenceTables).toEqual([
+      'moderation_training_feedbacks',
       'posts',
       'retained_user_identities',
     ])

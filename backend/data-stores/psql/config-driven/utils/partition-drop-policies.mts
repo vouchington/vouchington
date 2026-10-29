@@ -100,10 +100,11 @@ PARTITION_DROP_POLICIES['mcp_call_audit_events'] = {
 }
 
 // Owner-approved minimum for both transition histories. Retire only complete calendar months.
-// Referenced tables are locked first so FK teardown cannot invert the lock order (see
-// guard-and-retire-monthly-partition.mts).
+// retirementReferenceTables lists every table on either side of the history table's foreign keys
+// (outbound references and inbound referencing tables, per the schema snapshot). They are locked
+// first so FK teardown cannot invert the lock order (see guard-and-retire-monthly-partition.mts).
 const TRANSITION_HISTORY_REFERENCES: Readonly<Record<string, readonly string[]>> = {
-  post_clearance_changes: ['posts', 'retained_user_identities'],
+  post_clearance_changes: ['moderation_training_feedbacks', 'posts', 'retained_user_identities'],
   community_post_review_changes: [
     'communities',
     'community_post_reviews',

@@ -65,7 +65,7 @@ describe('monthly partition retirement locks', () => {
   })
 
   it.each([
-    ['post_clearance_changes', 'posts, retained_user_identities'],
+    ['post_clearance_changes', 'moderation_training_feedbacks, posts, retained_user_identities'],
     [
       'community_post_review_changes',
       'communities, community_post_reviews, retained_user_identities',
