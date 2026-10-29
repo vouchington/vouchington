@@ -1,4 +1,3 @@
-import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { ClearedCategoryTopicMapping } from './category-topic-votes.mts'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
@@ -24,8 +23,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
   formerTopicId: string | undefined,
   rawPage: CategoryClearRawPage,
 ): Promise<{ rows: ReResolvedCategoryTopicMapping[]; hasMore: boolean }> {
-  const CATEGORY_CLEAR_BATCH_SIZE = getRssFeedItemsWorkLimit('category_clear_batch_size')
-  const parameters = [topicAliasId, alias, formerTopicId ?? null, CATEGORY_CLEAR_BATCH_SIZE]
+  const parameters = [topicAliasId, alias, formerTopicId ?? null, rawPage.rows.length]
   const sourcePredicate =
     rawPage.match === 'alias_id'
       ? 'category.topic_alias_id = $1::uuid'
