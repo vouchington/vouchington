@@ -10,7 +10,6 @@ function createSession(overrides: {
 }) {
   const settings = {
     process_id: 12345,
-    version: 180006,
     locale: 'C',
     log_lock_waits: 'off',
     deadlock_timeout: '1s',
@@ -26,6 +25,7 @@ function createSession(overrides: {
     rows: [settings],
     fields: [],
     command: 'SELECT',
+    oid: 0,
     rowCount: 1,
   } satisfies QueryResult<typeof settings>
   const query = vi

@@ -1,6 +1,7 @@
+import type { EventEmitter } from 'node:events'
 import type { PoolClient } from '@data-stores/psql'
 
-type LockNoticeClient = Pick<PoolClient, 'query' | 'on' | 'off'>
+type LockNoticeClient = Pick<PoolClient, 'query'> & Pick<EventEmitter, 'on' | 'off'>
 
 type Settings = {
   log_lock_waits: string
