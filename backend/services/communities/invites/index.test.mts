@@ -1,5 +1,4 @@
 import { it, expect, beforeAll, describe, vi } from 'vitest'
-import * as psql from '@data-stores/psql'
 import * as onErrorModule from '@modules/on-error'
 import {
   createTestUser,
@@ -10,6 +9,7 @@ import {
   updateTestUserUiLocale,
   getTestCommunityInviteStorage,
 } from '@voucha/test-helpers'
+import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
 import { emails } from '@queues/emails/queues'
 import { createInvite, type CreateInviteInput } from './create.mts'
 import { redeemInviteCode } from './redeem.mts'
@@ -81,19 +81,17 @@ describe('index', () => {
     it('still invites and reports the error when the recipient locale lookup fails', async () => {
       const email = `tests+lookup-failure-${crypto.randomUUID().replaceAll('-', '')}@voucha.ai`
       const lookupError = new Error('lookup unavailable')
-      const realRead = psql.read
-      const readSpy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
-        const text = typeof query === 'string' ? query : query.text
-        if (text.includes('getCommunityInviteRecipientUiLocale')) return Promise.reject(lookupError)
-        return realRead(query, ...rest)
-      })
+      const restoreRead = rejectPostgresReadForTest(
+        'getCommunityInviteRecipientUiLocale',
+        lookupError,
+      )
       const reportError = vi.spyOn(onErrorModule, 'default').mockReturnValue(undefined)
       try {
         const invite = await inviteAs(owner.id, community.id, { email })
         expect(invite.invited_email).toBe(email)
         expect(reportError).toHaveBeenCalledWith(lookupError)
       } finally {
-        readSpy.mockRestore()
+        restoreRead()
         reportError.mockRestore()
       }
       const job = await findQueuedInviteEmail(email)
