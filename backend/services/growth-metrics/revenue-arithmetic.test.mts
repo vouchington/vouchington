@@ -53,4 +53,16 @@ describe('growth revenue arithmetic', () => {
       },
     ])
   })
+
+  it('reports each currency separately, sorted by currency code', () => {
+    expect(
+      calculateMembershipRevenue([
+        revenueRow('monthly', '1200'),
+        { ...revenueRow('monthly', '600'), currency_code: 'eur' },
+      ]).mrrByCurrency,
+    ).toEqual([
+      { amount: '6000000', currency: 'eur', scale: 6 },
+      { amount: '12000000', currency: 'usd', scale: 6 },
+    ])
+  })
 })
