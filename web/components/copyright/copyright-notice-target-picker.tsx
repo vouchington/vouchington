@@ -107,6 +107,7 @@ export function CopyrightNoticeTargetPicker({
           />
         </div>
         <Button
+          data-pw='copyright-notice-target-picker-resolve'
           className='mt-6'
           type='button'
           disabled={!targetUrl.trim() || resolving}

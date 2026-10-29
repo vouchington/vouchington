@@ -22,6 +22,8 @@ test.describe('Signed-out copyright notice filing', () => {
   }) => {
     await resetAnonymousBrowserStateBeforeNavigation(page)
     await navigateTo(page, '/copyright/notices/new')
+    await expect(page.getByTestId('copyright-notice-form-submit')).toBeAttached()
+    await expect(page.getByTestId('copyright-notice-target-picker-resolve')).toBeAttached()
 
     await lookUpHostedUse(page, `/discussion/no-such-post-${randomSuffix()}`)
 

@@ -153,6 +153,7 @@ export function CopyrightStaffTerritorialDecision({
         </div>
       )}
       <Button
+        data-pw='copyright-staff-territorial-decision-submit'
         disabled={pending || !canSubmit}
         onClick={submit}
         type='button'

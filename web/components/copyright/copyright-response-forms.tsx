@@ -153,6 +153,7 @@ export function CopyrightCounterNoticeForm({
         <CopyrightMisrepresentationWarning kind='counter_notice' />
         <TurnstileField turnstile={turnstile} />
         <Button
+          data-pw='copyright-response-forms-submit'
           type='submit'
           disabled={
             submitted ||

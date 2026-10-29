@@ -33,6 +33,7 @@ export function CopyrightEmailCorrespondenceActions({
         onChange={onChange}
       />
       <Button
+        data-pw='copyright-email-correspondence-actions-admit'
         disabled={
           loading ||
           !rationale.trim() ||
@@ -44,6 +45,7 @@ export function CopyrightEmailCorrespondenceActions({
         Admit correspondence
       </Button>
       <Button
+        data-pw='copyright-email-correspondence-actions-reject'
         disabled={loading || !rationale.trim() || requiresFallback}
         onClick={onReject}
         variant='destructive'

@@ -90,6 +90,7 @@ export function CopyrightEmailLegalProcessAction({
           </p>
           <div className='flex flex-wrap gap-2'>
             <Button
+              data-pw='copyright-email-legal-process-action-confirm'
               disabled={disabled || pending || !isValidCopyrightEmailLegalProcessReason(reason)}
               onClick={confirm}
               variant='destructive'
@@ -97,6 +98,7 @@ export function CopyrightEmailLegalProcessAction({
               Confirm legal process
             </Button>
             <Button
+              data-pw='copyright-email-legal-process-action-cancel'
               disabled={pending}
               onClick={cancel}
               variant='outline'
@@ -107,6 +109,7 @@ export function CopyrightEmailLegalProcessAction({
         </div>
       ) : (
         <Button
+          data-pw='copyright-email-legal-process-action-open-confirm'
           disabled={disabled}
           onClick={() => setConfirming(true)}
           variant='outline'

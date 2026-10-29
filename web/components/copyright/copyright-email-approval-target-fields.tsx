@@ -170,6 +170,7 @@ export function CopyrightEmailApprovalTargetFields({
       )}
       {groups.length > 1 && (
         <Button
+          data-pw='copyright-email-approval-remove-hosted-image'
           onClick={() =>
             onChange({
               ...draft,

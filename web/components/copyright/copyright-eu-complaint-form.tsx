@@ -66,6 +66,7 @@ export function CopyrightEuComplaintForm({ noticeId }: { noticeId: string }) {
       </div>
       <TurnstileField turnstile={turnstile} />
       <Button
+        data-pw='copyright-eu-complaint-form-submit'
         type='submit'
         size='touchSm'
         disabled={pending || submitted || !explanation.trim() || !turnstile.token}

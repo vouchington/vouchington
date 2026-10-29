@@ -82,6 +82,7 @@ export function CopyrightStaffAppealReview({
         </div>
       ))}
       <Button
+        data-pw='copyright-staff-case-appeal-submit'
         disabled={pending || !canSubmit || activeRestrictions.length === 0}
         onClick={() => submit(review, 'Appeal outcomes recorded.')}
       >
