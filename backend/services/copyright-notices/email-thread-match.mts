@@ -108,22 +108,22 @@ async function findInboundCopyrightEmailThreadMatch(
           ON link.copyright_notice_email_intake_id = ancestors.intake_id
       ) AS "noticeId",
       (
-        SELECT min(direct_edge.ancestor_message_intake_id::text)::uuid
+        SELECT min(direct_edge.ancestor_message_intake_receipt_id::text)::uuid
         FROM copyright_notice_email_message_ancestors direct_edge
         JOIN copyright_notice_email_thread_references parent_message
-          ON parent_message.copyright_notice_email_intake_id = direct_edge.ancestor_message_intake_id
+          ON parent_message.copyright_notice_email_intake_id = direct_edge.ancestor_message_intake_receipt_id
          AND parent_message.reference_kind = 'message_id'
          AND parent_message.token_id = ANY(${tokenIds}::uuid[])
-        WHERE direct_edge.reply_message_intake_id = ${intakeId}
+        WHERE direct_edge.reply_message_intake_receipt_id = ${intakeId}
       ) AS "matchedIntakeId",
       (
         SELECT min(parent_message.token_id::text)::uuid
         FROM copyright_notice_email_message_ancestors direct_edge
         JOIN copyright_notice_email_thread_references parent_message
-          ON parent_message.copyright_notice_email_intake_id = direct_edge.ancestor_message_intake_id
+          ON parent_message.copyright_notice_email_intake_id = direct_edge.ancestor_message_intake_receipt_id
          AND parent_message.reference_kind = 'message_id'
          AND parent_message.token_id = ANY(${tokenIds}::uuid[])
-        WHERE direct_edge.reply_message_intake_id = ${intakeId}
+        WHERE direct_edge.reply_message_intake_receipt_id = ${intakeId}
       ) AS "matchedTokenId",
       `
   matchQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`${intakeId}`))

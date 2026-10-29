@@ -6,7 +6,7 @@ import { createTestUserDirect } from './entities/index.mts'
 export async function seedCopyrightIntakeLegalDelivery(intakeId: string): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* seedCopyrightIntakeLegalDelivery */
     INSERT INTO copyright_notice_delivery_work_items (
-      copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
+      copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext, delivery_attempted_at, sent_at
     ) VALUES (
       ${intakeId}, 'correspondent', 'email_intake_received', 'email',
@@ -49,14 +49,14 @@ export async function seedCopyrightIntakeAuditReview(
   const { rows: recommendation } = await write<{ id: string }>(sql`
     /* seedCopyrightIntakeAuditRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations
-      (copyright_notice_email_intake_id, input_sha256, prompt_version, model,
+      (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
        structured_output_ciphertext)
     VALUES (${intakeId}, ${randomBytes(32)}, 'retention-test-v1', 'test-model', 'v1:advisory')
     RETURNING id`)
   const recommendationId = recommendation[0]!.id
   const { rows } = await write<{ id: string }>(sql`/* seedCopyrightIntakeAuditReview */
     INSERT INTO copyright_notice_email_intake_reviews
-      (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id,
+      (copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id,
        reviewed_by_id, reviewed_at, decision, rationale_ciphertext)
     VALUES (${intakeId}, ${recommendationId}, ${reviewer.id}, ${reviewedAt},
       'rejected', 'v1:test-rationale')
@@ -108,7 +108,7 @@ export async function seedTestCopyrightAncestorEdge(
 ): Promise<void> {
   await write(sql`/* seedTestCopyrightAncestorEdge */
     INSERT INTO copyright_notice_email_message_ancestors
-      (reply_message_intake_id, ancestor_message_intake_id, reference_kind)
+      (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind)
     VALUES (${replyIntakeId}, ${ancestorIntakeId}, 'in_reply_to')`)
 }
 
@@ -171,11 +171,11 @@ export async function readCopyrightIntakeRetentionState(intakeId: string): Promi
       (SELECT COUNT(*)::integer FROM copyright_notice_email_intake_parses
         WHERE copyright_notice_email_intake_id = ${intakeId}) AS parse_count,
       (SELECT body_ciphertext FROM copyright_notice_delivery_work_items
-        WHERE copyright_notice_email_intake_id = ${intakeId}
+        WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
         ORDER BY id DESC LIMIT 1) AS delivery_body,
       (SELECT COUNT(*)::integer FROM copyright_notice_email_message_ancestors
-        WHERE reply_message_intake_id = ${intakeId}
-          OR ancestor_message_intake_id = ${intakeId}) AS ancestor_count`)
+        WHERE reply_message_intake_receipt_id = ${intakeId}
+          OR ancestor_message_intake_receipt_id = ${intakeId}) AS ancestor_count`)
   const row = rows[0]!
   return {
     intakeExists: row.intake_exists,

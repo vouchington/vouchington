@@ -15,10 +15,7 @@ export async function resetCopyrightThreadRetentionCursor(
       cursor_legal_latest_release_at = NULL,
       cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
       cursor_blocker_assessment_id = NULL, cursor_blocker_territorial_decision_id = NULL,
-      cursor_blocker_generation = NULL,
-      cursor_blocker_found_qualifying_assessment = false,
-      cursor_blocker_found_screening_target = false,
-      cursor_blocker_found_claimant_receipt = false
+      cursor_blocker_generation = NULL
     WHERE kind = 'email_thread_references'`)
 }
 
@@ -37,9 +34,6 @@ export async function advanceCopyrightThreadCaseCursor(
       cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
       cursor_blocker_assessment_id = NULL, cursor_blocker_territorial_decision_id = NULL,
       cursor_blocker_generation = NULL,
-      cursor_blocker_found_qualifying_assessment = false,
-      cursor_blocker_found_screening_target = false,
-      cursor_blocker_found_claimant_receipt = false,
       sweep_upper_bound_record_id = ${upperBound}::uuid
     WHERE kind = 'email_thread_references'`)
 }
@@ -72,9 +66,6 @@ export async function saveCopyrightThreadBlockerProof(
       cursor_blocker_assessment_id = ${blocker.assessmentId}::uuid,
       cursor_blocker_territorial_decision_id = ${blocker.territorialDecisionId}::uuid,
       cursor_blocker_generation = ${blocker.generation}::bigint,
-      cursor_blocker_found_qualifying_assessment = ${blocker.foundQualifyingAssessment},
-      cursor_blocker_found_screening_target = ${blocker.foundScreeningTarget},
-      cursor_blocker_found_claimant_receipt = ${blocker.foundClaimantReceipt},
       sweep_upper_bound_record_id = ${upperBound}::uuid
     WHERE kind = 'email_thread_references'`)
 }

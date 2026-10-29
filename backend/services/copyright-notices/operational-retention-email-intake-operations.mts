@@ -17,7 +17,7 @@ export async function deleteChildPage(
     const { rowCount } = await transaction(sql`/* deleteUnlinkedCopyrightEmailRecommendations */
       WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id), candidates AS (
         SELECT id FROM copyright_notice_email_intake_recommendations
-        WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
+        WHERE copyright_notice_email_intake_receipt_id = (SELECT intake_id FROM owner)
         ORDER BY id LIMIT ${remaining + 1} FOR UPDATE
       )
       DELETE FROM copyright_notice_email_intake_recommendations recommendation
@@ -61,15 +61,15 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       (SELECT attachment.created_at FROM copyright_notice_email_intake_attachments attachment
        WHERE attachment.copyright_notice_email_intake_id = intake.id ORDER BY attachment.id DESC LIMIT 1),
       (SELECT recommendation.created_at FROM copyright_notice_email_intake_recommendations recommendation
-       WHERE recommendation.copyright_notice_email_intake_id = intake.id ORDER BY recommendation.id DESC LIMIT 1),
+       WHERE recommendation.copyright_notice_email_intake_receipt_id = intake.id ORDER BY recommendation.id DESC LIMIT 1),
       (SELECT review.created_at FROM copyright_notice_email_intake_reviews review
-       WHERE review.copyright_notice_email_intake_id = intake.id ORDER BY review.id DESC LIMIT 1),
+       WHERE review.copyright_notice_email_intake_receipt_id = intake.id ORDER BY review.id DESC LIMIT 1),
       (SELECT reference.created_at FROM copyright_notice_email_thread_references reference
        WHERE reference.copyright_notice_email_intake_id = intake.id ORDER BY reference.id DESC LIMIT 1),
       (SELECT max(delivery.updated_at) FROM copyright_notice_delivery_work_items delivery
-       WHERE delivery.copyright_notice_email_intake_id = intake.id),
+       WHERE delivery.copyright_notice_email_intake_receipt_id = intake.id),
       (SELECT rationale.created_at FROM copyright_decision_rationales rationale
-       WHERE rationale.copyright_notice_email_intake_id = intake.id
+       WHERE rationale.copyright_notice_email_intake_receipt_id = intake.id
        ORDER BY rationale.id DESC LIMIT 1)
     ) AS last_activity_at,
     EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
@@ -81,10 +81,10 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       OR EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_email_intake_id = intake.id) AS is_linked,
     EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-      WHERE review.copyright_notice_email_intake_id = intake.id
+      WHERE review.copyright_notice_email_intake_receipt_id = intake.id
         AND review.promoted_copyright_notice_id IS NOT NULL) AS has_promoted_review,
     EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
-      WHERE delivery.copyright_notice_email_intake_id = intake.id
+      WHERE delivery.copyright_notice_email_intake_receipt_id = intake.id
         AND delivery.state IN ('pending', 'claimed')) AS has_pending_delivery,
     receipt.erased_at
     FROM copyright_notice_email_intakes intake
@@ -104,33 +104,33 @@ export async function deleteUnlinkedAncestorEdgePage(
   const { rows } =
     direction === 'reply'
       ? await transaction<{ neighbor_id: string }>(sql`/* pageUnlinkedReplyAncestorEdges */
-        SELECT ancestor_message_intake_id AS neighbor_id
+        SELECT ancestor_message_intake_receipt_id AS neighbor_id
         FROM copyright_notice_email_message_ancestors
-        WHERE reply_message_intake_id = ${intakeId}
-          AND ancestor_message_intake_id > COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-        ORDER BY ancestor_message_intake_id LIMIT ${limit}`)
+        WHERE reply_message_intake_receipt_id = ${intakeId}
+          AND ancestor_message_intake_receipt_id > COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        ORDER BY ancestor_message_intake_receipt_id LIMIT ${limit}`)
       : await transaction<{ neighbor_id: string }>(sql`/* pageUnlinkedAncestorReplyEdges */
-        SELECT reply_message_intake_id AS neighbor_id
+        SELECT reply_message_intake_receipt_id AS neighbor_id
         FROM copyright_notice_email_message_ancestors
-        WHERE ancestor_message_intake_id = ${intakeId}
-          AND reply_message_intake_id > COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-        ORDER BY reply_message_intake_id LIMIT ${limit}`)
+        WHERE ancestor_message_intake_receipt_id = ${intakeId}
+          AND reply_message_intake_receipt_id > COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        ORDER BY reply_message_intake_receipt_id LIMIT ${limit}`)
   const neighbors = rows.map(row => row.neighbor_id)
   if (neighbors.length > 0) {
     if (direction === 'reply') {
       await transaction(sql`/* deleteUnlinkedReplyAncestorEdges */
         DELETE FROM copyright_notice_email_message_ancestors edge
-        WHERE edge.reply_message_intake_id = ${intakeId}
-          AND edge.ancestor_message_intake_id = ANY(${neighbors}::uuid[])
+        WHERE edge.reply_message_intake_receipt_id = ${intakeId}
+          AND edge.ancestor_message_intake_receipt_id = ANY(${neighbors}::uuid[])
           AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-            WHERE link.copyright_notice_email_intake_id = edge.ancestor_message_intake_id)`)
+            WHERE link.copyright_notice_email_intake_id = edge.ancestor_message_intake_receipt_id)`)
     } else {
       await transaction(sql`/* deleteUnlinkedAncestorReplyEdges */
         DELETE FROM copyright_notice_email_message_ancestors edge
-        WHERE edge.ancestor_message_intake_id = ${intakeId}
-          AND edge.reply_message_intake_id = ANY(${neighbors}::uuid[])
+        WHERE edge.ancestor_message_intake_receipt_id = ${intakeId}
+          AND edge.reply_message_intake_receipt_id = ANY(${neighbors}::uuid[])
           AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-            WHERE link.copyright_notice_email_intake_id = edge.reply_message_intake_id)`)
+            WHERE link.copyright_notice_email_intake_id = edge.reply_message_intake_receipt_id)`)
     }
   }
   return {

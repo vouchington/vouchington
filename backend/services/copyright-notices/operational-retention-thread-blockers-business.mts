@@ -50,7 +50,7 @@ function businessPageSql(
         )
         SELECT page.id, (page.link_kind = 'thread' AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_email_intake_reviews review
-          WHERE review.copyright_notice_email_intake_id = page.copyright_notice_email_intake_id
+          WHERE review.copyright_notice_email_intake_receipt_id = page.copyright_notice_email_intake_id
           LIMIT 1
         ) AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_email_correspondence_reviews review

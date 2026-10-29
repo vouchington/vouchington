@@ -147,7 +147,7 @@ export async function recordMcpCallAudit(
     await query(
       `/* recordMcpCallAudit:legalRationales */
        INSERT INTO copyright_decision_rationales
-         (id, copyright_notice_id, copyright_notice_email_intake_id,
+         (id, copyright_notice_id, copyright_notice_email_intake_receipt_id,
           copyright_repeat_infringer_review_id, account_user_id, recorded_by_id,
           tool_name, rationale_ciphertext)
        SELECT event.id,

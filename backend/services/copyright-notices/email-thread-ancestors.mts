@@ -78,7 +78,7 @@ export async function recordCopyrightEmailAncestorEdges(
 ): Promise<void> {
   await transaction(sql`/* recordCopyrightEmailAncestorEdges:reply */
     INSERT INTO copyright_notice_email_message_ancestors (
-      reply_message_intake_id, ancestor_message_intake_id, reference_kind
+      reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
     )
     SELECT ${intakeId}::uuid, resolved.ancestor_id, resolved.reference_kind
     FROM (
@@ -100,11 +100,11 @@ export async function recordCopyrightEmailAncestorEdges(
         CASE own.reference_kind WHEN 'in_reply_to' THEN 0 ELSE 1 END
     ) resolved
     ORDER BY resolved.ancestor_id
-    ON CONFLICT (reply_message_intake_id, ancestor_message_intake_id) DO NOTHING
+    ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
   `)
   await transaction(sql`/* recordCopyrightEmailAncestorEdges:waiting */
     INSERT INTO copyright_notice_email_message_ancestors (
-      reply_message_intake_id, ancestor_message_intake_id, reference_kind
+      reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
     )
     SELECT waiting.reply_id, ${intakeId}::uuid, waiting.reference_kind
     FROM (
@@ -137,7 +137,7 @@ export async function recordCopyrightEmailAncestorEdges(
         CASE reference.reference_kind WHEN 'in_reply_to' THEN 0 ELSE 1 END
     ) waiting
     ORDER BY waiting.reply_id
-    ON CONFLICT (reply_message_intake_id, ancestor_message_intake_id) DO NOTHING
+    ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
   `)
 }
 

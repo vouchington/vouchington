@@ -310,7 +310,7 @@ async function assertNoInitialIntakeReview(
 ): Promise<void> {
   const { rows } = await transaction(sql`/* copyrightEmailIntake:noInitialReview */
     SELECT 1 FROM copyright_notice_email_intake_reviews
-    WHERE copyright_notice_email_intake_id = ${intakeId}
+    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
   `)
   assert(!rows[0], 409, 'Thread-linked copyright email cannot receive an initial intake review')
 }
@@ -323,7 +323,7 @@ async function assertRecommendationScope(
   if (!recommendationId) return
   const { rows } = await transaction(sql`/* reviewCopyrightEmailCorrespondence:recommendation */
     SELECT id FROM copyright_notice_email_intake_recommendations
-    WHERE id = ${recommendationId} AND copyright_notice_email_intake_id = ${intakeId}
+    WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}
   `)
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')
 }

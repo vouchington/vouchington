@@ -26,9 +26,6 @@ export type ThreadProofCursor = {
   cursor_blocker_assessment_id: string | null
   cursor_blocker_territorial_decision_id: string | null
   cursor_blocker_generation: string | null
-  cursor_blocker_found_qualifying_assessment: boolean
-  cursor_blocker_found_screening_target: boolean
-  cursor_blocker_found_claimant_receipt: boolean
 }
 
 /** Both paged proofs must match current generations before any irreversible delete. */
@@ -61,9 +58,6 @@ export async function checkCopyrightThreadProofPage(
     assessmentId: cursor.cursor_blocker_assessment_id,
     territorialDecisionId: cursor.cursor_blocker_territorial_decision_id,
     generation: cursor.cursor_blocker_generation,
-    foundQualifyingAssessment: cursor.cursor_blocker_found_qualifying_assessment,
-    foundScreeningTarget: cursor.cursor_blocker_found_screening_target,
-    foundClaimantReceipt: cursor.cursor_blocker_found_claimant_receipt,
   })
   if (blocker.blocked) {
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)

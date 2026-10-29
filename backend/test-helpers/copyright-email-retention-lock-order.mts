@@ -50,7 +50,7 @@ export async function writeCopyrightEmailDuringErasure<T>(
       const { rows } = await writer<{ id: string }>(sql`
         /* writeCopyrightEmailDuringErasure */
         INSERT INTO copyright_notice_email_intake_recommendations
-          (copyright_notice_email_intake_id, input_sha256, prompt_version, model,
+          (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
            structured_output_ciphertext)
         VALUES (${intakeId}, ${Buffer.alloc(32, 7)}, ${randomUUID()},
           'lock-order-test', 'v1:lock-order-test') RETURNING id`)

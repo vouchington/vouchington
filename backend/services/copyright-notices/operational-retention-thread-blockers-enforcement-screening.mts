@@ -31,7 +31,6 @@ export async function readCopyrightThreadEnforcementScreeningPage(
         ...cursor,
         phase: 'enforcement_screening_receipts',
         childId: null,
-        foundScreeningTarget: true,
         blocked: false,
       }
     }
@@ -60,7 +59,6 @@ export async function readCopyrightThreadEnforcementScreeningPage(
         ...cursor,
         phase: 'enforcement_targets',
         childId: null,
-        foundClaimantReceipt: true,
         blocked: false,
       }
     }

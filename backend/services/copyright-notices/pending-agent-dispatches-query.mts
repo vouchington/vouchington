@@ -9,11 +9,11 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
         ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
       WHERE NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation
-        WHERE recommendation.copyright_notice_email_intake_id = intake.id
+        WHERE recommendation.copyright_notice_email_intake_receipt_id = intake.id
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_reviews initial_review
-        WHERE initial_review.copyright_notice_email_intake_id = intake.id
+        WHERE initial_review.copyright_notice_email_intake_receipt_id = intake.id
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_correspondence_reviews decision

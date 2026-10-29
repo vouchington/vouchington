@@ -162,7 +162,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   ),
   table('copyright_notice_lifecycle_change_rationales', { review_rationale_ciphertext: 'redact' }),
   table('copyright_decision_rationales', { rationale_ciphertext: 'redact' }, id =>
-    sql`copyright_notice_id = ${id} OR copyright_notice_email_intake_id IN `.append(
+    sql`copyright_notice_id = ${id} OR copyright_notice_email_intake_receipt_id IN `.append(
       emailIntakesOf(id),
     ),
   ),

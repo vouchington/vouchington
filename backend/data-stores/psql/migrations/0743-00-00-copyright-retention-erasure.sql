@@ -79,7 +79,7 @@ BEGIN
     WHERE notice.id = NEW.copyright_notice_id
       OR notice.id IN (
         SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)
     ORDER BY notice.id
   LOOP
     PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
@@ -88,7 +88,7 @@ BEGIN
     WHERE erased.copyright_notice_id = NEW.copyright_notice_id
       OR erased.copyright_notice_id IN (
         SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)) THEN
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)) THEN
     RETURN NULL;
   END IF;
   RETURN NEW;
@@ -118,22 +118,22 @@ RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
       AND rationale.rationale_ciphertext = 'erased'
       AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
         WHERE erasure.copyright_notice_id = rationale.copyright_notice_id))
-    OR (rationale.copyright_notice_email_intake_id IS NOT NULL AND (
+    OR (rationale.copyright_notice_email_intake_receipt_id IS NOT NULL AND (
       (rationale.rationale_ciphertext = 'erased'
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)
+          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
+          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
               WHERE erasure.copyright_notice_id = link.copyright_notice_id)))
       OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-            WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)
+            WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-          WHERE review.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
+          WHERE review.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id
             AND review.decision = 'rejected' AND review.reviewed_at < retention_bound.eligible_before_at)
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
-          WHERE delivery.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
+          WHERE delivery.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id
             AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= retention_bound.eligible_before_at)))
     ))
     OR (rationale.copyright_repeat_infringer_review_id IS NOT NULL

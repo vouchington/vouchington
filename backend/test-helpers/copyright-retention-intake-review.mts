@@ -12,7 +12,7 @@ export async function insertCopyrightRetentionIntakeReview(input: {
 }) {
   await write(sql`/* insertCopyrightRetentionIntakeReview */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, reviewed_by_id, reviewed_at, decision, rationale_ciphertext
+      copyright_notice_email_intake_receipt_id, reviewed_by_id, reviewed_at, decision, rationale_ciphertext
     ) VALUES (${input.intakeId}, ${input.reviewerId}, ${input.reviewedAt}, 'rejected',
       ${encryptSecret('The intake does not meet the filing requirements.', copyrightEmailIntakePurpose(input.sesMessageId))})`)
 }

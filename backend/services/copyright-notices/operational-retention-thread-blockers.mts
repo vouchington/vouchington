@@ -34,9 +34,6 @@ export async function checkCopyrightThreadBlockerPage(
         assessmentId: null,
         territorialDecisionId: null,
         generation,
-        foundQualifyingAssessment: false,
-        foundScreeningTarget: false,
-        foundClaimantReceipt: false,
       }
     : { ...cursor, phase: cursor.phase ?? 'form_intake', generation }
   const phase = current.phase!

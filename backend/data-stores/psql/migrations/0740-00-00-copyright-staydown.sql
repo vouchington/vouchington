@@ -92,7 +92,7 @@ BEGIN
     SELECT link.copyright_notice_id INTO case_id
     FROM copyright_notice_email_intake_notice_links link
     WHERE link.copyright_notice_email_intake_id =
-      (source_row ->> 'copyright_notice_email_intake_id')::uuid;
+      (source_row ->> 'copyright_notice_email_intake_receipt_id')::uuid;
   ELSIF source_table = 'copyright_notice_delivery_recipients' THEN
     SELECT work_item.copyright_notice_id INTO case_id
     FROM copyright_notice_delivery_work_items work_item
@@ -104,7 +104,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION fn_bump_copyright_thread_blocker_generation()
+CREATE FUNCTION fn_update_copyright_thread_blocker_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE old_case_id uuid; new_case_id uuid; case_id uuid;
 BEGIN
@@ -154,7 +154,7 @@ BEGIN
     EXECUTE format(
       'CREATE TRIGGER trigger_copyright_thread_blocker_generation '
       || 'AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW '
-      || 'EXECUTE FUNCTION fn_bump_copyright_thread_blocker_generation()',
+      || 'EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()',
       source_table);
   END LOOP;
 END;

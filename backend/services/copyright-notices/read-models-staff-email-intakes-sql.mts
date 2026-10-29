@@ -10,7 +10,7 @@ export function copyrightEmailIntakeAwaitingReviewSql(): SQLStatement {
   return sql`
     NOT EXISTS (
       SELECT 1 FROM copyright_notice_email_intake_reviews awaiting_review
-      WHERE awaiting_review.copyright_notice_email_intake_id = intake.id
+      WHERE awaiting_review.copyright_notice_email_intake_receipt_id = intake.id
     )
     AND NOT EXISTS (
       SELECT 1 FROM copyright_notice_email_intake_notice_links awaiting_link

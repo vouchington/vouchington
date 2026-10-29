@@ -73,14 +73,14 @@ COMMENT ON COLUMN mcp_call_audit_events.tool_option IS 'Declared literal option 
 CREATE TABLE IF NOT EXISTS copyright_decision_rationales (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id UUID REFERENCES copyright_notices (id) ON DELETE CASCADE,
-  copyright_notice_email_intake_id UUID REFERENCES copyright_notice_email_intake_receipts (id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_receipt_id UUID REFERENCES copyright_notice_email_intake_receipts (id) ON DELETE RESTRICT,
   copyright_repeat_infringer_review_id UUID REFERENCES copyright_repeat_infringer_reviews (id) ON DELETE RESTRICT,
   account_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   recorded_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   tool_name TEXT NOT NULL CHECK (tool_name ~ '^[a-z_]{1,64}$'),
   rationale_ciphertext TEXT NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at TIMESTAMPTZ NOT NULL GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id,
+  CHECK (num_nonnulls(copyright_notice_id, copyright_notice_email_intake_receipt_id,
     copyright_repeat_infringer_review_id, account_user_id) = 1)
 );
 
@@ -88,8 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__notice
 ON copyright_decision_rationales (copyright_notice_id, id)
 WHERE copyright_notice_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__email_intake
-ON copyright_decision_rationales (copyright_notice_email_intake_id, id)
-WHERE copyright_notice_email_intake_id IS NOT NULL;
+ON copyright_decision_rationales (copyright_notice_email_intake_receipt_id, id)
+WHERE copyright_notice_email_intake_receipt_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__repeat_review
 ON copyright_decision_rationales (copyright_repeat_infringer_review_id, id)
 WHERE copyright_repeat_infringer_review_id IS NOT NULL;
@@ -110,7 +110,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 COMMENT ON TABLE copyright_decision_rationales IS 'Encrypted rationale for an admitted legal MCP decision attempt, retained with a concrete legal case, intake, review or account independently of the short security audit. A later tool failure does not turn this attempted decision into a completed one.';
 COMMENT ON COLUMN copyright_decision_rationales.copyright_notice_id IS 'Copyright case whose decision this rationale accompanies.';
-COMMENT ON COLUMN copyright_decision_rationales.copyright_notice_email_intake_id IS 'Email intake that had not yet been admitted to a copyright case.';
+COMMENT ON COLUMN copyright_decision_rationales.copyright_notice_email_intake_receipt_id IS 'Email intake that had not yet been admitted to a copyright case.';
 COMMENT ON COLUMN copyright_decision_rationales.copyright_repeat_infringer_review_id IS 'Account-level repeat-infringer review when no single copyright case owns the decision.';
 COMMENT ON COLUMN copyright_decision_rationales.account_user_id IS 'Retained account identity for a reinstatement decision when no single case owns it; this identity does not authorize the account.';
 COMMENT ON COLUMN copyright_decision_rationales.recorded_by_id IS 'Retained staff identity that supplied the validated legal rationale.';
@@ -119,11 +119,20 @@ COMMENT ON COLUMN copyright_decision_rationales.rationale_ciphertext IS 'Validat
 
 -- A retained receipt can keep legal rows after source erasure, but may never authorize a new
 -- parse, recommendation, human decision, delivery, rationale, link or thread reference.
-CREATE FUNCTION fn_copyright_email_source_requires_active_receipt()
+CREATE FUNCTION fn_ensure_copyright_email_source_active_receipt()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE intake_id uuid;
 BEGIN
-  intake_id := (to_jsonb(NEW) ->> 'copyright_notice_email_intake_id')::uuid;
+  IF TG_TABLE_NAME IN (
+    'copyright_notice_email_intake_recommendations',
+    'copyright_notice_email_intake_reviews',
+    'copyright_notice_delivery_work_items',
+    'copyright_decision_rationales'
+  ) THEN
+    intake_id := (to_jsonb(NEW) ->> 'copyright_notice_email_intake_receipt_id')::uuid;
+  ELSE
+    intake_id := (to_jsonb(NEW) ->> 'copyright_notice_email_intake_id')::uuid;
+  END IF;
   IF intake_id IS NULL THEN RETURN NEW; END IF;
   PERFORM 1 FROM copyright_notice_email_intakes intake
   WHERE intake.id = intake_id AND intake.raw_storage_object_id IS NOT NULL
@@ -143,31 +152,31 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_email_parse_active_receipt
   BEFORE INSERT ON copyright_notice_email_intake_parses
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_attachment_active_receipt
   BEFORE INSERT ON copyright_notice_email_intake_attachments
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_recommendation_active_receipt
   BEFORE INSERT ON copyright_notice_email_intake_recommendations
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_review_active_receipt
   BEFORE INSERT ON copyright_notice_email_intake_reviews
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_delivery_active_receipt
   BEFORE INSERT ON copyright_notice_delivery_work_items
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_rationale_active_receipt
   BEFORE INSERT ON copyright_decision_rationales
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_link_active_receipt
   BEFORE INSERT ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_reference_active_receipt
   BEFORE INSERT ON copyright_notice_email_thread_references
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 CREATE TRIGGER trigger_copyright_email_correspondence_review_active_receipt
   BEFORE INSERT ON copyright_notice_email_correspondence_reviews
-  FOR EACH ROW EXECUTE FUNCTION fn_copyright_email_source_requires_active_receipt();
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt();
 
 -- Each security-retention family has its own durable keyset position. A completed pass resets
 -- the position so rows that became eligible after an earlier scan are reconsidered.

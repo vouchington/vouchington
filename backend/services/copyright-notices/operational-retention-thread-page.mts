@@ -56,19 +56,19 @@ export async function deleteCaseThreadPage(
   const { rows: edges } = await transaction<{ other_id: string }>(
     replySide
       ? sql`/* scanCopyrightCaseReplyEdges */
-          SELECT ancestor_message_intake_id AS other_id
+          SELECT ancestor_message_intake_receipt_id AS other_id
           FROM copyright_notice_email_message_ancestors
-          WHERE reply_message_intake_id = ${intakeId}
-            AND ancestor_message_intake_id > COALESCE(${edgeCursor}::uuid,
+          WHERE reply_message_intake_receipt_id = ${intakeId}
+            AND ancestor_message_intake_receipt_id > COALESCE(${edgeCursor}::uuid,
               '00000000-0000-0000-0000-000000000000'::uuid)
-          ORDER BY ancestor_message_intake_id LIMIT ${batchSize}`
+          ORDER BY ancestor_message_intake_receipt_id LIMIT ${batchSize}`
       : sql`/* scanCopyrightCaseAncestorEdges */
-          SELECT reply_message_intake_id AS other_id
+          SELECT reply_message_intake_receipt_id AS other_id
           FROM copyright_notice_email_message_ancestors
-          WHERE ancestor_message_intake_id = ${intakeId}
-            AND reply_message_intake_id > COALESCE(${edgeCursor}::uuid,
+          WHERE ancestor_message_intake_receipt_id = ${intakeId}
+            AND reply_message_intake_receipt_id > COALESCE(${edgeCursor}::uuid,
               '00000000-0000-0000-0000-000000000000'::uuid)
-          ORDER BY reply_message_intake_id LIMIT ${batchSize}`,
+          ORDER BY reply_message_intake_receipt_id LIMIT ${batchSize}`,
   )
   if (edges.length === 0) {
     return { deleted: 0, phase: replySide ? 'ancestor_edges' : null, edgeCursor: null }
@@ -78,17 +78,17 @@ export async function deleteCaseThreadPage(
     replySide
       ? sql`/* deleteExpiredCopyrightCaseReplyAncestors */
           DELETE FROM copyright_notice_email_message_ancestors edge
-          WHERE edge.reply_message_intake_id = ${intakeId}
-            AND edge.ancestor_message_intake_id = ANY(${ids}::uuid[])
+          WHERE edge.reply_message_intake_receipt_id = ${intakeId}
+            AND edge.ancestor_message_intake_receipt_id = ANY(${ids}::uuid[])
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other
-              WHERE other.copyright_notice_email_intake_id = edge.ancestor_message_intake_id
+              WHERE other.copyright_notice_email_intake_id = edge.ancestor_message_intake_receipt_id
                 AND other.copyright_notice_id <> ${noticeId})`
       : sql`/* deleteExpiredCopyrightCaseAncestorReplies */
           DELETE FROM copyright_notice_email_message_ancestors edge
-          WHERE edge.ancestor_message_intake_id = ${intakeId}
-            AND edge.reply_message_intake_id = ANY(${ids}::uuid[])
+          WHERE edge.ancestor_message_intake_receipt_id = ${intakeId}
+            AND edge.reply_message_intake_receipt_id = ANY(${ids}::uuid[])
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other
-              WHERE other.copyright_notice_email_intake_id = edge.reply_message_intake_id
+              WHERE other.copyright_notice_email_intake_id = edge.reply_message_intake_receipt_id
                 AND other.copyright_notice_id <> ${noticeId})`,
   )
   return { deleted: rowCount ?? 0, phase, edgeCursor: ids.at(-1)! }

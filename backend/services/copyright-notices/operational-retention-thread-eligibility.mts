@@ -19,7 +19,7 @@ export function copyrightOperationalThreadEligibleSql(cutoff: Date, noticeId: st
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_guest_capabilities capability
         WHERE capability.copyright_notice_id = notice.id
           AND capability.revoked_at IS NULL AND capability.expires_at > ${cutoff})
-      AND EXISTS (SELECT 1 FROM copyright_notice_thread_retention_activity activity
+      AND EXISTS (SELECT 1 FROM copyright_notice_thread_retention_activities activity
         WHERE activity.copyright_notice_id = notice.id
           AND activity.last_activity_at <= ${cutoff})`
 }

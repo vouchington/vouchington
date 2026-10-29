@@ -26,7 +26,7 @@ export type {
 
 export type ClaimedCopyrightDeliveryIntent = CopyrightDeliveryIntentRecord & {
   lease_token: string
-  copyright_notice_email_intake_id: string | null
+  copyright_notice_email_intake_receipt_id: string | null
   body_ciphertext: string | null
 }
 
@@ -65,7 +65,7 @@ export async function claimCopyrightDeliveryIntent(
       AND attempt_count < 5
       AND ((state = 'pending' AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP))
         OR (state = 'claimed' AND lease_expires_at <= clock_timestamp()))
-    RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_id,
+    RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_receipt_id,
       copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,
       recipient_role, delivery_kind, target_path, channel, state, amazon_ses_message_id, attempt_count,
       body_ciphertext
@@ -239,7 +239,7 @@ export function replayFailedCopyrightEmailIntakeReplyIntent(input: {
   actorUserId: string
 }): Promise<string | null> {
   return resetFailedCopyrightDeliveryIntent(
-    sql`copyright_notice_email_intake_id = ${input.intakeId} AND delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')`,
+    sql`copyright_notice_email_intake_receipt_id = ${input.intakeId} AND delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')`,
     input.actorUserId,
   )
 }

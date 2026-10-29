@@ -29,7 +29,7 @@ export async function checkCopyrightThreadLegalPage(
     FROM copyright_notice_retention_generations global
     LEFT JOIN copyright_notice_thread_party_generations parties
       ON parties.copyright_notice_id = ${noticeId}
-    WHERE global.id FOR UPDATE OF global`)
+    WHERE global.is_global FOR UPDATE OF global`)
   const current = generations[0]!
   const changed =
     cursor.holdGeneration !== current.preservation_generation ||

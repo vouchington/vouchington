@@ -24,9 +24,6 @@ const initialCursor: BlockerCursor = {
   assessmentId: null,
   territorialDecisionId: null,
   generation: null,
-  foundQualifyingAssessment: false,
-  foundScreeningTarget: false,
-  foundClaimantReceipt: false,
 }
 
 async function walkEnforcement(noticeId: string) {

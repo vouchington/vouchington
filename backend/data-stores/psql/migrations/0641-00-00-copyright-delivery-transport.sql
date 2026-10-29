@@ -94,7 +94,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 ALTER TABLE copyright_notice_delivery_work_items
   ADD CONSTRAINT copyright_delivery_intents_email_correspondence
   CHECK (channel <> 'email' OR copyright_notice_correspondence_message_id IS NOT NULL
-    OR copyright_notice_email_intake_id IS NOT NULL)
+    OR copyright_notice_email_intake_receipt_id IS NOT NULL)
   NOT VALID;
 ALTER TABLE copyright_notice_delivery_work_items
   VALIDATE CONSTRAINT copyright_delivery_intents_email_correspondence;

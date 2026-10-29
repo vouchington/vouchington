@@ -52,7 +52,7 @@ function insertReply(overrides: Partial<ReplyRow>) {
   const row = { ...validReply, ...overrides }
   return write<{ id: string }>(sql`/* insertCopyrightEmailIntakeReplyRow */
     INSERT INTO copyright_notice_delivery_work_items (
-      copyright_notice_id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
+      copyright_notice_id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (
       ${row.noticeId}, ${row.intakeId}, ${row.role}, ${row.kind}, ${row.channel},
@@ -86,7 +86,7 @@ export const rejectSameReplyKindForIntake = (intakeId: string) => insertReply({ 
 
 export const rejectReplyIntakeReassignment = (intentId: string, otherIntakeId: string) =>
   write(sql`/* rejectCopyrightReplyIntakeReassignment */
-    UPDATE copyright_notice_delivery_work_items SET copyright_notice_email_intake_id = ${otherIntakeId}
+    UPDATE copyright_notice_delivery_work_items SET copyright_notice_email_intake_receipt_id = ${otherIntakeId}
     WHERE id = ${intentId}`)
 
 export const rejectReplyBodyMutation = (intentId: string) =>

@@ -129,7 +129,7 @@ async function admitCopyrightEmailIntake(
       LEFT JOIN copyright_notice_submissions submission
         ON submission.copyright_notice_id = review.promoted_copyright_notice_id
         AND submission.kind = 'notice'
-      WHERE copyright_notice_email_intake_id = ${intake.id}
+      WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
     `,
   )
   const prior = priorPromotions[0]
@@ -249,7 +249,7 @@ async function assertRecommendationScope(
     id: string
   }>(sql`/* promoteCopyrightEmailIntake:recommendation */
     SELECT id FROM copyright_notice_email_intake_recommendations
-    WHERE id = ${recommendationId} AND copyright_notice_email_intake_id = ${intakeId}
+    WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}
   `)
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')
 }
@@ -307,7 +307,7 @@ async function recordEmailPromotion(
   `)
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
+      copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
       reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_id
     ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'approved',
       ${encryptSecret(
@@ -341,7 +341,7 @@ async function recordEmailPromotion(
   const { rows: arrivalReceipt } = await transaction<{
     id: string
   }>(sql`/* recordEmailPromotion:arrivalReceipt */
-    SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_id = ${intake.id}
+    SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
       AND delivery_kind = 'email_intake_received' AND state NOT IN ('failed', 'bounced')
   `)
   const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(

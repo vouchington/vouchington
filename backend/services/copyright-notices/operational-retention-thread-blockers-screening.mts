@@ -90,7 +90,6 @@ export async function readCopyrightThreadScreeningPage(
           ...cursor,
           phase: 'form_screening_targets',
           childId: null,
-          foundQualifyingAssessment: true,
           blocked: false,
         }
       }
@@ -117,7 +116,6 @@ export async function readCopyrightThreadScreeningPage(
           ...cursor,
           phase: 'form_screening_receipts',
           childId: null,
-          foundScreeningTarget: true,
           blocked: false,
         }
       }
@@ -144,7 +142,6 @@ export async function readCopyrightThreadScreeningPage(
       if (rows.some(row => row.qualifies)) {
         return {
           ...advanceCopyrightThreadBlockerPhase(cursor, 'territorial_receipts'),
-          foundClaimantReceipt: true,
         }
       }
       if (rows.length < batchSize) return { ...cursor, blocked: true }

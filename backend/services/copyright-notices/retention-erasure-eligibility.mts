@@ -94,7 +94,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
           (SELECT max(intake_review.reviewed_at)
             FROM copyright_notice_email_intake_notice_links link
             JOIN copyright_notice_email_intake_reviews intake_review
-              ON intake_review.copyright_notice_email_intake_id = link.copyright_notice_email_intake_id
+              ON intake_review.copyright_notice_email_intake_receipt_id = link.copyright_notice_email_intake_id
             WHERE link.copyright_notice_id = notice.id AND link.link_kind = 'thread'),
           (SELECT max(review.reviewed_at)
             FROM copyright_notice_email_correspondence_reviews review

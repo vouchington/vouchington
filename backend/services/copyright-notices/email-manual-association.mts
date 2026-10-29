@@ -158,7 +158,7 @@ async function readIntakeDecision(
       EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
         WHERE link.copyright_notice_email_intake_id = intake.id) AS linked,
       EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-        WHERE review.copyright_notice_email_intake_id = intake.id) AS reviewed
+        WHERE review.copyright_notice_email_intake_receipt_id = intake.id) AS reviewed
     FROM copyright_notice_email_intakes intake WHERE intake.id = ${intakeId}
   `)
   return rows[0]

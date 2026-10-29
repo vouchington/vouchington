@@ -69,10 +69,7 @@ export async function positionCopyrightOperationalCursor(
       cursor_legal_latest_release_at = NULL,
       cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
       cursor_blocker_assessment_id = NULL, cursor_blocker_territorial_decision_id = NULL,
-      cursor_blocker_generation = NULL,
-      cursor_blocker_found_qualifying_assessment = false,
-      cursor_blocker_found_screening_target = false,
-      cursor_blocker_found_claimant_receipt = false`)
+      cursor_blocker_generation = NULL`)
 }
 
 export async function seedCopyrightExecutionAttemptPair(

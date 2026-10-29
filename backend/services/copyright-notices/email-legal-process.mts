@@ -50,12 +50,12 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
   const { rows: decisions } = await transaction(
     sql`/* recordCopyrightEmailIntakeLegalProcess:existing */
       SELECT 1 FROM copyright_notice_email_intake_reviews
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}`,
+      WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`,
   )
   assert(!decisions[0], 409, 'Copyright email intake was already decided')
   await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, reviewed_at, reviewed_by_id, decision, rationale_ciphertext
+      copyright_notice_email_intake_receipt_id, reviewed_at, reviewed_by_id, decision, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'legal_process',
       ${encryptSecret(

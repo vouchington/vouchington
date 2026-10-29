@@ -118,7 +118,7 @@ export async function prepareCopyrightEmailDelivery(intentId: string): Promise<{
 }
 
 async function loadCopyrightEmailText(intent: ClaimedCopyrightDeliveryIntent): Promise<string> {
-  if (intent.copyright_notice_email_intake_id) {
+  if (intent.copyright_notice_email_intake_receipt_id) {
     assert(intent.body_ciphertext, 422, 'Copyright email intake reply has no stored body')
     return decryptCopyrightEmailIntakeResponseBody(intent.id, intent.body_ciphertext)
   }

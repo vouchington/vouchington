@@ -30,9 +30,6 @@ export type BlockerCursor = {
   assessmentId: string | null
   territorialDecisionId: string | null
   generation: string | null
-  foundQualifyingAssessment: boolean
-  foundScreeningTarget: boolean
-  foundClaimantReceipt: boolean
 }
 export type BlockerPage = BlockerCursor & { blocked: boolean; done: boolean }
 
@@ -51,9 +48,6 @@ export function advanceCopyrightThreadBlockerPhase(
     childId: null,
     assessmentId: null,
     territorialDecisionId: null,
-    foundQualifyingAssessment: false,
-    foundScreeningTarget: false,
-    foundClaimantReceipt: false,
     blocked: false,
   }
 }
@@ -77,8 +71,6 @@ export function skipCopyrightThreadEnforcementAssessment(
     childId: cursor.assessmentId,
     assessmentId: null,
     territorialDecisionId: null,
-    foundScreeningTarget: false,
-    foundClaimantReceipt: false,
     blocked: false,
   }
 }

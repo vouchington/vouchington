@@ -9,9 +9,6 @@ export function initialCopyrightThreadScreeningCursor(): BlockerCursor {
     assessmentId: null,
     territorialDecisionId: null,
     generation: '0',
-    foundQualifyingAssessment: false,
-    foundScreeningTarget: false,
-    foundClaimantReceipt: false,
   }
 }
 

@@ -31,7 +31,7 @@ export async function deleteExpiredCopyrightGuestCapabilities(
           WHERE submission.copyright_notice_guest_capability_id = capability.id)
       RETURNING copyright_notice_id, updated_at, expires_at, revoked_at
     ), retained_clock AS (
-      INSERT INTO copyright_notice_thread_retention_activity
+      INSERT INTO copyright_notice_thread_retention_activities
         (copyright_notice_id, last_activity_at)
       SELECT copyright_notice_id,
         MAX(GREATEST(updated_at,
@@ -39,7 +39,7 @@ export async function deleteExpiredCopyrightGuestCapabilities(
       FROM deleted GROUP BY copyright_notice_id ORDER BY copyright_notice_id
       ON CONFLICT (copyright_notice_id) DO UPDATE
         SET last_activity_at = GREATEST(
-          copyright_notice_thread_retention_activity.last_activity_at,
+          copyright_notice_thread_retention_activities.last_activity_at,
           EXCLUDED.last_activity_at)
       RETURNING copyright_notice_id
     )

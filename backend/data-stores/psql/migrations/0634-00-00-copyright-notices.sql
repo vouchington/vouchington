@@ -132,7 +132,12 @@ CREATE TABLE copyright_notice_thread_blocker_generations (
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0)
 );
 COMMENT ON TABLE copyright_notice_thread_blocker_generations IS 'Per-case staff and business blocker change generation invalidating a bounded retention proof.';
-CREATE FUNCTION fn_bump_copyright_thread_party_generation()
+COMMENT ON TABLE copyright_notice_thread_party_generations IS 'Per-case party change generation invalidating a paged legal-preservation proof.';
+COMMENT ON COLUMN copyright_notice_thread_party_generations.copyright_notice_id IS 'Copyright case whose party set this generation tracks.';
+COMMENT ON COLUMN copyright_notice_thread_party_generations.generation IS 'Monotonic count of case-party changes relevant to legal-preservation proof.';
+COMMENT ON COLUMN copyright_notice_thread_blocker_generations.copyright_notice_id IS 'Copyright case whose staff and business blockers this generation tracks.';
+COMMENT ON COLUMN copyright_notice_thread_blocker_generations.generation IS 'Monotonic count of blocker-relevant changes for this case.';
+CREATE FUNCTION fn_update_copyright_thread_party_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE notice_id uuid;
 BEGIN
@@ -152,14 +157,14 @@ $$;
 CREATE TRIGGER trigger_copyright_thread_party_claimant
   AFTER UPDATE OF claimant_user_id ON copyright_notices
   FOR EACH ROW WHEN (OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id)
-  EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
+  EXECUTE FUNCTION fn_update_copyright_thread_party_generation();
 CREATE TRIGGER trigger_copyright_thread_party_submission
   AFTER INSERT OR UPDATE OF submitted_by_id ON copyright_notice_submissions
-  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_party_generation();
 CREATE TRIGGER trigger_copyright_thread_party_target
   AFTER INSERT OR UPDATE OF placement_id, surface_owner_user_id, surface_activation_revision
   ON copyright_notice_targets
-  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_thread_party_generation();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_party_generation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_storage_objects (

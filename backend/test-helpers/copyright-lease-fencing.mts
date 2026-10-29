@@ -45,7 +45,7 @@ export async function createTestUnreadableCopyrightResponse(): Promise<string> {
   const id = uuidv7()
   await write(sql`/* createTestUnreadableCopyrightResponse */
     INSERT INTO copyright_notice_delivery_work_items (
-      id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
+      id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (
       ${id}, ${intake.id}, 'correspondent', 'email_intake_rejected', 'email',

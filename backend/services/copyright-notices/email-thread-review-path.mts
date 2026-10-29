@@ -54,13 +54,13 @@ export function copyrightEmailAncestorNoticeConflictSql(maxRows: number): SQLSta
     WITH RECURSIVE reached(reply_id, ancestor_id) AS (
       SELECT intake.id, intake.id
       UNION
-      SELECT edge.reply_message_intake_id, edge.ancestor_message_intake_id
+      SELECT edge.reply_message_intake_receipt_id, edge.ancestor_message_intake_receipt_id
       FROM reached child
       JOIN LATERAL (
-        SELECT reply_message_intake_id, ancestor_message_intake_id
+        SELECT reply_message_intake_receipt_id, ancestor_message_intake_receipt_id
         FROM copyright_notice_email_message_ancestors
-        WHERE reply_message_intake_id = child.ancestor_id
-        ORDER BY ancestor_message_intake_id
+        WHERE reply_message_intake_receipt_id = child.ancestor_id
+        ORDER BY ancestor_message_intake_receipt_id
         LIMIT ${maxRows + 1}
       ) edge ON true
     ), bounded AS MATERIALIZED (
@@ -105,10 +105,10 @@ export function copyrightEmailReferencedTokenIsAmbiguousSql(intakeId: SQLStateme
         SELECT 1
         FROM copyright_notice_email_message_ancestors existing_edge
         JOIN copyright_notice_email_thread_references recorded_parent
-          ON recorded_parent.copyright_notice_email_intake_id = existing_edge.ancestor_message_intake_id
+          ON recorded_parent.copyright_notice_email_intake_id = existing_edge.ancestor_message_intake_receipt_id
          AND recorded_parent.token_id = reference.token_id
          AND recorded_parent.reference_kind = 'message_id'
-        WHERE existing_edge.reply_message_intake_id = reference.copyright_notice_email_intake_id
+        WHERE existing_edge.reply_message_intake_receipt_id = reference.copyright_notice_email_intake_id
       )
   )`)
   return query

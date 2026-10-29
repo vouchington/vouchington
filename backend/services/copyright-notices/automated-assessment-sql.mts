@@ -23,7 +23,7 @@ export function aiGuidanceSql(noticeAlias = 'notice'): SQLStatement {
     JOIN copyright_notice_form_screenings guidance_screening ON guidance_screening.copyright_notice_form_intake_id = guidance_intake.id
     WHERE guidance_submission.copyright_notice_id = ${notice}.id)
     OR EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews guidance_review
-      JOIN copyright_notice_email_intake_recommendations guidance_recommendation ON guidance_recommendation.copyright_notice_email_intake_id = guidance_review.copyright_notice_email_intake_id
+      JOIN copyright_notice_email_intake_recommendations guidance_recommendation ON guidance_recommendation.copyright_notice_email_intake_receipt_id = guidance_review.copyright_notice_email_intake_receipt_id
       WHERE guidance_review.promoted_copyright_notice_id = ${notice}.id)
     OR EXISTS (SELECT 1 FROM copyright_notice_submissions guidance_appeal
       JOIN copyright_notice_appeal_recommendations guidance_recommendation ON guidance_recommendation.copyright_notice_submission_id = guidance_appeal.id

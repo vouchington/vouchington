@@ -25,24 +25,25 @@ CREATE INDEX idx_user_legal_preservation_holds__account_release
   ON user_legal_preservation_holds (account_user_id, released_at DESC);
 
 CREATE TABLE copyright_notice_retention_generations (
-  id boolean PRIMARY KEY DEFAULT true CHECK (id),
+  is_global boolean PRIMARY KEY DEFAULT true CHECK (is_global),
   preservation_generation bigint NOT NULL DEFAULT 0 CHECK (preservation_generation >= 0)
 );
-INSERT INTO copyright_notice_retention_generations (id) VALUES (true);
+INSERT INTO copyright_notice_retention_generations (is_global) VALUES (true);
 COMMENT ON TABLE copyright_notice_retention_generations IS 'Global legal-preservation change generation for bounded case-party proof; the gate serializes concurrent hold writes with retention.';
+COMMENT ON COLUMN copyright_notice_retention_generations.preservation_generation IS 'Monotonic generation invalidating paged case-party proof after a hold change.';
 
-CREATE FUNCTION fn_bump_copyright_preservation_generation()
+CREATE FUNCTION fn_update_copyright_preservation_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0));
   UPDATE copyright_notice_retention_generations
-    SET preservation_generation = preservation_generation + 1 WHERE id;
+    SET preservation_generation = preservation_generation + 1 WHERE is_global;
   RETURN NEW;
 END;
 $$;
 CREATE TRIGGER trigger_copyright_preservation_generation
   BEFORE INSERT OR UPDATE OF released_at ON user_legal_preservation_holds
-  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_preservation_generation();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_preservation_generation();
 
 CREATE INDEX IF NOT EXISTS idx_user_legal_preservation_holds__placed_by_id
   ON user_legal_preservation_holds (placed_by_id);

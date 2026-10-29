@@ -51,13 +51,13 @@ export async function readCopyrightEmailPromotionEffects(intakeId: string, place
   }>(sql`/* readCopyrightEmailPromotionEffects */
     SELECT
       (SELECT count(*)::int FROM copyright_notice_email_intake_reviews
-       WHERE copyright_notice_email_intake_id = ${intakeId}) AS reviews,
+       WHERE copyright_notice_email_intake_receipt_id = ${intakeId}) AS reviews,
       (SELECT count(*)::int FROM copyright_notice_evidence_artifacts
        WHERE storage_object_id = (
          SELECT raw_storage_object_id FROM copyright_notice_email_intakes WHERE id = ${intakeId}
        )) AS evidence,
       (SELECT count(*)::int FROM copyright_notice_delivery_work_items
-       WHERE copyright_notice_email_intake_id = ${intakeId}) AS deliveries,
+       WHERE copyright_notice_email_intake_receipt_id = ${intakeId}) AS deliveries,
       (SELECT count(*)::int FROM copyright_notice_email_correspondence_reviews
        WHERE copyright_notice_email_intake_id = ${intakeId}) AS thread_reviews,
       (SELECT count(*)::int FROM copyright_notice_targets

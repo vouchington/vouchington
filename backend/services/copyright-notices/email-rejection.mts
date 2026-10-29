@@ -84,9 +84,9 @@ export async function rejectCopyrightEmailIntake(input: {
       SELECT review.decision, response.id AS response_id
       FROM copyright_notice_email_intake_reviews review
       LEFT JOIN copyright_notice_delivery_work_items response
-        ON response.copyright_notice_email_intake_id = review.copyright_notice_email_intake_id
+        ON response.copyright_notice_email_intake_receipt_id = review.copyright_notice_email_intake_receipt_id
         AND response.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')
-      WHERE review.copyright_notice_email_intake_id = ${input.intakeId}`,
+      WHERE review.copyright_notice_email_intake_receipt_id = ${input.intakeId}`,
   )
   const decision = decisions[0]
   assert(decision?.decision !== 'approved', 409, 'Copyright email intake was already approved')
@@ -108,7 +108,7 @@ export async function rejectCopyrightEmailIntake(input: {
   )
   await transaction(sql`/* rejectCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intake_reviews (
-      copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id,
+      copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id,
       reviewed_at, reviewed_by_id, decision, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
@@ -173,7 +173,7 @@ async function assertRecommendationScope(
   const { rows } = await transaction<{ id: string }>(
     sql`/* rejectCopyrightEmailIntake:recommendation */
       SELECT id FROM copyright_notice_email_intake_recommendations
-      WHERE id = ${recommendationId} AND copyright_notice_email_intake_id = ${intakeId}`,
+      WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}`,
   )
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')
 }

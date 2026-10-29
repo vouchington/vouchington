@@ -72,7 +72,7 @@ export async function getCopyrightStaffEmailIntake(
   intakeQuery.append(sql` AS has_reply_reference
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
-    LEFT JOIN LATERAL (SELECT id, structured_output_ciphertext FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
+    LEFT JOIN LATERAL (SELECT id, structured_output_ciphertext FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_receipt_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
     WHERE intake.id = ${intakeId}

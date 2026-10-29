@@ -136,6 +136,8 @@ CREATE UNIQUE INDEX uq_copyright_territorial_decisions__original
   WHERE supersedes_decision_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TYPE copyright_notice_legal_retention_phases AS ENUM
+  ('claimant', 'submissions', 'incidents', 'targets', 'done');
 CREATE TABLE copyright_notice_operational_retention_cursors (
   kind copyright_notice_operational_retention_kinds PRIMARY KEY,
   cursor_record_id uuid,
@@ -143,7 +145,7 @@ CREATE TABLE copyright_notice_operational_retention_cursors (
   cursor_child_id uuid,
   cursor_edge_id uuid,
   cursor_phase copyright_notice_thread_retention_phases,
-  cursor_legal_phase text CHECK (cursor_legal_phase IN ('claimant', 'submissions', 'incidents', 'targets', 'done')),
+  cursor_legal_phase copyright_notice_legal_retention_phases,
   cursor_legal_child_id uuid,
   cursor_legal_hold_generation bigint,
   cursor_case_party_generation bigint,
@@ -153,9 +155,6 @@ CREATE TABLE copyright_notice_operational_retention_cursors (
   cursor_blocker_assessment_id uuid REFERENCES copyright_notice_submission_assessments(id) ON DELETE SET NULL,
   cursor_blocker_territorial_decision_id uuid REFERENCES copyright_territorial_decisions(id) ON DELETE SET NULL,
   cursor_blocker_generation bigint,
-  cursor_blocker_found_qualifying_assessment boolean NOT NULL DEFAULT false,
-  cursor_blocker_found_screening_target boolean NOT NULL DEFAULT false,
-  cursor_blocker_found_claimant_receipt boolean NOT NULL DEFAULT false,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TRIGGER trigger_copyright_operational_cursors_updated_at
@@ -178,15 +177,12 @@ COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_assessment_id IS 'Concrete submission assessment whose nested blocker children are being paged.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_territorial_decision_id IS 'Concrete territorial decision whose reversal requests are being paged for the current blocker proof.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_generation IS 'Observed case blocker generation for the current paged proof.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_found_qualifying_assessment IS 'Accumulated bounded assessment predicate for the current proof.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_found_screening_target IS 'Accumulated bounded screening target predicate for the current proof.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_found_claimant_receipt IS 'Accumulated bounded claimant receipt predicate for the current proof.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.updated_at IS 'Last time this sweep position changed.';
 
-CREATE INDEX idx_copyright_oper_cursor__assessment
+CREATE INDEX idx_cpyrght_ntc_oprtnl_rtntn_crsrs__assessment
   ON copyright_notice_operational_retention_cursors (cursor_blocker_assessment_id)
   WHERE cursor_blocker_assessment_id IS NOT NULL;
-CREATE INDEX idx_copyright_oper_cursor__territorial_decision
+CREATE INDEX idx_cpyrght_ntc_oprtnl_rtntn_crsrs__territorial_decision
   ON copyright_notice_operational_retention_cursors (cursor_blocker_territorial_decision_id)
   WHERE cursor_blocker_territorial_decision_id IS NOT NULL;
 

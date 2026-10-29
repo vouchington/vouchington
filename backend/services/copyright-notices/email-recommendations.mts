@@ -55,7 +55,7 @@ async function appendWithCurrentLink(
   if ((currentLinks[0]?.copyright_notice_id ?? null) !== noticeId) return 'link-changed'
   const { rowCount } = await transaction(sql`/* appendCopyrightEmailIntakeRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations (
-      copyright_notice_email_intake_id, input_sha256, prompt_version, model, structured_output_ciphertext
+      copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model, structured_output_ciphertext
     ) SELECT source.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
       ${encryptSecret(JSON.stringify(input.structuredOutput), copyrightEmailIntakePurpose(intake.amazon_ses_message_id))}
     FROM copyright_notice_email_intakes source
@@ -66,7 +66,7 @@ async function appendWithCurrentLink(
           ON erased.copyright_notice_id = link.copyright_notice_id
         WHERE link.copyright_notice_email_intake_id = source.id
       )
-    ON CONFLICT (copyright_notice_email_intake_id, input_sha256, prompt_version) DO NOTHING
+    ON CONFLICT (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version) DO NOTHING
   `)
   await transaction.commit()
   return rowCount === 1
