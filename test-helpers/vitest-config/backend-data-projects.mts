@@ -128,9 +128,9 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       ...backendDataStoreTestDefaults,
       name: 'backend-partition-retirement',
       sequence: { groupOrder: 1 },
-      isolate: true,
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: ['backend/services/topic-revisions/monthly-retirement.test.mts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
   {
