@@ -13,6 +13,7 @@ export const EXISTING_FINITE_VALUES_5 = {
     'image',
     'membership',
     'community_bridge',
+    'remote_actor',
   ],
   revision_types: ['create', 'update', 'delete'],
   user_display_name_sources: [

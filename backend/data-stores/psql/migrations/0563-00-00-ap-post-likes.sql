@@ -54,6 +54,8 @@ ALTER TABLE activitypub_post_like_activities
   VALIDATE CONSTRAINT fk_ap_post_like_activities__remote_actor_identity;
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__post_id
   ON activitypub_post_like_activities (post_id);
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__active_post_id__id
+  ON activitypub_post_like_activities (post_id, id) WHERE undone_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__confirmed_activity
   ON activitypub_post_like_activities (activity_id) WHERE confirmed_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__undone_retention

@@ -1,6 +1,28 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 
+export async function insertOperationalRemoteActorIdentityOnlyForTest(
+  query: TransactionQuery,
+): Promise<{ id: string; actorUri: string }> {
+  const actorUri = `https://retention-${randomUUID()}.example/users/actor`
+  const { rows } = await query<{ id: string }>(
+    `/* insertOperationalRemoteActorIdentityOnlyForTest */
+     INSERT INTO remote_actor_identities (actor_uri) VALUES ($1) RETURNING id`,
+    [actorUri],
+  )
+  return { id: rows[0]!.id, actorUri }
+}
+
+export async function deleteOperationalRemoteActorCacheForTest(
+  query: TransactionQuery,
+  actorId: string,
+): Promise<void> {
+  await query(
+    `/* deleteOperationalRemoteActorCacheForTest */ DELETE FROM remote_actors WHERE id = $1`,
+    [actorId],
+  )
+}
+
 export async function insertOperationalRemoteActorForTest(
   query: TransactionQuery,
   fetchedAt: Date,
@@ -37,11 +59,15 @@ export async function reinsertOperationalRemoteActorCacheForTest(
 
 export async function insertOperationalLocalPostForTest(
   query: TransactionQuery,
+  ownerUserId?: string,
 ): Promise<{ postId: string; userId: string }> {
-  const { rows: users } = await query<{ id: string }>(
-    `/* insertOperationalLikeUserForTest */ INSERT INTO users DEFAULT VALUES RETURNING id`,
-  )
-  const userId = users[0]!.id
+  const userId =
+    ownerUserId ??
+    (
+      await query<{ id: string }>(
+        `/* insertOperationalLikeUserForTest */ INSERT INTO users DEFAULT VALUES RETURNING id`,
+      )
+    ).rows[0]!.id
   const { rows: posts } = await query<{ id: string }>(
     `/* insertOperationalLikePostForTest */
      INSERT INTO posts

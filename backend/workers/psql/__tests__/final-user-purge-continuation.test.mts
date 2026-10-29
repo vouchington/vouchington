@@ -85,6 +85,12 @@ const settled = {
   supersededVoteBallots: [],
   orphanedUserAgentStrings: scannedDone,
   voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
+  undoneActivityPubLikes: continuationDone,
+  staleRemoteActors: continuationDone,
+  feedHostnameBlocks: continuationDone,
+  otherHostnameBlocks: continuationDone,
+  deletedConversations: continuationDone,
+  appAttestationKeys: continuationDone,
 } satisfies CleanupResult
 
 describe('final user purge continuation', () => {

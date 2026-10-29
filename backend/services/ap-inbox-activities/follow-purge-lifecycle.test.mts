@@ -2,13 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
-  getTestPostgresBackendProcessId,
   lockTestUserMutation,
   restoreUser,
   softDeleteUser,
   softDeleteTestUserAndWaitBeforeCommit,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
+import type { QueryExecutor, QueryInput, QueryValues } from '@data-stores/psql'
+import type { QueryResultRow } from 'pg'
 import {
   createFederatedUser,
   createRemoteActorFixture,
@@ -73,13 +73,27 @@ describe('remote Follow identity at user purge', () => {
     await query.commit()
   })
 
-  it('blocks an inbound Follow behind deletion and rejects it after the user fence commits', async () => {
+  it('submits an inbound Follow fence before deletion commits and then rejects the Follow', async () => {
     const actor = await createRemoteActorFixture()
     const target = await createFederatedUser()
     const id = activityId()
     const releaseDeletion = Promise.withResolvers<void>()
     const deletionHoldsUserFence = Promise.withResolvers<void>()
-    let deletionBackendId = 0
+    const inboundFenceSubmitted = Promise.withResolvers<void>()
+    await using inboundTransaction = await beginTransaction()
+    const observedQuery: QueryExecutor = <Row extends QueryResultRow = QueryResultRow>(
+      input: QueryInput,
+      values?: QueryValues,
+    ) => {
+      const pending = inboundTransaction<Row>(input, values)
+      if (
+        (typeof input === 'string' ? input : input.text).includes(
+          'lockActiveUserSubjectsForMutation',
+        )
+      )
+        inboundFenceSubmitted.resolve()
+      return pending
+    }
     let deleting: Promise<void> | undefined
     let incoming: Promise<unknown> | undefined
 
@@ -89,18 +103,21 @@ describe('remote Follow identity at user purge', () => {
         releaseDeletion.promise,
         deletionHoldsUserFence.resolve,
         async query => {
-          deletionBackendId = await getTestPostgresBackendProcessId(query)
           await lockTestUserMutation(query, target.id)
         },
       )
       await deletionHoldsUserFence.promise
-      incoming = dispatchInboundActivity(actor, {
-        id,
-        type: 'Follow',
-        actor: actor.actor_uri,
-        object: getActorUri(target.id),
-      }).catch((err: unknown) => err)
-      await waitForTestPostgresLockWaiter(deletionBackendId, 'lockActiveUserSubjectsForMutation')
+      incoming = dispatchInboundActivity(
+        actor,
+        {
+          id,
+          type: 'Follow',
+          actor: actor.actor_uri,
+          object: getActorUri(target.id),
+        },
+        { query: observedQuery },
+      ).catch((err: unknown) => err)
+      await inboundFenceSubmitted.promise
       releaseDeletion.resolve()
 
       await expect(deleting).resolves.toBeUndefined()
@@ -113,6 +130,7 @@ describe('remote Follow identity at user purge', () => {
       releaseDeletion.resolve()
       await deleting?.catch(() => undefined)
       await incoming
+      await inboundTransaction.rollback()
       await restoreUser(target.id)
     }
   })

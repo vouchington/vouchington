@@ -138,7 +138,7 @@ export function buildUnboundedUnpartitionedTables(
       ],
       [
         'remote_actor_identities',
-        'Exact external actor URI replay identities survive signing-key cache eviction; one identity per distinct remote actor URI.',
+        'Exact external actor URI replay identities survive signing-key cache eviction while live caches or retained Follow/Like activities reference them; a bounded root sweep removes unreferenced identities.',
       ],
       [
         'activitypub_post_like_activities',

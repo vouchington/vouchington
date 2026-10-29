@@ -36,19 +36,40 @@ export async function deleteOperationalRetainedReplayAnchorsForTest(
   query: TransactionQuery,
   anchors: { actorIdentityId: string; likeActivityId: string; followActivityId: string },
 ): Promise<void> {
-  await query(
-    `/* deleteOperationalRetainedLikeActivityForTest */
-     DELETE FROM activitypub_post_like_activities WHERE activity_id = $1`,
-    [anchors.likeActivityId],
-  )
-  await query(
-    `/* deleteOperationalRetainedFollowActivityForTest */
-     DELETE FROM activitypub_remote_follow_activities WHERE activity_id = $1`,
-    [anchors.followActivityId],
-  )
+  await deleteOperationalRetainedReplayReferencesForTest(query, anchors)
   await query(
     `/* deleteOperationalReplayActorIdentityForTest */
      DELETE FROM remote_actor_identities WHERE id = $1`,
     [anchors.actorIdentityId],
+  )
+}
+
+export async function deleteOperationalRetainedReplayReferencesForTest(
+  query: TransactionQuery,
+  anchors: { likeActivityId: string; followActivityId: string },
+): Promise<void> {
+  await deleteOperationalRetainedLikeReferenceForTest(query, anchors.likeActivityId)
+  await deleteOperationalRetainedFollowReferenceForTest(query, anchors.followActivityId)
+}
+
+export async function deleteOperationalRetainedLikeReferenceForTest(
+  query: TransactionQuery,
+  activityId: string,
+): Promise<void> {
+  await query(
+    `/* deleteOperationalRetainedLikeActivityForTest */
+     DELETE FROM activitypub_post_like_activities WHERE activity_id = $1`,
+    [activityId],
+  )
+}
+
+export async function deleteOperationalRetainedFollowReferenceForTest(
+  query: TransactionQuery,
+  activityId: string,
+): Promise<void> {
+  await query(
+    `/* deleteOperationalRetainedFollowActivityForTest */
+     DELETE FROM activitypub_remote_follow_activities WHERE activity_id = $1`,
+    [activityId],
   )
 }
