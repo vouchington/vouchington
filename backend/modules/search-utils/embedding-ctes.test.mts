@@ -38,10 +38,6 @@ describe('embedding-ctes', () => {
     expect(ctes).toHaveLength(1)
     expect(ctes[0].text).toContain('similar_rss_feed_item_embedding')
     expect(ctes[0].text).toContain('FROM rss_feed_items')
-  })
-
-  it('buildEmbeddingCtes parameterizes the rss feed item UUID', () => {
-    const ctes = buildEmbeddingCtes({ similar_rss_feed_item_id: VALID_RSS_FEED_ITEM_ID })
     expect(ctes[0].values).toContain(VALID_RSS_FEED_ITEM_ID)
   })
 
