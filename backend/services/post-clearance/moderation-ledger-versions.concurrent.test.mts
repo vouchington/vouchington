@@ -30,6 +30,23 @@ async function createOwnedPost(): Promise<string> {
 }
 
 describe('immutable moderation version conflict resolution', () => {
+  it('rejects a missing scalar post while a batch still commits its existing neighbor', async () => {
+    const missingPostId = randomUUID()
+    const neighborId = await createOwnedPost()
+
+    await expect(ensureCurrentPostModerationVersion(missingPostId)).rejects.toThrow(
+      `Post moderation version source post not found: ${missingPostId}`,
+    )
+    expect(await getTestCurrentPostModerationVersion(missingPostId)).toBeNull()
+    expect(await countTestPostModerationAttempts(missingPostId)).toBe(0)
+
+    const versions = await commitCurrentPostModerationVersions([missingPostId, neighborId])
+    expect(versions).toHaveLength(1)
+    expect(versions[0]?.post_id).toBe(neighborId)
+    expect(await countTestPostModerationAttempts(neighborId)).toBe(2)
+    expect(await countTestPostModerationAttempts(missingPostId)).toBe(0)
+  })
+
   it('returns the committed winner for an overlapping scalar ensure in the caller transaction', async () => {
     const postId = await createOwnedPost()
     await using holder = await beginTransaction()
