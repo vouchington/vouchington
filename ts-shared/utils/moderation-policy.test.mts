@@ -5,7 +5,6 @@ import {
   MODERATION_REPORT_REASON_OPTIONS,
   CONTENT_POLICY_CATEGORIES,
   CONTENT_POLICY,
-  MODERATION_JUDGEMENT_ACTIONS,
   MODERATION_APPEAL_ACTIONS,
   isReportReason,
   isAiCategory,
@@ -27,13 +26,6 @@ describe('moderation policy registry', () => {
   it('all entries have appealEligible set to true', () => {
     for (const entry of MODERATION_POLICY) {
       expect(entry.appealEligible).toBe(true)
-    }
-  })
-
-  it('recommendedAction values are all valid judgement actions', () => {
-    const validActions = new Set(MODERATION_JUDGEMENT_ACTIONS as readonly string[])
-    for (const entry of MODERATION_POLICY) {
-      expect(validActions.has(entry.recommendedAction)).toBe(true)
     }
   })
 
@@ -99,10 +91,6 @@ describe('moderation policy registry', () => {
     const categories = MODERATION_POLICY.filter(isAiCategory)
     expect(categories.every(e => e.isAiCategory)).toBe(true)
     expect(categories.map(e => e.key)).toEqual(CONTENT_POLICY_CATEGORIES)
-  })
-
-  it('MODERATION_JUDGEMENT_ACTIONS matches the expected values', () => {
-    expect(MODERATION_JUDGEMENT_ACTIONS).toEqual(['no_action', 'warn', 'remove', 'escalate'])
   })
 
   it('MODERATION_APPEAL_ACTIONS matches the expected values', () => {

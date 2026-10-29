@@ -17,7 +17,6 @@ export {
   type ModerationReportEntityType,
   MODERATION_POLICY_SEVERITIES,
   type ModerationPolicySeverity,
-  MODERATION_JUDGEMENT_ACTIONS,
   type ModerationJudgementAction,
   MODERATION_APPEAL_ACTIONS,
   type ModerationAppealAction,
