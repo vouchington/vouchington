@@ -42,7 +42,6 @@ const backendMocksProject = {
       '**/*.no-data.mock.test.mts',
       '**/*.real-glide.mock.test.mts',
       'backend/data-stores/psql/migrate.mock.test.mts',
-      // Real S3 presigner. Collected by the credentialed backend-aws project.
       'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts',
     ],
     globalSetup: './test-helpers/vitest.setup.data-stores.mts',
