@@ -10,11 +10,19 @@ import {
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
-import { runCopyrightOperationalRetentionCleanup, runDataRetentionCleanup, runVoteRetentionCleanupPage } from '@services/data-retention'
+import {
+  runCopyrightOperationalRetentionCleanup,
+  runDataRetentionCleanup,
+  runVoteRetentionCleanupPage,
+} from '@services/data-retention'
 import {
   unfinishedClassifierSweeps,
   unfinishedMembershipFamilies,
 } from './processors/retention-sweeps.mts'
+import {
+  enqueueVoteRetentionContinuationIfNeeded,
+  requireVoteRetentionSelection,
+} from './processors/vote-retention.mts'
 import { createHash } from 'node:crypto'
 import {
   enqueueAIRetentionContinuations,
@@ -152,26 +160,27 @@ export default async function processPsql(
       }
       // Cleanup continuations rerun the same bounded families, so only the first run chains vote pages.
       if (!data?.continuation) {
-        await enqueueVoteRetentionContinuationIfNeeded(result, jobId, dependencies)
+        await enqueueVoteRetentionContinuationIfNeeded(
+          result,
+          jobId,
+          dependencies?.enqueueDataRetentionContinuation,
+        )
       }
       return result
     }
     case 'continueVoteRetentionCleanup': {
-      if (
-        !data ||
-        !Array.isArray(data.voteTables) ||
-        typeof data.userAgentStrings !== 'boolean' ||
-        typeof data.voteIntegrityDetails !== 'boolean'
-      ) {
-        throw new Error('continueVoteRetentionCleanup job requires family selection')
-      }
+      const selection = requireVoteRetentionSelection(data)
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()
       const result = await (dependencies?.voteRetentionCleanupPage ?? runVoteRetentionCleanupPage)(
         getDataRetentionLimits(),
-        data as VoteRetentionContinuationData,
+        selection,
       )
-      await enqueueVoteRetentionContinuationIfNeeded(result, jobId, dependencies)
+      await enqueueVoteRetentionContinuationIfNeeded(
+        result,
+        jobId,
+        dependencies?.enqueueDataRetentionContinuation,
+      )
       return result
     }
     case 'refreshMaterializedView': {
@@ -185,26 +194,4 @@ export default async function processPsql(
     default:
       throw new Error(`Unknown job: ${jobName}`)
   }
-}
-
-type VoteRetentionResult = Awaited<ReturnType<typeof runVoteRetentionCleanupPage>>
-
-async function enqueueVoteRetentionContinuationIfNeeded(
-  result: VoteRetentionResult,
-  jobId: string | undefined,
-  dependencies?: Partial<ProcessPsqlDependencies>,
-): Promise<void> {
-  const next: VoteRetentionContinuationData = {
-    voteTables: result.supersededVoteBallots.flatMap(page =>
-      page.hasMore ? [page.voteTable] : [],
-    ),
-    userAgentStrings: result.orphanedUserAgentStrings.hasMore,
-    voteIntegrityDetails: result.voteIntegrityDetails.hasMore,
-  }
-  if (next.voteTables.length === 0 && !next.userAgentStrings && !next.voteIntegrityDetails) return
-  if (!jobId) throw new Error('vote retention job requires an id for continuation')
-  await (dependencies?.enqueueDataRetentionContinuation ?? enqueueDataRetentionContinuation)(
-    jobId,
-    next,
-  )
 }
