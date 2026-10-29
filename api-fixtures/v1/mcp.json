@@ -31318,7 +31318,7 @@
                     "additionalProperties": false,
                     "properties": {
                       "claimant_display_name": {
-                        "$ref": "#/$defs/S1"
+                        "$ref": "#/$defs/S2"
                       },
                       "claimant_user_id": {
                         "type": "string"
@@ -31495,7 +31495,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "claimant_display_name": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "claimant_user_id": {
                       "type": "string"
@@ -31676,7 +31676,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "claimant_display_name": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "claimant_user_id": {
                       "type": "string"
@@ -31857,7 +31857,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "claimant_display_name": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "claimant_user_id": {
                       "type": "string"
