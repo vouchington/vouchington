@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, userEvent, within } from 'storybook/test'
 import { CommunityMemberRow } from '@/components/communities/community-member-row'
 import { TransferOwnershipDialog } from '@/components/communities/community-transfer-ownership-dialog'
 import { useCommunityMembersManager } from '@/components/communities/use-community-members-manager'
@@ -61,6 +62,11 @@ const data: CommunityMembersResponseBody = {
   community_members: { [member.id]: member },
   users: { [member.user_id]: publicUsers[0]! },
 }
+const regularMember: CommunityMember = { ...member, role: 'member' }
+const regularMemberData: CommunityMembersResponseBody = {
+  ...data,
+  community_members: { [regularMember.id]: regularMember },
+}
 
 function OwnerView({
   memberRole,
@@ -69,11 +75,11 @@ function OwnerView({
   memberRole: 'member' | 'moderator'
   transferDialog?: boolean
 }) {
-  const row = { ...member, role: memberRole }
+  const row = memberRole === 'member' ? regularMember : member
   const state = useCommunityMembersManager({
     community,
     currentUserMembership: ownerMembership,
-    data: { ...data, community_members: { [row.id]: row } },
+    data: memberRole === 'member' ? regularMemberData : data,
   })
   return (
     <StoryFrame>
@@ -106,5 +112,20 @@ export const MemberManagedByOwner: Story = {
 }
 
 export const OwnershipTransfer: Story = {
-  render: () => <OwnerView memberRole='moderator' transferDialog />,
+  render: () => (
+    <OwnerView
+      memberRole='moderator'
+      transferDialog
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole('button', { name: /transfer ownership/i }),
+    )
+    await expect(
+      await within(canvasElement.ownerDocument.body).findByRole('alertdialog', {
+        name: /transfer ownership/i,
+      }),
+    ).toBeVisible()
+  },
 }
