@@ -15,4 +15,16 @@ export const MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
     'moderation_record_cleanup_cursors.sweep_upper_bound_record_id',
     'Frozen UUIDv7 timestamp boundary for one bounded sweep; it is not a relationship.',
   ],
+  [
+    'post_moderation_retention_cursors.cursor_record_id',
+    'Deletion-stable UUIDv7 keyset position can outlive the scanned moderation version or disposition; it is not a relationship.',
+  ],
+  [
+    'post_moderation_retention_cursors.cursor_lower_bound_record_id',
+    'Frozen UUIDv7 lower boundary for one bounded retention pass; it is not a relationship.',
+  ],
+  [
+    'post_moderation_retention_cursors.sweep_upper_bound_record_id',
+    'Frozen UUIDv7 upper boundary for one bounded retention pass; it is not a relationship.',
+  ],
 ])
