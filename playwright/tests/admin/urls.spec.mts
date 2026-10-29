@@ -1,4 +1,5 @@
-import { test, expect } from '../../helpers/test.mts'
+import { randomUUID } from 'node:crypto'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   navigateTo,
   requireTestValue,
@@ -6,9 +7,55 @@ import {
 } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { recentSeedCrawlId } from '../../../backend/scripts/seeds/crawl-ids.mts'
+import { insertTestCrawl, insertTestUrlDirect } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin URLs', () => {
   test.use({ storageState: ADMIN_AUTH_STATE })
+
+  test.describe('encoded URL route', () => {
+    let encodedUrl = ''
+    let encodedCrawlId = ''
+    let encodedCrawlTitle = ''
+
+    test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
+      const suffix = randomUUID()
+      const rawUrl = `https://example.com/roundtrip-${suffix}/a%2Fb?q=one%26two`
+      const decodedDecoy = `https://example.com/roundtrip-${suffix}/a/b?q=one&two`
+      const url = requireTestValue(
+        await insertTestUrlDirect(null, rawUrl),
+        'Failed to create encoded URL fixture',
+      )
+      await insertTestUrlDirect(null, decodedDecoy)
+      encodedUrl = rawUrl
+      encodedCrawlTitle = `Encoded path crawl ${suffix}`
+      const crawl = await insertTestCrawl({
+        urlId: url.id,
+        statusCode: 200,
+        title: encodedCrawlTitle,
+        markdown: `Only the encoded URL has this crawl: ${suffix}`,
+      })
+      encodedCrawlId = crawl.id
+    })
+
+    test('round-trips an encoded URL through its detail page and crawl link', async ({ page }) => {
+      const detailPath = `/url/${encodeURIComponent(encodedUrl)}`
+      const crawlPath = `${detailPath}/crawls/${encodedCrawlId}`
+      await navigateTo(page, detailPath)
+
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(encodedUrl)
+      await expect(page.getByTestId('url-page-source-link')).toHaveAttribute('href', encodedUrl)
+
+      const viewCrawl = page.locator('tbody tr').getByRole('link')
+      await expect(viewCrawl).toHaveAttribute('href', crawlPath)
+      await viewCrawl.click()
+
+      await expect(page).toHaveURL(crawlPath)
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Crawl Details')
+      await expect(page.locator('main')).toContainText(encodedCrawlTitle)
+      await expect(page.locator('main')).toContainText('Only the encoded URL has this crawl')
+    })
+  })
 
   test('should redirect unauthenticated users to login', async ({ page }) => {
     await page.context().clearCookies()
