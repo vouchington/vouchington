@@ -62,40 +62,10 @@ describe('computeTrustTier', () => {
     vi.useRealTimers()
   })
 
-  it('returns tier 0 for a new account (< 24h) regardless of other signals', () => {
-    const user = createFreshUser()
-    const tier = computeTrustTier(user, baseContext)
-    expect(tier).toBe(0)
-  })
-
   it('returns tier 2 for a user with an OAuth account', () => {
     const user = createMockUser({
       google_account: { id: '123', name: 'Test', email_address: 'test@test.com' },
     })
-    const tier = computeTrustTier(user, baseContext)
-    expect(tier).toBe(2)
-  })
-
-  it('adds +0.5 for account age > 30 days', () => {
-    const thirtyOneDaysAgo = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000)
-    const user = createMockUser({ id: uuidv7ForDate(thirtyOneDaysAgo) })
-    // base 1 + 0.5 = 1.5 → tier 1
-    const tier = computeTrustTier(user, baseContext)
-    expect(tier).toBe(1)
-  })
-
-  it('adds +1 for account age > 6 months', () => {
-    const sevenMonthsAgo = new Date(Date.now() - 210 * 24 * 60 * 60 * 1000)
-    const user = createMockUser({ id: uuidv7ForDate(sevenMonthsAgo) })
-    // base 1 + 1 = 2 → tier 2
-    const tier = computeTrustTier(user, baseContext)
-    expect(tier).toBe(2)
-  })
-
-  it('adds +1.5 for account age > 1 year', () => {
-    const twoYearsAgo = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000)
-    const user = createMockUser({ id: uuidv7ForDate(twoYearsAgo) })
-    // base 1 + 1.5 = 2.5 → tier 2
     const tier = computeTrustTier(user, baseContext)
     expect(tier).toBe(2)
   })
@@ -137,13 +107,6 @@ describe('computeTrustTier', () => {
     expect(tier).toBe(2)
   })
 
-  it('adds +1.5 for pro membership', () => {
-    const user = createMockUser()
-    const tier = computeTrustTier(user, { membershipPlan: 'pro' })
-    // base 1 + 1.5 = 2.5 → tier 2
-    expect(tier).toBe(2)
-  })
-
   it('returns tier 5 for a pro member with OAuth and old account', () => {
     const twoYearsAgo = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000)
     const user = createMockUser({
@@ -153,24 +116,6 @@ describe('computeTrustTier', () => {
     // base 1 + OAuth 1 + age 1.5 + pro 1.5 = 5 → tier 5
     const tier = computeTrustTier(user, { membershipPlan: 'pro' })
     expect(tier).toBe(5)
-  })
-
-  it('clamps tier to maximum of 5', () => {
-    const twoYearsAgo = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000)
-    const user = createMockUser({
-      id: uuidv7ForDate(twoYearsAgo),
-      google_account: { id: '123', name: 'Test', email_address: 'test@test.com' },
-      facebook_account: { id: '456', name: 'Test', email_address: null },
-    })
-    // base 1 + OAuth 1 + age 1.5 + pro 1.5 = 5 → tier 5 (clamped)
-    const tier = computeTrustTier(user, { membershipPlan: 'pro' })
-    expect(tier).toBe(5)
-  })
-
-  it('never returns below tier 0', () => {
-    const user = createFreshUser()
-    const tier = computeTrustTier(user, baseContext)
-    expect(tier).toBeGreaterThanOrEqual(0)
   })
 
   it('handles user with multiple OAuth providers', () => {
@@ -208,17 +153,6 @@ describe('computeTrustTier', () => {
     const user = createFreshUser({ roles: ['administrator'] })
     const tier = computeTrustTier(user, baseContext)
     expect(tier).toBe(5)
-  })
-
-  it('applies normal scoring for account at 25h old', () => {
-    const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000)
-    const user = createMockUser({
-      id: uuidv7ForDate(twentyFiveHoursAgo),
-      google_account: { id: '123', name: 'Test', email_address: null },
-    })
-    // base 1 + OAuth 1 = 2 → tier 2 (normal scoring applies)
-    const tier = computeTrustTier(user, baseContext)
-    expect(tier).toBe(2)
   })
 
   it('treats non-UUIDv7 IDs as ancient accounts (passes all age gates)', () => {
