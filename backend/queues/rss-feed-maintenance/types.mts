@@ -3,6 +3,19 @@ export type RssFeedItemCategoriesJobs =
   | 'processBackfillCategoriesForTopicAliases'
   | 'processBackfillRssFeedCategoriesForTopicAlias'
 
+export type TopicTextCategoryCursor = {
+  phase: 0 | 1 | 2
+  name: string
+  slug: string
+  scanUpperId: string
+  afterId: string | null
+}
+
+export type TopicTextCategoryJob = {
+  topicId: string
+  cursor?: TopicTextCategoryCursor | null
+}
+
 export type RssFeedDiscoverabilityJobs = 'processEvaluateRssFeedDiscoverability'
 
 export type RssFeedHardDeleteJobs =

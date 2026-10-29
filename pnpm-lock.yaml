@@ -3712,6 +3712,9 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../services/email-address-validator
+      '@services/engagement-emails':
+        specifier: workspace:^
+        version: link:../services/engagement-emails
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../services/entity-cache
@@ -3832,6 +3835,9 @@ importers:
       '@services/stories':
         specifier: workspace:^
         version: link:../services/stories
+      '@services/stripe':
+        specifier: workspace:^
+        version: link:../services/stripe
       '@services/topic-recommendations':
         specifier: workspace:^
         version: link:../services/topic-recommendations

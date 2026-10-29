@@ -11,6 +11,7 @@ import {
   createTopHashtagRssSourceForTest,
   getPostHashtagSourcesForTest,
   insertTestRssFeedDirect,
+  applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -24,10 +25,7 @@ import {
 } from '../aliases.mts'
 import { getTopicAliasIdByKey, getTopicAliasRecords } from '../get-topic-aliases.mts'
 import { searchTopicAliases } from '../search-topic-aliases.mts'
-import {
-  applyTopicAliasUnlinkPage,
-  selectTopicAliasUnlinkNextPage,
-} from '../unlink-topic-alias-page.mts'
+import { selectTopicAliasUnlinkNextPage } from '../unlink-topic-alias-page.mts'
 
 const UNLINK_PAGE_CAP = 16
 

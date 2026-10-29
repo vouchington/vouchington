@@ -2,12 +2,21 @@ import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-
 import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { getRssFeedItemMappedTopics } from '../category-relations.mts'
-import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
-import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
 import {
-  applyTopicAliasUnlinkPage,
-  selectTopicAliasUnlinkNextPage,
-} from '@services/topics/unlink-topic-alias-page'
+  backfillTopicCategoryMappingsForTest as backfillCategoriesForTopicAliases,
+  applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
+  createTestTopic,
+  createTestUser,
+  getTopicAliasIdForTest,
+  getEntityRelation,
+  softDeleteTopic,
+  insertTestRssFeedDirect,
+  setTestEntityRelationIdAndScore,
+  WEB_PROVENANCE,
+  beginTransaction,
+} from '@voucha/test-helpers'
+import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
+import { selectTopicAliasUnlinkNextPage } from '@services/topics/unlink-topic-alias-page'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { caches } from '@services/entity-cache/caches'
 import { getRssFeedItemById } from '../get.mts'
@@ -19,18 +28,6 @@ import { v4 as uuid } from 'uuid'
 // rss-feed-items would create a fresh rss-feed-items<->entity-fetch cycle. Same cache
 // instance/TTL/invalidation-keys as the RSS-feed-item batch cache.
 const getRssFeedItemByIdCached = caches.rss_feed_items.cacheGetByAny(getRssFeedItemById)
-
-import {
-  createTestTopic,
-  createTestUser,
-  getTopicAliasIdForTest,
-  getEntityRelation,
-  softDeleteTopic,
-  insertTestRssFeedDirect,
-  setTestEntityRelationIdAndScore,
-  WEB_PROVENANCE,
-  beginTransaction,
-} from '@voucha/test-helpers'
 
 import { createTopic } from '@services/topics'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation'

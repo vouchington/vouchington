@@ -1,5 +1,5 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
-import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
+import { registerPostCommitAction } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/invalidate-rss-feed-items'
 import {
@@ -13,37 +13,18 @@ import {
 import { createCategoryTopicRelationsInTransaction } from './category-relations.mts'
 import { markRssFeedItemCategorySnapshotsForReconciliation } from './category-snapshot-reconciliations.mts'
 import { chunkArray } from './processing-limits.mts'
+import { runCategoryTransaction } from './category-transaction.mts'
 import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
-import { clearUnlinkedTopicAliasCategoryBatch } from './clear-unlinked-topic-alias-category-batch.mts'
-import { clearUnlinkedTopicAliasFeedCategories } from './clear-unlinked-topic-alias-feed-categories.mts'
-/**
- * Re-resolves mappings for an alias that no longer has an active topic owner.
- *
- * A standalone hashtag alias remains the source of truth for `topic_alias_id`; only the derived
- * topic mapping changes. Name/slug matches are considered after the alias match disappears so an
- * RSS category can continue to map to a different active topic with the same public key.
- */
-export async function clearUnlinkedTopicAliasCategories(
-  topicAliasId: string,
-  alias: string,
-  formerTopicId: string | undefined,
-  options: QueryOptions,
-): Promise<{ updated: number; hasMore: boolean }> {
-  const feedBatchSize = getRssFeedItemsWorkLimit('category_clear_batch_size')
-  const feedUpdated = await runInTransaction(options, query =>
-    clearUnlinkedTopicAliasFeedCategories(query, topicAliasId, alias, formerTopicId, feedBatchSize),
-  )
-  const itemResult = await clearCategoryBatch(topicAliasId, alias, formerTopicId, options)
-  return {
-    updated: feedUpdated + itemResult.updated,
-    hasMore: feedUpdated === feedBatchSize || itemResult.hasMore,
-  }
-}
+import {
+  clearUnlinkedTopicAliasCategoryBatch,
+  type CategoryClearRawPage,
+} from './clear-unlinked-topic-alias-category-batch.mts'
 async function clearCategoryBatch(
   topicAliasId: string,
   alias: string,
   formerTopicId: string | undefined,
   options: QueryOptions,
+  rawPage: CategoryClearRawPage,
 ): Promise<{ updated: number; hasMore: boolean }> {
   const run = async (query: TransactionQuery) => {
     const { rows, hasMore } = await clearUnlinkedTopicAliasCategoryBatch(
@@ -51,6 +32,7 @@ async function clearCategoryBatch(
       topicAliasId,
       alias,
       formerTopicId,
+      rawPage,
     )
     const [clearedVotes, createdTargets] = await Promise.all([
       clearCategorizerVotesInTransaction(
@@ -91,28 +73,47 @@ async function clearCategoryBatch(
     ])
     return { rows, statTargets, hasMore }
   }
-  const result = await runInTransaction(options, run)
+  const result = await runCategoryTransaction(options, run)
   const { rows, statTargets, hasMore } = result
   if (rows.length === 0) return { updated: 0, hasMore }
 
-  await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
-  await invalidateRssFeedItemChunks([...new Set(rows.map(row => row.rss_feed_item_id))])
+  const publish = async () => {
+    await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
+    await invalidateRssFeedItemChunks([...new Set(rows.map(row => row.rss_feed_item_id))])
+  }
+  if (options.query) registerPostCommitAction(options.query, publish)
+  else await publish()
   return {
     updated: rows.length,
     hasMore,
   }
 }
 
-async function runInTransaction<Result>(
-  options: QueryOptions,
-  run: (query: TransactionQuery) => Promise<Result>,
-): Promise<Result> {
-  if (options.query || options.client) return withTransactionOptions(options, run)
-  await using transaction = await beginTransaction()
-  const result = await run(transaction)
-  await transaction.commit()
-  return result
+/** Applies one indexed raw item page for a durable alias generation. */
+export function clearUnlinkedTopicAliasItemPage(
+  topicAliasId: string,
+  alias: string,
+  rawPage: CategoryClearRawPage,
+  options: QueryOptions = {},
+): Promise<{ updated: number; hasMore: boolean }> {
+  return clearCategoryBatch(topicAliasId, alias, undefined, options, rawPage)
 }
+
+/** The RSS worker supplies this to the topic unlink transaction before authored bindings go away. */
+export async function clearTopicAliasUnlinkCategoryPage(
+  query: TransactionQuery,
+  aliasId: string,
+  alias: string,
+  rows: ReadonlyArray<{ rss_feed_item_id: string; category_identity_id: string }>,
+): Promise<void> {
+  await clearUnlinkedTopicAliasItemPage(
+    aliasId,
+    alias,
+    { rows: [...rows], hasMore: false, match: 'alias_id' },
+    { query },
+  )
+}
+
 async function invalidateRssFeedItemChunks(itemIds: string[]): Promise<void> {
   const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('backfill_invalidation_chunk_size')
   const [chunk, ...remaining] = chunkArray(itemIds, INVALIDATION_CHUNK_SIZE)

@@ -56,19 +56,13 @@ describe('bounded topic alias category reconciliation', () => {
       processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
     ).resolves.toEqual({
       reconciled: 0,
-      updated: 4,
+      updated: 2,
       hasMore: true,
     })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toMatchObject({
       generation,
     })
-    await expect(
-      processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
-    ).resolves.toEqual({
-      reconciled: 1,
-      updated: 2,
-      hasMore: false,
-    })
+    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, updated: 4 })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
     for (const fixture of fixtures) {
       await expect(getTestRssFeedCategories(fixture.feedId)).resolves.toContainEqual({
@@ -84,17 +78,11 @@ describe('bounded topic alias category reconciliation', () => {
       processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
     ).resolves.toEqual({
       reconciled: 0,
-      updated: 4,
+      updated: 2,
       hasMore: true,
     })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeDefined()
-    await expect(
-      processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
-    ).resolves.toEqual({
-      reconciled: 1,
-      updated: 2,
-      hasMore: false,
-    })
+    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, updated: 4 })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
     for (const fixture of fixtures) {
       await expect(getTestRssFeedCategories(fixture.feedId)).resolves.toContainEqual({
@@ -133,23 +121,17 @@ describe('bounded topic alias category reconciliation', () => {
       processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
     ).resolves.toEqual({
       reconciled: 0,
-      updated: 2,
+      updated: 1,
       hasMore: true,
     })
     const last = items.at(-1)!
     await expect(getTestRssFeedItemCategories(last.itemId)).resolves.toContainEqual(
       expect.objectContaining({ topic_id: replacement.id }),
     )
+    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1 })
     await expect(getTestRssFeedCategories(last.feedId)).resolves.toContainEqual({
       category_text: aliasText,
       topic_id: replacement.id,
-    })
-    await expect(
-      processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
-    ).resolves.toEqual({
-      reconciled: 1,
-      updated: 0,
-      hasMore: false,
     })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
   })
@@ -199,13 +181,11 @@ describe('bounded topic alias category reconciliation', () => {
           await expect(pending).resolves.toMatchObject({ reconciled: 0, hasMore: true })
           await expect(
             getTopicAliasCategoryMappingDirtyRowForTest(alias.id),
-          ).resolves.toMatchObject({
-            generation: successor!.generation,
-          })
+          ).resolves.toMatchObject({ generation: successor!.generation })
         },
       )
       await expect(
-        processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
+        drainAlias(alias.id),
       ).resolves.toMatchObject({ reconciled: 1, hasMore: false })
       await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
       await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
@@ -218,3 +198,15 @@ describe('bounded topic alias category reconciliation', () => {
     }
   })
 })
+
+async function drainAlias(aliasId: string) {
+  let updated = 0
+  let reconciled = 0
+  for (let page = 0; page < 10; page += 1) {
+    const result = await processReconcileTopicAliasCategoryMappings(1, [aliasId])
+    updated += result.updated
+    reconciled += result.reconciled
+    if (!result.hasMore) return { reconciled, updated, hasMore: false }
+  }
+  throw new Error('Alias generation did not finish within ten raw pages')
+}

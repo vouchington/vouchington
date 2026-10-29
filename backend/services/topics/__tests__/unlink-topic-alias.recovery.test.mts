@@ -12,13 +12,13 @@ import {
   createTopHashtagRssSourceForTest,
   getPostHashtagSourcesForTest,
   insertTestRssFeedDirect,
+  applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTopicAliases, createUnlinkedTopicAlias, unlinkTopicAlias } from '../aliases.mts'
 import { getTopicAliasIdByKey } from '../get-topic-aliases.mts'
 import {
-  applyTopicAliasUnlinkPage,
   recoverTopicAliasUnlinks,
   selectTopicAliasUnlinkNextPage,
 } from '../unlink-topic-alias-page.mts'

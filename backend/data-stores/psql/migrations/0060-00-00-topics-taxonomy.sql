@@ -871,6 +871,13 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
   topic_alias_id UUID PRIMARY KEY,
   alias TEXT NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
+  unlink_requested_at TIMESTAMPTZ,
+  phase SMALLINT NOT NULL DEFAULT 0 CHECK (phase BETWEEN 0 AND 3),
+  scan_upper_item_id UUID,
+  scan_upper_feed_id UUID,
+  after_item_id UUID,
+  after_category_identity_id UUID,
+  after_feed_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -882,7 +889,8 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_alias_category_mapping_reconciliations__updated_at
-ON topic_alias_category_mapping_reconciliations (updated_at, topic_alias_id);
+ON topic_alias_category_mapping_reconciliations (updated_at, topic_alias_id)
+WHERE unlink_requested_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()
@@ -890,6 +898,7 @@ RETURNS TRIGGER AS $$
 DECLARE
   dirty_alias_id UUID;
   dirty_alias TEXT;
+  dirty_unlink_requested_at TIMESTAMPTZ;
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF NEW.topic_id IS NULL THEN
@@ -897,25 +906,37 @@ BEGIN
     END IF;
     dirty_alias_id := NEW.id;
     dirty_alias := NEW.alias;
+    dirty_unlink_requested_at := NEW.unlink_requested_at;
   ELSIF TG_OP = 'UPDATE' THEN
-    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN
+    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id
+      AND NEW.unlink_requested_at IS NOT DISTINCT FROM OLD.unlink_requested_at THEN
       RETURN NEW;
     END IF;
     dirty_alias_id := NEW.id;
     dirty_alias := NEW.alias;
+    dirty_unlink_requested_at := NEW.unlink_requested_at;
   ELSIF TG_OP = 'DELETE' THEN
-    IF OLD.topic_id IS NULL THEN
+    IF OLD.topic_id IS NULL AND OLD.unlink_requested_at IS NULL THEN
       RETURN OLD;
     END IF;
     dirty_alias_id := OLD.id;
     dirty_alias := OLD.alias;
+    dirty_unlink_requested_at := NULL;
   END IF;
 
-  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)
-  VALUES (dirty_alias_id, dirty_alias)
+  INSERT INTO topic_alias_category_mapping_reconciliations
+    (topic_alias_id, alias, unlink_requested_at)
+  VALUES (dirty_alias_id, dirty_alias, dirty_unlink_requested_at)
   ON CONFLICT (topic_alias_id) DO UPDATE
   SET alias = EXCLUDED.alias,
-      generation = topic_alias_category_mapping_reconciliations.generation + 1;
+      unlink_requested_at = EXCLUDED.unlink_requested_at,
+      generation = topic_alias_category_mapping_reconciliations.generation + 1,
+      phase = 0,
+      scan_upper_item_id = NULL,
+      scan_upper_feed_id = NULL,
+      after_item_id = NULL,
+      after_category_identity_id = NULL,
+      after_feed_id = NULL;
 
   IF TG_OP = 'DELETE' THEN
     RETURN OLD;
@@ -926,7 +947,7 @@ $$ LANGUAGE plpgsql;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty
-AFTER INSERT OR UPDATE OF topic_id OR DELETE ON topic_aliases
+AFTER INSERT OR UPDATE OF topic_id, unlink_requested_at OR DELETE ON topic_aliases
 FOR EACH ROW
 EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty();
 
@@ -934,6 +955,10 @@ COMMENT ON TABLE topic_alias_category_mapping_reconciliations IS 'Coalesced clea
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.topic_alias_id IS 'Alias transition identity; the primary key coalesces pending work for the same alias.';
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.alias IS 'Canonical alias retained without a foreign key so delete tombstones can clear stale category mappings.';
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.generation IS 'Monotonic transition generation used to prevent stale workers from acknowledging newer alias ownership changes.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.unlink_requested_at IS 'Copied alias unlink request timestamp while the dedicated unlink phase owns category cleanup; NULL is selectable work.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.phase IS 'Raw category stream for this alias generation: authored item, text item, text feed, or complete.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.scan_upper_item_id IS 'Fixed highest item ID admitted by this generation; the nil UUID means there were no items.';
+COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.scan_upper_feed_id IS 'Fixed highest feed ID admitted by this generation; the nil UUID means there were no feeds.';
 
 --------------------------------------------------------------------------------
 -- retailer_topics

@@ -5,16 +5,19 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { buildRssFeedItemCategorySqlBatches } from '../category-batches.mts'
-import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
-import { upsertRssFeedItems } from '../upsert.mts'
-import { v4 as uuid } from 'uuid'
 import {
+  backfillTopicCategoryMappingsForTest as backfillCategoriesForTopicAliases,
+  readAliasBackfillRawPageForTest,
   beginTransaction,
   createTestTopic,
   getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
   lockTestRssFeedItemCategory,
 } from '@voucha/test-helpers'
+import { backfillCategoriesForTopicAliases as backfillRawCategoryPage } from '../backfill-categories-for-topic-aliases.mts'
+import { processReconcileTopicAliasCategoryMappings } from '../../rss-feeds/reconcile-topic-alias-category-mappings.mts'
+import { upsertRssFeedItems } from '../upsert.mts'
+import { v4 as uuid } from 'uuid'
 import { createTopicAliases } from '@services/topics/aliases'
 import { RSS_FEED_ITEM_MAX_CATEGORIES } from '../processing-limits.mts'
 
@@ -194,15 +197,15 @@ describe('categories limits', () => {
         slug: `alias-backfill-topic-${random}`,
         hostname: `alias-backfill-${random}.example.com`,
       })
-      await createTopicAliases(topic.id, [alias])
+      const [linkedAlias] = await createTopicAliases(topic.id, [alias])
 
-      const result = await backfillCategoriesForTopicAliases(topic.id)
+      const result = await processReconcileTopicAliasCategoryMappings(1, [linkedAlias!.id])
 
-      expect(result).toEqual({ updated: 2, hasMore: true })
-      await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({
-        updated: 1,
-        hasMore: false,
-      })
+      expect(result).toMatchObject({ updated: 2, hasMore: true })
+      await expect(
+        processReconcileTopicAliasCategoryMappings(1, [linkedAlias!.id]),
+      ).resolves.toMatchObject({ updated: 1, hasMore: true })
+      await backfillCategoriesForTopicAliases(topic.id)
       await expect(getTestRssFeedItemCategories(items[0]!.id)).resolves.toEqual([
         expect.objectContaining({ category_text: alias, topic_id: topic.id }),
       ])
@@ -230,7 +233,8 @@ describe('categories limits', () => {
       slug: `locked-alias-backfill-topic-${random}`,
       hostname: `locked-alias-backfill-${random}.example.com`,
     })
-    await createTopicAliases(topic.id, [alias])
+    const [linkedAlias] = await createTopicAliases(topic.id, [alias])
+    const rawPage = await readAliasBackfillRawPageForTest(linkedAlias!.id, alias)
 
     const ready = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
@@ -258,7 +262,7 @@ describe('categories limits', () => {
         },
       },
       async waitForLock => {
-        const backfill = backfillCategoriesForTopicAliases(topic.id)
+        const backfill = backfillRawCategoryPage(topic.id, rawPage)
         await waitForLock(backfill)
         await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
           expect.objectContaining({ category_text: alias, topic_id: null }),

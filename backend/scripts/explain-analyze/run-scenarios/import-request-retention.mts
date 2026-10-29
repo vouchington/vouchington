@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { cleanupExpiredUserDataRequestAttempts } from '@services/data-retention/cleanup-user-data-request-attempts'
+import { runAccountDataExportScenarios } from './account-data-export.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { postSeedTimestampMs, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { seedImportRequestRetention } from '../seed-data/import-request-retention.mts'
 
 export async function runImportRequestRetentionScenarios(): Promise<void> {
+  await runAccountDataExportScenarios()
+
   const oldRequestTimestamp = postSeedTimestampMs(0) - 40 * 86_400_000
   const requestId = seedUuidAtTimestamp(oldRequestTimestamp, 0)
   registerScenarioContract('import-retention-parent', {
@@ -119,7 +122,7 @@ export async function runImportRequestRetentionScenarios(): Promise<void> {
       },
       { kind: 'maxProcessedRows', relation: 'user_data_requests', max: 2 },
     ],
-    seededRows: { user_data_requests: 20_002 },
+    seededRows: { user_data_requests: 20_202 },
   })
   await runAndCapture('request-range-retirement-recent', () =>
     write(

@@ -39,7 +39,7 @@ function failureReason(error: unknown): string {
 }
 
 /** Up to `limit` eligible notice ids in a different random order each run, so no case starves. */
-async function selectCandidates(options: {
+export async function selectCandidates(options: {
   now: Date
   cutoff: Date
   limit: number

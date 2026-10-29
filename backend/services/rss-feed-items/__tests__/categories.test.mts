@@ -1,12 +1,15 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories } from '../categories.mts'
-import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
+import {
+  backfillTopicCategoryMappingsForTest as backfillCategoriesForTopicAliases,
+  createTestUser,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createTopic } from '@services/topics'
 import { createTopicAliases } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { v4 as uuid } from 'uuid'
-import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRssFeedItemCategoryTestFixture } from '../../../test-helpers/services/rss-feed-items/category-test-fixture.mts'
 import { upsertRssFeedCategories } from '../../rss-feeds/categories.mts'
 import { rejectRssFeedItemCategory } from '../unmapped-categories.mts'

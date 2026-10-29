@@ -1,6 +1,7 @@
 import { assertRssHardDeleteRecoverySeek } from './plan-custom/rss-hard-delete.mts'
 import { assertDispatchWorkPlan } from './plan-custom/dispatch-work.mts'
 import { assertMediaDeliveryReplayPlan } from './plan-custom/media-delivery-replay.mts'
+import { assertAppleNotificationRecoveryPlan } from './plan-custom/membership-apple-notifications.mts'
 import type { ExplainResult } from '@data-stores/psql'
 import { assertAdminEmailIndexPlan } from './plan-custom/admin-email.mts'
 import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-custom/classifier-human-vote-comparison.mts'
@@ -29,6 +30,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   dispatchReferralCrawlSelectivity: result => assertDispatchWorkPlan('crawl', result),
   dispatchReferralUnfurlSelectivity: result => assertDispatchWorkPlan('unfurl', result),
   mediaDeliveryReplay: assertMediaDeliveryReplayPlan,
+  appleNotificationRecovery: assertAppleNotificationRecoveryPlan,
   adminEmail: assertAdminEmailIndexPlan,
   classifierBatch: assertClassifierHumanVoteComparisonPlanIfApplicable,
   copyrightFacts: assertCopyrightStatementFactsIsTargetBounded,

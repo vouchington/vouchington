@@ -10,8 +10,6 @@ import {
   enqueueContinueTopicAliasCategoryMappingReconciliation,
 } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { invalidatePostsForTopicAliasesPage } from '@services/topics/invalidate-posts-for-topic-aliases'
-import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
-import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import { processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings } from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
 import type { TopicAliasPostInvalidationData } from '@queues/rss-feed-maintenance/types'
 
@@ -70,9 +68,7 @@ export const processTopicAliasesUpdate = async ({
   removedTopicAliasId?: string
 }) => {
   if (removedTopicAliasId) {
-    const cleared = await clearCategoriesForUnlinkedTopicAlias(removedTopicAliasId, topicId)
-    if (cleared.hasMore)
-      await enqueueContinueTopicAliasCategoryMappingReconciliation([removedTopicAliasId])
+    await enqueueContinueTopicAliasCategoryMappingReconciliation([removedTopicAliasId])
   }
 
   // The database projects the alias cache; refresh readers after the committed write.
@@ -82,11 +78,9 @@ export const processTopicAliasesUpdate = async ({
   // This lets the batch embedding process handle updates
   await updateTopicEmbeddingContentHash(topicId)
 
-  // Backfill RSS feed item categories that match the new aliases
-  // This updates category records to link them to this topic
+  // Alias transitions are drained from their durable per-alias generations.
+  // The topic jobs page only the current name and slug identities.
   await enqueueBackfillCategoriesForTopicAliases(topicId)
-
-  // Backfill feed-level podcast categories for the same alias change
-  const feedBackfill = await backfillCategoriesForTopicAlias(topicId)
-  if (feedBackfill.hasMore) await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId)
+  await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId)
+  await enqueueContinueTopicAliasCategoryMappingReconciliation()
 }

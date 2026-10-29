@@ -105,7 +105,7 @@ CREATE UNIQUE INDEX idx_image_surface_placements__profile_link
   ON image_surface_placements (user_profile_link_id, image_id)
   WHERE surface_kind = 'user-profile-link-image';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_image_surface_placements__image ON image_surface_placements (image_id);
+CREATE INDEX idx_image_surface_placements__image ON image_surface_placements (image_id, placement_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placements__user_foreign_key
   ON image_surface_placements (user_id) WHERE user_id IS NOT NULL;

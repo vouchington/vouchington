@@ -1,17 +1,23 @@
 import { getRssFeedsWorkLimit } from './work-limits.mts'
-import { write } from '@data-stores/psql'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
-import { clearAllCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-all-unlinked-topic-alias-categories'
-import { backfillCategoriesForTopicAlias } from './categories.mts'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import { clearUnlinkedTopicAliasItemPage } from '@services/rss-feed-items/clear-unlinked-topic-alias-categories'
+import { clearUnlinkedTopicAliasFeedPage } from '@services/rss-feed-items/clear-unlinked-topic-alias-feed-categories'
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
+import { beginTransaction } from '@data-stores/psql'
+import {
+  getTopicAliasCategoryMappingDirtyRows,
+  checkpointTopicAliasCategoryMappingDirtyRow,
+  acknowledgeTopicAliasCategoryMappingDirtyRow,
+  getCurrentTopicAlias,
+  type TopicAliasCategoryMappingDirtyRow,
+  type CurrentTopicAlias,
+} from './topic-alias-category-dirty-state.mts'
 
-type TopicAliasCategoryMappingDirtyRow = {
-  topic_alias_id: string
-  alias: string
-  generation: string
-}
-
-type CurrentTopicAlias = { topic_id: string | null }
+import {
+  readAliasCategoryRawPage,
+  type AliasCategoryRawPage,
+} from './topic-alias-category-raw-page.mts'
+import { backfillLinkedAliasFeedPage } from './linked-alias-feed-page.mts'
 
 /**
  * Drains durable alias transitions, rather than scanning category tables. A successful exact-
@@ -39,45 +45,6 @@ export async function processReconcileTopicAliasCategoryMappings(
     throw new AggregateError(errors, 'Topic alias category mapping reconciliation failed')
   }
   return result
-}
-
-async function getTopicAliasCategoryMappingDirtyRows(
-  limit: number,
-  topicAliasIds?: readonly string[],
-): Promise<TopicAliasCategoryMappingDirtyRow[]> {
-  const { rows } = await write<TopicAliasCategoryMappingDirtyRow>(
-    buildTopicAliasCategoryMappingDirtyRowsQuery(limit, topicAliasIds),
-  )
-  return rows
-}
-
-function buildTopicAliasCategoryMappingDirtyRowsQuery(
-  limit = getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
-  topicAliasIds?: readonly string[],
-): SQLStatement {
-  if (!topicAliasIds) {
-    return sql`/* getTopicAliasCategoryMappingDirtyRows */
-    SELECT reconciliation.topic_alias_id, reconciliation.alias, reconciliation.generation
-    FROM topic_alias_category_mapping_reconciliations reconciliation
-    WHERE NOT EXISTS (
-      SELECT 1 FROM topic_aliases pending
-      WHERE pending.id = reconciliation.topic_alias_id
-        AND pending.unlink_requested_at IS NOT NULL
-    )
-    ORDER BY reconciliation.updated_at, reconciliation.topic_alias_id
-    LIMIT ${limit}`
-  }
-  return sql`/* getTopicAliasCategoryMappingDirtyRows */
-    SELECT reconciliation.topic_alias_id, reconciliation.alias, reconciliation.generation
-    FROM topic_alias_category_mapping_reconciliations reconciliation
-    WHERE reconciliation.topic_alias_id = ANY(${topicAliasIds}::uuid[])
-      AND NOT EXISTS (
-        SELECT 1 FROM topic_aliases pending
-        WHERE pending.id = reconciliation.topic_alias_id
-          AND pending.unlink_requested_at IS NOT NULL
-      )
-    ORDER BY reconciliation.updated_at, reconciliation.topic_alias_id
-    LIMIT ${limit}`
 }
 
 async function reconcileTopicAliasCategoryMappingDirtyRows(
@@ -114,47 +81,80 @@ async function reconcileTopicAliasCategoryMappingDirtyRow(
   candidate: TopicAliasCategoryMappingDirtyRow,
 ): Promise<{ updated: number; hasMore: boolean }> {
   const currentAlias = await getCurrentTopicAlias(candidate.topic_alias_id)
-  const updated = currentAlias?.topic_id
-    ? await backfillLinkedTopicAliasCategories(currentAlias.topic_id)
-    : await clearAllCategoriesForUnlinkedTopicAlias(candidate.topic_alias_id, candidate.alias)
-  if (updated.hasMore) return updated
-  const acknowledged = await acknowledgeTopicAliasCategoryMappingDirtyRow(candidate)
-  return { ...updated, hasMore: !acknowledged }
-}
-
-async function getCurrentTopicAlias(topicAliasId: string): Promise<CurrentTopicAlias | undefined> {
-  const { rows } = await write<CurrentTopicAlias>(
-    `/* getCurrentTopicAlias */
-      SELECT topic_id
-      FROM topic_aliases
-      WHERE id = $1`,
-    [topicAliasId],
+  await using transaction = await beginTransaction()
+  const page = await readAliasCategoryRawPage(
+    transaction,
+    candidate.topic_alias_id,
+    candidate.alias,
+    candidate,
+    candidate.phase === 2
+      ? currentAlias?.topic_id
+        ? getRssFeedsWorkLimit('category_backfill_batch_size')
+        : getRssFeedItemsWorkLimit('category_clear_batch_size')
+      : getRssFeedItemsWorkLimit(
+          currentAlias?.topic_id ? 'category_backfill_batch_size' : 'category_clear_batch_size',
+        ),
   )
-  return rows[0]
-}
-
-async function backfillLinkedTopicAliasCategories(
-  topicId: string,
-): Promise<{ updated: number; hasMore: boolean }> {
-  const [itemBackfill, feedBackfill] = await Promise.all([
-    backfillCategoriesForTopicAliases(topicId),
-    backfillCategoriesForTopicAlias(topicId),
-  ])
-  return {
-    updated: itemBackfill.updated + feedBackfill.updated,
-    hasMore: itemBackfill.hasMore || feedBackfill.hasMore,
+  await transaction.commit()
+  const updated = await applyAliasCategoryRawPage(candidate, currentAlias, page)
+  if (page.hasMore) {
+    const checkpointed = await checkpointTopicAliasCategoryMappingDirtyRow(candidate, page.cursor)
+    return { updated, hasMore: page.hasMore || !checkpointed }
   }
+  const acknowledged = await acknowledgeTopicAliasCategoryMappingDirtyRow(candidate)
+  return { updated, hasMore: !acknowledged }
 }
 
-async function acknowledgeTopicAliasCategoryMappingDirtyRow(
+async function applyAliasCategoryRawPage(
   candidate: TopicAliasCategoryMappingDirtyRow,
-): Promise<boolean> {
-  const { rowCount } = await write(
-    `/* acknowledgeTopicAliasCategoryMappingDirtyRow */
-      DELETE FROM topic_alias_category_mapping_reconciliations
-      WHERE topic_alias_id = $1
-        AND generation = $2`,
-    [candidate.topic_alias_id, candidate.generation],
+  currentAlias: CurrentTopicAlias | undefined,
+  page: AliasCategoryRawPage,
+): Promise<number> {
+  if (page.rows.length === 0) return 0
+  if (candidate.phase === 2) {
+    const feeds = page.rows.flatMap(row =>
+      row.rss_feed_id
+        ? [{ rss_feed_id: row.rss_feed_id, category_identity_id: row.category_identity_id }]
+        : [],
+    )
+    if (currentAlias?.topic_id)
+      return backfillLinkedAliasFeedPage(
+        candidate.topic_alias_id,
+        candidate.alias,
+        currentAlias.topic_id,
+        feeds,
+      )
+    await using transaction = await beginTransaction()
+    const updated = await clearUnlinkedTopicAliasFeedPage(
+      transaction,
+      candidate.topic_alias_id,
+      candidate.alias,
+      feeds,
+    )
+    await transaction.commit()
+    return updated
+  }
+  const items = page.rows.flatMap(row =>
+    row.rss_feed_item_id
+      ? [{ rss_feed_item_id: row.rss_feed_item_id, category_identity_id: row.category_identity_id }]
+      : [],
   )
-  return rowCount === 1
+  if (currentAlias?.topic_id) {
+    const result = await backfillCategoriesForTopicAliases(currentAlias.topic_id, {
+      rows: items,
+      hasMore: page.hasMore,
+      match: {
+        kind: candidate.phase === 0 ? 'alias_id' : 'alias_text',
+        aliasId: candidate.topic_alias_id,
+        alias: candidate.alias,
+      },
+    })
+    return result.updated
+  }
+  const result = await clearUnlinkedTopicAliasItemPage(candidate.topic_alias_id, candidate.alias, {
+    rows: items,
+    hasMore: page.hasMore,
+    match: candidate.phase === 0 ? 'alias_id' : 'alias_text',
+  })
+  return result.updated
 }

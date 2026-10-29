@@ -67,23 +67,19 @@ async function cleanupRetainedMediaBindingsPage(
         )
       ).rows[0]
     : null
+  const lowerBound = progress?.cursor_placement_id ?? '00000000-0000-0000-0000-000000000000'
+  const candidateValues: unknown[] = [lowerBound]
+  const scopedIds =
+    listedIds === undefined
+      ? ''
+      : `AND placement_id = ANY($${candidateValues.push(listedIds)}::uuid[])`
+  const limitParam = `$${candidateValues.push(pageSize + 1)}`
   const { rows: candidates } = await query<{ placement_id: string; image_id: string }>(
     `/* listRetainedMediaBindingCleanupCandidates */
-     -- no-mistakes-disable-next-line postgres-required-predicates: the first cleanup page may have neither a placement-ID list nor a cursor
      SELECT placement_id, image_id FROM retained_image_placement_bindings
-     WHERE (
-       $1::uuid[] IS NOT NULL AND placement_id = ANY($1::uuid[])
-       AND ($3::boolean OR $2::uuid IS NULL OR placement_id > $2::uuid)
-     ) OR (
-       $1::uuid[] IS NULL AND ($2::uuid IS NULL OR placement_id > $2::uuid)
-     )
-     ORDER BY placement_id LIMIT $4`,
-    [
-      listedIds ?? null,
-      progress?.cursor_placement_id ?? null,
-      cursorPlacementIds === undefined,
-      pageSize + 1,
-    ],
+     WHERE placement_id > $1::uuid ${scopedIds}
+     ORDER BY placement_id LIMIT ${limitParam}`,
+    candidateValues,
   )
   const page = candidates.slice(0, pageSize)
   const pagePlacementIds = page.map(row => row.placement_id)

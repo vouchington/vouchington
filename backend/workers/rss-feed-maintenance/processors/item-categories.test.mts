@@ -5,13 +5,15 @@ import {
   processBackfillRssFeedCategoriesForTopicAlias,
   processReconcileRssFeedItemCategorySnapshots,
 } from './item-categories.mts'
-import type { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
-import type { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
+import type {
+  backfillTopicTextItemPage,
+  backfillTopicTextFeedPage,
+} from '@services/rss-feeds/topic-text-category-backfill'
 import type { enqueueContinueRssFeedItemCategorySnapshotReconciliation } from '@queues/rss-feed-maintenance/enqueues/item-categories'
 import type { reconcileRssFeedItemCategorySnapshots } from '@services/rss-feed-items/category-snapshot-reconciliations'
 
-const mockBackfillCategoriesForTopicAlias = vi.fn<typeof backfillCategoriesForTopicAlias>()
-const mockBackfillCategoriesForTopicAliases = vi.fn<typeof backfillCategoriesForTopicAliases>()
+const mockBackfillTopicTextFeedPage = vi.fn<typeof backfillTopicTextFeedPage>()
+const mockBackfillTopicTextItemPage = vi.fn<typeof backfillTopicTextItemPage>()
 const mockEnqueueContinuation =
   vi.fn<typeof enqueueContinueRssFeedItemCategorySnapshotReconciliation>()
 const mockReconcileSnapshots = vi.fn<typeof reconcileRssFeedItemCategorySnapshots>()
@@ -22,29 +24,29 @@ describe('rss feed item category processor', () => {
   })
 
   it('backfills item categories for topic aliases', async () => {
-    mockBackfillCategoriesForTopicAliases.mockResolvedValue({ updated: 2, hasMore: false })
+    mockBackfillTopicTextItemPage.mockResolvedValue({ updated: 2, hasMore: false, cursor: null })
 
     await expect(
       processBackfillCategoriesForTopicAliases(
         { topicId: 'topic-1' },
-        { backfillCategoriesForTopicAliases: mockBackfillCategoriesForTopicAliases },
+        { backfillTopicTextItemPage: mockBackfillTopicTextItemPage },
       ),
-    ).resolves.toEqual({ updated: 2, hasMore: false })
+    ).resolves.toEqual({ updated: 2, hasMore: false, cursor: null })
 
-    expect(mockBackfillCategoriesForTopicAliases).toHaveBeenCalledWith('topic-1')
+    expect(mockBackfillTopicTextItemPage).toHaveBeenCalledWith('topic-1', undefined)
   })
 
   it('backfills RSS feed categories for a topic alias', async () => {
-    mockBackfillCategoriesForTopicAlias.mockResolvedValue({ updated: 3, hasMore: false })
+    mockBackfillTopicTextFeedPage.mockResolvedValue({ updated: 3, hasMore: false, cursor: null })
 
     await expect(
       processBackfillRssFeedCategoriesForTopicAlias(
         { topicId: 'topic-2' },
-        { backfillCategoriesForTopicAlias: mockBackfillCategoriesForTopicAlias },
+        { backfillTopicTextFeedPage: mockBackfillTopicTextFeedPage },
       ),
-    ).resolves.toEqual({ updated: 3, hasMore: false })
+    ).resolves.toEqual({ updated: 3, hasMore: false, cursor: null })
 
-    expect(mockBackfillCategoriesForTopicAlias).toHaveBeenCalledWith('topic-2')
+    expect(mockBackfillTopicTextFeedPage).toHaveBeenCalledWith('topic-2', undefined)
   })
 
   it('enqueues an immediate serialized continuation after a full snapshot batch', async () => {

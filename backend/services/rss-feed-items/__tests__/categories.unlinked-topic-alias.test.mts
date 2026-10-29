@@ -2,17 +2,17 @@ import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-
 import { describe, expect, it } from 'vitest'
 
 import { upsertRssFeedItemCategories } from '../categories.mts'
-import { clearAllCategoriesForUnlinkedTopicAlias } from '../clear-all-unlinked-topic-alias-categories.mts'
-import { getRssFeedItemById } from '../get.mts'
-import { upsertRssFeedItems } from '../upsert.mts'
-import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import {
+  finishTopicAliasUnlinkForTest,
   createTestTopic,
   getTestRssFeedItemCategorySnapshotReconciliation,
   getTestRssFeedCategories,
   insertTestRssFeedCategory,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
+import { getRssFeedItemById } from '../get.mts'
+import { upsertRssFeedItems } from '../upsert.mts'
+import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 
 describe('unlinked RSS topic alias category cleanup', () => {
   it('re-resolves feed and item categories through an active topic slug after alias unlink', async () => {
@@ -44,7 +44,7 @@ describe('unlinked RSS topic alias category cleanup', () => {
     await insertTestRssFeedCategory(feed.id, aliasText, sourceTopic.id)
     await unlinkTopicAlias(alias!.id, { expectedTopicId: sourceTopic.id, skipSideEffects: true })
 
-    await clearAllCategoriesForUnlinkedTopicAlias(alias!.id, aliasText)
+    await finishTopicAliasUnlinkForTest(alias!.id)
 
     await expect(getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).resolves.toBeDefined()
 
@@ -58,7 +58,7 @@ describe('unlinked RSS topic alias category cleanup', () => {
       expect.objectContaining({
         categories: expect.arrayContaining([
           expect.objectContaining({
-            hashtag: expect.objectContaining({ key: aliasText, topic_id: null }),
+            hashtag: null,
             topic: expect.objectContaining({ id: replacementTopic.id }),
           }),
         ]),

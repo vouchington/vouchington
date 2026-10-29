@@ -11,6 +11,7 @@ import {
   createTestUser,
   insertTestRssFeedDirect,
   beginTransaction,
+  applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
@@ -20,10 +21,7 @@ import {
   unlinkTopicAlias,
 } from '../aliases.mts'
 import { recordTopicAliasPublicationChanges } from '../publication-change.mts'
-import {
-  applyTopicAliasUnlinkPage,
-  selectTopicAliasUnlinkNextPage,
-} from '../unlink-topic-alias-page.mts'
+import { selectTopicAliasUnlinkNextPage } from '../unlink-topic-alias-page.mts'
 
 describe('topic alias publication mutation', () => {
   it('rejects conflicting text for one alias identity', async () => {
