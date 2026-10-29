@@ -17,7 +17,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background": "workspace:^",
-    "@vouchington/worker-runtime": "^0.3.0",
+    "@vouchington/worker-runtime": "^0.3.1",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
