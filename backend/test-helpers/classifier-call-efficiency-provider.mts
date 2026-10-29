@@ -3,9 +3,11 @@ import { Response } from 'undici'
 import { vi } from 'vitest'
 import { fetchStructuredDecisionProvider } from '../modules/structured-decisions/transport.mts'
 import { OUTAGE } from './classifier-provider-failure-scenarios.mts'
-import { readAskedQuestions } from './data-stores/psql/classifier-runs/community-moderation-provider.mts'
-
-type Question = { type: string; criteria: Record<string, string> }
+import {
+  type AskedQuestion,
+  decisionResponseBody,
+  readAskedQuestions,
+} from './structured-decision-dialect.mts'
 
 type ProviderOptions = {
   /** Signals the real provider boundary and waits for its explicit response release. */
@@ -25,7 +27,7 @@ export type EfficiencyProvider = {
 }
 
 /** A choice question is answered with the first real candidate, or `none` when there is none. */
-function answerFor(id: string, question: Question, options: ProviderOptions) {
+function answerFor(id: string, question: AskedQuestion, options: ProviderOptions) {
   if (question.type === 'noul') return { id, type: 'noul', noul: options.noul?.(id) ?? 0.9 }
   if (question.type !== 'choice') throw new Error(`Unexpected question type: ${question.type}`)
   const keys = Object.keys(question.criteria)
@@ -45,7 +47,7 @@ export function installEfficiencyProvider(options: ProviderOptions = {}): Effici
   const billedResponseIds: string[] = []
   let refusals = 0
   vi.mocked(fetchStructuredDecisionProvider).mockImplementation(async (_url, init) => {
-    const questions = readAskedQuestions(init) as Record<string, Question>
+    const questions = readAskedQuestions(init)
     requests.push(Object.keys(questions))
     if (refusals > 0) {
       refusals -= 1
@@ -54,15 +56,17 @@ export function installEfficiencyProvider(options: ProviderOptions = {}): Effici
     await options.beforeResponse?.()
     const id = `decision-${randomUUID()}`
     billedResponseIds.push(id)
-    return Response.json({
-      id,
-      model: 'typesafe/jev-1.13-20260917',
-      provider: 'TypeSafe',
-      usage: { input_tokens: 12, output_tokens: 3, cost: 0.002 },
-      answers: Object.entries(questions).map(([qid, question]) =>
-        answerFor(qid, question, options),
-      ),
-    })
+    return Response.json(
+      decisionResponseBody(init, {
+        id,
+        model: 'typesafe/jev-1.13-20260917',
+        provider: 'TypeSafe',
+        usage: { input_tokens: 12, output_tokens: 3, cost: 0.002 },
+        answers: Object.entries(questions).map(([qid, question]) =>
+          answerFor(qid, question, options),
+        ),
+      }),
+    )
   })
   return {
     requests,

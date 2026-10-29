@@ -78,7 +78,7 @@ describe('classifier run processor (real GlideMQ)', () => {
   })
 
   it('does not reach the provider after the durable attempt budget is exhausted, and keeps the local outcome', async () => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     const request = vi.mocked(fetchStructuredDecisionProvider)
     request.mockRejectedValue(new Error('Unexpected provider request'))
     const { post, inputSha256, subject, run } = await reserveRun(true, true)
@@ -120,7 +120,7 @@ describe('classifier run processor (real GlideMQ)', () => {
   })
 
   it('releases an exhausted queue identity and executes all remote topics exactly once on recovery', async () => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     await spendCapConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     const setup = await createApprovedClassifierPost(true, false)

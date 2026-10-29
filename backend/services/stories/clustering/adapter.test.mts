@@ -162,7 +162,7 @@ describe('story clustering run configuration (real PG)', () => {
       actorId: resolved.actorId,
       classifierId: expect.any(String),
       promptVersionId: expect.any(String),
-      modelProvider: 'openrouter',
+      modelProvider: 'openai',
     })
     expect(Object.keys(resolved.configuration).toSorted()).toEqual([
       'actorId',

@@ -39,7 +39,7 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
       release = await driver.initialize?.()
     })
     beforeEach(() => {
-      vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+      vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     })
     afterEach(() => {
       vi.unstubAllEnvs()
@@ -160,7 +160,7 @@ export function describeClassifierLateCandidateReplay(driver: EfficiencyDriver):
     beforeAll(async () => {
       release = await driver.initialize?.()
     })
-    beforeEach(() => vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key'))
+    beforeEach(() => vi.stubEnv('OPENAI_API_KEY', 'test-provider-key'))
     afterEach(() => {
       vi.unstubAllEnvs()
       vi.mocked(fetchStructuredDecisionProvider).mockReset()

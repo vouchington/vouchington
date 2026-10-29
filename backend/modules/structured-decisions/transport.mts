@@ -10,7 +10,7 @@ import type { StructuredDecisionTransport } from './types.mts'
 const OPENAI_DECISIONS_URL = 'https://api.openai.com/v1/decisions'
 const OPENROUTER_DECISIONS_URL = 'https://openrouter.ai/api/alpha/decisions'
 const TYPESAFE_SYSTEM_ONE_URL = 'https://api.typesafe.ai/v1/systemone'
-export const OPENAI_DECISION_MODEL = 'gpt-6-luna'
+const OPENAI_DECISION_MODEL = 'gpt-6-luna'
 export function createTransportRequest(
   transport: StructuredDecisionTransport,
   apiKey: string,

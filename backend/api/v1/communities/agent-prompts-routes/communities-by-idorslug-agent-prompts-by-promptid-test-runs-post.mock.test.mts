@@ -39,7 +39,7 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
     owner = await createTestUser()
   })
   beforeEach(() => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     answerWith({ probability: 0.01 })
   })
   afterEach(() => {
