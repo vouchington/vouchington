@@ -14,7 +14,7 @@ type GrafanaHeartbeatDependencies = {
   // The timer runs the async heartbeat, whose promise settles after reporting or suppressing
   // request errors and scheduling the next run. Keep that completion contract on the callback.
   setTimeout: (callback: () => Promise<void>, ms: number) => Timer
-  clearTimeout: typeof globalThis.clearTimeout
+  clearTimeout: (timer: Timer) => void
   addGracefulShutdownCallback: typeof addGracefulShutdownCallback
 }
 

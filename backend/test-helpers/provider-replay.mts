@@ -157,7 +157,12 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
   }
 
   return {
-    fetch: async (input, init) => replayRequest(new Request(input, init)),
+    fetch: async (input, init) =>
+      replayRequest(
+        typeof input !== 'string' && 'url' in input
+          ? new Request(input, init)
+          : new Request(input.toString(), init),
+      ),
     sendHttpRequest: async (url, init) =>
       replayRequest(new Request(url, init), url, new Headers(init?.headers)),
     requests,

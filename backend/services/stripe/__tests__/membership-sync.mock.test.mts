@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import Stripe from 'stripe'
+import type Stripe from 'stripe'
+import { createStripeClient } from '@vouchington/stripe'
 import { describe, expect, it, vi } from 'vitest'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
 import { getStripeCustomer } from '@modules/stripe/customers'
@@ -58,9 +59,12 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
     const evidenceBefore = await getTestMembershipProviderEvidenceId(membership.id)
     const agent = new MockAgent()
     agent.disableNetConnect()
-    const client = new Stripe('sk_test_owned_fixture', {
-      httpClient: Stripe.createFetchHttpClient(createMockAgentFetchForTest(agent)),
-      maxNetworkRetries: 0,
+    const client = createStripeClient({
+      apiKey: 'sk_test_owned_fixture',
+      fetch: createMockAgentFetchForTest(agent),
+      // Preserve the Stripe SDK's default instead of adopting the wrapper's shorter timeout.
+      timeoutMs: 80_000,
+      config: { maxNetworkRetries: 0 },
     })
     vi.mocked(getStripeCustomer).mockImplementation(id => client.customers.retrieve(id))
     vi.mocked(getStripeSubscription).mockImplementation(id =>

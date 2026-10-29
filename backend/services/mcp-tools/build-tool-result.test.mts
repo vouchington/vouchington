@@ -108,7 +108,7 @@ describe('tool-local schema references', () => {
         // Exercise our actual stateless HTTP handler with the SDK's wire protocol and
         // serialization, without opening a socket or starting the web stack.
         fetch: async (input, init) => {
-          const request = new Request(input, init)
+          const request = new Request(input.toString(), init)
           if (request.method !== 'POST') return new Response(null, { status: 405 })
           const parsedBody: unknown = await request.clone().json()
           return handleMcpHttpRequest({
