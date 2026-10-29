@@ -1435,6 +1435,8 @@
 ## `operational_tombstone_retention_names`
 
 - `remote_actors`
+- `feed_hostname_blocks`
+- `other_hostname_blocks`
 - `deleted_conversations`
 
 ## `passkey_device_types`

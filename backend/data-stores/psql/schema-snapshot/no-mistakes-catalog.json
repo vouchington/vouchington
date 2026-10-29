@@ -1093,7 +1093,12 @@
       "values": ["code"]
     },
     "operational_tombstone_retention_names": {
-      "values": ["remote_actors", "deleted_conversations"]
+      "values": [
+        "remote_actors",
+        "feed_hostname_blocks",
+        "other_hostname_blocks",
+        "deleted_conversations"
+      ]
     },
     "passkey_device_types": {
       "values": ["singleDevice", "multiDevice"]
@@ -84927,7 +84932,7 @@
       },
       "columns": {
         "cleanup_name": {
-          "comment": "Remote actor or deleted conversation protected-row sweep.",
+          "comment": "Actor, hostname-block, or deleted-conversation protected-row sweep.",
           "dataType": "operational_tombstone_retention_names",
           "defaultExpression": null,
           "generated": null,
@@ -84977,7 +84982,7 @@
           "ordinalPosition": 5
         }
       },
-      "comment": "Durable keyset positions only for old actor or conversation rows that remain protected while a sweep advances.",
+      "comment": "Durable keyset positions for actor, hostname-block, and conversation rows that remain protected while a sweep advances.",
       "foreignKeys": {},
       "indexes": {
         "operational_tombstone_retention_cursors_pkey": {
