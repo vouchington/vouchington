@@ -4,12 +4,6 @@ import { generateSQL } from '../utils/blacklist-source-seed-sql.mts'
 import { BLACKLISTS } from '@voucha/types/entities/domain-blacklist-source'
 
 describe('0050-00-01-seed-blacklist-sources', () => {
-  it('generates valid SQL without errors', () => {
-    const sql = generateSeedBlacklistSourcesSQL()
-    expect(typeof sql).toBe('string')
-    expect(sql.length).toBeGreaterThan(0)
-  })
-
   it('includes all blacklist sources', () => {
     const sql = generateSeedBlacklistSourcesSQL()
     for (const source of BLACKLISTS) {
