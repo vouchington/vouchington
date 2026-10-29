@@ -11,7 +11,7 @@ import { MARKDOWN_CONTENT_FEATURES_UTM } from '@/components/shared/markdown-cont
 import { IdentityVerifiedBadge } from './identity-verified-badge'
 import { UserProfileLinks } from './profile-links'
 import { UserBioCopy } from './user-bio-copy'
-import { getDisplayName } from '@/lib/users/user-helpers'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { useAuth } from '@/lib/auth/context'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
 import { createUserPathname, userHref } from '@/lib/links/entity-href'
@@ -54,9 +54,7 @@ export function UserProfileHeader({
   const router = useRouter()
   const { currentUser } = useAuth()
   const currentUserId = currentUser?.id
-  const displayName = getDisplayName(user)
-  const avatarLabel =
-    user.username || displayName || t('extracted.users.userProfileHeader.user_b512d97e')
+  const displayName = getUserLabel(user, t('shared.user.deletedUser'))
   const canFollow = currentUserId !== user.id
   const summaryItems = [
     metrics?.count.reviews
@@ -78,7 +76,7 @@ export function UserProfileHeader({
       <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
         <UserAvatar
           profileImagePlacement={user.profile_image_placement}
-          username={avatarLabel}
+          username={displayName}
           size='lg'
         />
         <div className='min-w-0'>

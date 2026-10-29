@@ -8,7 +8,7 @@ import { EntityBookmarkButton } from '@/components/shared/entity-bookmark-button
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { createUserPathname, userHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import type { UserSearchResult } from '@/types/user'
 
 export function UserSearchListItemContent({
@@ -23,9 +23,7 @@ export function UserSearchListItemContent({
   showAdminAffordances?: boolean
 }) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   const userLabel = getUserLabel(user, deletedUserLabel)
   const isSuspended = Boolean(user.suspended_at)
   const showMuteButton =

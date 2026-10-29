@@ -7,7 +7,7 @@ import type { PublicLandingPage } from '@/types/landing-pages'
 import { PublicLandingPageHeader } from './public-landing-page-header'
 import { PublicLandingPageItems } from './public-landing-page-items'
 import type { getTranslations } from '@/lib/i18n/get-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 type Translate = Awaited<ReturnType<typeof getTranslations>>
 
@@ -20,7 +20,7 @@ interface Props {
 export function PublicLandingPageView({ data, canonicalPath, t }: Props) {
   const displayName = getUserLabel(
     { display_account: { name: data.user.display_name }, username: data.user.username },
-    t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
+    t('shared.user.deletedUser'),
   )
   const profileImagePath = buildPlacementImagePath(data.user.profile_image_placement)
 

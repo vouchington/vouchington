@@ -6,7 +6,7 @@ import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
 import { searchUsersExcluding } from '@/components/shared/search-users-excluding'
 import type { UserSearchResult } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface Props {
   recipients: UserSearchResult[]
@@ -18,9 +18,7 @@ interface Props {
 
 export function RecipientPicker({ recipients, onAdd, onRemove, excludeIds, disabled }: Props) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   const selectedIds = new Set(recipients.map(r => r.id))
 
   async function search(query: string, signal: AbortSignal) {

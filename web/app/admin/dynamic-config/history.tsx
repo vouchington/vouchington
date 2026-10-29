@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { DynamicConfigHistoryEntry } from '@/lib/api/client/dynamic-config'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -12,9 +12,7 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
 
 export function DynamicConfigHistory({ history }: { history: DynamicConfigHistoryEntry[] }) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   return (
     <Card data-pw='dynamic-config-history'>
       <CardHeader>

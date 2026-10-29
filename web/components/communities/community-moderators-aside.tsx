@@ -4,7 +4,7 @@ import { UserAvatar } from '@/components/shared/user-avatar'
 import { UserLink } from '@/components/users/user-link'
 import type { CommunityMembersResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface CommunityModeratorsAsideProps {
   owners: CommunityMembersResponseBody | null
@@ -41,9 +41,7 @@ export function CommunityModeratorsAside({ owners, moderators }: CommunityModera
 
 function ModeratorGroup({ title, data }: { title: string; data: CommunityMembersResponseBody }) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   const members = data.results.flatMap(result =>
     data.community_members[result.id] != null ? [data.community_members[result.id]!] : [],
   )

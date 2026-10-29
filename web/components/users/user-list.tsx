@@ -10,7 +10,7 @@ import { userHref } from '@/lib/links/entity-href'
 import type { UserSearchResult } from '@/types/user'
 import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import {
   RelationManagementAction,
   type RelationManagementActionConfig,
@@ -70,9 +70,7 @@ export function UserList({
   showAdminAffordances?: boolean
 }) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   if (users.length === 0) {
     return (
       <EmptyState

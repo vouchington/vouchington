@@ -4,7 +4,7 @@ import { MarkdownContent } from '@/components/shared/markdown-content'
 import { UserLink } from '@/components/users/user-link'
 import type { TopicContentUpdate } from '@/types/topics'
 import type { getTranslations } from '@/lib/i18n/get-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 const contentUpdateDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -55,10 +55,7 @@ export function TopicDescriptionAside({
             user={contentUpdate.updated_by}
             className='font-medium text-foreground hover:underline'
           >
-            {getUserLabel(
-              contentUpdate.updated_by,
-              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
-            )}
+            {getUserLabel(contentUpdate.updated_by, t('shared.user.deletedUser'))}
           </UserLink>
         </p>
       )}

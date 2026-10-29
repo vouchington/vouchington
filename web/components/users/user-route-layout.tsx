@@ -6,7 +6,7 @@ import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-struct
 import { createUserPathname } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
-import { getDisplayName, isProfileOwner } from '@/lib/users/user-helpers'
+import { getUserLabel, isProfileOwner } from '@/lib/users/user-helpers'
 import { UserDetailLayout } from './user-detail-layout'
 import { isAdmin, isPlatformAccount } from '@/lib/auth/account-type'
 
@@ -36,7 +36,8 @@ export async function UserRouteLayout({
   const isOwner = isProfileOwner(currentUser, user)
   const viewerIsAdmin = isAdmin(currentUser)
 
-  const displayName = getDisplayName(user)
+  const deletedUserLabel = t('shared.user.deletedUser')
+  const displayName = getUserLabel(user, deletedUserLabel)
   const canonicalPath = createUserPathname(user)
   const breadcrumbItems = buildBreadcrumbsForPath(canonicalPath, {
     isAuthenticated: !!currentUser,
@@ -50,6 +51,7 @@ export async function UserRouteLayout({
       )}
       <UserDetailLayout
         user={user}
+        deletedUserLabel={deletedUserLabel}
         metrics={profileData.user_metrics}
         profileLinks={profileData.profile_links ?? []}
         aboutHtml={profileData.user_bio_html}

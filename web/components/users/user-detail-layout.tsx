@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
 import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { UserProfileHeader } from './user-profile-header'
 import { UserProfileTabs } from './user-profile-tabs'
@@ -19,6 +20,7 @@ const UserActionsAside = dynamic<Parameters<typeof UserActionsAsideComponent>[0]
 
 interface UserDetailLayoutProps {
   user: User
+  deletedUserLabel: string
   metrics?: UserMetrics
   profileLinks: ProfileLink[]
   aboutHtml?: string | null
@@ -41,6 +43,7 @@ interface UserDetailAsides {
 
 export function UserDetailLayout({
   user,
+  deletedUserLabel,
   metrics,
   profileLinks,
   aboutHtml,
@@ -50,7 +53,7 @@ export function UserDetailLayout({
   children,
 }: UserDetailLayoutProps) {
   const usernameOrId = user.username ?? user.id
-  const displayName = user.display_account?.name || user.username || 'User'
+  const displayName = getUserLabel(user, deletedUserLabel)
 
   return (
     <PageWithAside

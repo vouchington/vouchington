@@ -1,7 +1,15 @@
 import type { User } from '@/types/user'
 
-export function getDisplayName(user: Pick<User, 'display_account' | 'username'>): string {
-  return user.display_account?.name || user.username || 'User'
+type LabelledUser = {
+  display_account?: { name?: string | null } | null
+  username?: string | null
+}
+
+export function getUserLabel(
+  user: LabelledUser | null | undefined,
+  deletedUserLabel: string,
+): string {
+  return user?.display_account?.name || user?.username || deletedUserLabel
 }
 
 export function isProfileOwner(

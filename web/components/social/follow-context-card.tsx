@@ -7,6 +7,7 @@ import type { FollowContextUsers } from '@/types/api-responses'
 import type { PublicUser } from '@/types/user'
 import { userHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface Section {
   title: string
@@ -18,20 +19,13 @@ function hasSectionData(section: Section): section is Section & { data: FollowCo
   return Boolean(section.data)
 }
 
-function getUserLabel(user: PublicUser, t: ReturnType<typeof useTranslations>): string {
-  return (
-    user.username ??
-    user.display_account?.name ??
-    t('extracted.social.followContextCard.unknownUser_0bca6947')
-  )
-}
-
 function FollowContextUserList({ users }: { users: PublicUser[] }) {
   const t = useTranslations()
+  const deletedUserLabel = t('shared.user.deletedUser')
   return (
     <div className='space-y-2'>
       {users.map(user => {
-        const label = getUserLabel(user, t)
+        const label = getUserLabel(user, deletedUserLabel)
         const href = userHref(user)
         const content = (
           <div className='flex items-center gap-2 rounded-md border px-2 py-1.5'>

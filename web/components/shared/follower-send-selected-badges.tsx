@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { PublicUser } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface FollowerSendSelectedBadgesProps {
   followers: PublicUser[]
@@ -17,9 +17,7 @@ export function FollowerSendSelectedBadges({
   onToggleFollowerSelection,
 }: FollowerSendSelectedBadgesProps) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   return (
     <div className='flex flex-wrap gap-2'>
       {followers.map(follower => {

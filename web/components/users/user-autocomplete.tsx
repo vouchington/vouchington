@@ -4,7 +4,7 @@ import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
 import { searchUsersExcluding } from '@/components/shared/search-users-excluding'
 import type { PublicUser } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getUserLabel } from '@/lib/users/get-user-label'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 const NO_EXCLUSIONS: ReadonlySet<string> = new Set()
 
@@ -37,9 +37,7 @@ export function UserAutocomplete({
   dataPw,
 }: Props) {
   const t = useTranslations()
-  const deletedUserLabel = t(
-    'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-  )
+  const deletedUserLabel = t('shared.user.deletedUser')
   const search = (q: string, signal: AbortSignal) =>
     searchUsersExcluding(q, NO_EXCLUSIONS, { signal })
 
