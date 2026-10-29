@@ -65,10 +65,10 @@ async function writePostClearanceStatus(
   const changeType = CLEARANCE_CHANGE_TYPES[status]
   const transactionOptions = options ?? {}
   const run = async (query: TransactionQuery) => {
+    await lockPostPublication(query, postId)
     if (decision.platformOverride) {
       await ensureCurrentPostModerationVersion(postId, { query })
     }
-    await lockPostPublication(query, postId)
     const { rows } = await query<{
       id: string
       community_id: string | null

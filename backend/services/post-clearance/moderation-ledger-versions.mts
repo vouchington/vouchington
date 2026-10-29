@@ -13,6 +13,9 @@ export type PostModerationVersion = {
   deadline_at: Date
 }
 
+// The post row lock serializes version inserts per post: the retention trigger links each new
+// version to its predecessor, and two concurrent inserts would otherwise not see each other.
+// Lock order is publication fence, then post, then moderation work and sources.
 export async function ensureCurrentPostModerationVersion(
   postId: string,
   options: QueryOptions = {},
@@ -24,6 +27,7 @@ export async function ensureCurrentPostModerationVersion(
       FROM posts
       WHERE id = $1
         AND deleted_at IS NULL
+      FOR NO KEY UPDATE
     ),
     inserted_version AS (
       INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision)
@@ -84,6 +88,8 @@ export async function commitCurrentPostModerationVersions(
       FROM posts
       WHERE id = ANY($1::uuid[])
         AND deleted_at IS NULL
+      ORDER BY id ASC NULLS LAST
+      FOR NO KEY UPDATE
     ),
     inserted_version AS (
       INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision)
