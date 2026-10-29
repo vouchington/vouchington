@@ -61,7 +61,7 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
   })
   afterEach(() => {
     vi.unstubAllEnvs()

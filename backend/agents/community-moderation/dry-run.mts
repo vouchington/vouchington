@@ -22,7 +22,7 @@ export type CommunityPromptDryRunDependencies = {
   getConfiguration?: () => Promise<CommunityPromptDryRunConfiguration>
   /** The external-provider boundary is injectable only for deterministic tests. */
   fetch?: StructuredDecisionFetch
-  /** Tests may avoid process-wide credential mutation; production uses OPENROUTER_API_KEY. */
+  /** Tests may avoid process-wide credential mutation; production reads the transport's key. */
   apiKey?: string
   /** Overrides the per-call deadline; injectable only so tests need not wait it out. */
   callTimeoutMs?: number

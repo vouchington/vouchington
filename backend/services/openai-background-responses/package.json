@@ -23,7 +23,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@vouchington/ai": "^0.3.0",
+    "@vouchington/ai": "^0.4.0",
     "openai": "^7.43.0"
   },
   "devDependencies": {

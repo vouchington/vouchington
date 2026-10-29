@@ -4,8 +4,10 @@ import {
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
   classifyByStatus,
+  classifyOpenAIFailure,
   classifyOpenRouterFailure,
   classifyProviderResponse,
+  decodeOpenAIResult,
   decodeResult,
   describeProviderErrorDetail,
   parseBilledUsage,
@@ -20,10 +22,12 @@ import type {
   StructuredDecisionFetch,
 } from './types.mts'
 
+const OPENAI_MODEL = /^gpt-6-luna(?:-[A-Za-z0-9.-]+)?$/
 const OPENROUTER_MODEL = /^typesafe\/jev-1\.13(?:-[A-Za-z0-9.]+)?$/
 const TYPESAFE_MODEL = /^(?:typesafe\/)?(?:jev-latest|jev-1\.13(?:\.0)?(?:-[A-Za-z0-9.]+)?)$/
 
 function classifierFor(transport: CreateStructuredDecisionClientOptions['transport']) {
+  if (transport === 'openai') return classifyOpenAIFailure
   return transport === 'openrouter' ? classifyOpenRouterFailure : classifyByStatus
 }
 
@@ -147,6 +151,11 @@ async function decodeBilledResponse(
       requestStartedAt: options.requestStartedAt,
     })
   }
+  if (options.transport === 'openai')
+    return decodeOpenAIResult(raw, options.request, {
+      fallbackProvider: options.dispatch.provider,
+      isExpectedModel: model => OPENAI_MODEL.test(model),
+    })
   const isOpenRouter = options.transport === 'openrouter'
   return decodeResult(raw, options.request, {
     fallbackProvider: options.dispatch.provider,

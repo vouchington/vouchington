@@ -59,3 +59,41 @@ export function makeOpenRouterStructuredDecisionBody(
     ...overrides,
   }
 }
+
+/** An OpenAI `/v1/decisions` body answering `bakeryStructuredDecisionRequest`, in question order. */
+export function makeOpenAIStructuredDecisionBody(overrides: Record<string, unknown> = {}): unknown {
+  return {
+    model: 'gpt-6-luna',
+    usage: {
+      input_tokens: 40,
+      input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+      output_tokens: 3,
+      output_tokens_details: { reasoning_tokens: 0 },
+      total_tokens: 43,
+    },
+    answers: [
+      { name: 'spam', type: 'predicate', probability: 0.2 },
+      {
+        name: 'topic',
+        type: 'choice',
+        choice: 'food',
+        confidence: 0.8,
+        probabilities: [
+          { value: 'food', probability: 0.8 },
+          { value: 'sports', probability: 0.2 },
+        ],
+      },
+      {
+        name: 'quality',
+        type: 'score',
+        score: 1,
+        confidence: 0.9,
+        probabilities: [
+          { value: 0, label: 'poor', probability: 0.1 },
+          { value: 1, label: 'excellent', probability: 0.9 },
+        ],
+      },
+    ],
+    ...overrides,
+  }
+}

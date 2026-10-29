@@ -4,7 +4,7 @@ import type {
   StructuredDecisionResult,
   StructuredDecisionUsage,
 } from '@vouchington/ai/structured-decisions'
-export type StructuredDecisionTransport = 'openrouter' | 'typesafe'
+export type StructuredDecisionTransport = 'openai' | 'openrouter' | 'typesafe'
 export type StructuredDecisionFetch = (
   url: string,
   init: Parameters<typeof undiciFetch>[1],
@@ -30,8 +30,8 @@ export interface StructuredDecisionAttemptHooks {
   onBilledResponse?: (response: StructuredDecisionBilledResponse) => Promise<void>
 }
 /**
- * The `{ provider, model }` a jev classifier entry point takes: the classifier row's transport and
- * jev model, which stay its single source because its thresholds are calibrated per model.
+ * The `{ provider, model }` a classifier entry point takes: the classifier row's transport and
+ * decision model, which stay its single source because its thresholds are calibrated per model.
  */
 export type StructuredDecisionModelSelection = {
   provider: StructuredDecisionTransport
@@ -39,7 +39,7 @@ export type StructuredDecisionModelSelection = {
 }
 export type CreateStructuredDecisionClientOptions = {
   transport: StructuredDecisionTransport
-  /** The jev model to ask; each transport's own jev model when omitted. */
+  /** The decision model to ask; each transport's own default model when omitted. */
   model?: string
   apiKey: string
   fetch?: StructuredDecisionFetch

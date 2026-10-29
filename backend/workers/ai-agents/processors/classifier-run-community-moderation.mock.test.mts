@@ -55,7 +55,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
   })
   beforeEach(() => {
     asked = []
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     provider.mockImplementation(async (_url, init) => answerCommunityQuestions(init, { asked }))
   })
   afterEach(() => {

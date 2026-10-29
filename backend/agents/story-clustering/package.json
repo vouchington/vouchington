@@ -30,8 +30,7 @@
     "@modules/utils": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
-    "@services/stories": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@services/stories": "workspace:^"
   },
   "devDependencies": {
     "@services/ai-usage": "workspace:^",

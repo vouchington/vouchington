@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  decisionResponseBody,
+  readAskedQuestions,
+} from '@voucha/test-helpers/structured-decision-dialect'
 import { createStoryClusteringClient, executeStoryClusteringRun } from '@agents/story-clustering'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
@@ -8,7 +12,6 @@ import { spendCapConfig } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '@services/stories'
-import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
 import {
   expireClassifierRunLeaseForTest,
@@ -46,10 +49,7 @@ let askedCriteria: string[][] = []
 /** A provider that picks `chosen` (a criterion key) for every question it is asked. */
 function pick(chosen: (criteria: string[]) => string) {
   provider.mockImplementation(async (_url, init) => {
-    const body = JSON.parse(stringFromUnknown(init?.body)) as {
-      questions: Record<string, { criteria: Record<string, string> }>
-    }
-    const answers = Object.entries(body.questions).map(([id, question]) => {
+    const answers = Object.entries(readAskedQuestions(init)).map(([id, question]) => {
       const criteria = Object.keys(question.criteria)
       askedCriteria.push(criteria)
       const choice = chosen(criteria)
@@ -59,13 +59,13 @@ function pick(chosen: (criteria: string[]) => string) {
       )
       return { id, type: 'choice', choice, confidence: 0.9, probabilities }
     })
-    return Response.json({
-      id: `decision-${randomUUID()}`,
-      model: 'typesafe/jev-1.13',
-      provider: 'TypeSafe',
-      usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
-      answers,
-    })
+    return Response.json(
+      decisionResponseBody(init, {
+        id: `decision-${randomUUID()}`,
+        usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
+        answers,
+      }),
+    )
   })
 }
 
@@ -95,7 +95,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   })
   beforeEach(() => {
     askedCriteria = []
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
   })
   afterEach(() => {
     vi.unstubAllEnvs()

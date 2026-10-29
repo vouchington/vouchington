@@ -30,7 +30,7 @@
     "@modules/structured-decisions": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@vouchington/ai": "^0.3.0"
+    "@vouchington/ai": "^0.4.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

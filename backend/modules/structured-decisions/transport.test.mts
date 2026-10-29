@@ -9,16 +9,17 @@ const request: StructuredDecisionRequest = {
 
 describe('createTransportRequest model', () => {
   it.each([
+    ['openai', 'gpt-6-luna'],
     ['openrouter', 'typesafe/jev-1.13'],
     ['typesafe', 'jev-latest'],
   ] as const)(
-    'asks the %s transport its own jev model unless the caller names one',
-    (transport, jev) => {
-      expect(createTransportRequest(transport, 'key', request).body.model).toBe(jev)
+    'asks the %s transport its own decision model unless the caller names one',
+    (transport, model) => {
+      expect(createTransportRequest(transport, 'key', request).body.model).toBe(model)
     },
   )
 
-  it.each(['openrouter', 'typesafe'] as const)(
+  it.each(['openai', 'openrouter', 'typesafe'] as const)(
     'asks the classifier row model on the %s transport',
     transport => {
       expect(createTransportRequest(transport, 'key', request, 'row-model').body.model).toBe(

@@ -10,8 +10,8 @@ import { POST_CLASSIFIER_SYSTEM_USERNAME } from './user-constants.mts'
 import type { ClassifierModelProvider } from './classifier.mts'
 
 export const POST_CLASSIFIER_SLUG = POST_CLASSIFIER_SYSTEM_USERNAME
-export const POST_CLASSIFIER_MODEL_NAME = 'typesafe/jev-1.13'
-export const POST_CLASSIFIER_MODEL_PROVIDER = 'openrouter' satisfies ClassifierModelProvider
+export const POST_CLASSIFIER_MODEL_NAME = 'gpt-6-luna'
+export const POST_CLASSIFIER_MODEL_PROVIDER = 'openai' satisfies ClassifierModelProvider
 export const POST_CLASSIFIER_ACTION_POLICY_REVISION = '1'
 export const POST_CLASSIFIER_LOCAL_POLICY_REVISION = '1'
 

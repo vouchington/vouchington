@@ -2,8 +2,8 @@ import { AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/us
 import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
 
 const CLASSIFIER_SLUG = 'tagging'
-const MODEL_NAME = 'typesafe/jev-1.13'
-const MODEL_PROVIDER = 'openrouter'
+const MODEL_NAME = 'gpt-6-luna'
+const MODEL_PROVIDER = 'openai'
 const DEFAULT_LOWER_THRESHOLD = '0.1500'
 const DEFAULT_UPPER_THRESHOLD = '0.6500'
 

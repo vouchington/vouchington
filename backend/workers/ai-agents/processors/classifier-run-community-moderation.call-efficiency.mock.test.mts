@@ -36,7 +36,7 @@ describeClassifierCallEfficiency(communityModerationEfficiencyDriver)
 
 describe('C8 community moderation content and rule versions (real PG, deterministic provider)', () => {
   beforeEach(() => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
   })
   afterEach(() => {
     vi.unstubAllEnvs()

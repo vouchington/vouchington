@@ -2,10 +2,15 @@ import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { vi } from 'vitest'
 import { fetchStructuredDecisionProvider } from '../modules/structured-decisions/transport.mts'
-import { OUTAGE } from './classifier-provider-failure-scenarios.mts'
-import { readAskedQuestions } from './data-stores/psql/classifier-runs/community-moderation-provider.mts'
+import {
+  type AskedQuestion,
+  decisionResponseBody,
+  isOpenAIDecisionRequest,
+  readAskedQuestions,
+} from './structured-decision-dialect.mts'
 
-type Question = { type: string; criteria: Record<string, string> }
+/** A 503 is transient in every decision dialect, so the run retries without being billed. */
+const UNAVAILABLE = { code: 503, message: 'No provider available' }
 
 type ProviderOptions = {
   /** Signals the real provider boundary and waits for its explicit response release. */
@@ -25,7 +30,7 @@ export type EfficiencyProvider = {
 }
 
 /** A choice question is answered with the first real candidate, or `none` when there is none. */
-function answerFor(id: string, question: Question, options: ProviderOptions) {
+function answerFor(id: string, question: AskedQuestion, options: ProviderOptions) {
   if (question.type === 'noul') return { id, type: 'noul', noul: options.noul?.(id) ?? 0.9 }
   if (question.type !== 'choice') throw new Error(`Unexpected question type: ${question.type}`)
   const keys = Object.keys(question.criteria)
@@ -36,33 +41,46 @@ function answerFor(id: string, question: Question, options: ProviderOptions) {
 }
 
 /**
- * Replaces the mocked provider transport (the test file mocks the module) with a billing provider:
- * every answered request reports 12 input tokens, 3 output tokens and 0.002 dollars (2000
- * millionths), so cost is never zero and a second bill would be visible in the ledger.
+ * Every answered request costs 0.002 dollars (2000 millionths), so cost is never zero and a second
+ * bill would be visible in the ledger. Jev reports that cost; OpenAI is priced from its 20,000 input
+ * tokens at luna's $0.10 per million, with no billed output.
+ */
+function billedUsage(
+  init: Parameters<typeof fetchStructuredDecisionProvider>[1],
+): Record<string, number> {
+  if (isOpenAIDecisionRequest(init)) return { input_tokens: 20_000, output_tokens: 0 }
+  return { input_tokens: 12, output_tokens: 3, cost: 0.002 }
+}
+
+/**
+ * Replaces the mocked provider transport (the test file mocks the module) with a billing provider
+ * whose every answered request bills `billedUsage`.
  */
 export function installEfficiencyProvider(options: ProviderOptions = {}): EfficiencyProvider {
   const requests: string[][] = []
   const billedResponseIds: string[] = []
   let refusals = 0
   vi.mocked(fetchStructuredDecisionProvider).mockImplementation(async (_url, init) => {
-    const questions = readAskedQuestions(init) as Record<string, Question>
+    const questions = readAskedQuestions(init)
     requests.push(Object.keys(questions))
     if (refusals > 0) {
       refusals -= 1
-      return Response.json({ error: OUTAGE }, { status: 403 })
+      return Response.json({ error: UNAVAILABLE }, { status: 503 })
     }
     await options.beforeResponse?.()
     const id = `decision-${randomUUID()}`
     billedResponseIds.push(id)
-    return Response.json({
-      id,
-      model: 'typesafe/jev-1.13-20260917',
-      provider: 'TypeSafe',
-      usage: { input_tokens: 12, output_tokens: 3, cost: 0.002 },
-      answers: Object.entries(questions).map(([qid, question]) =>
-        answerFor(qid, question, options),
-      ),
-    })
+    return Response.json(
+      decisionResponseBody(init, {
+        id,
+        model: 'typesafe/jev-1.13-20260917',
+        provider: 'TypeSafe',
+        usage: billedUsage(init),
+        answers: Object.entries(questions).map(([qid, question]) =>
+          answerFor(qid, question, options),
+        ),
+      }),
+    )
   })
   return {
     requests,

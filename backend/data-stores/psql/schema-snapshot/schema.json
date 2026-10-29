@@ -161,7 +161,7 @@
       "values": ["topic", "story", "community_prompt"]
     },
     "classifier_model_providers": {
-      "values": ["typesafe", "openrouter"]
+      "values": ["typesafe", "openrouter", "openai"]
     },
     "classifier_primitives": {
       "values": ["noul", "choice", "score", "agent"]

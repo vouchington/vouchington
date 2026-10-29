@@ -1,13 +1,13 @@
-import { recordAgentResponseUsage } from '@agents/_shared'
+import { recordAgentResponseUsage, structuredDecisionUsageRecord } from '@agents/_shared'
 import {
   createStructuredDecisionClient,
+  structuredDecisionApiKey,
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
   type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import { assertDailySpendCapNotBreached, SpendCapBreachError } from '@services/ai-usage'
-import type { ClassifierModelProvider } from '@voucha/types'
 
 /**
  * The cost-ledger and spend-cap label of a moderator's rule preview. It is deliberately not the
@@ -19,24 +19,8 @@ const DRY_RUN_WORKLOAD = 'community-moderation-dry-run'
 type CommunityPromptDryRunClientOptions = {
   /** The external-provider boundary is injectable only for deterministic tests. */
   fetch?: StructuredDecisionFetch
-  /** Tests may avoid process-wide credential mutation; production uses OPENROUTER_API_KEY. */
+  /** Tests may avoid process-wide credential mutation; production reads the transport's key. */
   apiKey?: string
-}
-
-/**
- * A dry run uses the same provider and key as a real run. An operator who reconfigures the seeded
- * classifier to another provider gets no key source, so building the client throws before any spend.
- */
-function resolveApiKey(
-  provider: ClassifierModelProvider,
-  options: CommunityPromptDryRunClientOptions,
-): string {
-  if (provider !== 'openrouter') {
-    throw new Error(
-      `Community moderation classifier has no API key source for provider '${provider}'`,
-    )
-  }
-  return options.apiKey ?? process.env.OPENROUTER_API_KEY ?? ''
 }
 
 /**
@@ -53,15 +37,8 @@ function createDryRunBillingHooks(communityId: string): StructuredDecisionAttemp
     },
     onBilledResponse: async response => {
       await recordAgentResponseUsage({
-        response: {
-          id: typeof response.id === 'string' ? response.id : undefined,
-          model: typeof response.model === 'string' ? response.model : undefined,
-          usage: response.usage,
-          service_tier: undefined,
-        },
+        ...structuredDecisionUsageRecord(response),
         agentSlug: DRY_RUN_WORKLOAD,
-        provider: 'typesafe',
-        transport: response.transport,
         communityId,
         postId: null,
         createdAt: response.requestStartedAt,
@@ -78,7 +55,7 @@ export function createCommunityPromptDryRunClient(
   return createStructuredDecisionClient({
     transport: input.selection.provider,
     model: input.selection.model,
-    apiKey: resolveApiKey(input.selection.provider, options),
+    apiKey: structuredDecisionApiKey(input.selection.provider, options.apiKey),
     fetch: options.fetch,
     hooks: createDryRunBillingHooks(input.communityId),
   })

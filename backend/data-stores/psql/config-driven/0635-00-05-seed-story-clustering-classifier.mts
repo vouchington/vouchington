@@ -2,8 +2,8 @@ import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-c
 import { STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
 
-const MODEL_NAME = 'typesafe/jev-1.13'
-const MODEL_PROVIDER = 'openrouter'
+const MODEL_NAME = 'gpt-6-luna'
+const MODEL_PROVIDER = 'openai'
 
 /**
  * A Choice answer's `probabilities` sum to 1 across every criterion, including the unbound `none`

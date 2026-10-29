@@ -33,7 +33,10 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
-import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import {
+  decisionResponseBody,
+  readAskedQuestions,
+} from '@voucha/test-helpers/structured-decision-dialect'
 import { toClassifierRunJobData } from './classifier-run-handler.mts'
 import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processClassifierRun } from './process-classifier-run.mts'
@@ -78,7 +81,7 @@ describe('classifier run processor (real GlideMQ)', () => {
   })
 
   it('does not reach the provider after the durable attempt budget is exhausted, and keeps the local outcome', async () => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     const request = vi.mocked(fetchStructuredDecisionProvider)
     request.mockRejectedValue(new Error('Unexpected provider request'))
     const { post, inputSha256, subject, run } = await reserveRun(true, true)
@@ -120,7 +123,7 @@ describe('classifier run processor (real GlideMQ)', () => {
   })
 
   it('releases an exhausted queue identity and executes all remote topics exactly once on recovery', async () => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     await spendCapConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     const setup = await createApprovedClassifierPost(true, false)
@@ -135,17 +138,15 @@ describe('classifier run processor (real GlideMQ)', () => {
     const data = toClassifierRunJobData(POST_CLASSIFIER_SLUG, reserved.run)
     const request = vi.mocked(fetchStructuredDecisionProvider)
     request.mockImplementation(async (_url, init) => {
-      const body = JSON.parse(stringFromUnknown(init?.body)) as {
-        questions: Record<string, unknown>
-      }
-      expect(Object.keys(body.questions)).toHaveLength(10)
-      return Response.json({
-        id: `decision-${randomUUID()}`,
-        model: 'typesafe/jev-1.13',
-        provider: 'TypeSafe',
-        usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
-        answers: Object.keys(body.questions).map(id => ({ id, type: 'noul', noul: 0.9 })),
-      })
+      const ids = Object.keys(readAskedQuestions(init))
+      expect(ids).toHaveLength(10)
+      return Response.json(
+        decisionResponseBody(init, {
+          id: `decision-${randomUUID()}`,
+          usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
+          answers: ids.map(id => ({ id, type: 'noul', noul: 0.9 })),
+        }),
+      )
     })
     let unavailable = true
     let attempts = 0

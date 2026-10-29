@@ -1,6 +1,7 @@
 import { createStructuredDecisionBillingHooks } from '@agents/_shared'
 import {
   createStructuredDecisionClient,
+  structuredDecisionApiKey,
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
@@ -15,23 +16,22 @@ type PostClassifierProviderAttemptHook = NonNullable<
 type PostClassifierClientOptions = {
   /** The external-provider boundary is injectable only for deterministic tests. */
   fetch?: StructuredDecisionFetch
-  /** Tests may avoid process-wide credential mutation; production uses OPENROUTER_API_KEY. */
+  /** Tests may avoid process-wide credential mutation; production reads the transport's key. */
   apiKey?: string
 }
 
 /**
- * Builds the C5 provider client only for an application that actually has remote work.
- *
- * This route is fixed to OpenRouter/Jev. Shared billing first admits the spend, then invokes the
- * caller's durable receipt reservation immediately before the single physical request.
+ * Builds the C5 provider client only for an application that actually has remote work, on the
+ * classifier row's transport. Shared billing first admits the spend, then invokes the caller's
+ * durable receipt reservation immediately before the single physical request.
  */
-export function createPostClassifierOpenRouterClient(
+export function createPostClassifierClient(
   input: {
     classifierRunId: string
     postId: string
     communityId: string | null
-    /** The classifier row's jev model on OpenRouter, the only transport this route uses. */
-    selection: StructuredDecisionModelSelection & { provider: 'openrouter' }
+    /** The classifier row's transport and decision model. */
+    selection: StructuredDecisionModelSelection
     beforeAttempt: PostClassifierProviderAttemptHook
   },
   options: PostClassifierClientOptions = {},
@@ -39,7 +39,7 @@ export function createPostClassifierOpenRouterClient(
   return createStructuredDecisionClient({
     transport: input.selection.provider,
     model: input.selection.model,
-    apiKey: options.apiKey ?? process.env.OPENROUTER_API_KEY ?? '',
+    apiKey: structuredDecisionApiKey(input.selection.provider, options.apiKey),
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: POST_CLASSIFIER_SLUG,

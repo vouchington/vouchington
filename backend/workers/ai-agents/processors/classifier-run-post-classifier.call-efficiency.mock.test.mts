@@ -65,7 +65,7 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
       detector: 'typed-external-detector-fixture',
       detectorModelVersion: 'fixture-negative-v1',
     }))
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
   })
   afterEach(() => {
     vi.mocked(vurst.detectAiGeneratedText).mockReset()

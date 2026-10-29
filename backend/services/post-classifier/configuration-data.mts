@@ -1,5 +1,6 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type { ClassifierModelProvider } from '@voucha/types'
 
 type ToggleRow = { slug: string; enabled_at: Date | null; disabled_at: Date | null }
 
@@ -52,7 +53,7 @@ export type CurrentPostClassifierRemoteRow = {
   prompt_version_id: string
   prompt: string
   model_name: string
-  model_provider: 'openrouter' | 'typesafe'
+  model_provider: ClassifierModelProvider
   candidate_id: string
   topic_id: string
   topic_slug: string

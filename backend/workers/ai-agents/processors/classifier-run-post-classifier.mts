@@ -3,10 +3,7 @@ import {
   POST_CLASSIFIER_MODEL_NAME,
   POST_CLASSIFIER_MODEL_PROVIDER,
 } from '@voucha/types/entities/post-classifier'
-import {
-  createPostClassifierOpenRouterClient,
-  executePostClassifierRun,
-} from '@agents/post-classifier'
+import { createPostClassifierClient, executePostClassifierRun } from '@agents/post-classifier'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { randomUUID } from 'node:crypto'
 import {
@@ -43,7 +40,7 @@ export function createPostClassifierRegistration(
         {
           detectLocal: detectAiGeneratedModeration,
           createClient: hooks =>
-            createPostClassifierOpenRouterClient({
+            createPostClassifierClient({
               postId: post.id,
               communityId: post.community_id,
               // The fixed catalog: resolving the configuration already proved the row is exactly this.

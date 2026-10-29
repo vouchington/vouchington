@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  decisionResponseBody,
+  readAskedQuestions,
+} from '@voucha/test-helpers/structured-decision-dialect'
 import { ModelProviderError } from '@vouchington/ai/providers'
 import { generateToolTurn } from '@modules/model-providers/tool-turn'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
@@ -36,7 +40,6 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { readLiveSubjectTopicIds } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { toClassifierRunJobData } from './classifier-run-handler.mts'
 import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processClassifierRun, processClassifierRunDispatcher } from './process-classifier-run.mts'
@@ -71,17 +74,14 @@ function agentSubmits(...topicIds: string[]) {
 /** Points the mocked provider at an answer function: the probability it gives each question id. */
 function answerWith(probabilityFor: (questionId: string) => number) {
   provider.mockImplementation(async (_url, init) => {
-    const body = JSON.parse(stringFromUnknown(init?.body)) as {
-      questions: Record<string, unknown>
-    }
-    const ids = Object.keys(body.questions)
-    return Response.json({
-      id: `decision-${randomUUID()}`,
-      model: 'typesafe/jev-1.13',
-      provider: 'TypeSafe',
-      usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
-      answers: ids.map(id => ({ id, type: 'noul', noul: probabilityFor(id) })),
-    })
+    const ids = Object.keys(readAskedQuestions(init))
+    return Response.json(
+      decisionResponseBody(init, {
+        id: `decision-${randomUUID()}`,
+        usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
+        answers: ids.map(id => ({ id, type: 'noul', noul: probabilityFor(id) })),
+      }),
+    )
   })
 }
 
@@ -147,7 +147,7 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
     restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    vi.stubEnv('OPENAI_API_KEY', 'test-provider-key')
     answerWith(() => 0.9)
     agentSubmits()
   })
