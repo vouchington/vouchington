@@ -5201,7 +5201,6 @@
 {"alias":"extracted.communities.communityAgentPromptForm.promptCreated_8ce11e7a","consumer":"web","copyId":"copy.extracted.communities.communityAgentPromptForm.promptCreated_8ce11e7a"},
 {"alias":"extracted.communities.communityAgentPromptForm.promptIsRequired_f7f8a443","consumer":"web","copyId":"copy.extracted.communities.communityAgentPromptForm.promptIsRequired_f7f8a443"},
 {"alias":"extracted.communities.communityAgentPromptForm.promptMust10000CharactersOr_75c1685f","consumer":"web","copyId":"copy.extracted.communities.communityAgentPromptForm.promptMust10000CharactersOr_75c1685f"},
-{"alias":"extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa","consumer":"web","copyId":"copy.extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa"},
 {"alias":"extracted.communities.communityAgentPromptHistory.failedToLoadHistory_eeddd17d","consumer":"web","copyId":"copy.extracted.communities.communityAgentPromptHistory.failedToLoadHistory_eeddd17d"},
 {"alias":"extracted.communities.communityAgentPromptHistory.loadMore_ac8991ef","consumer":"web","copyId":"copy.extracted.communities.communityAgentPromptHistory.loadMore_ac8991ef"},
 {"alias":"extracted.communities.communityAgentPromptHistory.loading_ba3bbbe1","consumer":"web","copyId":"copy.common.loading"},
@@ -8415,7 +8414,6 @@
 {"alias":"extracted.shared.followerSendPicker.chooseFollowers_b5cefa96","consumer":"web","copyId":"copy.extracted.shared.followerSendPicker.chooseFollowers_b5cefa96"},
 {"alias":"extracted.shared.followerSendPicker.filterFollowers_ebe0f18a","consumer":"web","copyId":"copy.extracted.shared.followerSendPicker.filterFollowers_ebe0f18a"},
 {"alias":"extracted.shared.followerSendPicker.noFollowersFound_1f13985f","consumer":"web","copyId":"copy.extracted.shared.followerSendPicker.noFollowersFound_1f13985f"},
-{"alias":"extracted.shared.followerSendPicker.user_b512d97e","consumer":"web","copyId":"copy.extracted.agents.conversationDetail.user_b512d97e"},
 {"alias":"extracted.shared.followerSendSelectedBadges.removeName_e6a3c4a1","consumer":"web","copyId":"copy.extracted.messages.recipientPicker.removeName_e6a3c4a1"},
 {"alias":"extracted.shared.followerShareActionButtons.moreActions_f8d46c25","consumer":"web","copyId":"copy.extracted.posts.postDetailOverflowMenu.moreActions_f8d46c25"},
 {"alias":"extracted.shared.followerShareActionButtons.sendSendsANotificationToSelected_198345fe","consumer":"web","copyId":"copy.extracted.posts.followerShareMenuItems.sendSendsANotificationToSelected_198345fe"},
@@ -8513,7 +8511,6 @@
 {"alias":"extracted.slug.layout.noDescriptionYet_6d962a3d","consumer":"web","copyId":"copy.extracted.slug.layout.noDescriptionYet_6d962a3d"},
 {"alias":"extracted.slug.layout.posts_a80811cf","consumer":"web","copyId":"copy.extracted.communities.modQueue.posts_a80811cf"},
 {"alias":"extracted.social.followContextCard.andOverflowMore_221c6bd9","consumer":"web","copyId":"copy.extracted.social.followContextCard.andOverflowMore_221c6bd9"},
-{"alias":"extracted.social.followContextCard.unknownUser_0bca6947","consumer":"web","copyId":"copy.extracted.communities.communityMemberRow.unknownUser_0bca6947"},
 {"alias":"extracted.sources.addSourceForm.failedToAddSource_206b335b","consumer":"web","copyId":"copy.extracted.sources.addSourceForm.failedToAddSource_206b335b"},
 {"alias":"extracted.sources.addSourceForm.sourceAddedSuccessfully_1817e3b7","consumer":"web","copyId":"copy.extracted.sources.addSourceForm.sourceAddedSuccessfully_1817e3b7"},
 {"alias":"extracted.sources.createSourceForm.doneCompletedImportedFailedFailed_d5eddc9e","consumer":"web","copyId":"copy.extracted.sources.createSourceForm.doneCompletedImportedFailedFailed_d5eddc9e"},
@@ -9031,7 +9028,6 @@
 {"alias":"extracted.users.userList.unmuteThisUser_e0f99e00","consumer":"web","copyId":"copy.extracted.users.userList.unmuteThisUser_e0f99e00"},
 {"alias":"extracted.users.userProfileHeader.admin_c1c224b0","consumer":"web","copyId":"copy.extracted.users.userProfileHeader.admin_c1c224b0"},
 {"alias":"extracted.users.userProfileHeader.theyLlBeNotifiedWhenYou_4020b06b","consumer":"web","copyId":"copy.extracted.users.userProfileHeader.theyLlBeNotifiedWhenYou_4020b06b"},
-{"alias":"extracted.users.userProfileHeader.user_b512d97e","consumer":"web","copyId":"copy.extracted.agents.conversationDetail.user_b512d97e"},
 {"alias":"extracted.users.userProfileHeader.username_6da31ba5","consumer":"web","copyId":"copy.extracted.communities.modQueueBanEvasion.username_6da31ba5"},
 {"alias":"extracted.users.userProfileTabs.userProfileNavigation_92fbb7a5","consumer":"web","copyId":"copy.extracted.users.userProfileTabs.userProfileNavigation_92fbb7a5"},
 {"alias":"extracted.users.userProfileTabsConfig.about_4efca0d1","consumer":"web","copyId":"copy.extracted.my.profileForm.about_4efca0d1"},
@@ -9339,5 +9335,6 @@
 {"alias":"shared.provenance.viaApi","consumer":"web","copyId":"copy.shared.provenance.viaApi"},
 {"alias":"shared.provenance.viaApp","consumer":"web","copyId":"copy.shared.provenance.viaApp"},
 {"alias":"shared.provenance.viaMcp","consumer":"web","copyId":"copy.shared.provenance.viaMcp"},
-{"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"}
+{"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"},
+{"alias":"shared.user.deletedUser","consumer":"web","copyId":"copy.shared.user.deletedUser"}
 ]

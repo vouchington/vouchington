@@ -74,7 +74,7 @@ export const AuthenticatedRelatedContent: Story = {
     await expect(positiveSection).toHaveTextContent('Positive signals for this post')
     await expect(
       positiveSection?.querySelector(`a[href="${userHref(publicUsers[0]!)}"]`),
-    ).toHaveTextContent(publicUsers[0]!.username!)
+    ).toHaveTextContent(publicUsers[0]!.display_account!.name!)
     await expect(positiveSection?.querySelector('h3 + span')).toHaveTextContent('1')
     await expect(canvasElement).toHaveTextContent(topics[0]!.name)
     await expect(canvasElement.querySelector('button')).not.toBeNull()

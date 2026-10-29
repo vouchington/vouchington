@@ -10,6 +10,7 @@ import { userHref } from '@/lib/links/entity-href'
 import type { UserSearchResult } from '@/types/user'
 import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import {
   RelationManagementAction,
   type RelationManagementActionConfig,
@@ -69,6 +70,7 @@ export function UserList({
   showAdminAffordances?: boolean
 }) {
   const t = useTranslations()
+  const deletedUserLabel = t('shared.user.deletedUser')
   if (users.length === 0) {
     return (
       <EmptyState
@@ -93,8 +95,7 @@ export function UserList({
           )
         }
 
-        const username = user.username ?? user.id
-        const displayName = user.display_account?.name || username
+        const displayName = getUserLabel(user, deletedUserLabel)
         const handle = user.username ? `@${user.username}` : null
         const showMuteButton =
           !relationAction && currentUserId !== undefined && currentUserId !== user.id
@@ -120,7 +121,7 @@ export function UserList({
               {user.profile_image_id && (
                 <UserAvatar
                   profileImagePlacement={user.profile_image_placement}
-                  username={username}
+                  username={displayName}
                   className='flex-shrink-0'
                 />
               )}

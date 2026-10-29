@@ -45,13 +45,6 @@ vi.mock(
     }) as unknown as typeof import('@/components/seo/anonymous-structured-data-script'),
 )
 
-vi.mock(import('@/lib/users/user-helpers'), () => ({
-  getDisplayName: vi.fn<VitestLooseMock>(
-    (user: { display_name?: string; username: string }) => user.display_name ?? user.username,
-  ),
-  isProfileOwner: vi.fn<VitestLooseMock>(() => false),
-}))
-
 vi.mock(import('../user-detail-layout'), () => ({
   UserDetailLayout: ({ children, ...props }: { children: React.ReactNode }) => {
     mockUserDetailLayout(props)
@@ -85,7 +78,7 @@ describe('UserRouteLayout', () => {
   beforeEach(() => {
     mockGetCurrentUser.mockResolvedValue(null)
     mockGetUserProfile.mockResolvedValue({
-      user: { id: 'u1', username: 'alice', display_name: 'Alice' },
+      user: { id: 'u1', username: 'alice', display_account: { name: 'Alice' } },
       user_metrics: null,
       profile_links: [],
       user_bio_html: null,
@@ -100,6 +93,20 @@ describe('UserRouteLayout', () => {
     })
     render(result)
     expect(screen.getByTestId('user-detail-layout')).toHaveTextContent('content')
+  })
+
+  it('uses the translated deleted-user label for the profile and breadcrumb', async () => {
+    mockGetUserProfile.mockResolvedValue({
+      user: { id: 'u1', username: null, display_account: null },
+      profile_links: [],
+    })
+
+    render(await UserRouteLayout({ idOrUsername: 'u1', children: <div>content</div> }))
+
+    expect(mockUserDetailLayout.mock.lastCall?.[0]).toMatchObject({
+      deletedUserLabel: 'Deleted user',
+      breadcrumbItems: expect.arrayContaining([expect.objectContaining({ name: 'Deleted user' })]),
+    })
   })
 
   it('renders bare children when an explicitly exempt route has no active profile', async () => {

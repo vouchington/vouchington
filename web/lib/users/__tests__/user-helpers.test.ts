@@ -1,19 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { getDisplayName, isProfileOwner } from '../user-helpers'
+import { getUserLabel, isProfileOwner } from '../user-helpers'
 
-describe('getDisplayName', () => {
+describe('getUserLabel', () => {
   it('prefers display_account.name', () => {
-    expect(getDisplayName({ display_account: { name: 'Alice Smith' }, username: 'alice' })).toBe(
-      'Alice Smith',
-    )
+    expect(
+      getUserLabel({ display_account: { name: 'Alice Smith' }, username: 'alice' }, 'Deleted user'),
+    ).toBe('Alice Smith')
   })
 
-  it('falls back to username when no display_account', () => {
-    expect(getDisplayName({ username: 'alice' })).toBe('alice')
+  it.each([
+    { username: 'alice' },
+    { display_account: null, username: 'alice' },
+    { display_account: { name: null }, username: 'alice' },
+    { display_account: { name: '' }, username: 'alice' },
+  ])('falls back to username when no display name remains: %j', user => {
+    expect(getUserLabel(user, 'Deleted user')).toBe('alice')
   })
 
-  it('falls back to "User" when both are absent', () => {
-    expect(getDisplayName({})).toBe('User')
+  it.each([
+    {},
+    { username: null },
+    { display_account: { name: '' }, username: '' },
+    null,
+    undefined,
+  ])('uses the caller-translated label when no name remains: %j', user => {
+    expect(getUserLabel(user, 'Usuario eliminado')).toBe('Usuario eliminado')
   })
 })
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { UserList } from '../user-list'
 
 describe('UserList', () => {
-  it('does not prefix the fallback id with @ when username is missing', async () => {
+  it('shows Deleted user instead of an id when the username and display name are missing', async () => {
     render(
       <UserList
         users={[
@@ -17,9 +17,9 @@ describe('UserList', () => {
       />,
     )
 
-    expect(screen.getByText('550e8400-e29b-41d4-a716-446655440000')).toBeDefined()
+    expect(screen.getByText('Deleted user')).toBeDefined()
+    expect(screen.queryByText('550e8400-e29b-41d4-a716-446655440000')).toBeNull()
     expect(screen.queryByText('@550e8400-e29b-41d4-a716-446655440000')).toBeNull()
-    expect(screen.queryAllByText('550e8400-e29b-41d4-a716-446655440000')).toHaveLength(1)
   })
 
   it('does not render an avatar when profile_image_id is absent', async () => {

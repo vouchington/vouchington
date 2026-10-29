@@ -11,6 +11,7 @@ import type { UsersListResponseBody } from '@/types/api-responses'
 import type { PublicUser } from '@/types/user'
 import { FollowerSendSelectedBadges } from './follower-send-selected-badges'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 const FOLLOWER_SEARCH_LIMIT = 5
 
@@ -33,7 +34,7 @@ export function FollowerSendPicker({
   const requestGenerationRef = useRef(0)
   const queryRef = useRef('')
   const pageAbortControllerRef = useRef<AbortController | null>(null)
-  const fallbackUserLabel = t('extracted.shared.followerSendPicker.user_b512d97e')
+  const deletedUserLabel = t('shared.user.deletedUser')
   const selectedFollowerIds = new Set(selectedFollowers.map(follower => follower.id))
 
   useEffect(
@@ -136,12 +137,12 @@ export function FollowerSendPicker({
             />
             <UserAvatar
               profileImagePlacement={follower.profile_image_placement}
-              username={follower.username ?? follower.display_account?.name ?? fallbackUserLabel}
+              username={getUserLabel(follower, deletedUserLabel)}
               size='sm'
             />
             <div className='min-w-0'>
               <div className='truncate text-sm font-medium'>
-                {follower.display_account?.name ?? follower.username ?? fallbackUserLabel}
+                {getUserLabel(follower, deletedUserLabel)}
               </div>
               {follower.username ? (
                 <div className='truncate text-xs text-muted-foreground'>@{follower.username}</div>

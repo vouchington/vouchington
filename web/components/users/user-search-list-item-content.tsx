@@ -8,7 +8,7 @@ import { EntityBookmarkButton } from '@/components/shared/entity-bookmark-button
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { createUserPathname, userHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getDisplayName } from '@/lib/users/user-helpers'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import type { UserSearchResult } from '@/types/user'
 
 export function UserSearchListItemContent({
@@ -23,7 +23,8 @@ export function UserSearchListItemContent({
   showAdminAffordances?: boolean
 }) {
   const t = useTranslations()
-  const username = user.username ?? user.id
+  const deletedUserLabel = t('shared.user.deletedUser')
+  const userLabel = getUserLabel(user, deletedUserLabel)
   const isSuspended = Boolean(user.suspended_at)
   const showMuteButton =
     !showAdminAffordances && currentUserId !== undefined && currentUserId !== user.id
@@ -39,14 +40,14 @@ export function UserSearchListItemContent({
         >
           <UserAvatar
             profileImagePlacement={user.profile_image_placement}
-            username={username}
+            username={userLabel}
             className='shrink-0'
           />
           <div className='min-w-0'>
-            <p className='truncate font-medium'>{getDisplayName(user)}</p>
-            <p className='truncate text-sm text-muted-foreground'>
-              {user.username ? `@${user.username}` : user.id}
-            </p>
+            <p className='truncate font-medium'>{userLabel}</p>
+            {user.username ? (
+              <p className='truncate text-sm text-muted-foreground'>@{user.username}</p>
+            ) : null}
             {showAdminAffordances && user.email_address ? (
               <p
                 data-pw='user-card-email'
@@ -72,7 +73,7 @@ export function UserSearchListItemContent({
               variant='outline'
             >
               <Link
-                href={createUserPathname(encodeURIComponent(username), '/admin')}
+                href={createUserPathname(user, '/admin')}
                 data-pw='user-card-manage-link'
                 prefetch={false}
               >

@@ -4,6 +4,7 @@ import { UserAvatar } from '@/components/shared/user-avatar'
 import { UserLink } from '@/components/users/user-link'
 import type { CommunityMembersResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface CommunityModeratorsAsideProps {
   owners: CommunityMembersResponseBody | null
@@ -39,6 +40,8 @@ export function CommunityModeratorsAside({ owners, moderators }: CommunityModera
 }
 
 function ModeratorGroup({ title, data }: { title: string; data: CommunityMembersResponseBody }) {
+  const t = useTranslations()
+  const deletedUserLabel = t('shared.user.deletedUser')
   const members = data.results.flatMap(result =>
     data.community_members[result.id] != null ? [data.community_members[result.id]!] : [],
   )
@@ -52,7 +55,7 @@ function ModeratorGroup({ title, data }: { title: string; data: CommunityMembers
         {members.map(member => {
           const user = data.users[member.user_id]
           if (!user) return null
-          const username = user.username ?? user.id
+          const username = getUserLabel(user, deletedUserLabel)
           return (
             <li
               key={member.id}
@@ -67,7 +70,9 @@ function ModeratorGroup({ title, data }: { title: string; data: CommunityMembers
                 data-pw='community-moderators-aside-user-link'
                 user={user}
                 className='font-medium hover:underline'
-              />
+              >
+                {username}
+              </UserLink>
             </li>
           )
         })}

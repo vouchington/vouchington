@@ -10,6 +10,7 @@ import {
 import onError from '@/lib/on-error'
 import { useState, useTransition } from 'react'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface Props {
   initialEntries: CommunityAgentPromptHistoryEntry[]
@@ -94,9 +95,7 @@ export function CommunityAgentPromptHistory({
                       {entry.action}
                     </span>
                     <span className='font-medium'>
-                      {entry.changed_by?.username ??
-                        entry.changed_by?.id ??
-                        t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+                      {getUserLabel(entry.changed_by, t('shared.user.deletedUser'))}
                     </span>
                   </span>
                   <time

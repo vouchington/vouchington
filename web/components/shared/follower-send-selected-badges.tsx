@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { PublicUser } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface FollowerSendSelectedBadgesProps {
   followers: PublicUser[]
@@ -16,17 +17,18 @@ export function FollowerSendSelectedBadges({
   onToggleFollowerSelection,
 }: FollowerSendSelectedBadgesProps) {
   const t = useTranslations()
+  const deletedUserLabel = t('shared.user.deletedUser')
   return (
     <div className='flex flex-wrap gap-2'>
       {followers.map(follower => {
-        const name = follower.username ?? follower.display_account?.name ?? follower.id
+        const name = getUserLabel(follower, deletedUserLabel)
         return (
           <Badge
             key={follower.id}
             variant='secondary'
             className='gap-1 pr-1'
           >
-            @{name}
+            {name}
             <Button
               data-pw='follower-send-selected-badges-remove-follower'
               type='button'

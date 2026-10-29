@@ -4,6 +4,7 @@ import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
 import { searchUsersExcluding } from '@/components/shared/search-users-excluding'
 import type { PublicUser } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 const NO_EXCLUSIONS: ReadonlySet<string> = new Set()
 
@@ -36,6 +37,7 @@ export function UserAutocomplete({
   dataPw,
 }: Props) {
   const t = useTranslations()
+  const deletedUserLabel = t('shared.user.deletedUser')
   const search = (q: string, signal: AbortSignal) =>
     searchUsersExcluding(q, NO_EXCLUSIONS, { signal })
 
@@ -59,16 +61,18 @@ export function UserAutocomplete({
           : undefined
       }
       onSelect={(user: PublicUser, { setQuery }: { setQuery: (query: string) => void }) => {
-        const username = user.username ?? user.id
+        const username = user.username || getUserLabel(user, deletedUserLabel)
         onChange(user.id, username)
-        setQuery(username)
+        setQuery(getUserLabel(user, deletedUserLabel))
       }}
       renderItem={(user: PublicUser) => (
         <>
-          {user.username ?? user.id}
-          {user.display_account?.name && (
-            <span className='text-xs text-muted-foreground'>{user.display_account.name}</span>
-          )}
+          {getUserLabel(user, deletedUserLabel)}
+          {user.username &&
+            user.display_account?.name &&
+            user.display_account.name !== user.username && (
+              <span className='text-xs text-muted-foreground'>@{user.username}</span>
+            )}
         </>
       )}
     />
