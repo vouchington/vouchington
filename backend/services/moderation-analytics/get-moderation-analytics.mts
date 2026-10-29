@@ -64,7 +64,7 @@ export async function getModerationAnalytics(
   }
 }
 
-export function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
+function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
   const d = new Date(now)
   switch (range) {
     case 'today': {

@@ -17,30 +17,28 @@ import {
   insertTestUserWarning,
   resolveTestModerationAppeal,
 } from '@voucha/test-helpers'
-import { getRangeStart } from './get-moderation-analytics.mts'
-import { getTransparencyRangeStart, getTransparencyWindow } from './all-time-transparency-pages.mts'
+import { getTransparencyWindow } from './all-time-transparency-pages.mts'
 import {
   getCommunityModerationTransparency,
   getModerationTransparency,
 } from './get-moderation-transparency.mts'
 
 describe('moderation transparency privacy boundaries', () => {
-  it('preserves raw rolling analytics ranges as exact durations', () => {
-    const now = new Date('2026-08-16T15:42:13.456Z')
-
-    expect(getRangeStart('today', now)).toEqual(new Date('2026-08-16T00:00:00.000Z'))
-    expect(getRangeStart('7d', now)).toEqual(new Date('2026-08-09T15:42:13.456Z'))
-    expect(getRangeStart('30d', now)).toEqual(new Date('2026-07-17T15:42:13.456Z'))
-    expect(getRangeStart('90d', now)).toEqual(new Date('2026-05-18T15:42:13.456Z'))
-  })
-
   it('aligns every short-range start to a complete UTC day', () => {
     const cutoff = new Date('2026-08-16T15:42:13.456Z')
 
-    expect(getTransparencyRangeStart('today', cutoff)).toEqual(new Date('2026-08-16T00:00:00.000Z'))
-    expect(getTransparencyRangeStart('7d', cutoff)).toEqual(new Date('2026-08-10T00:00:00.000Z'))
-    expect(getTransparencyRangeStart('30d', cutoff)).toEqual(new Date('2026-07-18T00:00:00.000Z'))
-    expect(getTransparencyRangeStart('90d', cutoff)).toEqual(new Date('2026-05-19T00:00:00.000Z'))
+    expect(getTransparencyWindow('today', cutoff).periodStart).toEqual(
+      new Date('2026-08-16T00:00:00.000Z'),
+    )
+    expect(getTransparencyWindow('7d', cutoff).periodStart).toEqual(
+      new Date('2026-08-10T00:00:00.000Z'),
+    )
+    expect(getTransparencyWindow('30d', cutoff).periodStart).toEqual(
+      new Date('2026-07-18T00:00:00.000Z'),
+    )
+    expect(getTransparencyWindow('90d', cutoff).periodStart).toEqual(
+      new Date('2026-05-19T00:00:00.000Z'),
+    )
   })
 
   it.each([

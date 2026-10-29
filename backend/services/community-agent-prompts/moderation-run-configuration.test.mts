@@ -5,69 +5,103 @@ import {
   insertTestCommunity,
   insertTestCommunityAgentPrompt,
 } from '@voucha/test-helpers'
-import { setTestCommunityAutomodAction } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import {
-  resolveCommunityModerationRunConfiguration,
-  selectCommunityModerationPrompts,
-} from './moderation-run-configuration.mts'
+  editTestCommunityRule,
+  setTestCommunityAutomodAction,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
+import { setTestCommunityModerationPromptActivatedAt } from '@voucha/test-helpers/community-moderation-prompt-activation'
+import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
+import { resolveCommunityModerationRunConfiguration } from './moderation-run-configuration.mts'
 
-const promptWith = (index: number, characters = 10) => ({
-  id: `prompt-${String(index).padStart(3, '0')}`,
-  text: 'r'.repeat(characters),
-})
+describe('community moderation prompt selection', () => {
+  async function communityWithPrompts(count: number, characters: number) {
+    const owner = await createTestUser()
+    await createTestMembership({ user_id: owner.id, plan: 'pro' })
+    const community = await insertTestCommunity({ createdById: owner.id })
+    const creators = [owner]
+    while (creators.length * 10 < count) {
+      const creator = await createTestUser()
+      await createTestMembership({ user_id: creator.id, plan: 'pro' })
+      creators.push(creator)
+    }
+    for (let index = 0; index < count; index++) {
+      await insertTestCommunityAgentPrompt({
+        communityId: community.id,
+        createdById: creators[Math.floor(index / 10)]!.id,
+        prompt: 'r'.repeat(characters),
+        slotAllocated: true,
+      })
+    }
+    const active = await getActiveCommunityAgentPrompts(community.id)
+    expect(active).toHaveLength(count)
+    return { community, active }
+  }
 
-describe('selectCommunityModerationPrompts', () => {
-  it('keeps every prompt under the caps', () => {
-    const prompts = Array.from({ length: 10 }, (_, index) => promptWith(index))
+  it('keeps every active prompt under the caps and sorts the pinned configuration', async () => {
+    const { community, active } = await communityWithPrompts(10, 10)
+    const resolved = await resolveCommunityModerationRunConfiguration(community.id)
+    const expected = active
+      .map(row => ({ id: row.id, text: row.prompt }))
+      .toSorted((a, b) => a.id.localeCompare(b.id))
 
-    expect(selectCommunityModerationPrompts(prompts)).toEqual(prompts)
+    expect(resolved?.configuration.prompts).toEqual(expected)
+    expect(resolved?.remote).toMatchObject({ promptIds: expected.map(prompt => prompt.id) })
   })
 
-  it('caps one call at thirty questions and drops the ones past the cap', () => {
-    const prompts = Array.from({ length: 35 }, (_, index) => promptWith(index))
+  it('caps one provider call at thirty questions and keeps the source prefix', async () => {
+    const { community, active } = await communityWithPrompts(31, 10)
+    const resolved = await resolveCommunityModerationRunConfiguration(community.id)
 
-    const selected = selectCommunityModerationPrompts(prompts)
-
-    expect(selected).toHaveLength(30)
-    expect(selected.map(prompt => prompt.id)).toEqual(prompts.slice(0, 30).map(prompt => prompt.id))
+    expect(resolved?.configuration.prompts).toHaveLength(30)
+    expect(resolved?.configuration.prompts.map(prompt => prompt.id)).toEqual(
+      active
+        .slice(0, 30)
+        .map(row => row.id)
+        .toSorted(),
+    )
+    expect(resolved?.remote).toMatchObject({
+      promptIds: resolved?.configuration.prompts.map(row => row.id),
+    })
   })
 
-  it('caps the rule characters of one call, keeping the prefix that fits', () => {
-    const prompts = Array.from({ length: 6 }, (_, index) => promptWith(index, 10_000))
+  it('pins id-sorted prompts when activation order differs in both directions', async () => {
+    const { community, active } = await communityWithPrompts(3, 10)
+    const ids = active.map(row => row.id).toSorted()
+    await setTestCommunityModerationPromptActivatedAt(ids[1]!, new Date('2026-01-01T00:00:00.000Z'))
+    await setTestCommunityModerationPromptActivatedAt(ids[0]!, new Date('2026-01-02T00:00:00.000Z'))
+    await setTestCommunityModerationPromptActivatedAt(ids[2]!, new Date('2026-01-03T00:00:00.000Z'))
 
-    expect(selectCommunityModerationPrompts(prompts).map(prompt => prompt.id)).toEqual(
-      prompts.slice(0, 4).map(prompt => prompt.id),
+    const source = await getActiveCommunityAgentPrompts(community.id)
+    expect(source.map(row => row.id)).toEqual([ids[1], ids[0], ids[2]])
+    const resolved = await resolveCommunityModerationRunConfiguration(community.id)
+    expect(resolved?.configuration.prompts.map(row => row.id)).toEqual(ids)
+    expect(resolved?.remote).toMatchObject({ promptIds: ids })
+  })
+
+  it('keeps exactly 40,000 rule characters and excludes the first overflow', async () => {
+    const { community, active } = await communityWithPrompts(3, 1)
+    await editTestCommunityRule(active[0]!.id, 'r'.repeat(20_000))
+    await editTestCommunityRule(active[1]!.id, 'r'.repeat(20_000))
+    const resolved = await resolveCommunityModerationRunConfiguration(community.id)
+
+    expect(resolved?.configuration.prompts).toHaveLength(2)
+    expect(resolved?.configuration.prompts.map(row => row.text.length)).toEqual([20_000, 20_000])
+    expect(resolved?.configuration.prompts.map(row => row.id)).toEqual(
+      active
+        .slice(0, 2)
+        .map(row => row.id)
+        .toSorted(),
     )
   })
 
-  it('accepts a call that is exactly at the character cap', () => {
-    const prompts = [promptWith(0, 20_000), promptWith(1, 20_000)]
+  it('stops at the first rule that does not fit, even when a later one is short', async () => {
+    const { community, active } = await communityWithPrompts(3, 1)
+    await editTestCommunityRule(active[0]!.id, 'r'.repeat(30_000))
+    await editTestCommunityRule(active[1]!.id, 'r'.repeat(20_000))
+    await editTestCommunityRule(active[2]!.id, 'r'.repeat(5))
 
-    expect(selectCommunityModerationPrompts(prompts)).toHaveLength(2)
-    expect(selectCommunityModerationPrompts([...prompts, promptWith(2, 1)])).toHaveLength(2)
-  })
-
-  it('stops at the first prompt that does not fit rather than skipping to a shorter later one', () => {
-    const prompts = [promptWith(0, 30_000), promptWith(1, 20_000), promptWith(2, 5)]
-
-    expect(selectCommunityModerationPrompts(prompts).map(prompt => prompt.id)).toEqual([
-      'prompt-000',
-    ])
-  })
-
-  it('returns the kept prompts sorted by id so the configuration is deterministic', () => {
-    const prompts = [promptWith(3), promptWith(1), promptWith(2)]
-
-    expect(selectCommunityModerationPrompts(prompts).map(prompt => prompt.id)).toEqual([
-      'prompt-001',
-      'prompt-002',
-      'prompt-003',
-    ])
-    expect(prompts.map(prompt => prompt.id)).toEqual(['prompt-003', 'prompt-001', 'prompt-002'])
-  })
-
-  it('selects nothing from no prompts', () => {
-    expect(selectCommunityModerationPrompts([])).toEqual([])
+    const resolved = await resolveCommunityModerationRunConfiguration(community.id)
+    expect(resolved?.configuration.prompts.map(row => row.id)).toEqual([active[0]!.id])
   })
 })
 

@@ -76,7 +76,7 @@ export async function releaseModerationTransparencyCohorts(
 }
 
 /** Paid transparency releases whole UTC daily cohorts, unlike raw rolling analytics. */
-export function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date): Date {
+function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date): Date {
   const start = new Date(cutoff)
   start.setUTCHours(0, 0, 0, 0)
   switch (range) {

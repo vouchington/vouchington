@@ -10,7 +10,7 @@ import { createEmailUnsubscribeUrl } from '@services/users'
 import type { CommunityModerationSummaryEmailProps } from '@email-templates/core'
 import pMap from 'p-map'
 
-export type ModerationRecipientRow = {
+type ModerationRecipientRow = {
   id: string
   email_address: string
   username: string | null
@@ -567,7 +567,7 @@ function timeToMinutes(value: string): number {
   return hours * 60 + minutes
 }
 
-export function buildModerationSendKey(recipient: ModerationRecipientRow, now: Date): string {
+function buildModerationSendKey(recipient: ModerationRecipientRow, now: Date): string {
   const localDate = formatLocalDate(now, recipient.moderation_email_timezone)
   if (recipient.moderation_email_cadence === 'weekly') {
     return `weekly:${getIsoWeekKey(localDate)}`
@@ -579,7 +579,7 @@ export function formatLocalDate(now: Date, timeZone: string): string {
   return getLocalDateFormatter(timeZone).format(now)
 }
 
-export function formatLocalTime(now: Date, timeZone: string): string {
+function formatLocalTime(now: Date, timeZone: string): string {
   return getLocalTimeFormatter(timeZone).format(now)
 }
 
