@@ -15,3 +15,11 @@ export type RecordPostModerationDisposition = {
   attemptId?: string
   actorUserId?: string
 }
+
+export type PostModerationVersion = {
+  id: string
+  post_id: string
+  content_sha256: Buffer
+  policy_revision: string
+  deadline_at: Date
+}

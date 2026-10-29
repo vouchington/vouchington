@@ -7,12 +7,12 @@ import {
   type AutomatedPostModerationSource,
   AUTOMATED_POST_MODERATION_SOURCES,
   type PostModerationDisposition,
+  type PostModerationVersion,
   POST_MODERATION_POLICY_REVISION,
 } from './moderation-ledger-types.mts'
 import {
   ensureCurrentPostModerationVersion,
   recordPostModerationDisposition,
-  type PostModerationVersion,
 } from './moderation-ledger-versions.mts'
 
 export type PostModerationAttempt = {
