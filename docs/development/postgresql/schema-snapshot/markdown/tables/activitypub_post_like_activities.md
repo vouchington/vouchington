@@ -36,7 +36,6 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `activitypub_post_like_activities_pkey`: `CREATE UNIQUE INDEX activitypub_post_like_activities_pkey ON public.activitypub_post_like_activities USING btree (id)`
-- `idx_activitypub_post_like_activities__active_post_id__id`: `CREATE INDEX idx_activitypub_post_like_activities__active_post_id__id ON public.activitypub_post_like_activities USING btree (post_id, id) WHERE (undone_at IS NULL)`
 - `idx_activitypub_post_like_activities__confirmed_activity`: `CREATE UNIQUE INDEX idx_activitypub_post_like_activities__confirmed_activity ON public.activitypub_post_like_activities USING btree (activity_id) WHERE (confirmed_at IS NOT NULL)`
 - `idx_activitypub_post_like_activities__post_id`: `CREATE INDEX idx_activitypub_post_like_activities__post_id ON public.activitypub_post_like_activities USING btree (post_id)`
 - `idx_activitypub_post_like_activities__undone_retention`: `CREATE INDEX idx_activitypub_post_like_activities__undone_retention ON public.activitypub_post_like_activities USING btree (undone_at, id) WHERE (undone_at IS NOT NULL)`
