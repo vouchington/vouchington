@@ -34,7 +34,7 @@ export async function detachHostnameBlockReferences(
      )
      UPDATE url_hostname_blocks child
      SET relation_cleanup_root_block_id = NULL
-     FROM page WHERE child.id = page.id`,
+     WHERE child.id = ANY(ARRAY(SELECT id FROM page))`,
     [blockId, batchSize],
   )
   const remainingBudget = batchSize - (descendants.rowCount ?? 0)
@@ -49,7 +49,7 @@ export async function detachHostnameBlockReferences(
        )
        UPDATE vote_weight_penalties penalty
        SET source_hostname_block_id = NULL
-       FROM page WHERE penalty.id = page.id`,
+       WHERE penalty.id = ANY(ARRAY(SELECT id FROM page))`,
           [blockId, remainingBudget],
         )
       : { rowCount: 0 }
