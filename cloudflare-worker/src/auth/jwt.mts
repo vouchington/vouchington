@@ -26,15 +26,15 @@ export type SessionCachePayload = {
   uil?: string | null
 }
 
-export type BackendSessionTokenPayloads = {
+type BackendSessionTokenPayloads = {
   devicePayload: DeviceTokenPayload | null
   sessionPayload: SessionTokenPayload | null
   sessionCachePayload: SessionCachePayload | null
 }
 
-// Pure classification of an already-verified payload pair. Split out from
-// verifyBackendSessionTokens so it can be reused (and unit-tested) without re-running crypto.
-export const deriveSessionCachePayload = (
+// Classifies an already-verified device/session pair for authenticated cache bypass.
+// Only matching device identities with a user and session produce cache claims.
+const deriveSessionCachePayload = (
   devicePayload: DeviceTokenPayload | null,
   sessionPayload: SessionTokenPayload | null,
 ): SessionCachePayload | null => {
@@ -122,7 +122,7 @@ export const verifyBackendSessionTokens = async (
 // lose, so they're indistinguishable from "no session cookie" for this purpose. Decoding
 // without verifying is safe here because the result only ever widens a cache *bypass* decision
 // (never grants access) — see verifyBackendSessionTokens's doc comment.
-export const isAuthShapedSessionToken = (sessionToken: string | null): boolean => {
+const isAuthShapedSessionToken = (sessionToken: string | null): boolean => {
   if (!sessionToken) return false
   const decoded = decodeSessionJwt(sessionToken)
   return decoded !== null && decoded.uid !== null
