@@ -20,7 +20,7 @@ import {
 import type { ProjectionWork, SourceRow } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
 
-export type StoryPostRelatedUrlProjectionRelationDependencies = {
+type StoryPostRelatedUrlProjectionRelationDependencies = {
   enqueueBulkCrawlUrls?: (entries: Parameters<typeof enqueueBulkCrawlUrls>[0]) => Promise<unknown>
 }
 

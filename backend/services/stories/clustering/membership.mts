@@ -7,7 +7,7 @@ import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { deriveNewStoryMetadata } from './metadata.mts'
 
 /** A live RSS item read under its row lock, so what is checked here cannot change before commit. */
-export type LockedClusterItem = {
+type LockedClusterItem = {
   id: string
   story_id: string | null
   story_locked_at: Date | null

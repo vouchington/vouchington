@@ -3,7 +3,7 @@ import {
   type PersistedClassifierDecisionResult,
 } from '@services/classifiers'
 
-export type StoryClusteringOutcome =
+type StoryClusteringOutcome =
   | { kind: 'none' }
   | { kind: 'existing_story'; storyId: string }
   | { kind: 'standalone'; rssFeedItemId: string }
