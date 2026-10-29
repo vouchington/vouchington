@@ -81,7 +81,7 @@ describe('callStoryPostAgent', () => {
     expect(callModel).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining('Article One'),
       story.id,
-      { selection: TEST_OPENAI_SELECTION, openaiTransport: 'openrouter' },
+      { selection: TEST_OPENAI_SELECTION, openaiTransport: 'direct' },
     )
   })
 

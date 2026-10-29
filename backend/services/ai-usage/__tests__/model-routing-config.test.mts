@@ -7,14 +7,14 @@ import {
 } from '../model-routing-config.mts'
 
 describe('model routing config', () => {
-  it('defaults every service to Haiku 5.5 through the OpenRouter transport', async () => {
+  it('defaults every service to Haiku 5.5 through the direct transport', async () => {
     await modelRoutingConfig.waitForInitialization()
 
     expect(getServiceModelSelection('autotagger-agent')).toEqual({
       provider: 'anthropic',
       model: 'claude-haiku-5-5',
     })
-    expect(getOpenAITransport()).toBe('openrouter')
+    expect(getOpenAITransport()).toBe('direct')
   })
 
   it('reads a switched service and the global transport without a deploy', async () => {

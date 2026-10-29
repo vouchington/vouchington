@@ -35,7 +35,7 @@ export const modelRoutingRegistryEntry: DynamicConfigRegistryEntry = defineDynam
   fields: {
     openai_transport: {
       description:
-        'How OpenAI calls reach OpenAI for every service: openrouter (OpenRouter) or direct (OpenAI directly, with background mode and its reconciler).',
+        'How OpenAI calls reach OpenAI for every service: direct (the default; OpenAI directly, with background mode and its reconciler) or openrouter (OpenRouter).',
     },
     ...serviceFields,
   },
