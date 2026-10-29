@@ -3,8 +3,6 @@ import {
   PRIVATE_USER_PROFILE_COLLECTIONS,
   PUBLIC_USER_PROFILE_COLLECTIONS,
   USER_PROFILE_COLLECTIONS,
-  getProfileCollectionRouteSuffixes,
-  getProfileCollectionsByRouteSegment,
   getProfileCollectionRouteSuffix,
 } from './catalog.mts'
 
@@ -24,23 +22,6 @@ describe('@ts-shared/user-profile-collections catalog', () => {
       'users/followers',
       'rss-feeds/following',
       'communities/member',
-    ])
-  })
-
-  it('derives route suffix helpers from the catalog', () => {
-    expect(getProfileCollectionRouteSuffixes()).toEqual(
-      USER_PROFILE_COLLECTIONS.map(getProfileCollectionRouteSuffix),
-    )
-    expect(getProfileCollectionRouteSuffixes([USER_PROFILE_COLLECTIONS[0]])).toEqual([
-      'posts/saved',
-    ])
-    expect(
-      getProfileCollectionsByRouteSegment('rss-feeds').map(getProfileCollectionRouteSuffix),
-    ).toEqual([
-      'rss-feeds/following',
-      'rss-feeds/subscribed',
-      'rss-feeds/muted',
-      'rss-feeds/viewed',
     ])
   })
 

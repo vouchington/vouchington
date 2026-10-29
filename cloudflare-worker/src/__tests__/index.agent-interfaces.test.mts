@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { removeAdvertisedAgentInterfaceUrls } from '@ts-shared/route-classification'
+import { removeAdvertisedAgentInterfaceUrls } from '../../test-helpers/advertised-agent-interface-urls.mts'
 
 import worker from '../index.mts'
 

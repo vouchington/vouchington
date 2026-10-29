@@ -9,7 +9,6 @@ import {
   MODERATION_APPEAL_ACTIONS,
   isReportReason,
   isAiCategory,
-  hasGuidance,
   getPolicySeverity,
 } from './moderation-policy.mts'
 
@@ -86,7 +85,7 @@ describe('moderation policy registry', () => {
     const reportOnlyAiOnly = MODERATION_POLICY.filter(e => e.isReportReason && !e.isAiCategory)
     expect(reportOnlyAiOnly.length).toBeGreaterThan(0)
     for (const entry of reportOnlyAiOnly) {
-      expect(hasGuidance(entry)).toBe(true)
+      expect(entry).toHaveProperty('guidance', expect.stringMatching(/\S/))
     }
   })
 

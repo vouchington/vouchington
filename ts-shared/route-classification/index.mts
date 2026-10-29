@@ -1,7 +1,5 @@
 export {
-  ADVERTISED_AGENT_INTERFACE_PATHS,
   buildAdvertisedAgentInterfaceUrls,
-  removeAdvertisedAgentInterfaceUrls,
   type AdvertisedAgentInterface,
   type AdvertisedAgentInterfaceUrls,
 } from './agent-interfaces.mts'
@@ -13,7 +11,6 @@ export {
   PRIVATE_DISCOVERY_PREFIXES,
   PRIVATE_DYNAMIC_ROUTE_PATTERNS,
   PRIVATE_TOPIC_MANAGEMENT_RE,
-  PRIVATE_USER_PROFILE_COLLECTION_ROUTE_SUFFIXES,
   PUBLIC_STATIC_SITE_NAV_PATHS,
   ROBOTS_DISALLOW_PREFIXES,
 } from './patterns.mts'

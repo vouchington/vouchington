@@ -91,7 +91,7 @@ export const PRIVATE_TOPIC_MANAGEMENT_RE: RegExp =
   /^\/(bank-account|card|referral-program|rewards-program|rewards-program-status|source|topic)\/[^/]+\/(settings|tags|validations)(?:\/|$)/
 
 /* c8 ignore start -- covered by focused route-classification tests outside pre-push's backend sample. */
-export const PRIVATE_USER_PROFILE_COLLECTION_ROUTE_SUFFIXES = PRIVATE_USER_PROFILE_COLLECTIONS.map(
+const PRIVATE_USER_PROFILE_COLLECTION_ROUTE_SUFFIXES = PRIVATE_USER_PROFILE_COLLECTIONS.map(
   getProfileCollectionRouteSuffix,
 )
 

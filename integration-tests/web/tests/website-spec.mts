@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { removeAdvertisedAgentInterfaceUrls } from '@ts-shared/route-classification'
+import { removeAdvertisedAgentInterfaceUrls } from '../../../cloudflare-worker/test-helpers/advertised-agent-interface-urls.mts'
 
 import { WebIntegrationClient } from '../helpers/client.mts'
 import { TEST_USER_USERNAME } from '../helpers/constants.mts'
