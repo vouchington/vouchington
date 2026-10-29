@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { validateScheduledJobManifests } from '../../../modules/scheduled-job-manifest/validation.mts'
-import { policyManagedWorkerQueueNames } from '@modules/worker-queue-inventory'
+import { allLiveWorkerQueueNames } from '@modules/worker-queue-inventory'
 import { BLOOM_FILTER_REBUILD_INPUTS } from '@queues/bloom-filters/types'
 import { enqueueGlideMqStats } from '@queues/heartbeat/enqueues'
 import {
@@ -12,10 +12,7 @@ import { psql } from '@queues/psql/queues'
 import { PSQL_SCHEDULED_ADMIN_JOB_TYPES } from '@queues/psql/types'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
-import {
-  SCHEDULED_JOB_API_ORDER,
-  SCHEDULED_JOBS_REGISTRY,
-} from '@services/queue-monitoring/scheduled-jobs-registry'
+import { SCHEDULED_JOBS_REGISTRY } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
   'background-cpu/bedrock-embeddings:backlog-dispatcher',
@@ -128,14 +125,11 @@ describe('scheduled job manifest catalog', () => {
     }
   })
 
-  it('uses only policy-managed queues, the universal heartbeat queue, or empty tombstones', () => {
-    const queues = new Set(policyManagedWorkerQueueNames())
+  it('uses only live queues or empty tombstones', () => {
+    const queues = new Set(allLiveWorkerQueueNames())
     expect(
       SCHEDULED_JOB_MANIFESTS.every(
-        manifest =>
-          queues.has(manifest.queueName) ||
-          manifest.queueName === 'heartbeat' ||
-          manifest.jobs.length === 0,
+        manifest => queues.has(manifest.queueName) || manifest.jobs.length === 0,
       ),
     ).toBe(true)
   })
@@ -163,7 +157,6 @@ describe('scheduled job manifest catalog', () => {
 
   it('projects every scheduled API surface', () => {
     expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(82)
-    expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,
     )

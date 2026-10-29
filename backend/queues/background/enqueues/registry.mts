@@ -51,7 +51,7 @@ import { VOTE_AGGREGATION_DOMAIN, VOTE_AGGREGATION_JOBS } from './vote-aggregati
 import { TOPIC_MERGE_DOMAIN, TOPIC_MERGE_JOBS } from './topic-merge-jobs.mts'
 
 /** The single source of truth for what the `background` queue runs: domains and their jobs. */
-export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[] = [
+const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[] = [
   IMAGE_DELETION_DOMAIN,
   SES_INBOUND_DOMAIN,
   OPENAI_MODERATION_DOMAIN,

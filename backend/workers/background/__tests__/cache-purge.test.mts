@@ -1,10 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { backgroundHandler } from '@queues/background/enqueues/define-handler'
-import {
-  CACHE_PURGE_RATE_LIMIT,
-  CACHE_PURGE_TAGS_JOB,
-} from '@queues/background/enqueues/cache-purge-jobs'
+import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { getBackgroundDomainDefinition } from '@queues/background/enqueues/registry'
 import { background } from '@queues/background/queues'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
@@ -34,11 +31,13 @@ describe('cache-purge background domain', () => {
   })
 
   it('limits outbound purges to 4 per minute under Workers Cache Free-tier, across every worker', () => {
-    expect(CACHE_PURGE_RATE_LIMIT).toEqual({ max: 4, duration: 60_000 })
-    expect(getBackgroundDomainDefinition('cache-purge').rateLimit).toEqual(CACHE_PURGE_RATE_LIMIT)
+    expect(getBackgroundDomainDefinition('cache-purge').rateLimit).toEqual({
+      max: 4,
+      duration: 60_000,
+    })
     expect(CACHE_PURGE_TAGS_JOB.options.ordering).toMatchObject({
       key: 'cache-purge',
-      rateLimit: CACHE_PURGE_RATE_LIMIT,
+      rateLimit: { max: 4, duration: 60_000 },
     })
   })
 

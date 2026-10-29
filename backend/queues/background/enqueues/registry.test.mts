@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 import { BACKGROUND_DOMAINS, isBackgroundDomain } from '../config.mts'
 import {
-  BACKGROUND_DOMAIN_DEFINITIONS,
   BACKGROUND_JOBS,
   getBackgroundJob,
   getBackgroundJobNames,
@@ -11,7 +10,7 @@ import {
 
 describe('background registry', () => {
   it('registers every domain once with namespaced, unique job names', () => {
-    expect(BACKGROUND_DOMAIN_DEFINITIONS.map(domain => domain.domain).toSorted()).toEqual(
+    expect([...new Set(BACKGROUND_JOBS.map(job => job.domain))].toSorted()).toEqual(
       [...BACKGROUND_DOMAINS].toSorted(),
     )
     expect(new Set(BACKGROUND_JOBS.map(job => job.name)).size).toBe(BACKGROUND_JOBS.length)
@@ -70,9 +69,7 @@ describe('background registry', () => {
         BACKGROUND_JOBS.filter(job => job.domain === domain).map(job => job.name),
       )
     }
-    expect(getBackgroundWorkerBaseline()).toBe(
-      BACKGROUND_DOMAIN_DEFINITIONS.reduce((total, domain) => total + domain.workerConcurrency, 0),
-    )
+    expect(getBackgroundWorkerBaseline()).toBe(123)
     expect(isBackgroundDomain('ses-inbound')).toBe(true)
     expect(isBackgroundDomain('emails')).toBe(false)
   })

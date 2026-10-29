@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import {
-  CACHE_PURGE_RATE_LIMIT,
-  CACHE_PURGE_TAGS_JOB,
-} from '@queues/background/enqueues/cache-purge-jobs'
+import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
+import { getBackgroundDomainDefinition } from '@queues/background/enqueues/registry'
 import {
   startBackgroundHarness,
   type BackgroundHarness,
@@ -24,6 +22,8 @@ describe('cache-purge domain rate limit through real GlideMQ', () => {
   })
 
   it('starts no more purges than the Workers Cache window allows, across workers', async () => {
+    const rateLimit = getBackgroundDomainDefinition('cache-purge').rateLimit
+    if (!rateLimit) throw new Error('cache-purge requires a rate limit')
     const startedIds: string[] = []
     const windowFull = Promise.withResolvers<void>()
     harness = await startBackgroundHarness({
@@ -34,12 +34,12 @@ describe('cache-purge domain rate limit through real GlideMQ', () => {
       bodies: {
         [CACHE_PURGE_TAGS_JOB.name]: job => {
           startedIds.push(job.id)
-          if (startedIds.length === CACHE_PURGE_RATE_LIMIT.max) windowFull.resolve()
+          if (startedIds.length === rateLimit.max) windowFull.resolve()
         },
       },
     })
     const jobs = await Promise.all(
-      Array.from({ length: CACHE_PURGE_RATE_LIMIT.max + 1 }, () =>
+      Array.from({ length: rateLimit.max + 1 }, () =>
         harness!.add(CACHE_PURGE_TAGS_JOB, { tags: [`post:${randomUUID()}`] }),
       ),
     )
@@ -49,7 +49,7 @@ describe('cache-purge domain rate limit through real GlideMQ', () => {
     await Promise.all(started.map(job => harness!.settled(job)))
 
     // Ten free slots across two workers remain, so the last job only waits because the window is spent.
-    expect(startedIds).toHaveLength(CACHE_PURGE_RATE_LIMIT.max)
+    expect(startedIds).toHaveLength(rateLimit.max)
     const waiting = jobs.filter(job => !startedIds.includes(job.id))
     expect(waiting).toHaveLength(1)
     expect(await harness.queue.getJob(waiting[0]!.id).then(job => job?.getState())).not.toBe(
