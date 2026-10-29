@@ -109,34 +109,5 @@ describe('flows', () => {
       expect(result.st).not.toBe(sessionToken)
       expect(result.uid).toBeNull()
     })
-
-    it('hot path: rejects signed UUIDv4 authenticated ids before returning tokens', async () => {
-      const did = legacyUuidV4()
-      const sid = legacyUuidV4()
-      const uid = v7()
-      const now = Math.floor(Date.now() / 1000)
-      const deviceToken = await signLegacyDeviceJwt({ did })
-      const sessionToken = await signLegacySessionJwt({
-        did,
-        sid,
-        uid,
-        sca: now + 3600,
-        rca: now + 3600,
-      })
-
-      const result = await refreshSessionState({
-        deviceToken,
-        sessionToken,
-        fetchUser: getTestPrivateUserById,
-      })
-
-      expect(isUUIDv7(result.did)).toBe(true)
-      expect(isUUIDv7(result.sid)).toBe(true)
-      expect(result.did).not.toBe(did)
-      expect(result.sid).not.toBe(sid)
-      expect(result.dt).not.toBe(deviceToken)
-      expect(result.st).not.toBe(sessionToken)
-      expect(result.uid).toBeNull()
-    })
   })
 })

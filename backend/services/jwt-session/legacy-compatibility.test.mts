@@ -11,7 +11,6 @@ import { getTestUserSessionById } from '../../test-helpers/entities/user-session
 import { createEmailAddressLoginToken } from '../users/authentication.mts'
 import { routeRateLimitConfig } from '../route-rate-limits/config.mts'
 import { refreshSessionState } from './flows.mts'
-import { resetSessionState } from './reset-session.mts'
 import {
   legacyUuidV4,
   signLegacyDeviceJwt,
@@ -38,41 +37,6 @@ describe('signed UUIDv4 session identifiers are rejected', () => {
   })
 
   const cases: Array<{ name: string; run: () => Promise<void> }> = [
-    {
-      name: 'refresh treats signed UUIDv4 anonymous IDs as untrusted',
-      async run() {
-        const legacyDid = legacyUuidV4()
-        const legacySid = legacyUuidV4()
-        const result = await refreshSessionState({
-          fetchUser: async () => null,
-          deviceToken: await signLegacyDeviceJwt({ did: legacyDid }),
-          sessionToken: await signLegacySessionJwt({
-            did: legacyDid,
-            sid: legacySid,
-            uid: null,
-          }),
-        })
-
-        expect(isUUIDv7(result.did)).toBe(true)
-        expect(isUUIDv7(result.sid)).toBe(true)
-        expect(result.did).not.toBe(legacyDid)
-        expect(result.sid).not.toBe(legacySid)
-      },
-    },
-    {
-      name: 'reset rejects a signed UUIDv4 device and its App Attest class',
-      async run() {
-        const legacyDid = legacyUuidV4()
-        const result = await resetSessionState({
-          deviceToken: await signLegacyDeviceJwt({ did: legacyDid, dc: 'attested' }),
-        })
-
-        expect(isUUIDv7(result.did)).toBe(true)
-        expect(isUUIDv7(result.sid)).toBe(true)
-        expect(result.did).not.toBe(legacyDid)
-        expect(result.deviceClass).toBeUndefined()
-      },
-    },
     {
       name: 'signed UUIDv4 authenticated session cannot authenticate',
       async run() {

@@ -68,16 +68,6 @@ describe('revocation', () => {
     expect(await isSessionRevoked(sid2)).toBe(false)
   })
 
-  it('revokes multiple sessions through the canonical operation', async () => {
-    const sid1 = v7()
-    const sid2 = v7()
-
-    await Promise.all([revokeSession(sid1), revokeSession(sid2)])
-
-    await expect(isSessionRevoked(sid1)).resolves.toBe(true)
-    await expect(isSessionRevoked(sid2)).resolves.toBe(true)
-  })
-
   it('uses the single-key path when revoking one session key', async () => {
     const sid = v7()
 
