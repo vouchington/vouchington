@@ -131,7 +131,6 @@ async function main() {
   await seedPosts(100_000)
   await seedPostCreationModerationBypass()
   await seedPostModerationRetention()
-  await seedParentHistory()
   await seedSemanticPosts()
   await seedPostFeedShares()
   await seedUserRemovedPlatformPosts()

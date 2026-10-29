@@ -1156,9 +1156,6 @@
     "post_moderation_disposition_types": {
       "values": ["pass", "review", "reject", "incomplete"]
     },
-    "post_moderation_retention_kinds": {
-      "values": ["superseded_versions", "pass_evidence"]
-    },
     "post_moderation_sources": {
       "values": ["openai_omni", "spam_detection", "staff"]
     },
@@ -84375,7 +84372,7 @@
         },
         "evidence": {
           "collation": null,
-          "comment": "Bounded private staff evidence; aged current automated passes are cleared without changing their outcome.",
+          "comment": "Bounded private evidence for moderation staff; never part of public post contracts.",
           "defaultExpression": "'{}'::jsonb",
           "generated": null,
           "generatedExpression": null,
@@ -84429,7 +84426,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Typed moderation outcomes whose pass evidence is cleared after retention; decision columns remain immutable.",
+      "comment": "Append-only typed moderation outcomes with bounded internal evidence.",
       "foreignKeys": {
         "post_moderation_dispositions_actor_user_id_fkey": {
           "columns": ["actor_user_id"],
@@ -84442,8 +84439,8 @@
         },
         "post_moderation_dispositions_attempt_id_version_id_source_fkey": {
           "columns": ["attempt_id", "version_id", "source"],
-          "definition": "FOREIGN KEY (attempt_id, version_id, source) REFERENCES post_moderation_attempts(id, version_id, source) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (attempt_id, version_id, source) REFERENCES post_moderation_attempts(id, version_id, source) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id", "version_id", "source"],
           "referencedTable": "post_moderation_attempts",
@@ -84476,26 +84473,6 @@
             }
           ],
           "predicate": "(actor_user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_moderation_dispositions__pass_evidence_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_moderation_dispositions__pass_evidence_id ON public.post_moderation_dispositions USING btree (id) WHERE ((disposition = 'pass'::post_moderation_disposition_types) AND (source <> 'staff'::post_moderation_sources) AND (evidence <> '{}'::jsonb))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((disposition = 'pass'::post_moderation_disposition_types) AND (source <> 'staff'::post_moderation_sources) AND (evidence <> '{}'::jsonb))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -84617,102 +84594,6 @@
           "definition": "UNIQUE (attempt_id)"
         }
       }
-    },
-    "post_moderation_retention_cursors": {
-      "checkConstraints": {},
-      "columns": {
-        "cursor_lower_bound_record_id": {
-          "collation": null,
-          "comment": "Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "cursor_record_id": {
-          "collation": null,
-          "comment": "Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "kind": {
-          "collation": null,
-          "comment": "Ledger stream whose progress this row records.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "post_moderation_retention_kinds"
-        },
-        "sweep_upper_bound_record_id": {
-          "collation": null,
-          "comment": "Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": "Time of the last committed progress update.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Durable UUIDv7 positions for bounded post moderation ledger retention.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "post_moderation_retention_cursors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_moderation_retention_cursors_pkey ON public.post_moderation_retention_cursors USING btree (kind)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "kind",
-              "descending": false,
-              "expression": "kind",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["kind"],
-        "definition": "PRIMARY KEY (kind)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_post_moderation_retention_cursors_updated_at": "CREATE TRIGGER trigger_post_moderation_retention_cursors_updated_at BEFORE UPDATE ON public.post_moderation_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
     },
     "post_moderation_versions": {
       "checkConstraints": {

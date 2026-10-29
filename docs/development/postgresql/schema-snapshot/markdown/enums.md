@@ -1518,11 +1518,6 @@
 - `reject`
 - `incomplete`
 
-## `post_moderation_retention_kinds`
-
-- `superseded_versions`
-- `pass_evidence`
-
 ## `post_moderation_sources`
 
 - `openai_omni`
