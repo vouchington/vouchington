@@ -162,15 +162,17 @@ describe('registered background work limits', () => {
       expect(Object.keys(entry.fields).toSorted()).toEqual(Object.keys(owner.maxima).toSorted())
       for (const [field, defaultValue] of Object.entries(owner.config.defaultFields)) {
         const maximum = (owner.maxima as Record<string, number>)[field]!
+        const minimum = entry.fields[field]!.minValue ?? 1
+        expect(minimum).toBeGreaterThanOrEqual(1)
+        expect(defaultValue).toBeGreaterThanOrEqual(minimum)
         expect(defaultValue).toBeLessThanOrEqual(maximum)
         expect(entry.fields[field]).toMatchObject({
-          minValue: 1,
           integer: true,
           maxValue: maximum,
         })
-        const restore = overrideDynamicConfigFieldsForTest(owner.config, { [field]: 1 })
+        const restore = overrideDynamicConfigFieldsForTest(owner.config, { [field]: minimum })
         try {
-          expect(owner.read(field)).toBe(1)
+          expect(owner.read(field)).toBe(minimum)
           overrideDynamicConfigFieldsForTest(owner.config, { [field]: maximum })
           expect(owner.read(field)).toBe(maximum)
           overrideDynamicConfigFieldsForTest(owner.config, { [field]: maximum + 1 })

@@ -55,5 +55,17 @@ export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
       maxValue: USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_budget_ms,
       integer: true,
     },
+    export_cursor_batch_size: {
+      description: 'Rows fetched per cursor round trip for RSS feed and topic exports.',
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.export_cursor_batch_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.export_cursor_batch_size,
+      integer: true,
+    },
+    topic_import_attempt_prune_batch_size: {
+      description: 'Expired topic import attempts removed by a direct prune call.',
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.topic_import_attempt_prune_batch_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.topic_import_attempt_prune_batch_size,
+      integer: true,
+    },
   },
 })

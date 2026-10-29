@@ -100,14 +100,14 @@ async function deferHostnameCacheInvalidations(items: ClaimedHostname[]): Promis
     UPDATE url_hostname_cache_invalidation_work_items work
     SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
         available_at = CURRENT_TIMESTAMP +
-          (LEAST(300, power(2, LEAST(attempt_count, 8))) * INTERVAL '1 second')
+          (LEAST($2::int, power(2, LEAST(attempt_count, 8))) * INTERVAL '1 second')
     FROM failed, failed_ids
     WHERE work.url_hostname_id = ANY(failed_ids.ids)
       AND work.url_hostname_id = failed.url_hostname_id
       AND work.generation = failed.generation
       AND work.lease_token = failed.lease_token
       AND work.lease_expires_at > CURRENT_TIMESTAMP`,
-    [JSON.stringify(items)],
+    [JSON.stringify(items), getEntityCacheWorkLimit('hostname_invalidation_retry_ceiling_seconds')],
   )
 }
 
@@ -123,6 +123,7 @@ async function claimHostnameCacheInvalidations(
       : 'lease_token IS NOT NULL AND lease_expires_at <= CURRENT_TIMESTAMP AND available_at <= CURRENT_TIMESTAMP'
   const order = kind === 'available' ? 'available_at' : 'lease_expires_at'
   const scope = hostnameIds ? 'AND url_hostname_id = ANY($2::uuid[])' : ''
+  const leaseSecondsParameter = hostnameIds ? '$3' : '$2'
   const statement = `/* no-mistakes: deadlock-safe -- SKIP LOCKED never waits for other work-table claimers; the bounded page locks only work rows. */
     WITH picked AS MATERIALIZED (
       SELECT url_hostname_id FROM url_hostname_cache_invalidation_work_items
@@ -134,14 +135,16 @@ async function claimHostnameCacheInvalidations(
     )
     UPDATE url_hostname_cache_invalidation_work_items work
     SET lease_token = uuidv7(), leased_at = CURRENT_TIMESTAMP,
-        lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes',
+        lease_expires_at = CURRENT_TIMESTAMP + (${leaseSecondsParameter}::int * INTERVAL '1 second'),
         attempt_count = attempt_count + 1
     FROM picked_ids, url_hostnames hostname
     WHERE work.url_hostname_id = ANY(picked_ids.ids)
       AND hostname.id = work.url_hostname_id
     RETURNING work.url_hostname_id, hostname.hostname, work.generation::text,
       work.lease_token`
-  const values = hostnameIds ? [limit, hostnameIds] : [limit]
+  const values = hostnameIds
+    ? [limit, hostnameIds, getEntityCacheWorkLimit('hostname_invalidation_lease_seconds')]
+    : [limit, getEntityCacheWorkLimit('hostname_invalidation_lease_seconds')]
   const { rows } =
     kind === 'available'
       ? await write<ClaimedHostname>(

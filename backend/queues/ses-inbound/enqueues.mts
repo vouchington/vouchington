@@ -11,11 +11,11 @@ import {
 } from '@ts-shared/ses-inbound-contract'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { SES_INBOUND_RECONCILE_INTERVAL_MS } from './config.mts'
+import {
+  getSesInboundRetainedFailedJobScanLimit,
+  SES_INBOUND_RECONCILE_INTERVAL_MS,
+} from './config.mts'
 import { sesInboundQueue } from './queues.mts'
-
-/** Retained failed process jobs read per reconciliation run; the queue's failure retention bounds them. */
-const RETAINED_FAILED_JOB_LIMIT = 1_000
 
 export const enqueueBulkSesInboundProcess = createBackgroundBulkEnqueue(
   SES_INBOUND_PROCESS_JOB,
@@ -39,7 +39,7 @@ const recoveryDependencies: SesInboundRecoveryDependencies = {
     sesInboundQueue.searchJobs({
       state: 'failed',
       name: SES_INBOUND_PROCESS_JOB.name,
-      limit: RETAINED_FAILED_JOB_LIMIT,
+      limit: getSesInboundRetainedFailedJobScanLimit(),
       excludeData: true,
     }),
 }

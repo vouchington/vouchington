@@ -1,5 +1,6 @@
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import {
+  MIN_DISPATCH_MAX_AGE_SECONDS,
   moderationReportsWorkConfig,
   moderationReportsWorkMaxValues,
 } from '@services/moderation-reports/work-limits'
@@ -20,9 +21,12 @@ export const backgroundWorkEntries3 = [
     config: moderationReportsWorkConfig,
     label: 'Moderation Reports',
     maxValues: moderationReportsWorkMaxValues,
+    minValues: { dispatch_max_age_seconds: MIN_DISPATCH_MAX_AGE_SECONDS },
     descriptions: {
       backfill_batch_size: 'Backfill batch size for moderation reports processing.',
       dispatch_batch_size: 'Dispatch batch size for moderation reports processing.',
+      dispatch_min_age_seconds: 'Minimum age of judgements eligible for auto-dispatch.',
+      dispatch_max_age_seconds: 'Maximum age of judgements eligible for auto-dispatch.',
     },
   }),
   defineBoundedWorkNamespace({

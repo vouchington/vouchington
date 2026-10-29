@@ -41,6 +41,9 @@ export const backgroundWorkEntries2 = [
     descriptions: {
       bloom_backfill_batch_size: 'Bloom backfill batch size for entity cache processing.',
       delete_keys_per_batch: 'Delete keys per batch for entity cache processing.',
+      hostname_invalidation_lease_seconds: 'Lease duration for hostname cache invalidation work.',
+      hostname_invalidation_retry_ceiling_seconds:
+        'Maximum backoff before retrying hostname cache invalidation.',
     },
   }),
   defineBoundedWorkNamespace({
