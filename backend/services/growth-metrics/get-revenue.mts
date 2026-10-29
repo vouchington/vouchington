@@ -1,20 +1,11 @@
 import { read } from '@data-stores/psql'
-import { MONEY_SCALE, type CurrencyCode, type ScaledMoneyAggregate } from '@ts-shared/money'
 import sql from 'sql-template-strings'
-import type { GrowthRange, Revenue, MembershipsByTier } from './types.mts'
+import type { GrowthRange, Revenue } from './types.mts'
+import { calculateMembershipRevenue, type MembershipRevenueRow } from './revenue-arithmetic.mts'
 import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
-
-type MembershipRevenueRow = {
-  tier: string
-  interval: 'monthly' | 'yearly'
-  currency_code: CurrencyCode
-  minor_unit_exponent: number
-  membership_count: number
-  total_minor_units: string
-}
 
 type RevenueQueryRow = {
   active_membership_rows: Array<{ tier: string; membership_count: number }>
@@ -31,10 +22,9 @@ export async function getRevenue(
   _periodStart: Date,
   scope?: RevenueScope,
   context: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
-  deps: { read: typeof read } = { read },
 ): Promise<Revenue> {
   const scopeIds = scope?.userIds ?? ['00000000-0000-0000-0000-000000000000']
-  const { rows } = await deps.read<RevenueQueryRow>(sql`/* getRevenue */
+  const { rows } = await read<RevenueQueryRow>(sql`/* getRevenue */
     WITH active_membership_counts AS (
       SELECT tier, SUM(membership_count)::INT AS membership_count
       FROM mv_revenue_memberships
@@ -119,51 +109,4 @@ export async function getRevenue(
         ? cancellations / (activeMemberships + cancellations)
         : 0,
   }
-}
-function calculateMembershipRevenue(membershipRows: readonly MembershipRevenueRow[]): {
-  activeMemberships: number
-  membershipsByTier: MembershipsByTier
-  mrrByCurrency: ScaledMoneyAggregate[]
-} {
-  const membershipsByTier: MembershipsByTier = {}
-  const amountsByCurrency = new Map<
-    CurrencyCode,
-    { monthly: bigint; yearly: bigint; minorUnitExponent: number }
-  >()
-  let activeMemberships = 0
-  for (const row of membershipRows) {
-    activeMemberships += row.membership_count
-    membershipsByTier[row.tier] = (membershipsByTier[row.tier] ?? 0) + row.membership_count
-    const current = amountsByCurrency.get(row.currency_code) ?? {
-      monthly: 0n,
-      yearly: 0n,
-      minorUnitExponent: row.minor_unit_exponent,
-    }
-    current[row.interval] += BigInt(row.total_minor_units)
-    amountsByCurrency.set(row.currency_code, current)
-  }
-  return {
-    activeMemberships,
-    membershipsByTier,
-    mrrByCurrency: calculateMrrByCurrency(amountsByCurrency),
-  }
-}
-function calculateMrrByCurrency(
-  amountsByCurrency: ReadonlyMap<
-    CurrencyCode,
-    { monthly: bigint; yearly: bigint; minorUnitExponent: number }
-  >,
-): ScaledMoneyAggregate[] {
-  return [...amountsByCurrency.entries()]
-    .toSorted(([left], [right]) => left.localeCompare(right))
-    .map(([currency, totals]) => {
-      const scaleFactor = 10n ** BigInt(MONEY_SCALE - totals.minorUnitExponent)
-      const annualizedScaled = (totals.monthly * 12n + totals.yearly) * scaleFactor
-      const roundedMonthlyScaled = (annualizedScaled + 6n) / 12n
-      return {
-        amount: roundedMonthlyScaled.toString(),
-        currency,
-        scale: MONEY_SCALE,
-      }
-    })
 }
