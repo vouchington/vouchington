@@ -9,6 +9,8 @@ CREATE TABLE notification_push_intents (
   id UUID NOT NULL DEFAULT uuidv7() UNIQUE,
   user_id UUID NOT NULL,
   notification_id UUID NOT NULL,
+  conversation_id UUID CONSTRAINT fk_notification_push_intents__conversation_id
+    REFERENCES conversations (id) ON DELETE CASCADE,
   status notification_push_intent_statuses GENERATED ALWAYS AS (
     CASE WHEN suppressed_at IS NOT NULL THEN 'suppressed'::notification_push_intent_statuses
       WHEN delivered_at IS NOT NULL THEN 'delivered'::notification_push_intent_statuses
@@ -29,6 +31,7 @@ CREATE TABLE notification_push_intents (
   CHECK (num_nonnulls(suppressed_at, delivered_at) <= 1)
 );
 
+
 CREATE INDEX idx_notification_push_intents__available
   ON notification_push_intents (updated_at, user_id, notification_id)
   WHERE status = 'pending';
@@ -36,6 +39,14 @@ CREATE INDEX idx_notification_push_intents__available
 CREATE INDEX idx_notification_push_intents__pending_retention
   ON notification_push_intents (id)
   WHERE status = 'pending';
+
+CREATE INDEX idx_notification_push_intents__conversation_id
+  ON notification_push_intents (conversation_id)
+  WHERE conversation_id IS NOT NULL;
+
+CREATE INDEX idx_notification_push_intents__pending_conversation
+  ON notification_push_intents (conversation_id, user_id, notification_id)
+  WHERE conversation_id IS NOT NULL AND status = 'pending';
 
 CREATE TABLE notification_push_intent_retention_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
@@ -66,6 +77,7 @@ COMMENT ON TABLE notification_push_intents IS 'One durable browser-push effect p
 COMMENT ON COLUMN notification_push_intents.id IS 'UUIDv7 intent creation identity used for bounded age retention.';
 COMMENT ON COLUMN notification_push_intents.user_id IS 'Notification owner and first half of the durable intent identity.';
 COMMENT ON COLUMN notification_push_intents.notification_id IS 'Notification identifier and second half of the durable intent identity.';
+COMMENT ON COLUMN notification_push_intents.conversation_id IS 'Conversation referred to by the notification, used to veto whole-conversation deletion while push is pending.';
 COMMENT ON COLUMN notification_push_intents.status IS 'Generated enum derived exclusively from mutually exclusive terminal delivery facts.';
 COMMENT ON COLUMN notification_push_intents.lease_token IS 'Unique worker fencing token rotated for each delivery claim.';
 COMMENT ON COLUMN notification_push_intents.leased_at IS 'Timestamp when the current delivery claim began.';

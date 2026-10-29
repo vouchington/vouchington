@@ -9,10 +9,10 @@ export async function lockActivityPubLikeIdentity(query: QueryExecutor, activity
       'activitypub-like-identity:' || ${activityId}, 0
     ))
   `)
-  const { rows } = await query<{ post_id: string; remote_actor_id: string }>(
+  const { rows } = await query<{ post_id: string; remote_actor_identity_id: string }>(
     sql`/* findConfirmedActivityPubLikeOwner */
-      SELECT post_id, remote_actor_id FROM activitypub_post_likes
-      WHERE like_activitypub_id = ${activityId} AND confirmed_at IS NOT NULL
+      SELECT post_id, remote_actor_identity_id FROM activitypub_post_like_activities
+      WHERE activity_id = ${activityId} AND confirmed_at IS NOT NULL
       LIMIT 1
     `,
   )

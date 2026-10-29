@@ -448,8 +448,8 @@ ON notifications (user_id, conversation_id, entity_type)
 WHERE conversation_id IS NOT NULL AND deleted_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_notifications__conversation_id
-ON notifications (conversation_id)
+CREATE INDEX IF NOT EXISTS idx_notifications__conversation_id__id__user_id
+ON notifications (conversation_id, id, user_id)
 WHERE conversation_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

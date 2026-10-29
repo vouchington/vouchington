@@ -7,9 +7,9 @@ const SOURCES = {
     terminalAt: 'undone_at',
   },
   like: {
-    table: 'activitypub_post_likes',
-    activityId: 'like_activitypub_id',
-    terminalAt: 'deleted_at',
+    table: 'activitypub_post_like_activities',
+    activityId: 'activity_id',
+    terminalAt: 'undone_at',
   },
 } as const
 
@@ -45,6 +45,14 @@ export async function setTerminalActivityTimeForTest(
     [activityId, at],
   )
   if (rowCount !== 1) throw new Error('Expected one owned terminal identity')
+  if (kind === 'like')
+    await query(
+      `/* setTerminalLikePayloadTimeForTest */
+     UPDATE activitypub_post_likes SET deleted_at = $2::timestamptz
+     WHERE id = (SELECT id FROM activitypub_post_like_activities WHERE activity_id = $1)
+       AND deleted_at IS NOT NULL`,
+      [activityId, at],
+    )
 }
 
 /** Adds only a fixture-id restriction before the real capped production SELECT. */
@@ -57,11 +65,26 @@ export function scopeTerminalActivityQueryForTest(
   return new Proxy(query, {
     apply(target, thisArgument, args: Parameters<TransactionQuery>) {
       const [statement, values] = args
-      if (
-        typeof statement !== 'string' ||
-        !statement.includes('/* cleanupActivityPubTerminalIdentityPage */')
-      ) {
-        throw new Error('Unexpected terminal activity cleanup statement')
+      if (typeof statement !== 'string') throw new Error('Expected a named terminal cleanup query')
+      if (!statement.includes('/* cleanupActivityPubTerminalIdentityPage */')) {
+        const picked = values?.[0]
+        const owned = new Set(ids)
+        if (
+          !Array.isArray(picked) ||
+          picked.some((id: unknown) => typeof id !== 'string' || !owned.has(id))
+        ) {
+          throw new Error('Terminal cleanup mutation escaped owned fixture IDs')
+        }
+        const identityDelete =
+          statement.includes('/* deleteTerminalActivityIdentityPage */') &&
+          statement.includes(`DELETE FROM ${source.table} target`)
+        const payloadDelete =
+          kind === 'like' &&
+          statement.includes('/* deleteTerminalActivityLikePayloadPage */') &&
+          statement.includes('DELETE FROM activitypub_post_likes')
+        if (!identityDelete && !payloadDelete)
+          throw new Error('Unexpected terminal cleanup mutation')
+        return Reflect.apply(target, thisArgument, args)
       }
       const selector = `WHERE ${source.terminalAt} < $1::timestamptz`
       if (
@@ -99,4 +122,13 @@ export async function readFollowCyclePointerForTest(
     [actorId, userId],
   )
   return rows[0]
+}
+
+/** Remove this owned terminal payload to model the independent, shorter payload-retention phase. */
+export async function removeTerminalLikePayloadForTest(query: TransactionQuery, id: string) {
+  await query(
+    `/* removeTerminalLikePayloadForTest */
+     DELETE FROM activitypub_post_likes WHERE id = $1::uuid AND deleted_at IS NOT NULL`,
+    [id],
+  )
 }

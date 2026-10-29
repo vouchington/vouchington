@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS app_attestation_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_app_attestation_keys__did ON app_attestation_keys (did);
+CREATE INDEX IF NOT EXISTS idx_app_attestation_keys__retention
+  ON app_attestation_keys (COALESCE(last_used_at, uuid_extract_timestamp(id)), id);
 
 COMMENT ON TABLE app_attestation_keys IS 'Apple App Attest keys, one row per device-generated attestation key, used to verify subsequent per-request assertions.';
 COMMENT ON COLUMN app_attestation_keys.key_id IS 'Apple App Attest key identifier: raw 32-byte SHA-256 of the attested public key, as returned by DCAppAttestService.';
@@ -27,4 +29,4 @@ COMMENT ON COLUMN app_attestation_keys.public_key IS 'Attested EC P-256 public k
 COMMENT ON COLUMN app_attestation_keys.sign_count IS 'Highest assertion sign count verified for this key. Assertions must present a strictly greater sign count.';
 COMMENT ON COLUMN app_attestation_keys.bundle_id IS 'App bundle identifier the key was attested for.';
 COMMENT ON COLUMN app_attestation_keys.environment IS 'Apple App Attest environment (production or development) the key was attested under. Development-environment keys are rejected at assertion time once development attestation is disabled.';
-COMMENT ON COLUMN app_attestation_keys.last_used_at IS 'Timestamp of the most recently verified assertion for this key.';
+COMMENT ON COLUMN app_attestation_keys.last_used_at IS 'Coalesced timestamp of successful assertion use, advanced at most once per day for retention.';

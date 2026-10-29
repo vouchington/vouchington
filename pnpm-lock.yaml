@@ -4285,6 +4285,9 @@ importers:
       '@services/route-rate-limits':
         specifier: workspace:^
         version: link:../route-rate-limits
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../user-deletions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6137,6 +6140,9 @@ importers:
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
+      '@services/ap-post-likes':
+        specifier: workspace:^
+        version: link:../ap-post-likes
       '@services/growth-metrics':
         specifier: workspace:^
         version: link:../growth-metrics

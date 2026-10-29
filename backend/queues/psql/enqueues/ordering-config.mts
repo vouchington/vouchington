@@ -15,21 +15,33 @@ const orderingFields = orderingConfigFields(
 
 export const TERMINAL_ACTIVITY_RETENTION_ORDERING_MAX = 1
 const TERMINAL_CONCURRENCY_FIELD = 'terminal_activity_retention_concurrency'
+const OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD = 'operational_tombstone_retention_concurrency'
 
 export const psqlQueueConfig = new DynamicConfig({
   key: 'psql-queue-config',
-  fieldTypes: { ...orderingFields.fieldTypes, [TERMINAL_CONCURRENCY_FIELD]: 'number' },
-  defaultFields: { ...orderingFields.defaultFields, [TERMINAL_CONCURRENCY_FIELD]: 1 },
+  fieldTypes: {
+    ...orderingFields.fieldTypes,
+    [TERMINAL_CONCURRENCY_FIELD]: 'number',
+    [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]: 'number',
+  },
+  defaultFields: {
+    ...orderingFields.defaultFields,
+    [TERMINAL_CONCURRENCY_FIELD]: 1,
+    [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]: 1,
+  },
 })
 
 export const psqlQueueMaxValues: Record<string, number> = {
   ...orderingFields.maxValues,
   [TERMINAL_CONCURRENCY_FIELD]: TERMINAL_ACTIVITY_RETENTION_ORDERING_MAX,
+  [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]: 1,
 }
 export const psqlQueueDescriptions = {
   ...orderingFields.descriptions,
   [TERMINAL_CONCURRENCY_FIELD]:
     'Global concurrent retained jobs per terminal Follow or Like family.',
+  [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]:
+    'Global concurrent retained jobs per operational tombstone family.',
 }
 
 export function getTerminalActivityRetentionConcurrency(): number {

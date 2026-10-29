@@ -1,6 +1,31 @@
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+
+/** Raw queue work without a contact-purpose producer; the real staff case hydrator omits it. */
+export async function insertUnreadableCopyrightQueueCase(
+  query: TransactionQuery,
+  receivedAt: Date,
+): Promise<string> {
+  const { rows } = await query<{ id: string }>(sql`/* insertUnreadableCopyrightQueueCase */
+    WITH notice AS (
+      INSERT INTO copyright_notices (
+        jurisdiction, legal_basis, received_at, claimant_contact_ciphertext,
+        work_description, policy_version
+      ) VALUES (
+        'us_dmca', 'copyright', ${receivedAt}, ${`unreadable-${randomUUID()}`},
+        ${`work-${randomUUID()}`}, 'test-v1'
+      ) RETURNING id
+    ), appeal AS (
+      INSERT INTO copyright_notice_submissions (
+        copyright_notice_id, kind, received_at, source_kind, body_ciphertext
+      ) SELECT id, 'appeal', ${receivedAt}, 'staff', ${`appeal-${randomUUID()}`}
+      FROM notice
+    ) SELECT id FROM notice`)
+  if (!rows[0]) throw new Error('Unreadable queue case was not inserted')
+  return rows[0].id
+}
 
 /** Records a staff decision on a form intake so the intake itself no longer queues its case. */
 export async function insertReviewedCopyrightFormIntake(input: {

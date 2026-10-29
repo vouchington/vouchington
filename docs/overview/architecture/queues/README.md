@@ -95,6 +95,12 @@ page result before child admission, so a retry of a receipted parent reuses the 
 PostgreSQL cursor progress remains authoritative; a crash before the receipt can replay bounded,
 idempotent cleanup. Daily and operator seeds recover lost queue state or terminal failures.
 
+Operational tombstone retention uses one retained PostgreSQL job per family. A productive partial
+sweep yields its job so a backlog drains beyond the daily seed; a locked page completes and waits
+for the next seed. Hostname-block roots detach bounded descendant and penalty references before
+deletion, while a cursor advances past an unfinished hostname cleanup operation without erasing its
+ownership.
+
 Image deletion fences delivery before processing posts that share the image. Each continuation
 commits a bounded page of post resets and deletion revisions with its cursor and pending listener
 admissions. Admission retries drain that receipt before mutating another page, so a lost queue
@@ -121,6 +127,12 @@ Terminal ActivityPub identity cleanup can yield the same retained family job whi
 so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
 later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial
 ordering lane, and every pass commits bounded SQL work before yielding.
+Deleted-conversation cleanup follows the same retained-job pattern when the daily pass finds more
+work. Its continuation runs only that family, so child notification pages do not make the daily
+schedule the throughput ceiling. The persisted conversation cursor and pending-push checks remain
+the source of progress and safety across jobs.
+When another transaction holds a child row, the retained job finishes its claim and the next
+scheduled cleanup retries from the persisted cursor after the lock clears.
 
 Hostname blocking records one durable cleanup operation before admitting background work. Its
 continuations page child hostnames, URLs, relations, creator penalties, and recalculation jobs with

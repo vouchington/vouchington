@@ -10,7 +10,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'post_activitypub_like_tallies',
   'post_vote_retained_daily_counts',
   'api_keys',
-  'app_attestation_keys',
   'apple_accounts',
   'bluesky_linked_accounts',
   'bluesky_link_authorizations',

@@ -9,6 +9,14 @@ export const ROOT_FAMILIES = {
     table: 'retained_user_identities',
     references: RETAINED_USER_REFERENCES,
   },
+  remote_actor: {
+    table: 'remote_actor_identities',
+    references: [
+      ['remote_actors', 'id'],
+      ['activitypub_remote_follow_activities', 'remote_actor_identity_id'],
+      ['activitypub_post_like_activities', 'remote_actor_identity_id'],
+    ],
+  },
   membership: {
     table: 'retained_membership_identities',
     references: [
@@ -37,6 +45,7 @@ export const ROOT_FAMILIES = {
     table: 'retained_post_identities',
     references: [
       ['posts', 'id'],
+      ['activitypub_post_like_activities', 'post_id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
       ['image_deletion_post_updates', 'post_id'],

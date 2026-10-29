@@ -6,7 +6,9 @@
  */
 
 import { vi } from 'vitest'
+import { beginTransaction } from '@data-stores/psql'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
+import sql from 'sql-template-strings'
 import type { FetchRemoteActorDocumentDeps } from '../services/remote-actors/fetch-remote-actor-document.mts'
 import {
   getOrFetchRemoteActorByKeyId,
@@ -50,4 +52,19 @@ export async function createRemoteActorFixture(): Promise<RemoteActorRow> {
     .fn<FetchRemoteActorDocumentDeps['validateUrl']>()
     .mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
   return getOrFetchRemoteActorByKeyId(keyId, { fetchWithTimeout, validateUrl })
+}
+
+/** Probe the Like pair lock from a separate real PostgreSQL transaction. */
+export async function isActivityPubLikePairLockAvailableForTest(
+  postId: string,
+  remoteActorId: string,
+): Promise<boolean> {
+  await using query = await beginTransaction()
+  const { rows } = await query<{ available: boolean }>(sql`
+    /* isActivityPubLikePairLockAvailableForTest */
+    SELECT pg_try_advisory_xact_lock(hashtextextended(
+      'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
+    )) AS available
+  `)
+  return rows[0]?.available ?? false
 }

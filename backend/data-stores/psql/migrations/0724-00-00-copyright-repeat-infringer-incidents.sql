@@ -188,14 +188,6 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION fn_reject_copyright_repeat_infringer_review()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'completed copyright repeat-infringer review history is immutable'
-    USING ERRCODE = 'check_violation';
-END;
-$$;
-
 CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_incidents
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_incident();
@@ -214,7 +206,7 @@ CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_actor
 
 CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_reviews
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_always('completed copyright repeat-infringer review history is immutable');
 
 COMMENT ON TABLE copyright_repeat_infringer_incidents IS 'One account incident per copyright notice. Operative means a human confirm or modify still stands and no withdrawal, duplicate, or abusive disposition exists.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident.';

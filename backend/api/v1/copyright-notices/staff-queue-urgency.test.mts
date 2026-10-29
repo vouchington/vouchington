@@ -6,6 +6,7 @@ import { withCopyrightStaffQueueHttp } from '@voucha/test-helpers/copyright-staf
 import {
   insertOpenCopyrightCounterNoticeDeadline,
   insertReviewedCopyrightFormIntake,
+  insertUnreadableCopyrightQueueCase,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import {
@@ -105,6 +106,8 @@ describe('copyright staff queue urgency', () => {
     }
     // Eligible owned control interleaves between the due deadline and newer legal hold.
     const interleavingControl = await createGuestNotice(decisionNow)
+    // Ordinary later intake remains real queue work, outside this test's required window.
+    const trailingControl = await createGuestNotice(decisionNow)
     await insertReviewedCopyrightFormIntake({
       noticeId: interleavingControl,
       reviewerUserId: moderator.id,
@@ -122,13 +125,22 @@ describe('copyright staff queue urgency', () => {
     await withCopyrightStaffQueueHttp(
       moderator,
       undefined,
-      async ({ read, assertInterleaving }) => {
+      async ({ query, read, assertInterleaving }) => {
+        // This raw key is visible only in this rolled-back snapshot, not a readable staff case.
+        const unreadable = await insertUnreadableCopyrightQueueCase(
+          query,
+          new Date(decisionNow.getTime() - 31 * day),
+        )
         await assertInterleaving(due, interleavingControl, filingCase, false)
         const first = await read(ownedIds, false, 100)
         expect(first.copyright_notices.map(item => item.id)).toEqual(ownedIds)
         const walked = await read(ownedIds, false, 1)
         const owned = walked.copyright_notices
         expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
+        expect(walked.observedIds).toContain(interleavingControl)
+        expect(walked.observedIds).not.toContain(trailingControl)
+        expect(walked.observedIds).not.toContain(unreadable)
+        expect(walked.rawObservedIds).toContain(unreadable)
         expect(walked.page_info.has_next_page).toBe(true)
         expect(walked.page_info.end_cursor).toEqual(expect.any(String))
         expect(owned.map(notice => notice.id)).toEqual(ownedIds)

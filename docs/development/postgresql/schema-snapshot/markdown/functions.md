@@ -693,6 +693,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_agent_system_account()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_always`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_always()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_classifier_activation_lifecycle`
 
 ```sql
@@ -965,14 +973,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_incident(
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_copyright_repeat_infringer_review`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_review()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_reject_copyright_restriction_assessment_scope`
 
 ```sql
@@ -1241,6 +1241,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_inten
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_notification_push_intent_conversation_mismatch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_notification_push_intent_conversation_mismatch()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

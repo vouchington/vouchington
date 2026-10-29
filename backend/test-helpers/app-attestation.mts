@@ -9,6 +9,7 @@ import type {
   AppAttestEnvironment,
 } from '@voucha/types/entities/app-attestation'
 import { appAttestationConfig } from '../services/app-attestation/index.mts'
+import { encodeAssertionCbor } from './app-attestation-cbor.mts'
 import {
   overrideDynamicConfigFieldsForTest,
   snapshotDynamicConfigFieldsForTest,
@@ -80,6 +81,22 @@ export async function insertAttestationKey(params: {
   }
 }
 
+export async function setAppAttestationKeyLastUsedAtForTest(
+  keyId: Buffer,
+  lastUsedAt: Date,
+): Promise<void> {
+  await write(sql`/* setAppAttestationKeyLastUsedAtForTest */
+    UPDATE app_attestation_keys SET last_used_at = ${lastUsedAt} WHERE key_id = ${keyId}`)
+}
+
+export async function getAppAttestationKeyLastUsedAtForTest(keyId: Buffer): Promise<Date | null> {
+  const { rows } = await write<{
+    last_used_at: Date | null
+  }>(sql`/* getAppAttestationKeyLastUsedAtForTest */
+    SELECT last_used_at FROM app_attestation_keys WHERE key_id = ${keyId}`)
+  return rows[0]?.last_used_at ?? null
+}
+
 export type AppAttestAssertionHeaders = {
   'x-app-attest-key-id': string
   'x-app-attest-assertion': string
@@ -90,28 +107,6 @@ type AppAttestAssertionInput = {
   actionTag: string
   challengeId?: string
   signCount?: number
-}
-
-function cborTextString(value: string): Buffer {
-  const bytes = Buffer.from(value, 'utf8')
-  if (bytes.length > 23) throw new Error('cborTextString: fixture strings must be <= 23 bytes')
-  return Buffer.concat([Buffer.from([0x60 + bytes.length]), bytes])
-}
-
-function cborByteString(value: Buffer): Buffer {
-  if (value.length <= 23) return Buffer.concat([Buffer.from([0x40 + value.length]), value])
-  if (value.length <= 255) return Buffer.concat([Buffer.from([0x58, value.length]), value])
-  throw new Error('cborByteString: fixture byte strings must be <= 255 bytes')
-}
-
-function encodeAssertionCbor(signature: Buffer, authenticatorData: Buffer): Buffer {
-  return Buffer.concat([
-    Buffer.from([0xa2]),
-    cborTextString('signature'),
-    cborByteString(signature),
-    cborTextString('authenticatorData'),
-    cborByteString(authenticatorData),
-  ])
 }
 
 function buildAuthenticatorData(teamId: string, bundleId: string, signCount: number): Buffer {

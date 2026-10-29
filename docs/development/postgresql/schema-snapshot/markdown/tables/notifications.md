@@ -88,7 +88,7 @@ _none_
 - `idx_notifications__community_ban`: `CREATE INDEX idx_notifications__community_ban ON ONLY public.notifications USING btree (community_ban_id) WHERE ((community_ban_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_notifications__community_ban_id`: `CREATE INDEX idx_notifications__community_ban_id ON ONLY public.notifications USING btree (community_ban_id) WHERE (community_ban_id IS NOT NULL)`
 - `idx_notifications__community_id`: `CREATE INDEX idx_notifications__community_id ON ONLY public.notifications USING btree (community_id) WHERE (community_id IS NOT NULL)`
-- `idx_notifications__conversation_id`: `CREATE INDEX idx_notifications__conversation_id ON ONLY public.notifications USING btree (conversation_id) WHERE (conversation_id IS NOT NULL)`
+- `idx_notifications__conversation_id__id__user_id`: `CREATE INDEX idx_notifications__conversation_id__id__user_id ON ONLY public.notifications USING btree (conversation_id, id, user_id) WHERE (conversation_id IS NOT NULL)`
 - `idx_notifications__copyright_notice`: `CREATE INDEX idx_notifications__copyright_notice ON ONLY public.notifications USING btree (copyright_notice_id) WHERE (copyright_notice_id IS NOT NULL)`
 - `idx_notifications__household_id`: `CREATE INDEX idx_notifications__household_id ON ONLY public.notifications USING btree (household_id) WHERE (household_id IS NOT NULL)`
 - `idx_notifications__household_invitation_id`: `CREATE INDEX idx_notifications__household_invitation_id ON ONLY public.notifications USING btree (household_invitation_id)`
@@ -126,6 +126,7 @@ _none_
 
 **Triggers:**
 
+- `trigger_assert_notification_conversation_immutable`: `CREATE TRIGGER trigger_assert_notification_conversation_immutable BEFORE UPDATE OF conversation_id ON public.notifications FOR EACH ROW WHEN ((old.conversation_id IS DISTINCT FROM new.conversation_id)) EXECUTE FUNCTION fn_reject_always('Notification conversation cannot change after creation')`
 - `trigger_notifications_capture_push_intent`: `CREATE TRIGGER trigger_notifications_capture_push_intent AFTER INSERT OR UPDATE OF id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent()`
 - `trigger_notifications_preserve_publication_target`: `CREATE TRIGGER trigger_notifications_preserve_publication_target BEFORE INSERT OR UPDATE OF post_id, rss_feed_item_id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_notification_publication_target()`
 - `trigger_notifications_retire_push_intent`: `CREATE TRIGGER trigger_notifications_retire_push_intent BEFORE UPDATE OF id ON public.notifications FOR EACH ROW WHEN ((old.id IS DISTINCT FROM new.id)) EXECUTE FUNCTION fn_project_retire_notification_push_intent()`

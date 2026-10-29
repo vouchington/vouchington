@@ -17,6 +17,8 @@ import {
 import { pseudonymizeIdentityVerificationAttempts } from './pseudonymize-identity-verification-attempts.mts'
 import { terminateRetainedMembershipGrants } from './terminate-retained-membership-grants.mts'
 
+import { terminalizePurgedUserRemoteFollows } from './cleanup-federation-purge-identities.mts'
+
 import type { RetentionWorkBudget } from './work-budget.mts'
 
 /** All independent mutation-backed candidate pages share the job's remaining row allowance. */
@@ -47,6 +49,7 @@ export async function cleanupUserPreservedRows(
     (limit: number) => cleanupUserNotificationPushIntents(query, userId, limit),
     (limit: number) => cleanupUserNotifications(query, userId, limit),
     (limit: number) => cleanupUserCommunityMemberships(query, userId, limit),
+    (limit: number) => terminalizePurgedUserRemoteFollows(query, userId, limit),
     async (limit: number) => {
       const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch: preserve topics */
         -- no-mistakes-disable-next-line postgres-required-predicates: reassign every topic the purged user created, including deleted and merged ones, or deleting the user cascades into them

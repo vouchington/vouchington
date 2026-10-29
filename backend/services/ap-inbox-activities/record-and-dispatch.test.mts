@@ -133,7 +133,7 @@ describe('recordAndDispatchInboundActivity', () => {
 
     expect(replay).toEqual({ outcome: 'applied', duplicate: true })
   })
-  it('rolls back the dedup marker atomically when the core database effect fails', async () => {
+  it('rolls back the dedup marker when a Follow actor has no live row', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const user = await createFederatedUser()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
@@ -146,7 +146,7 @@ describe('recordAndDispatchInboundActivity', () => {
     }
 
     await expect(recordAndDispatchInboundActivity(remoteActor, activity)).rejects.toThrow(
-      'foreign key constraint',
+      'ActivityPub Follow id belongs to another actor or target',
     )
 
     const isFirstSeenAgain = await recordInboxActivity(activityId, activity.type, activity.actor)

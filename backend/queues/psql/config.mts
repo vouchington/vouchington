@@ -1,5 +1,7 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+import { psqlQueueConfig } from './enqueues/ordering-config.mts'
+import type { OperationalTombstoneFamily } from './types.mts'
 import type { JobOptions } from 'glide-mq'
 
 export const QUEUE_NAME = 'psql'
@@ -57,8 +59,19 @@ export const REFRESH_REVENUE_CHANGES_CRON = '3,8,13,18,23,28,33,38,43,48,53,58 *
 // Daily at 6:00 AM UTC
 export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
 
-export type TerminalActivityRetentionFamily = 'follow' | 'like'
 export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
+export const OPERATIONAL_TOMBSTONE_RETENTION_JOB_NAME = 'cleanupOperationalTombstones'
+export const operationalTombstoneRetentionJobId = (family: OperationalTombstoneFamily): string =>
+  `psql__operational_tombstone_retention__${family}`
+export const OPERATIONAL_TOMBSTONE_RETENTION_ORDERING_MAX = 1
+
+export function getOperationalTombstoneRetentionConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    psqlQueueConfig,
+    'operational_tombstone_retention_concurrency',
+    { defaultValue: 1, maxValue: OPERATIONAL_TOMBSTONE_RETENTION_ORDERING_MAX },
+  )
+}
 
 /** Existing PSQL transient-failure policy, shared by schedules and retained continuations. */
 export const PSQL_RETRY_OPTIONS = {
@@ -118,6 +131,20 @@ export function getModerationRetentionJobOptions(): JobOptions {
         defaultValue: 1,
         maxValue: 1,
       }),
+    },
+  }
+}
+
+export function getOperationalTombstoneRetentionJobOptions(
+  family: OperationalTombstoneFamily,
+): JobOptions {
+  return {
+    ...PSQL_RETRY_OPTIONS,
+    jobId: operationalTombstoneRetentionJobId(family),
+    priority: PRIORITY_DEFAULT,
+    ordering: {
+      key: `psql:operational-tombstone-retention:${family}`,
+      concurrency: getOperationalTombstoneRetentionConcurrency(),
     },
   }
 }

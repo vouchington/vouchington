@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
-  acquireModerationOperationRetentionTestLock,
   createTestRetentionWindow,
   createTestUserDirect,
   insertReferralAttributionAt,
@@ -19,17 +18,14 @@ import {
   insertTestRetainedRelationIdentity,
 } from '@voucha/test-helpers/entities/retained-identities'
 import { seedTestRetainedMediaOrphan } from '@voucha/test-helpers/entities/retained-media'
-import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
-import * as cleanupBatches from '../cleanup-batches.mts'
-import * as retainedRoots from '../cleanup-retained-identities.mts'
-import * as retainedMedia from '../cleanup-retained-media-bindings.mts'
-import * as retainedRelations from '../cleanup-retained-relation-identities.mts'
+import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
+import { cleanupRetainedMediaBindings } from '../cleanup-retained-media-bindings.mts'
+import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
 import {
   cleanupExpiredOAuthAuthorizationServerArtifacts,
   cleanupOldReferralAttributions,
   cleanupOrphanedOAuthAccounts,
   cleanupSoftDeletedUsers,
-  runDataRetentionCleanup,
 } from '../cleanup.mts'
 import {
   DATA_RETENTION_MAX_VALUES,
@@ -38,71 +34,8 @@ import {
   getDataRetentionLimits,
 } from '../config.mts'
 
-const DAY_MS = 24 * 60 * 60 * 1000
-
-// Every cleanup except the one under test sweeps a window that holds no rows, so the shared
-// database's other fixtures are untouched.
-function emptyScopedOptions(now: Date) {
-  const emptyWindow = { lowerBoundDate: new Date(now.getTime() + DAY_MS), now }
-  return {
-    voteBallotIdsByTable: {},
-    userAgentStringIds: [],
-    voteIntegrityFlagIds: [],
-    retainedIdentityRootIds: {},
-    retainedRelationIdentityKeys: {},
-    retainedMediaBindingIds: [],
-    softDeletedUsers: emptyWindow,
-    histories: emptyWindow,
-    orphanedOAuthAccounts: emptyWindow,
-    oauthFriendEdges: { now: new Date('1970-01-02T00:00:00.000Z') },
-    expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
-    expiredOAuthServerArtifacts: emptyWindow,
-    expiredBlueskyLinkCompletions: emptyWindow,
-    abandonedBlueskyLinkSessions: emptyWindow,
-    expiredContributionAdmissions: emptyWindow,
-    expiredContributionQuotaConsumptions: emptyWindow,
-    expiredTopicImportAttempts: emptyWindow,
-    terminalNotificationPushIntents: emptyWindow,
-    deliveredMembershipEntitlementEffects: emptyWindow,
-    endedMembershipRenewalNotices: emptyWindow,
-    terminalGooglePlayAcknowledgments: emptyWindow,
-    terminalStripeEventWork: emptyWindow,
-    abandonedMembershipPurchaseIntents: emptyWindow,
-    emailAddressLoginTokens: emptyWindow,
-    phoneNumberLoginTokens: emptyWindow,
-    expiredUserSessions: emptyWindow,
-    webPushSubscriptionTombstones: emptyWindow,
-    oldModerationQueueClaims: emptyWindow,
-    oldModerationMediaReveals: emptyWindow,
-    federationRetention: { now: new Date(0) },
-    textEmbeddingCache: emptyWindow,
-    terminalEmbeddingBatches: emptyWindow,
-    oldMediaDeliveryChanges: emptyWindow,
-    classifierRecords: emptyWindow,
-    sesBounceEvents: emptyWindow,
-    systemPrunedNotifications: emptyWindow,
-    userDeletedNotifications: emptyWindow,
-    moderationEmailSends: emptyWindow,
-  }
-}
-
 describe('data retention per-run caps', () => {
-  it.each([
-    [1, 1],
-    [DATA_RETENTION_MAX_VALUES.batch_size, 1_000],
-  ])('uses a bounded retained page for batch size %i', async (batchSize, pageSize) => {
-    const moderationLock = await acquireModerationOperationRetentionTestLock()
-    onTestFinished(() => moderationLock.release())
-    const lock = await acquirePaymentOperationRetentionTestLock()
-    onTestFinished(() => lock.release())
-    const roots = vi.spyOn(retainedRoots, 'cleanupRetainedIdentityRoots')
-    const media = vi.spyOn(retainedMedia, 'cleanupRetainedMediaBindings')
-    const relations = vi.spyOn(retainedRelations, 'cleanupRetainedRelationIdentities')
-    onTestFinished(() => {
-      roots.mockRestore()
-      media.mockRestore()
-      relations.mockRestore()
-    })
+  it.each([1, 1_000])('cleans exact owned retained pages capped at %i', async pageSize => {
     const postId = randomUUID()
     const relationId = randomUUID()
     const imageId = randomUUID()
@@ -111,36 +44,18 @@ describe('data retention per-run caps', () => {
     await insertTestRetainedIdentityRoot('post', postId)
     await insertTestRetainedRelationIdentity(relationTable, postId, relationId)
     await seedTestRetainedMediaOrphan({ imageId, placementId, bindingFamily: 'post' })
-    const now = new Date()
-    const options = {
-      ...emptyScopedOptions(now),
-      oldReferralAttributions: { now, lowerBoundDate: new Date(now.getTime() + DAY_MS) },
-      retainedIdentityRootIds: { post: [postId], image: [imageId] },
-      retainedRelationIdentityKeys: {
-        [relationTable]: [{ subjectId: postId, relationId }],
-      },
-      retainedMediaBindingIds: [placementId],
-    }
-
-    const result = await runDataRetentionCleanup(
-      { batchSize, maxBatches: 1 },
-      {
-        ...options,
-        federationRetention: { now: new Date(0) },
-      },
-    )
-
-    expect(relations).toHaveBeenCalledExactlyOnceWith(
-      pageSize,
-      options.retainedRelationIdentityKeys,
-    )
-    expect(media).toHaveBeenCalledExactlyOnceWith(pageSize, options.retainedMediaBindingIds)
-    expect(roots).toHaveBeenCalledExactlyOnceWith(pageSize, options.retainedIdentityRootIds)
-    expect(result.retainedRelationIdentities).toEqual([
-      { relationTable, scanned: 1, deleted: 1, hasMore: false },
-    ])
-    expect(result.retainedMediaBindings).toEqual({ scanned: 1, deleted: 1, hasMore: false })
-    expect(result.retainedIdentityRoots).toEqual([
+    const relationResult = await cleanupRetainedRelationIdentities(pageSize, {
+      [relationTable]: [{ subjectId: postId, relationId }],
+    })
+    expect(relationResult).toEqual([{ relationTable, scanned: 1, deleted: 1, hasMore: false }])
+    const mediaResult = await cleanupRetainedMediaBindings(pageSize, [placementId])
+    expect(mediaResult).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+    // Root removal follows the actual deletion of these owned relation and media references.
+    const rootResult = await cleanupRetainedIdentityRoots(pageSize, {
+      post: [postId],
+      image: [imageId],
+    })
+    expect(rootResult).toEqual([
       { family: 'post', scanned: 1, deleted: 1, hasMore: false },
       { family: 'image', scanned: 1, deleted: 1, hasMore: false },
     ])
@@ -181,10 +96,6 @@ describe('data retention per-run caps', () => {
   })
 
   it('stops after max_batches_per_run batches and reports hasMore while rows remain', async () => {
-    const moderationLock = await acquireModerationOperationRetentionTestLock()
-    onTestFinished(() => moderationLock.release())
-    const lock = await acquirePaymentOperationRetentionTestLock()
-    onTestFinished(() => lock.release())
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()
     const eligibleDates = [
@@ -196,43 +107,27 @@ describe('data retention per-run caps', () => {
       eligibleDates.map(date => insertReferralAttributionAt(referrer.id, date)),
     )
     await dataRetentionConfig.waitForInitialization()
-    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
-      batch_size: 1,
-      max_batches_per_run: 2,
-    })
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+        batch_size: 1,
+        max_batches_per_run: 2,
+      }),
+    )
     const options = {
-      ...emptyScopedOptions(window.now),
-      oldReferralAttributions: {
-        retentionDays: window.retentionDays,
-        lowerBoundDate: window.lowerBoundDate,
-        now: window.now,
-      },
+      retentionDays: window.retentionDays,
+      lowerBoundDate: window.lowerBoundDate,
+      now: window.now,
     }
 
     expect(getDataRetentionLimits()).toEqual({ batchSize: 1, maxBatches: 2 })
-    const batches = vi.spyOn(cleanupBatches, 'deleteOldReferralAttributionBatch')
-    onTestFinished(() => batches.mockRestore())
-    const first = await runDataRetentionCleanup(getDataRetentionLimits(), {
-      ...options,
-      federationRetention: { now: new Date(0) },
-    })
-    expect({
-      limits: batches.mock.calls.map(call => call[1]),
-      result: first.oldReferralAttributions,
-      remaining: (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(
-        Boolean,
-      ).length,
-    }).toEqual({ limits: [1, 1], result: { deleted: 2, hasMore: true }, remaining: 1 })
-    expect(first.oldReferralAttributions).toEqual({ deleted: 2, hasMore: true })
+    const first = await cleanupOldReferralAttributions({ ...options, ...getDataRetentionLimits() })
+    expect(first).toEqual({ deleted: 2, hasMore: true })
     expect(
       (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(Boolean),
     ).toHaveLength(1)
 
-    const second = await runDataRetentionCleanup(getDataRetentionLimits(), {
-      ...options,
-      federationRetention: { now: new Date(0) },
-    })
-    expect(second.oldReferralAttributions).toEqual({ deleted: 1, hasMore: false })
+    const second = await cleanupOldReferralAttributions({ ...options, ...getDataRetentionLimits() })
+    expect(second).toEqual({ deleted: 1, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
       false,
       false,
@@ -240,11 +135,7 @@ describe('data retention per-run caps', () => {
     ])
   })
 
-  it('lets a per-cleanup override replace the run limits', async () => {
-    const moderationLock = await acquireModerationOperationRetentionTestLock()
-    onTestFinished(() => moderationLock.release())
-    const lock = await acquirePaymentOperationRetentionTestLock()
-    onTestFinished(() => lock.release())
+  it('uses explicit cleanup limits to drain the owned referral window', async () => {
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()
     const ids = await Promise.all([
@@ -252,21 +143,15 @@ describe('data retention per-run caps', () => {
       insertReferralAttributionAt(referrer.id, window.secondEligibleDate),
     ])
 
-    const result = await runDataRetentionCleanup(
-      { batchSize: 1, maxBatches: 1 },
-      {
-        ...emptyScopedOptions(window.now),
-        oldReferralAttributions: {
-          retentionDays: window.retentionDays,
-          lowerBoundDate: window.lowerBoundDate,
-          now: window.now,
-          maxBatches: 10,
-        },
-        federationRetention: { now: new Date(0) },
-      },
-    )
+    const result = await cleanupOldReferralAttributions({
+      batchSize: 1,
+      maxBatches: 10,
+      retentionDays: window.retentionDays,
+      lowerBoundDate: window.lowerBoundDate,
+      now: window.now,
+    })
 
-    expect(result.oldReferralAttributions).toEqual({ deleted: 2, hasMore: false })
+    expect(result).toEqual({ deleted: 2, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
       false,
       false,

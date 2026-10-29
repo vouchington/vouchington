@@ -11,6 +11,7 @@ type RetainedIdentityFamily =
   | 'post'
   | 'rss_feed_item'
   | 'image'
+  | 'remote_actor'
 
 function retainedRootTable(family: RetainedIdentityFamily): string {
   switch (family) {
@@ -28,6 +29,8 @@ function retainedRootTable(family: RetainedIdentityFamily): string {
       return 'retained_rss_feed_item_identities'
     case 'image':
       return 'retained_image_identities'
+    case 'remote_actor':
+      return 'remote_actor_identities'
     default:
       return assertNever(family, 'Unknown retained identity family')
   }
@@ -122,7 +125,7 @@ export async function readTestRetainedIdentityTraversalBound(
 }
 
 export async function insertTestRetainedIdentityRoot(
-  family: Exclude<RetainedIdentityFamily, 'image'>,
+  family: Exclude<RetainedIdentityFamily, 'image' | 'remote_actor'>,
   id: string,
   options: QueryOptions = {},
 ): Promise<void> {

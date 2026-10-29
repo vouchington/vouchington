@@ -64,3 +64,25 @@ export async function bumpAttestationSignCount(keyId: Buffer, newSignCount: numb
     throw createCodedError(409, 'App Attest sign count regression', ATTESTATION_REJECTED)
   }
 }
+
+/** A daily touch bounds per-request writes while keeping active keys inside the retention window. */
+export async function markAttestationKeyUsed(keyId: Buffer): Promise<void> {
+  const { rows } = await write<{ registered: boolean }>(
+    sql`/* markAttestationKeyUsed */
+      WITH touched AS (
+        UPDATE app_attestation_keys
+        SET last_used_at = CURRENT_TIMESTAMP
+        WHERE key_id = ${keyId}
+          AND (last_used_at IS NULL OR last_used_at < CURRENT_TIMESTAMP - INTERVAL '1 day')
+        RETURNING id
+      )
+      SELECT EXISTS (
+        SELECT id FROM touched
+        UNION ALL
+        SELECT id FROM app_attestation_keys WHERE key_id = ${keyId}
+      ) AS registered`,
+  )
+  if (!rows[0]?.registered) {
+    throw createCodedError(403, 'App Attest key is no longer registered', ATTESTATION_REJECTED)
+  }
+}

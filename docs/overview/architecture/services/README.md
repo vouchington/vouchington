@@ -104,6 +104,16 @@ deadline is re-enqueued on GlideMQ with a job id taken from the version and sour
 retries and leases. Billing stays a per-request report and is not read to skip work. Batch
 embedding listings use a fixed ID boundary and keyset continuation because polling does not
 necessarily remove active rows from the work predicate.
+Deleted chat and direct-message conversations are retired after pending push delivery finishes.
+Retention drains delivery receipts, intents, notifications, messages, and participants in bounded
+pages before deleting the conversation; modmail and internal moderation conversations follow their
+case lifecycle. App Attest key retention tracks successful per-request use without advancing the
+challenge-path sign count, so an active signing key remains available while abandoned keys expire.
+
+Moderation reconciliation admits expired and retryable work through the same bounded candidate
+page. Terminal dispositions are written only for that admitted page; lease and disposition updates
+commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because
+polling does not necessarily remove active rows from the work predicate.
 
 Posts owns embedding-trigger bookkeeping alongside deletion so a terminal skip cannot hide a newly
 eligible first community post. Community services retain ban-evasion detection policy; the deleted
@@ -147,6 +157,14 @@ again at the oldest row. Each bounded page first checks for one still-eligible r
 cursor, so a late commit cannot be lost. The referral check uses only rows that still carry URL or
 campaign details; once cleared, a retained click does not consume future scrub pages. Histories
 whose eligibility can change when a newer same-key row arrives still revisit their raw range.
+Like and Follow replay identities retain exact activity URI, actor and target identity, and Undo
+date after payload or signing-key cache removal, through the configured finite terminal window.
+The Like terminal-family job caps identity candidates before deleting their terminal payloads and
+identities in the same transaction; its existing retained job continues while more remains.
+Active or recent identities remain. A retained actor URI is never signing authority.
+An evicted actor must pass a fresh document fetch and HTTP signature verification before it can
+write again. An actor cache stays while any follow relation, Like payload, or verified inbox work
+item references it.
 
 Vote ballots keep their request metadata (IP address, device, session, user agent) as durable
 vote-integrity evidence. Daily retention deletes ballots superseded more than 90 days ago, always

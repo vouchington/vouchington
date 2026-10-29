@@ -150,6 +150,43 @@ DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_notification_push_intent_conversation_mismatch() RETURNS TRIGGER AS $$
+DECLARE
+  notification_conversation_id UUID;
+  entering_pending BOOLEAN;
+  context_changed BOOLEAN;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    entering_pending := TRUE;
+    context_changed := TRUE;
+  ELSE
+    entering_pending := OLD.delivered_at IS NOT NULL OR OLD.suppressed_at IS NOT NULL
+      OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id;
+    context_changed := NEW.user_id IS DISTINCT FROM OLD.user_id
+      OR NEW.notification_id IS DISTINCT FROM OLD.notification_id
+      OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id;
+  END IF;
+  IF context_changed THEN
+    SELECT conversation_id INTO STRICT notification_conversation_id
+    FROM notifications WHERE user_id = NEW.user_id AND id = NEW.notification_id;
+    IF NEW.conversation_id IS DISTINCT FROM notification_conversation_id THEN
+      RAISE EXCEPTION 'Push intent conversation must match its notification';
+    END IF;
+  END IF;
+  IF entering_pending AND NEW.conversation_id IS NOT NULL
+    AND NEW.delivered_at IS NULL AND NEW.suppressed_at IS NULL THEN
+    -- Serialize new pending work with retention's FOR UPDATE parent lock.
+    PERFORM 1 FROM conversations WHERE id = NEW.conversation_id FOR KEY SHARE;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_assert_notification_push_intent_conversation
+BEFORE INSERT OR UPDATE ON notification_push_intents
+FOR EACH ROW EXECUTE FUNCTION fn_reject_notification_push_intent_conversation_mismatch();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_retire_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
   -- Retire the prior effect before its foreign keys can cascade to the new generation.
@@ -168,8 +205,8 @@ EXECUTE FUNCTION fn_project_retire_notification_push_intent();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO notification_push_intents (user_id, notification_id)
-  VALUES (NEW.user_id, NEW.id)
+  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)
+  VALUES (NEW.user_id, NEW.id, NEW.conversation_id)
   ON CONFLICT (user_id, notification_id) DO NOTHING;
   RETURN NEW;
 END;
@@ -179,6 +216,11 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trigger_notifications_capture_push_intent
 AFTER INSERT OR UPDATE OF id ON notifications
 FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();
+
+CREATE TRIGGER trigger_assert_notification_conversation_immutable
+BEFORE UPDATE OF conversation_id ON notifications
+FOR EACH ROW WHEN (OLD.conversation_id IS DISTINCT FROM NEW.conversation_id)
+EXECUTE FUNCTION fn_reject_always('Notification conversation cannot change after creation');
 
 COMMENT ON TABLE web_push_endpoint_owners IS 'Global exact browser endpoint owner; SHA-256 digest serializes endpoint claims while exact endpoint comparison detects digest collisions.';
 COMMENT ON COLUMN web_push_endpoint_owners.endpoint_digest IS 'SHA-256 digest of endpoint, used as the global registry primary key.';

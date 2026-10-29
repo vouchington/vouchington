@@ -1,9 +1,25 @@
 import { describe, expect, it } from 'vitest'
+import { v7 } from 'uuid'
+import {
+  deleteOperationalRetainedReplayAnchorsForTest,
+  hasTestRetainedIdentityRoot,
+  insertOperationalRemoteActorForTest,
+  insertOperationalRemoteActorIdentityOnlyForTest,
+  deleteOperationalRemoteActorCacheForTest,
+  insertOperationalRetainedReplayAnchorsForTest,
+  insertTestRetainedIdentityRoot,
+} from '@voucha/test-helpers'
+import {
+  deleteOperationalRetainedFollowReferenceForTest,
+  deleteOperationalRetainedLikeReferenceForTest,
+} from '@voucha/test-helpers/retained-replay-root-anchors'
 import {
   readTestRetainedIdentityForeignKeys,
   type RetainedIdentityForeignKey,
 } from '@voucha/test-helpers/entities/retained-identity-foreign-keys'
 import { ROOT_FAMILIES } from '../retained-identity-root-references.mts'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
 type Registry = Record<string, { table: string; references: readonly (readonly string[])[] }>
 
@@ -64,5 +80,97 @@ describe('retained identity cleanup registry', () => {
     expect(unregisteredRetainedForeignKeys(foreignKeys, withoutClearance)).toEqual([
       'post_clearance_changes.changed_by_id -> retained_user_identities',
     ])
+  })
+
+  it('keeps deleted post and user roots while compact Like and Follow replay anchors remain', async () => {
+    const postId = v7()
+    const userId = v7()
+    const anchors = await withCommittedPostgresTransactionForTest(async query => {
+      await insertTestRetainedIdentityRoot('post', postId, { query })
+      await insertTestRetainedIdentityRoot('user', userId, { query })
+      return insertOperationalRetainedReplayAnchorsForTest(query, postId, userId)
+    })
+    try {
+      await cleanupRetainedIdentityRoots(1_000, { post: [postId], user: [userId] })
+      expect(await hasTestRetainedIdentityRoot('post', postId)).toBe(true)
+      expect(await hasTestRetainedIdentityRoot('user', userId)).toBe(true)
+    } finally {
+      await withCommittedPostgresTransactionForTest(query =>
+        deleteOperationalRetainedReplayAnchorsForTest(query, anchors),
+      )
+      await cleanupRetainedIdentityRoots(1_000, { post: [postId], user: [userId] })
+    }
+    expect(await hasTestRetainedIdentityRoot('post', postId)).toBe(false)
+    expect(await hasTestRetainedIdentityRoot('user', userId)).toBe(false)
+  })
+
+  it('sweeps unreferenced remote actor identities after every live and replay reference ends', async () => {
+    const postId = v7()
+    const userId = v7()
+    const { orphan, cached, anchors, likeOnly } = await withCommittedPostgresTransactionForTest(
+      async query => {
+        await insertTestRetainedIdentityRoot('post', postId, { query })
+        await insertTestRetainedIdentityRoot('user', userId, { query })
+        const likeOnly = await insertOperationalRetainedReplayAnchorsForTest(query, postId, userId)
+        await deleteOperationalRetainedFollowReferenceForTest(query, likeOnly.followActivityId)
+        return {
+          orphan: await insertOperationalRemoteActorIdentityOnlyForTest(query),
+          cached: await insertOperationalRemoteActorForTest(query, new Date()),
+          anchors: await insertOperationalRetainedReplayAnchorsForTest(query, postId, userId),
+          likeOnly,
+        }
+      },
+    )
+    const ids = [orphan.id, cached.id, anchors.actorIdentityId, likeOnly.actorIdentityId]
+    try {
+      expect(await cleanupRetainedIdentityRoots(1_000, { remote_actor: ids })).toEqual([
+        { family: 'remote_actor', scanned: 4, deleted: 1, hasMore: false },
+      ])
+      expect(await hasTestRetainedIdentityRoot('remote_actor', orphan.id)).toBe(false)
+      expect(await hasTestRetainedIdentityRoot('remote_actor', cached.id)).toBe(true)
+      expect(await hasTestRetainedIdentityRoot('remote_actor', anchors.actorIdentityId)).toBe(true)
+      expect(await hasTestRetainedIdentityRoot('remote_actor', likeOnly.actorIdentityId)).toBe(true)
+
+      await withCommittedPostgresTransactionForTest(query =>
+        deleteOperationalRetainedLikeReferenceForTest(query, anchors.likeActivityId),
+      )
+      expect(await cleanupRetainedIdentityRoots(1_000, { remote_actor: ids })).toMatchObject([
+        { family: 'remote_actor', deleted: 0 },
+      ])
+      await withCommittedPostgresTransactionForTest(query =>
+        deleteOperationalRetainedFollowReferenceForTest(query, anchors.followActivityId),
+      )
+      expect(await cleanupRetainedIdentityRoots(1_000, { remote_actor: ids })).toMatchObject([
+        { family: 'remote_actor', deleted: 1 },
+      ])
+      expect(await hasTestRetainedIdentityRoot('remote_actor', likeOnly.actorIdentityId)).toBe(true)
+      await withCommittedPostgresTransactionForTest(query =>
+        deleteOperationalRemoteActorCacheForTest(query, cached.id),
+      )
+      await withCommittedPostgresTransactionForTest(query =>
+        deleteOperationalRetainedLikeReferenceForTest(query, likeOnly.likeActivityId),
+      )
+      expect(await cleanupRetainedIdentityRoots(1_000, { remote_actor: ids })).toMatchObject([
+        { family: 'remote_actor', deleted: 2 },
+      ])
+      expect(await hasTestRetainedIdentityRoot('remote_actor', cached.id)).toBe(false)
+      expect(await hasTestRetainedIdentityRoot('remote_actor', anchors.actorIdentityId)).toBe(false)
+      expect(await hasTestRetainedIdentityRoot('remote_actor', likeOnly.actorIdentityId)).toBe(
+        false,
+      )
+    } finally {
+      await withCommittedPostgresTransactionForTest(async query => {
+        await deleteOperationalRetainedLikeReferenceForTest(query, anchors.likeActivityId)
+        await deleteOperationalRetainedFollowReferenceForTest(query, anchors.followActivityId)
+        await deleteOperationalRetainedLikeReferenceForTest(query, likeOnly.likeActivityId)
+        await deleteOperationalRetainedFollowReferenceForTest(query, likeOnly.followActivityId)
+        await deleteOperationalRemoteActorCacheForTest(query, cached.id)
+      })
+      await cleanupRetainedIdentityRoots(1_000, {
+        remote_actor: ids,
+        post: [postId],
+        user: [userId],
+      })
+    }
   })
 })

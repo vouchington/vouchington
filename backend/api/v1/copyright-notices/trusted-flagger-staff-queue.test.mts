@@ -161,6 +161,7 @@ describe('trusted-flagger staff queue priority', () => {
         const walked = walk.copyright_notices.map(item => item.id)
         expect(walked).toEqual([missed, boosted, unmatched, outOfArea])
         expect(new Set(walked).size).toBe(walked.length)
+        expect(walk.observedIds).toContain(interleavingControl)
 
         const priorCursor = encodeScopedTierPreciseUuidCursor(
           '2026-01-01T00:00:00.000000Z',

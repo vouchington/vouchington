@@ -92,10 +92,11 @@ export async function expireTestNotificationPushIntentLease(
 export async function getTestNotificationPushIntent(userId: string, notificationId: string) {
   const { rows } = await read<{
     status: string
+    conversation_id: string | null
     suppressed_at: Date | null
     delivered_at: Date | null
   }>(sql`/* getTestNotificationPushIntent */
-    SELECT status, suppressed_at, delivered_at
+    SELECT status, conversation_id, suppressed_at, delivered_at
     FROM notification_push_intents
     WHERE user_id = ${userId} AND notification_id = ${notificationId}
   `)

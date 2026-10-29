@@ -9,6 +9,7 @@ import {
   verifyTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
+import { deleteRemoteActorRetentionFixtureForTest } from '@voucha/test-helpers/operational-retention-committed'
 
 registerActivityPubInboxAdmission()
 
@@ -55,5 +56,17 @@ describe('durable ActivityPub inbox deliveries', () => {
     const actor = await createRemoteActorFixture()
     expect(await verifyTestDelivery(created.deliveryId, actor.id)).toBe(true)
     expect(await loadTestDelivery(created.deliveryId)).toMatchObject({ remoteActorId: actor.id })
+  })
+
+  it('accepts an unverified envelope when a cached signing actor disappears before admission', async () => {
+    const actor = await createRemoteActorFixture()
+    await deleteRemoteActorRetentionFixtureForTest(actor.id)
+    const envelope = createActivityPubInboxEnvelope()
+    const created = await acceptTestDelivery(envelope, actor.id)
+    expect(await loadTestDelivery(created.deliveryId)).toMatchObject({
+      remoteActorId: null,
+      verifiedAt: null,
+      senderAllowedAt: null,
+    })
   })
 })

@@ -1,14 +1,17 @@
 import { cleanupActivityPubTerminalIdentities } from '@services/data-retention/cleanup-activitypub-tombstones'
+import { cleanupOperationalTombstones } from '@services/data-retention/cleanup-operational-tombstones'
+import { createOperationalTombstoneRetentionHandlers } from './processors/operational-tombstone-retention.mts'
+import { psql as psqlQueue } from '@queues/psql/queues'
+import {
+  admitsDailyRetentionResults,
+  createPsqlRetentionDispatcher,
+} from './processors/retention-dispatch.mts'
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import {
   admitPendingTerminalActivityRetention,
   createTerminalActivityRetentionProcessor,
 } from './processors/activitypub-terminal-retention.mts'
-import {
-  TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
-  DATA_RETENTION_JOB_NAME,
-  QUEUE_NAME,
-} from '@queues/psql/config'
+import { TERMINAL_ACTIVITY_RETENTION_JOB_NAME, QUEUE_NAME } from '@queues/psql/config'
 import type {
   AIRetentionContinuationData,
   ModerationRetentionJobData,
@@ -21,7 +24,6 @@ import type {
 } from '@queues/psql/types'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import processPsql from './processors.mts'
 import { processModerationRetentionCleanup } from './processors/moderation-retention.mts'
 import { createAIRetentionContinuationProcessor } from './processors/retention-continuation.mts'
@@ -31,6 +33,10 @@ const processTerminalActivityRetention = createTerminalActivityRetentionProcesso
   cleanupActivityPubTerminalIdentities,
 )
 const processAIRetentionContinuation = createAIRetentionContinuationProcessor()
+const operationalTombstoneRetention = createOperationalTombstoneRetentionHandlers(
+  psqlQueue,
+  cleanupOperationalTombstones,
+)
 
 async function processPsqlJob(job: Job): Promise<unknown> {
   if (job.name === TERMINAL_ACTIVITY_RETENTION_JOB_NAME) {
@@ -53,10 +59,7 @@ async function processPsqlJob(job: Job): Promise<unknown> {
     undefined,
     job.id,
   )
-  if (
-    job.name === DATA_RETENTION_JOB_NAME &&
-    !(job.data as PsqlRetentionJobData).continuation?.copyrightFamilies
-  ) {
+  if (admitsDailyRetentionResults(job)) {
     await admitPendingTerminalActivityRetention(
       result as Awaited<ReturnType<typeof runDataRetentionCleanup>>,
     )
@@ -66,9 +69,11 @@ async function processPsqlJob(job: Job): Promise<unknown> {
 
 export const psql = createWorker(
   QUEUE_NAME,
-  (job: Job) => {
-    return deferPostgresConnectionTimeout(job, () => processPsqlJob(job))
-  },
+  createPsqlRetentionDispatcher({
+    processRetained: operationalTombstoneRetention.processRetained,
+    admitPending: operationalTombstoneRetention.admitPending,
+    processDefault: processPsqlJob,
+  }),
   {
     dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('psql', { baseline: 1, ignoreScale: true }),
