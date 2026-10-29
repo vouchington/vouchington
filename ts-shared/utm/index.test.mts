@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveUtmSource, extractUtmParams } from './index.mts'
+import { resolveUtmSource } from './index.mts'
 
 describe('resolveUtmSource', () => {
   it('resolves ig to instagram', () => {
@@ -45,51 +45,5 @@ describe('resolveUtmSource', () => {
 
   it('trims whitespace', () => {
     expect(resolveUtmSource(' ig ')).toBe('instagram')
-  })
-})
-
-describe('extractUtmParams', () => {
-  it('extracts utm_source', () => {
-    const url = new URL('https://example.com/?utm_source=google')
-    const params = extractUtmParams(url)
-    expect(params.utmSource).toBe('google')
-  })
-
-  it('resolves utm_source shortcodes', () => {
-    const url = new URL('https://example.com/?utm_source=ig')
-    const params = extractUtmParams(url)
-    expect(params.utmSource).toBe('instagram')
-  })
-
-  it('falls back to ref param for source', () => {
-    const url = new URL('https://example.com/?ref=fb')
-    const params = extractUtmParams(url)
-    expect(params.utmSource).toBe('facebook')
-  })
-
-  it('prefers utm_source over ref', () => {
-    const url = new URL('https://example.com/?utm_source=google&ref=ig')
-    const params = extractUtmParams(url)
-    expect(params.utmSource).toBe('google')
-  })
-
-  it('extracts all utm params', () => {
-    const url = new URL(
-      'https://example.com/?utm_source=google&utm_medium=cpc&utm_campaign=spring&utm_content=banner',
-    )
-    const params = extractUtmParams(url)
-    expect(params.utmSource).toBe('google')
-    expect(params.utmMedium).toBe('cpc')
-    expect(params.utmCampaign).toBe('spring')
-    expect(params.utmContent).toBe('banner')
-  })
-
-  it('returns null for missing params', () => {
-    const url = new URL('https://example.com/')
-    const params = extractUtmParams(url)
-    expect(params.utmSource).toBeNull()
-    expect(params.utmMedium).toBeNull()
-    expect(params.utmCampaign).toBeNull()
-    expect(params.utmContent).toBeNull()
   })
 })

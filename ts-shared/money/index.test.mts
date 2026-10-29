@@ -9,7 +9,6 @@ import {
   isMoney,
   isMoneyRange,
   isScaledMoney,
-  isScaledMoneyAggregate,
   parseMajorUnitsToMoney,
   parseMajorUnitsToScaledMoney,
 } from './index.mts'
@@ -122,30 +121,6 @@ describe('money validation', () => {
     expect(isScaledMoney({ amount: 35_000, currency: 'usd', scale: 4 })).toBe(false)
     expect(
       isScaledMoney({ amount: 35_000, currency: 'usd', scale: MONEY_SCALE, note: 'extra' }),
-    ).toBe(false)
-  })
-
-  it('accepts exact scaled aggregates beyond the JSON-safe integer range', () => {
-    expect(
-      isScaledMoneyAggregate({
-        amount: '90071992547409910000',
-        currency: 'usd',
-        scale: MONEY_SCALE,
-      }),
-    ).toBe(true)
-    expect(
-      isScaledMoneyAggregate({
-        amount: '090071992547409910000',
-        currency: 'usd',
-        scale: MONEY_SCALE,
-      }),
-    ).toBe(false)
-    expect(
-      isScaledMoneyAggregate({
-        amount: MAX_MONEY_AMOUNT + 1,
-        currency: 'usd',
-        scale: MONEY_SCALE,
-      }),
     ).toBe(false)
   })
 

@@ -20,14 +20,8 @@ The catalog exports normalized records with:
 - `surfaces`: concrete places where the name belongs, such as ECS task environment, ECS secrets,
   local `.env` generation, Lambda env, Cloudflare Worker vars, or web Docker build args
 
-Main helpers:
-
-- `ENV_VAR_CONTRACT`: normalized entries
-- `envNamesForSurface(surface)`: names assigned to one surface
-- `envContractsByName()`: entries grouped by env-var name
-- `knownPublicEnvNames()` / `knownSecretEnvNames()`: sensitivity subsets for policy checks
-- `collectTypedEnvContractEntries()` / `collectTypedEnvVarConstants()`: compatibility exports used
-  by config-inventory fixtures and repo tooling
+Tooling reads the normalized metadata directly. Test-side lookup helpers stay outside the runtime
+package so assertions about variable assignments do not expand its production API.
 
 ## Consumers
 

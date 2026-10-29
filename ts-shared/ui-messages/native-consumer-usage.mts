@@ -29,7 +29,7 @@ export function nativeKeyIdentifier(key: string, consumer: NativeConsumer): stri
     .join('')
 }
 
-export function canonicalNativeKey(key: string): string {
+function canonicalNativeKey(key: string): string {
   return key.replace(INTERNAL_VARIANT_SUFFIX, '')
 }
 

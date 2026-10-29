@@ -61,7 +61,7 @@ export function catalogMessagesFromTables(catalog: CatalogTables): CatalogMessag
     })
 }
 
-export function loadCatalogMessages(): CatalogMessage[] {
+function loadCatalogMessages(): CatalogMessage[] {
   cachedMessages ??= catalogMessagesFromTables(CATALOG)
   return cachedMessages
 }

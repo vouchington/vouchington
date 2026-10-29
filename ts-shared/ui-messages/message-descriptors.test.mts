@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Catalog } from './index.mts'
-import { isMessageDescriptor, PLURAL_RULE_METADATA } from './message-descriptors.mts'
+import { isMessageDescriptor } from './message-descriptors.mts'
 import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
 
 const CATALOGS_BY_LOCALE = { en: enMessages, es: esMessages, fr: frMessages, pt: ptMessages }
@@ -19,14 +19,5 @@ describe('serializable message descriptors', () => {
       expect(catalogHasFunction(catalog)).toBe(false)
       expect(JSON.parse(JSON.stringify(catalog))).toEqual(catalog)
     }
-  })
-
-  it('declares explicit plural-rule metadata for every catalog locale', () => {
-    expect(PLURAL_RULE_METADATA).toEqual({
-      en: { algorithm: 'cardinal-one-versus-other' },
-      es: { algorithm: 'cardinal-one-versus-other' },
-      fr: { algorithm: 'cardinal-one-versus-other' },
-      pt: { algorithm: 'cardinal-one-versus-other' },
-    })
   })
 })

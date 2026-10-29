@@ -64,10 +64,6 @@ export function isScaledMoney(value: unknown): value is ScaledMoney {
   return moneyCatalog.isScaledMoney(value)
 }
 
-export function isScaledMoneyAggregate(value: unknown): value is ScaledMoneyAggregate {
-  return moneyCatalog.isScaledMoneyAggregate(value)
-}
-
 export function isMoneyRange(value: unknown): value is MoneyRange {
   return moneyCatalog.isMoneyRange(value)
 }
