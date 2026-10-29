@@ -127,9 +127,6 @@ export const POST_CLASSIFIER_LABELS = [
   },
 ] as const satisfies readonly (RemoteLabel | LocalLabel)[]
 
-export type PostClassifierLabel = (typeof POST_CLASSIFIER_LABELS)[number]
-export type PostClassifierLogicalSlug = PostClassifierLabel['slug']
-
 export const POST_CLASSIFIER_REMOTE_QUESTIONS = POST_CLASSIFIER_LABELS.flatMap(label =>
   label.kind === 'remote'
     ? label.candidates.map(candidate => ({ logicalSlug: label.slug, ...candidate }))
