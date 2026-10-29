@@ -9,8 +9,10 @@ export type CopyrightRetentionRows = Record<string, Record<string, unknown>[]>
 export async function readCopyrightSensitiveColumns(): Promise<Record<string, string[]>> {
   const { rows } = await read<{ table_name: string; columns: string[] }>(
     sql`/* readCopyrightSensitiveColumns */
-      SELECT table_name::text, array_agg(column_name::text ORDER BY column_name) AS columns
-      FROM information_schema.columns
+      SELECT column_row.table_name::text, array_agg(column_name::text ORDER BY column_name) AS columns
+      FROM information_schema.columns column_row
+      JOIN pg_class relation ON relation.relname = column_row.table_name
+        AND relation.relnamespace = 'public'::regnamespace AND NOT relation.relispartition
       WHERE table_schema = 'public' AND table_name LIKE 'copyright%'
         AND (column_name LIKE '%ciphertext' OR column_name LIKE '%storage_object_id'
           OR column_name LIKE '%lookup%')

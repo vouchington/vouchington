@@ -79,6 +79,19 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   table('copyright_notice_form_intake_reviews', { rationale_ciphertext: 'redact' }, viaFormIntakes),
   table('copyright_notice_evidence_artifacts', { storage_object_id: 'null' }, viaSubmissions),
   table(
+    'copyright_notice_email_intake_receipts',
+    { review_rationale_ciphertext: 'redact' },
+    id =>
+      sql`id IN (SELECT own_link.copyright_notice_email_intake_id
+      FROM copyright_notice_email_intake_notice_links own_link
+      WHERE own_link.copyright_notice_id = ${id}
+        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other_link
+          WHERE other_link.copyright_notice_email_intake_id = own_link.copyright_notice_email_intake_id
+            AND other_link.copyright_notice_id <> ${id}
+            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
+              WHERE erased.copyright_notice_id = other_link.copyright_notice_id)))`,
+  ),
+  table(
     'copyright_notice_email_intakes',
     { raw_storage_object_id: 'null', current_recommendation_output_ciphertext: 'redact' },
     id => sql`id IN `.append(emailIntakesOf(id)),

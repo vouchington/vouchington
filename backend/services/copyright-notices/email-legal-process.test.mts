@@ -9,6 +9,7 @@ import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
 } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { readCopyrightEmailReceiptReview } from '@voucha/test-helpers/copyright-email-receipt-review'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import {
   readCopyrightReviewTargetBreaches,
@@ -44,12 +45,28 @@ describe('recordCopyrightEmailIntakeLegalProcess', () => {
       promoted_copyright_notice_id: null,
     })
     expect(review?.reviewed_at).toBeInstanceOf(Date)
+    const receiptReview = await readCopyrightEmailReceiptReview(intake.id)
+    expect(receiptReview).toMatchObject({
+      amazon_ses_message_id: intake.amazon_ses_message_id,
+      review_decision: 'legal_process',
+      reviewed_by_id: moderator.id,
+      review_rationale_ciphertext: review?.rationale_ciphertext,
+    })
+    expect(receiptReview?.review_rationale_ciphertext).not.toContain(reason)
     expect(review?.rationale_ciphertext).not.toContain(reason)
     expect(
       JSON.parse(
         decryptSecret(
           review?.rationale_ciphertext as string,
           copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
+        ),
+      ),
+    ).toEqual({ rationale: reason, manual_fallback_reason: null })
+    expect(
+      JSON.parse(
+        decryptSecret(
+          receiptReview?.review_rationale_ciphertext as string,
+          copyrightEmailIntakePurpose(receiptReview!.amazon_ses_message_id),
         ),
       ),
     ).toEqual({ rationale: reason, manual_fallback_reason: null })

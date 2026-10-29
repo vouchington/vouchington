@@ -11,12 +11,14 @@ CREATE TABLE copyright_notice_email_intake_receipts (
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
   erased_at timestamptz,
   review_decision copyright_notice_email_intake_review_decisions,
+  review_rationale_ciphertext text
+    CHECK (char_length(review_rationale_ciphertext) BETWEEN 1 AND 1048576),
   reviewed_at timestamptz,
   reviewed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT chk_copyright_email_intake_receipts__review_result CHECK (
-    (review_decision IS NULL AND reviewed_at IS NULL AND reviewed_by_id IS NULL)
-    OR (review_decision IS NOT NULL AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL))
+    (review_decision IS NULL AND reviewed_at IS NULL AND reviewed_by_id IS NULL AND review_rationale_ciphertext IS NULL)
+    OR (review_decision IS NOT NULL AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL AND review_rationale_ciphertext IS NOT NULL))
 );
 COMMENT ON TABLE copyright_notice_email_intake_receipts IS 'Minimal SES replay identity retained after an unlinked private intake and its evidence are erased; this row never authorizes access to an intake.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.amazon_ses_message_id IS 'Stable opaque SES delivery identifier reserved against re-admission after erasure.';
@@ -24,6 +26,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_sha256 IS 'Digest o
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_storage_key_sha256 IS 'Digest of the original object key used to reject changed replay evidence without keeping the key.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_byte_size IS 'Original MIME size used to reject changed replay evidence.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.erased_at IS 'Time the private intake began operational erasure; the replay identity survives.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_rationale_ciphertext IS 'Final initial-review explanation encrypted with the receipt-owned immutable SES message identity; retained independently of finite review history.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result, retained independently of finite review history.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
@@ -34,12 +37,15 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright email replay receipt is retained' USING ERRCODE = 'check_violation';
   END IF;
-  IF (to_jsonb(OLD) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'erased_at'])
+  IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
+    RETURN NEW;
+  END IF;
+  IF (to_jsonb(OLD) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'review_rationale_ciphertext', 'erased_at'])
       IS DISTINCT FROM
-     (to_jsonb(NEW) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'erased_at'])
+     (to_jsonb(NEW) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'review_rationale_ciphertext', 'erased_at'])
     OR (OLD.erased_at IS NOT NULL AND NEW.erased_at IS DISTINCT FROM OLD.erased_at)
-    OR (OLD.review_decision IS NOT NULL AND ROW(NEW.review_decision, NEW.reviewed_at, NEW.reviewed_by_id)
-      IS DISTINCT FROM ROW(OLD.review_decision, OLD.reviewed_at, OLD.reviewed_by_id))
+    OR (OLD.review_decision IS NOT NULL AND ROW(NEW.review_decision, NEW.reviewed_at, NEW.reviewed_by_id, NEW.review_rationale_ciphertext)
+      IS DISTINCT FROM ROW(OLD.review_decision, OLD.reviewed_at, OLD.reviewed_by_id, OLD.review_rationale_ciphertext))
     OR (OLD.review_decision IS NULL AND NEW.review_decision IS NOT NULL AND OLD.erased_at IS NOT NULL) THEN
     RAISE EXCEPTION 'copyright email receipt identity and completed review are immutable' USING ERRCODE = 'check_violation';
   END IF;

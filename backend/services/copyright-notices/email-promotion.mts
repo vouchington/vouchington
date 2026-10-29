@@ -308,23 +308,25 @@ async function recordEmailPromotion(
     INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
     VALUES (${submission.id}, ${intake.raw_storage_object_id}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
   `)
+  const rationaleCiphertext = encryptSecret(
+    JSON.stringify({
+      rationale: input.rationale,
+      manual_fallback_reason: input.manualFallbackReason,
+    }),
+    purpose,
+  )
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
       copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
       reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_id
     ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'approved',
-      ${encryptSecret(
-        JSON.stringify({
-          rationale: input.rationale,
-          manual_fallback_reason: input.manualFallbackReason,
-        }),
-        purpose,
-      )}, ${noticeId})
+      ${rationaleCiphertext}, ${noticeId})
   `)
   await transaction(sql`/* promoteCopyrightEmailIntake:currentDecision */
     UPDATE copyright_notice_email_intake_receipts SET
       review_decision = 'approved', reviewed_at = CURRENT_TIMESTAMP,
-      reviewed_by_id = ${input.currentUser.id}
+      reviewed_by_id = ${input.currentUser.id},
+      review_rationale_ciphertext = ${rationaleCiphertext}
     WHERE id = ${intake.id}`)
   const { rows: initialLinks } = await transaction<{ copyright_notice_email_intake_id: string }>(
     sql`/* promoteCopyrightEmailIntake:initialThreadLink */

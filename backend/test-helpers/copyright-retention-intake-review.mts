@@ -19,7 +19,8 @@ export async function insertCopyrightRetentionIntakeReview(input: {
   await transaction(sql`/* insertCopyrightRetentionIntakeReview:current */
     UPDATE copyright_notice_email_intake_receipts SET
       review_decision = 'rejected', reviewed_at = ${input.reviewedAt},
-      reviewed_by_id = ${input.reviewerId}
+      reviewed_by_id = ${input.reviewerId},
+      review_rationale_ciphertext = ${encryptSecret('The intake does not meet the filing requirements.', copyrightEmailIntakePurpose(input.sesMessageId))}
     WHERE id = ${input.intakeId}`)
   await transaction.commit()
 }

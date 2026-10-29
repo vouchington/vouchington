@@ -28,6 +28,7 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
     WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']
     WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']
+    WHEN 'copyright_notice_email_intake_receipts' THEN ARRAY['review_rationale_ciphertext']
     WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id', 'current_recommendation_output_ciphertext']
     WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']
     WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']

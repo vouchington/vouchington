@@ -75,7 +75,8 @@ export async function seedCopyrightIntakeAuditReview(
     RETURNING id`)
   await transaction(sql`/* seedCopyrightIntakeAuditReviewOwner */
     UPDATE copyright_notice_email_intake_receipts SET
-      review_decision = 'rejected', reviewed_at = ${reviewedAt}, reviewed_by_id = ${reviewer.id}
+      review_decision = 'rejected', reviewed_at = ${reviewedAt}, reviewed_by_id = ${reviewer.id},
+      review_rationale_ciphertext = 'v1:test-rationale'
     WHERE id = ${intakeId}`)
   await transaction.commit()
   return { reviewId: rows[0]!.id, recommendationId }

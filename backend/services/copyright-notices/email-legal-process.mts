@@ -53,21 +53,23 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
       WHERE id = ${input.intakeId} AND review_decision IS NOT NULL`,
   )
   assert(!decisions[0], 409, 'Copyright email intake was already decided')
+  const rationaleCiphertext = encryptSecret(
+    JSON.stringify({ rationale: reason, manual_fallback_reason: null }),
+    copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
+  )
   await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess */
     INSERT INTO copyright_notice_email_intake_reviews (
       copyright_notice_email_intake_receipt_id, reviewed_at, reviewed_by_id, decision, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'legal_process',
-      ${encryptSecret(
-        JSON.stringify({ rationale: reason, manual_fallback_reason: null }),
-        copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
-      )}
+      ${rationaleCiphertext}
     )
   `)
   await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess:currentDecision */
     UPDATE copyright_notice_email_intake_receipts SET
       review_decision = 'legal_process', reviewed_at = CURRENT_TIMESTAMP,
-      reviewed_by_id = ${input.currentUser.id}
+      reviewed_by_id = ${input.currentUser.id},
+      review_rationale_ciphertext = ${rationaleCiphertext}
     WHERE id = ${input.intakeId}`)
   await transaction.commit()
 }
