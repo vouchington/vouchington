@@ -1,5 +1,4 @@
 import type { ModerationRecordCleanupKind } from '@voucha/types/entities/moderation-retention'
-import type { TerminalActivityRetentionFamily } from './config.mts'
 
 export type PsqlJobs =
   | 'runMigrations'
@@ -39,7 +38,7 @@ export type RefreshMaterializedViewData = {
 }
 
 export type TerminalActivityRetentionData = {
-  family: TerminalActivityRetentionFamily
+  family: 'follow' | 'like'
 }
 
 export type ModerationRetentionJobData = {

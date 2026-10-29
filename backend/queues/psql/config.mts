@@ -58,7 +58,6 @@ export const REFRESH_REVENUE_CHANGES_CRON = '3,8,13,18,23,28,33,38,43,48,53,58 *
 // Daily at 6:00 AM UTC
 export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
 
-export type TerminalActivityRetentionFamily = 'follow' | 'like'
 export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
 export const DELETED_CONVERSATION_RETENTION_JOB_NAME = 'cleanupDeletedConversations'
 export const deletedConversationRetentionJobId = 'psql__deleted_conversation_retention'
