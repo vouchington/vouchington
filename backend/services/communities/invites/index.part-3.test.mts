@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { redeemInviteCode } from './redeem.mts'
 import { revokeInvite } from './revoke.mts'
-import { archiveCommunity } from '../archive.mts'
+import { archiveCommunities } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 
@@ -60,7 +60,7 @@ describe('index', () => {
         invitedById: owner.id,
         invitedUserId: invitee.id,
       })
-      await archiveCommunity(archivedCommunity.id, null)
+      await archiveCommunities([archivedCommunity.id], null)
 
       await expect(revokeInvite(owner.id, invite.id)).rejects.toMatchObject({ status: 403 })
     })

@@ -1,6 +1,6 @@
 import assert from 'http-assert'
 
-export const MAX_APPLICATION_QUESTION_OPTIONS = 32_768
+const MAX_APPLICATION_QUESTION_OPTIONS = 32_768
 
 const VALID_FIELD_TYPES = [
   'short_text',

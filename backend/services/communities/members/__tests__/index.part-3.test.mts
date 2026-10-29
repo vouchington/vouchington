@@ -8,7 +8,7 @@ import {
 
 import { joinCommunity } from '../join.mts'
 
-import { archiveCommunity } from '../../archive.mts'
+import { archiveCommunities } from '../../archive.mts'
 import { getCommunityOrThrow } from '../../get.mts'
 
 import { leaveCommunity } from '../leave.mts'
@@ -92,7 +92,7 @@ describe('index', () => {
           role: 'member',
         }),
       ])
-      await archiveCommunity(archivedCommunity.id, owner.id)
+      await archiveCommunities([archivedCommunity.id], owner.id)
 
       await expect(
         removeMember(owner.id, await getCommunityOrThrow(archivedCommunity.id), target.id),
@@ -159,7 +159,6 @@ describe('index', () => {
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof joinCommunity)
-  void (0 as unknown as typeof archiveCommunity)
   void (0 as unknown as typeof leaveCommunity)
   void (0 as unknown as typeof updateMemberRole)
 })

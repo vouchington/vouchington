@@ -1,6 +1,6 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
-import { archiveCommunity } from '@services/communities/archive'
+import { archiveCommunities } from '@services/communities/archive'
 import { createCommunityAgentPrompt } from './create.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -94,7 +94,7 @@ describe('create', () => {
         createdById: user.id,
         slug: `prompt-create-archived-${Date.now()}`,
       })
-      await archiveCommunity(archived.id, user.id)
+      await archiveCommunities([archived.id], user.id)
 
       await expect(
         createCommunityAgentPrompt(user.id, archived.id, {

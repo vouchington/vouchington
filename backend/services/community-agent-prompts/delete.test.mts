@@ -5,7 +5,7 @@ import {
   insertTestCommunityAgentPrompt,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import { archiveCommunity } from '@services/communities/archive'
+import { archiveCommunities } from '@services/communities/archive'
 import { deleteCommunityAgentPrompt } from './delete.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -82,7 +82,7 @@ describe('delete', () => {
         communityId: archivedCommunity.id,
         createdById: owner.id,
       })
-      await archiveCommunity(archivedCommunity.id, owner.id)
+      await archiveCommunities([archivedCommunity.id], owner.id)
 
       await expect(deleteCommunityAgentPrompt(owner, p)).rejects.toMatchObject({
         status: 403,

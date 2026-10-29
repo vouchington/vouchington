@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import { updatePost } from '../update.mts'
-import { archiveCommunity } from '@services/communities/archive'
+import { archiveCommunities } from '@services/communities/archive'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 
@@ -77,7 +77,7 @@ describe('createCommunityPostFixture community authorization', () => {
       userId: member.id,
       role: 'member',
     })
-    await archiveCommunity(archivedComm.id, null)
+    await archiveCommunities([archivedComm.id], null)
     await expect(createCommunityPostFixture(member, archivedComm.id)).rejects.toMatchObject({
       status: 403,
     })
