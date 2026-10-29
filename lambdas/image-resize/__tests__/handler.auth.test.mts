@@ -18,14 +18,7 @@ const mockSideloadConfig: SideloadConfig = {
   maxHeight: 2400,
 }
 
-function createMockEvent(): APIGatewayProxyEvent {
-  return {
-    queryStringParameters: { key: 'test.jpg', w: '200' },
-    headers: {},
-  } as unknown as APIGatewayProxyEvent
-}
-
-describe('handler auth boundary', () => {
+describe('handler request boundary', () => {
   let handler: ReturnType<typeof createLambdaHandler>
 
   beforeEach(() => {
@@ -36,9 +29,14 @@ describe('handler auth boundary', () => {
     vi.unstubAllEnvs()
   })
 
-  it('does not require the legacy shared-secret header in handler code', async () => {
-    const result = await handler(createMockEvent())
-    expect(result.statusCode).not.toBe(403)
+  it('rejects a request without a path as an invalid placement route', async () => {
+    const result = await handler({
+      queryStringParameters: { key: 'test.jpg', w: '200' },
+      headers: {},
+    } as unknown as APIGatewayProxyEvent)
+
+    expect(result.statusCode).toBe(400)
+    expect(JSON.parse(result.body)).toEqual({ error: 'Invalid placement route' })
   })
 
   it('does not resolve sideload signing keys for ordinary image requests', async () => {

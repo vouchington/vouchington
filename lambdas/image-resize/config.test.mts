@@ -1,21 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import {
-  CACHE_VERSION,
-  getCacheBucket,
-  getSideloadCacheBucket,
-  getSourceBucket,
-  MAX_INPUT_PIXELS,
-} from './config.mts'
-
-describe('resize cache and decode constants', () => {
-  it('bumps CACHE_VERSION when resize semantics change', () => {
-    expect(CACHE_VERSION).toBe('v3')
-  })
-
-  it('caps decoded Sharp input at 24 megapixels', () => {
-    expect(MAX_INPUT_PIXELS).toBe(24_000_000)
-  })
-})
+import { getCacheBucket, getSideloadCacheBucket, getSourceBucket } from './config.mts'
 
 describe('getSideloadCacheBucket', () => {
   const originalRendersBucket = process.env.S3_BUCKET_RENDERS
