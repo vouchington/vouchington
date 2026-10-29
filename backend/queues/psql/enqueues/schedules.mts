@@ -67,11 +67,6 @@ const DATA_RETENTION_SCHEDULE_OPTS = () =>
     priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
   }) satisfies JobOptions
 
-const TOP_HASHTAGS_SCHEDULE_OPTS = {
-  ...SCHEDULE_OPTS,
-  ordering: { key: 'mv_refresh', concurrency: 1 },
-} satisfies JobOptions
-
 const MATERIALIZED_VIEW_SCHEDULE_OPTS = {
   ...SCHEDULE_OPTS,
   ordering: { key: 'mv_refresh', concurrency: 1 },
@@ -124,7 +119,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: REFRESH_MATERIALIZED_VIEW_JOB_NAME,
       data: { viewName: TOP_HASHTAGS_VIEW },
-      opts: TOP_HASHTAGS_SCHEDULE_OPTS,
+      opts: MATERIALIZED_VIEW_SCHEDULE_OPTS,
     },
     operatorSurfaces: [
       {
