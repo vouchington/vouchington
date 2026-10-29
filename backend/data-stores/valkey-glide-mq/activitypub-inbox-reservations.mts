@@ -85,19 +85,21 @@ export function observeActivityPubInboxReservations(
     )
   }
   events.on('completed', release)
-  events.on('failed', release)
   events.on('removed', release)
-  events.on('expired', ({ jobId }: { jobId: string }) => {
+  const removeAndRelease = ({ jobId }: { jobId: string }) => {
     if (!jobId.startsWith('activitypub-inbox__')) return
     track(
       (async () => {
-        // Native expiry marks the job failed but leaves its sensitive hash behind.
+        // Native expiry and revocation can leave a failed sensitive hash behind.
         await (await queue.getJob(jobId))?.remove()
         await releaseActivityPubInboxDelivery(queueName, jobId, prefix)
         onReleased?.(jobId)
       })(),
     )
-  })
+  }
+  events.on('failed', removeAndRelease)
+  events.on('expired', removeAndRelease)
+  events.on('revoked', removeAndRelease)
   events.on('error', report)
   const ready = events.waitUntilReady()
   void ready.catch(report)

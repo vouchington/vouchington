@@ -129,7 +129,7 @@ describe('ActivityPub inbox reservations', () => {
     }
   })
 
-  it('releases terminal failure and completion after their native events', async () => {
+  it('removes a retained terminal failure and releases a later completion', async () => {
     const queueName = `activitypub_inbox_terminal_${randomUUID()}`
     const prefix = `inbox_reservation_terminal_${randomUUID()}`
     const key = activityPubInboxReservationKey(queueName, prefix)
@@ -160,7 +160,7 @@ describe('ActivityPub inbox reservations', () => {
           jobId,
           ordering: { key: 'activitypub:inbound', concurrency: 1 },
           attempts: 1,
-          removeOnFail: true,
+          removeOnFail: false,
         },
       )
       expect(job).toBeTruthy()
