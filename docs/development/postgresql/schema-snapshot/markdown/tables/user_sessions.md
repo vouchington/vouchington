@@ -68,4 +68,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_user_sessions_queue_released_user_agent_string`: `CREATE TRIGGER trigger_user_sessions_queue_released_user_agent_string AFTER DELETE OR UPDATE OF user_agent_string_id ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`
 - `trigger_user_sessions_updated_at`: `CREATE TRIGGER trigger_user_sessions_updated_at BEFORE UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

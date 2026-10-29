@@ -40,10 +40,13 @@ _none_
 
 **Indexes:**
 
+- `idx_user_vouch_votes__cleanup__id`: `CREATE INDEX idx_user_vouch_votes__cleanup__id ON ONLY public.user_vouch_votes USING btree (id)`
 - `idx_user_vouch_votes__target_user_id__id`: `CREATE INDEX idx_user_vouch_votes__target_user_id__id ON ONLY public.user_vouch_votes USING btree (target_user_id, id)`
 - `idx_user_vouch_votes__target_user_id__user_id__id`: `CREATE INDEX idx_user_vouch_votes__target_user_id__user_id__id ON ONLY public.user_vouch_votes USING btree (target_user_id, user_id, id DESC)`
+- `idx_user_vouch_votes__user_agent__id`: `CREATE INDEX idx_user_vouch_votes__user_agent__id ON ONLY public.user_vouch_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_user_vouch_votes__user_id__target_user_id__id`: `CREATE INDEX idx_user_vouch_votes__user_id__target_user_id__id ON ONLY public.user_vouch_votes USING btree (user_id, target_user_id, id DESC)`
 - `user_vouch_votes_pkey`: `CREATE UNIQUE INDEX user_vouch_votes_pkey ON ONLY public.user_vouch_votes USING btree (target_user_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_user_vouch_votes__ua_release`: `CREATE TRIGGER trigger_user_vouch_votes__ua_release AFTER DELETE ON public.user_vouch_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`

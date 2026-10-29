@@ -7,6 +7,7 @@ export type DataRetentionConfig = {
   community_moderator_scan_page_size: number
   community_purge_batch_size: number
   topic_import_attempt_batch_size: number
+  vote_integrity_detail_days: number
   max_batches_per_run: number
   partition_status_probe_limit: number
   moderation_batch_size: number
@@ -30,6 +31,7 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   community_moderator_scan_page_size: 50,
   community_purge_batch_size: 25,
   topic_import_attempt_batch_size: 25,
+  vote_integrity_detail_days: 180,
   max_batches_per_run: 200,
   partition_status_probe_limit: 64,
   moderation_batch_size: 25,
@@ -45,6 +47,7 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   community_moderator_scan_page_size: 250,
   community_purge_batch_size: 250,
   topic_import_attempt_batch_size: 250,
+  vote_integrity_detail_days: 180,
   max_batches_per_run: 2_000,
   partition_status_probe_limit: 256,
   moderation_batch_size: 100,
@@ -69,6 +72,7 @@ export const dataRetentionConfig = new DynamicConfig({
     ses_bounce_retention_days: 'number',
     ai_retention_page_size: 'number',
     ai_retention_max_pages_per_run: 'number',
+    vote_integrity_detail_days: 'number',
   },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
@@ -123,4 +127,8 @@ export function getCommunityPurgeBatchSize(): number {
 
 export function getCommunityModeratorScanPageSize(): number {
   return readField('community_moderator_scan_page_size')
+}
+
+export function getVoteIntegrityDetailRetentionDays(): number {
+  return readField('vote_integrity_detail_days')
 }

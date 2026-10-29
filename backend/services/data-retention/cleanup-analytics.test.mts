@@ -87,6 +87,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
 
     await expect(
       runDataRetentionCleanup(limits, {
+        voteBallotIdsByTable: {},
+        userAgentStringIds: [],
+        voteIntegrityFlagIds: [],
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],
@@ -188,6 +191,19 @@ describe('cleanupAnalyticsLocalFiles', () => {
       systemPrunedNotifications: { deleted: 0, hasMore: false, continuation: null },
       userDeletedNotifications: { deleted: 0, hasMore: false, continuation: null },
       moderationEmailSends: { deleted: 0, hasMore: false, continuation: null },
+      supersededVoteBallots: expect.arrayContaining([
+        expect.objectContaining({ voteTable: 'post_votes', scanned: expect.any(Number) }),
+      ]),
+      orphanedUserAgentStrings: expect.objectContaining({
+        scanned: expect.any(Number),
+        deleted: expect.any(Number),
+        hasMore: expect.any(Boolean),
+      }),
+      voteIntegrityDetails: expect.objectContaining({
+        scanned: expect.any(Number),
+        redacted: expect.any(Number),
+        hasMore: expect.any(Boolean),
+      }),
     })
     await flushFirehose()
     expect(firehoseSender).toHaveBeenCalled()

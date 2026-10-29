@@ -3,6 +3,7 @@ import { FEDERATION_BOUNDED_TABLES } from './schema-growth-bounded-federation.mt
 import { MODERATION_BOUNDED_TABLES } from './schema-growth-bounded-moderation.mts'
 import { TOPIC_MERGE_BOUNDED_TABLES } from './schema-growth-bounded-topic-merge.mts'
 import { EXTRA_BOUNDED_TABLES_CONTINUED } from './schema-growth-bounded-extra-continued.mts'
+import { VOTE_RETENTION_BOUNDED_TABLES } from './schema-vote-retention-policies.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ['admin_import_batches', 'Completed batches retire after a bounded retention window.'],
@@ -71,6 +72,7 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'notification_email_retention_cleanup_cursors',
     'The finite cleanup-name enum bounds durable notification and email sweep positions to four rows.',
   ],
+  ...VOTE_RETENTION_BOUNDED_TABLES,
   [
     'security_retention_cleanup_cursors',
     'The security_retention_sources enum is the primary key, so there is at most one durable cursor per fixed cleanup family.',

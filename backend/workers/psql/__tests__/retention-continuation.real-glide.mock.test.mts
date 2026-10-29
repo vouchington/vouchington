@@ -101,6 +101,9 @@ describe('AI retention continuation delivery', () => {
       ...familyResults,
       classifierRecords: {},
       softDeletedUsers: { deleted: 0, hasMore: false },
+      supersededVoteBallots: [],
+      orphanedUserAgentStrings: { hasMore: false },
+      voteIntegrityDetails: { hasMore: false },
     }
     const backlogged = AI_RETENTION_FAMILIES.filter(family => family !== 'textEmbeddingCache')
     expect(AI_RETENTION_FAMILIES.filter(family => dailyResults[family].hasMore)).toEqual(backlogged)

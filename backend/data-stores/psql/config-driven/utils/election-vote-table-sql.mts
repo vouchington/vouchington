@@ -4,7 +4,7 @@ import {
 } from '@voucha/types/entities/entity-relations-metadata'
 import type { EntityRelationEntityType } from '@voucha/types/entities/entity-relations-config'
 import type { VoteSchemaConfig } from './election-schema-config.mts'
-import { getElectionIndexName } from './election-sql-identifiers.mts'
+import { getElectionIndexName, getElectionTriggerName } from './election-sql-identifiers.mts'
 export function createVoteDefaultPartitionSql(voteTable: string): string {
   return `CREATE TABLE IF NOT EXISTS ${voteTable}__default
 PARTITION OF ${voteTable} DEFAULT;`
@@ -23,7 +23,31 @@ ON ${voteTable} (${entityIdColumn}, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, `${actor}__${key}__id`)}
-ON ${voteTable} (user_id, ${entityIdColumn}, id DESC);`
+ON ${voteTable} (user_id, ${entityIdColumn}, id DESC);
+
+-- UUIDv7 keyset scan for the bounded cyclic superseded-ballot cleanup.
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, 'cleanup__id')}
+ON ${voteTable} (id);
+
+-- Serves the orphan user-agent check, which asks whether any ballot still references a string.
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, 'user_agent__id')}
+ON ${voteTable} (user_agent_string_id)
+WHERE user_agent_string_id IS NOT NULL;
+
+-- A deleted ballot may leave its user-agent string unreferenced, so requeue it for the orphan check.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = '${voteTable}'::regclass
+      AND tgname = '${getElectionTriggerName(voteTable, 'ua_release')}'
+  ) THEN
+    CREATE TRIGGER ${getElectionTriggerName(voteTable, 'ua_release')}
+    AFTER DELETE ON ${voteTable}
+    FOR EACH ROW WHEN (OLD.user_agent_string_id IS NOT NULL)
+    EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate();
+  END IF;
+END $$;`
 }
 
 export function createEntityRelationComments(metadata: EntityRelationMetadata): string {

@@ -27,7 +27,23 @@ function createVoteSchemaSql(config: VoteSchemaConfig): string {
 ON post_votes (post_id, id)
 WHERE outbound_activitypub_distributed_at IS NULL
   AND (outbound_activitypub_like_activity_id = id
-    OR outbound_activitypub_original_like_activity_id IS NOT NULL);`)
+    OR outbound_activitypub_original_like_activity_id IS NOT NULL);
+
+-- Ordinary post ballot pages exclude deferred protocol sources at the index.
+CREATE INDEX IF NOT EXISTS idx_post_votes__retention_ordinary_actor
+ON post_votes (post_id, user_id, id)
+WHERE ballot_retention_deferred_at IS NULL;
+
+-- Deferred sources are revisited after the maximum supported replay horizon.
+CREATE INDEX IF NOT EXISTS idx_post_votes__retention_deferred_id
+ON post_votes (id)
+WHERE ballot_retention_deferred_at IS NOT NULL;
+
+-- Once delivery completes, a deferred source can leave before the replay deadline.
+CREATE INDEX IF NOT EXISTS idx_post_votes__retention_delivered_id
+ON post_votes (id)
+WHERE ballot_retention_deferred_at IS NOT NULL
+  AND outbound_activitypub_distributed_at IS NOT NULL;`)
   }
 
   return parts.join('\n\n')

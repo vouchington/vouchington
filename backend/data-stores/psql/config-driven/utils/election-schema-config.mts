@@ -27,6 +27,7 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
       'outbound_activitypub_like_activity_id UUID',
       'outbound_activitypub_original_like_activity_id UUID',
       'outbound_activitypub_distributed_at TIMESTAMPTZ',
+      'ballot_retention_deferred_at TIMESTAMPTZ',
     ],
     voteAdditionalColumnComments: {
       outbound_activitypub_like_activity_id: 'Stable outbound ActivityPub Like protocol identity.',
@@ -34,6 +35,8 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
         'The positive Like identity undone by this negative ballot transition.',
       outbound_activitypub_distributed_at:
         'Set when all follower-page delivery jobs for this ballot event have been admitted.',
+      ballot_retention_deferred_at:
+        'Marks a pending outbound ActivityPub source for deletion after the supported replay horizon.',
     },
     voteTableConstraints: ['FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE'],
     deletedAtFilter: true,

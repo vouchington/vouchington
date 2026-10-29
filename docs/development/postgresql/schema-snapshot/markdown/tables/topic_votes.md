@@ -40,11 +40,14 @@ _none_
 
 **Indexes:**
 
+- `idx_topic_votes__cleanup__id`: `CREATE INDEX idx_topic_votes__cleanup__id ON ONLY public.topic_votes USING btree (id)`
 - `idx_topic_votes__topic_id__id`: `CREATE INDEX idx_topic_votes__topic_id__id ON ONLY public.topic_votes USING btree (topic_id, id)`
 - `idx_topic_votes__topic_id__user_id__id`: `CREATE INDEX idx_topic_votes__topic_id__user_id__id ON ONLY public.topic_votes USING btree (topic_id, user_id, id DESC)`
+- `idx_topic_votes__user_agent__id`: `CREATE INDEX idx_topic_votes__user_agent__id ON ONLY public.topic_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_topic_votes__user_id__topic_id__id`: `CREATE INDEX idx_topic_votes__user_id__topic_id__id ON ONLY public.topic_votes USING btree (user_id, topic_id, id DESC)`
 - `topic_votes_pkey`: `CREATE UNIQUE INDEX topic_votes_pkey ON ONLY public.topic_votes USING btree (topic_id, id)`
 
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_topic_votes__ua_release`: `CREATE TRIGGER trigger_topic_votes__ua_release AFTER DELETE ON public.topic_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`

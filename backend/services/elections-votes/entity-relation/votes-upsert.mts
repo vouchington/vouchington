@@ -57,85 +57,6 @@ export async function upsertEntityRelationElectionVotes(
     .map(([entityId, score]) => ({ entityId, score }))
     .toSorted((left, right) => left.entityId.localeCompare(right.entityId))
   const { enqueueVoteStats = true, ...queryOptions } = options
-  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, queryOptions)
-
-  const query = sql`/* upsertEntityRelationElectionVotes */
-    WITH input_data AS (
-      SELECT * FROM UNNEST(
-        ${values.map(() => normalizedUserId)}::uuid[],
-        ${values.map(value => value.entityId)}::uuid[],
-        ${values.map(value => value.score)}::smallint[],
-        ${values.map(() => context.ipAddress)}::inet[],
-        ${values.map(() => context.deviceId)}::uuid[],
-        ${values.map(() => context.sessionId)}::uuid[],
-        ${values.map(() => userAgentId)}::uuid[]
-      ) AS input(user_id, entity_relation_id, score, ip_address, device_id, session_id, user_agent_string_id)
-    ), matched_relations AS (`
-
-  targetRelations.forEach((metadata, index) => {
-    if (index > 0) query.append(sql` UNION ALL `)
-    query.append(sql`SELECT `)
-    query.append(`${index}::integer AS relation_index, relation.subject_id, input.*
-      FROM input_data input
-      JOIN `)
-    query.append(
-      assertWhitelistedSqlIdentifier(metadata.table_name, relationTables, 'entityRelationTable'),
-    )
-    query.append(sql` relation ON relation.id = input.entity_relation_id
-      -- A zero vote may neutralize a retained vote after the relation is soft-deleted.
-      -- Positive votes remain restricted to active relations.
-      WHERE relation.deleted_at IS NULL OR input.score = 0`)
-  })
-  query.append(sql`), `)
-
-  targetRelations.forEach((metadata, index) => {
-    if (index > 0) query.append(sql`, `)
-    query.append(`inserted_${index} AS (INSERT INTO `)
-    query.append(
-      assertWhitelistedSqlIdentifier(
-        getEntityRelationVoteTableName(metadata),
-        relationVoteTables,
-        'entityRelationVoteTable',
-      ),
-    )
-    query.append(sql` (
-        user_id, subject_id, entity_relation_id, score,
-        ip_address, device_id, session_id, user_agent_string_id
-      )
-      SELECT user_id, subject_id, entity_relation_id, score,
-        ip_address, device_id, session_id, user_agent_string_id
-      FROM matched_relations
-      WHERE relation_index = `)
-    query.append(String(index))
-    query.append(sql`
-        AND score IS DISTINCT FROM (
-          SELECT previous.score
-          FROM `)
-    query.append(
-      assertWhitelistedSqlIdentifier(
-        getEntityRelationVoteTableName(metadata),
-        relationVoteTables,
-        'entityRelationVoteTable',
-      ),
-    )
-    query.append(sql` previous
-          WHERE previous.user_id = ${normalizedUserId}
-            AND previous.entity_relation_id = matched_relations.entity_relation_id
-          ORDER BY previous.id DESC
-          LIMIT 1
-        )
-      RETURNING entity_relation_id AS entity_id, user_id, score, created_at
-    )`)
-  })
-
-  query.append(sql` `)
-  targetRelations.forEach((_metadata, index) => {
-    if (index > 0) query.append(sql` UNION ALL `)
-    query.append(
-      `SELECT entity_id, user_id, score, created_at, '${targetRelations[index]!.table_name}'::text AS entity_relation FROM inserted_${index}`,
-    )
-  })
-
   const run = async (transaction: TransactionQuery) => {
     await transaction(sql`/* lockActiveUserForEntityRelationElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${normalizedUserId}::uuid)
@@ -151,6 +72,88 @@ export async function upsertEntityRelationElectionVotes(
       SELECT pg_advisory_xact_lock(hashtextextended(ordered.lock_key, 0))
       FROM (SELECT unnest(${locks.map(lock => lock.key)}::text[]) AS lock_key ORDER BY lock_key) ordered
     `)
+    // Keep the lookup row locked through the ballot insert on this transaction.
+    const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, {
+      query: transaction,
+    })
+
+    const query = sql`/* upsertEntityRelationElectionVotes */
+    WITH input_data AS (
+      SELECT * FROM UNNEST(
+        ${values.map(() => normalizedUserId)}::uuid[],
+        ${values.map(value => value.entityId)}::uuid[],
+        ${values.map(value => value.score)}::smallint[],
+        ${values.map(() => context.ipAddress)}::inet[],
+        ${values.map(() => context.deviceId)}::uuid[],
+        ${values.map(() => context.sessionId)}::uuid[],
+        ${values.map(() => userAgentId)}::uuid[]
+      ) AS input(user_id, entity_relation_id, score, ip_address, device_id, session_id, user_agent_string_id)
+    ), matched_relations AS (`
+
+    targetRelations.forEach((metadata, index) => {
+      if (index > 0) query.append(sql` UNION ALL `)
+      query.append(sql`SELECT `)
+      query.append(`${index}::integer AS relation_index, relation.subject_id, input.*
+      FROM input_data input
+      JOIN `)
+      query.append(
+        assertWhitelistedSqlIdentifier(metadata.table_name, relationTables, 'entityRelationTable'),
+      )
+      query.append(sql` relation ON relation.id = input.entity_relation_id
+      -- A zero vote may neutralize a retained vote after the relation is soft-deleted.
+      -- Positive votes remain restricted to active relations.
+      WHERE relation.deleted_at IS NULL OR input.score = 0`)
+    })
+    query.append(sql`), `)
+
+    targetRelations.forEach((metadata, index) => {
+      if (index > 0) query.append(sql`, `)
+      query.append(`inserted_${index} AS (INSERT INTO `)
+      query.append(
+        assertWhitelistedSqlIdentifier(
+          getEntityRelationVoteTableName(metadata),
+          relationVoteTables,
+          'entityRelationVoteTable',
+        ),
+      )
+      query.append(sql` (
+        user_id, subject_id, entity_relation_id, score,
+        ip_address, device_id, session_id, user_agent_string_id
+      )
+      SELECT user_id, subject_id, entity_relation_id, score,
+        ip_address, device_id, session_id, user_agent_string_id
+      FROM matched_relations
+      WHERE relation_index = `)
+      query.append(String(index))
+      query.append(sql`
+        AND score IS DISTINCT FROM (
+          SELECT previous.score
+          FROM `)
+      query.append(
+        assertWhitelistedSqlIdentifier(
+          getEntityRelationVoteTableName(metadata),
+          relationVoteTables,
+          'entityRelationVoteTable',
+        ),
+      )
+      query.append(sql` previous
+          WHERE previous.user_id = ${normalizedUserId}
+            AND previous.entity_relation_id = matched_relations.entity_relation_id
+          ORDER BY previous.id DESC
+          LIMIT 1
+        )
+      RETURNING entity_relation_id AS entity_id, user_id, score, created_at
+    )`)
+    })
+
+    query.append(sql` `)
+    targetRelations.forEach((_metadata, index) => {
+      if (index > 0) query.append(sql` UNION ALL `)
+      query.append(
+        `SELECT entity_id, user_id, score, created_at, '${targetRelations[index]!.table_name}'::text AS entity_relation FROM inserted_${index}`,
+      )
+    })
+
     const { rows } = await transaction(query)
     const upsertedVotes = rows as Array<ElectionVoteMutationResult & { entity_relation: string }>
     const singleRelation =

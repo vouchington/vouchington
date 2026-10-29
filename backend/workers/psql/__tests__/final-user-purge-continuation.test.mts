@@ -2,16 +2,90 @@ import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import { psql } from '@queues/psql/queues'
-import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
+import type { PsqlRetentionJobData } from '@queues/psql/types'
 import processPsql from '../processors.mts'
 
 type CleanupResult = Awaited<ReturnType<typeof runDataRetentionCleanup>>
 
+const done = { deleted: 0, hasMore: false }
+const scannedDone = { ...done, scanned: 0 }
+const continuationDone = { ...done, continuation: null }
+const historyDone = { scanned: 0, changed: 0, hasMore: false }
 const settled = {
-  ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
-  classifierRecords: {},
-  softDeletedUsers: { deleted: 0, hasMore: false },
-} as CleanupResult
+  retainedRelationIdentities: [],
+  retainedMediaBindings: scannedDone,
+  retainedIdentityRoots: [],
+  softDeletedUsers: done,
+  oldReferralAttributions: done,
+  histories: {
+    dynamic_configuration_revisions: historyDone,
+    rss_feed_setting_changes: historyDone,
+    fediverse_instance_integration_changes: historyDone,
+    community_agent_prompt_revisions: historyDone,
+    followed_user_import_requests: historyDone,
+    pending_user_import_requests: historyDone,
+    referral_attribution_scrub: historyDone,
+    referral_attribution_expiry: historyDone,
+  },
+  orphanedOAuthAccounts: done,
+  oauthFriendEdges: { ...done, resolved: 0 },
+  securityRecords: done,
+  expiredOAuthAuthorizations: done,
+  expiredOAuthServerArtifacts: done,
+  expiredBlueskyLinkCompletions: done,
+  abandonedBlueskyLinkSessions: done,
+  expiredContributionAdmissions: done,
+  expiredContributionQuotaConsumptions: done,
+  expiredTopicImportAttempts: done,
+  terminalNotificationPushIntents: done,
+  deliveredMembershipEntitlementEffects: done,
+  endedMembershipRenewalNotices: done,
+  terminalGooglePlayAcknowledgments: done,
+  terminalStripeEventWork: { ...done, cursorId: null },
+  abandonedMembershipPurchaseIntents: { ...done, cursorId: null },
+  emailAddressLoginTokens: continuationDone,
+  phoneNumberLoginTokens: continuationDone,
+  expiredUserSessions: continuationDone,
+  webPushSubscriptionTombstones: continuationDone,
+  oldPendingNotificationPushIntents: continuationDone,
+  oldModerationQueueClaims: { ...done, cursorId: null },
+  oldModerationMediaReveals: { ...done, cursorId: null },
+  textEmbeddingCache: done,
+  terminalEmbeddingBatches: done,
+  completedAdminImportBatches: continuationDone,
+  completedRssImportBatches: continuationDone,
+  expiredUserDataRequestAttempts: continuationDone,
+  oldMediaDeliveryChanges: done,
+  classifierRecords: {
+    runCandidates: scannedDone,
+    agentTopics: scannedDone,
+    localOutcomes: scannedDone,
+    runs: scannedDone,
+    topicResults: scannedDone,
+    storyResults: scannedDone,
+    communityPromptResults: scannedDone,
+    decisionCandidates: scannedDone,
+    calls: scannedDone,
+    batches: scannedDone,
+    requests: scannedDone,
+    deletedSubjectIdentities: scannedDone,
+    versionedIdentities: scannedDone,
+    identities: scannedDone,
+  },
+  sesBounceEvents: continuationDone,
+  systemPrunedNotifications: continuationDone,
+  userDeletedNotifications: continuationDone,
+  moderationEmailSends: continuationDone,
+  federationRetention: {
+    followerDistributions: { ...done, continuationPosition: null },
+    inboxReplay: { ...done, continuationPosition: null },
+    terminalFollowIdentities: done,
+    terminalLikeIdentities: done,
+  },
+  supersededVoteBallots: [],
+  orphanedUserAgentStrings: scannedDone,
+  voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
+} satisfies CleanupResult
 
 describe('final user purge continuation', () => {
   it('carries the cursor through sensitive continuations until the purge settles', async () => {
@@ -29,7 +103,7 @@ describe('final user purge continuation', () => {
     const pending = {
       ...settled,
       softDeletedUsers: { deleted: 0, hasMore: true, userPurge },
-    } as CleanupResult
+    } satisfies CleanupResult
     const cleanup = vi
       .fn<typeof runDataRetentionCleanup>()
       .mockResolvedValueOnce(pending)

@@ -37,8 +37,100 @@ CREATE TABLE IF NOT EXISTS user_agent_strings (
   CHECK (LENGTH(user_agent) <= 1024)
 );
 
-COMMENT ON TABLE user_agent_strings IS 'Insert-only deduplicated lookup table for browser user-agent strings shared by sessions and votes. Empty string represents an unknown session user agent.';
+COMMENT ON TABLE user_agent_strings IS 'Deduplicated lookup table for browser user-agent strings shared by sessions and votes; rows referenced by neither are removed by bounded cleanup. Empty string represents an unknown session user agent.';
 COMMENT ON COLUMN user_agent_strings.user_agent IS 'The full user agent string, unique and trimmed.';
+
+-- A candidate is created with each lookup row and recreated when a session or retention-deleted ballot
+-- stops referencing it. The cleanup retires candidates that still have references; later release requeues them.
+CREATE TABLE IF NOT EXISTS user_agent_string_cleanup_candidates (
+  user_agent_string_id UUID PRIMARY KEY REFERENCES user_agent_strings ON DELETE CASCADE
+);
+COMMENT ON TABLE user_agent_string_cleanup_candidates IS 'Indexed bounded orphan checks for new user-agent strings and strings released by sessions or deleted ballots.';
+COMMENT ON COLUMN user_agent_string_cleanup_candidates.user_agent_string_id IS 'User-agent lookup row awaiting an orphan check; removed after a completed check.';
+
+CREATE OR REPLACE FUNCTION fn_register_new_user_agent_string_cleanup_candidate()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)
+  VALUES (NEW.id) ON CONFLICT DO NOTHING;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.user_agent_string_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.user_agent_string_id IS NOT DISTINCT FROM NEW.user_agent_string_id THEN
+      RETURN NULL;
+    END IF;
+  END IF;
+  -- Keep the parent locked through the releasing transaction even if the candidate already
+  -- exists. Cleanup must not consume that candidate while this release is uncommitted.
+  PERFORM 1 FROM user_agent_strings
+  WHERE id = OLD.user_agent_string_id FOR KEY SHARE;
+  INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)
+  VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;
+  RETURN NULL;
+END $$;
+CREATE OR REPLACE TRIGGER trigger_user_agent_strings_queue_cleanup_candidate
+  AFTER INSERT ON user_agent_strings FOR EACH ROW
+  EXECUTE FUNCTION fn_register_new_user_agent_string_cleanup_candidate();
+
+-- Each ballot family records the newest aged superseding event it has inspected.
+DO $$ BEGIN
+  CREATE TYPE vote_ballot_cleanup_families AS ENUM (
+    'post_votes', 'topic_votes', 'hostname_votes', 'rss_feed_item_votes',
+    'agent_moderation_votes', 'user_vouch_votes',
+    'relation__user__category__topic__votes',
+    'relation__post__category__topic__votes',
+    'relation__post__category__topic_alias__votes',
+    'relation__post__related__post__votes',
+    'relation__post__related__url__votes',
+    'relation__topic__related__topic__votes',
+    'relation__topic__category__topic__votes',
+    'relation__topic__publisher_type__topic__votes',
+    'relation__topic__faq__post__votes',
+    'relation__topic__related__post__votes',
+    'relation__topic__related__url__votes',
+    'relation__topic__faq__url__votes',
+    'relation__topic__guide__url__votes',
+    'relation__topic__landing_page__url__votes',
+    'relation__topic__terms_of_service__url__votes',
+    'relation__rss_feed_item__category__topic__votes',
+    'relation__rss_feed_item__category__topic_alias__votes'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+COMMENT ON TYPE vote_ballot_cleanup_families IS 'Fixed ballot families eligible for one independent retention cursor each.';
+
+CREATE TABLE IF NOT EXISTS vote_ballot_cleanup_cursors (
+  family vote_ballot_cleanup_families PRIMARY KEY,
+  cursor_vote_id UUID,
+  sweep_cutoff_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_vote_ballot_cleanup_cursors_updated_at
+  BEFORE UPDATE ON vote_ballot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE vote_ballot_cleanup_cursors IS 'One monotonic aged-superseder frontier and frozen sweep end per ballot table.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.family IS 'Concrete ballot family selected by the cleanup worker.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.cursor_vote_id IS 'Last fully processed superseding ballot ID; not a durable relationship to a ballot.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.sweep_cutoff_id IS 'Frozen exclusive UUIDv7 upper bound for the current sweep.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.updated_at IS 'Last committed ballot sweep progress.';
+
+CREATE TABLE IF NOT EXISTS post_vote_retained_daily_counts (
+  id UUID DEFAULT uuidv7() PRIMARY KEY,
+  day DATE NOT NULL UNIQUE,
+  count BIGINT NOT NULL CHECK (count >= 0),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+COMMENT ON TABLE post_vote_retained_daily_counts IS 'Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.';
+COMMENT ON COLUMN post_vote_retained_daily_counts.id IS 'Identity of this anonymous daily aggregate row.';
+COMMENT ON COLUMN post_vote_retained_daily_counts.day IS 'UTC day of the removed ballot event.';
+COMMENT ON COLUMN post_vote_retained_daily_counts.count IS 'Number of qualifying removed post vote events on this day.';
+COMMENT ON COLUMN post_vote_retained_daily_counts.created_at IS 'When this aggregate row was created, derived from its UUIDv7 ID.';
 
 -- ============================================================================
 -- Vote Integrity Flags
@@ -169,6 +261,27 @@ COMMENT ON COLUMN vote_integrity_flags.details IS 'JSON details about the detect
 COMMENT ON COLUMN vote_integrity_flags.resolved_at IS 'When a moderator resolved this flag.';
 COMMENT ON COLUMN vote_integrity_flags.resolved_by_id IS 'Moderator who resolved this flag.';
 COMMENT ON COLUMN vote_integrity_flags.resolution IS 'Outcome: dismissed, penalized, or suspended.';
+
+-- The flag itself remains for moderation; only identifying detail is time-limited.
+CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__identifying_details__id
+  ON vote_integrity_flags (id)
+  WHERE details ?| ARRAY['correlated_ips', 'ip_address', 'ipAddress', 'device_id', 'deviceId',
+                         'session_id', 'sessionId', 'user_agent', 'userAgent', 'user_agent_string_id'];
+
+CREATE TABLE IF NOT EXISTS vote_integrity_flag_detail_cleanup_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_flag_id UUID,
+  sweep_cutoff_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_vote_integrity_flag_detail_cleanup_cursors_updated_at
+  BEFORE UPDATE ON vote_integrity_flag_detail_cleanup_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE vote_integrity_flag_detail_cleanup_cursors IS 'Bounded cyclic UUIDv7 sweep that strips aged identifying details while retaining moderation flags.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.is_singleton IS 'Checked singleton key serializes the sweep.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.cursor_flag_id IS 'Last examined flag ID; not a relationship to the flag.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.sweep_cutoff_id IS 'Frozen exclusive UUIDv7 upper bound for the current sweep.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.updated_at IS 'Last committed flag-detail sweep progress.';
 
 -- ============================================================================
 -- Vote Weight Penalties

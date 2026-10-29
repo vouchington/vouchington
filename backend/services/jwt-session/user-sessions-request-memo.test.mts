@@ -9,10 +9,56 @@ import {
 } from '@voucha/test-helpers/query-capture'
 import { runSessionActionWithRolledBackQuery } from '../../test-helpers/session-user-agent-rollback.mts'
 import { registerAuthenticatedSession } from './user-sessions.mts'
+import { cleanupOrphanedUserAgentStrings } from '../data-retention/cleanup-user-agent-strings.mts'
+import {
+  countTestUserAgentStrings,
+  deleteTestUserSession,
+} from '../../test-helpers/entities/user-sessions.mts'
 
 const expiresAt = new Date('2030-01-01T00:00:00.000Z')
 
 describe('request-local session user-agent memo', () => {
+  it('recreates a memoized agent deleted after the preceding session committed', async () => {
+    const user = await createTestUser()
+    const userAgent = `expired-memo-agent-${crypto.randomUUID()}`
+    const firstSessionId = v7()
+    const secondSessionId = v7()
+    const afterAgeGuard = new Date(Date.now() + 2 * 24 * 60 * 60 * 1_000)
+
+    await runWithRequestContext(async () => {
+      await registerAuthenticatedSession({
+        sid: firstSessionId,
+        uid: user.id,
+        did: v7(),
+        expiresAt,
+        deviceContext: { user_agent: userAgent },
+      })
+      const firstAgentId = await upsertUserAgentString(userAgent)
+      if (!firstAgentId) throw new Error('First session agent is missing')
+      await deleteTestUserSession(firstSessionId)
+      expect(await cleanupOrphanedUserAgentStrings(1, [firstAgentId], afterAgeGuard)).toMatchObject(
+        {
+          deleted: 1,
+        },
+      )
+
+      await registerAuthenticatedSession({
+        sid: secondSessionId,
+        uid: user.id,
+        did: v7(),
+        expiresAt,
+        deviceContext: { user_agent: userAgent },
+      })
+      expect(await upsertUserAgentString(userAgent)).not.toBe(firstAgentId)
+    })
+
+    expect(await countTestUserAgentStrings(userAgent)).toBe(1)
+    await expect(getTestUserSessionById(secondSessionId)).resolves.toMatchObject({
+      id: secondSessionId,
+      user_agent: userAgent,
+    })
+  })
+
   it('looks up a warm normalized agent once for two registrations in one request', async () => {
     const user = await createTestUser()
     const userAgent = `warm-session-agent-${crypto.randomUUID()}`

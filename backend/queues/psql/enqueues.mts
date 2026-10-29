@@ -1,7 +1,17 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createHash } from 'node:crypto'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import type { EnqueueReturnType } from '@voucha/types'
-import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW, PSQL_RETRY_OPTIONS } from './config.mts'
+import {
+  DATA_RETENTION_ORDERING,
+  DATA_RETENTION_RETRY_OPTIONS,
+  PRIORITY_DEFAULT,
+  PSQL_RETRY_OPTIONS,
+  QUEUE_NAME,
+  TOP_HASHTAGS_VIEW,
+  VOTE_RETENTION_CONTINUATION_JOB_NAME,
+} from './config.mts'
 import { psql } from './queues.mts'
 import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
 export { enqueueAIRetentionContinuations }
@@ -10,6 +20,7 @@ import type {
   PsqlPartitionJobData,
   PsqlRetentionJobData,
   RefreshMaterializedViewData,
+  VoteRetentionContinuationData,
 } from './types.mts'
 
 function createPsqlEnqueue(jobName: PsqlJobs) {
@@ -34,10 +45,9 @@ const enqueueRetentionJob = createEnqueueFunction<PsqlRetentionJobData, PsqlJobs
   queueName: QUEUE_NAME,
   jobName: 'dataRetentionCleanup',
 })
-const retentionOrdering = { key: 'data_retention:cleanup', concurrency: 1 } as const
 
 export const enqueueDataRetentionCleanup = (): EnqueueReturnType =>
-  enqueueRetentionJob({}, { priority: PRIORITY_DEFAULT, ordering: retentionOrdering })
+  enqueueRetentionJob({}, { priority: PRIORITY_DEFAULT, ordering: DATA_RETENTION_ORDERING })
 
 export function enqueueDataRetentionCleanupContinuation(
   data: NonNullable<PsqlRetentionJobData['continuation']>,
@@ -53,7 +63,7 @@ export function enqueueDataRetentionCleanupContinuation(
           enqueueRetentionJob(input, {
             jobId,
             priority: PRIORITY_DEFAULT,
-            ordering: retentionOrdering,
+            ordering: DATA_RETENTION_ORDERING,
             ...(data.userPurge ? { sensitive: true } : {}),
             attempts: 3,
             backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
@@ -107,6 +117,52 @@ function createPartitionEnqueue(jobName: 'createPartitions' | 'cleanupPartitions
 
 export const enqueueCreatePartitions = createPartitionEnqueue('createPartitions')
 export const enqueueCleanupPartitions = createPartitionEnqueue('cleanupPartitions')
+
+type RetentionContinuationInput = { parentJobId: string; data: VoteRetentionContinuationData }
+
+// A running job cannot re-add its own id. The selected families are part of the
+// child identity because a retried parent may observe a different remaining set.
+const dataRetentionContinuationId = (input: RetentionContinuationInput) => {
+  const { parentJobId, data } = input
+  const identity = JSON.stringify([
+    parentJobId,
+    data.voteTables.toSorted(),
+    data.userAgentStrings,
+    data.voteIntegrityDetails,
+  ])
+  return `vote-retention__${createHash('sha256').update(identity).digest('hex').slice(0, 32)}`
+}
+
+const enqueueBulkDataRetentionContinuations = createBulkEnqueueFunction({
+  queue: psql,
+  queueName: QUEUE_NAME,
+  jobName: VOTE_RETENTION_CONTINUATION_JOB_NAME,
+  defaults: {
+    ...DATA_RETENTION_RETRY_OPTIONS,
+    ordering: DATA_RETENTION_ORDERING,
+    removeOnComplete: true,
+    removeOnFail: true,
+  },
+  buildJob: (input: RetentionContinuationInput, _index: number) => ({
+    data: input.data,
+    opts: {
+      jobId: dataRetentionContinuationId(input),
+      priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
+    },
+  }),
+})
+
+export function enqueueDataRetentionContinuation(
+  parentJobId: string,
+  data: VoteRetentionContinuationData,
+) {
+  return enqueueBulkReactivatingFinished({
+    queue: psql,
+    inputs: [{ parentJobId, data }],
+    jobIdOf: dataRetentionContinuationId,
+    enqueueBulk: enqueueBulkDataRetentionContinuations,
+  })
+}
 
 const enqueueRefreshMaterializedViewJob = createEnqueueFunction<
   RefreshMaterializedViewData,

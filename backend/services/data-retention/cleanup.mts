@@ -103,6 +103,18 @@ import {
 } from './cleanup-retained-media-bindings.mts'
 import { cleanupSecurityRecords } from './cleanup-security-records.mts'
 import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
+import {
+  cleanupSupersededVoteBallots,
+  type VoteBallotCleanupPage,
+} from './cleanup-vote-ballots.mts'
+import {
+  cleanupOrphanedUserAgentStrings,
+  type UserAgentStringCleanupPage,
+} from './cleanup-user-agent-strings.mts'
+import {
+  cleanupVoteIntegrityDetails,
+  type VoteIntegrityDetailCleanupPage,
+} from './cleanup-vote-integrity-details.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -141,6 +153,9 @@ type ExpiryCleanupOptions = Pick<
 type DataRetentionCleanupOptions = {
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
+  voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
+  userAgentStringIds?: readonly string[]
+  voteIntegrityFlagIds?: readonly string[]
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
@@ -237,6 +252,41 @@ type DataRetentionCleanupResult = {
   userDeletedNotifications: NotificationEmailCleanupResult
   moderationEmailSends: NotificationEmailCleanupResult
   federationRetention: FederationRetentionResult
+  supersededVoteBallots: VoteBallotCleanupPage[]
+  orphanedUserAgentStrings: UserAgentStringCleanupPage
+  voteIntegrityDetails: VoteIntegrityDetailCleanupPage
+}
+
+export type VoteRetentionSelection = {
+  voteTables: readonly string[]
+  userAgentStrings: boolean
+  voteIntegrityDetails: boolean
+}
+
+type VoteRetentionPage = Pick<
+  DataRetentionCleanupResult,
+  'supersededVoteBallots' | 'orphanedUserAgentStrings' | 'voteIntegrityDetails'
+>
+
+/** Continue only families that reported another page in the previous job. */
+export async function runVoteRetentionCleanupPage(
+  limits: DataRetentionLimits,
+  selection: VoteRetentionSelection,
+): Promise<VoteRetentionPage> {
+  const now = new Date()
+  const supersededVoteBallots = await cleanupSupersededVoteBallots(
+    limits.batchSize,
+    now,
+    undefined,
+    selection.voteTables,
+  )
+  const orphanedUserAgentStrings = selection.userAgentStrings
+    ? await cleanupOrphanedUserAgentStrings(limits.batchSize)
+    : { scanned: 0, deleted: 0, hasMore: false }
+  const voteIntegrityDetails = selection.voteIntegrityDetails
+    ? await cleanupVoteIntegrityDetails(limits.batchSize, now)
+    : { scanned: 0, redacted: 0, hasMore: false }
+  return { supersededVoteBallots, orphanedUserAgentStrings, voteIntegrityDetails }
 }
 
 export async function runDataRetentionCleanup(
@@ -371,11 +421,25 @@ export async function runDataRetentionCleanup(
       cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications)),
       cleanupModerationEmailSends(withLimits(options.moderationEmailSends)),
     ])
+  // ast-grep-ignore: no-three-sequential-awaits -- retention families run serially to cap concurrent database work
   const federationRetention = await cleanupFederationRetention({
     ...limits,
     ...options.federationRetention,
   })
-  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
+  const supersededVoteBallots = await cleanupSupersededVoteBallots(
+    limits.batchSize,
+    new Date(),
+    options.voteBallotIdsByTable,
+  )
+  const orphanedUserAgentStrings = await cleanupOrphanedUserAgentStrings(
+    limits.batchSize,
+    options.userAgentStringIds,
+  )
+  const voteIntegrityDetails = await cleanupVoteIntegrityDetails(
+    limits.batchSize,
+    new Date(),
+    options.voteIntegrityFlagIds,
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -384,6 +448,7 @@ export async function runDataRetentionCleanup(
     retainedPageSize,
     options.retainedMediaBindingIds,
   )
+  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedIdentityRoots = await cleanupRetainedIdentityRoots(
     retainedPageSize,
     options.retainedIdentityRootIds,
@@ -432,6 +497,9 @@ export async function runDataRetentionCleanup(
     userDeletedNotifications,
     moderationEmailSends,
     federationRetention,
+    supersededVoteBallots,
+    orphanedUserAgentStrings,
+    voteIntegrityDetails,
   }
 }
 

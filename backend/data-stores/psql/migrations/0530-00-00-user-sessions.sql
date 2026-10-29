@@ -70,6 +70,10 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id__foreign_key
   ON user_sessions (user_id)
   WHERE user_id IS NOT NULL;
 
+CREATE OR REPLACE TRIGGER trigger_user_sessions_queue_released_user_agent_string
+  AFTER DELETE OR UPDATE OF user_agent_string_id ON user_sessions
+  FOR EACH ROW EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate();
+
 COMMENT ON TABLE user_sessions IS 'User session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition; bounded retention removes expired rows after the audit window. Rows hold durable device credential authority and revocation checked after cache misses, and support session listing and audit.';
 COMMENT ON COLUMN user_sessions.user_id IS 'Owning user for this session row.';
 COMMENT ON COLUMN user_sessions.device_id IS 'JWT device ID (dt.did) associated with this session.';

@@ -17,6 +17,7 @@ import type {
   PsqlRetentionJobData,
   RefreshMaterializedViewData,
   TerminalActivityRetentionData,
+  VoteRetentionContinuationData,
 } from '@queues/psql/types'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
@@ -43,7 +44,12 @@ async function processPsqlJob(job: Job): Promise<unknown> {
   }
   const result = await processPsql(
     job.name as PsqlJobs,
-    job.data as Partial<RefreshMaterializedViewData & PsqlPartitionJobData & PsqlRetentionJobData>,
+    job.data as Partial<
+      RefreshMaterializedViewData &
+        PsqlPartitionJobData &
+        PsqlRetentionJobData &
+        VoteRetentionContinuationData
+    >,
     undefined,
     job.id,
   )
