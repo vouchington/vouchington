@@ -94,6 +94,8 @@ The root Vitest config installs a `configureVitest` plugin that rejects an effec
 
 ## Live policy inputs and finite controls
 
+Article link validation runs in required static CI through the released checker and the application’s parser, link rewriter, and raw renderer. This keeps committed-content validation out of unit-test discovery while checking the HTML the application produces. Raw rendering is separate from entity enrichment so this check does not need live data services.
+
 The root repository-file policy command runs the released Docker image mirror and Trivy scan and
 exception checks alongside the repository-specific aggregate. Static CI runs those released checks
 as separate steps. The aggregate still owns workspace root catalog correspondence; finite unit

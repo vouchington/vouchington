@@ -40,6 +40,9 @@ jobs:
         working-directory: email-templates
         run: pnpm run build
         timeout-minutes: 1
+      - name: Check article links
+        run: pnpm run article-links:check
+        timeout-minutes: 2
       - name: Typecheck scripts
         shell: bash
         run: pnpm exec tsc --noEmit --project tsconfig.json
