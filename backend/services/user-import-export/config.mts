@@ -19,7 +19,7 @@ export type UserImportExportConfig = {
 
 export const USER_IMPORT_EXPORT_CONFIG_KEY = 'user-import-export-config'
 
-export const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
+const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
   sync_export_max_items: 1_000,
   import_max_body_bytes: 2 * 1024 * 1024,
   import_dispatch_page_size: 100,

@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { describe, expect, it } from 'vitest'
 import {
   createTestTopic,
@@ -8,11 +9,7 @@ import {
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
 import { getTopicByAny } from '@services/topics/get'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
-import {
-  getRssFeedImport,
-  processRssFeedImportRow,
-  submitRssFeedImport,
-} from './rss-feed-imports.mts'
+import { getRssFeedImport, processRssFeedImportRow } from './rss-feed-imports.mts'
 
 describe('RSS feed import topic links', () => {
   it('returns the active merge target slug after an imported feed topic is merged', async () => {
@@ -21,7 +18,7 @@ describe('RSS feed import topic links', () => {
     const destination = await createTestTopic({ user })
     const feedUrl = `https://merged-import-${crypto.randomUUID()}.example.com/feed.xml`
     const feed = await insertTestRssFeedDirect({ topicId: source.id, rssFeedUrl: feedUrl })
-    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [feedUrl])
+    const submitted = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [feedUrl])
     await processRssFeedImportRow(
       submitted.import.id,
       await getFirstRssFeedImportRowId(submitted.import.id),

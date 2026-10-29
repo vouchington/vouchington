@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
@@ -7,7 +8,6 @@ import {
 } from '@queues/background/enqueues/imports-jobs'
 import { userImportExportConfig } from '@services/user-import-export/config'
 import { dispatchUserRssFeedImport } from '@services/user-import-export/rss-feed-import-dispatch'
-import { submitRssFeedImport } from '@services/user-import-export/rss-feed-imports'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   startBackgroundHarness,
@@ -24,7 +24,7 @@ const connection = { connection: workerQueueConnection, prefix: workerQueuePrefi
 async function submitImport(rowCount: number): Promise<{ importId: string; rowIds: string[] }> {
   const user = await createTestUser()
   const stamp = crypto.randomUUID()
-  const submitted = await submitRssFeedImport(
+  const submitted = await createRssFeedImportBatchForTest(
     user,
     WEB_PROVENANCE,
     Array.from(

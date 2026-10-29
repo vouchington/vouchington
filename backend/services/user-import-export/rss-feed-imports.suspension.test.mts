@@ -1,11 +1,8 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, suspendTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getRssFeedImportRowIds } from '@voucha/test-helpers/rss-feed-import-rows'
-import {
-  getRssFeedImport,
-  processRssFeedImportRow,
-  submitRssFeedImport,
-} from './rss-feed-imports.mts'
+import { getRssFeedImport, processRssFeedImportRow } from './rss-feed-imports.mts'
 
 const feedUrl = () => `https://suspended-import-${crypto.randomUUID()}.example.com/feed.xml`
 
@@ -13,7 +10,7 @@ describe('RSS feed import suspension', () => {
   it('fails the remaining rows when the user is suspended after submit', async () => {
     const user = await createTestUser()
     const urls = [feedUrl(), feedUrl()]
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
+    const created = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, urls, {
       should_follow_imported_feeds: false,
     })
     await suspendTestUser(user.id)

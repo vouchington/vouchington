@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
@@ -10,7 +11,6 @@ import { USER_RSS_FEED_IMPORT_DISPATCH_ID_PREFIX } from '@queues/user-rss-feed-i
 import { userImportExportConfig } from '@services/user-import-export/config'
 import { dispatchUserRssFeedImport } from '@services/user-import-export/rss-feed-import-dispatch'
 import { recoverStalledUserRssFeedImports } from '@services/user-import-export/rss-feed-import-recovery'
-import { submitRssFeedImport } from '@services/user-import-export/rss-feed-imports'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   startBackgroundHarness,
@@ -38,7 +38,7 @@ describe('import recovery on a real shared queue', () => {
     )
     const user = await createTestUser()
     const stamp = crypto.randomUUID()
-    const submitted = await submitRssFeedImport(
+    const submitted = await createRssFeedImportBatchForTest(
       user,
       WEB_PROVENANCE,
       Array.from({ length: 3 }, (_, index) => `https://recover-${stamp}-${index}.example.com/rss`),
