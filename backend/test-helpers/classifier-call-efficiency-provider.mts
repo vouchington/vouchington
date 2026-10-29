@@ -45,7 +45,9 @@ function answerFor(id: string, question: AskedQuestion, options: ProviderOptions
  * bill would be visible in the ledger. Jev reports that cost; OpenAI is priced from its 20,000 input
  * tokens at luna's $0.10 per million, with no billed output.
  */
-function billedUsage(init: Parameters<typeof fetchStructuredDecisionProvider>[1]) {
+function billedUsage(
+  init: Parameters<typeof fetchStructuredDecisionProvider>[1],
+): Record<string, number> {
   if (isOpenAIDecisionRequest(init)) return { input_tokens: 20_000, output_tokens: 0 }
   return { input_tokens: 12, output_tokens: 3, cost: 0.002 }
 }
