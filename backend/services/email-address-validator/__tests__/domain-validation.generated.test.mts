@@ -20,7 +20,6 @@ describe('valid domain validation', () => {
 // Tests for invalid domains - shares cache for the invalid domain
 describe('invalid domain validation', () => {
   installEmailDomainDnsMock()
-  const invalidDomain = 'invalid-domain-12345.test'
 
   it('error includes domain in message', async () => {
     const domain = 'definitely-invalid-12345.test'

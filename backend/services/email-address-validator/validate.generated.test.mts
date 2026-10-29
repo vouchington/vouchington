@@ -8,7 +8,6 @@ import {
   deleteTestConsumedEmailToken,
   insertTestConsumedEmailTokenAt,
   insertEmailAddressLoginToken,
-  insertUrlHostname,
 } from '@voucha/test-helpers'
 
 // Tests for format validation - no DNS, no cache needed
@@ -76,7 +75,6 @@ describe('domain validation', () => {
   installEmailDomainDnsMock()
 
   it('error includes domain for domain errors', async () => {
-    // Reuse the cached invalid domain from previous test
     const err = await validateEmailAddress('user2@invalid-domain-12345.test').catch(err => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).domain).toBe('invalid-domain-12345.test')
