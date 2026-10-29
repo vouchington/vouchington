@@ -30,7 +30,7 @@
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/ai": "^0.3.0",
+    "@vouchington/ai": "^0.4.0",
     "@vouchington/postgres": "^0.1.2",
     "@vouchington/utils": "^0.10.2",
     "p-map": "^7.1.1",

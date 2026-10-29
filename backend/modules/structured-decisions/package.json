@@ -2,7 +2,7 @@
   "name": "@modules/structured-decisions",
   "version": "1.0.0",
   "private": true,
-  "description": "Strict provider-neutral Jev structured-decision client",
+  "description": "Strict provider-neutral structured-decision client",
   "license": "UNLICENSED",
   "author": "",
   "type": "module",
@@ -24,7 +24,7 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/ai": "^0.3.0",
+    "@vouchington/ai": "^0.4.0",
     "undici": "^8.12.3"
   }
 }

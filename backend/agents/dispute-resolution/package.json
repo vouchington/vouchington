@@ -28,7 +28,7 @@
     "@services/moderation-ai-config": "workspace:^",
     "@services/review-disputes": "workspace:^",
     "@services/topic-claims": "workspace:^",
-    "@vouchington/ai": "^0.3.0",
+    "@vouchington/ai": "^0.4.0",
     "openai": "^7.43.0"
   },
   "devDependencies": {
