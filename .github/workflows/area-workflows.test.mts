@@ -28,7 +28,7 @@ const fanIns = new Set(['coverage', 'codecov'])
 // (backend) and the credentialed browser checks against real cloud resources (web) fail a run
 // without failing the gate (docs/development/tests.md#live-provider-smoke-checks).
 const reportOnly: Record<string, string[]> = {
-  backend: ['test-backend-credentialed', 'typecheck-bun'],
+  backend: ['test-backend-credentialed'],
   web: ['test-playwright-credentialed'],
 }
 // Producer jobs that prepare shared test inputs before a database-backed suite starts.
