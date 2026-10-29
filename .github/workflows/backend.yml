@@ -237,6 +237,7 @@ jobs:
         test-postgres-schema,
         backend-smoke,
         test-explain-analyze,
+        typecheck-bun,
         validate-backend-images,
         publish-backend-images,
         coverage,
@@ -252,4 +253,4 @@ jobs:
         timeout-minutes: 1
         with:
           results: >-
-            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"prepare-postgres":{"result":"${{ needs.prepare-postgres.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"validate-backend-images":{"result":"${{ needs.validate-backend-images.result }}"},"publish-backend-images":{"result":"${{ needs.publish-backend-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"prepare-postgres":{"result":"${{ needs.prepare-postgres.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"typecheck-bun":{"result":"${{ needs.typecheck-bun.result }}"},"validate-backend-images":{"result":"${{ needs.validate-backend-images.result }}"},"publish-backend-images":{"result":"${{ needs.publish-backend-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
