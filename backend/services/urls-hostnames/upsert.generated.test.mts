@@ -20,16 +20,6 @@ import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostn
 describe('upsert.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
 
-  it('upsertUrlHostnames creates a new hostname', async () => {
-    const testHostname = `upsert-create-${suffix}.example.com`
-    const hostnamesMap = await upsertUrlHostnames(null, [testHostname])
-    const hostnameId = [...hostnamesMap.values()][0]
-    const hostname = [...hostnamesMap.keys()][0]
-
-    expect(hostnameId).toBeDefined()
-    expect(hostname).toBe(testHostname)
-  })
-
   it('upsertUrlHostnames normalizes hostname from URL', async () => {
     const testHostname = `upsert-normalize-${suffix}.example.com`
     const hostnamesMap = await upsertUrlHostnames(null, [`https://${testHostname}/path`])

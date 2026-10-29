@@ -12,17 +12,6 @@ import {
 describe('search.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
 
-  it('searchUrlHostnames returns hostnames matching query', async () => {
-    const h1 = `search-${suffix}-1.com`
-    const h2 = `search-${suffix}-2.com`
-    await upsertUrlHostnames(null, [h1, h2, `search-other-${suffix}.com`])
-
-    const { results } = await searchUrlHostnames({ query: `search-${suffix}` })
-    expect(results.length).toBeGreaterThanOrEqual(2)
-    expect(results.some(h => h.hostname === h1)).toBe(true)
-    expect(results.some(h => h.hostname === h2)).toBe(true)
-  })
-
   it('treats LIKE wildcards in the hostname query as literal characters', async () => {
     const literalPercent = `wild-${suffix}-percent-a%%%b.example.com`
     const widenedPercent = `wild-${suffix}-percent-aXYZb.example.com`
@@ -43,25 +32,6 @@ describe('search.generated', () => {
     expect(results.map(row => row.hostname)).toEqual([literal])
   })
 
-  it('searchUrlHostnames filters by is_blocked status', async () => {
-    const blockedHost = `search-is_blocked-${suffix}.com`
-    const hostnamesMap = await upsertUrlHostnames(null, [
-      blockedHost,
-      `search-unblocked-${suffix}.com`,
-    ])
-    const blockedHostnameId = hostnamesMap.get(blockedHost)
-
-    if (blockedHostnameId) {
-      await updateUrlHostnameBlocked(blockedHostnameId, true)
-    }
-
-    const { results: blockedResults } = await searchUrlHostnames({
-      is_blocked: true,
-      query: `search-is_blocked-${suffix}`,
-    })
-    expect(blockedResults.some(h => h.hostname === blockedHost)).toBe(true)
-  })
-
   it('keeps explicit true, false and omitted admin filters distinct', async () => {
     const query = `search-flags-${suffix}`
     const map = await upsertUrlHostnames(null, [
@@ -77,19 +47,6 @@ describe('search.generated', () => {
     expect(await names({ is_crawlable: false })).toEqual([`${query}-disabled.com`])
     expect(await names({ is_blocked: true })).toEqual([`${query}-blocked.com`])
     expect(await names({ is_crawlable: true, is_blocked: false })).toEqual([`${query}-allowed.com`])
-  })
-
-  it('searchUrlHostnames respects limit', async () => {
-    await upsertUrlHostnames(null, [
-      `search-limit-${suffix}-1.com`,
-      `search-limit-${suffix}-2.com`,
-      `search-limit-${suffix}-3.com`,
-      `search-limit-${suffix}-4.com`,
-      `search-limit-${suffix}-5.com`,
-    ])
-
-    const { results } = await searchUrlHostnames({ query: `search-limit-${suffix}`, limit: 2 })
-    expect(results.length).toBeLessThanOrEqual(2)
   })
 
   it('paginates text matches with a name cursor', async () => {
