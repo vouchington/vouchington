@@ -128,13 +128,24 @@ function invalid(target: string, input: Record<string, unknown>) {
 }
 
 describe('all merged admin MCP options', () => {
-  it('registers 55 admin tools and drops every replaced name', () => {
+  it('registers 56 admin tools and drops every replaced name', () => {
     const adminTools = ALL_TOOLS.filter(tool => tool.meta?.audience === 'admin')
-    expect(adminTools).toHaveLength(55)
+    expect(adminTools).toHaveLength(56)
     expect(adminMergedGroups).toHaveLength(27)
     expect(replacedAdminToolNames.size).toBe(58)
     for (const name of replacedAdminToolNames) expect(getRegisteredToolByName(name)).toBeUndefined()
     for (const group of adminMergedGroups) expect(getRegisteredToolByName(group.name)).toBeDefined()
+  })
+
+  it('registers landing-page identity as a read-only admin operation on its REST route', () => {
+    const tool = getRegisteredToolByName('get_landing_page_identity')
+    expect(tool?.meta).toMatchObject({
+      audience: 'admin',
+      requiredScopes: ['editorial:read'],
+      annotations: { readOnlyHint: true },
+    })
+    expect(tool?.meta?.api?.map(toRouteKey)).toEqual(['GET:/api/v1/admin/landing-pages/:pageId'])
+    expect(validateToolArguments(tool!.schema.parameters, { page_id: UUID })).toBeNull()
   })
 
   it('lists every admin tool for an all-authorized grant and only moderation reads for Reviewer', () => {
