@@ -3,7 +3,6 @@ import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
 import {
   availableScopeAudiences,
   scopeResourceGroups,
-  scopeResourceRows,
   toggleScope,
 } from '../api-keys-manager/scope-selection'
 import { scopeDescriptionMessageKey } from '../api-keys-manager/scope-description'
@@ -24,9 +23,9 @@ function entry(overrides: Partial<ScopeCatalogEntry> & Pick<ScopeCatalogEntry, '
   } satisfies ScopeCatalogEntry
 }
 
-describe('scopeResourceRows', () => {
+describe('scopeResourceGroups rows', () => {
   it('pairs read and write scopes per resource with the MCP umbrella first', () => {
-    const rows = scopeResourceRows(catalog, 'api-key', ['user'])
+    const rows = scopeResourceGroups(catalog, 'api-key', ['user']).flatMap(group => group.rows)
 
     expect(rows[0]).toMatchObject({
       resource: 'mcp.user',
@@ -43,11 +42,13 @@ describe('scopeResourceRows', () => {
   })
 
   it('keeps only the requested audiences', () => {
-    const userRows = scopeResourceRows(catalog, 'api-key', ['user']).map(row => row.resource)
+    const userRows = scopeResourceGroups(catalog, 'api-key', ['user'])
+      .flatMap(group => group.rows)
+      .map(row => row.resource)
     expect(userRows).not.toContain('mcp.admin')
     expect(userRows).not.toContain('rss')
 
-    const adminRows = scopeResourceRows(catalog, 'oauth', ['admin'])
+    const adminRows = scopeResourceGroups(catalog, 'oauth', ['admin']).flatMap(group => group.rows)
     expect(adminRows[0]?.resource).toBe('mcp.admin')
     const adminEntries = adminRows.flatMap(row => [row.read, row.write]).filter(e => e != null)
     expect(adminEntries.map(e => e.audience)).toEqual(adminEntries.map(() => 'admin'))
@@ -57,7 +58,8 @@ describe('scopeResourceRows', () => {
     const expected = catalog.filter(
       entry => entry.audience === 'admin' && entry.surfaces.includes('oauth'),
     )
-    const actual = scopeResourceRows(catalog, 'oauth', ['admin'])
+    const actual = scopeResourceGroups(catalog, 'oauth', ['admin'])
+      .flatMap(group => group.rows)
       .flatMap(row => [row.read, row.write])
       .filter(entry => entry != null)
     expect(actual.map(entry => entry.scope).toSorted()).toEqual(
@@ -70,17 +72,17 @@ describe('scopeResourceRows', () => {
   })
 
   it('never offers administrator scopes on API keys, which are OAuth-only for admin MCP', () => {
-    expect(scopeResourceRows(catalog, 'api-key', ['user', 'admin'])).not.toContainEqual(
-      expect.objectContaining({ resource: 'mcp.admin' }),
-    )
+    expect(
+      scopeResourceGroups(catalog, 'api-key', ['user', 'admin']).flatMap(group => group.rows),
+    ).not.toContainEqual(expect.objectContaining({ resource: 'mcp.admin' }))
   })
 
   it('keeps only scopes offered on the credential surface', () => {
-    const rows = scopeResourceRows(
+    const rows = scopeResourceGroups(
       [entry({ scope: 'posts:read', surfaces: ['oauth'] }), entry({ scope: 'cards:read' })],
       'api-key',
       ['user'],
-    )
+    ).flatMap(group => group.rows)
 
     expect(rows.map(row => row.resource)).toEqual(['cards'])
   })

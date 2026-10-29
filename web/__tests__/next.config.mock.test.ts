@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 
 const {
   constrainedMemoryBytes,
@@ -49,25 +49,54 @@ vi.mock(
     }) as unknown as typeof import('@sentry/nextjs/config'),
 )
 
-import loadConfig, { assertSecureSharpVersion } from '../next.config'
+import loadConfig from '../next.config'
 import { nextBuildPageDataWorkerCount } from '../next-build-page-data-worker-count'
 import { PHASE_PRODUCTION_SERVER } from 'next/constants'
 
 const config = loadConfig(PHASE_PRODUCTION_SERVER)
 
 describe('next.config', () => {
+  afterEach(() => vi.doUnmock(import('sharp')))
+
   afterAll(() => {
     vi.unstubAllGlobals()
   })
 
-  it('rejects Sharp releases below 0.35.0', () => {
-    expect(() => assertSecureSharpVersion('0.34.5')).toThrow('requires sharp >=0.35.0')
-    expect(() => assertSecureSharpVersion('invalid')).toThrow('requires sharp >=0.35.0')
-  })
+  it.each(['0.34.5', 'invalid'])(
+    'rejects unsafe Sharp %s while loading the config',
+    async version => {
+      vi.resetModules()
+      vi.doMock(
+        import('sharp'),
+        () =>
+          ({
+            default: { versions: { sharp: version } },
+          }) as unknown as typeof import('sharp'),
+      )
+      await expect(
+        vi.importActual<typeof import('../next.config')>('../next.config'),
+      ).rejects.toThrow('requires sharp >=0.35.0')
+    },
+  )
 
-  it('accepts secure Sharp releases', () => {
-    expect(() => assertSecureSharpVersion('0.35.0')).not.toThrow()
-    expect(() => assertSecureSharpVersion('1.0.0')).not.toThrow()
+  it.each(['0.35.0', '1.0.0'])('loads the config with secure Sharp %s', async version => {
+    vi.resetModules()
+    vi.doMock(
+      import('sharp'),
+      () =>
+        ({
+          default: { versions: { sharp: version } },
+        }) as unknown as typeof import('sharp'),
+    )
+    await withSentryConfig.withImplementation(
+      nextConfig => nextConfig,
+      async () => {
+        const loaded = await vi.importActual<typeof import('../next.config')>('../next.config')
+        expect(loaded.default(PHASE_PRODUCTION_SERVER)).toMatchObject({
+          experimental: { useTypeScriptCli: false },
+        })
+      },
+    )
   })
 
   it('does not set webpack config (Turbopack is the bundler)', () => {

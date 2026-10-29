@@ -15,7 +15,7 @@ export type DerivedPageShortcut = {
   featureFlag?: string
 }
 
-export function hrefToDataPw(href: string): string {
+function hrefToDataPw(href: string): string {
   return `search-page-shortcut-${href.replace(/^\//, '').replace(/\//g, '-')}`
 }
 

@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { TOP_LEVEL_TABS, getTopLevelTabHref } from '../user-profile-tabs-config'
+import { getVisibleTopLevelTabs, getTopLevelTabHref } from '../user-profile-tabs-config'
 import { USER_RELATION_ACTIONS } from '../user-relation-actions'
 
 describe('catalog-derived user profile config', () => {
   it('derives tab hrefs for the public profile tab structure', () => {
-    expect(TOP_LEVEL_TABS.map(tab => getTopLevelTabHref(tab, 'alice'))).toEqual([
+    expect(getVisibleTopLevelTabs().map(tab => getTopLevelTabHref(tab, 'alice'))).toEqual([
       '/user/alice',
       '/user/alice/posts',
       '/user/alice/topics/following',

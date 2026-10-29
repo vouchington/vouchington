@@ -19,7 +19,7 @@ const STORYBOOK_NEXTJS_FRAMEWORK = /@storybook[/+]nextjs(?:-vite)?[/\\]/
 
 // Next useRouter reads parentRenderTree.data.bfcacheId. Storybook still sets only parentCacheNode.
 // bfcacheId 0 is the fallback Next uses when the layout cache node has no id.
-export function addStorybookParentRenderTree(code: string): string | null {
+function addStorybookParentRenderTree(code: string): string | null {
   if (!code.includes('LayoutRouterContext') || !code.includes('parentCacheNode:')) return null
   if (code.includes('parentRenderTree')) return null
 

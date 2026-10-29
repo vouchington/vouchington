@@ -17,27 +17,27 @@ export function readTopicRecommendationFormValues(formData: FormData) {
   }
 }
 
-export function aliasesToText(aliases?: string[] | null): string {
+function aliasesToText(aliases?: string[] | null): string {
   return aliases?.join('\n') ?? ''
 }
 
-export function hostnamesToText(hostnames?: Array<{ hostname: string }> | null): string {
+function hostnamesToText(hostnames?: Array<{ hostname: string }> | null): string {
   return hostnames?.map(hostname => hostname.hostname).join('\n') ?? ''
 }
 
-export function parseAliases(text: string): string[] {
+function parseAliases(text: string): string[] {
   return text.split('\n').flatMap(alias => (alias.trim() ? [alias.trim()] : []))
 }
 
-export function parseHostnames(text: string): string[] {
+function parseHostnames(text: string): string[] {
   return text.split('\n').flatMap(hostname => (hostname.trim() ? [hostname.trim()] : []))
 }
 
-export function parseLandingPageUrls(text: string): string[] {
+function parseLandingPageUrls(text: string): string[] {
   return text.split('\n').flatMap(url => (url.trim() ? [url.trim()] : []))
 }
 
-export function landingPageUrlsToText(urls?: string[] | null): string {
+function landingPageUrlsToText(urls?: string[] | null): string {
   return urls?.join('\n') ?? ''
 }
 

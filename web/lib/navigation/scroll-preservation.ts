@@ -14,7 +14,7 @@ interface ScrollPreservingClickEvent {
   shiftKey: boolean
 }
 
-export function preserveScrollForPathname(pathname: string, scrollY = window.scrollY) {
+function preserveScrollForPathname(pathname: string, scrollY = window.scrollY) {
   preservedScrollPosition = { pathname, scrollY }
 }
 

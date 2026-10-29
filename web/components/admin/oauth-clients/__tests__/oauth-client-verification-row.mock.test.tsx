@@ -3,7 +3,7 @@ import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { ApiError } from '@vouchington/api-client'
 import type { ListResponse } from '@/types/api-responses'
 import type { AdminOAuthClientListItem } from '@/types/oauth-apps'
@@ -56,13 +56,13 @@ const fixtureClient = (listFixture as ListResponse<AdminOAuthClientListItem>).re
 
 function renderRow(overrides: Partial<AdminOAuthClientListItem> = {}, uiLocale = 'en-US') {
   render(
-    <UiLocaleContext.Provider value={uiLocale}>
+    <LocaleProvider locale={uiLocale}>
       <table>
         <tbody>
           <OAuthClientVerificationRow client={{ ...fixtureClient, ...overrides }} />
         </tbody>
       </table>
-    </UiLocaleContext.Provider>,
+    </LocaleProvider>,
   )
 }
 

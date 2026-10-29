@@ -19,7 +19,7 @@ interface RuntimePublicConfigEventTarget {
   addEventListener(type: string, listener: () => void, options: { once: true }): void
 }
 
-export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): SentryInitOptions {
+function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): SentryInitOptions {
   const runtimeConfig = (deps.getRuntimePublicConfig ?? getBrowserRuntimePublicConfig)() ?? {}
 
   return withApiErrorRequestId({

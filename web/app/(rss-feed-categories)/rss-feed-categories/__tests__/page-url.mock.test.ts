@@ -1,5 +1,7 @@
 import '@/test-helpers/i18n/mock-json-messages'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { getAdminRssFeedCategories } from '@/lib/api/server/rss-feed-categories'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 vi.mock(import('@/lib/api/server/rss-feed-categories'), () => ({
   getAdminRssFeedCategories: vi.fn<VitestLooseMock>(),
@@ -33,27 +35,57 @@ vi.mock(
       AdminTableShell: () => null,
     }) as unknown as typeof import('@/components/admin/admin-table-shell'),
 )
-vi.mock(import('@/components/admin/admin-pagination'), () => ({ AdminPagination: () => null }))
 
-import { buildPageUrl } from '../page'
+import RssFeedCategoriesPage from '../page'
 
-describe('buildPageUrl', () => {
-  it('returns base URL with no params', () => {
-    expect(buildPageUrl({}, undefined)).toBe('/rss-feed-categories')
+describe('RSS feed category page pagination', () => {
+  beforeEach(() => {
+    vi.mocked(getAdminRssFeedCategories).mockResolvedValue({
+      results: [],
+      page_info: {
+        has_next_page: true,
+        start_cursor: 'start',
+        end_cursor: 'cursor-1',
+      },
+    })
   })
 
-  it('includes status param when set', () => {
-    expect(buildPageUrl({ status: 'rejected' }, undefined)).toBe(
+  it('links back to the base URL when clearing the current cursor', async () => {
+    render(await RssFeedCategoriesPage({ searchParams: Promise.resolve({ after: 'old-cursor' }) }))
+    expect(screen.getByRole('link', { name: 'Previous' })).toHaveAttribute(
+      'href',
+      '/rss-feed-categories',
+    )
+  })
+
+  it('preserves status when clearing the current cursor', async () => {
+    render(
+      await RssFeedCategoriesPage({
+        searchParams: Promise.resolve({ status: 'rejected', after: 'old-cursor' }),
+      }),
+    )
+    expect(getAdminRssFeedCategories).toHaveBeenLastCalledWith({
+      searchParams: { status: 'rejected', after: 'old-cursor', limit: 25 },
+    })
+    expect(screen.getByRole('link', { name: 'Previous' })).toHaveAttribute(
+      'href',
       '/rss-feed-categories?status=rejected',
     )
   })
 
-  it('includes after cursor when set', () => {
-    expect(buildPageUrl({}, 'abc123')).toBe('/rss-feed-categories?after=abc123')
+  it('links forward with the returned cursor', async () => {
+    render(await RssFeedCategoriesPage({ searchParams: Promise.resolve({}) }))
+    expect(screen.getByRole('link', { name: 'Next' })).toHaveAttribute(
+      'href',
+      '/rss-feed-categories?after=cursor-1',
+    )
   })
 
-  it('includes both status and after when both set', () => {
-    const url = buildPageUrl({ status: 'all' }, 'cursor-1')
-    expect(url).toBe('/rss-feed-categories?status=all&after=cursor-1')
+  it('preserves status on the next-page link', async () => {
+    render(await RssFeedCategoriesPage({ searchParams: Promise.resolve({ status: 'all' }) }))
+    expect(screen.getByRole('link', { name: 'Next' })).toHaveAttribute(
+      'href',
+      '/rss-feed-categories?status=all&after=cursor-1',
+    )
   })
 })

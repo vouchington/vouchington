@@ -125,7 +125,7 @@ export default async function RssFeedCategoriesPage({
   )
 }
 
-export function buildPageUrl(params: { status?: string }, after: string | undefined): string {
+function buildPageUrl(params: { status?: string }, after: string | undefined): string {
   const p = new URLSearchParams()
   if (params.status) p.set('status', params.status)
   if (after) p.set('after', after)

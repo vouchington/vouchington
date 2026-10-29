@@ -1,15 +1,17 @@
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { ScrollToTop } from '../scroll-to-top'
 import {
   consumePreservedScrollPosition,
-  preserveScrollForPathname,
+  preserveScrollForInternalHrefClick,
 } from '@/lib/navigation/scroll-preservation'
 
-let mockPathname = '/initial'
-vi.mock(import('next/navigation'), () => ({
-  usePathname: () => mockPathname,
-}))
+vi.mock(
+  import('next/navigation'),
+  () => navMockModule as unknown as typeof import('next/navigation'),
+)
+const mockNav = createNavMock()
 
 describe('ScrollToTop', () => {
   let scrollToSpy: ReturnType<typeof vi.spyOn>
@@ -22,7 +24,7 @@ describe('ScrollToTop', () => {
   let mockMatchMedia: ReturnType<typeof vi.fn<(query: string) => MediaQueryList>>
 
   beforeEach(() => {
-    mockPathname = '/initial'
+    mockNav.setPathname('/initial')
     consumePreservedScrollPosition('/__test_reset__')
     scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
       Object.defineProperty(window, 'scrollY', { configurable: true, value: 320 })
@@ -84,7 +86,7 @@ describe('ScrollToTop', () => {
     const { rerender } = render(<ScrollToTop />)
     expect(scrollToSpy).not.toHaveBeenCalled()
 
-    mockPathname = '/new-page'
+    mockNav.setPathname('/new-page')
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).toHaveBeenCalledOnce()
@@ -99,7 +101,7 @@ describe('ScrollToTop', () => {
     const focusSpy = vi.spyOn(input, 'focus')
     const { rerender } = render(<ScrollToTop />)
 
-    mockPathname = '/new-page'
+    mockNav.setPathname('/new-page')
     rerender(<ScrollToTop />)
     vi.runAllTimers()
 
@@ -125,7 +127,7 @@ describe('ScrollToTop', () => {
     const focusSpy = vi.spyOn(input, 'focus')
     const { rerender } = render(<ScrollToTop />)
 
-    mockPathname = '/new-page'
+    mockNav.setPathname('/new-page')
     rerender(<ScrollToTop />)
     vi.runAllTimers()
 
@@ -141,7 +143,7 @@ describe('ScrollToTop', () => {
     const focusSpy = vi.spyOn(input, 'focus')
     const { rerender } = render(<ScrollToTop />)
 
-    mockPathname = '/new-page'
+    mockNav.setPathname('/new-page')
     rerender(<ScrollToTop />)
     vi.runAllTimers()
 
@@ -151,7 +153,7 @@ describe('ScrollToTop', () => {
   it('does not scroll again when re-rendering with the same pathname', () => {
     const { rerender } = render(<ScrollToTop />)
 
-    mockPathname = '/page-a'
+    mockNav.setPathname('/page-a')
     rerender(<ScrollToTop />)
     expect(scrollToSpy).toHaveBeenCalledTimes(1)
 
@@ -164,7 +166,7 @@ describe('ScrollToTop', () => {
     try {
       const { rerender } = render(<ScrollToTop />)
 
-      mockPathname = '/page-with-anchor'
+      mockNav.setPathname('/page-with-anchor')
       rerender(<ScrollToTop />)
 
       expect(scrollToSpy).not.toHaveBeenCalled()
@@ -180,7 +182,7 @@ describe('ScrollToTop', () => {
     window.history.pushState({}, '', '/page-back')
     window.dispatchEvent(new PopStateEvent('popstate', { state: null }))
 
-    mockPathname = '/page-back'
+    mockNav.setPathname('/page-back')
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).not.toHaveBeenCalled()
@@ -202,7 +204,7 @@ describe('ScrollToTop', () => {
 
     // Now a real forward navigation to a new pathname must scroll.
     window.history.pushState({}, '', '/page-forward')
-    mockPathname = '/page-forward'
+    mockNav.setPathname('/page-forward')
     rerender(<ScrollToTop />)
     expect(scrollToSpy).toHaveBeenCalledOnce()
 
@@ -215,13 +217,13 @@ describe('ScrollToTop', () => {
     // Popstate cross-pathname back — no scroll.
     window.history.pushState({}, '', '/page-back')
     window.dispatchEvent(new PopStateEvent('popstate', { state: null }))
-    mockPathname = '/page-back'
+    mockNav.setPathname('/page-back')
     rerender(<ScrollToTop />)
     expect(scrollToSpy).not.toHaveBeenCalled()
 
     // Forward navigation immediately after — scroll should reset.
     window.history.pushState({}, '', '/page-forward')
-    mockPathname = '/page-forward'
+    mockNav.setPathname('/page-forward')
     rerender(<ScrollToTop />)
     expect(scrollToSpy).toHaveBeenCalledOnce()
 
@@ -231,10 +233,10 @@ describe('ScrollToTop', () => {
   it('scrolls each time the pathname changes to a new value', () => {
     const { rerender } = render(<ScrollToTop />)
 
-    mockPathname = '/page-a'
+    mockNav.setPathname('/page-a')
     rerender(<ScrollToTop />)
 
-    mockPathname = '/page-b'
+    mockNav.setPathname('/page-b')
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).toHaveBeenCalledTimes(2)
@@ -243,8 +245,13 @@ describe('ScrollToTop', () => {
   it('restores the saved position when the destination becomes tall enough', () => {
     const { rerender } = render(<ScrollToTop />)
 
-    preserveScrollForPathname('/entity/tags/post', 320)
-    mockPathname = '/entity/tags/post'
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 320 })
+    expect(preserveScrollForInternalHrefClick(new MouseEvent('click'), '/entity/tags/post')).toBe(
+      true,
+    )
+    // The shorter destination clamps the browser's current position before restoration.
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 })
+    mockNav.setPathname('/entity/tags/post')
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).not.toHaveBeenCalled()
@@ -262,13 +269,15 @@ describe('ScrollToTop', () => {
   it('scrolls when a preserved destination does not match the next pathname', () => {
     const { rerender } = render(<ScrollToTop />)
 
-    preserveScrollForPathname('/entity/tags/post')
-    mockPathname = '/other-page'
+    expect(preserveScrollForInternalHrefClick(new MouseEvent('click'), '/entity/tags/post')).toBe(
+      true,
+    )
+    mockNav.setPathname('/other-page')
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).toHaveBeenCalledOnce()
 
-    mockPathname = '/entity/tags/post'
+    mockNav.setPathname('/entity/tags/post')
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).toHaveBeenCalledTimes(2)
