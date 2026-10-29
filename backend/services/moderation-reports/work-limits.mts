@@ -16,7 +16,8 @@ export const moderationReportsWorkMaxValues = {
   dispatch_max_age_seconds: 86400,
 }
 
-export const MIN_DISPATCH_MAX_AGE_SECONDS = 601
+// Even at the largest minimum age, leave ten minutes for the five-minute recovery sweep.
+export const MIN_DISPATCH_MAX_AGE_SECONDS = 1200
 
 export const moderationReportsWorkConfig = new DynamicConfig({
   key: 'moderation-reports-work-config',
