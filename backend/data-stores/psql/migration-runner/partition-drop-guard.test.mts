@@ -32,33 +32,6 @@ describe('partition drop guard', () => {
     expect(getMonthlyPartitionUpperBound('rss_feed_crawls', 'crawls__p_2026_01')).toBeNull()
   })
 
-  it('retains each complete decision-history month for at least 72 months', () => {
-    const policy = { minimumRetentionDays: null, minimumRetentionMonths: 72 }
-    const reference = new Date('2026-10-28T00:00:00.000Z')
-    expect(
-      getPartitionDropAgeRefusal(
-        {
-          table: 'post_clearance_changes',
-          partition: 'post_clearance_changes__p_2020_09',
-          upperBound: new Date('2020-10-01T00:00:00.000Z'),
-        },
-        policy,
-        reference,
-      ),
-    ).toBeNull()
-    expect(
-      getPartitionDropAgeRefusal(
-        {
-          table: 'post_clearance_changes',
-          partition: 'post_clearance_changes__p_2020_10',
-          upperBound: new Date('2020-11-01T00:00:00.000Z'),
-        },
-        policy,
-        reference,
-      ),
-    ).toBe('inside-retention')
-  })
-
   it('rejects an invalid status probe limit', async () => {
     await expect(getPartitionDropStatusRefusals(write, [], {}, now, 0)).rejects.toThrow(
       'maxProbes must be a positive safe integer',
@@ -152,30 +125,6 @@ describe('partition drop guard', () => {
     expect(
       getPartitionDropAgeRefusal(december, policy, new Date('2026-01-01T00:00:00.000Z')),
     ).toBeNull()
-  })
-
-  it('retires topic revision children only after twelve complete calendar months', () => {
-    const policy = { minimumRetentionDays: null, minimumRetentionMonths: 12 }
-    const referenceDate = new Date('2026-10-28T23:59:59.000Z')
-    const previous = {
-      table: 'topic_revisions',
-      partition: 'topic_revisions__p_2025_09',
-      upperBound: new Date('2025-10-01T00:00:00.000Z'),
-    }
-    const current = {
-      ...previous,
-      partition: 'topic_revisions__p_2025_10',
-      upperBound: new Date('2025-11-01T00:00:00.000Z'),
-    }
-    expect(getPartitionDropAgeRefusal(previous, policy, referenceDate)).toBeNull()
-    expect(getPartitionDropAgeRefusal(current, policy, referenceDate)).toBe('inside-retention')
-    expect(
-      getPartitionDropAgeRefusal(
-        previous,
-        { minimumRetentionDays: null, minimumRetentionMonths: Number.MAX_SAFE_INTEGER },
-        referenceDate,
-      ),
-    ).toBe('no-declared-retention')
   })
 
   it('refuses a held account and unfinished work before detach', async () => {

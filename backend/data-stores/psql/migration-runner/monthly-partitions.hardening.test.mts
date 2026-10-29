@@ -16,7 +16,10 @@ import { createCopyrightPartitionRetirementRecorder } from '@voucha/test-helpers
 import { write } from '../setup.mts'
 import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
-import { listMonthlyDropCandidates, type PartitionCleanupCursor } from './monthly-partition-candidates.mts'
+import {
+  listMonthlyDropCandidates,
+  type PartitionCleanupCursor,
+} from './monthly-partition-candidates.mts'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
@@ -27,7 +30,10 @@ import {
 
 type Recorder = ReturnType<typeof createCopyrightPartitionRetirementRecorder>
 
-async function sweepRecorded(recorder: Recorder, referenceDate: Date): Promise<PartitionDropOutcome[]> {
+async function sweepRecorded(
+  recorder: Recorder,
+  referenceDate: Date,
+): Promise<PartitionDropOutcome[]> {
   const { candidates } = await listMonthlyDropCandidates(recorder.query)
   return retireMonthlyDropCandidates(candidates, referenceDate, 500, candidate =>
     retireMonthlyPartitionCandidate(candidate, referenceDate, 500, recorder.begin),

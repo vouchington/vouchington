@@ -35,7 +35,7 @@ export async function createMonthlyPartitions(writer: QueryExecutor = write): Pr
 }
 
 export async function cleanupPartitions(
-  referenceDate: Date = new Date(),
+  referenceDate: Date,
   options: {
     feedbackBatchSize: number
     limit?: number

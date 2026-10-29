@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { QueryExecutor } from '../../types.mts'
-import { guardAndRetireMonthlyPartition } from '../monthly-partitions.mts'
+import { guardAndRetireMonthlyPartition } from '../guard-and-retire-monthly-partition.mts'
 
 describe('monthly partition retirement locks', () => {
   it('takes referenced-table NOWAIT locks before any topic history lock', async () => {
@@ -24,6 +24,7 @@ describe('monthly partition retirement locks', () => {
           retirementReferenceTables: ['topics', 'users'],
         },
         new Date('2013-01-15T00:00:00.000Z'),
+        500,
       ),
     ).rejects.toThrow('referenced table busy')
     expect(statements).toEqual([
@@ -52,6 +53,7 @@ describe('monthly partition retirement locks', () => {
           retirementReferenceTables: ['topics', 'users'],
         },
         new Date('2013-01-15T00:00:00.000Z'),
+        500,
       ),
     ).rejects.toThrow('child busy')
     expect(statements).toEqual([
