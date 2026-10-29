@@ -976,7 +976,7 @@ BEGIN
     target_notice_id := NEW.copyright_notice_id;
   ELSE
     SELECT copyright_notice_id INTO target_notice_id FROM copyright_notice_email_intake_notice_links
-      WHERE copyright_notice_email_intake_id = target_intake_id;
+      WHERE copyright_notice_email_intake_receipt_id = target_intake_id;
   END IF;
   -- Some callers already hold intake/child locks. Never wait in the opposite lifetime order:
   -- a concurrent erasure rejects this write, while an admitted writer fences erasure until commit.
@@ -1004,7 +1004,7 @@ BEGIN
   -- The intake could have gained its first association while this row lock was pending.
   IF TG_TABLE_NAME <> 'copyright_notice_email_intake_notice_links' THEN
     SELECT copyright_notice_id INTO target_notice_id FROM copyright_notice_email_intake_notice_links
-      WHERE copyright_notice_email_intake_id = target_intake_id;
+      WHERE copyright_notice_email_intake_receipt_id = target_intake_id;
   END IF;
   IF target_notice_id IS NOT NULL AND NOT pg_try_advisory_xact_lock_shared(
     hashtextextended('copyright-erasure:' || target_notice_id::text, 0)) THEN
