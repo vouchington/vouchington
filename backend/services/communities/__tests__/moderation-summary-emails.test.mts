@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   clearTestUserModerationEmailTimezone,
@@ -34,13 +34,6 @@ async function findQueuedModerationSummary(userId: string) {
 }
 
 describe('moderation summary dispatch', () => {
-  let userId: string
-
-  beforeAll(async () => {
-    const user = await createTestUser()
-    userId = user!.id
-  })
-
   it('does not enqueue a summary for a window that is already claimed', async () => {
     const user = await createTestUser()
     const now = pinnedNow()
