@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -28,39 +29,46 @@ describe('CopyrightRepeatInfringerActions', () => {
     recordOutcome.mockResolvedValue(undefined)
   })
 
-  it('shows reviewer decisions and hides suspension controls', async () => {
-    listAccounts.mockResolvedValue({
-      copyright_repeat_infringer_accounts: [
-        {
-          account_user_id: 'account-1',
-          account_username: 'account-one',
-          incident_id: 'incident-1',
-          is_operative: true,
-          open_review_id: 'review-1',
-          termination_in_effect: false,
-        },
-      ],
-    })
-    const submit = vi.fn<VitestLooseMock>()
-    render(
-      <CopyrightRepeatInfringerActions
-        canAdminister={false}
-        canSubmit
-        noticeId='notice-1'
-        pending={false}
-        rationale='Reviewed.'
-        submit={submit}
-      />,
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Show repeat-infringer record' }))
-    expect(await screen.findByRole('button', { name: 'Record warning' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Restrict account' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Mark duplicate' }))
-    expect(submit).toHaveBeenCalledOnce()
-    const action = submit.mock.calls[0]?.[0] as () => Promise<void>
-    await action()
-    expect(recordDisposition).toHaveBeenCalledWith('incident-1', 'duplicate', 'Reviewed.')
-  })
+  it.each(['account-one', null])(
+    'shows reviewer decisions for account %s and hides suspension controls',
+    async username => {
+      listAccounts.mockResolvedValue({
+        copyright_repeat_infringer_accounts: [
+          {
+            account_user_id: 'account-1',
+            account_username: username,
+            incident_id: 'incident-1',
+            is_operative: true,
+            open_review_id: 'review-1',
+            termination_in_effect: false,
+          },
+        ],
+      })
+      const submit = vi.fn<VitestLooseMock>()
+      render(
+        <CopyrightRepeatInfringerActions
+          canAdminister={false}
+          canSubmit
+          noticeId='notice-1'
+          pending={false}
+          rationale='Reviewed.'
+          submit={submit}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'Show repeat-infringer record' }))
+      expect(await screen.findByRole('button', { name: 'Record warning' })).toBeInTheDocument()
+      expect(
+        screen.getByText(username ? 'Account @account-one' : 'Account Deleted user'),
+      ).toBeInTheDocument()
+      expect(screen.queryByText('account-1')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Restrict account' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Mark duplicate' }))
+      expect(submit).toHaveBeenCalledOnce()
+      const action = submit.mock.calls[0]?.[0] as () => Promise<void>
+      await action()
+      expect(recordDisposition).toHaveBeenCalledWith('incident-1', 'duplicate', 'Reviewed.')
+    },
+  )
 
   it('offers restriction, termination, and reinstatement to an administrator', async () => {
     listAccounts.mockResolvedValue({

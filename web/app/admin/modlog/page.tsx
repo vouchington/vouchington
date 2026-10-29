@@ -17,6 +17,7 @@ import type {
   UserResponseBody,
 } from '@/types/api-responses'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { ModlogFilters } from '@/components/admin/modlog-filters'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
@@ -150,13 +151,9 @@ export default async function AdminModlogPage({
                     {action.created_at.split('T')[0]}
                   </td>
                   <td className='px-4 py-3 text-sm'>
-                    {actor?.username
-                      ? `@${actor.username}`
-                      : action.actor_user_id
-                        ? t(
-                            'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-                          )
-                        : t('extracted.modlog.page.system_7a4d2e63')}
+                    {action.actor_user_id
+                      ? getUserLabel(actor, t('shared.user.deletedUser'))
+                      : t('extracted.modlog.page.system_7a4d2e63')}
                   </td>
                   <td className='px-4 py-3 text-sm font-mono text-xs'>{action.action_type}</td>
                   <td className='px-4 py-3 text-sm text-muted-foreground'>

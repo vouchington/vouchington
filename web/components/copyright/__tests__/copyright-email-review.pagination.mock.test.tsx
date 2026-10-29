@@ -87,7 +87,7 @@ function firstPage() {
 }
 
 function queueIntakeIds() {
-  return [...document.querySelectorAll('[data-pw="copyright-email-queue-select"]')].map(button =>
-    button.getAttribute('data-intake-id'),
+  return [...document.querySelectorAll('[data-pw="copyright-email-queue-item-select"]')].map(
+    button => button.getAttribute('data-intake-id'),
   )
 }

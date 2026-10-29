@@ -41,15 +41,12 @@ vi.mock(import('@/lib/seo/metadata'), () => ({
 vi.mock(import('@/components/ui/breadcrumb'), () => ({
   Breadcrumbs: () => <nav data-testid='breadcrumbs' />,
 }))
-
 vi.mock(import('@/components/admin/admin-page-header'), () => ({
   AdminPageHeader: ({ title }: { title: string }) => <h1>{title}</h1>,
 }))
-
 vi.mock(import('@/components/admin/admin-table-shell'), () => ({
   AdminTableShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
-
 vi.mock(import('@/components/admin/admin-pagination'), () => ({
   AdminPagination: ({
     previousHref,
@@ -64,7 +61,6 @@ vi.mock(import('@/components/admin/admin-pagination'), () => ({
     </nav>
   ),
 }))
-
 const actorId = '019f0000-0000-7000-8000-000000000001'
 const communityId = '019f0000-0000-7000-8000-000000000002'
 const emptyData = {
@@ -96,7 +92,6 @@ const dataWithAction = {
     'user-1': { id: 'user-1', username: 'moderator' },
   },
 }
-
 describe('AdminModlogPage', () => {
   beforeEach(() => {
     notFoundMock.mockClear()
@@ -106,7 +101,6 @@ describe('AdminModlogPage', () => {
     serverApiGetMock.mockReset()
     serverApiGetMock.mockResolvedValue(emptyData)
   })
-
   it('renders the heading, empty state, and pagination', async () => {
     const page = await AdminModlogPage({ searchParams: Promise.resolve({}) })
     render(page)
@@ -114,16 +108,22 @@ describe('AdminModlogPage', () => {
     expect(screen.getByText('No moderation actions found.')).toBeDefined()
     expect(screen.getByTestId('admin-pagination')).toBeDefined()
   })
-
-  it('renders action rows when results are present', async () => {
-    serverApiGetMock.mockResolvedValue(dataWithAction)
+  it.each([
+    [{ username: 'moderator' }, 'moderator'],
+    [{ username: 'moderator', display_account: { name: 'Moderation Lead' } }, 'Moderation Lead'],
+    [{ username: null }, 'Deleted user'],
+    [null, 'Deleted user'],
+  ] as const)('renders actor facts with their shared label', async (actor, label) => {
+    serverApiGetMock.mockResolvedValue({
+      ...dataWithAction,
+      users: actor ? { 'user-1': actor } : {},
+    })
     const page = await AdminModlogPage({ searchParams: Promise.resolve({}) })
     render(page)
-    expect(screen.getByText('@moderator')).toBeDefined()
+    expect(screen.getByText(label)).toBeDefined()
     expect(screen.getByText('ban')).toBeDefined()
     expect(screen.getByText('Spam')).toBeDefined()
   })
-
   it('renders System for actions with no actor', async () => {
     serverApiGetMock.mockResolvedValue({
       ...dataWithAction,

@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { userHref } from '@/lib/links/entity-href'
 import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import { TimeAgo } from '@/components/shared/time-ago'
@@ -32,12 +34,17 @@ export function CopyrightStaffStaydownMatches({
   pending: boolean
   submitRecovery: SubmitRecovery
 }) {
+  const t = useTranslations()
   if (notice.staydown_matches.length === 0) return null
   return (
     <section className='space-y-2'>
       <h3 className='font-medium'>Possible re-uploads</h3>
       {notice.staydown_matches.map(match => {
         const target = notice.targets.find(target => target.id === match.target_id)
+        const uploaderLabel = getUserLabel(
+          { username: match.uploaded_by_username },
+          t('shared.user.deletedUser'),
+        )
         return (
           <div
             className='flex items-center justify-between gap-2 text-sm'
@@ -64,10 +71,10 @@ export function CopyrightStaffStaydownMatches({
                     username: match.uploaded_by_username,
                   })}
                 >
-                  @{match.uploaded_by_username}
+                  @{uploaderLabel}
                 </Link>
               ) : (
-                'A former member'
+                uploaderLabel
               )}{' '}
               uploaded this image <TimeAgo date={match.matched_at} />.{' '}
               {match.image_placement ? (

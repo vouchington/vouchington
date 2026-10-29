@@ -93,13 +93,7 @@ export function ModlogFilters({
         <UserAutocomplete
           key={actor ?? actorId ?? 'all'}
           ariaLabel={t('extracted.admin.modlogFilters.filterByUser')}
-          label={
-            actor
-              ? `@${actor}`
-              : actorId
-                ? t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')
-                : ''
-          }
+          label={actor ? `@${actor}` : actorId ? t('shared.user.deletedUser') : ''}
           value={null}
           onChange={selectActor}
           placeholder={

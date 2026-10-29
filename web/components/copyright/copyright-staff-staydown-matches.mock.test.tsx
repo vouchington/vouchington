@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reviewCopyrightStaydownMatch } from '@/lib/api/client/copyright-staydown'
@@ -93,7 +94,7 @@ describe('CopyrightStaffQueue possible re-uploads', () => {
       />,
     )
 
-    expect(screen.getByText(/A former member/)).toBeInTheDocument()
+    expect(screen.getByText(/Deleted user/)).toBeInTheDocument()
     expect(screen.getByText(/Original hosted use unavailable/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Inspect matching image' })).toBeNull()
     expect(screen.queryByText('user-2')).toBeNull()
