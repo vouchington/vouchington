@@ -1,6 +1,8 @@
 import { write, type QueryOptions } from '@data-stores/psql'
-import { POST_MODERATION_POLICY_REVISION } from './moderation-ledger-types.mts'
-import type { PostModerationVersion } from './moderation-ledger-versions.mts'
+import {
+  POST_MODERATION_POLICY_REVISION,
+  type PostModerationVersion,
+} from './moderation-ledger-types.mts'
 
 // A writer that held the post lock first commits its version while ensureCurrentPostModerationVersion
 // waits for that lock. ON CONFLICT then skips the insert, but the statement's snapshot predates

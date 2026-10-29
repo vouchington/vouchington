@@ -3,16 +3,9 @@ import { readCommittedCurrentPostModerationVersion } from './moderation-ledger-c
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,
+  type PostModerationVersion,
   type RecordPostModerationDisposition,
 } from './moderation-ledger-types.mts'
-
-export type PostModerationVersion = {
-  id: string
-  post_id: string
-  content_sha256: Buffer
-  policy_revision: string
-  deadline_at: Date
-}
 
 // The post row lock serializes version inserts per post: the retention trigger links each new
 // version to its predecessor, and two concurrent inserts would otherwise not see each other.

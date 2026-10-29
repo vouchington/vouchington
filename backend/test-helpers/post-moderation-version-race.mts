@@ -1,8 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
-import {
-  ensureCurrentPostModerationVersion,
-  type PostModerationVersion,
-} from '../services/post-clearance/moderation-ledger.mts'
+import { ensureCurrentPostModerationVersion } from '../services/post-clearance/moderation-ledger.mts'
+import type { PostModerationVersion } from '../services/post-clearance/moderation-ledger-types.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
