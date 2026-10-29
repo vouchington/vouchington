@@ -10,6 +10,7 @@ import { entityRelationViewerFor } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import { canonicalEntityIds } from './resolve-entity-reference.mts'
+import { sanitizedTitle } from './mcp-read-output.mts'
 
 export const ADD_LIST_ITEM_LIMIT = 100
 
@@ -86,7 +87,11 @@ export async function addVisibleListItems(
     try {
       // no-mistakes-disable-next-line query-reached-per-item: visibility is one batch; each insert is the existing single-item write
       const list_item = await addListItem(listId, item.item_type, id)
-      results.push({ ...item, status: 'added', list_item })
+      results.push({
+        ...item,
+        status: 'added',
+        list_item: { ...list_item, entity_label: await sanitizedTitle(list_item.entity_label) },
+      })
     } catch (err) {
       const status =
         typeof err === 'object' && err !== null && 'status' in err
