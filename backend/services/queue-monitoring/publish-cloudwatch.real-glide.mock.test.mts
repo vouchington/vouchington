@@ -85,6 +85,7 @@ describe('publishAggregatedQueueStats through real GlideMQ', () => {
         const queueClass = metric.Dimensions?.find(
           dimension => dimension.Name === 'QueueClass',
         )?.Value
+        expect(metric.Dimensions).toEqual([{ Name: 'QueueClass', Value: queueClass }])
         const aggregate = queueClass ? aggregatesByClass.get(queueClass as 'cpu' | 'io') : undefined
         if (!aggregate) throw new Error(`Missing observed ${queueClass ?? 'unknown'} queue stats`)
         const expectedValue =
