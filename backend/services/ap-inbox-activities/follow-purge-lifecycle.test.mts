@@ -7,8 +7,6 @@ import {
   softDeleteUser,
   softDeleteTestUserAndWaitBeforeCommit,
 } from '@voucha/test-helpers'
-import type { QueryExecutor, QueryInput, QueryValues } from '@data-stores/psql'
-import type { QueryResultRow } from 'pg'
 import {
   createFederatedUser,
   createRemoteActorFixture,
@@ -81,19 +79,19 @@ describe('remote Follow identity at user purge', () => {
     const deletionHoldsUserFence = Promise.withResolvers<void>()
     const inboundFenceSubmitted = Promise.withResolvers<void>()
     await using inboundTransaction = await beginTransaction()
-    const observedQuery: QueryExecutor = <Row extends QueryResultRow = QueryResultRow>(
-      input: QueryInput,
-      values?: QueryValues,
-    ) => {
-      const pending = inboundTransaction<Row>(input, values)
-      if (
-        (typeof input === 'string' ? input : input.text).includes(
-          'lockActiveUserSubjectsForMutation',
+    const observedQuery = new Proxy(inboundTransaction, {
+      apply(target, thisArg, args: Parameters<typeof inboundTransaction>) {
+        const [input] = args
+        const pending = Reflect.apply(target, thisArg, args)
+        if (
+          (typeof input === 'string' ? input : input.text).includes(
+            'lockActiveUserSubjectsForMutation',
+          )
         )
-      )
-        inboundFenceSubmitted.resolve()
-      return pending
-    }
+          inboundFenceSubmitted.resolve()
+        return pending
+      },
+    })
     let deleting: Promise<void> | undefined
     let incoming: Promise<unknown> | undefined
 

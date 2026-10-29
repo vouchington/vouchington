@@ -15,6 +15,7 @@ import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operation
 import { RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS } from '../../../rss-category-snapshot-uuid-allowlist.mts'
 import { TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS } from '../../../topic-merge-schema-allowlists.mts'
 import { OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './operational-retention-uuid-allowlists.mts'
+import { MODERATION_LIFECYCLE_UUID_COLUMNS_WITHOUT_KEYS } from './moderation-lifecycle-uuid-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'user_data_requests.processing_attempt_id',
@@ -28,6 +29,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS,
   ...TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS,
   ...OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
+  ...MODERATION_LIFECYCLE_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'copyright_notice_email_thread_retirements.retired_before_intake_bound',
     'Synthetic exclusive UUIDv7 intake-age boundary blocks replay of retired sources, not a relation.',
@@ -153,19 +155,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'relation__user__follow__user.outbound_activitypub_follow_activity_id',
     'ActivityPub protocol identity for the active Follow generation; it intentionally identifies no database row.',
   ],
-  ['moderation_appeals.approved_by_id', 'Audit ownership survives moderator deletion.'],
-  [
-    'moderation_appeals.edited_by_id',
-    'Lifecycle ownership FK; survives moderator deletion as audit record.',
-  ],
-  [
-    'moderation_appeals.latest_lifecycle_change_id',
-    'Denormalized pointer to latest lifecycle change row; no FK needed.',
-  ],
-  [
-    'moderation_appeals.resolved_by_id',
-    'Lifecycle ownership FK; survives moderator deletion as audit record.',
-  ],
   [
     'moderation_report_judgements.triggering_report_id',
     'Optional FK to the report that triggered this judgement; survives report deletion.',
@@ -181,27 +170,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'user_sessions.device_id',
     'No devices table exists; did is an ephemeral dt device-token claim paired with the persisted session id.',
-  ],
-  ['post_dispute_annotations.removed_by_id', 'Audit snapshot survives user deletion.'],
-  [
-    'review_dispute_lifecycle_changes.changed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
-    'review_disputes.approved_by_id',
-    'Lifecycle ownership FK; survives moderator deletion as audit record.',
-  ],
-  [
-    'review_disputes.edited_by_id',
-    'Lifecycle ownership FK; survives moderator deletion as audit record.',
-  ],
-  [
-    'review_disputes.latest_lifecycle_change_id',
-    'Denormalized pointer to latest lifecycle change row; no FK needed.',
-  ],
-  [
-    'review_disputes.resolved_by_id',
-    'Lifecycle ownership FK; survives moderator deletion as audit record.',
   ],
 ])
 /* v8 ignore stop */

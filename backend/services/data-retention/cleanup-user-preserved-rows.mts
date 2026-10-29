@@ -17,10 +17,7 @@ import {
 import { pseudonymizeIdentityVerificationAttempts } from './pseudonymize-identity-verification-attempts.mts'
 import { terminateRetainedMembershipGrants } from './terminate-retained-membership-grants.mts'
 
-import {
-  terminalizePurgedUserPostLikes,
-  terminalizePurgedUserRemoteFollows,
-} from './cleanup-federation-purge-identities.mts'
+import { terminalizePurgedUserRemoteFollows } from './cleanup-federation-purge-identities.mts'
 
 import type { RetentionWorkBudget } from './work-budget.mts'
 
@@ -33,57 +30,26 @@ export async function cleanupUserPreservedRows(
   cursor?: UserPurgeCursor,
 ): Promise<{ hasMore: boolean; userPurge?: UserPurgeCursor; afterCommit: UserPurgeAfterCommit[] }> {
   const afterCommit: UserPurgeAfterCommit[] = []
-  const likeCursor = cursor && 'postId' in cursor ? cursor : undefined
-  const withLikeCursor = () => (likeCursor ? { userPurge: likeCursor } : {})
-  if (budget.remainingRows === 0) return { hasMore: true, ...withLikeCursor(), afterCommit }
+  if (budget.remainingRows === 0) return { hasMore: true, afterCommit }
   const community = await cleanupUserOwnedCommunities(
     query,
     userId,
     Math.min(batchSize, budget.remainingRows),
-    cursor && 'communityId' in cursor ? cursor : undefined,
+    cursor,
   )
   afterCommit.push(...community.afterCommit)
   budget.remainingRows -= community.processed
   if (community.userPurge) return { hasMore: true, userPurge: community.userPurge, afterCommit }
-  if (community.processed > 0 || (cursor && 'communityId' in cursor))
-    return { hasMore: true, ...withLikeCursor(), afterCommit }
+  if (community.processed > 0 || cursor) return { hasMore: true, afterCommit }
   const lists = await cleanupUserListRows(query, userId, Math.min(batchSize, budget.remainingRows))
   budget.remainingRows -= lists
-  if (lists > 0) return { hasMore: true, ...withLikeCursor(), afterCommit }
-  const stagesBeforeLikes = [
+  if (lists > 0) return { hasMore: true, afterCommit }
+  const stages = [
     (limit: number) => cleanupUserNotificationPushReceipts(query, userId, limit),
     (limit: number) => cleanupUserNotificationPushIntents(query, userId, limit),
     (limit: number) => cleanupUserNotifications(query, userId, limit),
     (limit: number) => cleanupUserCommunityMemberships(query, userId, limit),
     (limit: number) => terminalizePurgedUserRemoteFollows(query, userId, limit),
-  ]
-  for (const stage of stagesBeforeLikes) {
-    if (budget.remainingRows === 0) return { hasMore: true, ...withLikeCursor(), afterCommit }
-    const limit = Math.min(batchSize, budget.remainingRows)
-    // oxlint-disable-next-line no-await-in-loop -- later candidate pages share the remaining allowance and lifecycle order.
-    const processed = await stage(limit)
-    budget.remainingRows -= processed
-    if (processed === limit) return { hasMore: true, ...withLikeCursor(), afterCommit }
-  }
-  const afterLikesCursor: UserPurgeCursor = { userId, postId: null }
-  if (likeCursor?.postId !== null) {
-    const page = await terminalizePurgedUserPostLikes(
-      query,
-      userId,
-      Math.min(batchSize, budget.remainingRows),
-      likeCursor?.postId,
-    )
-    budget.remainingRows -= page.processed
-    if (page.nextPostId)
-      return {
-        hasMore: true,
-        userPurge: { userId, postId: page.nextPostId },
-        afterCommit,
-      }
-    if (budget.remainingRows === 0)
-      return { hasMore: true, userPurge: afterLikesCursor, afterCommit }
-  }
-  const stagesAfterLikes = [
     async (limit: number) => {
       const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch: preserve topics */
         -- no-mistakes-disable-next-line postgres-required-predicates: reassign every topic the purged user created, including deleted and merged ones, or deleting the user cascades into them
@@ -116,18 +82,13 @@ export async function cleanupUserPreservedRows(
     },
     (limit: number) => detachProviderMembershipSources(query, userId, limit),
   ]
-  for (const stage of stagesAfterLikes) {
-    if (budget.remainingRows === 0)
-      return { hasMore: true, userPurge: afterLikesCursor, afterCommit }
+  for (const stage of stages) {
+    if (budget.remainingRows === 0) return { hasMore: true, afterCommit }
     const limit = Math.min(batchSize, budget.remainingRows)
     // oxlint-disable-next-line no-await-in-loop -- later candidate pages share the remaining allowance and lifecycle order.
     const processed = await stage(limit)
     budget.remainingRows -= processed
-    if (processed === limit) return { hasMore: true, userPurge: afterLikesCursor, afterCommit }
+    if (processed === limit) return { hasMore: true, afterCommit }
   }
-  return {
-    hasMore: budget.remainingRows === 0,
-    ...(budget.remainingRows === 0 ? { userPurge: afterLikesCursor } : {}),
-    afterCommit,
-  }
+  return { hasMore: budget.remainingRows === 0, afterCommit }
 }

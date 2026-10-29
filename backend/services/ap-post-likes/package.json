@@ -25,7 +25,6 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
-    "@services/user-deletions": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

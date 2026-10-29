@@ -1,5 +1,4 @@
 import { beginTransaction, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
-import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import sql from 'sql-template-strings'
 import { lockActivityPubLikeIdentity } from './activity-identity.mts'
 
@@ -32,15 +31,6 @@ async function recordLikeInTransaction(
   likeApId: string,
 ): Promise<void> {
   if (await lockActivityPubLikeIdentity(query, likeApId)) return
-  // Admission is fenced against final purge before any new activity or payload is written.
-  // Preserved posts use their current owner after publication reassignment.
-  const { rows: posts } = await query<{ created_by_id: string | null }>(sql`
-    /* recordLike:findPostOwner */
-    SELECT created_by_id FROM posts WHERE id = ${postId} LIMIT 1
-  `)
-  if (!posts[0]) return
-  if (posts[0].created_by_id)
-    await lockActiveUserSubjectsForMutation(query, [posts[0].created_by_id])
   // Serialize per actor/post even when no active row exists yet. An Undo of this exact id
   // races through the all-rows unique index and wins as a terminal tombstone retained beyond the replay horizon.
   await query(sql`/* lockActivityPubLikePair */

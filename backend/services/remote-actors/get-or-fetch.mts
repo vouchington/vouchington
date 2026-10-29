@@ -139,12 +139,12 @@ function deriveActorUriFromKeyId(keyId: string): string {
 async function upsertRemoteActor(document: RemoteActorDocument): Promise<RemoteActorRow> {
   const hostnameId = await lookupHostnameId(document.actorUri)
   await using query = await beginTransaction()
-  await query(sql`/* reserveRemoteActorIdentity */
+  // The conflict update holds the retained identity row lock through the cache insert.
+  // If a root sweep deletes an unreferenced row first, this statement inserts a new identity.
+  const { rows: identities } = await query<{ id: string }>(sql`/* reserveRemoteActorIdentity */
     INSERT INTO remote_actor_identities (actor_uri) VALUES (${document.actorUri})
-    ON CONFLICT (actor_uri) DO NOTHING
-  `)
-  const { rows: identities } = await query<{ id: string }>(sql`/* readRemoteActorIdentity */
-    SELECT id FROM remote_actor_identities WHERE actor_uri = ${document.actorUri}
+    ON CONFLICT (actor_uri) DO UPDATE SET actor_uri = EXCLUDED.actor_uri
+    RETURNING id
   `)
   const id = identities[0]!.id
   const { rows } = await query(sql`/* upsertRemoteActor */

@@ -1,26 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createTestPost, createTestRetentionWindow, softDeleteUserAt } from '@voucha/test-helpers'
+import { createTestPost } from '@voucha/test-helpers'
 import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
 import { recordLike } from './record-like.mts'
 import { undoLike } from './undo-like.mts'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 describe('recordLike', () => {
-  it('rejects a new active Like after the post author enters deletion', async () => {
-    const post = await createTestPost()
-    const remoteActor = await createRemoteActorFixture()
-    const window = createTestRetentionWindow()
-    await softDeleteUserAt(post.created_by_id!, window.firstEligibleDate)
-
-    await expect(
-      recordLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`),
-    ).rejects.toThrow(/cannot own new data after deletion/)
-    expect(await getTestApPostLikesTally(post.id)).toEqual({
-      activitypub_likes_score: 0,
-      activitypub_likes_count: 0,
-    })
-  })
-
   it('creates the post_activitypub_like_tallies tally on the first Like', async () => {
     const post = await createTestPost()
     const remoteActor = await createRemoteActorFixture()

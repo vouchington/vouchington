@@ -4322,9 +4322,6 @@ importers:
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
-      '@services/user-deletions':
-        specifier: workspace:^
-        version: link:../user-deletions
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

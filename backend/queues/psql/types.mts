@@ -106,9 +106,7 @@ export type PsqlRetentionJobData = {
     /** A copyright continuation runs only these pending families, without another daily sweep. */
     copyrightFamilies?: CopyrightRetentionFamily[]
     /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
-    userPurge?:
-      | { userId: string; communityId: string; afterModeratorId: string; postId?: never }
-      | { userId: string; postId: string | null; communityId?: never; afterModeratorId?: never }
+    userPurge?: { userId: string; communityId: string; afterModeratorId: string }
   }
 }
 

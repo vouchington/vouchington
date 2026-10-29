@@ -59,15 +59,11 @@ export async function reinsertOperationalRemoteActorCacheForTest(
 
 export async function insertOperationalLocalPostForTest(
   query: TransactionQuery,
-  ownerUserId?: string,
 ): Promise<{ postId: string; userId: string }> {
-  const userId =
-    ownerUserId ??
-    (
-      await query<{ id: string }>(
-        `/* insertOperationalLikeUserForTest */ INSERT INTO users DEFAULT VALUES RETURNING id`,
-      )
-    ).rows[0]!.id
+  const { rows: users } = await query<{ id: string }>(
+    `/* insertOperationalLikeUserForTest */ INSERT INTO users DEFAULT VALUES RETURNING id`,
+  )
+  const userId = users[0]!.id
   const { rows: posts } = await query<{ id: string }>(
     `/* insertOperationalLikePostForTest */
      INSERT INTO posts

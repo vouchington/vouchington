@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, onTestFinished } from 'vitest'
-import { createTestExpiryWindow, setTestRemoteActorFetchedAt } from '@voucha/test-helpers'
+import {
+  createTestExpiryWindow,
+  hasTestRetainedIdentityRoot,
+  setTestRemoteActorFetchedAt,
+} from '@voucha/test-helpers'
 import {
   fetchWithTimeoutResult,
   makeJsonResponse,
@@ -10,6 +14,7 @@ import {
   deleteRemoteActorRetentionFixtureForTest,
 } from '@voucha/test-helpers/operational-retention-committed'
 import { getRemoteActorByKeyId, getOrFetchRemoteActorByKeyId } from '../get-or-fetch.mts'
+import { cleanupRetainedIdentityRoots } from '../../data-retention/cleanup-retained-identities.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -56,5 +61,20 @@ describe('remote actor cache retention', () => {
       validateUrl,
     })
     expect(recovered.id).toBe(original.id)
+
+    await setTestRemoteActorFetchedAt(actorUri, window.firstEligibleDate)
+    expect(
+      await cleanupCommittedRemoteActorCacheForTest(
+        recovered.id,
+        new Date(window.upperBoundDate.getTime() + 90 * DAY_MS),
+      ),
+    ).toMatchObject({ deleted: 1 })
+    await cleanupRetainedIdentityRoots(1_000, { remote_actor: [recovered.id] })
+    expect(await hasTestRetainedIdentityRoot('remote_actor', recovered.id)).toBe(false)
+
+    fetchWithTimeout.mockResolvedValueOnce(fetchWithTimeoutResult(makeJsonResponse(document)))
+    const recreated = await getOrFetchRemoteActorByKeyId(keyId, { fetchWithTimeout, validateUrl })
+    onTestFinished(() => deleteRemoteActorRetentionFixtureForTest(recreated.id))
+    expect(recreated.id).not.toBe(original.id)
   })
 })
