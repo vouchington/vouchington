@@ -9,7 +9,8 @@ export function copyrightOperationalThreadEligibleSql(cutoff: Date, noticeId: st
       AND notice.id < ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id
-          AND event.id >= ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid)
+          AND event.id >= ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
+          AND event.change_type <> 'media_delivery_registry_replayed')
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items intent
         WHERE intent.copyright_notice_id = notice.id AND intent.updated_at > ${cutoff})
       AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident

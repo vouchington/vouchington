@@ -28,7 +28,11 @@ describe('territorial complaint email admission', () => {
     expect(admitted.noticeId).toBe(scene.noticeId)
     const records = await readTestTerritorialComplaintEmailRecords(scene.noticeId)
     expect(records.requests).toHaveLength(1)
-    expect(records.requests[0]).toMatchObject({ submitted_by_id: null })
+    expect(records.requests[0]).toMatchObject({
+      submitted_by_id: null,
+      challenged_decision_outcome: 'no_action',
+      authorizing_assessment_identity_id: null,
+    })
     expect(records.requests[0]?.received_at.getTime()).toBe(email.receivedAt.getTime())
     expect(records.submissions).toEqual([
       expect.objectContaining({

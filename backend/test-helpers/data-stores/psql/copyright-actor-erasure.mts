@@ -3,7 +3,9 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
-  assessedById: null
+  assessedById: string
+  hasLiveActor: boolean
+  hasRetainedActor: boolean
   draftedById: null
   actorUserId: string
   recipientUserId: null
@@ -65,7 +67,9 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
     sql`/* eraseCopyrightAuditActor */ DELETE FROM users WHERE id = ${fixture.actor_user_id}`,
   )
   const result = await read<{
-    assessed_by_id: null
+    assessed_by_id: string
+    has_live_actor: boolean
+    has_retained_actor: boolean
     drafted_by_id: null
     changed_by_id: string
     recipient_user_id: null
@@ -73,6 +77,8 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   }>(
     sql`/* readCopyrightErasedAuditActors */
       SELECT assessment.assessed_by_id, correspondence.drafted_by_id, event.changed_by_id,
+        EXISTS (SELECT 1 FROM users WHERE id = ${fixture.actor_user_id}) AS has_live_actor,
+        EXISTS (SELECT 1 FROM retained_user_identities WHERE id = ${fixture.actor_user_id}) AS has_retained_actor,
         delivery_intent.recipient_user_id, delivery_intent.recipient_user_erased_at
       FROM copyright_notice_submission_assessments assessment
       CROSS JOIN copyright_notice_correspondence_messages correspondence
@@ -86,6 +92,8 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   )
   return {
     assessedById: result.rows[0]!.assessed_by_id,
+    hasLiveActor: result.rows[0]!.has_live_actor,
+    hasRetainedActor: result.rows[0]!.has_retained_actor,
     draftedById: result.rows[0]!.drafted_by_id,
     actorUserId: result.rows[0]!.changed_by_id,
     recipientUserId: result.rows[0]!.recipient_user_id,

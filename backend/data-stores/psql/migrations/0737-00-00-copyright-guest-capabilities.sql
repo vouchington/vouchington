@@ -38,17 +38,25 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE FUNCTION fn_update_copyright_guest_capability_activity() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' THEN
+    -- Expired unused capability material may retire; its completed lifetime stays on the case.
+    UPDATE copyright_notices notice
+    SET last_guest_capability_activity_at = GREATEST(
+      notice.last_guest_capability_activity_at, OLD.updated_at,
+      CASE WHEN OLD.revoked_at IS NULL THEN OLD.expires_at ELSE NULL END)
+    WHERE notice.id = OLD.copyright_notice_id;
+    RETURN OLD;
+  END IF;
+  -- Planned future expiry belongs to the live capability, not the monotonic activity clock.
   UPDATE copyright_notices notice
   SET last_guest_capability_activity_at = GREATEST(
-    notice.last_guest_capability_activity_at,
-    NEW.updated_at,
-    CASE WHEN NEW.revoked_at IS NULL THEN NEW.expires_at ELSE NULL END)
+    notice.last_guest_capability_activity_at, NEW.updated_at)
   WHERE notice.id = NEW.copyright_notice_id;
   RETURN NEW;
 END;
 $$;
 CREATE TRIGGER trigger_record_copyright_guest_capability_activity
-AFTER INSERT OR UPDATE ON copyright_notice_guest_capabilities
+AFTER INSERT OR UPDATE OR DELETE ON copyright_notice_guest_capabilities
 FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_guest_capability_activity();
 
 CREATE INDEX idx_copyright_notice_guest_capabilities__notice

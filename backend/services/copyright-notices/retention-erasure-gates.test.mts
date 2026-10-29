@@ -3,6 +3,8 @@ import { insertPreservationHoldForTest } from '@voucha/test-helpers/entities/use
 import {
   readCopyrightRetentionColumns,
   readCopyrightRetentionMarker,
+  readCopyrightRetentionLifecycleClock,
+  recordCopyrightRetentionEvidenceActivity,
 } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { RETENTION_BLOCKERS } from '@voucha/test-helpers/services/copyright-notices/retention-blocked-cases'
 import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
@@ -10,7 +12,6 @@ import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/co
 import { releasePreservationHoldAt } from '@voucha/test-helpers/services/copyright-notices/retention-preservation-holds'
 import { createRetentionTerritorialCase } from '@voucha/test-helpers/services/copyright-notices/retention-territorial-case'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { sweepCopyrightEvidenceRetention } from './index.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -21,9 +22,12 @@ describe('copyright evidence retention gates', () => {
   const configure = useCopyrightRetentionConfig()
 
   /** A case with a stored original, and a check that a sweep left every trace of it in place. */
-  async function createWatchedCase() {
+  async function createWatchedCase(activityAt?: Date) {
     const entry = await createRetentionMinimalCase({ artifacts: 1 })
-    return watch(entry.noticeId, entry.evidenceKeys[0]!)
+    const activityTime = activityAt
+      ? await recordCopyrightRetentionEvidenceActivity(entry.noticeId, activityAt)
+      : null
+    return { ...(await watch(entry.noticeId, entry.evidenceKeys[0]!)), activityTime }
   }
 
   async function watch(noticeId: string, evidenceKey: string) {
@@ -93,17 +97,17 @@ describe('copyright evidence retention gates', () => {
 
   it('erases at the exact 30-day lifecycle edge, not one millisecond before', async () => {
     await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
-    const atEdge = await createWatchedCase()
-    const afterEdge = await createWatchedCase()
-    const atAggregate = await getCopyrightNoticePrivateAggregate(atEdge.noticeId)
-    const afterAggregate = await getCopyrightNoticePrivateAggregate(afterEdge.noticeId)
-    expect(atAggregate?.lifecycleEvents).toHaveLength(1)
-    expect(afterAggregate?.lifecycleEvents).toHaveLength(1)
-    const atEvent = atAggregate?.lifecycleEvents[0]
-    const afterEvent = afterAggregate?.lifecycleEvents[0]
-    if (!atEvent || !afterEvent) throw new Error('Retention lifecycle event disappeared')
-    const atNow = atEvent.created_at.getTime() + 30 * DAY_MS
-    const afterNow = afterEvent.created_at.getTime() + 30 * DAY_MS
+    const activityAt = new Date(Date.now() + 60_000)
+    const atEdge = await createWatchedCase(activityAt)
+    const afterEdge = await createWatchedCase(activityAt)
+    expect(atEdge.activityTime).toEqual(activityAt)
+    expect(afterEdge.activityTime).toEqual(activityAt)
+    await expect(readCopyrightRetentionLifecycleClock(atEdge.noticeId)).resolves.toEqual(activityAt)
+    await expect(readCopyrightRetentionLifecycleClock(afterEdge.noticeId)).resolves.toEqual(
+      activityAt,
+    )
+    const atNow = activityAt.getTime() + 30 * DAY_MS
+    const afterNow = activityAt.getTime() + 30 * DAY_MS
 
     await expect(
       sweepCopyrightEvidenceRetention({

@@ -24,6 +24,10 @@ import {
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { lockImageDeliveryLegalAuthority } from '../media-delivery-safety/delivery-authority.mts'
+import {
+  hasCopyrightRegistryReplayAudit,
+  readCopyrightCaseLifecycleClock,
+} from '@voucha/test-helpers/copyright-lifecycle-clock'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
@@ -212,12 +216,22 @@ describe('copyright action persisted delivery authority', () => {
         code: '55P03',
       })
     }
+    const beforeReplayClock = await readCopyrightCaseLifecycleClock(scene.notice.id)
+    expect(beforeReplayClock).toBeInstanceOf(Date)
     replay = replayFailedMediaDeliveryRegistryRecords({
       actorUserId: scene.moderator.id,
       recordIds: [mediaDeliveryRegistryRecordId],
     })
     try {
       await expect(replay).resolves.toMatchObject({ replayed: 1 })
+      expect(await readCopyrightCaseLifecycleClock(scene.notice.id)).toEqual(beforeReplayClock)
+      expect(
+        await hasCopyrightRegistryReplayAudit(
+          scene.notice.id,
+          mediaDeliveryRegistryRecordId,
+          scene.moderator.id,
+        ),
+      ).toBe(true)
       expect(await getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).toMatchObject({
         state: 'pending',
       })

@@ -1419,9 +1419,12 @@ CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE IN
 CREATE OR REPLACE FUNCTION fn_update_copyright_case_lifecycle_activity() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.copyright_notice_id IS NOT NULL THEN
+  -- Placement-wide registry retries add audit, not a new case filing or legal decision.
+  IF NEW.copyright_notice_id IS NOT NULL
+    AND NEW.change_type <> 'media_delivery_registry_replayed' THEN
     UPDATE copyright_notices notice
-    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, NEW.created_at)
+    -- Virtual generated columns are absent from trigger NEW records; derive the same event clock.
+    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id))
     WHERE notice.id = NEW.copyright_notice_id;
   END IF;
   RETURN NEW;
@@ -1472,3 +1475,7 @@ CREATE INDEX idx_copyright_restrictions__administrator_lift_decided_by
 CREATE INDEX idx_copyright_notice_submissions__current_assessed_by
   ON copyright_notice_submissions (current_assessed_by_id)
   WHERE current_assessed_by_id IS NOT NULL;
+
+CREATE INDEX idx_copyright_notice_lifecycle_changes__case_activity
+  ON copyright_notice_lifecycle_changes (copyright_notice_id, id)
+  WHERE change_type <> 'media_delivery_registry_replayed';

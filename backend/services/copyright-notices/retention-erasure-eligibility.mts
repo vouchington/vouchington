@@ -77,6 +77,8 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
           notice.created_at,
           notice.last_lifecycle_activity_at,
           notice.last_guest_capability_activity_at,
+          (SELECT max(capability.expires_at) FROM copyright_notice_guest_capabilities capability
+           WHERE capability.copyright_notice_id = notice.id AND capability.revoked_at IS NULL),
           (SELECT max(intent.updated_at) FROM copyright_notice_delivery_work_items intent
            WHERE intent.copyright_notice_id = notice.id),
           (SELECT max(incident.updated_at) FROM copyright_repeat_infringer_incidents incident

@@ -20,10 +20,15 @@ export async function createGuestTerritorialComplaintFromEmail(
   const { rows } = await transaction<{
     id: string
     decided_at: Date
+    outcome: 'restrict' | 'no_action'
+    authorizing_assessment_identity_id: string | null
     requester_user_id: string | null
   }>(sql`/* createGuestTerritorialComplaintFromEmail:parent */
     SELECT notice.current_territorial_decision_identity_id AS id,
-      notice.territorial_decided_at AS decided_at, receipt.requester_user_id
+      notice.territorial_decided_at AS decided_at,
+      notice.territorial_decision_outcome AS outcome,
+      notice.territorial_authorizing_assessment_identity_id AS authorizing_assessment_identity_id,
+      receipt.requester_user_id
     FROM copyright_notices notice
     JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
@@ -53,9 +58,12 @@ export async function createGuestTerritorialComplaintFromEmail(
   await transaction(sql`/* createGuestTerritorialComplaintFromEmail:request */
     INSERT INTO copyright_territorial_redress_requests (
       copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
+      challenged_decision_outcome, authorizing_assessment_identity_id,
       submitted_by_id, filed_by, idempotency_key, explanation_ciphertext, received_at
     ) VALUES (
-      ${input.noticeId}, 'eu_dsa', ${parent.id}, NULL, 'notifier', ${input.submissionId},
+      ${input.noticeId}, 'eu_dsa', ${parent.id},
+      ${parent.outcome}, ${parent.authorizing_assessment_identity_id},
+      NULL, 'notifier', ${input.submissionId},
       ${encryptSecret(body, `${territorialLabels('eu_dsa').redressPurpose}:${input.submissionId}`)},
       ${input.receivedAt}
     )

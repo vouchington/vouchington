@@ -8,8 +8,11 @@ describe('copyright actor erasure', () => {
   })
 
   it('erases live-user links and retains the lifecycle actor without erasing legal decisions', async () => {
-    await expect(eraseCopyrightActorAndReadAuditLinks()).resolves.toEqual({
-      assessedById: null,
+    const audit = await eraseCopyrightActorAndReadAuditLinks()
+    expect(audit).toEqual({
+      assessedById: audit.actorUserId,
+      hasLiveActor: false,
+      hasRetainedActor: true,
       draftedById: null,
       actorUserId: expect.any(String),
       recipientUserId: null,

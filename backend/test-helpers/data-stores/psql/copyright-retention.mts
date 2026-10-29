@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
+import { v7 as uuidv7 } from 'uuid'
 import sql from 'sql-template-strings'
 import { COPYRIGHT_RETENTION_ERASURE } from '../../../services/copyright-notices/retention-erasure-spec.mts'
 
@@ -116,4 +117,33 @@ export function findCopyrightRetentionGaps(
     }
   }
   return gaps
+}
+
+export async function readCopyrightRetentionLifecycleClock(noticeId: string): Promise<Date | null> {
+  const { rows } = await read<{ last_lifecycle_activity_at: Date | null }>(
+    sql`/* readCopyrightRetentionLifecycleClock */
+      SELECT last_lifecycle_activity_at FROM copyright_notices WHERE id = ${noticeId}`,
+  )
+  if (!rows[0]) throw new Error('Copyright notice disappeared')
+  return rows[0].last_lifecycle_activity_at
+}
+
+/** Record evidence activity at an exact millisecond without changing existing immutable events. */
+export async function recordCopyrightRetentionEvidenceActivity(
+  noticeId: string,
+  at: Date,
+): Promise<Date> {
+  const { rows } = await write<{
+    created_at: Date
+  }>(sql`/* recordCopyrightRetentionEvidenceActivity */
+    INSERT INTO copyright_notice_lifecycle_changes
+      (id, copyright_notice_id, change_type, copyright_notice_evidence_artifact_id)
+    SELECT ${uuidv7({ msecs: at.getTime() })}, ${noticeId}, 'evidence_artifact_recorded', artifact.id
+    FROM copyright_notice_evidence_artifacts artifact
+    JOIN copyright_notice_submissions submission ON submission.id = artifact.copyright_notice_submission_id
+    WHERE submission.copyright_notice_id = ${noticeId}
+    ORDER BY artifact.id LIMIT 1
+    RETURNING created_at`)
+  if (!rows[0]) throw new Error('Copyright evidence activity was not recorded')
+  return rows[0].created_at
 }
