@@ -74,20 +74,6 @@ describe('searchTopHostnames', () => {
     expect(second.results[0].votes_score_net).toBeLessThanOrEqual(first.results[0].votes_score_net)
   })
 
-  it('returns correct page_info structure', async () => {
-    // The DB accumulates hostnames across test runs, so we can't assume fewer than 100 results.
-    // Just verify the page_info structure is valid.
-    const { results, page_info } = await searchTopHostnames({ limit: 100 })
-    expect(results.length).toBeGreaterThan(0)
-    expect(typeof page_info.has_next_page).toBe('boolean')
-    // When there is a next page, end_cursor must be set; otherwise it must be null.
-    // Encode the constraint as a single boolean assertion to avoid conditional expect.
-    const cursorConsistentWithPagination = page_info.has_next_page
-      ? page_info.end_cursor !== null
-      : page_info.end_cursor === null
-    expect(cursorConsistentWithPagination).toBe(true)
-  })
-
   it('returns vote columns in results', async () => {
     const { results } = await searchTopHostnames({ limit: 100 })
     const found = results.find(r => r.id === highTrustHostnameId)

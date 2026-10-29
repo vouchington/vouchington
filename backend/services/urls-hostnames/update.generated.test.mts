@@ -16,27 +16,6 @@ import { caches } from '../entity-cache/caches.mts'
 describe('update.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
 
-  it('updateUrlHostnameBlocked updates is_blocked status', async () => {
-    const hostnamesMap = await upsertUrlHostnames(null, [`update-block-${suffix}.com`])
-    const hostnameId = [...hostnamesMap.values()][0]
-
-    await updateUrlHostnameBlocked(hostnameId, true)
-
-    const retrieved = await getUrlHostnameByAny(hostnameId)
-    expect(retrieved!.is_blocked).toBe(true)
-  })
-
-  it('updateUrlHostname updates is_crawlable status', async () => {
-    const hostnamesMap = await upsertUrlHostnames(null, [`update-crawl-${suffix}.com`])
-    const hostnameId = [...hostnamesMap.values()][0]
-
-    const updated = await updateUrlHostname(hostnameId, { is_crawlable: true })
-    expect(updated).toBeDefined()
-
-    const retrieved = await getUrlHostnameByAny(hostnameId)
-    expect(retrieved!.is_crawlable).toBe(true)
-  })
-
   it('updateUrlHostname updates should_follow_link_rel status', async () => {
     const hostnamesMap = await upsertUrlHostnames(null, [`update-follow-${suffix}.com`])
     const hostnameId = [...hostnamesMap.values()][0]

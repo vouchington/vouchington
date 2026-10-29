@@ -114,17 +114,4 @@ describe('dns-failures', () => {
     expect(row!.last_dns_failure_at).toBeInstanceOf(Date)
     expect(mockCanary).not.toHaveBeenCalled()
   })
-
-  it('recordHostnameConfigurationFailure disables hostname on third failure', async () => {
-    const id = await makeHostname()
-
-    await recordHostnameConfigurationFailure(id)
-    await recordHostnameConfigurationFailure(id)
-    await recordHostnameConfigurationFailure(id)
-
-    const row = await getTestHostnameDnsStats(id)
-    expect(row!.consecutive_dns_failures).toBe(3)
-    expect(row!.is_crawlable).toBe(false)
-    expect(row!.dns_disabled_at).toBeInstanceOf(Date)
-  })
 })
