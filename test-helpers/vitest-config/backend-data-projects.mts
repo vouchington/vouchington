@@ -134,6 +134,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
+      setupFiles: ['./test-helpers/vitest.setup.stored-secret-encryption-keys.mts'],
       testTimeout: 5_000,
       hookTimeout: 5_000,
     },

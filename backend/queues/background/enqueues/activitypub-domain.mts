@@ -74,7 +74,6 @@ export type ActivityPubInboxDeliveryJob = {
   verifiedRemoteActorId?: string
   senderAllowed?: true
 }
-export type EmptyActivityPubJobData = Record<string, never>
 export type RecoverOutboundDistributionData = {
   source: 'follows' | 'votes'
   cursor?: string

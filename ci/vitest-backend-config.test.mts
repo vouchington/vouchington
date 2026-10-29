@@ -88,6 +88,15 @@ describe('backend Vitest project config', () => {
     expect(owners).toEqual(['backend-data-stores'])
   })
 
+  it('gives schema fixtures synthetic secret encryption keys without full data-store setup', () => {
+    const schema = backendProjectTest('backend-postgres-schema')
+
+    expect(schema?.globalSetup).toBeUndefined()
+    expect(schema?.setupFiles).toContain(
+      './test-helpers/vitest.setup.stored-secret-encryption-keys.mts',
+    )
+  })
+
   it('raises the Valkey request budget before DB-backed setup creates clients', () => {
     const setupSource = readFileSync('test-helpers/vitest.setup.data-stores.mts', 'utf8')
     const timeoutAssignment = setupSource.indexOf(
