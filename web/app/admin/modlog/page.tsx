@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
+import { isUUID } from '@ts-shared/utils/validation-core'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
@@ -19,7 +20,10 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 import { ModlogFilters } from '@/components/admin/modlog-filters'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
-export const metadata: Metadata = createNoIndexMetadata('Mod Log | Admin')
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createNoIndexMetadata(t('extracted.modlog.page.modLogAdmin'))
+}
 
 export default async function AdminModlogPage({
   searchParams,
@@ -51,22 +55,28 @@ export default async function AdminModlogPage({
         )
       : null,
   ])
-  if (requestedCommunity && !community?.community.slug) notFound()
-  if (requestedActor && !actor?.user.username) notFound()
-  const filters = { community: community?.community.slug, actor: actor?.user.username }
+  if (requestedCommunity && !community?.community.slug && !isUUID(requestedCommunity)) notFound()
+  if (requestedActor && !actor?.user.username && !isUUID(requestedActor)) notFound()
+  const communityId = community?.community.id ?? (requestedCommunity || undefined)
+  const actorId = actor?.user.id ?? (requestedActor || undefined)
+  const filters = {
+    community: community?.community.slug || undefined,
+    actor: actor?.user.username || undefined,
+    community_id: community?.community.slug ? undefined : communityId,
+    actor_user_id: actor?.user.username ? undefined : actorId,
+  }
   if (
-    params.community_id !== undefined ||
-    params.actor_user_id !== undefined ||
-    (requestedCommunity && requestedCommunity !== filters.community) ||
-    (requestedActor && requestedActor !== filters.actor)
+    (filters.community &&
+      (params.community_id !== undefined || requestedCommunity !== filters.community)) ||
+    (filters.actor && (params.actor_user_id !== undefined || requestedActor !== filters.actor))
   )
     permanentRedirect(buildPageUrl(filters, params.after))
 
   const data = await serverApi.get<ModlogResponseBody>('/api/v1/admin/modlog', {
     searchParams: {
       after: params.after,
-      community_id: community?.community.id,
-      actor_user_id: actor?.user.id,
+      community_id: communityId,
+      actor_user_id: actorId,
       limit: 25,
     },
   })
@@ -74,7 +84,7 @@ export default async function AdminModlogPage({
   const breadcrumbItems = buildBreadcrumbsForPath('/admin/modlog', {
     isAuthenticated: true,
     userRoles: ['administrator'],
-    tail: [{ name: 'Mod Log', path: '/admin/modlog' }],
+    tail: [{ name: t('extracted.modlog.page.modLog_7d4b507b'), path: '/admin/modlog' }],
   })
 
   return (
@@ -90,35 +100,27 @@ export default async function AdminModlogPage({
       <ModlogFilters
         community={filters.community}
         actor={filters.actor}
+        communityId={filters.community_id}
+        actorId={filters.actor_user_id}
       />
       <AdminTableShell aria-label={t('extracted.modlog.page.modLog_7d4b507b')}>
         <table className='min-w-full divide-y divide-border'>
           <thead className='bg-muted/50'>
             <tr>
-              <th
-                scope='col'
-                className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground'
-              >
-                {t('extracted.modlog.page.date_99c40ab4')}
-              </th>
-              <th
-                scope='col'
-                className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground'
-              >
-                {t('extracted.modlog.page.actor_449995c4')}
-              </th>
-              <th
-                scope='col'
-                className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground'
-              >
-                {t('extracted.modlog.page.action_64cff131')}
-              </th>
-              <th
-                scope='col'
-                className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground'
-              >
-                {t('extracted.modlog.page.reason_f81ab834')}
-              </th>
+              {[
+                t('extracted.modlog.page.date_99c40ab4'),
+                t('extracted.modlog.page.actor_449995c4'),
+                t('extracted.modlog.page.action_64cff131'),
+                t('extracted.modlog.page.reason_f81ab834'),
+              ].map(label => (
+                <th
+                  scope='col'
+                  key={label}
+                  className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground'
+                >
+                  {label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className='divide-y divide-border bg-card'>
@@ -151,7 +153,9 @@ export default async function AdminModlogPage({
                     {actor?.username
                       ? `@${actor.username}`
                       : action.actor_user_id
-                        ? 'Deleted user'
+                        ? t(
+                            'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
+                          )
                         : t('extracted.modlog.page.system_7a4d2e63')}
                   </td>
                   <td className='px-4 py-3 text-sm font-mono text-xs'>{action.action_type}</td>
@@ -177,12 +181,11 @@ export default async function AdminModlogPage({
 }
 
 function buildPageUrl(
-  params: { community?: string; actor?: string },
+  params: Record<string, string | undefined>,
   after: string | undefined,
 ): string {
   const searchParams = new URLSearchParams()
-  if (params.community) searchParams.set('community', params.community)
-  if (params.actor) searchParams.set('actor', params.actor)
+  for (const [key, value] of Object.entries(params)) if (value) searchParams.set(key, value)
   if (after) searchParams.set('after', after)
   const qs = searchParams.toString()
   return qs ? `/admin/modlog?${qs}` : '/admin/modlog'

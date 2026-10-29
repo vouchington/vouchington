@@ -1,14 +1,22 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { useState } from 'react'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createCopyrightEmailApprovalDraft,
   type CopyrightEmailApprovalDraft,
 } from './copyright-email-approval-model'
+import { useCopyrightEmailApprovalOwnerSelection } from './copyright-email-approval-owner-selection'
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 
 const fetchUser = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchPost = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const onError = vi.hoisted(() => vi.fn<VitestLooseMock>())
+vi.mock(import('@/lib/on-error'), () => ({ default: onError }))
+vi.mock(
+  import('@/lib/api/client/posts'),
+  () => ({ fetchPost }) as unknown as typeof import('@/lib/api/client/posts'),
+)
 vi.mock(
   import('@/lib/api/client/users'),
   () => ({ fetchUser }) as unknown as typeof import('@/lib/api/client/users'),
@@ -96,4 +104,42 @@ describe('copyright approval owner selection draft updates', () => {
     )
     expect(screen.getByLabelText('Selected account')).toHaveTextContent('user-2')
   })
+})
+
+describe('copyright owner lookup lifecycle', () => {
+  it.each(['user success', 'user error', 'post error'] as const)(
+    'ignores a late %s after the target unmounts',
+    async scenario => {
+      let resolveLookup!: (value: unknown) => void
+      let rejectLookup!: (error: Error) => void
+      const lookup = new Promise((resolve, reject) => {
+        resolveLookup = resolve
+        rejectLookup = reject
+      })
+      const fetchOwner = scenario === 'post error' ? fetchPost : fetchUser
+      fetchOwner.mockReturnValueOnce(lookup)
+      onError.mockClear()
+      const onChange = vi.fn<React.Dispatch<React.SetStateAction<CopyrightEmailApprovalDraft>>>()
+      const { result, unmount } = renderHook(() =>
+        useCopyrightEmailApprovalOwnerSelection(target, onChange),
+      )
+      let pending!: Promise<void>
+      act(() => {
+        pending =
+          scenario === 'post error'
+            ? result.current.selectPost('post-2', 'Harbour')
+            : result.current.selectUser('user-2')
+      })
+      onChange.mockClear()
+      unmount()
+      await act(async () => {
+        if (scenario === 'user success')
+          resolveLookup({ user: { id: 'user-2', username: 'harbouruser' } })
+        else rejectLookup(new Error('Lookup failed after closing'))
+        await pending
+      })
+      expect(onChange).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+    },
+  )
 })

@@ -15,18 +15,17 @@ import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { isUUID } from '@ts-shared/utils/validation'
 import type { Hostname } from '@/types/hostnames'
-
 export const dynamic = 'force-dynamic'
-
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
-
-export const metadata: Metadata = createPageMetadata({
-  title: 'Compare Domains',
-  path: '/domains/compare',
-})
-
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createPageMetadata({
+    title: t('extracted.compare.page.compareDomains_77153ba7'),
+    path: '/domains/compare',
+  })
+}
 export default async function DomainsComparePage({ searchParams }: PageProps) {
   const t = await getTranslations()
   const params = await searchParams
@@ -75,11 +74,10 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
     isAuthenticated: !!currentUser,
     userRoles: currentUser?.roles ?? [],
     tail: [
-      { name: 'Domains', path: '/domains' },
-      { name: 'Compare', path: '/domains/compare' },
+      { name: t('extracted.compare.page.domains'), path: '/domains' },
+      { name: t('extracted.compare.page.compare'), path: '/domains/compare' },
     ],
   })
-
   return (
     <PageWithAside showFooter={false}>
       <div className='space-y-4'>
@@ -110,7 +108,7 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
             data-pw='domains-compare-empty'
           >
             <p>{t('extracted.compare.page.noDomainsToCompare_07c4cc55')}</p>
-            <p className='mt-2 text-sm'>Search for hostnames above to start a comparison.</p>
+            <p className='mt-2 text-sm'>{t('extracted.compare.page.searchHostnamesToCompare')}</p>
             <Link
               href='/domains'
               prefetch={false}

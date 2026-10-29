@@ -2,6 +2,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import {
   createCopyrightNoticeForManualAssociation,
   markTestCopyrightNoticeErasedAndCommit,
+  searchTestCopyrightAssociationsInTimeZone,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { randomUUID } from 'node:crypto'
@@ -70,4 +71,41 @@ describe('copyright notice association search', () => {
     )
     expect(second.copyright_notices).toContainEqual(expect.objectContaining({ id: matchingId }))
   })
+})
+
+describe('copyright association received-date search', () => {
+  it.each(['America/Los_Angeles', 'Asia/Tokyo'] as const)(
+    'matches the UTC calendar day under a %s session',
+    async timeZone => {
+      const moderator = await createTestUser({ extraRoles: ['moderator'] })
+      const window = createTestUuidWindow()
+      const query = '2026-07-01'
+      const first = await createCopyrightNoticeForManualAssociation(
+        false,
+        'us_dmca',
+        `work-${randomUUID()}`,
+        window.firstId,
+        null,
+        new Date('2026-07-01T00:30:00.000Z'),
+      )
+      const second = await createCopyrightNoticeForManualAssociation(
+        false,
+        'us_dmca',
+        `work-${randomUUID()}`,
+        window.secondId,
+        null,
+        new Date('2026-07-01T23:30:00.000Z'),
+      )
+      const after = encodeScopedUuidCursor(window.thirdId, `copyright-notice-association:${query}`)
+      const page = await searchTestCopyrightAssociationsInTimeZone(
+        moderator,
+        query,
+        after,
+        timeZone,
+      )
+      expect(page.copyright_notices.map(notice => notice.id)).toEqual(
+        expect.arrayContaining([first, second]),
+      )
+    },
+  )
 })

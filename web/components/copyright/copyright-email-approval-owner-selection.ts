@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
 import {
   approvalTargetFields,
@@ -22,6 +22,12 @@ export function useCopyrightEmailApprovalOwnerSelection(
   const [choices, setChoices] = useState<CopyrightNoticeResolvedTarget[]>([])
   const [ownerUrl, setOwnerUrl] = useState('')
   const selectionRequest = useRef(0)
+  useEffect(
+    () => () => {
+      selectionRequest.current++
+    },
+    [],
+  )
 
   function update(changes: Partial<CopyrightEmailApprovalTarget>) {
     onChange(current => ({

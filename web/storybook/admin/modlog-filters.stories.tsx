@@ -36,3 +36,20 @@ export const SelectedFilters: Story = {
     </StoryFrame>
   ),
 }
+
+export const DeletedIdentities: Story = {
+  args: {
+    communityId: '00000000-0000-7000-8000-000000000101',
+    actorId: '00000000-0000-7000-8000-000000000102',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByDisplayValue('Deleted community')).toHaveValue('Deleted community')
+    await expect(canvas.getByDisplayValue('Deleted user')).toHaveValue('Deleted user')
+  },
+  render: args => (
+    <StoryFrame width='max-w-2xl'>
+      <ModlogFilters {...args} />
+    </StoryFrame>
+  ),
+}

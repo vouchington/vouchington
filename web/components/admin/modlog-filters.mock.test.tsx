@@ -17,8 +17,21 @@ vi.mock(
   import('@/components/users/user-autocomplete'),
   () =>
     ({
-      UserAutocomplete: ({ onChange }: { onChange: (id: string, label: string) => void }) => (
+      UserAutocomplete: ({
+        onChange,
+        label,
+        ariaLabel,
+      }: {
+        onChange: (id: string, label: string) => void
+        label: string
+        ariaLabel: string
+      }) => (
         <>
+          <input
+            aria-label={ariaLabel}
+            value={label}
+            readOnly
+          />
           <button
             type='button'
             onClick={() => onChange('user-2', 'user-2')}
@@ -39,7 +52,29 @@ vi.mock(
   import('@/components/shared/entity-autocomplete'),
   () =>
     ({
-      EntityAutocomplete: () => <span>Community picker</span>,
+      EntityAutocomplete: ({
+        queryLabel,
+        ariaLabel,
+        onSelect,
+      }: {
+        queryLabel?: string
+        ariaLabel: string
+        onSelect: (item: { slug: string }, helpers: { setQuery: (query: string) => void }) => void
+      }) => (
+        <>
+          <input
+            aria-label={ariaLabel}
+            value={queryLabel ?? ''}
+            readOnly
+          />
+          <button
+            type='button'
+            onClick={() => onSelect({ slug: 'next-community' }, { setQuery: () => undefined })}
+          >
+            Choose community
+          </button>
+        </>
+      ),
     }) as unknown as typeof import('@/components/shared/entity-autocomplete'),
 )
 
@@ -67,6 +102,45 @@ describe('ModlogFilters user selection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
     await waitFor(() => expect(fetchUser).toHaveBeenCalledWith('user-2'))
     expect(nav.push).not.toHaveBeenCalled()
+  })
+
+  it('keeps retained identity filters out of inputs and preserves the other filter when clearing', () => {
+    render(
+      <ModlogFilters
+        communityId='019f0000-0000-7000-8000-000000000002'
+        actorId='019f0000-0000-7000-8000-000000000001'
+      />,
+    )
+    expect(screen.getByLabelText('Filter by community')).toHaveValue('Deleted community')
+    expect(screen.getByLabelText('Filter by user')).toHaveValue('Deleted user')
+    fireEvent.click(screen.getByRole('button', { name: 'Clear user' }))
+    expect(nav.push).toHaveBeenLastCalledWith(
+      '/admin/modlog?community_id=019f0000-0000-7000-8000-000000000002',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Clear community' }))
+    expect(nav.push).toHaveBeenLastCalledWith(
+      '/admin/modlog?actor_user_id=019f0000-0000-7000-8000-000000000001',
+    )
+  })
+
+  it('generates canonical selections while preserving another retained identity filter', async () => {
+    fetchUser.mockResolvedValue({ user: { id: 'user-2', username: 'harbouruser' } })
+    render(
+      <ModlogFilters
+        communityId='019f0000-0000-7000-8000-000000000002'
+        actorId='019f0000-0000-7000-8000-000000000001'
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
+    await waitFor(() =>
+      expect(nav.push).toHaveBeenLastCalledWith(
+        '/admin/modlog?actor=harbouruser&community_id=019f0000-0000-7000-8000-000000000002',
+      ),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Choose community' }))
+    expect(nav.push).toHaveBeenLastCalledWith(
+      '/admin/modlog?community=next-community&actor_user_id=019f0000-0000-7000-8000-000000000001',
+    )
   })
 
   it('ignores a late lookup after a newer user selection', async () => {

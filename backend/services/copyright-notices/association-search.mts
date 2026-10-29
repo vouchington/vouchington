@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -19,6 +20,7 @@ export async function searchCopyrightNoticeAssociationTargets(
   currentUser: PrivateUser,
   query: string,
   after?: string,
+  queryOptions: QueryOptions = {},
 ) {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   const q = query.trim()
@@ -48,11 +50,11 @@ export async function searchCopyrightNoticeAssociationTargets(
       ), FALSE) AS erased,
       (candidate.claimant_display_name ILIKE ${pattern} ESCAPE '\\'
         OR candidate.work_description ILIKE ${pattern} ESCAPE '\\'
-        OR candidate.received_at::date::text LIKE ${pattern} ESCAPE '\\') AS matches
+        OR to_char(candidate.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') LIKE ${pattern} ESCAPE '\\') AS matches
     FROM candidates candidate
     ORDER BY candidate.id DESC
   `)
-  const { rows } = await read<AssociationCandidate>(searchSql)
+  const { rows } = await read<AssociationCandidate>(searchSql, undefined, queryOptions)
   const candidates = rows.slice(0, candidateRows)
   const visible = candidates.filter(
     row =>
