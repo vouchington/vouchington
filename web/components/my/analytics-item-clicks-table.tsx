@@ -25,7 +25,7 @@ export function AnalyticsItemClicksTable({ itemClicks, items }: Props) {
           break
         }
         case 'review': {
-          const title = item.review.title.trim()
+          const title = item.review.title.trim() || item.review.slug
           if (title) {
             map.set(item.id, {
               text: title,
@@ -88,11 +88,7 @@ export function AnalyticsItemClicksTable({ itemClicks, items }: Props) {
                         content={label}
                       />
                     ) : (
-                      label || (
-                        <span className='font-mono text-xs text-muted-foreground'>
-                          {ic.item_id.slice(0, 8)}…
-                        </span>
-                      )
+                      label || t('extracted.my.analyticsItemClicksTable.item_652bcc3a')
                     )}
                   </td>
                   <td className='px-4 py-3'>

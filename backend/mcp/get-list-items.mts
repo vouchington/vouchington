@@ -32,7 +32,7 @@ const { default: defaultLimit, max } = LIST_PAGE_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "List a readable list's posts and RSS items, newest first. Read entity_id with read_posts (option details) or read_rss_feed_item (option details). Access follows read_my_lists (option get). Unreadable posts are omitted, so a short page can still have a next page. media_type filters RSS items only.",
+      "List a readable list's posts and RSS items, newest first. entity_label identifies each item in presentation; read entity_id with read_posts (option details) or read_rss_feed_item (option details). Access follows read_my_lists (option get). Unreadable posts are omitted, so a short page can still have a next page. media_type filters RSS items only.",
     parameters: {
       type: 'object',
       properties: {
@@ -77,7 +77,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const hidden = new Set(postItems.filter((_, index) => !threads[index]))
       return {
         success: true,
-        results: page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
+        results: await Promise.all(
+          page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
+        ),
         // The cursor comes from the unfiltered page, so it advances past every hidden item.
         page_info: page.page_info,
       }

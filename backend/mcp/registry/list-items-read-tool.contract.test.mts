@@ -24,6 +24,7 @@ type Item = {
   list_id: string
   item_type: string
   entity_id: string
+  entity_label: string | null
   media_type: string | null
 }
 type Page = {
@@ -102,11 +103,16 @@ describe('read_my_lists.items — real DB', () => {
         list_id: list.id,
         item_type: 'post',
         entity_id: second,
+        entity_label: expect.any(String),
         order_index: expect.any(Number),
         media_type: null,
         created_at: expect.any(String),
       })
       expect(page.page_info.has_next_page).toBe(false)
+      const rest = await createRequest().get(`/api/v1/lists/${list.id}/items`).expect(200)
+      expect(page.results[0]?.entity_label).toBe(
+        rest.body.list_items[page.results[0]!.id].entity_label,
+      )
     }
   })
 
@@ -128,6 +134,7 @@ describe('read_my_lists.items — real DB', () => {
 
     expect(entities(all)).toEqual([rssItem.id, post])
     expect(rss.media_type).toEqual(expect.any(String))
+    expect(rss.entity_label).toBe(rssItem.title)
     expect(entities(filtered)).toEqual([rssItem.id])
     expect(entities(await getItems(list.id, { media_type: `none-${random}` }))).toEqual([])
   })

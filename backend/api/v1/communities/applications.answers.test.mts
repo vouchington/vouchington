@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
+import contracts from '../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
 import {
   createRandomString,
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
+
+const applicationResponses = new RuntimeRequestValidatorRegistry({
+  version: 1,
+  source: 'checked-in-request-contracts',
+  components: contracts.components,
+  operations: {
+    'GET:/api/v1/communities/:idOrSlug/applications': {
+      body: contracts.responses['GET:/api/v1/communities/:idOrSlug/applications'],
+    },
+  },
+})
 
 describe('community application answer routes', () => {
   it('keeps unauthenticated malformed answers at 401 and rejects unknown questions with 422', async () => {
@@ -77,6 +90,20 @@ describe('community application answer routes', () => {
       { __entity_type: 'community_application', id: created.body.community_application.id },
     ])
     expect(listed.body.page_info.has_next_page).toBe(false)
+    expect(listed.body.users[applicant!.id].username).toBe(applicant!.username)
+    expect(
+      applicationResponses.validateBody(
+        'GET:/api/v1/communities/:idOrSlug/applications',
+        listed.body,
+      ),
+    ).toBeNull()
+    const { users: _users, ...withoutProfiles } = listed.body
+    expect(
+      applicationResponses.validateBody(
+        'GET:/api/v1/communities/:idOrSlug/applications',
+        withoutProfiles,
+      ),
+    ).not.toBeNull()
     expect(
       listed.body.community_applications[created.body.community_application.id].answers,
     ).toEqual({ [questionId]: ['Beta', 'Alpha'] })

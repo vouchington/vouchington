@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import type { CommunityApplicationsResponseBody } from '../../response-types/communities.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -12,6 +13,7 @@ import {
 } from '@services/communities'
 import { indexById } from '@modules/utils'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { communityApplicationsQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 
 app
@@ -41,16 +43,18 @@ app
     })
 
     const result = await searchApplications(community.id, { limit, after, status })
+    const users = await getUserPublicByAnyCachedBatch(result.results.map(a => a.user_id))
 
     const searchResults = result.results.map(a => ({
       __entity_type: 'community_application' as const,
       id: a.id,
     }))
 
-    const output: Record<string, unknown> = {
+    const output: CommunityApplicationsResponseBody = {
       results: searchResults,
       page_info: result.page_info,
       community_applications: indexById(result.results),
+      users: indexById(users.filter(user => user !== null)),
     }
 
     ctx.setType('json')

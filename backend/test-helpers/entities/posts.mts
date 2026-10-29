@@ -106,6 +106,10 @@ export async function deleteTestPost(postId: string): Promise<void> {
   )
 }
 
+export async function deleteTestPostSlugs(postId: string): Promise<void> {
+  await write(sql`/* deleteTestPostSlugs */ DELETE FROM post_slugs WHERE post_id = ${postId}`)
+}
+
 export async function getTestPostDeletedAt(postId: string): Promise<Date | null> {
   const { rows } = await read<{ deleted_at: Date | null }>(
     sql`/* getTestPostDeletedAt */

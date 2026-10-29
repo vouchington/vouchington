@@ -12,13 +12,12 @@ import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { approveApplication, rejectApplication } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { CommunityApplication, CommunityApplicationsResponseBody } from '@/types/api-responses'
-import type { PublicUser } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface ApplicationReviewProps {
   data: CommunityApplicationsResponseBody
   communitySlug: string
-  users?: Record<string, PublicUser>
 }
 
 interface ActiveAction {
@@ -26,7 +25,7 @@ interface ActiveAction {
   type: 'reject'
 }
 
-export function ApplicationReview({ data, communitySlug, users }: ApplicationReviewProps) {
+export function ApplicationReview({ data, communitySlug }: ApplicationReviewProps) {
   const t = useTranslations()
   const { refresh } = useRouter()
   const endpoint = `/api/v1/communities/${encodeURIComponent(communitySlug)}/applications`
@@ -34,6 +33,7 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
     usePaginatedList(data, endpoint, {})
   const results = mergePageResultsById(pages)
   const communityApplications = mergeRecords(pages, page => page.community_applications)
+  const users = mergeRecords(pages, page => page.users)
   const [loading, setLoading] = useState<string | null>(null)
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
@@ -126,7 +126,7 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
       >
         <div className='space-y-4'>
           {applications.map(application => {
-            const user = users?.[application.user_id]
+            const user = users[application.user_id]
             const isPending = !application.approved_at && !application.rejected_at
             const isApproved = !!application.approved_at
             const isRejected = !!application.rejected_at
@@ -138,7 +138,9 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
               >
                 <div className='flex items-start justify-between gap-3'>
                   <div>
-                    <p className='font-medium'>{user?.username ?? application.user_id}</p>
+                    <p className='font-medium'>
+                      {getUserLabel(user, t('shared.user.deletedUser'))}
+                    </p>
                     <p
                       className='text-xs text-muted-foreground'
                       suppressHydrationWarning

@@ -56,7 +56,7 @@ describe('AnalyticsItemClicksTable', () => {
     expect(title).toHaveAttribute('dir', 'rtl')
   })
 
-  it('falls back to the truncated id when no matching item exists', () => {
+  it('shows a generic item label when the item was removed', () => {
     const itemClicks: LandingPageItemClickStats[] = [
       { item_id: '0123456789abcdef', item_type: 'link', click_count: 1 },
     ]
@@ -68,10 +68,11 @@ describe('AnalyticsItemClicksTable', () => {
       />,
     )
 
-    expect(screen.getByText('01234567…')).toBeDefined()
+    expect(screen.getAllByText('Item').length).toBeGreaterThan(0)
+    expect(screen.queryByText('01234567…')).toBeNull()
   })
 
-  it('falls back to the truncated id for a whitespace-only review title', () => {
+  it('uses the review slug for a whitespace-only title', () => {
     const items: LandingPageItem[] = [
       {
         id: 'item-1',
@@ -99,6 +100,6 @@ describe('AnalyticsItemClicksTable', () => {
       />,
     )
 
-    expect(screen.getByText('item-1…')).toBeDefined()
+    expect(screen.getByText('empty-review')).toBeDefined()
   })
 })

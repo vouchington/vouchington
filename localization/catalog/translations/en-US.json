@@ -6228,6 +6228,7 @@
 {"id":"copy.shared.provenance.viaApp","value":"via {app}"},
 {"id":"copy.shared.provenance.viaMcp","value":"via MCP"},
 {"id":"copy.shared.timeAgo.relativeDuration","value":{"day":{"one":"{value} day ago","other":"{value} days ago"},"hour":{"one":"{value} hour ago","other":"{value} hours ago"},"minute":{"one":"{value} minute ago","other":"{value} minutes ago"},"month":{"one":"{value} month ago","other":"{value} months ago"},"week":{"one":"{value} week ago","other":"{value} weeks ago"},"year":{"one":"{value} year ago","other":"{value} years ago"}}},
+{"id":"copy.shared.topic.unavailable","value":"Topic unavailable"},
 {"id":"copy.shared.user.deletedUser","value":"Deleted user"},
 {"id":"copy.topics.merge.checkStatus","value":"Check status"},
 {"id":"copy.topics.merge.completed","value":"Topic merge completed."},

@@ -195,8 +195,8 @@
       },
       "read_my_lists": {
         "measured": {
-          "list": 6039,
-          "core": 2849
+          "list": 6166,
+          "core": 2900
         },
         "max": {
           "list": 7000,
@@ -787,7 +787,7 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40480,
+          "list": 40584,
           "core": 6505
         },
         "max": {

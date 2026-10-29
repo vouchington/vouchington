@@ -6228,6 +6228,7 @@
 {"id":"copy.shared.provenance.viaApp","value":"via {app}"},
 {"id":"copy.shared.provenance.viaMcp","value":"via MCP"},
 {"id":"copy.shared.timeAgo.relativeDuration","value":{"day":{"one":"il y a {value} jour","other":"il y a {value} jours"},"hour":{"one":"il y a {value} heure","other":"il y a {value} heures"},"minute":{"one":"il y a {value} minute","other":"il y a {value} minutes"},"month":{"one":"il y a {value} mois","other":"il y a {value} mois"},"week":{"one":"il y a {value} semaine","other":"il y a {value} semaines"},"year":{"one":"il y a {value} an","other":"il y a {value} ans"}}},
+{"id":"copy.shared.topic.unavailable","value":"Sujet indisponible"},
 {"id":"copy.shared.user.deletedUser","value":"Utilisateur supprimé"},
 {"id":"copy.topics.merge.checkStatus","value":"Vérifier l’état"},
 {"id":"copy.topics.merge.completed","value":"Fusion des sujets terminée."},

@@ -78,7 +78,8 @@ export function getInitialReviewTopics({
     return post.review_topic_ratings.map(r => ({
       key: crypto.randomUUID(),
       topicId: r.topic_id,
-      topicName: r.topic?.name ?? r.topic_id,
+      topicName:
+        r.topic?.name ?? (initialReviewTopic?.id === r.topic_id ? initialReviewTopic.name : ''),
       rating: r.rating,
     }))
   }

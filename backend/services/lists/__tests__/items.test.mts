@@ -6,6 +6,8 @@ import {
   insertTestTopic,
   createTestRssFeedItemWithUrl,
   deleteTestPost,
+  deleteTestPostSlugs,
+  setPostAiSummaryMarkdownForTest,
   insertTestRssFeed,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -20,6 +22,8 @@ describe('items service', () => {
   let listId: string
   let postId: string
   let rssFeedItemId: string
+  let rssFeedItemTitle: string
+  let postTitle: string
 
   beforeAll(async () => {
     user = await createTestUser()
@@ -33,8 +37,9 @@ describe('items service', () => {
       slug: `items-topic-${createRandomString(8)}`,
       createdById: user.id,
     })
+    postTitle = `Items Post ${createRandomString(8)}`
     postId = await insertTestPost({
-      title: `Items Post ${createRandomString(8)}`,
+      title: postTitle,
       slug: `items-post-${createRandomString(8)}`,
       createdById: user.id,
       markdown: 'test content',
@@ -45,6 +50,7 @@ describe('items service', () => {
     })
     const item = await createTestRssFeedItemWithUrl(feedId)
     rssFeedItemId = item.id
+    rssFeedItemTitle = item.title
   })
 
   describe('addListItem', () => {
@@ -54,6 +60,7 @@ describe('items service', () => {
       expect(item.list_id).toBe(listId)
       expect(item.item_type).toBe('rss_feed_item')
       expect(item.entity_id).toBe(rssFeedItemId)
+      expect(item.entity_label).toBe(rssFeedItemTitle)
     })
 
     it('is idempotent on duplicate add (returns existing row)', async () => {
@@ -69,6 +76,7 @@ describe('items service', () => {
       const item = await addListItem(listId, 'post', postId)
       expect(item.item_type).toBe('post')
       expect(item.entity_id).toBe(postId)
+      expect(item.entity_label).toBe(postTitle)
     })
   })
 
@@ -93,6 +101,62 @@ describe('items service', () => {
   })
 
   describe('searchListItems', () => {
+    it.each([
+      ['# Useful **comment** with a [link](https://example.com)', '', 'Useful comment with a link'],
+      ['   ', '**Summary** content', 'Summary content'],
+    ])('labels a no-slug comment from plain text: %s', async (markdown, summary, expectedLabel) => {
+      const commentId = await insertTestPost({
+        title: '',
+        slug: `temporary-comment-${createRandomString(8)}`,
+        createdById: user.id,
+        markdown,
+        postType: 'comment',
+        rootId: postId,
+        parentId: postId,
+      })
+      await deleteTestPostSlugs(commentId)
+      await setPostAiSummaryMarkdownForTest({ postId: commentId, aiSummaryMarkdown: summary })
+      const commentList = await createList(user.id, WEB_PROVENANCE, {
+        name: `Comment list ${createRandomString(8)}`,
+      })
+      const added = await addListItem(commentList.id, 'post', commentId)
+      const found = (await searchListItems(commentList.id, { currentUserId: user.id })).results
+
+      expect(added.entity_label).toBe(expectedLabel)
+      expect(found[0]?.entity_label).toBe(expectedLabel)
+    })
+
+    it('keeps a missing label factual through add, duplicate add, and search for an untitled no-slug comment', async () => {
+      const commentId = await insertTestPost({
+        title: '',
+        slug: `whitespace-comment-${createRandomString(8)}`,
+        createdById: user.id,
+        markdown: '   ',
+        postType: 'comment',
+        rootId: postId,
+        parentId: postId,
+      })
+      await deleteTestPostSlugs(commentId)
+      const commentList = await createList(user.id, WEB_PROVENANCE, {
+        name: `Whitespace list ${createRandomString(8)}`,
+      })
+      const added = await addListItem(commentList.id, 'post', commentId)
+      const found = (await searchListItems(commentList.id, { currentUserId: user.id })).results
+
+      const duplicate = await addListItem(commentList.id, 'post', commentId)
+      expect(duplicate.id).toBe(added.id)
+      expect(added.entity_label).toBeNull()
+      expect(duplicate.entity_label).toBeNull()
+      expect(found[0]?.entity_label).toBeNull()
+    })
+
+    it('hydrates labels for both entity types in the list query', async () => {
+      const { results } = await searchListItems(listId)
+      expect(results.find(item => item.entity_id === postId)?.entity_label).toBe(postTitle)
+      expect(results.find(item => item.entity_id === rssFeedItemId)?.entity_label).toBe(
+        rssFeedItemTitle,
+      )
+    })
     it('hides a feed item after its only source feed is disabled', async () => {
       const list = await createList(user.id, WEB_PROVENANCE, {
         name: `Disabled feed ${createRandomString(8)}`,

@@ -95,7 +95,22 @@ describe('PostForm rendering', () => {
       ...mockDiscussion,
       post_type: 'review',
       review_topic_ratings: [
-        { topic_id: 'topic-1', rating: 4, order_index: 0, updated_at: '2024-01-15T10:00:00Z' },
+        {
+          topic_id: 'topic-1',
+          rating: 4,
+          order_index: 0,
+          updated_at: '2024-01-15T10:00:00Z',
+          topic: {
+            __entity_type: 'topic',
+            id: 'topic-1',
+            name: 'Travel card',
+            slug: 'travel-card',
+            markdown: '',
+            topic_type: 'card',
+            created_at: '2024-01-15T10:00:00Z',
+            referral_program_id: null,
+          },
+        },
       ],
     }
     render(
@@ -104,8 +119,10 @@ describe('PostForm rendering', () => {
         post={reviewPost}
       />,
     )
-    expect(screen.getByRole('radiogroup', { name: /Rating for topic-1/i })).toBeDefined()
+    expect(screen.getByRole('radiogroup', { name: /Rating for Travel card/i })).toBeDefined()
+    expect(screen.queryByText('topic-1')).toBeNull()
     expect(screen.getByRole('radio', { name: '1 star' })).toBeDefined()
+    expect(screen.getByRole('radio', { name: '4 stars' })).toBeChecked()
     expect(screen.getByTestId('topic-autocomplete')).toBeDefined()
   })
 

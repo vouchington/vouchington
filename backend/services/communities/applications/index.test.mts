@@ -14,6 +14,7 @@ import type { Community } from '../types.mts'
 
 describe('index', () => {
   const applicationKeys = [
+    '__entity_type',
     'answers',
     'approved_at',
     'community_id',
@@ -156,6 +157,7 @@ describe('index', () => {
       expect(Object.keys(result.results[0]!).toSorted()).toEqual(applicationKeys)
       expect(result.results).toHaveLength(1)
       expect(result.results[0]).toMatchObject({
+        __entity_type: 'community_application',
         id: application.id,
         user_id: applicant.id,
         community_id: community.id,

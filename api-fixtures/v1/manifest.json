@@ -30077,7 +30077,7 @@
     },
     "GET:/api/v1/lists/:id/items": {
       "bodyKind": "content",
-      "hash": "24153f0a8ad17b1a4e6f23e0ba81ed9d1b01fb9327a671b06e1917f484550dbd",
+      "hash": "fa48a686671b054db88646b504a18a58a4993b214e99d0540f0ac55f9cd1555e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -30104,6 +30104,20 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "entity_label": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -100376,7 +100390,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "2b893ae3523cb188c32149d798d9b9690baeb533dca0c374aef31e41e3fa2829",
+        "hash": "64d7f29e9a8a8d4a4cc1a38e3a0cebaac23bf7a5242d39b25ef08f0ad63e1c57",
         "key": "web.communities.applications.default"
       },
       "route": {
@@ -103502,7 +103516,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "3141764b9a5587099c679576b05ea4d8c7b5f657203d17ca0eddb512b31be3b3",
+        "hash": "cab99bab693a10dc60fdba9c0f6559aabd7c02f8d2dbd37e7b0ffd4c8d58af8e",
         "key": "native.list-items.default"
       },
       "route": {

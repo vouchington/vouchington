@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createContext, use } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { UserAutocomplete } from '../user-autocomplete'
+import { publicUsers } from '@/storybook/entities/fixtures/users'
 
 // Mock Popover components to avoid portal/DOM issues in tests.
 // Context is created inside the factory so it's available when the factory runs
@@ -195,6 +196,33 @@ describe('UserAutocomplete', () => {
 
     fireEvent.click(screen.getByText('alice'))
     expect(onUserSelect).toHaveBeenCalledWith('user-1', 'alice')
+  })
+
+  it('keeps a missing username out of selection data while showing the display name', async () => {
+    mockSearchUsers.mockResolvedValueOnce({
+      results: [
+        {
+          ...publicUsers[0]!,
+          id: 'no-username-user',
+          username: '',
+          display_account: { name: 'Visible person' },
+        },
+      ],
+      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+    })
+    const onChange = vi.fn<(id: string, username: string) => void>()
+    render(
+      <UserAutocomplete
+        value={null}
+        label=''
+        onChange={onChange}
+      />,
+    )
+    const input = screen.getByPlaceholderText('Search users...')
+    fireEvent.change(input, { target: { value: 'Visible' } })
+    fireEvent.click(await screen.findByRole('button', { name: 'Visible person' }))
+    expect(onChange).toHaveBeenCalledWith('no-username-user', '')
+    expect(input).toHaveValue('Visible person')
   })
 
   it('clears the stored id when text is edited and clearOnTextEdit + a value are set', () => {

@@ -128,12 +128,6 @@ const moderatorAction = () =>
 
 export function communityModerationReadOutput(option: string): ToolOutputSchema | null {
   switch (option) {
-    case 'list_applications':
-      return indexed(
-        'community_application',
-        'community_applications',
-        changeComponent('CommunityApplication', {}, ['__entity_type']),
-      )
     case 'list_automod_actions':
       return automodActions()
     case 'list_bans':

@@ -35,6 +35,7 @@ async function searchByItemType(
   itemType: CommunityListItemType,
   q: string,
   signal: AbortSignal,
+  untitledPost: string,
 ): Promise<SearchResult[]> {
   switch (itemType) {
     case 'topic': {
@@ -50,19 +51,22 @@ async function searchByItemType(
     }
     case 'post': {
       const res = await fetchPosts({ q, limit: 10, signal })
-      return res.results.flatMap(r => {
+      return res.results.flatMap<SearchResult>(r => {
         const post = res.posts?.[r.id]
-        return post
-          ? [
-              {
-                id: post.id,
-                displayName: post.title ?? post.id,
-                kind: 'post-content' as const,
-                declared_language: post.declared_language,
-                lingua_rs_detected_language: post.lingua_rs_detected_language,
-              },
-            ]
-          : []
+        if (!post) return []
+        const displayName = post.title?.trim() || post.slug || post.markdown?.trim().slice(0, 80)
+        if (!displayName) {
+          return [{ id: post.id, displayName: untitledPost, kind: 'ui-text' as const }]
+        }
+        return [
+          {
+            id: post.id,
+            displayName,
+            kind: 'post-content' as const,
+            declared_language: post.declared_language,
+            lingua_rs_detected_language: post.lingua_rs_detected_language,
+          },
+        ]
       })
     }
     case 'url_hostname': {
@@ -92,7 +96,9 @@ async function searchByItemType(
 
 export function CommunityListAutocomplete({ itemType, onSelect, disabled }: Props) {
   const t = useTranslations()
-  const search = async (q: string, signal: AbortSignal) => searchByItemType(itemType, q, signal)
+  const untitledPost = t('extracted.commandSearch.resultGroups.untitledPost_2e2fc1fc')
+  const search = async (q: string, signal: AbortSignal) =>
+    searchByItemType(itemType, q, signal, untitledPost)
   const { searchLabel } = communityListItemTypeCatalog[itemType]
 
   const placeholder = t(
@@ -141,7 +147,7 @@ export function CommunityListAutocomplete({ itemType, onSelect, disabled }: Prop
               declared_language: item.declared_language,
               lingua_rs_detected_language: item.lingua_rs_detected_language,
             }}
-            fallback={item.id}
+            fallback={item.displayName}
           />
         ) : (
           item.displayName

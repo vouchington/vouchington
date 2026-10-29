@@ -14,7 +14,7 @@ import {
 
 // These checked-in response entries are open Record<string, unknown> placeholders, so use the
 // current route's concrete REST shape below. All other named responses use the canonical schema.
-const openNamedResponses = new Set(['list_applications', 'list_invites', 'list_pending_posts'])
+const openNamedResponses = new Set(['list_invites', 'list_pending_posts'])
 
 export function communityModerationOutputSchema(endpoint: ToolApiEndpoint): ToolOutputSchema {
   const route = communityModerationRoutes.find(

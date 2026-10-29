@@ -8,79 +8,9 @@ import { getListItemStorageConfig } from './catalog.mts'
 import { listPostDiscoveryFilter } from './listable.mts'
 import type { ListItem, ListItemType } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-
-function rowToListItem(row: Record<string, unknown>, itemType: ListItemType): ListItem {
-  return {
-    __entity_type: 'list_item',
-    id: row.id as string,
-    list_id: row.list_id as string,
-    item_type: itemType,
-    entity_id: row.entity_id as string,
-    order_index: (row.order_index as number) ?? 0,
-    created_at: row.created_at as Date,
-    media_type: (row.media_type as string | null) ?? null,
-  }
-}
-
-export async function addListItem(
-  listId: string,
-  itemType: ListItemType,
-  entityId: string,
-): Promise<ListItem> {
-  const { table, entityColumn } = getListItemStorageConfig(itemType)
-  assert(table && entityColumn, 500, 'unknown item type')
-
-  const { rows } = await write(
-    `/* addListItem */
-    -- Dynamic table and column come from the closed list-item storage catalog; VALUES is one row.
-    /* no-mistakes: deadlock-safe */
-    INSERT INTO ${table} (user_list_id, ${entityColumn})
-    VALUES ($1, $2)
-    RETURNING id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
-    `,
-    [listId, entityId],
-  ).catch(async (err: unknown) => {
-    const code = (err as { code?: string }).code
-    if (code === '23505') {
-      // write() not read() to avoid replica-lag race on immediate re-add
-      return write(
-        `/* addListItem:existing */
-        SELECT id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
-        FROM ${table}
-        WHERE user_list_id = $1
-          AND ${entityColumn} = $2
-          AND removed_at IS NULL
-        LIMIT 1
-        `,
-        [listId, entityId],
-      )
-    }
-    if (code === '23503') {
-      assert(false, 404, 'Referenced list or entity does not exist')
-    }
-    if (code === '22P02') {
-      assert(false, 422, 'Invalid entity ID format')
-    }
-    throw err
-  })
-
-  assert(rows.length > 0, 500, 'Failed to add list item')
-
-  let mediaType: string | null = null
-  if (itemType === 'rss_feed_item') {
-    const { rows: rfiRows } = await write(
-      `/* addListItem:mediaType */
-      SELECT media_type FROM rss_feed_items WHERE id = $1 LIMIT 1
-      `,
-      [entityId],
-    )
-    mediaType = (rfiRows[0]?.media_type as string | null) ?? null
-  }
-
-  const item = rowToListItem({ ...rows[0]!, media_type: mediaType }, itemType)
-  await invalidate.lists(listId)
-  return item
-}
+import { rowToListItem } from './item-row.mts'
+import { postItemFactsSql } from './item-facts.mts'
+export { addListItem } from './add-item.mts'
 
 export async function removeListItem(
   listId: string,
@@ -125,9 +55,12 @@ export async function searchListItems(
       SELECT li.id, li.user_list_id AS list_id,
         'rss_feed_item'::user_list_item_types AS item_type,
         li.rss_feed_item_id AS entity_id, li.order_index, li.created_at,
-        rfi.media_type::text AS media_type
+        rfi.media_type::text AS media_type,
+        COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url) AS entity_label,
+        NULL::text AS label_markdown, NULL::text AS label_summary
       FROM user_list_rss_feed_items li
       JOIN rss_feed_items rfi ON rfi.id = li.rss_feed_item_id AND rfi.deleted_at IS NULL
+      JOIN urls article_url ON article_url.id = rfi.url_id
       WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
         AND EXISTS (
           SELECT 1 FROM rss_feed_item_sources source
@@ -139,7 +72,10 @@ export async function searchListItems(
       SELECT li.id, li.user_list_id AS list_id,
         'post'::user_list_item_types AS item_type,
         li.post_id AS entity_id, li.order_index, li.created_at,
-        NULL::text AS media_type
+        NULL::text AS media_type,
+        `
+  query.append(postItemFactsSql('candidate_post'))
+  query.append(sql`
       FROM user_list_posts li
       JOIN posts candidate_post
         ON candidate_post.id = li.post_id AND candidate_post.deleted_at IS NULL
@@ -147,11 +83,11 @@ export async function searchListItems(
         ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
        AND root_post.deleted_at IS NULL
       WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
-        AND `
+        AND `)
   query.append(listPostDiscoveryFilter(options.currentUserId, options.isAdministrator === true))
   query.append(sql`
     )
-    SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type
+    SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type, entity_label, label_markdown, label_summary
     FROM list_items
     WHERE true`)
 

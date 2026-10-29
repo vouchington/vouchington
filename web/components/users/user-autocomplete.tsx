@@ -61,8 +61,7 @@ export function UserAutocomplete({
           : undefined
       }
       onSelect={(user: PublicUser, { setQuery }: { setQuery: (query: string) => void }) => {
-        const username = user.username || getUserLabel(user, deletedUserLabel)
-        onChange(user.id, username)
+        onChange(user.id, user.username ?? '')
         setQuery(getUserLabel(user, deletedUserLabel))
       }}
       renderItem={(user: PublicUser) => (

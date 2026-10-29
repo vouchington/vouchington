@@ -79,7 +79,16 @@ for a page together. Native presentation and its executable evidence are tracked
 [vouchington-clients#526](https://github.com/vouchington/vouchington-clients/issues/526);
 this producer change makes no native UI parity claim.
 
-> > > > > > > f81c6dd8e8 (fix(moderation): replace visible UUIDs with entity labels)
+## Saved list and community applicant labels
+
+List-item reads and add responses provide a nullable factual entity label alongside the ID, so web
+and native clients can identify saved content without displaying an opaque UUID. Missing labels
+remain null in REST and MCP; clients render a localized untitled-post label. Community application reads
+include applicant profiles for each page, including applicants who have not joined the community;
+clients should display the name or username and use a deleted-user label when the profile is gone.
+These response additions preserve IDs for mutations and joins. Native presentation adoption remains
+dependent client work in [clients #528](https://github.com/vouchington/vouchington-clients/issues/528)
+and does not change a parity claim in the feature matrix.
 
 ## Moderation history retention
 
