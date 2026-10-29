@@ -13,14 +13,23 @@ function actorLabel(actor: ReviewDisputeActorSummary, deletedUser: string): stri
 export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
   const t = useTranslations()
   const review = dispute.staff_context?.review
+  const reviewSlug = review?.post.slug
   const target = dispute.post_content ? (
-    <PostContentText
-      as={Link}
-      href={reviewHref(dispute.post_id)}
-      className='font-medium underline'
-      prefetch={false}
-      content={dispute.post_content}
-    />
+    reviewSlug ? (
+      <PostContentText
+        as={Link}
+        href={reviewHref(reviewSlug)}
+        className='font-medium underline'
+        prefetch={false}
+        content={dispute.post_content}
+      />
+    ) : (
+      <PostContentText
+        as='p'
+        className='font-medium'
+        content={dispute.post_content}
+      />
+    )
   ) : (
     <p className='font-medium'>
       {dispute.post_label === 'review'

@@ -21,7 +21,7 @@ function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
 }
 
 describe('MemberDisputeRow', () => {
-  it('renders a link to the target content', () => {
+  it('renders target content without a route when its public slug is absent', () => {
     render(
       <table>
         <tbody>
@@ -29,9 +29,8 @@ describe('MemberDisputeRow', () => {
         </tbody>
       </table>,
     )
-    const link = screen.getByRole('link', { name: 'A Review' })
-    expect(link).toBeInTheDocument()
-    expect(link).toHaveAttribute('href', '/review/post-1')
+    expect(screen.getByText('A Review')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'A Review' })).toBeNull()
   })
 
   it('shows the factual post label when post content is unavailable', () => {

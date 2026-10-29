@@ -1,8 +1,6 @@
 'use client'
 
-import Link from 'next/link'
 import { PostContentText } from '@/components/posts/post-content-text'
-import { reviewHref } from '@/lib/links/entity-href'
 import { TimeAgo } from '@/components/shared/time-ago'
 import type { ReviewDispute } from '@/types/review-disputes'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -21,10 +19,8 @@ export function MemberDisputeRow({ dispute }: MemberDisputeRowProps) {
       <td className='px-4 py-3 text-sm'>
         {dispute.post_content ? (
           <PostContentText
-            as={Link}
-            href={reviewHref(dispute.post_id)}
-            className='font-medium underline'
-            prefetch={false}
+            as='span'
+            className='font-medium'
             content={dispute.post_content}
           />
         ) : (

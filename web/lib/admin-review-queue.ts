@@ -23,19 +23,17 @@ function topicRecommendationReviewQueueHref(post: Pick<AdminReviewQueuePost, 'po
   return `/topic-recommendations?q=${encodeURIComponent(post.post_label)}`
 }
 
-export function getAdminReviewQueuePostHref(post: AdminReviewQueuePost) {
-  const identifier = post.slug ?? post.id
+export function getAdminReviewQueuePostHref(post: AdminReviewQueuePost): string | null {
   if (post.post_type === 'topic_recommendation') {
     return topicRecommendationReviewQueueHref(post)
   }
   if (post.post_type === 'comment') {
-    const rootIdentifier = post.root_slug ?? post.root_post_id
-    if (!rootIdentifier || !post.root_post_type) return createPostPathname('discussion', identifier)
     if (post.root_post_type === 'topic_recommendation') {
       return topicRecommendationReviewQueueHref(post)
     }
-    return `${createPostPathname(reviewQueuePostSlug(post.root_post_type), rootIdentifier)}/comment/${post.id}`
+    if (!post.root_slug || !post.root_post_type) return null
+    return `${createPostPathname(reviewQueuePostSlug(post.root_post_type), post.root_slug)}/comment/${post.id}`
   }
 
-  return createPostPathname(reviewQueuePostSlug(post.post_type), identifier)
+  return post.slug ? createPostPathname(reviewQueuePostSlug(post.post_type), post.slug) : null
 }

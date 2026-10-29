@@ -27,6 +27,31 @@ interface Props {
   revealDisabled: boolean
 }
 
+function ReviewQueuePostTitle({
+  post,
+  fallback,
+}: {
+  post: AdminReviewQueuePost
+  fallback: string
+}) {
+  const href = getAdminReviewQueuePostHref(post)
+  const content = {
+    text: post.post_label,
+    declared_language: post.declared_language,
+    lingua_rs_detected_language: post.lingua_rs_detected_language,
+  }
+  return (
+    <PostContentText
+      as={href ? Link : 'span'}
+      {...(href ? { href, prefetch: false } : {})}
+      content={content}
+      fallback={fallback}
+      className={`font-medium text-foreground${href ? ' hover:underline' : ''}`}
+      data-pw='review-queue-post-title'
+    />
+  )
+}
+
 export function ReviewQueueTable({
   posts,
   actionPostId,
@@ -62,18 +87,9 @@ export function ReviewQueueTable({
             posts.map(post => (
               <TableRow key={post.id}>
                 <TableCell className='max-w-xl'>
-                  <PostContentText
-                    as={Link}
-                    content={{
-                      text: post.post_label,
-                      declared_language: post.declared_language,
-                      lingua_rs_detected_language: post.lingua_rs_detected_language,
-                    }}
+                  <ReviewQueuePostTitle
+                    post={post}
                     fallback={t('extracted.reviewQueue.reviewQueueTable.untitledPost_4d5e6f71')}
-                    href={getAdminReviewQueuePostHref(post)}
-                    className='font-medium text-foreground hover:underline'
-                    prefetch={false}
-                    data-pw='review-queue-post-title'
                   />
                   <PostContentText
                     as='div'

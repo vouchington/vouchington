@@ -50,7 +50,7 @@ describe('DisputeContext', () => {
 
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute(
       'href',
-      '/review/post-1',
+      '/review/a-disputed-review',
     )
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute('lang', 'ar')
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute('dir', 'rtl')
@@ -59,6 +59,20 @@ describe('DisputeContext', () => {
     expect(screen.getByText('2/5')).toBeInTheDocument()
     expect(screen.getByText('Claimant Name')).toBeInTheDocument()
     expect(screen.getByText('The published terms are inaccurate.')).toBeInTheDocument()
+  })
+
+  it('renders review content without a link when staff context has no slug', () => {
+    const dispute = makeDispute({
+      post_content: {
+        text: 'A review without a slug',
+        declared_language: null,
+        lingua_rs_detected_language: null,
+      },
+    })
+    render(<DisputeContext dispute={dispute} />)
+
+    expect(screen.getByText('A review without a slug')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'A review without a slug' })).toBeNull()
   })
 
   it('shows factual review label and deleted-user text when optional context is absent', () => {
