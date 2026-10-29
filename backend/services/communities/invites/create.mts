@@ -6,6 +6,7 @@ import type { LoadedCommunity } from '../load-with-viewer.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { getPublicUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { enqueueSendCommunityInviteEmail } from '@queues/emails/enqueues'
 import onError from '@modules/on-error'
 import type { CommunityInvite, CreatedCommunityInvite } from '../types.mts'
@@ -93,12 +94,9 @@ export async function createInvite(
   await transaction.commit()
 
   if (invitedEmail) {
-    await enqueueInviteEmail(
-      invitedEmail,
-      await getCommunityInviteRecipientUiLocale(invitedEmail),
-      community.name,
-      inviterName,
-      code,
+    const uiLocale = await getCommunityInviteRecipientUiLocale(invitedEmail)
+    await awaitReportedEnqueueAdmission(async () =>
+      enqueueInviteEmail(invitedEmail, uiLocale, community.name, inviterName, code),
     )
   }
 
