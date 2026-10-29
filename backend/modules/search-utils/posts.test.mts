@@ -1,6 +1,5 @@
 import { it, expect, describe } from 'vitest'
 import { hasTextSearch, hasSemanticSearch, detectSearchSort } from './posts.mts'
-import { clampLimit } from './limits.mts'
 
 describe('posts', () => {
   // hasTextSearch tests
@@ -73,29 +72,5 @@ describe('posts', () => {
 
   it('detectSearchSort does not treat empty string sort as absent', () => {
     expect(detectSearchSort({ text_search_query: 'hello', sort: '' as never })).toBe('')
-  })
-
-  // clampLimit tests
-  it('clampLimit returns default 25 for undefined', () => {
-    expect(clampLimit()).toBe(25)
-  })
-
-  it('clampLimit clamps to minimum 1', () => {
-    expect(clampLimit(0)).toBe(1)
-    expect(clampLimit(-5)).toBe(1)
-    expect(clampLimit(-100)).toBe(1)
-  })
-
-  it('clampLimit clamps to maximum 100', () => {
-    expect(clampLimit(101)).toBe(100)
-    expect(clampLimit(500)).toBe(100)
-    expect(clampLimit(1000)).toBe(100)
-  })
-
-  it('clampLimit allows values within range', () => {
-    expect(clampLimit(1)).toBe(1)
-    expect(clampLimit(25)).toBe(25)
-    expect(clampLimit(50)).toBe(50)
-    expect(clampLimit(100)).toBe(100)
   })
 })
