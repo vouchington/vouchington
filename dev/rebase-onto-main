@@ -44,21 +44,37 @@ fi
 
 git -C "$REPO_ROOT" fetch origin main
 
-open_stack_layers() {
+# Prints the open layer count, then the PR number of the highest merged layer (if any).
+stack_layers() {
   gh stack view --json 2>/dev/null | node -e '
     let input = ""
     process.stdin.on("data", chunk => (input += chunk))
     process.stdin.on("end", () => {
       const { branches } = JSON.parse(input)
-      console.log(branches.filter(branch => !branch.isMerged).length)
+      const merged = branches.filter(branch => branch.isMerged && branch.pr)
+      const open = branches.length - branches.filter(branch => branch.isMerged).length
+      console.log(open, merged.length > 0 ? merged[merged.length - 1].pr.number : "")
     })
   ' 2>/dev/null || echo unknown
 }
 
 # gh stack rebase can replay merged trunk commits once the lower layers land (#4410).
-if $STACK && [ "$(open_stack_layers)" = 1 ]; then
-  echo "Only one open stack layer remains; rebasing onto origin/main." >&2
-  STACK=false
+# A squash-merged lower layer leaves its original commits in this branch, so replay
+# only the commits above that layer's merged PR head.
+ONTO_BASE=""
+if $STACK; then
+  read -r OPEN_LAYERS MERGED_PR <<<"$(stack_layers)"
+  if [ "$OPEN_LAYERS" = 1 ]; then
+    echo "Only one open stack layer remains; rebasing onto origin/main." >&2
+    STACK=false
+    if [ -n "${MERGED_PR:-}" ]; then
+      merged_head="$(gh pr view "$MERGED_PR" --json headRefOid --jq .headRefOid)" || merged_head=""
+      if [ -n "$merged_head" ] &&
+        git -C "$REPO_ROOT" merge-base --is-ancestor "$merged_head" HEAD; then
+        ONTO_BASE="$merged_head"
+      fi
+    fi
+  fi
 fi
 
 if $STACK; then
@@ -67,6 +83,8 @@ if $STACK; then
   else
     gh stack rebase
   fi
+elif [ -n "$ONTO_BASE" ]; then
+  git -C "$REPO_ROOT" rebase --onto origin/main "$ONTO_BASE"
 else
   git -C "$REPO_ROOT" rebase origin/main
 fi

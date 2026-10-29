@@ -19,6 +19,7 @@ async function runRebase(args: string[], env: Record<string, string>) {
 log="\${FAKE_COMMAND_LOG:?}"
 if [ "$1" = "-C" ]; then shift 2; fi
 printf 'git %s\\n' "$*" >> "$log"
+if [ "$1" = "merge-base" ]; then [ -n "\${FAKE_IS_ANCESTOR:-}" ]; fi
 `,
   )
   await writeFile(
@@ -30,6 +31,7 @@ if [ "$*" = "stack view --json" ]; then
   [ -n "\${FAKE_STACK_JSON:-}" ] || exit 2
   printf '%s' "$FAKE_STACK_JSON"
 fi
+if [ "$1 $2" = "pr view" ]; then printf 'lower-head\\n'; fi
 `,
   )
   await chmod(join(bin, 'git'), 0o755)
@@ -92,17 +94,39 @@ describe('rebase-onto-main', () => {
     expect(result.log).not.toContain('git rebase origin/main')
   })
 
-  it('rebases the last open layer onto origin/main after lower layers merge', async () => {
+  it('replays only the commits above a squash-merged lower layer', async () => {
+    const result = await runRebase(['--stack'], {
+      FAKE_IS_ANCESTOR: '1',
+      FAKE_STACK_JSON: stackJson([true, false]),
+    })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('gh pr view 100 --json headRefOid --jq .headRefOid')
+    expect(result.log).toContain('git rebase --onto origin/main lower-head')
+    expect(result.log).not.toContain('gh stack rebase')
+    expect(result.stderr).toContain('Only one open stack layer remains')
+  })
+
+  it('rebases onto origin/main when the merged head is not in the branch', async () => {
     const result = await runRebase(['--stack'], { FAKE_STACK_JSON: stackJson([true, false]) })
     expect(result.exitCode).toBe(0)
     expect(result.log).toContain('git rebase origin/main')
-    expect(result.log).not.toContain('gh stack rebase')
-    expect(result.stderr).toContain('Only one open stack layer remains')
+    expect(result.log).not.toContain('--onto')
+  })
+
+  it('rebases a lone open layer onto origin/main', async () => {
+    const result = await runRebase(['--stack'], { FAKE_STACK_JSON: stackJson([false]) })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).not.toContain('gh pr view')
+    expect(result.log).toContain('git rebase origin/main')
   })
 })
 
 function stackJson(merged: boolean[]) {
   return JSON.stringify({
-    branches: merged.map((isMerged, index) => ({ isMerged, name: `layer-${index}` })),
+    branches: merged.map((isMerged, index) => ({
+      isMerged,
+      name: `layer-${index}`,
+      pr: { number: 100 + index, state: isMerged ? 'MERGED' : 'OPEN' },
+    })),
   })
 }
