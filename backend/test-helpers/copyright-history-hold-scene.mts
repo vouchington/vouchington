@@ -4,7 +4,7 @@ import {
   getPartitionDropRefusal,
   getPartitionDropStatusRefusals,
 } from '@data-stores/psql/migration-runner/partition-drop-guard'
-import { listMonthlyDropCandidates } from '@data-stores/psql/migration-runner/monthly-partitions'
+import { listMonthlyDropCandidates } from '@data-stores/psql/migration-runner/monthly-partition-candidates'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -52,7 +52,7 @@ export async function withCopyrightHistoryHoldScene(
   }) => Promise<void>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  const candidates = await listMonthlyDropCandidates(query)
+  const { candidates } = await listMonthlyDropCandidates(query, 50)
   const lifecycle = candidates.find(row => row.table === 'copyright_notice_lifecycle_changes')
   if (!lifecycle?.upperBound) throw new Error('Missing monthly copyright lifecycle child')
   const repeat = candidates.find(
