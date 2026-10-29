@@ -18,26 +18,16 @@ describe('topics', () => {
     user = await createTestUser()
   })
   describe('GET /md/topics', () => {
-    it('should return text/markdown content type', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/topics').expect(200)
-      expect(response.headers['content-type']).toContain('text/markdown')
-    })
-
-    it('should return markdown with frontmatter', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/topics').expect(200)
-      expect(response.text).toMatch(/^---/)
-      expect(response.text).toContain('has_next_page')
-    })
-
-    it('should return markdown listing structure', async () => {
+    it('returns a markdown listing with frontmatter and cache metadata', async () => {
       const request = createRequest()
       const response = await request.get('/md/topics').expect(200)
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('has_next_page')
       // response should have markdown headings for topics
       expect(response.text).toContain('## [')
+      expect(response.headers['content-type']).toContain('text/markdown')
+      expect(response.headers['cache-control']).toBe('public, max-age=60')
+      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('uses singular topic routes in markdown listings', async () => {
@@ -60,18 +50,6 @@ describe('topics', () => {
       const response = await request.get('/md/topics?limit=2').expect(200)
       expect(response.text).toMatch(/^---/)
       expect(response.headers['content-type']).toContain('text/markdown')
-    })
-
-    it('should set Cache-Control header with max-age=60', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/topics').expect(200)
-      expect(response.headers['cache-control']).toBe('public, max-age=60')
-    })
-
-    it('returns ETag header', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/topics').expect(200)
-      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('returns 304 for matching If-None-Match', async () => {
@@ -111,7 +89,7 @@ describe('topics', () => {
       await request.get('/md/topics/does-not-exist-topic-xyz').expect(404)
     })
 
-    it('should return text/markdown for an existing topic', async () => {
+    it('returns topic markdown with cache metadata', async () => {
       const random = Math.random().toString(36).slice(2, 8)
       const topicId = await insertTestTopic({
         name: `Detail MD Topic ${random}`,
@@ -124,6 +102,8 @@ describe('topics', () => {
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('name')
       expect(response.text).toContain(`Detail MD Topic ${random}`)
+      expect(response.headers['cache-control']).toBe('public, max-age=300')
+      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('uses singular topic routes in detail frontmatter', async () => {
@@ -181,30 +161,6 @@ describe('topics', () => {
       const request = createRequest()
       const response = await request.get(`/md/topics/${slug}`).expect(200)
       expect(response.text).toContain(`Cached Resolution MD Topic ${random}`)
-    })
-
-    it('should set Cache-Control header with max-age=300', async () => {
-      const random = Math.random().toString(36).slice(2, 8)
-      const topicId = await insertTestTopic({
-        name: `Cache MD Topic ${random}`,
-        slug: `cache-md-topic-${random}`,
-        createdById: user.id,
-      })
-      const request = createRequest()
-      const response = await request.get(`/md/topics/${topicId}`).expect(200)
-      expect(response.headers['cache-control']).toBe('public, max-age=300')
-    })
-
-    it('returns ETag header for detail page', async () => {
-      const random = Math.random().toString(36).slice(2, 8)
-      const topicId = await insertTestTopic({
-        name: `ETag MD Topic ${random}`,
-        slug: `etag-md-topic-${random}`,
-        createdById: user.id,
-      })
-      const request = createRequest()
-      const response = await request.get(`/md/topics/${topicId}`).expect(200)
-      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('returns 304 for matching If-None-Match on detail page', async () => {

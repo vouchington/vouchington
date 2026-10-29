@@ -17,13 +17,15 @@ describe('users', () => {
       await request.get('/md/users/does-not-exist-user-xyz').expect(404)
     })
 
-    it('should return text/markdown for an existing user by id', async () => {
+    it('returns user markdown by id with cache metadata', async () => {
       const request = createRequest()
       const response = await request.get(`/md/users/${user.id}`).expect(200)
       expect(response.headers['content-type']).toContain('text/markdown')
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('username')
       expect(response.text).toContain('url')
+      expect(response.headers['cache-control']).toBe('public, max-age=300')
+      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('should return user profile by username', async () => {
@@ -31,18 +33,6 @@ describe('users', () => {
       const response = await request.get(`/md/users/${user.username}`).expect(200)
       expect(response.headers['content-type']).toContain('text/markdown')
       expect(response.text).toContain(user.username!)
-    })
-
-    it('should set Cache-Control header with max-age=300', async () => {
-      const request = createRequest()
-      const response = await request.get(`/md/users/${user.id}`).expect(200)
-      expect(response.headers['cache-control']).toBe('public, max-age=300')
-    })
-
-    it('returns ETag header', async () => {
-      const request = createRequest()
-      const response = await request.get(`/md/users/${user.id}`).expect(200)
-      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('returns 304 for matching If-None-Match', async () => {
