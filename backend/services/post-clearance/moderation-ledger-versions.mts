@@ -1,4 +1,5 @@
 import { write, type QueryOptions } from '@data-stores/psql'
+import { readCommittedCurrentPostModerationVersion } from './moderation-ledger-committed-version.mts'
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,
@@ -71,7 +72,7 @@ export async function ensureCurrentPostModerationVersion(
     [postId, POST_MODERATION_POLICY_REVISION, [...AUTOMATED_POST_MODERATION_SOURCES]],
     options,
   )
-  const version = rows[0]
+  const version = rows[0] ?? (await readCommittedCurrentPostModerationVersion(postId, options))
   if (!version) throw new Error(`Post moderation version source post not found: ${postId}`)
   return version
 }
