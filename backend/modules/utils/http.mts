@@ -46,7 +46,12 @@ export const cancelResponseBody = (response: Parameters<typeof transport.cancelR
   transport.cancelResponseBody(response, reportError)
 
 /* no-mistakes: integration=http */
-export const handleHttpErrors = (options: { response: Response; url: string }): void =>
+export const handleHttpErrors = (
+  options: Omit<
+    Parameters<typeof transport.handleHttpErrors>[0],
+    'onError' | 'createRateLimitError' | 'createServerError'
+  >,
+): void =>
   transport.handleHttpErrors({
     ...options,
     onError: reportError,
