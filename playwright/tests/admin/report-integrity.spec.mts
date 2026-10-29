@@ -109,7 +109,7 @@ test.describe('Admin Report Integrity', () => {
 })
 
 test.describe('Admin Report Integrity — pagination failure', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeAll(async () => {
     protectPlaywrightHookTimeouts(test.info())
