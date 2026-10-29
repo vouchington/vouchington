@@ -27,4 +27,20 @@ export const MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
     'post_moderation_retention_cursors.sweep_upper_bound_record_id',
     'Frozen UUIDv7 upper boundary for one bounded retention pass; it is not a relationship.',
   ],
+  [
+    'post_moderation_retention_cursors.cursor_policy_version_record_id',
+    'One-time policy revision sweep position can outlive the examined version; it is not a relationship.',
+  ],
+  [
+    'post_moderation_retention_post_work_items.cursor_version_record_id',
+    'Per-post work position can outlive the examined version; it is not a relationship.',
+  ],
+  [
+    'post_moderation_retention_post_work_items.cursor_processing_version_record_id',
+    'In-progress subpage coordinate can outlive the examined version; it is not a relationship.',
+  ],
+  [
+    'post_moderation_retention_post_work_items.cursor_disposition_record_id',
+    'Per-version work position can outlive the examined disposition; it is not a relationship.',
+  ],
 ])

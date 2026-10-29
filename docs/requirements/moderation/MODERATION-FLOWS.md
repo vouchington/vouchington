@@ -36,6 +36,11 @@ retention window. Current automated pass decisions remain available for clearanc
 their private evidence is cleared after that window. Review, rejection, and staff decisions keep
 their evidence for their own decision lifecycle.
 
+Retention advances when a successor ages, a post digest changes, or the moderation policy revision
+changes. Current versions and noncurrent pass evidence stay dormant between those events. A digest
+restoration makes the earlier version current again, so cleanup rechecks currentness before changing
+the ledger. This keeps the daily pass from repeatedly locking posts whose decisions have not changed.
+
 ## Paid Transparency Projection
 
 The paid transparency API is an aggregate release, not a moderation queue or a community record

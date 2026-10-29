@@ -128,20 +128,21 @@ export default async function processPsql(
       const activeMembershipFamilies = unfinishedMembershipFamilies(result)
       const activeCopyrightFamilies = unfinishedCopyrightFamilies(result)
       const activePostModerationKinds = result.postModerationLedger.remainingKinds
+      const enqueueCleanup =
+        dependencies?.enqueueDataRetentionCleanupContinuation ??
+        enqueueDataRetentionCleanupContinuation
       const userPurge = result.softDeletedUsers.hasMore
         ? result.softDeletedUsers.userPurge
         : undefined
       if (!data?.continuation && activeCopyrightFamilies.length > 0) {
         if (!jobId) throw new Error('Copyright retention continuation needs the current job ID')
         const runId = createHash('sha256').update(jobId).digest('hex')
-        await (
-          dependencies?.enqueueDataRetentionCleanupContinuation ??
-          enqueueDataRetentionCleanupContinuation
-        )({
+        await enqueueCleanup({
           runId,
           step: 1,
           activeClassifierSweeps: [],
           activeMembershipFamilies: [],
+          activePostModerationKinds: [],
           copyrightFamilies: activeCopyrightFamilies,
         })
       }
@@ -153,10 +154,7 @@ export default async function processPsql(
       ) {
         if (!jobId) throw new Error('Data retention continuation needs the current job ID')
         const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
-        await (
-          dependencies?.enqueueDataRetentionCleanupContinuation ??
-          enqueueDataRetentionCleanupContinuation
-        )({
+        await enqueueCleanup({
           runId,
           step: (data?.continuation?.step ?? 0) + 1,
           activeClassifierSweeps,

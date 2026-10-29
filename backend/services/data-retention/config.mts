@@ -132,7 +132,7 @@ export function getClassifierRetentionDays(): number {
 }
 
 export function getPostModerationRetentionDays(): number {
-  return Math.max(90, readField('post_moderation_retention_days'))
+  return Math.max(90, readDataRetentionField('post_moderation_retention_days'))
 }
 
 export function getModerationRecordCleanupLimits(): DataRetentionLimits {

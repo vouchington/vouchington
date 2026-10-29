@@ -33,6 +33,7 @@ export async function processCopyrightRetentionContinuation(
       step: continuation.step + 1,
       activeClassifierSweeps: [],
       activeMembershipFamilies: [],
+      activePostModerationKinds: [],
       copyrightFamilies: pending,
     })
   }

@@ -15,6 +15,7 @@ import {
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 import { revertPostDuringTestModerationRetention } from '@voucha/test-helpers/post-moderation-retention-lock'
+import { getTestPostModerationVersionMarkers } from '@voucha/test-helpers/post-moderation-retention-progress'
 
 const DAY_MS = 86_400_000
 
@@ -63,7 +64,11 @@ describe('post moderation ledger retention', () => {
           lowerBoundDate: new Date(oldAt.getTime() - 1),
         }),
     })
-    expect(result).toMatchObject({ deletedVersions: 0, hasMore: false })
+    expect(result).toMatchObject({ deletedVersions: 0, hasMore: true })
+    expect(await getTestPostModerationVersionMarkers(oldId)).toMatchObject({
+      dueAt: null,
+      hashBlockedAt: expect.any(Date),
+    })
     const state = await getTestPostModerationRetentionState({
       versionIds: [oldId, successorId],
       dispositionIds: [],
@@ -211,6 +216,7 @@ describe('post moderation ledger retention', () => {
       batchSize: 1,
     })
     expect(pending.hasMore).toBe(true)
+    expect(pending.remainingKinds).toEqual(['pass_evidence'])
     const stricterWindow = await cleanupPostModerationLedger({
       ...options,
       kinds: ['pass_evidence'],
@@ -220,7 +226,6 @@ describe('post moderation ledger retention', () => {
     expect(stricterWindow.clearedPassEvidence).toBe(0)
     expect(stricterWindow.hasMore).toBe(false)
     let sawContinuation = false
-    let sawOnlyPassEvidence = false
     let deletedVersions = 0
     let clearedPassEvidence = 0
     let kinds: Array<'superseded_versions' | 'pass_evidence'> | undefined
@@ -229,14 +234,11 @@ describe('post moderation ledger retention', () => {
       deletedVersions += result.deletedVersions
       clearedPassEvidence += result.clearedPassEvidence
       sawContinuation ||= result.hasMore
-      sawOnlyPassEvidence ||=
-        result.remainingKinds.length === 1 && result.remainingKinds[0] === 'pass_evidence'
       kinds = result.remainingKinds
       if (!result.hasMore) break
       if (run === 9) throw new Error('Post moderation retention did not finish within ten runs')
     }
     expect(sawContinuation).toBe(true)
-    expect(sawOnlyPassEvidence).toBe(true)
     expect(deletedVersions).toBe(1)
     expect(clearedPassEvidence).toBe(1)
     const state = await getTestPostModerationRetentionState({

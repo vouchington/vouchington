@@ -15,5 +15,9 @@ export const REVIEWED_RETENTION_CURSOR_IDS = new Map<string, string>(
     'post_moderation_retention_cursors.cursor_record_id',
     'post_moderation_retention_cursors.cursor_lower_bound_record_id',
     'post_moderation_retention_cursors.sweep_upper_bound_record_id',
+    'post_moderation_retention_cursors.cursor_policy_version_record_id',
+    'post_moderation_retention_post_work_items.cursor_version_record_id',
+    'post_moderation_retention_post_work_items.cursor_processing_version_record_id',
+    'post_moderation_retention_post_work_items.cursor_disposition_record_id',
   ].map(key => [key, reason] as const),
 )
