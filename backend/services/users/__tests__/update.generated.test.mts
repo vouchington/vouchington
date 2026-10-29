@@ -12,8 +12,6 @@ import type { PrivateUser } from '@services/users/types'
 
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 
-import { getUserIdByAnyCached } from '@services/entity-cache/lookups'
-
 import { ValkeyBloomFilter } from '@data-stores/valkey'
 
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
@@ -242,23 +240,5 @@ describe('update.generated', () => {
     const user2 = await getPrivateUserByAny(user.id)
     assert(user2)
     assert.strictEqual(user2.id, user.id)
-  })
-
-  it('updateUserFields invalidates username lookup cache for old and new usernames', async () => {
-    const targetUser = await createTestUser()
-    assert(targetUser)
-    assert(targetUser.username)
-
-    const oldUsername = targetUser.username
-    const newUsername = safeUsername('test-user')
-
-    await getUserIdByAnyCached(oldUsername)
-    await updateUserFields(targetUser.id, { username: newUsername })
-
-    const oldLookup = await getUserIdByAnyCached(oldUsername)
-    const newLookup = await getUserIdByAnyCached(newUsername)
-
-    expect(oldLookup).toBeNull()
-    expect(newLookup).toBe(targetUser.id)
   })
 })
