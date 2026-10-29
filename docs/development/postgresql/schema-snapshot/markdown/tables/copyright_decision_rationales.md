@@ -6,17 +6,17 @@ Encrypted rationale for an admitted legal MCP decision attempt, retained with a 
 
 Not partitioned — growth: unbounded.
 
-| Column                                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                           |
-| ------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                   |
-| `copyright_notice_id`                      | `uuid`                     | yes      |                              |          |           |           | Copyright case whose decision this rationale accompanies.                                                                         |
-| `copyright_notice_email_intake_receipt_id` | `uuid`                     | yes      |                              |          |           |           | Email intake that had not yet been admitted to a copyright case.                                                                  |
-| `copyright_repeat_infringer_review_id`     | `uuid`                     | yes      |                              |          |           |           | Account-level repeat-infringer review when no single copyright case owns the decision.                                            |
-| `account_user_id`                          | `uuid`                     | yes      |                              |          |           |           | Retained account identity for a reinstatement decision when no single case owns it; this identity does not authorize the account. |
-| `recorded_by_id`                           | `uuid`                     | no       |                              |          |           |           | Retained staff identity that supplied the validated legal rationale.                                                              |
-| `tool_name`                                | `text`                     | no       |                              |          |           |           | Registered legal decision tool name, never arbitrary caller text.                                                                 |
-| `rationale_ciphertext`                     | `text`                     | no       |                              |          |           |           | Validated rationale encrypted with AAD bound to this row id; erased under copyright retention.                                    |
-| `created_at`                               | `timestamp with time zone` | no       | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                   |
+| Column                                          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                           |
+| ----------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                   |
+| `copyright_notice_id`                           | `uuid`                     | yes      |                              |          |           |           | Copyright case whose decision this rationale accompanies.                                                                         |
+| `copyright_notice_email_intake_receipt_id`      | `uuid`                     | yes      |                              |          |           |           | Email intake that had not yet been admitted to a copyright case.                                                                  |
+| `copyright_repeat_infringer_review_identity_id` | `uuid`                     | yes      |                              |          |           |           | Account-level repeat-infringer review when no single copyright case owns the decision.                                            |
+| `account_user_id`                               | `uuid`                     | yes      |                              |          |           |           | Retained account identity for a reinstatement decision when no single case owns it; this identity does not authorize the account. |
+| `recorded_by_id`                                | `uuid`                     | no       |                              |          |           |           | Retained staff identity that supplied the validated legal rationale.                                                              |
+| `tool_name`                                     | `text`                     | no       |                              |          |           |           | Registered legal decision tool name, never arbitrary caller text.                                                                 |
+| `rationale_ciphertext`                          | `text`                     | no       |                              |          |           |           | Validated rationale encrypted with AAD bound to this row id; erased under copyright retention.                                    |
+| `created_at`                                    | `timestamp with time zone` | no       | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,7 +25,7 @@ _none_
 
 **Check constraints:**
 
-- `copyright_decision_rationales_check`: `CHECK ((num_nonnulls(copyright_notice_id, copyright_notice_email_intake_receipt_id, copyright_repeat_infringer_review_id, account_user_id) = 1))`
+- `copyright_decision_rationales_check`: `CHECK ((num_nonnulls(copyright_notice_id, copyright_notice_email_intake_receipt_id, copyright_repeat_infringer_review_identity_id, account_user_id) = 1))`
 - `copyright_decision_rationales_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
 - `copyright_decision_rationales_tool_name_check`: `CHECK ((tool_name ~ '^[a-z_]{1,64}$'::text))`
 
@@ -34,7 +34,7 @@ _none_
 - `copyright_decision_rationales_account_user_id_fkey`: `FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_decision_rationales_copyright_notice_email_intak_fkey`: `FOREIGN KEY (copyright_notice_email_intake_receipt_id) REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT`
 - `copyright_decision_rationales_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
-- `copyright_decision_rationales_copyright_repeat_infringer_r_fkey`: `FOREIGN KEY (copyright_repeat_infringer_review_id) REFERENCES copyright_repeat_infringer_reviews(id) ON DELETE RESTRICT`
+- `copyright_decision_rationales_copyright_repeat_infringer_r_fkey`: `FOREIGN KEY (copyright_repeat_infringer_review_identity_id) REFERENCES copyright_repeat_infringer_review_identities(id) ON DELETE RESTRICT`
 - `copyright_decision_rationales_recorded_by_id_fkey`: `FOREIGN KEY (recorded_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -46,7 +46,7 @@ _none_
 - `idx_copyright_decision_rationales__noncase_retention`: `CREATE INDEX idx_copyright_decision_rationales__noncase_retention ON public.copyright_decision_rationales USING btree (id) WHERE ((copyright_notice_id IS NULL) AND (rationale_ciphertext <> 'erased'::text))`
 - `idx_copyright_decision_rationales__notice`: `CREATE INDEX idx_copyright_decision_rationales__notice ON public.copyright_decision_rationales USING btree (copyright_notice_id, id) WHERE (copyright_notice_id IS NOT NULL)`
 - `idx_copyright_decision_rationales__recorded_by`: `CREATE INDEX idx_copyright_decision_rationales__recorded_by ON public.copyright_decision_rationales USING btree (recorded_by_id)`
-- `idx_copyright_decision_rationales__repeat_review`: `CREATE INDEX idx_copyright_decision_rationales__repeat_review ON public.copyright_decision_rationales USING btree (copyright_repeat_infringer_review_id, id) WHERE (copyright_repeat_infringer_review_id IS NOT NULL)`
+- `idx_copyright_decision_rationales__repeat_review`: `CREATE INDEX idx_copyright_decision_rationales__repeat_review ON public.copyright_decision_rationales USING btree (copyright_repeat_infringer_review_identity_id, id) WHERE (copyright_repeat_infringer_review_identity_id IS NOT NULL)`
 
 **Triggers:**
 

@@ -845,6 +845,30 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_email_intake_current_recommendation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_intake_current_recommendation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_email_link_current_decision`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_link_current_decision()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_email_receipt_current_review`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_receipt_current_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_email_thread_reference_without_token`
 
 ```sql
@@ -921,6 +945,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_submission()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_copyright_operational_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_redress_request_result`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_redress_request_result()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1431,10 +1463,26 @@ CREATE OR REPLACE FUNCTION public.fn_update_copyright_action_work()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_copyright_case_lifecycle_activity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_case_lifecycle_activity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_copyright_delivery_work`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_guest_capability_activity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_guest_capability_activity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

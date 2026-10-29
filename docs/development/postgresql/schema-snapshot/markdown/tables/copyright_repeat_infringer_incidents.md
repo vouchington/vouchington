@@ -6,14 +6,17 @@ One account incident per copyright notice. Operative means a human confirm or mo
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                     |
-| `account_user_id`     | `uuid`                     | no       |                              |          |           |           | Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident. |
-| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | Copyright notice this incident belongs to. Several targets on one notice are still one incident.                    |
-| `is_operative`        | `boolean`                  | no       |                              |          |           |           | Whether this notice still counts toward the repeat-infringer review threshold.                                      |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                     |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                     |
+| Column                               | Type                                           | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
+| ------------------------------------ | ---------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `id`                                 | `uuid`                                         | no       | `uuidv7()`                   |          |           |           |                                                                                                                     |
+| `account_user_id`                    | `uuid`                                         | no       |                              |          |           |           | Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident. |
+| `copyright_notice_id`                | `uuid`                                         | no       |                              |          |           |           | Copyright notice this incident belongs to. Several targets on one notice are still one incident.                    |
+| `is_operative`                       | `boolean`                                      | no       |                              |          |           |           | Whether this notice still counts toward the repeat-infringer review threshold.                                      |
+| `current_disposition`                | `copyright_repeat_infringer_disposition_kinds` | yes      |                              |          |           |           | Current staff disposition making this incident inoperative.                                                         |
+| `current_disposition_recorded_at`    | `timestamp with time zone`                     | yes      |                              |          |           |           | Time the current incident disposition was recorded.                                                                 |
+| `current_disposition_recorded_by_id` | `uuid`                                         | yes      |                              |          |           |           | Retained staff identity that recorded the current incident disposition.                                             |
+| `created_at`                         | `timestamp with time zone`                     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                     |
+| `updated_at`                         | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,10 +26,12 @@ Not partitioned — growth: unbounded.
 - `uq_copyright_repeat_infringer_incidents__id__notice`: `UNIQUE (id, copyright_notice_id)`
 
 **Check constraints:**
-_none_
+
+- `chk_copyright_repeat_infringer_incidents__disposition`: `CHECK ((((current_disposition IS NULL) AND (current_disposition_recorded_at IS NULL) AND (current_disposition_recorded_by_id IS NULL)) OR ((current_disposition IS NOT NULL) AND (current_disposition_recorded_at IS NOT NULL) AND (current_disposition_recorded_by_id IS NOT NULL) AND (is_operative IS FALSE))))`
 
 **Foreign keys:**
 
+- `copyright_repeat_infringer_in_current_disposition_recorded_fkey`: `FOREIGN KEY (current_disposition_recorded_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_repeat_infringer_incidents_account_user_id_fkey`: `FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_repeat_infringer_incidents_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 
@@ -36,6 +41,7 @@ _none_
 - `idx_copyright_repeat_infringer_incidents__notice_id`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_id ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id, id)`
 - `idx_copyright_repeat_infringer_incidents__notice_updated`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_updated ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id, updated_at)`
 - `idx_copyright_repeat_infringer_incidents__operative_account`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account ON public.copyright_repeat_infringer_incidents USING btree (account_user_id) WHERE is_operative`
+- `idx_cpyrght_rpt_infrngr_incdnts__disposition_recorded_by`: `CREATE INDEX idx_cpyrght_rpt_infrngr_incdnts__disposition_recorded_by ON public.copyright_repeat_infringer_incidents USING btree (current_disposition_recorded_by_id) WHERE (current_disposition_recorded_by_id IS NOT NULL)`
 - `uq_copyrig_repeat_infringe_incident__account_user_id__notice_id`: `CREATE UNIQUE INDEX uq_copyrig_repeat_infringe_incident__account_user_id__notice_id ON public.copyright_repeat_infringer_incidents USING btree (account_user_id, copyright_notice_id)`
 - `uq_copyright_repeat_infringer_incidents__id__notice`: `CREATE UNIQUE INDEX uq_copyright_repeat_infringer_incidents__id__notice ON public.copyright_repeat_infringer_incidents USING btree (id, copyright_notice_id)`
 

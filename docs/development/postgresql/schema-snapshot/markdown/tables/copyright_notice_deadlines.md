@@ -6,25 +6,25 @@ Durable US counter-notice restoration window derived from an immutable substanti
 
 Not partitioned — growth: unbounded.
 
-| Column                                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                            |
-| ----------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`                                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                    |
-| `copyright_notice_id`                     | `uuid`                     | no       |                              |          |           |           | Legal case governed by this restoration deadline.                                                  |
-| `qualifying_counter_notice_assessment_id` | `uuid`                     | no       |                              |          |           |           | Compliance assessment whose referenced submission receipt starts the statutory clock.              |
-| `earliest_restoration_at`                 | `timestamp with time zone` | no       |                              |          |           |           | Start of US federal business day ten in America/New_York.                                          |
-| `escalation_at`                           | `timestamp with time zone` | no       |                              |          |           |           | Start of US federal business day fourteen, when unresolved restoration requires urgent escalation. |
-| `restoration_deadline_at`                 | `timestamp with time zone` | no       |                              |          |           |           | Exclusive end of US federal business day fourteen in America/New_York.                             |
-| `resolved_at`                             | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set when every eligible restriction covered by this deadline is restored.        |
-| `cancelled_at`                            | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set when withdrawal, reversal, or another durable ground cancels the deadline.   |
-| `created_at`                              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                    |
-| `updated_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                    |
+| Column                                             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                            |
+| -------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `id`                                               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                    |
+| `copyright_notice_id`                              | `uuid`                     | no       |                              |          |           |           | Legal case governed by this restoration deadline.                                                  |
+| `qualifying_counter_notice_assessment_identity_id` | `uuid`                     | no       |                              |          |           |           | Compliance assessment whose referenced submission receipt starts the statutory clock.              |
+| `earliest_restoration_at`                          | `timestamp with time zone` | no       |                              |          |           |           | Start of US federal business day ten in America/New_York.                                          |
+| `escalation_at`                                    | `timestamp with time zone` | no       |                              |          |           |           | Start of US federal business day fourteen, when unresolved restoration requires urgent escalation. |
+| `restoration_deadline_at`                          | `timestamp with time zone` | no       |                              |          |           |           | Exclusive end of US federal business day fourteen in America/New_York.                             |
+| `resolved_at`                                      | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set when every eligible restriction covered by this deadline is restored.        |
+| `cancelled_at`                                     | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set when withdrawal, reversal, or another durable ground cancels the deadline.   |
+| `created_at`                                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                    |
+| `updated_at`                                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `copyright_notice_deadlines_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
-- `uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id`: `UNIQUE (qualifying_counter_notice_assessment_id)`
+- `uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id`: `UNIQUE (qualifying_counter_notice_assessment_identity_id)`
 
 **Check constraints:**
 
@@ -35,7 +35,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_deadlines_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment`: `FOREIGN KEY (qualifying_counter_notice_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment`: `FOREIGN KEY (qualifying_counter_notice_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -43,7 +43,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_deadlines_pkey`: `CREATE UNIQUE INDEX copyright_notice_deadlines_pkey ON public.copyright_notice_deadlines USING btree (id)`
 - `idx_copyright_notice_deadlines__notice`: `CREATE INDEX idx_copyright_notice_deadlines__notice ON public.copyright_notice_deadlines USING btree (copyright_notice_id, id DESC)`
 - `idx_copyright_notice_deadlines__pending`: `CREATE INDEX idx_copyright_notice_deadlines__pending ON public.copyright_notice_deadlines USING btree (escalation_at, id) WHERE ((resolved_at IS NULL) AND (cancelled_at IS NULL))`
-- `uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id`: `CREATE UNIQUE INDEX uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id ON public.copyright_notice_deadlines USING btree (qualifying_counter_notice_assessment_id)`
+- `uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id`: `CREATE UNIQUE INDEX uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id ON public.copyright_notice_deadlines USING btree (qualifying_counter_notice_assessment_identity_id)`
 
 **Triggers:**
 

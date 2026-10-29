@@ -6,15 +6,19 @@ Minimal SES replay identity retained after an unlinked private intake and its ev
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                           |
-| ------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `id`                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                   |
-| `amazon_ses_message_id`  | `text`                     | no       |                              |          |           |           | Stable opaque SES delivery identifier reserved against re-admission after erasure.                |
-| `raw_sha256`             | `bytea`                    | no       |                              |          |           |           | Digest of the original MIME used to reject a reused SES delivery identifier.                      |
-| `raw_storage_key_sha256` | `bytea`                    | no       |                              |          |           |           | Digest of the original object key used to reject changed replay evidence without keeping the key. |
-| `raw_byte_size`          | `integer`                  | no       |                              |          |           |           | Original MIME size used to reject changed replay evidence.                                        |
-| `erased_at`              | `timestamp with time zone` | yes      |                              |          |           |           | Time the private intake began operational erasure; the replay identity survives.                  |
-| `created_at`             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
+| Column                        | Type                                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                                           | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                    |
+| `amazon_ses_message_id`       | `text`                                           | no       |                              |          |           |           | Stable opaque SES delivery identifier reserved against re-admission after erasure.                                                                 |
+| `raw_sha256`                  | `bytea`                                          | no       |                              |          |           |           | Digest of the original MIME used to reject a reused SES delivery identifier.                                                                       |
+| `raw_storage_key_sha256`      | `bytea`                                          | no       |                              |          |           |           | Digest of the original object key used to reject changed replay evidence without keeping the key.                                                  |
+| `raw_byte_size`               | `integer`                                        | no       |                              |          |           |           | Original MIME size used to reject changed replay evidence.                                                                                         |
+| `erased_at`                   | `timestamp with time zone`                       | yes      |                              |          |           |           | Time the private intake began operational erasure; the replay identity survives.                                                                   |
+| `review_decision`             | `copyright_notice_email_intake_review_decisions` | yes      |                              |          |           |           | Final initial staff review result, retained independently of finite review history.                                                                |
+| `review_rationale_ciphertext` | `text`                                           | yes      |                              |          |           |           | Final initial-review explanation encrypted with the receipt-owned immutable SES message identity; retained independently of finite review history. |
+| `reviewed_at`                 | `timestamp with time zone`                       | yes      |                              |          |           |           | Time of the final initial staff review.                                                                                                            |
+| `reviewed_by_id`              | `uuid`                                           | yes      |                              |          |           |           | Retained identity of the staff member who made the final initial review.                                                                           |
+| `created_at`                  | `timestamp with time zone`                       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -24,18 +28,23 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `chk_copyright_email_intake_receipts__review_result`: `CHECK ((((review_decision IS NULL) AND (reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (review_rationale_ciphertext IS NULL)) OR ((review_decision IS NOT NULL) AND (reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (review_rationale_ciphertext IS NOT NULL))))`
 - `copyright_notice_email_intake_rece_raw_storage_key_sha256_check`: `CHECK ((octet_length(raw_storage_key_sha256) = 32))`
 - `copyright_notice_email_intake_recei_amazon_ses_message_id_check`: `CHECK (((char_length(amazon_ses_message_id) >= 1) AND (char_length(amazon_ses_message_id) <= 512)))`
 - `copyright_notice_email_intake_receipts_raw_byte_size_check`: `CHECK ((raw_byte_size >= 0))`
 - `copyright_notice_email_intake_receipts_raw_sha256_check`: `CHECK ((octet_length(raw_sha256) = 32))`
+- `copyright_notice_email_intake_review_rationale_ciphertext_check`: `CHECK (((char_length(review_rationale_ciphertext) >= 1) AND (char_length(review_rationale_ciphertext) <= 1048576)))`
 
 **Foreign keys:**
-_none_
+
+- `copyright_notice_email_intake_receipts_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_email_intake_receipt_amazon_ses_message_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake_receipt_amazon_ses_message_id_key ON public.copyright_notice_email_intake_receipts USING btree (amazon_ses_message_id)`
 - `copyright_notice_email_intake_receipts_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_receipts_pkey ON public.copyright_notice_email_intake_receipts USING btree (id)`
+- `idx_copyright_notice_email_intake_receipts__reviewed_by`: `CREATE INDEX idx_copyright_notice_email_intake_receipts__reviewed_by ON public.copyright_notice_email_intake_receipts USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
 
 **Triggers:**
-_none_
+
+- `trigger_copyright_email_receipts_current_review`: `CREATE TRIGGER trigger_copyright_email_receipts_current_review BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_receipt_current_review()`

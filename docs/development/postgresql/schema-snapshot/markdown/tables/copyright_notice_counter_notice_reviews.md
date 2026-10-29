@@ -6,23 +6,23 @@ Immutable moderator formal-compliance decisions for statutory US counter-notices
 
 Not partitioned — growth: unbounded.
 
-| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                   |
-| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
-| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                           |
-| `copyright_notice_submission_id`            | `uuid`                     | no       |                              |          |           |           | Statutory counter-notice reviewed by staff.               |
-| `copyright_notice_submission_assessment_id` | `uuid`                     | no       |                              |          |           |           | Human compliance assessment created by the review.        |
-| `copyright_notice_deadline_id`              | `uuid`                     | yes      |                              |          |           |           | Restoration clock created for an accepted counter-notice. |
-| `reviewed_at`                               | `timestamp with time zone` | no       |                              |          |           |           | Time the moderator completed formal review.               |
-| `reviewed_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Moderator who completed formal review.                    |
-| `is_accepted`                               | `boolean`                  | no       |                              |          |           |           | Whether the counter-notice was formally compliant.        |
-| `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale.                            |
-| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
+| Column                                               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                   |
+| ---------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
+| `id`                                                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                           |
+| `copyright_notice_submission_id`                     | `uuid`                     | no       |                              |          |           |           | Statutory counter-notice reviewed by staff.               |
+| `copyright_notice_submission_assessment_identity_id` | `uuid`                     | no       |                              |          |           |           | Human compliance assessment created by the review.        |
+| `copyright_notice_deadline_id`                       | `uuid`                     | yes      |                              |          |           |           | Restoration clock created for an accepted counter-notice. |
+| `reviewed_at`                                        | `timestamp with time zone` | no       |                              |          |           |           | Time the moderator completed formal review.               |
+| `reviewed_by_id`                                     | `uuid`                     | yes      |                              |          |           |           | Moderator who completed formal review.                    |
+| `is_accepted`                                        | `boolean`                  | no       |                              |          |           |           | Whether the counter-notice was formally compliant.        |
+| `rationale_ciphertext`                               | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale.                            |
+| `created_at`                                         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_copyri_notice_counte_notice_review__submission_assessment_id`: `UNIQUE (copyright_notice_submission_assessment_id)`
+- `uq_copyri_notice_counte_notice_review__submission_assessment_id`: `UNIQUE (copyright_notice_submission_assessment_identity_id)`
 - `uq_copyright_notice_counter_notice_reviews__deadline_id`: `UNIQUE (copyright_notice_deadline_id)`
 - `uq_copyright_notice_counter_notice_reviews__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
@@ -34,7 +34,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_counter_notice_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyrig_notice_counter_notice_reviews__submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `fk_copyrig_notice_counter_notice_reviews__submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_counter_notice_reviews__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_counter_notice_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
@@ -42,7 +42,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notice_counter_notice_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_counter_notice_reviews_pkey ON public.copyright_notice_counter_notice_reviews USING btree (id)`
 - `idx_copyright_notice_counter_notice_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_counter_notice_reviews__reviewer ON public.copyright_notice_counter_notice_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
-- `uq_copyri_notice_counte_notice_review__submission_assessment_id`: `CREATE UNIQUE INDEX uq_copyri_notice_counte_notice_review__submission_assessment_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_assessment_id)`
+- `uq_copyri_notice_counte_notice_review__submission_assessment_id`: `CREATE UNIQUE INDEX uq_copyri_notice_counte_notice_review__submission_assessment_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_assessment_identity_id)`
 - `uq_copyright_notice_counter_notice_reviews__deadline_id`: `CREATE UNIQUE INDEX uq_copyright_notice_counter_notice_reviews__deadline_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_deadline_id)`
 - `uq_copyright_notice_counter_notice_reviews__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_counter_notice_reviews__submission_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_id)`
 
