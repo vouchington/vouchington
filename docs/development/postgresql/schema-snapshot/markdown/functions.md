@@ -1245,6 +1245,22 @@ CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_wo
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_notification_conversation_change`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_notification_conversation_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_notification_push_intent_conversation_mismatch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_notification_push_intent_conversation_mismatch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_oauth_event_mutation`
 
 ```sql

@@ -6,22 +6,22 @@ Per-activity remote Follow identity. Active cycles remain domain facts; terminal
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                      |
-| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                              |
-| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Virtual UUIDv7 creation time for per-activity Follow identity; active identities remain while terminal retention is measured from undone_at. |
-| `activity_id`     | `text`                     | no       |                              |          |           |           | External Follow URI. Undo-only assertions are actor scoped; receipt of the original Follow establishes one global URI owner.                 |
-| `remote_actor_id` | `uuid`                     | no       |                              |          |           |           | Signing remote actor that sent the Follow.                                                                                                   |
-| `target_user_id`  | `uuid`                     | no       |                              |          |           |           | Local user targeted by the Follow.                                                                                                           |
-| `undone_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Set by Undo or replacement, including Undo before Follow; never cleared while retained and starts the terminal identity retention window.    |
-| `confirmed_at`    | `timestamp with time zone` | yes      | `clock_timestamp()`          |          |           |           | When the original signed Follow was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.     |
+| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                      |
+| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                              |
+| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Virtual UUIDv7 creation time for per-activity Follow identity; active identities remain while terminal retention is measured from undone_at. |
+| `activity_id`              | `text`                     | no       |                              |          |           |           | External Follow URI. Undo-only assertions are actor scoped; receipt of the original Follow establishes one global URI owner.                 |
+| `remote_actor_identity_id` | `uuid`                     | no       |                              |          |           |           | Retained identity of the signing remote actor that sent the Follow.                                                                          |
+| `target_user_id`           | `uuid`                     | no       |                              |          |           |           | Local user targeted by the Follow.                                                                                                           |
+| `undone_at`                | `timestamp with time zone` | yes      |                              |          |           |           | Set by Undo or replacement, including Undo before Follow; never cleared while retained and starts the terminal identity retention window.    |
+| `confirmed_at`             | `timestamp with time zone` | yes      | `clock_timestamp()`          |          |           |           | When the original signed Follow was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_ap_remote_follow_activities__actor_activity`: `UNIQUE (remote_actor_id, activity_id)`
-- `uq_ap_remote_follow_activities__scope_id`: `UNIQUE (remote_actor_id, target_user_id, id)`
+- `uq_ap_remote_follow_activities__actor_activity`: `UNIQUE (remote_actor_identity_id, activity_id)`
+- `uq_ap_remote_follow_activities__scope_id`: `UNIQUE (remote_actor_identity_id, target_user_id, id)`
 
 **Check constraints:**
 
@@ -30,17 +30,18 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `activitypub_remote_follow_activities_remote_actor_id_fkey`: `FOREIGN KEY (remote_actor_id) REFERENCES remote_actors(id) ON DELETE CASCADE`
-- `activitypub_remote_follow_activities_target_user_id_fkey`: `FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `fk_ap_remote_follow_activities__remote_actor_identity`: `FOREIGN KEY (remote_actor_identity_id) REFERENCES remote_actor_identities(id) ON DELETE RESTRICT`
+- `fk_ap_remote_follow_activities__target_user_identity`: `FOREIGN KEY (target_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `activitypub_remote_follow_activities_pkey`: `CREATE UNIQUE INDEX activitypub_remote_follow_activities_pkey ON public.activitypub_remote_follow_activities USING btree (id)`
+- `idx_activitypub_remote_follow_activities__active_target`: `CREATE INDEX idx_activitypub_remote_follow_activities__active_target ON public.activitypub_remote_follow_activities USING btree (target_user_id, id) WHERE (undone_at IS NULL)`
 - `idx_activitypub_remote_follow_activities__confirmed_activity`: `CREATE UNIQUE INDEX idx_activitypub_remote_follow_activities__confirmed_activity ON public.activitypub_remote_follow_activities USING btree (activity_id) WHERE (confirmed_at IS NOT NULL)`
 - `idx_activitypub_remote_follow_activities__target_user_id`: `CREATE INDEX idx_activitypub_remote_follow_activities__target_user_id ON public.activitypub_remote_follow_activities USING btree (target_user_id)`
 - `idx_activitypub_remote_follow_activities__undone_retention`: `CREATE INDEX idx_activitypub_remote_follow_activities__undone_retention ON public.activitypub_remote_follow_activities USING btree (undone_at, id) WHERE (undone_at IS NOT NULL)`
-- `uq_ap_remote_follow_activities__actor_activity`: `CREATE UNIQUE INDEX uq_ap_remote_follow_activities__actor_activity ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, activity_id)`
-- `uq_ap_remote_follow_activities__scope_id`: `CREATE UNIQUE INDEX uq_ap_remote_follow_activities__scope_id ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, target_user_id, id)`
+- `uq_ap_remote_follow_activities__actor_activity`: `CREATE UNIQUE INDEX uq_ap_remote_follow_activities__actor_activity ON public.activitypub_remote_follow_activities USING btree (remote_actor_identity_id, activity_id)`
+- `uq_ap_remote_follow_activities__scope_id`: `CREATE UNIQUE INDEX uq_ap_remote_follow_activities__scope_id ON public.activitypub_remote_follow_activities USING btree (remote_actor_identity_id, target_user_id, id)`
 
 **Triggers:**
 _none_

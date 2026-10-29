@@ -1432,6 +1432,11 @@
 
 - `code`
 
+## `operational_tombstone_retention_names`
+
+- `remote_actors`
+- `deleted_conversations`
+
 ## `passkey_device_types`
 
 - `singleDevice`
