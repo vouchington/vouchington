@@ -66,7 +66,7 @@ export async function cleanupSupersededVoteBallotTable(
     borrowedQuery,
   )
   if (voteTable !== 'post_votes' || voteIds) return ordinary
-  const deferred = await cleanupDeferredPostVoteBallots(batchSize, now, borrowedQuery)
+  const deferred = await cleanupDeferredPostVoteBallots(batchSize, now, { query: borrowedQuery })
   return {
     ...ordinary,
     scanned: ordinary.scanned + deferred.scanned,

@@ -42,16 +42,20 @@ describe('ActivityPub ballot source retention', () => {
     expect(aged.deleted).toBe(0)
     expect(await getTestPostVoteIds(postId, userId)).toEqual([sourceId, supersederId])
     expect(await getTestPostVoteRetentionDeferredAt(postId, sourceId)).not.toBeNull()
-    const recovery = await listPendingOutboundDistributionPage('votes', undefined, 5_000)
+    const recovery = await listPendingOutboundDistributionPage(
+      'votes',
+      `${postId}__00000000-0000-7000-8000-000000000000`,
+      1,
+      postId,
+    )
     expect(recovery.rows).toContainEqual(
       expect.objectContaining({ source: 'votes', targetPostId: postId, activityId: sourceId }),
     )
 
-    const expired = await cleanupDeferredPostVoteBallots(
-      5_000,
-      new Date('2027-01-04T00:00:00.000Z'),
-    )
-    expect(expired.deleted).toBeGreaterThanOrEqual(1)
+    const expired = await cleanupDeferredPostVoteBallots(1, new Date('2027-01-04T00:00:00.000Z'), {
+      voteIds: [sourceId],
+    })
+    expect(expired.deleted).toBe(1)
     expect(await getTestPostVoteIds(postId, userId)).toEqual([supersederId])
   })
 
@@ -80,8 +84,8 @@ describe('ActivityPub ballot source retention', () => {
     await cleanupSupersededVoteBallotTable('post_votes', 2, NOW, [supersederId])
 
     await setTestPostVoteActivityPubSource(postId, sourceId, sourceId, null, NOW)
-    const delivered = await cleanupDeferredPostVoteBallots(5_000, NOW)
-    expect(delivered.deleted).toBeGreaterThanOrEqual(1)
+    const delivered = await cleanupDeferredPostVoteBallots(1, NOW, { voteIds: [sourceId] })
+    expect(delivered.deleted).toBe(1)
     expect(await getTestPostVoteIds(postId, userId)).toEqual([supersederId])
   })
 
@@ -92,8 +96,33 @@ describe('ActivityPub ballot source retention', () => {
     await setTestPostVoteActivityPubSource(postId, voteId, voteId)
     await setTestPostVoteRetentionDeferredAt(postId, voteId, NOW)
 
-    await cleanupDeferredPostVoteBallots(5_000, NOW)
+    await cleanupDeferredPostVoteBallots(1, NOW, { voteIds: [voteId] })
     expect(await getTestPostVoteIds(postId, userId)).toEqual([voteId])
     expect(await getTestPostVoteRetentionDeferredAt(postId, voteId)).toBeNull()
+  })
+
+  it('limits a due-source cleanup to its owned vote ID', async () => {
+    const first = await postForTest()
+    const second = await postForTest()
+    const firstId = uuidv7({ msecs: Date.parse('2028-01-01T00:00:00.000Z') })
+    const secondId = uuidv7({ msecs: Date.parse('2028-01-02T00:00:00.000Z') })
+    const newerId = uuidv7({ msecs: Date.parse('2029-01-01T00:00:00.000Z') })
+    for (const [fixture, sourceId] of [
+      [first, firstId],
+      [second, secondId],
+    ] as const) {
+      await insertTestPostVote(fixture.postId, fixture.userId, '127.0.0.1', 1, sourceId)
+      await insertTestPostVote(fixture.postId, fixture.userId, '127.0.0.1', 2, newerId)
+      await setTestPostVoteRetentionDeferredAt(fixture.postId, sourceId, NOW)
+    }
+    const futureNow = new Date('2030-10-23T12:00:00.000Z')
+    await expect(
+      cleanupDeferredPostVoteBallots(1, futureNow, { voteIds: [firstId, secondId] }),
+    ).rejects.toThrow('Scoped deferred post ballots must fit one page')
+
+    const firstPage = await cleanupDeferredPostVoteBallots(1, futureNow, { voteIds: [firstId] })
+    expect(firstPage).toMatchObject({ scanned: 1, deleted: 1, hasMore: false })
+    expect(await getTestPostVoteIds(second.postId, second.userId)).toEqual([secondId, newerId])
+    await cleanupDeferredPostVoteBallots(1, futureNow, { voteIds: [secondId] })
   })
 })

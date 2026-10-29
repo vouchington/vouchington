@@ -11,17 +11,20 @@ type DeferredPostVotePage = { scanned: number; deleted: number; hasMore: boolean
 export async function cleanupDeferredPostVoteBallots(
   batchSize: number,
   now: Date,
-  borrowedQuery?: TransactionQuery,
+  options: { query?: TransactionQuery; voteIds?: readonly string[] } = {},
 ): Promise<DeferredPostVotePage> {
   if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 5_000)
     throw new RangeError('Deferred post ballot batch size must be between 1 and 5000')
+  if (options.voteIds && options.voteIds.length > batchSize)
+    throw new RangeError('Scoped deferred post ballots must fit one page')
+  if (options.voteIds?.length === 0) return { scanned: 0, deleted: 0, hasMore: false }
   const cutoffId = getMinUUIDv7ForDate(
     new Date(now.getTime() - MINIMUM_TERMINAL_IDENTITY_RETENTION_DAYS * DAY_MS),
   )
-  await using ownedQuery = borrowedQuery ? undefined : await beginTransaction()
-  const query = borrowedQuery ?? ownedQuery!
-  const delivered = await cleanupDeferredPostVotePage(query, batchSize, null)
-  const expired = await cleanupDeferredPostVotePage(query, batchSize, cutoffId)
+  await using ownedQuery = options.query ? undefined : await beginTransaction()
+  const query = options.query ?? ownedQuery!
+  const delivered = await cleanupDeferredPostVotePage(query, batchSize, null, options.voteIds)
+  const expired = await cleanupDeferredPostVotePage(query, batchSize, cutoffId, options.voteIds)
   if (ownedQuery) await ownedQuery.commit()
   return {
     scanned: delivered.scanned + expired.scanned,
@@ -34,19 +37,26 @@ async function cleanupDeferredPostVotePage(
   query: TransactionQuery,
   batchSize: number,
   cutoffId: string | null,
+  voteIds?: readonly string[],
 ): Promise<DeferredPostVotePage> {
+  const parameters: unknown[] = []
+  if (cutoffId !== null) parameters.push(cutoffId)
+  if (voteIds !== undefined) parameters.push(voteIds)
+  parameters.push(batchSize + 1)
   const { rows: due } = await query<{ post_id: string; id: string }>(
     `/* listDeferredPostVoteSources */
-     -- no-mistakes-disable-next-line postgres-required-predicates: this global due-source page spans every post partition; partial ID indexes and LIMIT cap raw reads before supersession checks
+     /* no-mistakes: deadlock-safe -- each capped due page locks rows in ID order before its delete or marker update; the delivered and expired lanes run sequentially. */
+     -- no-mistakes-disable-next-line postgres-required-predicates: the unscoped due-source page spans every post partition; partial ID indexes and LIMIT cap raw reads, while scoped calls constrain an owned ID set
      SELECT post_id, id FROM post_votes
      WHERE ballot_retention_deferred_at IS NOT NULL
        AND ${cutoffId === null ? 'outbound_activitypub_distributed_at IS NOT NULL' : 'id < $1::uuid'}
-     ORDER BY id LIMIT $${cutoffId === null ? '1' : '2'} FOR UPDATE`,
-    cutoffId === null ? [batchSize + 1] : [cutoffId, batchSize + 1],
+       ${voteIds === undefined ? '' : `AND id = ANY($${cutoffId === null ? '1' : '2'}::uuid[])`}
+     ORDER BY id LIMIT $${parameters.length} FOR UPDATE`,
+    parameters,
   )
   const page = due.slice(0, batchSize)
   const postIds = page.map(row => row.post_id)
-  const voteIds = page.map(row => row.id)
+  const pageVoteIds = page.map(row => row.id)
   const { rows: deletedRows } = await query<{ deleted: number }>(
     `/* deleteDeferredPostVoteSources */
      /* no-mistakes: deadlock-safe -- due rows are locked in ID order; daily aggregate keys are inserted in day order. */
@@ -60,7 +70,7 @@ async function cleanupDeferredPostVotePage(
          RETURNING old.id, old.score, old.score_is_semantic
        )${POST_VOTE_RETENTION_TALLY_SQL}
      SELECT COUNT(*)::int AS deleted FROM deleted`,
-    [postIds, voteIds],
+    [postIds, pageVoteIds],
   )
   // If a formerly superseded row is current again, it is a current ballot and must
   // leave the due index so that the next page can make progress.
@@ -73,7 +83,7 @@ async function cleanupDeferredPostVotePage(
          AND NOT EXISTS (SELECT 1 FROM post_votes newer
            WHERE newer.post_id = vote.post_id AND newer.user_id = vote.user_id
              AND newer.id > vote.id)`,
-      [postIds, voteIds],
+      [postIds, pageVoteIds],
     )
   return {
     scanned: page.length,
