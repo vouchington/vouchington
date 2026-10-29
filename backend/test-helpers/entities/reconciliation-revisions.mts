@@ -1,5 +1,13 @@
+import { randomInt } from 'node:crypto'
 import { v7 } from 'uuid'
 import { write } from '@data-stores/psql'
+
+/** A synthetic clock inside the bootstrap child, away from wall-clock entity writes. */
+export function createTestReconciliationClock(): number {
+  const now = new Date()
+  const nextMonth = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 10)
+  return nextMonth + randomInt(0, 7 * 24 * 60 * 60 * 1000)
+}
 
 /** Creates immutable revision clocks at insertion, including two revisions at the same instant. */
 export async function insertTestReconciliationRevisionClocks(
