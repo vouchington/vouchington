@@ -1,6 +1,6 @@
 import { Readable, Transform, compose } from 'node:stream'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { fetch } from 'undici'
+import { fetch as undiciFetch, type Response } from 'undici'
 import { HttpResponseSizeError } from '@vouchington/sentry'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 
@@ -39,7 +39,7 @@ export async function fetchFeedList(
   if (cached?.etag) headers['If-None-Match'] = cached.etag
   if (cached?.lastModified) headers['If-Modified-Since'] = cached.lastModified
 
-  const response = await fetch(url, {
+  const response = await undiciFetch(url, {
     dispatcher: getExternalRequestDispatcher(),
     headers,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -76,7 +76,7 @@ export async function forgetFeedListValidators(names: readonly string[]): Promis
   await headerCache.delete(...names)
 }
 
-function cappedFeedListStream(response: globalThis.Response, url: string): Readable {
+function cappedFeedListStream(response: Response, url: string): Readable {
   if (!response.body) return Readable.from([])
   let seen = 0
   const cap = new Transform({

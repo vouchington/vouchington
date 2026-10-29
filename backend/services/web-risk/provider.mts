@@ -48,12 +48,7 @@ export async function checkWebRiskUrl(
     })
 
   if (response.status === 429 || response.status === 403) {
-    // Ambient and package `Response` declarations have version-skewed types but describe the same
-    // Undici-backed WHATWG runtime object (see @vouchington/http-transport), so this cast has no
-    // behavioral effect. Needed for programs that also load the "dom" lib (playwright,
-    // integration-tests), where the ambient global `Response` resolves to lib.dom's incompatible
-    // type instead of undici's — the two types don't overlap enough for a direct assertion.
-    await state.setProviderCooldownFromResponse(response as unknown as Response)
+    await state.setProviderCooldownFromResponse(response)
     await response.body?.cancel()
     throw new WebRiskRateLimitError(`Google Web Risk lookup rate limited (HTTP ${response.status})`)
   }

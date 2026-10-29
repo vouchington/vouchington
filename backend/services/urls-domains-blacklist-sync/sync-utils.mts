@@ -1,3 +1,4 @@
+import type { Response } from 'undici'
 import { createInterface } from 'node:readline'
 import { Readable } from 'node:stream'
 import { normalizeDomain } from '@services/urls-domains-blacklist/domains'

@@ -10,6 +10,8 @@ import createHttpError from 'http-errors'
 import undici from 'undici'
 import type { OutboundActivityJson } from './types.mts'
 
+type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
+
 const DELIVERY_TIMEOUT_MS = 10000
 // ssrf-guard@1.0.0's validateUrl short-circuits to no timeout when both `signal` and `timeoutMs`
 // are undefined (mirrors crawl-url/safety.mts:9-12's DEFAULT_DNS_TIMEOUT_MS), so this option is
@@ -31,7 +33,7 @@ export type DeliverActivityToInboxDeps = {
 
 const defaultDeps: DeliverActivityToInboxDeps = { validateUrl, fetch: undici.fetch }
 
-function cancelResponseBody(response: Response): void {
+function cancelResponseBody(response: UndiciResponse): void {
   const cancellation = response.body?.cancel()
   if (cancellation) {
     // Cancellation is best-effort cleanup; preserve the HTTP error outcome.
@@ -87,7 +89,7 @@ export async function deliverActivityToInbox(
     ? getPinnedRequestDispatcher(resolvedAddresses)
     : getExternalRequestDispatcher()
 
-  let response: Response
+  let response: UndiciResponse
   try {
     response = await deps.fetch(input.inboxUrl, {
       method: 'POST',

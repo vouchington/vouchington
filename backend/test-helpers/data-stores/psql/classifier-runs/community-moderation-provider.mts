@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { Response } from 'undici'
+import { Response, type RequestInit } from 'undici'
 
 type AnswerOptions = {
   /** Prompt ids the model answers "yes, this post breaks the rule" to. */

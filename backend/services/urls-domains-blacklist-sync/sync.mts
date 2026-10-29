@@ -21,6 +21,8 @@ import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import { ReplicaBehindError } from './replica-freshness.mts'
 export type { SyncBlacklistSourceResult } from './sync-types.mts'
 
+type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
+
 const FETCH_TIMEOUT_MS = 30_000
 const UNCONDITIONAL_NOT_MODIFIED = 'Blocklist source returned 304 to an unconditional request'
 
@@ -98,7 +100,10 @@ function hasConditionalValidators(cache: SourceCacheHeaders | null): boolean {
 }
 
 /* no-mistakes: integration=http */
-async function fetchBlacklist(url: string, cache: SourceCacheHeaders | null): Promise<Response> {
+async function fetchBlacklist(
+  url: string,
+  cache: SourceCacheHeaders | null,
+): Promise<UndiciResponse> {
   return undici.fetch(url, {
     dispatcher: getExternalRequestDispatcher(),
     headers: createBlacklistFetchHeaders(cache),
