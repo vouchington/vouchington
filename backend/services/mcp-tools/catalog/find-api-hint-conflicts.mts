@@ -1,6 +1,6 @@
 import type { Tool, ToolAnnotations, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 
-export type ApiHintConflict = { tool: string; conflict: string }
+type ApiHintConflict = { tool: string; conflict: string }
 
 const IDEMPOTENT_METHODS: ReadonlySet<ToolApiEndpoint['method']> = new Set(['PUT', 'DELETE'])
 

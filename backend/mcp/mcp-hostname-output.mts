@@ -16,7 +16,7 @@ export const HOSTNAME_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 25 
 const ELECTION_FIELDS = ['votes_count_up', 'votes_count_down', 'votes_score_net'] as const
 
 /** One hostname with its public trust vote totals. Moderation fields never reach this shape. */
-export type McpHostname = {
+type McpHostname = {
   id: string
   hostname: string
   topic_id: string | null

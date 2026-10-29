@@ -5,7 +5,8 @@ import { ALL_TOOLS, getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { ADMIN_MCP_SERVER_CONFIG, ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { planMcpCalls } from './classify-calls.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
-import { toRouteKey } from './tool-route-keys.mts'
+import { toolRouteCharges } from './tool-route-keys.mts'
+import { toolRouteKeys } from '@voucha/test-helpers/mcp-route-keys'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
 const UUID = '00000000-0000-4000-8000-000000000001'
@@ -56,12 +57,11 @@ const cases = adminMergedGroups.flatMap(group =>
     const parameters = entry.source.schema.parameters as Record<string, unknown>
     const args = sample(parameters, parameters) as Record<string, unknown>
     // A source whose arguments pick among its REST routes charges only the route they select.
-    const routes = entry.source.meta?.selectApi?.(args) ?? entry.source.meta?.api ?? []
     return {
       target: group.name,
       option: entry.option,
       args,
-      routes: routes.map(toRouteKey),
+      routes: toolRouteKeys(entry.source.meta, args),
       switched: entry.source.meta?.switch === 'copyright.mcpDecisionTools',
     }
   }),
@@ -144,7 +144,9 @@ describe('all merged admin MCP options', () => {
       requiredScopes: ['editorial:read'],
       annotations: { readOnlyHint: true },
     })
-    expect(tool?.meta?.api?.map(toRouteKey)).toEqual(['GET:/api/v1/admin/landing-pages/:pageId'])
+    expect(toolRouteCharges(tool?.meta, { page_id: UUID })).toEqual([
+      { routeKeys: ['GET:/api/v1/admin/landing-pages/:pageId'], weight: 1 },
+    ])
     expect(validateToolArguments(tool!.schema.parameters, { page_id: UUID })).toBeNull()
   })
 

@@ -25,7 +25,7 @@ type McpVerifiedCredential =
       rateLimitIdentity: { userId: string }
     }
 
-export type McpBearerAuthentication =
+type McpBearerAuthentication =
   | { status: 'missing' }
   | { status: 'invalid' }
   | (McpVerifiedCredential & {

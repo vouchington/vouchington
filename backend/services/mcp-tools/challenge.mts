@@ -2,7 +2,7 @@ import { getOAuthResourceMetadataUrl } from '@services/oauth-authorization-serve
 import { withScopePrerequisites, type ApiScope } from '@modules/scopes'
 import type { McpServerConfig } from './config.mts'
 
-export type McpBearerChallenge =
+type McpBearerChallenge =
   | { error: 'missing_credential' }
   | { error: 'invalid_token' }
   | { error: 'insufficient_scope'; scopes: readonly ApiScope[] }

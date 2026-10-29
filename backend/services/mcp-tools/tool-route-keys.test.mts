@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
 import addListItemTool from '../../mcp/add-list-item.mts'
 import setBookmarkTool from '../../mcp/set-bookmark.mts'
-import { toolRouteKeys } from '@voucha/test-helpers/mcp-route-keys'
-import { toolRouteCharges, toRouteKey } from './tool-route-keys.mts'
+import { toolRouteCharges } from './tool-route-keys.mts'
 
 const CREATE: ToolApiEndpoint = { method: 'POST', path: '/api/v1/things' }
 const REMOVE: ToolApiEndpoint = { method: 'DELETE', path: '/api/v1/things/:id' }
 const metaOf = (extra: Partial<ToolMeta>): ToolMeta =>
   ({ audience: 'user', ...extra }) as unknown as ToolMeta
 
-describe('toRouteKey', () => {
+describe('tool route bucket normalization', () => {
   it.each([
     [{ method: 'POST', path: '/api/v1/reports' }, 'POST:/api/v1/reports'],
     [{ method: 'PATCH', path: '/api/v1/posts/:idOrSlug' }, 'PATCH:/api/v1/posts/:idOrSlug'],
@@ -19,23 +18,24 @@ describe('toRouteKey', () => {
       'DELETE:/api/v1/admin/stories/:id/items/:itemId',
     ],
   ] as const)('names the bucket of %j', (endpoint, key) => {
-    expect(toRouteKey(endpoint)).toBe(key)
+    expect(toolRouteCharges(metaOf({ api: [endpoint] }), {})).toEqual([
+      { routeKeys: [key], weight: 1 },
+    ])
   })
 })
 
-describe('toolRouteKeys', () => {
+describe('tool route selection', () => {
   it('exercises no route for a tool with no metadata or no REST twin', () => {
-    expect(toolRouteKeys(undefined, {})).toEqual([])
-    expect(toolRouteKeys(metaOf({ api: null }), {})).toEqual([])
-    expect(toolRouteKeys(metaOf({}), {})).toEqual([])
+    expect(toolRouteCharges(undefined, {})).toEqual([])
+    expect(toolRouteCharges(metaOf({ api: null }), {})).toEqual([])
+    expect(toolRouteCharges(metaOf({}), {})).toEqual([])
   })
 
   it('exercises each listed route once when the tool has no selector', () => {
     const api = [CREATE, REMOVE, { method: 'DELETE', path: '/api/v1/things/{id}' }] as const
 
-    expect(toolRouteKeys(metaOf({ api: [...api] }), {})).toEqual([
-      'POST:/api/v1/things',
-      'DELETE:/api/v1/things/:id',
+    expect(toolRouteCharges(metaOf({ api: [...api] }), {})).toEqual([
+      { routeKeys: ['POST:/api/v1/things', 'DELETE:/api/v1/things/:id'], weight: 1 },
     ])
   })
 
@@ -45,8 +45,10 @@ describe('toolRouteKeys', () => {
       selectApi: args => (args['kind'] === 'remove' ? [REMOVE] : []),
     })
 
-    expect(toolRouteKeys(meta, { kind: 'remove' })).toEqual(['DELETE:/api/v1/things/:id'])
-    expect(toolRouteKeys(meta, { kind: 'other' })).toEqual([])
+    expect(toolRouteCharges(meta, { kind: 'remove' })).toEqual([
+      { routeKeys: ['DELETE:/api/v1/things/:id'], weight: 1 },
+    ])
+    expect(toolRouteCharges(meta, { kind: 'other' })).toEqual([])
   })
 })
 

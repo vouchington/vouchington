@@ -12,7 +12,7 @@ export type MergedToolSource<TArgs = never, TResult = unknown> = PackageMergedTo
   TResult,
   ToolMeta
 >
-export type MergedToolOption<TArgs = never, TResult = unknown> = {
+type MergedToolOption<TArgs = never, TResult = unknown> = {
   option: string
   source: MergedToolSource<TArgs, TResult>
 }
