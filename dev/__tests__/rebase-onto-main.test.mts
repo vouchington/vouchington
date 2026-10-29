@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -26,6 +26,10 @@ printf 'git %s\\n' "$*" >> "$log"
     `#!/usr/bin/env bash
 log="\${FAKE_COMMAND_LOG:?}"
 printf 'gh %s\\n' "$*" >> "$log"
+if [ "$*" = "stack view --json" ]; then
+  [ -n "\${FAKE_STACK_JSON:-}" ] || exit 2
+  printf '%s' "$FAKE_STACK_JSON"
+fi
 `,
   )
   await chmod(join(bin, 'git'), 0o755)
@@ -45,7 +49,7 @@ printf 'gh %s\\n' "$*" >> "$log"
         SANDBOX_RUNTIME: '',
         ...env,
         FAKE_COMMAND_LOG: logPath,
-        PATH: `${bin}:/usr/bin:/bin`,
+        PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
       },
     })
     return { exitCode: 0, log: await readFile(logPath, 'utf8'), stderr: result.stderr }
@@ -78,4 +82,27 @@ describe('rebase-onto-main', () => {
     expect(result.log).toContain('gh stack rebase')
     expect(result.log).not.toContain('git rebase origin/main')
   })
+
+  it('keeps gh stack rebase while several layers are open', async () => {
+    const result = await runRebase(['--stack', '--upstack'], {
+      FAKE_STACK_JSON: stackJson([false, false]),
+    })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('gh stack rebase --upstack')
+    expect(result.log).not.toContain('git rebase origin/main')
+  })
+
+  it('rebases the last open layer onto origin/main after lower layers merge', async () => {
+    const result = await runRebase(['--stack'], { FAKE_STACK_JSON: stackJson([true, false]) })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('git rebase origin/main')
+    expect(result.log).not.toContain('gh stack rebase')
+    expect(result.stderr).toContain('Only one open stack layer remains')
+  })
 })
+
+function stackJson(merged: boolean[]) {
+  return JSON.stringify({
+    branches: merged.map((isMerged, index) => ({ isMerged, name: `layer-${index}` })),
+  })
+}

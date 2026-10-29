@@ -28,6 +28,9 @@ The parent does not run another shepherd poll for the same stack. Run
 `pnpm exec pr-shepherd stack <pr> --until-terminal --quiet-status` for the owned stack, following
 the printed instructions. A fix on a lower layer uses `./dev/rebase-onto-main --stack` or the
 appropriate canonical `gh stack` operation; serialize Git mutations in its one worktree.
+Once lower layers merge and one open layer remains, the wrapper runs `git rebase origin/main`
+instead. If a `gh stack rebase` plan still replays commits already on `origin/main`, abort it and
+run `./dev/rebase-onto-main` without `--stack` (#4410).
 
 ### Who runs the stack
 

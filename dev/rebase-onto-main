@@ -11,7 +11,8 @@ usage() {
 Usage: ./dev/rebase-onto-main [--stack] [--upstack]
 
 Fetches origin/main, then rebases onto it. With --stack, runs gh stack rebase
-instead (add --upstack to rewrite upper stack layers).
+instead (add --upstack to rewrite upper stack layers). A stack with only one
+unmerged layer left is a plain branch, so --stack rebases it onto origin/main.
 EOF
 }
 
@@ -42,6 +43,23 @@ if $UPSTACK && ! $STACK; then
 fi
 
 git -C "$REPO_ROOT" fetch origin main
+
+open_stack_layers() {
+  gh stack view --json 2>/dev/null | node -e '
+    let input = ""
+    process.stdin.on("data", chunk => (input += chunk))
+    process.stdin.on("end", () => {
+      const { branches } = JSON.parse(input)
+      console.log(branches.filter(branch => !branch.isMerged).length)
+    })
+  ' 2>/dev/null || echo unknown
+}
+
+# gh stack rebase can replay merged trunk commits once the lower layers land (#4410).
+if $STACK && [ "$(open_stack_layers)" = 1 ]; then
+  echo "Only one open stack layer remains; rebasing onto origin/main." >&2
+  STACK=false
+fi
 
 if $STACK; then
   if $UPSTACK; then
