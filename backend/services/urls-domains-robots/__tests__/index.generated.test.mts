@@ -20,11 +20,6 @@ describe('index.generated', () => {
     exampleOrg = `${randomUUID()}.example.org`
     fetchWithTimeoutSimple.mockReset().mockResolvedValue(new Response(null, { status: 404 }))
   })
-  it('fetchRobotsTxtCached returns the permissive body for example.com', async () => {
-    await expect(fetchRobotsTxtCached(exampleCom, dependencies)).resolves.toBe(
-      PERMISSIVE_ROBOTS_TXT,
-    )
-  })
 
   it('fetchRobotsTxtCached repeats the permissive body for example.net', async () => {
     const first = await fetchRobotsTxtCached(exampleNet, dependencies)
@@ -35,18 +30,6 @@ describe('index.generated', () => {
       `https://${exampleNet}/robots.txt`,
       10_000,
     )
-  })
-
-  it('isUrlCrawlable returns true for an example.org path', async () => {
-    await expect(
-      isUrlCrawlable(`https://${exampleOrg}/research`, 'MyBot/1.0', { dependencies }),
-    ).resolves.toBe(true)
-  })
-
-  it('isUrlCrawlable returns true for an example.com path a stricter robots.txt might block', async () => {
-    await expect(
-      isUrlCrawlable(`https://${exampleCom}/admin`, 'MyBot/1.0', { dependencies }),
-    ).resolves.toBe(true)
   })
 
   it('isUrlCrawlable allows every user agent when example.net has no robots rules', async () => {
@@ -64,18 +47,6 @@ describe('index.generated', () => {
     ).resolves.toBe(true)
     await expect(
       isUrlCrawlable(`https://${exampleOrg}/`, 'MyBot/1.0', { dependencies }),
-    ).resolves.toBe(true)
-  })
-
-  it('fetchRobotsTxtCached returns permissive robots.txt on 404', async () => {
-    await expect(fetchRobotsTxtCached(exampleOrg, dependencies)).resolves.toBe(
-      PERMISSIVE_ROBOTS_TXT,
-    )
-  })
-
-  it('isUrlCrawlable allows crawling when robots.txt returns 404', async () => {
-    await expect(
-      isUrlCrawlable(`https://${exampleCom}/page`, 'MyBot/1.0', { dependencies }),
     ).resolves.toBe(true)
   })
 

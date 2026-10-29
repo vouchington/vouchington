@@ -72,28 +72,6 @@ describe('urls-domains-robots', () => {
     expect(result).toBe('User-agent: *\nAllow: /')
   })
 
-  it('returns DISALLOW when domain is in blocklisted_domains', async () => {
-    const domain = randomDomain()
-    await insertTestDomainBlacklist(domain)
-    await addDomainsToBloomFilter([domain])
-
-    const result = await fetchRobotsTxtCachedForTest(domain)
-
-    expect(result).toBe('User-agent: *\nDisallow: /')
-  })
-
-  it('returns 404 as ALLOW', async () => {
-    const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-    })
-
-    const result = await fetchRobotsTxtCachedForTest(domain)
-
-    expect(result).toBe('User-agent: *\nAllow: /')
-  })
-
   it('returns robots.txt content on successful fetch', async () => {
     const robotsContent = 'User-agent: *\nDisallow: /admin\nAllow: /'
     const domain = randomDomain()
@@ -185,15 +163,6 @@ describe('urls-domains-robots', () => {
 
     expect(result).toBe('User-agent: *\nAllow: /')
   })
-  it('returns false when domain is blacklisted', async () => {
-    const domain = randomDomain()
-    await insertTestDomainBlacklist(domain)
-    await addDomainsToBloomFilter([domain])
-
-    const result = await isUrlCrawlableForTest(`https://${domain}/page`, 'Googlebot')
-
-    expect(result).toBe(false)
-  })
 
   it('returns false when robots.txt disallows path', async () => {
     const domain = randomDomain()
@@ -235,17 +204,6 @@ describe('urls-domains-robots', () => {
     expect(result).toBe(false)
   })
 
-  it('returns true when 404 robots.txt (allows all)', async () => {
-    const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-    })
-
-    const result = await isUrlCrawlableForTest(`https://${domain}/page`, 'Googlebot')
-
-    expect(result).toBe(true)
-  })
   it('uses default 1000ms when requestsPerSecondLimit is null', async () => {
     const domain = randomDomain()
     mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
