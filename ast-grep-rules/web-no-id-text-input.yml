@@ -41,6 +41,35 @@ rule:
     - all:
         - pattern: '<FormLabel $$$>{$TEXT}</FormLabel>'
         - regex: ' (ID|UUID)\s*''\s*\}\s*</FormLabel>$'
+    - all:
+        - kind: jsx_attribute
+        - regex: '^(placeholder|aria-label)\s*=\s*\{\s*`[^`]* (ID|UUID)\s*`\s*\}$'
+    - all:
+        - pattern: '<Label $$$>{$TEXT}</Label>'
+        - regex: ' (ID|UUID)\s*`\s*\}\s*</Label>$'
+    - all:
+        - pattern: '<FormLabel $$$>{$TEXT}</FormLabel>'
+        - regex: ' (ID|UUID)\s*`\s*\}\s*</FormLabel>$'
+    - all:
+        - kind: jsx_attribute
+        - regex: '^(value|defaultValue)\s*=\s*\{\s*[\w$.?!]*(Id|_id)\s*\}$'
+        - inside:
+            stopBy: neighbor
+            any:
+              - kind: jsx_self_closing_element
+              - kind: jsx_opening_element
+            all:
+              - has:
+                  field: name
+                  regex: '^(Input|input)$'
+              - not:
+                  has:
+                    kind: jsx_attribute
+                    regex: '^readOnly$'
+              - not:
+                  has:
+                    kind: jsx_attribute
+                    regex: '^type\s*=\s*(["'']hidden["'']|\{\s*["'']hidden["'']\s*\})$'
 examples:
   - code: '<Input placeholder="Company topic ID" />'
     isValid: false
@@ -108,3 +137,42 @@ examples:
   - code: '<Input placeholder="Company ID" />'
     isValid: true
     file: 'web/storybook/design-system/input.stories.tsx'
+  - code: 'const el = <Input placeholder={`Company ID`} />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input aria-label={`Topic UUID`} />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Label>{`User ID`}</Label>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <FormLabel>{`Rewards Program ID`}</FormLabel>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input value={topicId} onChange={onChange} />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <input defaultValue={form.community_id} />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input value={form.communityId} onChange={onChange} />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input type="hidden" value={topicId} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: 'const el = <input type={"hidden"} name="x" defaultValue={form.community_id} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input value={hostname} onChange={onChange} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input placeholder={`Search topics`} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Hidden value={topicId} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input value={clientId} readOnly />'
+    isValid: true
+    file: 'web/app/page.tsx'

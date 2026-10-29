@@ -8,8 +8,8 @@ import type {
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { PostContentText } from '@/components/posts/post-content-text'
 
-function actorLabel(actor: ModerationActorSummary): string {
-  return actor.verified_display_name ?? actor.username ?? actor.id
+function actorLabel(actor: ModerationActorSummary, deletedUserLabel: string): string {
+  return actor.verified_display_name ?? actor.username ?? deletedUserLabel
 }
 
 function targetDetail(context: ModerationAppealTargetContext | null): string | null {
@@ -37,6 +37,7 @@ function targetLabel(appeal: ModerationAppeal, t: ReturnType<typeof useTranslati
 
 export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
   const t = useTranslations()
+  const deletedUserLabel = t('shared.user.deletedUser')
   const detail = targetDetail(appeal.target_context)
   const community =
     appeal.target_context && 'community' in appeal.target_context
@@ -50,7 +51,7 @@ export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
       data-pw='appeal-context'
     >
       <p className='font-medium'>{targetLabel(appeal, t)}</p>
-      {staffContext ? <p>{actorLabel(staffContext.appellant)}</p> : null}
+      {staffContext ? <p>{actorLabel(staffContext.appellant, deletedUserLabel)}</p> : null}
       {appeal.target_context?.type === 'post_removal' ? (
         <PostContentText
           as='p'
@@ -68,7 +69,9 @@ export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
         <p className='text-muted-foreground'>{staffContext.original_decision.internal_reason}</p>
       ) : null}
       {staffContext?.original_decision.actor ? (
-        <p className='text-muted-foreground'>{actorLabel(staffContext.original_decision.actor)}</p>
+        <p className='text-muted-foreground'>
+          {actorLabel(staffContext.original_decision.actor, deletedUserLabel)}
+        </p>
       ) : null}
     </div>
   )

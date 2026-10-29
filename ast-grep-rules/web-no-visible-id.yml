@@ -1,0 +1,80 @@
+id: web-no-visible-id
+language: Tsx
+severity: error
+message: 'Never render an entity ID as visible text, truncated or as a label fallback; render a label fact (username, title, slug, name) instead.'
+files:
+  - 'web/**/*.tsx'
+  - 'web/**/*.ts'
+ignores:
+  - 'web/components/ui/**'
+  - 'web/lib/links/**'
+  - 'web/lib/api/**'
+  - 'web/**/*.test.ts'
+  - 'web/**/*.test.tsx'
+  - 'web/**/*.spec.ts'
+  - 'web/**/*.spec.tsx'
+  - 'web/**/*.stories.tsx'
+constraints:
+  A:
+    regex: '(^|\.)id$|Id$|_id$'
+rule:
+  any:
+    - any:
+        - pattern: $A.slice(0, 8)
+        - pattern: $A.substring(0, 8)
+    - all:
+        - kind: binary_expression
+        - any:
+            - pattern: $L ?? $X
+            - pattern: $L || $X
+        - has:
+            field: left
+            regex: '(?i)(name|title|email|label|handle|text)$'
+        - has:
+            field: right
+            kind: member_expression
+            regex: '\.(id|\w+Id|\w+_id)$'
+    - all:
+        - kind: jsx_expression
+        - not:
+            inside:
+              kind: jsx_attribute
+              stopBy: neighbor
+        - regex: '^\{\s*[\w$.?!]+\.(id|\w+Id|\w+_id)\s*\}$'
+examples:
+  - code: 'export function Row({ user }) { return <span>{user.id}</span> }'
+    isValid: false
+    file: 'web/components/row.tsx'
+  - code: 'export function Row({ name, row }) { return <span>{name ?? row.topic_id}</span> }'
+    isValid: false
+    file: 'web/components/row.tsx'
+  - code: 'export function Row({ name, row }) { return <span>{name || row.topicId}</span> }'
+    isValid: false
+    file: 'web/components/row.tsx'
+  - code: 'export const short = (row) => row.id.slice(0, 8)'
+    isValid: false
+    file: 'web/components/row.tsx'
+  - code: 'export const short = (topicId) => topicId.substring(0, 8)'
+    isValid: false
+    file: 'web/components/row.tsx'
+  - code: 'export const label = (name, row) => name ?? row.id'
+    isValid: false
+    file: 'web/lib/labels.ts'
+  - code: 'export function Row({ row }) { return <li key={row.id}>{row.username}</li> }'
+    isValid: true
+    file: 'web/components/row.tsx'
+  - code: 'export function Row({ row }) { return <a href={href(row.id)}>{row.username}</a> }'
+    isValid: true
+    file: 'web/components/row.tsx'
+  - code: 'export const short = (title) => title.slice(0, 8)'
+    isValid: true
+    file: 'web/components/row.tsx'
+  - code: 'export function Row({ user }) { return <span>{user.id}</span> }'
+    isValid: true
+    file: 'web/components/ui/row.tsx'
+  - code: 'export const url = (row) => row.next ?? row.id'
+    isValid: true
+    file: 'web/lib/links/row.ts'
+  - code: 'export function Row({ user }) { return <span>{user.id}</span> }'
+    isValid: true
+    file: 'web/components/row.test.tsx'

@@ -14,7 +14,7 @@ import { UserBioCopy } from './user-bio-copy'
 import { getUserLabel } from '@/lib/users/user-helpers'
 import { useAuth } from '@/lib/auth/context'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
-import { createUserPathname, userHref } from '@/lib/links/entity-href'
+import { createUserPathname, userHref, userPathSegment } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { isPlatformAccount } from '@/lib/auth/account-type'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
@@ -142,7 +142,7 @@ export function UserProfileHeader({
               >
                 <Link
                   data-pw='user-profile-header-admin'
-                  href={createUserPathname(encodeURIComponent(user.username ?? user.id), '/admin')}
+                  href={createUserPathname(encodeURIComponent(userPathSegment(user)), '/admin')}
                   prefetch={false}
                 >
                   {t('extracted.users.userProfileHeader.admin_c1c224b0')}
