@@ -23,8 +23,9 @@ import {
   unverifyOAuthClient,
   verifyOAuthClient,
   type OAuthClientVerificationFilter,
-  type OAuthClientVerificationReview,
 } from './index.mts'
+
+type OAuthClientVerificationReview = Parameters<typeof verifyOAuthClient>[2]
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
 

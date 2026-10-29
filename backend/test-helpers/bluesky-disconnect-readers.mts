@@ -1,6 +1,8 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { BlueskyDisconnectRequest } from '../services/bluesky-follows/disconnect-request.mts'
+import type { requestBlueskyDisconnect } from '../services/bluesky-follows/disconnect-request.mts'
+
+type BlueskyDisconnectRequest = Awaited<ReturnType<typeof requestBlueskyDisconnect>>
 
 export async function hasTestPendingBlueskyDisconnect(
   request: BlueskyDisconnectRequest,

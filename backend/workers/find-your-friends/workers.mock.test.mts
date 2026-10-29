@@ -10,7 +10,7 @@ import {
   setTestOAuthAccountTokens,
 } from '@voucha/test-helpers'
 import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts/connect'
-import { connectPersistedOAuthAccountFlow } from '@services/oauth/flows'
+import { connectOAuthAccountFlow } from '@services/oauth/flows'
 import {
   enqueueSyncFacebookFriends,
   enqueueSyncGithubFriends,
@@ -69,10 +69,10 @@ describe('friend sync worker account identities', () => {
     if (!account.account_id) throw new Error('Expected an X account UUID')
     const add = vi.spyOn(findYourFriendsQueue, 'add')
 
-    await connectPersistedOAuthAccountFlow({
+    await connectOAuthAccountFlow({
       provider: 'x',
       currentUserId: owner.id,
-      account,
+      prepared: { persist: async () => account },
     })
 
     expect(await getOAuthAccountByProviderUserId('x', providerUserId)).toMatchObject({

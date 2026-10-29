@@ -14,7 +14,7 @@ export type SessionRequestOrigin = {
   client: ClientFamily | null
   oauthClientId: null
 }
-export type CredentialRequestOrigin =
+type CredentialRequestOrigin =
   | { interface: 'rest' | 'mcp'; credential: 'api_key'; client: null; oauthClientId: null }
   // `oauthClientId` is the `oauth_clients.id` row that the access token was issued to.
   | { interface: 'rest' | 'mcp'; credential: 'oauth'; client: null; oauthClientId: string }

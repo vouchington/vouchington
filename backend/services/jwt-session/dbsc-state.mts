@@ -94,7 +94,7 @@ export async function consumeDbscChallenge(options: {
   return 'consumed'
 }
 
-export function getDbscChallengeKey(nonce: string): string {
+function getDbscChallengeKey(nonce: string): string {
   return `${CHALLENGE_PREFIX}${nonce}`
 }
 

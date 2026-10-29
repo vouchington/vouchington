@@ -46,7 +46,7 @@ export async function connectOAuthAccountFlow(options: {
   })
 }
 
-export async function connectPersistedOAuthAccountFlow(options: {
+async function connectPersistedOAuthAccountFlow(options: {
   provider: OAuthProvider
   currentUserId: string
   account: OAuthAccount

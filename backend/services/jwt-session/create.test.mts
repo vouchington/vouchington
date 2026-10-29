@@ -12,7 +12,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
 import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
-import { upsertAuthenticatedSession } from './user-sessions.mts'
+import { registerAuthenticatedSession } from './user-sessions.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 
 describe('create', () => {
@@ -168,17 +168,19 @@ describe('create', () => {
       const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0'
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
-      await upsertAuthenticatedSession(user.id, {
+      await registerAuthenticatedSession({
         sid: v7(),
-        deviceId: v7(),
+        uid: user.id,
+        did: v7(),
         expiresAt,
-        userAgent,
+        deviceContext: { user_agent: userAgent },
       })
-      await upsertAuthenticatedSession(user.id, {
+      await registerAuthenticatedSession({
         sid: v7(),
-        deviceId: v7(),
+        uid: user.id,
+        did: v7(),
         expiresAt,
-        userAgent,
+        deviceContext: { user_agent: userAgent },
       })
 
       await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)

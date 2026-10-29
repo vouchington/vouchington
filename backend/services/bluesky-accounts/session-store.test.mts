@@ -14,7 +14,6 @@ import {
   runWithAttachedBlueskySession,
   runWithBlueskySessionAuthorization,
 } from './session-lifecycle-context.mts'
-import { BlueskySessionLifecycleConflictError } from './session-generation.mts'
 import { deleteUser } from '../users/delete.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
@@ -132,10 +131,16 @@ describe('BlueskySessionStore', () => {
       linkAuthorizationId: authorizationId,
     })
 
-    await expect(store.set(did, fakeSession())).rejects.toThrow(
-      BlueskySessionLifecycleConflictError,
-    )
-    await expect(store.del(did)).rejects.toThrow(BlueskySessionLifecycleConflictError)
+    await expect(store.set(did, fakeSession())).rejects.toMatchObject({
+      name: 'BlueskySessionLifecycleConflictError',
+      message: `Bluesky session lifecycle ownership changed for ${did}`,
+      did,
+    })
+    await expect(store.del(did)).rejects.toMatchObject({
+      name: 'BlueskySessionLifecycleConflictError',
+      message: `Bluesky session lifecycle ownership changed for ${did}`,
+      did,
+    })
     expect(await getTestBlueskyLinkedAccountRow(did)).toMatchObject({ user_id: user.id })
   })
 
@@ -154,7 +159,7 @@ describe('BlueskySessionStore', () => {
     ])
 
     expect(unlinkResult.status).toBe('fulfilled')
-    await expectRefreshCompletedOrLostLifecycleRace(refreshResult)
+    await expectRefreshCompletedOrLostLifecycleRace(refreshResult, did)
     expect(await getTestBlueskyLinkedAccountRow(did)).toBeNull()
   })
 
@@ -176,7 +181,7 @@ describe('BlueskySessionStore', () => {
     if (deletionResult.status === 'fulfilled') {
       await drainUserDeletionForTest(deletionResult.value)
     }
-    await expectRefreshCompletedOrLostLifecycleRace(refreshResult)
+    await expectRefreshCompletedOrLostLifecycleRace(refreshResult, did)
     expect(await getTestBlueskyLinkedAccountRow(did)).toBeNull()
   })
 
@@ -255,7 +260,12 @@ async function deleteLinkingSession(
 
 async function expectRefreshCompletedOrLostLifecycleRace(
   result: PromiseSettledResult<void>,
+  did: string,
 ): Promise<void> {
   if (result.status === 'fulfilled') return
-  expect(result.reason).toBeInstanceOf(BlueskySessionLifecycleConflictError)
+  expect(result.reason).toMatchObject({
+    name: 'BlueskySessionLifecycleConflictError',
+    message: `Bluesky session lifecycle ownership changed for ${did}`,
+    did,
+  })
 }

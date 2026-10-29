@@ -6,7 +6,7 @@ import {
   insertEmailAddressLoginToken,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
+import { addVerifiedEmailForUser } from '@voucha/test-helpers/entities/email-addresses'
 import {
   deleteTestUserSession,
   getActiveTestUserSessions,
@@ -20,14 +20,33 @@ import {
   getJwtRevokedKey,
   isSessionRevoked,
   revokeAllAuthenticatedSessions,
+  createDeviceAndSessionTokens,
 } from '@services/jwt-session'
-import { upsertAuthenticatedSession } from '@services/jwt-session/user-sessions'
+import { registerAuthenticatedSession } from '@services/jwt-session/user-sessions'
 
 import { v7 } from 'uuid'
 
-describe('Auth sessions routes', () => {
-  installEmailDomainDnsMock()
+async function loginForSessionRoutes(prefix: string) {
+  const emailAddress = createUniqueTestEmail(prefix)
+  const user = await createTestUser()
+  await addVerifiedEmailForUser(user.id, emailAddress)
+  const loginToken = v7()
+  await insertEmailAddressLoginToken(emailAddress, loginToken)
+  const anonymous = await createDeviceAndSessionTokens({ did: v7(), sid: v7() })
+  const response = await createRequest()
+    .post('/api/v1/auth/email-address/login')
+    .send({
+      emailAddress,
+      token: loginToken,
+      dt: anonymous.deviceToken.token,
+      st: anonymous.sessionToken.token,
+    })
+    .expect(200)
+  expect(response.body.user.id).toBe(user.id)
+  return response
+}
 
+describe('Auth sessions routes', () => {
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
   beforeEach(async () => {
@@ -40,14 +59,7 @@ describe('Auth sessions routes', () => {
   })
 
   it('lists active sessions but rejects a credential whose durable session row is gone', async () => {
-    const emailAddress = createUniqueTestEmail('sessions')
-    const loginToken = v7()
-    await insertEmailAddressLoginToken(emailAddress, loginToken)
-
-    const loginResponse = await createRequest()
-      .post('/api/v1/auth/email-address/login')
-      .send({ emailAddress, token: loginToken })
-      .expect(200)
+    const loginResponse = await loginForSessionRoutes('sessions')
 
     const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[]
     const dtCookie = loginCookies.find(cookie => cookie.startsWith('dt='))
@@ -109,14 +121,7 @@ describe('Auth sessions routes', () => {
   })
 
   it('revokes a single session row and marks its Valkey revocation key', async () => {
-    const emailAddress = createUniqueTestEmail('sessions-delete')
-    const loginToken = v7()
-    await insertEmailAddressLoginToken(emailAddress, loginToken)
-
-    const loginResponse = await createRequest()
-      .post('/api/v1/auth/email-address/login')
-      .send({ emailAddress, token: loginToken })
-      .expect(200)
+    const loginResponse = await loginForSessionRoutes('sessions-delete')
     const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[]
     const dtCookie = loginCookies.find(cookie => cookie.startsWith('dt='))
     const stCookie = loginCookies.find(cookie => cookie.startsWith('st='))
@@ -163,9 +168,10 @@ describe('Auth sessions routes', () => {
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) Chrome/126.0',
     })
 
-    await upsertAuthenticatedSession(user!.id, {
+    await registerAuthenticatedSession({
+      uid: user!.id,
       sid: session.id,
-      deviceId: session.device_id,
+      did: session.device_id,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
@@ -173,12 +179,12 @@ describe('Auth sessions routes', () => {
       device_name: 'Original laptop',
     })
 
-    await upsertAuthenticatedSession(user!.id, {
+    await registerAuthenticatedSession({
+      uid: user!.id,
       sid: session.id,
-      deviceId: session.device_id,
+      did: session.device_id,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      userAgent: 'node',
-      ipAddress: '127.0.0.1',
+      deviceContext: { user_agent: 'node', ip_address: '127.0.0.1' },
       refreshMetadata: false,
     })
 
@@ -190,14 +196,7 @@ describe('Auth sessions routes', () => {
   })
 
   it('revokes all active sessions for the current user', async () => {
-    const emailAddress = createUniqueTestEmail('sessions-revoke-all')
-    const loginToken = v7()
-    await insertEmailAddressLoginToken(emailAddress, loginToken)
-
-    const loginResponse = await createRequest()
-      .post('/api/v1/auth/email-address/login')
-      .send({ emailAddress, token: loginToken })
-      .expect(200)
+    const loginResponse = await loginForSessionRoutes('sessions-revoke-all')
     const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[]
     const dtCookie = loginCookies.find(cookie => cookie.startsWith('dt='))
     const stCookie = loginCookies.find(cookie => cookie.startsWith('st='))
@@ -239,14 +238,7 @@ describe('Auth sessions routes', () => {
   })
 
   it('does not authorize account-wide revocation from a missing session row', async () => {
-    const emailAddress = createUniqueTestEmail('sessions-revoke-legacy')
-    const loginToken = v7()
-    await insertEmailAddressLoginToken(emailAddress, loginToken)
-
-    const loginResponse = await createRequest()
-      .post('/api/v1/auth/email-address/login')
-      .send({ emailAddress, token: loginToken })
-      .expect(200)
+    const loginResponse = await loginForSessionRoutes('sessions-revoke-legacy')
     const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[]
     const dtCookie = loginCookies.find(cookie => cookie.startsWith('dt='))
     const stCookie = loginCookies.find(cookie => cookie.startsWith('st='))

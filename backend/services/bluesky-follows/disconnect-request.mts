@@ -4,7 +4,7 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
 
-export type BlueskyDisconnectRequest = {
+type BlueskyDisconnectRequest = {
   userId: string
   blueskyDid: string
   linkAuthorizationId: string

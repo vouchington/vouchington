@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, getTestUserSessionById } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
-import { upsertAuthenticatedSession } from './user-sessions.mts'
+import { registerAuthenticatedSession } from './user-sessions.mts'
 import { runTestActionsAcrossUserAgentConflict } from '@voucha/test-helpers/user-agent-conflict'
 
 describe('authenticated session persistence', () => {
@@ -16,46 +16,41 @@ describe('authenticated session persistence', () => {
     const userAgent = `session-user-agent-race-${crypto.randomUUID()}`
     const expiresAt = new Date(Date.now() + 60_000)
 
-    const [firstSession, blockedSession] = await runTestActionsAcrossUserAgentConflict(
+    await runTestActionsAcrossUserAgentConflict(
       queryOptions =>
-        upsertAuthenticatedSession(
-          user.id,
-          { sid: firstSessionId, deviceId: firstDeviceId, expiresAt, userAgent },
+        registerAuthenticatedSession(
+          {
+            sid: firstSessionId,
+            uid: user.id,
+            did: firstDeviceId,
+            expiresAt,
+            deviceContext: { user_agent: userAgent },
+          },
           queryOptions,
         ),
       queryOptions =>
-        upsertAuthenticatedSession(
-          user.id,
+        registerAuthenticatedSession(
           {
             sid: blockedSessionId,
-            deviceId: blockedDeviceId,
+            uid: user.id,
+            did: blockedDeviceId,
             expiresAt,
-            userAgent,
+            deviceContext: { user_agent: userAgent },
           },
           queryOptions,
         ),
     )
 
-    expect(firstSession).toMatchObject({
+    await expect(getTestUserSessionById(firstSessionId)).resolves.toMatchObject({
       id: firstSessionId,
       user_id: user.id,
       device_id: firstDeviceId,
       user_agent: userAgent,
     })
-    expect(blockedSession).toMatchObject({
-      id: blockedSessionId,
-      user_id: user.id,
-      device_id: blockedDeviceId,
-      user_agent: userAgent,
-    })
-    await expect(getTestUserSessionById(firstSessionId)).resolves.toMatchObject({
-      id: firstSessionId,
-      user_id: user.id,
-      user_agent: userAgent,
-    })
     await expect(getTestUserSessionById(blockedSessionId)).resolves.toMatchObject({
       id: blockedSessionId,
       user_id: user.id,
+      device_id: blockedDeviceId,
       user_agent: userAgent,
     })
     await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
@@ -67,13 +62,17 @@ describe('authenticated session persistence', () => {
     const sharedId = await upsertUserAgentString(userAgent)
     expect(sharedId).toBeTruthy()
     for (const agent of [undefined, '   ', `  ${userAgent}  `]) {
-      const session = await upsertAuthenticatedSession(user.id, {
-        sid: v7(),
-        deviceId: v7(),
+      const sid = v7()
+      await registerAuthenticatedSession({
+        sid,
+        uid: user.id,
+        did: v7(),
         expiresAt: new Date(Date.now() + 60_000),
-        userAgent: agent,
+        deviceContext: { user_agent: agent },
       })
-      expect(session?.user_agent).toBe(agent?.trim() ?? '')
+      await expect(getTestUserSessionById(sid)).resolves.toMatchObject({
+        user_agent: agent?.trim() ?? '',
+      })
     }
     await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
   })
@@ -91,23 +90,31 @@ describe('authenticated session persistence', () => {
     await expect(
       runTestActionsAcrossUserAgentConflict(
         queryOptions =>
-          upsertAuthenticatedSession(
-            user.id,
-            { sid: firstSessionId, deviceId: firstDeviceId, expiresAt, userAgent },
+          registerAuthenticatedSession(
+            {
+              sid: firstSessionId,
+              uid: user.id,
+              did: firstDeviceId,
+              expiresAt,
+              deviceContext: { user_agent: userAgent },
+            },
             queryOptions,
           ),
         () => Promise.reject(failure),
       ),
     ).rejects.toBe(failure)
 
-    await expect(
-      upsertAuthenticatedSession(user.id, {
-        sid: retrySessionId,
-        deviceId: retryDeviceId,
-        expiresAt,
-        userAgent,
-      }),
-    ).resolves.toMatchObject({ id: retrySessionId })
+    await registerAuthenticatedSession({
+      sid: retrySessionId,
+      uid: user.id,
+      did: retryDeviceId,
+      expiresAt,
+      deviceContext: { user_agent: userAgent },
+    })
+    await expect(getTestUserSessionById(retrySessionId)).resolves.toMatchObject({
+      id: retrySessionId,
+      device_id: retryDeviceId,
+    })
   })
 
   it('keeps the early-success diagnostic for a non-blocking action', async () => {
@@ -118,13 +125,13 @@ describe('authenticated session persistence', () => {
     await expect(
       runTestActionsAcrossUserAgentConflict(
         queryOptions =>
-          upsertAuthenticatedSession(
-            user.id,
+          registerAuthenticatedSession(
             {
               sid: v7(),
-              deviceId: v7(),
+              uid: user.id,
+              did: v7(),
               expiresAt,
-              userAgent,
+              deviceContext: { user_agent: userAgent },
             },
             queryOptions,
           ),

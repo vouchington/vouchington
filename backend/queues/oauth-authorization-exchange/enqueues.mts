@@ -15,7 +15,7 @@ const enqueueExchangeJob = createBackgroundEnqueue(OAUTH_AUTHORIZATION_EXCHANGE_
 
 const enqueueDispatcherJob = createBackgroundEnqueue(OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB)
 
-export const enqueueBulkOAuthAuthorizationExchanges = createBackgroundBulkEnqueue(
+const enqueueBulkOAuthAuthorizationExchanges = createBackgroundBulkEnqueue(
   OAUTH_AUTHORIZATION_EXCHANGE_JOB,
   (data: OAuthAuthorizationExchangeJobData) => ({
     data,
@@ -85,7 +85,7 @@ const DEFAULT_DISPATCHER_DEDUPLICATION_ID = 'oauth-authorization-exchange-dispat
  * return `null`. The serialized `dispatcher` ordering key still keeps passes from racing, and the
  * durable rows re-derive all work, so a trigger accepted while a pass runs just queues behind it.
  */
-export function getOAuthAuthorizationExchangeDispatcherJobOptions(
+function getOAuthAuthorizationExchangeDispatcherJobOptions(
   deduplicationId: string = DEFAULT_DISPATCHER_DEDUPLICATION_ID,
 ) {
   return {
