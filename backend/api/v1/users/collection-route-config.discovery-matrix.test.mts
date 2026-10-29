@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { isPrivateDiscoveryPath } from '@ts-shared/route-classification'
 import {
   PRIVATE_USER_PROFILE_COLLECTIONS,
-  PUBLIC_USER_PROFILE_COLLECTIONS,
+  USER_PROFILE_COLLECTIONS,
   getProfileCollectionRouteSuffix,
 } from '@ts-shared/user-profile-collections'
 
@@ -61,8 +61,10 @@ describe('route-classification reconciliation — backend collection privacy', (
 
   it('public catalog collection paths stay public for discovery', () => {
     const userId = 'user-id-123'
-    const unexpectedlyPrivate = PUBLIC_USER_PROFILE_COLLECTIONS.filter(collection =>
-      isPrivateDiscoveryPath(`/user/${userId}/${getProfileCollectionRouteSuffix(collection)}`),
+    const unexpectedlyPrivate = USER_PROFILE_COLLECTIONS.filter(
+      collection =>
+        collection.access === 'public' &&
+        isPrivateDiscoveryPath(`/user/${userId}/${getProfileCollectionRouteSuffix(collection)}`),
     ).map(getProfileCollectionRouteSuffix)
     expect(unexpectedlyPrivate).toEqual([])
   })

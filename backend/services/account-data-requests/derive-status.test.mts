@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { attachDerivedStatus, isActiveDataRequest } from './derive-status.mts'
-import { deriveDataRequestStatus } from '@voucha/types/entities/account-data-request'
 import type { UserDataRequestRow } from './types.mts'
 
 const baseRow: UserDataRequestRow = {
@@ -21,14 +20,16 @@ const baseRow: UserDataRequestRow = {
   updated_at: new Date('2026-02-22T00:00:00.000Z'),
 }
 
-describe('deriveDataRequestStatus', () => {
+const statusOf = (row: UserDataRequestRow) => attachDerivedStatus(row).status
+
+describe('derived request status', () => {
   it('returns pending when only queued_at is set', () => {
-    expect(deriveDataRequestStatus(baseRow)).toBe('pending')
+    expect(statusOf(baseRow)).toBe('pending')
   })
 
   it('returns processing when processing_started_at is set but not completed/failed', () => {
     expect(
-      deriveDataRequestStatus({
+      statusOf({
         ...baseRow,
         processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
       }),
@@ -52,13 +53,13 @@ describe('deriveDataRequestStatus', () => {
       }
 
       vi.setSystemTime(new Date(expiresAt.getTime() - 1))
-      expect(deriveDataRequestStatus(completed)).toBe('ready')
+      expect(statusOf(completed)).toBe('ready')
 
       vi.setSystemTime(expiresAt)
-      expect(deriveDataRequestStatus(completed)).toBe('expired')
+      expect(statusOf(completed)).toBe('expired')
 
       vi.setSystemTime(new Date(expiresAt.getTime() + 1))
-      expect(deriveDataRequestStatus(completed)).toBe('expired')
+      expect(statusOf(completed)).toBe('expired')
     } finally {
       vi.useRealTimers()
     }
@@ -66,7 +67,7 @@ describe('deriveDataRequestStatus', () => {
 
   it('returns ready when completed with active s3_key and no expiry deadline', () => {
     expect(
-      deriveDataRequestStatus({
+      statusOf({
         ...baseRow,
         processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
         completed_at: new Date('2026-02-22T00:02:00.000Z'),
@@ -78,7 +79,7 @@ describe('deriveDataRequestStatus', () => {
 
   it('returns expired when completed but s3_key has been reclaimed', () => {
     expect(
-      deriveDataRequestStatus({
+      statusOf({
         ...baseRow,
         processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
         completed_at: new Date('2026-02-22T00:02:00.000Z'),
@@ -90,7 +91,7 @@ describe('deriveDataRequestStatus', () => {
 
   it('returns failed when failed_at is set, even if completed_at is also set', () => {
     expect(
-      deriveDataRequestStatus({
+      statusOf({
         ...baseRow,
         processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
         completed_at: new Date('2026-02-22T00:02:00.000Z'),
@@ -102,7 +103,7 @@ describe('deriveDataRequestStatus', () => {
 
   it('returns failed when failed_at is set on an otherwise pending row', () => {
     expect(
-      deriveDataRequestStatus({
+      statusOf({
         ...baseRow,
         failed_at: new Date('2026-02-22T00:01:00.000Z'),
       }),

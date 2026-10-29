@@ -27,7 +27,7 @@ type DataRequestLifecycle = Pick<
   'processing_started_at' | 'completed_at' | 'failed_at' | 's3_key' | 'expires_at'
 >
 
-export function deriveDataRequestStatus(row: DataRequestLifecycle): DataRequestStatus {
+function deriveDataRequestStatus(row: DataRequestLifecycle): DataRequestStatus {
   if (row.failed_at) return 'failed'
   if (row.completed_at) {
     if (!row.s3_key) return 'expired'
