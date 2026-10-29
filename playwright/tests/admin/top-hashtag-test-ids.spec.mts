@@ -1,5 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import {
   createTestUser,
@@ -12,7 +12,7 @@ import { createUnlinkedTopicAlias } from '../../../backend/services/topics/alias
 import { refreshMaterializedView } from '../../../backend/data-stores/psql/migrate.mts'
 
 test.describe('Top hashtag controls', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   let unlinkedHashtag = ''
   let linkedHashtag = ''

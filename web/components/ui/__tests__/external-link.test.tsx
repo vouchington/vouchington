@@ -4,12 +4,19 @@ import { ExternalLink } from '@/components/ui/external-link'
 
 describe('ExternalLink', () => {
   it('renders as anchor with correct attributes for https url', () => {
-    render(<ExternalLink href='https://example.com'>Link</ExternalLink>)
+    render(
+      <ExternalLink
+        href='https://example.com'
+        data-pw='external-link-test-source'
+      >
+        Link
+      </ExternalLink>,
+    )
     const link = screen.getByRole('link', { name: 'Link' })
     expect(link).toHaveAttribute('href', 'https://example.com')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'nofollow noopener noreferrer')
-    expect(link).toHaveAttribute('data-pw', 'external-link')
+    expect(link).toHaveAttribute('data-pw', 'external-link-test-source')
   })
 
   it('renders as anchor for http url', () => {
