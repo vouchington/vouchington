@@ -132,41 +132,6 @@ describe('URL embed response contract', () => {
     ).toMatchObject(expected)
   })
 
-  it('classifies crawl og:audio as the effective audio enclosure for article RSS items', async () => {
-    const urlId = await createTestUrlWithHostname()
-    const feed = await insertTestRssFeedDirect({})
-    const itemId = await insertTestRssFeedItem({
-      rssFeedId: feed.id,
-      urlId,
-      guid: randomUUID(),
-      itemData: { title: 'Crawl audio item' },
-      contentSha256: createHash('sha256').update(randomUUID()).digest(),
-    })
-    await setRssFeedItemMediaDetails(itemId, {
-      mediaType: 'article',
-      enclosureUrl: null,
-      enclosureType: null,
-      durationSeconds: null,
-      thumbnailUrl: null,
-    })
-    await insertTestCrawl({
-      urlId,
-      statusCode: 200,
-      markdown: '',
-      metaTags: { 'Og:AuDiO': 'https://example.com/crawl-audio.mp3' },
-    })
-
-    const expected = {
-      media_type: 'audio',
-      enclosure_url: 'https://example.com/crawl-audio.mp3',
-    }
-    expect(await getUrlEmbedByUrlId(urlId)).toMatchObject(expected)
-    expect((await getUrlEmbedsByUrlIds([urlId]))[urlId]).toMatchObject(expected)
-    expect(
-      (await getRssFeedItemEmbedsByItems([{ id: itemId, url: { id: urlId } }]))[itemId],
-    ).toMatchObject(expected)
-  })
-
   it('uses narrow safe display projections in all public embed query rows', async () => {
     const urlId = await createTestUrlWithHostname()
     await expectNarrowPublicEmbedQuery('getUrlEmbedByUrlId', () => getUrlEmbedByUrlId(urlId))

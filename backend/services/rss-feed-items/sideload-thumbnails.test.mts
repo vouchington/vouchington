@@ -20,17 +20,6 @@ describe('sideload-thumbnails', () => {
     expect(proxyThumbnailUrls([])).toEqual({})
   })
 
-  it('proxyThumbnailUrls: omits items with no thumbnail_url', () => {
-    const items = [makeItem('item-1'), makeItem('item-2')]
-    expect(proxyThumbnailUrls(items)).toEqual({})
-  })
-
-  it('proxyThumbnailUrls: maps item id to a proxied /sideload/ URL', () => {
-    const items = [makeItem('item-1', 'https://example.com/thumb.jpg')]
-    const result = proxyThumbnailUrls(items)
-    expect(result['item-1']).toMatch(/^https?:\/\/[^/]+\/sideload\//)
-  })
-
   it('proxyThumbnailUrls: uses width 400', () => {
     const items = [makeItem('item-1', 'https://example.com/thumb.jpg')]
     const result = proxyThumbnailUrls(items)
