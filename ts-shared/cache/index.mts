@@ -9,8 +9,6 @@ export {
   rssFeedTag,
   rssFeedItemTag,
   SITEMAP_TAG,
-  RSS_TAG,
-  STATIC_TAG,
   HTML_TAG,
   deriveCacheTags,
 } from './cache-tags.mts'

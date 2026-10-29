@@ -39,8 +39,8 @@ export const rssFeedItemTag = (id: string): string => cacheTag('rss-feed-item', 
 // existing anon TTL window instead.
 
 export const SITEMAP_TAG = 'sitemap'
-export const RSS_TAG = 'rss'
-export const STATIC_TAG = 'static'
+const RSS_TAG = 'rss'
+const STATIC_TAG = 'static'
 // Fallback for any cacheable page that isn't a single-entity detail page (home, search,
 // list/collection pages such as /reviews or /cards). These are high-cardinality and don't
 // map to one entity, so they share one coarse, purge-by-tag-able class instead of being
@@ -145,7 +145,7 @@ function stripMarkdownExtension(idOrSlug: string): string {
 // tag-based purge on mutation. Not reachable today (SUPPORTED_UI_LOCALES is `['en']`, so no
 // locale prefix exists yet); strip any locale prefix from `pathname` here when locale-prefixed
 // routing ships.
-export function deriveEntityCacheTags(pathname: string): string[] {
+function deriveEntityCacheTags(pathname: string): string[] {
   // Decode per segment, never the whole pathname: an identifier containing a literal `/` reaches
   // the edge as `%2F`, which `URL.pathname` leaves encoded, and decoding before the split would
   // manufacture a segment boundary that the route never had. Family and static-subroute segments

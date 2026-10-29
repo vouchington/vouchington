@@ -9,13 +9,12 @@ import {
   hostnameTag,
   rssFeedTag,
   rssFeedItemTag,
-  deriveEntityCacheTags,
   deriveCacheTags,
   SITEMAP_TAG,
-  RSS_TAG,
-  STATIC_TAG,
   HTML_TAG,
 } from './cache-tags.mts'
+
+const noContext = { isSitemap: false, isRss: false, isStatic: false }
 
 describe('tag formatters', () => {
   it('formats each entity family with its own prefix', () => {
@@ -43,39 +42,41 @@ describe('tag formatters', () => {
   })
 })
 
-describe('deriveEntityCacheTags', () => {
+describe('deriveCacheTags entity routes', () => {
   it('tags a user detail page', () => {
-    expect(deriveEntityCacheTags('/user/alice')).toEqual(['user:alice'])
+    expect(deriveCacheTags('/user/alice', noContext)).toEqual(['user:alice'])
   })
 
   it('tags landing pages with the owning user tag', () => {
-    expect(deriveEntityCacheTags('/landing/alice')).toEqual(['user:alice'])
-    expect(deriveEntityCacheTags('/landing/alice/primary-links')).toEqual(['user:alice'])
+    expect(deriveCacheTags('/landing/alice', noContext)).toEqual(['user:alice'])
+    expect(deriveCacheTags('/landing/alice/primary-links', noContext)).toEqual(['user:alice'])
   })
 
   it('tags a post detail page by post-type slug', () => {
-    expect(deriveEntityCacheTags('/review/my-review-slug')).toEqual(['post:my-review-slug'])
-    expect(deriveEntityCacheTags('/discussion/some-id')).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/review/my-review-slug', noContext)).toEqual(['post:my-review-slug'])
+    expect(deriveCacheTags('/discussion/some-id', noContext)).toEqual(['post:some-id'])
   })
 
   it('tags the separately-routable story detail page with the same post tag as its canonical discussion URL', () => {
-    expect(deriveEntityCacheTags('/story/some-id')).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/story/some-id', noContext)).toEqual(['post:some-id'])
   })
 
   it('normalizes an id-or-slug segment before tagging so mixed-case URLs still purge correctly', () => {
-    expect(deriveEntityCacheTags('/user/Alice')).toEqual(['user:alice'])
-    expect(deriveEntityCacheTags('/discussion/Some-Id')).toEqual(['post:some-id'])
-    expect(deriveEntityCacheTags('/card/Chase-Sapphire')).toEqual(['topic:chase-sapphire'])
+    expect(deriveCacheTags('/user/Alice', noContext)).toEqual(['user:alice'])
+    expect(deriveCacheTags('/discussion/Some-Id', noContext)).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/card/Chase-Sapphire', noContext)).toEqual(['topic:chase-sapphire'])
   })
 
   it('tags a topic detail page by topic-type slug', () => {
-    expect(deriveEntityCacheTags('/card/chase-sapphire')).toEqual(['topic:chase-sapphire'])
-    expect(deriveEntityCacheTags('/topic/some-id')).toEqual(['topic:some-id'])
+    expect(deriveCacheTags('/card/chase-sapphire', noContext)).toEqual(['topic:chase-sapphire'])
+    expect(deriveCacheTags('/topic/some-id', noContext)).toEqual(['topic:some-id'])
   })
 
   it('tags a fediverse instance page with the topic tag a topic purge emits', () => {
-    expect(deriveEntityCacheTags('/instance/mastodon-example')).toEqual(['topic:mastodon-example'])
-    expect(deriveEntityCacheTags('/instance/mastodon-example/posts')).toEqual([
+    expect(deriveCacheTags('/instance/mastodon-example', noContext)).toEqual([
+      'topic:mastodon-example',
+    ])
+    expect(deriveCacheTags('/instance/mastodon-example/posts', noContext)).toEqual([
       'topic:mastodon-example',
     ])
     expect(
@@ -85,142 +86,148 @@ describe('deriveEntityCacheTags', () => {
         isStatic: false,
       }),
     ).toEqual(['topic:mastodon-example'])
-    expect(deriveEntityCacheTags('/instances')).toEqual([])
+    expect(deriveCacheTags('/instances', noContext)).toEqual(['html'])
   })
 
   it('ignores extra path depth beyond the id-or-slug segment', () => {
-    expect(deriveEntityCacheTags('/user/alice/reviews')).toEqual(['user:alice'])
-    expect(deriveEntityCacheTags('/card/chase-sapphire/settings/about')).toEqual([
+    expect(deriveCacheTags('/user/alice/reviews', noContext)).toEqual(['user:alice'])
+    expect(deriveCacheTags('/card/chase-sapphire/settings/about', noContext)).toEqual([
       'topic:chase-sapphire',
     ])
   })
 
-  it('returns [] for an unrecognized family segment', () => {
-    expect(deriveEntityCacheTags('/podcasts/apple-news')).toEqual([])
+  it('uses the html fallback for an unrecognized family segment', () => {
+    expect(deriveCacheTags('/podcasts/apple-news', noContext)).toEqual(['html'])
   })
 
   it('does not mint a tag when a recognized route lacks an entity identifier', () => {
     for (const pathname of ['/api/v1/posts', '/md/posts', '/user', '/landing']) {
-      expect(deriveEntityCacheTags(pathname)).toEqual([])
+      expect(deriveCacheTags(pathname, noContext)).toEqual(['html'])
     }
   })
 
   it('tags a domain detail page with the hostname family, since it renders hostname data', () => {
-    expect(deriveEntityCacheTags('/domain/example.com')).toEqual(['hostname:example.com'])
+    expect(deriveCacheTags('/domain/example.com', noContext)).toEqual(['hostname:example.com'])
   })
 
   it('tags a community detail page with the community family', () => {
-    expect(deriveEntityCacheTags('/communities/voucha-members')).toEqual([
+    expect(deriveCacheTags('/communities/voucha-members', noContext)).toEqual([
       'community:voucha-members',
     ])
   })
 
   it('normalizes a domain id-or-slug segment before tagging', () => {
-    expect(deriveEntityCacheTags('/domain/Example.com')).toEqual(['hostname:example.com'])
+    expect(deriveCacheTags('/domain/Example.com', noContext)).toEqual(['hostname:example.com'])
   })
 
   it('tags a domain detail page addressed by hostname UUID with the same hostname family', () => {
-    expect(deriveEntityCacheTags('/domain/some-uuid')).toEqual(['hostname:some-uuid'])
+    expect(deriveCacheTags('/domain/some-uuid', noContext)).toEqual(['hostname:some-uuid'])
   })
 
   it('tags a backend API detail route by its plural resource family', () => {
-    expect(deriveEntityCacheTags('/api/v1/posts/some-id')).toEqual(['post:some-id'])
-    expect(deriveEntityCacheTags('/api/v1/topics/chase-sapphire')).toEqual(['topic:chase-sapphire'])
-    expect(deriveEntityCacheTags('/api/v1/users/alice')).toEqual(['user:alice'])
-    expect(deriveEntityCacheTags('/api/v1/communities/voucha-members')).toEqual([
+    expect(deriveCacheTags('/api/v1/posts/some-id', noContext)).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/api/v1/topics/chase-sapphire', noContext)).toEqual([
+      'topic:chase-sapphire',
+    ])
+    expect(deriveCacheTags('/api/v1/users/alice', noContext)).toEqual(['user:alice'])
+    expect(deriveCacheTags('/api/v1/communities/voucha-members', noContext)).toEqual([
       'community:voucha-members',
     ])
-    expect(deriveEntityCacheTags('/api/v1/lists/some-id')).toEqual(['list:some-id'])
-    expect(deriveEntityCacheTags('/api/v1/stories/some-id')).toEqual(['story:some-id'])
-    expect(deriveEntityCacheTags('/api/v1/rss-feeds/some-id')).toEqual(['rss-feed:some-id'])
-    expect(deriveEntityCacheTags('/api/v1/rss-feed-items/some-id')).toEqual([
+    expect(deriveCacheTags('/api/v1/lists/some-id', noContext)).toEqual(['list:some-id'])
+    expect(deriveCacheTags('/api/v1/stories/some-id', noContext)).toEqual(['story:some-id'])
+    expect(deriveCacheTags('/api/v1/rss-feeds/some-id', noContext)).toEqual(['rss-feed:some-id'])
+    expect(deriveCacheTags('/api/v1/rss-feed-items/some-id', noContext)).toEqual([
       'rss-feed-item:some-id',
     ])
   })
 
-  it('returns [] for static rss-feeds API subroutes instead of mistaking the literal segment for an rss-feed id', () => {
-    expect(deriveEntityCacheTags('/api/v1/rss-feeds/trending')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/rss-feeds/recommended')).toEqual([])
+  it('uses the html fallback for static rss-feeds API subroutes instead of mistaking the literal segment for an rss-feed id', () => {
+    expect(deriveCacheTags('/api/v1/rss-feeds/trending', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/rss-feeds/recommended', noContext)).toEqual(['html'])
   })
 
-  it('returns [] for static community and list API subroutes instead of mistaking literals for ids', () => {
-    expect(deriveEntityCacheTags('/api/v1/communities/invite-redemptions')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/lists/contains')).toEqual([])
+  it('uses the html fallback for static community and list API subroutes instead of mistaking literals for ids', () => {
+    expect(deriveCacheTags('/api/v1/communities/invite-redemptions', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/lists/contains', noContext)).toEqual(['html'])
   })
 
   it('ignores extra path depth beyond the id-or-slug on an API detail route', () => {
-    expect(deriveEntityCacheTags('/api/v1/posts/some-id/images')).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/api/v1/posts/some-id/images', noContext)).toEqual(['post:some-id'])
   })
 
-  it('returns [] for an unrecognized API family segment', () => {
-    expect(deriveEntityCacheTags('/api/v1/admin/mcp')).toEqual([])
+  it('uses the html fallback for an unrecognized API family segment', () => {
+    expect(deriveCacheTags('/api/v1/admin/mcp', noContext)).toEqual(['html'])
   })
 
-  it('returns [] for an API path with no id-or-slug segment', () => {
-    expect(deriveEntityCacheTags('/api/v1/posts')).toEqual([])
+  it('uses the html fallback for an API path with no id-or-slug segment', () => {
+    expect(deriveCacheTags('/api/v1/posts', noContext)).toEqual(['html'])
   })
 
-  it('returns [] for static API subroutes instead of mistaking the literal segment for a topic id', () => {
-    expect(deriveEntityCacheTags('/api/v1/topics/compare')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/topics/publisher-types')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/topics/aliases')).toEqual([])
+  it('uses the html fallback for static API subroutes instead of mistaking the literal segment for a topic id', () => {
+    expect(deriveCacheTags('/api/v1/topics/compare', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/topics/publisher-types', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/topics/aliases', noContext)).toEqual(['html'])
   })
 
   it('still tags a real topic id-or-slug that happens to differ from a static subroute name', () => {
-    expect(deriveEntityCacheTags('/api/v1/topics/chase-sapphire')).toEqual(['topic:chase-sapphire'])
+    expect(deriveCacheTags('/api/v1/topics/chase-sapphire', noContext)).toEqual([
+      'topic:chase-sapphire',
+    ])
   })
 
-  it('returns [] for a bare single-segment path', () => {
-    expect(deriveEntityCacheTags('/reviews')).toEqual([])
+  it('uses the html fallback for a bare single-segment path', () => {
+    expect(deriveCacheTags('/reviews', noContext)).toEqual(['html'])
   })
 
-  it('returns [] for the root path', () => {
-    expect(deriveEntityCacheTags('/')).toEqual([])
+  it('uses the html fallback for the root path', () => {
+    expect(deriveCacheTags('/', noContext)).toEqual(['html'])
   })
 
   it('tags a hostname detail API route', () => {
-    expect(deriveEntityCacheTags('/api/v1/hostnames/example.com')).toEqual(['hostname:example.com'])
+    expect(deriveCacheTags('/api/v1/hostnames/example.com', noContext)).toEqual([
+      'hostname:example.com',
+    ])
   })
 
-  it('returns [] for static hostname API subroutes instead of mistaking the literal segment for a hostname id', () => {
-    expect(deriveEntityCacheTags('/api/v1/hostnames/top')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/hostnames/compare')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/hostnames/social')).toEqual([])
-    expect(deriveEntityCacheTags('/api/v1/hostnames/blocked')).toEqual([])
+  it('uses the html fallback for static hostname API subroutes instead of mistaking the literal segment for a hostname id', () => {
+    expect(deriveCacheTags('/api/v1/hostnames/top', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/hostnames/compare', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/hostnames/social', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/api/v1/hostnames/blocked', noContext)).toEqual(['html'])
   })
 
   it('tags a markdown detail route by its plural resource family', () => {
-    expect(deriveEntityCacheTags('/md/posts/some-id')).toEqual(['post:some-id'])
-    expect(deriveEntityCacheTags('/md/topics/chase-sapphire')).toEqual(['topic:chase-sapphire'])
-    expect(deriveEntityCacheTags('/md/users/alice')).toEqual(['user:alice'])
+    expect(deriveCacheTags('/md/posts/some-id', noContext)).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/md/topics/chase-sapphire', noContext)).toEqual([
+      'topic:chase-sapphire',
+    ])
+    expect(deriveCacheTags('/md/users/alice', noContext)).toEqual(['user:alice'])
   })
 
   it('ignores extra path depth beyond the id-or-slug on a markdown detail route', () => {
-    expect(deriveEntityCacheTags('/md/posts/some-id/comments')).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/md/posts/some-id/comments', noContext)).toEqual(['post:some-id'])
   })
 
-  it('returns [] for an unrecognized markdown family segment', () => {
-    expect(deriveEntityCacheTags('/md/webhooks/stripe')).toEqual([])
+  it('uses the html fallback for an unrecognized markdown family segment', () => {
+    expect(deriveCacheTags('/md/webhooks/stripe', noContext)).toEqual(['html'])
   })
 
-  it('returns [] for a markdown path with no id-or-slug segment', () => {
-    expect(deriveEntityCacheTags('/md/posts')).toEqual([])
+  it('uses the html fallback for a markdown path with no id-or-slug segment', () => {
+    expect(deriveCacheTags('/md/posts', noContext)).toEqual(['html'])
   })
 
   it('strips a .md alias suffix from a web-route id-or-slug so the tag matches the real entity', () => {
-    expect(deriveEntityCacheTags('/discussion/some-id.md')).toEqual(['post:some-id'])
-    expect(deriveEntityCacheTags('/card/chase-sapphire.md')).toEqual(['topic:chase-sapphire'])
-    expect(deriveEntityCacheTags('/user/alice.md')).toEqual(['user:alice'])
+    expect(deriveCacheTags('/discussion/some-id.md', noContext)).toEqual(['post:some-id'])
+    expect(deriveCacheTags('/card/chase-sapphire.md', noContext)).toEqual(['topic:chase-sapphire'])
+    expect(deriveCacheTags('/user/alice.md', noContext)).toEqual(['user:alice'])
   })
 
   it('does not strip a bare ".md" segment down to an empty id-or-slug', () => {
-    expect(deriveEntityCacheTags('/user/.md')).toEqual(['user:.md'])
+    expect(deriveCacheTags('/user/.md', noContext)).toEqual(['user:.md'])
   })
 })
 
 describe('deriveCacheTags', () => {
-  const noContext = { isSitemap: false, isRss: false, isStatic: false }
-
   it('prefers an entity tag over any class tag', () => {
     expect(deriveCacheTags('/user/alice', { ...noContext, isStatic: true })).toEqual(['user:alice'])
   })
@@ -232,11 +239,11 @@ describe('deriveCacheTags', () => {
   })
 
   it('falls back to the rss class tag', () => {
-    expect(deriveCacheTags('/feed.xml', { ...noContext, isRss: true })).toEqual([RSS_TAG])
+    expect(deriveCacheTags('/feed.xml', { ...noContext, isRss: true })).toEqual(['rss'])
   })
 
   it('falls back to the static class tag', () => {
-    expect(deriveCacheTags('/robots.txt', { ...noContext, isStatic: true })).toEqual([STATIC_TAG])
+    expect(deriveCacheTags('/robots.txt', { ...noContext, isStatic: true })).toEqual(['static'])
   })
 
   it('falls back to the generic html class tag for unclassified pages', () => {

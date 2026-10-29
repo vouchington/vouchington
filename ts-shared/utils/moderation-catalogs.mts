@@ -20,7 +20,7 @@ export const REVIEW_DISPUTE_ACTIONS = ['no_action', 'remove', 'annotate', 'dismi
 export type ReviewDisputeAction = (typeof REVIEW_DISPUTE_ACTIONS)[number]
 export type ReviewDisputeRecommendedAction = ReviewDisputeAction
 
-export const REVIEW_DISPUTE_RESOLUTION_ACTIONS = ['remove', 'annotate', 'dismiss'] as const
+const REVIEW_DISPUTE_RESOLUTION_ACTIONS = ['remove', 'annotate', 'dismiss'] as const
 export type ReviewDisputeResolutionAction = (typeof REVIEW_DISPUTE_RESOLUTION_ACTIONS)[number]
 
 export const MODERATION_REPORT_STATUSES = ['pending', 'reviewed', 'actioned', 'dismissed'] as const
@@ -30,19 +30,19 @@ export const MODERATION_REPORT_RESOLUTION_STATUSES = ['reviewed', 'dismissed'] a
 export type ModerationReportResolutionStatus =
   (typeof MODERATION_REPORT_RESOLUTION_STATUSES)[number]
 
-export const REPORT_INTEGRITY_FLAG_TYPES = ['mass_report_suspected'] as const
+const REPORT_INTEGRITY_FLAG_TYPES = ['mass_report_suspected'] as const
 export type ReportIntegrityFlagType = (typeof REPORT_INTEGRITY_FLAG_TYPES)[number]
 
-export const REPORT_INTEGRITY_RESOLUTIONS = ['dismissed', 'penalized'] as const
+const REPORT_INTEGRITY_RESOLUTIONS = ['dismissed', 'penalized'] as const
 export type ReportIntegrityResolution = (typeof REPORT_INTEGRITY_RESOLUTIONS)[number]
 
-export const REPORT_INTEGRITY_PATCH_RESOLUTIONS = ['dismissed'] as const
+const REPORT_INTEGRITY_PATCH_RESOLUTIONS = ['dismissed'] as const
 export type ReportIntegrityPatchResolution = (typeof REPORT_INTEGRITY_PATCH_RESOLUTIONS)[number]
 
-export const VOTE_INTEGRITY_FLAG_TYPES = ['velocity_spike', 'ip_correlation'] as const
+const VOTE_INTEGRITY_FLAG_TYPES = ['velocity_spike', 'ip_correlation'] as const
 export type VoteIntegrityFlagType = (typeof VOTE_INTEGRITY_FLAG_TYPES)[number]
 
-export const VOTE_INTEGRITY_RESOLUTIONS = ['dismissed', 'penalized', 'suspended'] as const
+const VOTE_INTEGRITY_RESOLUTIONS = ['dismissed', 'penalized', 'suspended'] as const
 export type VoteIntegrityResolution = (typeof VOTE_INTEGRITY_RESOLUTIONS)[number]
 
 export const INTEGRITY_FLAG_STATUSES = ['pending', 'resolved'] as const

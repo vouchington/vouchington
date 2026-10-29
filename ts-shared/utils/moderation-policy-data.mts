@@ -25,7 +25,7 @@ export type ModerationReportEntityType = (typeof MODERATION_REPORT_ENTITY_TYPES)
 export const MODERATION_POLICY_SEVERITIES = ['low', 'medium', 'high', 'critical'] as const
 export type ModerationPolicySeverity = (typeof MODERATION_POLICY_SEVERITIES)[number]
 
-export const MODERATION_JUDGEMENT_ACTIONS = ['no_action', 'warn', 'remove', 'escalate'] as const
+const MODERATION_JUDGEMENT_ACTIONS = ['no_action', 'warn', 'remove', 'escalate'] as const
 export type ModerationJudgementAction = (typeof MODERATION_JUDGEMENT_ACTIONS)[number]
 
 export { MODERATION_APPEAL_ACTIONS, type ModerationAppealAction } from './moderation-catalogs.mts'
