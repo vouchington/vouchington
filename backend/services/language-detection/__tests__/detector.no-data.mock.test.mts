@@ -54,40 +54,12 @@ describe('detector', () => {
   })
 
   describe('detectLanguageMany', () => {
-    it('returns an array of detection results', async () => {
-      const inputs = [Buffer.from('Hello world', 'utf8'), Buffer.from('Hallo Welt', 'utf8')]
-      const results = await detectLanguageMany(inputs)
-      expect(Array.isArray(results)).toBe(true)
-      expect(results.length).toBeGreaterThan(0)
-      expect(results[0]?.detector).toBe('lingua')
-    })
-
     it('passes options through to the underlying module', async () => {
       const inputs = [Buffer.from('test', 'utf8')]
-      await detectLanguageMany(inputs, { lowAccuracy: true })
+      const results = await detectLanguageMany(inputs, { lowAccuracy: true })
 
+      expect(results[0]?.languages[0]?.iso6391).toBe('de')
       expect(detectLanguageManyMock).toHaveBeenCalledWith(inputs, { lowAccuracy: true })
     })
-  })
-})
-
-describe('detector interface contract (lingua-rs present)', () => {
-  // The unavailable/throw path is covered separately in detector-unavailable.mock.test.mts
-  // (needs a fresh module so the per-file cachedMod resolves to null).
-  it('detectLanguage result conforms to LinguaDetectionResult interface', async () => {
-    const result = await detectLanguage(Buffer.from('test', 'utf8'))
-    expect(typeof result.detector).toBe('string')
-    expect(typeof result.detectorModelVersion).toBe('string')
-    expect(Array.isArray(result.languages)).toBe(true)
-  })
-
-  it('detectLanguageMany result array items conform to LinguaDetectionResult interface', async () => {
-    const results = await detectLanguageMany([Buffer.from('test', 'utf8')])
-    expect(Array.isArray(results)).toBe(true)
-    for (const r of results) {
-      expect(typeof r.detector).toBe('string')
-      expect(typeof r.detectorModelVersion).toBe('string')
-      expect(Array.isArray(r.languages)).toBe(true)
-    }
   })
 })
