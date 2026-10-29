@@ -43,6 +43,13 @@ describe('partition drop policy coverage', () => {
       expect(PARTITION_DROP_POLICIES[table]?.minimumRetentionMonths).toBe(72)
       expect(PARTITION_DROP_POLICIES[table]?.legalHoldAccountColumn).toBe('post_author_user_id')
     }
+    expect(PARTITION_DROP_POLICIES.post_clearance_changes?.retirementReferenceTables).toEqual([
+      'posts',
+      'retained_user_identities',
+    ])
+    expect(
+      PARTITION_DROP_POLICIES.community_post_review_changes?.retirementReferenceTables,
+    ).toEqual(['communities', 'community_post_reviews', 'retained_user_identities'])
     expect(TOPIC_REVISION_PARTITION_TABLES).toContainEqual(
       expect.objectContaining({ table: 'topic_revisions', retentionDays: 0 }),
     )

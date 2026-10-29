@@ -100,11 +100,22 @@ PARTITION_DROP_POLICIES['mcp_call_audit_events'] = {
 }
 
 // Owner-approved minimum for both transition histories. Retire only complete calendar months.
-for (const table of ['post_clearance_changes', 'community_post_review_changes']) {
+// Referenced tables are locked first so FK teardown cannot invert the lock order (see
+// guard-and-retire-monthly-partition.mts).
+const TRANSITION_HISTORY_REFERENCES: Readonly<Record<string, readonly string[]>> = {
+  post_clearance_changes: ['posts', 'retained_user_identities'],
+  community_post_review_changes: [
+    'communities',
+    'community_post_reviews',
+    'retained_user_identities',
+  ],
+}
+for (const [table, retirementReferenceTables] of Object.entries(TRANSITION_HISTORY_REFERENCES)) {
   PARTITION_DROP_POLICIES[table] = {
     minimumRetentionDays: null,
     minimumRetentionMonths: 72,
     legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
     legalHoldAccountColumn: 'post_author_user_id',
+    retirementReferenceTables,
   }
 }

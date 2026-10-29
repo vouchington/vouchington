@@ -85,6 +85,20 @@ describe('monthly decision history lifecycle', () => {
     expect(
       recorder.statements.filter(statement => statement.includes('lockCandidate')),
     ).toHaveLength(tables.length)
+    const lockOrder = recorder.statements.flatMap(
+      statement =>
+        /cleanupPartitions:(lockReference|lockParent|lockCandidate)/.exec(statement)?.slice(1) ??
+        [],
+    )
+    expect(lockOrder).toEqual(
+      tables.flatMap(() => ['lockReference', 'lockParent', 'lockCandidate']),
+    )
+    expect(
+      recorder.statements.filter(
+        statement =>
+          /lock(Reference|Parent|Candidate) \*\//.test(statement) && !statement.endsWith(' NOWAIT'),
+      ),
+    ).toEqual([])
   })
 })
 
