@@ -7,7 +7,7 @@ import {
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
 
-export type MembershipRevenueRow = {
+type MembershipRevenueRow = {
   tier: string
   interval: 'monthly' | 'yearly'
   currency_code: CurrencyCode
@@ -31,9 +31,10 @@ export async function getRevenue(
   _periodStart: Date,
   scope?: RevenueScope,
   context: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
+  deps: { read: typeof read } = { read },
 ): Promise<Revenue> {
   const scopeIds = scope?.userIds ?? ['00000000-0000-0000-0000-000000000000']
-  const { rows } = await read<RevenueQueryRow>(sql`/* getRevenue */
+  const { rows } = await deps.read<RevenueQueryRow>(sql`/* getRevenue */
     WITH active_membership_counts AS (
       SELECT tier, SUM(membership_count)::INT AS membership_count
       FROM mv_revenue_memberships
@@ -119,7 +120,7 @@ export async function getRevenue(
         : 0,
   }
 }
-export function calculateMembershipRevenue(membershipRows: readonly MembershipRevenueRow[]): {
+function calculateMembershipRevenue(membershipRows: readonly MembershipRevenueRow[]): {
   activeMemberships: number
   membershipsByTier: MembershipsByTier
   mrrByCurrency: ScaledMoneyAggregate[]
@@ -147,7 +148,7 @@ export function calculateMembershipRevenue(membershipRows: readonly MembershipRe
     mrrByCurrency: calculateMrrByCurrency(amountsByCurrency),
   }
 }
-export function calculateMrrByCurrency(
+function calculateMrrByCurrency(
   amountsByCurrency: ReadonlyMap<
     CurrencyCode,
     { monthly: bigint; yearly: bigint; minorUnitExponent: number }
