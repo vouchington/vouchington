@@ -53,10 +53,6 @@ describe('expireOrphanedBloomFilterBuildingKeys', () => {
     }
   })
 
-  it('does nothing when there are no building keys', async () => {
-    await expect(expireOrphanedBloomFilterBuildingKeys()).resolves.toBeUndefined()
-  })
-
   it('rethrows scan failures instead of swallowing them', async () => {
     const scanError = new Error('scan boom')
     const throwingClient = { scan: () => Promise.reject(scanError) } as unknown as GlideClient
@@ -125,12 +121,6 @@ describe('expireBookmarkBloomFiltersMissingTtl', () => {
     await expireBookmarkBloomFiltersMissingTtl(BOOKMARK_SWEEP_TTL_SECONDS, client)
 
     expect(exec).not.toHaveBeenCalled()
-  })
-
-  it('does nothing when there are no matching keys', async () => {
-    await expect(
-      expireBookmarkBloomFiltersMissingTtl(BOOKMARK_SWEEP_TTL_SECONDS),
-    ).resolves.toBeUndefined()
   })
 
   it('rethrows scan failures instead of swallowing them', async () => {

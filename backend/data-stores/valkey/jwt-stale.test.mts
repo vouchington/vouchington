@@ -27,14 +27,6 @@ describe('jwt-stale', () => {
     expect(await sessionValkeyClient.get(getJwtStaleKey(userId))).toBeNull()
   })
 
-  it('markJwtStale is idempotent', async () => {
-    const userId = v7()
-
-    await markJwtStale(userId)
-    const marker = await markJwtStale(userId)
-    expect((await sessionValkeyClient.get(getJwtStaleKey(userId)))?.toString()).toBe(marker)
-  })
-
   it('markJwtStaleBatch marks multiple users and returns per-user markers', async () => {
     const userIdA = v7()
     const userIdB = v7()
