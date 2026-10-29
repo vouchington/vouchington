@@ -5,7 +5,7 @@ import { normalizeFields } from '@vouchington/dynamic-config'
 import { dynamicConfigRegistry } from './registry.mts'
 
 describe('registered AI spend-cap field rules', () => {
-  it('allows the zero-spend kill switch and enforces the configured integer bounds', () => {
+  it('allows zero as a cap value and enforces the configured integer bounds', () => {
     const entry = dynamicConfigRegistry.get('ai-spend-cap')
     if (!entry) throw new Error('ai-spend-cap registry entry missing')
 

@@ -22,17 +22,14 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
   } as unknown as typeof import('openai').default,
 }))
 
-describe('OpenAI response stream latch decisions', () => {
+describe('OpenAI response stream error decisions', () => {
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-key'
     openAIMocks.create.mockReset()
   })
 
-  it('does not latch when the signal aborts during beforeAttempt', async () => {
+  it('rejects when the signal aborts during beforeAttempt', async () => {
     const controller = new AbortController()
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
       runWithOpenAIResponseAttemptHooks(
@@ -40,7 +37,6 @@ describe('OpenAI response stream latch decisions', () => {
           beforeAttempt: async () => {
             controller.abort()
           },
-          onUnknownBilledAttempt,
         },
         async () =>
           createOpenAIResponse(
@@ -51,10 +47,9 @@ describe('OpenAI response stream latch decisions', () => {
     ).rejects.toThrow('This operation was aborted')
 
     expect(openAIMocks.create).not.toHaveBeenCalled()
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch a terminal failed stream that carries usage', async () => {
+  it('rejects a terminal failed stream that carries usage', async () => {
     openAIMocks.create.mockResolvedValueOnce(
       makeResponseStream([
         makeStreamEvent({
@@ -64,21 +59,15 @@ describe('OpenAI response stream latch decisions', () => {
         }),
       ]),
     )
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+        createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
-
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch when the caller aborts an in-flight stream', async () => {
+  it('rejects when the caller aborts an in-flight stream', async () => {
     const abort = new Error('This operation was aborted')
     abort.name = 'AbortError'
     const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
@@ -96,17 +85,11 @@ describe('OpenAI response stream latch decisions', () => {
       },
     }
     openAIMocks.create.mockResolvedValueOnce(stream)
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, () =>
+        createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(abort)
-
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 })

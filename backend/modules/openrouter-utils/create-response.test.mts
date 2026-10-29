@@ -78,18 +78,15 @@ describe('OpenRouter Responses transport', () => {
     )
   })
 
-  it('latches an unknown billed attempt when the response stream fails before completion', async () => {
+  it('reports a response stream failure before completion', async () => {
     const cause = new Error('socket closed')
     const failingStream: AsyncIterable<ResponseStreamEvent> = {
       [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(cause) }),
     }
     const createResponse = vi.fn<CreateResponse>().mockResolvedValueOnce(failingStream as never)
-    const onUnknownBilledAttempt = vi.fn<
-      (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     const error = await runWithOpenAIResponseAttemptHooks(
-      { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
+      { beforeAttempt: () => Promise.resolve() },
       () =>
         createOpenRouterResponse({ model: 'openai/gpt-6-luna', input: 'hello' }, undefined, {
           createResponse,
@@ -97,9 +94,6 @@ describe('OpenRouter Responses transport', () => {
     ).catch((err: unknown) => err)
 
     expect(error).toMatchObject({ cause })
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ error }),
-    )
   })
 })
 

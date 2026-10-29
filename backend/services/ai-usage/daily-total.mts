@@ -9,12 +9,6 @@ const DAILY_AI_COST_TOTAL_CACHE_TTL_MS = 60_000
 
 type DailyAiCostTotal = {
   totalMicrounits: number
-  // True when any row in the window has pricing_status = 'unpriced' (calcCostMicrounits,
-  // @modules/model-providers/pricing.mts, found no pricing-table entry for the model/service-tier
-  // the provider actually served, so cost_microunits is NULL). Postgres's SUM() silently skips NULLs,
-  // so totalMicrounits alone would under-count real spend here -- callers must fail closed on
-  // this flag rather than trust the sum.
-  hasUnpricedRows: boolean
   // The UTC day (`YYYY-MM-DD`) this total was queried for. A cap-breach caller must compute its
   // delay target from this, not from a fresh `new Date()` read -- the wall clock can advance past
   // UTC midnight during the async DB round-trip, landing the delay a day too far out.
@@ -42,9 +36,8 @@ let dailyAiCostTotalRefresh: Pick<DailyAiCostTotalCacheEntry, 'day' | 'promise'>
  * `DEFERRED_LEDGER_PARTITION_TABLES` with a single DEFAULT partition, so partition pruning cannot
  * help here -- the in-process cache below keeps the aggregation off the per-job hot path.
  *
- * Reads via `write()` (primary), not `read()`: this backs a spend-ceiling breach check, which must
- * observe just-written rows rather than risk `READ_DATABASE_URL` replica lag under-reporting spend
- * (`.agents/skills/postgres-node-performance-tuning/SKILL.md`, lag-sensitive reads).
+ * Reads via `write()` (primary) so the best-effort cap can see recent recorded calls.
+ * Unpriced rows have NULL cost and do not contribute to the known spend total.
  */
 export function getDailyAiCostTotalMicrounits(day = getCurrentUtcDay()): Promise<DailyAiCostTotal> {
   const now = Date.now()
@@ -88,11 +81,10 @@ export function refreshDailyAiCostTotalMicrounits(): Promise<DailyAiCostTotal> {
 
 async function loadDailyAiCostTotalMicrounits(day: string): Promise<DailyAiCostTotal> {
   const bounds = getUtcDayUuidv7Bounds(day)
-  const { rows } = await write<{ total_microunits: string; has_unpriced_rows: boolean }>(
+  const { rows } = await write<{ total_microunits: string }>(
     sql`/* loadDailyAiCostTotalMicrounits */
     SELECT
-      COALESCE(SUM(cost_microunits), 0)::TEXT AS total_microunits,
-      COALESCE(BOOL_OR(pricing_status = 'unpriced'), false) AS has_unpriced_rows
+      COALESCE(SUM(cost_microunits), 0)::TEXT AS total_microunits
     FROM ai_usage_records
     WHERE id >= ${bounds.startBound}
       AND id < ${bounds.endBound}
@@ -102,7 +94,6 @@ async function loadDailyAiCostTotalMicrounits(day: string): Promise<DailyAiCostT
   if (!row) throw new Error('getDailyAiCostTotalMicrounits query returned no result row')
   return {
     totalMicrounits: parseDailyTotalMicrounits(row.total_microunits),
-    hasUnpricedRows: row.has_unpriced_rows,
     day,
   }
 }
@@ -110,14 +101,10 @@ async function loadDailyAiCostTotalMicrounits(day: string): Promise<DailyAiCostT
 /**
  * A runaway ingestion day -- exactly the scenario this spend ceiling exists to catch -- can push
  * the raw SUM past MAX_MONEY_AMOUNT (Number.MAX_SAFE_INTEGER), and parsePostgresMoneyAmount throws
- * a RangeError on that overflow. The guard must fail closed (report the max representable amount,
- * which trips any realistic cap) rather than let the overflow crash the request with a 500.
+ * a RangeError on that overflow. This known lower bound is already above the configured cap.
  */
 export function parseDailyTotalMicrounits(value: string): number {
-  try {
-    return parsePostgresMoneyAmount(value)
-  } catch (err) {
-    if (err instanceof RangeError) return MAX_MONEY_AMOUNT
-    throw err as Error
-  }
+  if (!/^\d+$/.test(value)) throw new Error('Invalid daily AI cost total')
+  if (BigInt(value) > BigInt(MAX_MONEY_AMOUNT)) return MAX_MONEY_AMOUNT
+  return parsePostgresMoneyAmount(value)
 }

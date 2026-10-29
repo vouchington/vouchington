@@ -33,16 +33,13 @@ export function createBackgroundResponseRegistrationHooks(
           const job = getBackgroundResponseJobContext()
           await (job ? job.register(response) : enqueueRecoverBackgroundResponse(response))
           registration = { responseId, createdAt: params.createdAt }
-          return true
         } catch (err) {
-          // Recovery is a cheap guard against a paid replay. Losing it must not fail the call, but
-          // an unsaved response stays an unknown billed attempt if the call then fails.
+          // Recovery is a cheap guard against a paid replay. Losing it must not fail the call.
           onError(
             err instanceof Error
               ? err
               : new Error('Background response registration failed', { cause: err }),
           )
-          return false
         }
       },
     },

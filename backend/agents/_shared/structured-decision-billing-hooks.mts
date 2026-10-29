@@ -1,13 +1,7 @@
-import {
-  assertDailySpendCapNotBreached,
-  latchAccountingUncertainty,
-  SpendCapBreachError,
-} from '@services/ai-usage'
-import { getUtcDayFromDate } from '@ts-shared/utils/dates'
+import { assertDailySpendCapNotBreached, SpendCapBreachError } from '@services/ai-usage'
 import type {
   StructuredDecisionAttemptHooks,
   StructuredDecisionBilledResponse,
-  StructuredDecisionUnknownBilledAttempt,
 } from '@modules/structured-decisions'
 import { recordAgentResponseUsage } from './record-response-usage.mts'
 
@@ -22,7 +16,6 @@ type StructuredDecisionBillingSubject = {
 
 interface StructuredDecisionBillingHooksDeps {
   assertDailySpendCapNotBreached?: typeof assertDailySpendCapNotBreached
-  latchAccountingUncertainty?: typeof latchAccountingUncertainty
   recordAgentResponseUsage?: typeof recordAgentResponseUsage
 }
 
@@ -39,7 +32,6 @@ export function createStructuredDecisionBillingHooks(
   deps: StructuredDecisionBillingHooksDeps = {},
 ): StructuredDecisionAttemptHooks {
   const checkSpendCap = deps.assertDailySpendCapNotBreached ?? assertDailySpendCapNotBreached
-  const latchUncertainty = deps.latchAccountingUncertainty ?? latchAccountingUncertainty
   const recordUsage = deps.recordAgentResponseUsage ?? recordAgentResponseUsage
   return {
     beforeAttempt: async attempt => {
@@ -49,9 +41,6 @@ export function createStructuredDecisionBillingHooks(
     },
     onBilledResponse: async response => {
       await recordStructuredDecisionUsage(response, subject, recordUsage)
-    },
-    onUnknownBilledAttempt: async attempt => {
-      await latchStructuredDecisionAccountingUncertainty(attempt, latchUncertainty)
     },
   }
 }
@@ -80,15 +69,5 @@ async function recordStructuredDecisionUsage(
       latencyMs: Math.max(0, Date.now() - response.requestStartedAt.getTime()),
     },
     createdAt: response.requestStartedAt,
-  })
-}
-
-async function latchStructuredDecisionAccountingUncertainty(
-  attempt: StructuredDecisionUnknownBilledAttempt,
-  latchUncertainty: typeof latchAccountingUncertainty,
-): Promise<void> {
-  await latchUncertainty({
-    requestDay: getUtcDayFromDate(attempt.requestStartedAt),
-    source: 'unknown_billed_attempt',
   })
 }

@@ -59,8 +59,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck,
       }),
     ).rejects.toThrow('delayed')
@@ -83,8 +82,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck: (registeredJob, registeredDay) =>
           registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
             registerSpendCapDelayedJob,
@@ -112,8 +110,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck: (registeredJob, registeredDay) =>
           registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
             registerSpendCapDelayedJob,
@@ -135,8 +132,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck: () => Promise.resolve(false),
       }),
     ).rejects.toThrow('delayed')
@@ -162,8 +158,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck,
         reportSpendCapRegistrationFailure,
       }),
@@ -186,8 +181,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       processSpendCapRecheckJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         beginSpendCapDelayedJobRelease: begin,
         reopenSpendCapDelayedJobRegistration: reopen,
       }),

@@ -143,7 +143,7 @@ describe('structured-decision provider failure', () => {
     expect(error).toMatchObject({ code: 'invalid-response', retryClass: undefined })
   })
 
-  it('still latches the billed attempt and throws a provider error when the body cannot be read', async () => {
+  it('throws a provider error when the body cannot be read', async () => {
     const unreadable = new Response(
       new ReadableStream({
         start(controller) {
@@ -152,39 +152,12 @@ describe('structured-decision provider failure', () => {
       }),
       { status: 503 },
     )
-    const onUnknownBilledAttempt = vi
-      .fn<NonNullable<StructuredDecisionAttemptHooks['onUnknownBilledAttempt']>>()
-      .mockResolvedValue(undefined)
     const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(unreadable)
 
-    await expect(decide(fetch, { onUnknownBilledAttempt })).rejects.toMatchObject({
+    await expect(decide(fetch)).rejects.toMatchObject({
       code: 'provider-error',
       status: 503,
       retryClass: 'transient',
     })
-    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
-  })
-
-  // The spend-cap latch follows the billing status rules alone (#652), never the retry class: a
-  // transient outage 403 does not latch, while a 409 is permanent to retry yet still latches.
-  it.each([
-    [
-      'a transient outage 403',
-      403,
-      { error: { code: 403, message: 'Provider returned error' } },
-      0,
-    ],
-    ['a permanent 401', 401, {}, 0],
-    ['a transient 429', 429, {}, 1],
-    ['a permanent 409', 409, {}, 1],
-  ])('latches %s the number of times the billing rules say', async (_name, status, body, times) => {
-    const onUnknownBilledAttempt = vi
-      .fn<NonNullable<StructuredDecisionAttemptHooks['onUnknownBilledAttempt']>>()
-      .mockResolvedValue(undefined)
-    const fetch = vi
-      .fn<StructuredDecisionFetch>()
-      .mockResolvedValue(makeStructuredDecisionResponse(body, status))
-    await decide(fetch, { onUnknownBilledAttempt }).catch(() => undefined)
-    expect(onUnknownBilledAttempt).toHaveBeenCalledTimes(times)
   })
 })

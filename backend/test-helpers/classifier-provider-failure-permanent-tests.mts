@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { getAccountingUncertaintySource } from '../services/ai-usage/index.mts'
 import { getClassifierRunHandler } from '../workers/ai-agents/processors/classifier-run-registry.mts'
 import {
   type ClassifierFailureDriver,
@@ -21,7 +20,7 @@ export function describeClassifierPermanentFailures(driver: ClassifierFailureDri
     it.each(PERMANENT)(
       'ends the run at once on a %s and never retries or re-dispatches it',
       async (...scenario) => {
-        await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async day => {
+        await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
           const run = await driver.prepare()
           const fetch = failing(scenario[1], scenario[2], scenario[3])
 
@@ -42,7 +41,6 @@ export function describeClassifierPermanentFailures(driver: ClassifierFailureDri
           expect(JSON.stringify(sentryCaptureMessageMock.mock.calls)).not.toContain(
             (scenario[2] as { message: string }).message,
           )
-          await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
           await expect(run.claim()).resolves.toBe('terminal')
           await expect(run.execute(fetch)).resolves.toBe('stale')
           expect(fetch).toHaveBeenCalledOnce()

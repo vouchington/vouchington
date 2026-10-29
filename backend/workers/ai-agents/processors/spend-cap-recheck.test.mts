@@ -50,15 +50,14 @@ describe('AI spend-cap registration freshness', () => {
           dailyCapMicrounits: number
         }>
       >()
-      .mockResolvedValue({ reason: 'cap_exceeded', totalMicrounits: 1, dailyCapMicrounits: 1, day })
+      .mockResolvedValue({ reason: 'cap_exceeded', totalMicrounits: 2, dailyCapMicrounits: 1, day })
     const refresh = vi.fn<typeof refreshDailyAiCostTotalMicrounits>()
 
     await expect(
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck: (registeredJob, registeredDay) =>
           registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
             registerSpendCapDelayedJob: register,
@@ -93,8 +92,7 @@ describe('AI spend-cap registration freshness', () => {
       processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () =>
-          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
         registerSpendCapRecheck: (registeredJob, registeredDay) =>
           registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
             registerSpendCapDelayedJob: register,
@@ -133,7 +131,7 @@ describe('AI spend-cap registration freshness', () => {
         evaluateSpendCapBreach: () =>
           Promise.resolve({
             reason: 'cap_exceeded',
-            totalMicrounits: 1,
+            totalMicrounits: 2,
             dailyCapMicrounits: 1,
             day,
           }),

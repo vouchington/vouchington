@@ -1,7 +1,5 @@
-import { beginTransaction } from '@data-stores/psql'
 import { ai_agents } from '../queues/ai-agents/queues.mts'
 import { backgroundResponseRecoveryJobId } from '../queues/ai-agents/enqueues/recover-background-response.mts'
-import sql from 'sql-template-strings'
 import { Stream } from 'openai/core/streaming'
 import type { Response, ResponseStreamEvent } from 'openai/resources/responses/responses'
 import { makeSdkResponse, makeStreamEvent } from './modules/openai-utils/responses.mts'
@@ -56,16 +54,6 @@ export function createTitleResponseStream(response: Response) {
 
 /** Call only after all fixture provider/title operations and their owned registrations have settled. */
 export async function deleteTitleResponseFixture(responseId: string): Promise<void> {
-  await using query = await beginTransaction()
-  // The response-key FK cascades from the exact ledger row; unrelated provider keys are retained.
-  await query(sql`/* deleteTitleResponseFixture.ledger */
-    DELETE FROM ai_usage_records record
-    USING ai_usage_provider_response_keys key
-    WHERE record.id = key.ai_usage_record_id
-      AND key.response_id = ${responseId}
-      AND record.agent_slug = ${TITLE_AGENT_SLUG}
-  `)
-  await query.commit()
   const job = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
   if (job) await job.remove()
 }

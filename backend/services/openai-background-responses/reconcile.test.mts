@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { APIError } from 'openai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { countAiUsageRecordsForResponseId } from '@voucha/test-helpers'
+import { countAiUsageRecordsForAgent } from '@voucha/test-helpers'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import {
   makeSdkResponse,
@@ -54,7 +54,9 @@ describe('saved background response reconciliation', () => {
       const row = candidate()
       retrieve.mockResolvedValueOnce(make('done', { id: row.responseId, usage: makeUsage() }))
       await expect(reconcileBackgroundResponse(row, 'worker')).resolves.toBe('settled')
-      await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(1)
+      await expect(
+        countAiUsageRecordsForAgent(row.agentSlug, { inputTokens: 11, outputTokens: 7 }),
+      ).resolves.toBe(1)
       expect(cancel).not.toHaveBeenCalled()
     }),
   )
@@ -69,7 +71,9 @@ describe('saved background response reconciliation', () => {
       }),
     )
     await expect(reconcileBackgroundResponse(row, 'worker')).resolves.toBe('settled')
-    await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+    await expect(
+      countAiUsageRecordsForAgent(row.agentSlug, { inputTokens: 11, outputTokens: 7 }),
+    ).resolves.toBe(0)
   })
 
   it('settles a response past provider retention', async () => {
@@ -101,7 +105,7 @@ describe('saved background response reconciliation', () => {
     )
     await expect(reconcileBackgroundResponse(row, 'worker')).resolves.toBe('settled')
     expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
-    await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+    await expect(countAiUsageRecordsForAgent(row.agentSlug)).resolves.toBe(0)
   })
 
   it('lets a failed retrieval retry the job', async () => {

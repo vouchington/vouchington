@@ -25,8 +25,7 @@ export async function withCurrentClassifierUsage<T>(
     restore()
     vi.useRealTimers()
     if (ownedRunIds.size > 0) {
-      // The provider response-key FK cascades from only these test-owned ledger rows. The
-      // classifier run identities and their replay receipts stay intact.
+      // The classifier run identities and their replay receipts stay intact.
       await write(sql`/* cleanupCurrentClassifierUsage */
         DELETE FROM ai_usage_records
         WHERE classifier_run_identity_id = ANY(${[...ownedRunIds]}::uuid[])

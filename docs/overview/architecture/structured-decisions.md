@@ -19,7 +19,7 @@ Callers explicitly select one transport, and each jev classifier entry point tak
 `typesafe`) and `model` is the jev model, both read from the classifier row, which stays their single
 source because its thresholds are calibrated per model (`StructuredDecisionModelSelection`). The
 client makes exactly one attempt per call and never
-retries; optional `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks let a caller
+retries; optional `beforeAttempt`/`onBilledResponse` hooks let a caller
 record billed usage and enforce a spend cap without this module ever importing a billing service
 itself. `@agents/_shared/structured-decision-billing-hooks.mts` owns that reusable composition for
 agent callers; `@agents/post-classifier` uses its fixed OpenRouter/Jev client factory in the

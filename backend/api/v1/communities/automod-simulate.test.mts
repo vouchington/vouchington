@@ -9,9 +9,8 @@ import {
   insertTestCommunityPostReview,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import * as communityModeration from '@agents/community-moderation'
-import { spendCapConfig } from '@services/ai-usage'
 
 describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   it('returns 401 for unauthenticated users', async () => {
@@ -146,72 +145,62 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   })
 
   it('returns 429 and does not call the agent when the daily spend cap is breached', async () => {
-    await spendCapConfig.waitForInitialization()
-    // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
-    // this breaches on the very first call regardless of what other tests have written today.
-    const restoreConfig = overrideDynamicConfigFieldsForTest(spendCapConfig, {
-      daily_cap_microunits: 0,
+    await withReservedAiUsageDay(0, async () => {
+      // The reserved day has known priced spend above the zero cap.
+      const simulateSpy = vi
+        .spyOn(communityModeration, 'simulateCommunityPromptOnPosts')
+        .mockResolvedValue([])
+      try {
+        const owner = await createTestUser()
+        const community = await insertTestCommunity({
+          createdById: owner.id,
+          slug: `automod-sim-429-${createRandomString(8)}`,
+        })
+        await insertTestCommunityMember({
+          communityId: community.id,
+          userId: owner.id,
+          role: 'owner',
+        })
+        const prompt = await insertTestCommunityAgentPrompt({
+          communityId: community.id,
+          createdById: owner.id,
+          slotAllocated: false,
+        })
+        // The cap check only guards requests that would actually call OpenAI (#9348 review round 10):
+        // a matching post is required here so this test still exercises the breach path.
+        const postId = await insertTestPost({
+          title: `Automod cap check ${createRandomString(8)}`,
+          slug: `automod-sim-429-post-${createRandomString(8)}`,
+          markdown: 'Post body for spend-cap breach simulation',
+          createdById: owner.id,
+          communityId: community.id,
+        })
+        await insertTestCommunityPostReview({
+          communityId: community.id,
+          postId,
+          submittedById: owner.id,
+        })
+
+        const request = createRequest()
+        await request.authenticateAs(owner)
+        await request
+          .post(`/api/v1/communities/${community.slug}/automod/simulate`)
+          .set('Content-Type', 'application/json')
+          .send({ prompt_id: prompt.id })
+          .expect(429)
+
+        expect(simulateSpy).not.toHaveBeenCalled()
+      } finally {
+        simulateSpy.mockRestore()
+      }
     })
-    // Mocked (not spied-through): if the posts.length guard ever regresses, this must fail the
-    // assertion below instead of making a real OpenAI call.
-    const simulateSpy = vi
-      .spyOn(communityModeration, 'simulateCommunityPromptOnPosts')
-      .mockResolvedValue([])
-    try {
-      const owner = await createTestUser()
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `automod-sim-429-${createRandomString(8)}`,
-      })
-      await insertTestCommunityMember({
-        communityId: community.id,
-        userId: owner.id,
-        role: 'owner',
-      })
-      const prompt = await insertTestCommunityAgentPrompt({
-        communityId: community.id,
-        createdById: owner.id,
-        slotAllocated: false,
-      })
-      // The cap check only guards requests that would actually call OpenAI (#9348 review round 10):
-      // a matching post is required here so this test still exercises the breach path.
-      const postId = await insertTestPost({
-        title: `Automod cap check ${createRandomString(8)}`,
-        slug: `automod-sim-429-post-${createRandomString(8)}`,
-        markdown: 'Post body for spend-cap breach simulation',
-        createdById: owner.id,
-        communityId: community.id,
-      })
-      await insertTestCommunityPostReview({
-        communityId: community.id,
-        postId,
-        submittedById: owner.id,
-      })
-
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      await request
-        .post(`/api/v1/communities/${community.slug}/automod/simulate`)
-        .set('Content-Type', 'application/json')
-        .send({ prompt_id: prompt.id })
-        .expect(429)
-
-      expect(simulateSpy).not.toHaveBeenCalled()
-    } finally {
-      simulateSpy.mockRestore()
-      restoreConfig()
-    }
   })
 
   it('returns 200 for an empty simulation even when the daily spend cap is breached', async () => {
-    await spendCapConfig.waitForInitialization()
     // No posts means simulateCommunityPromptOnPosts() never calls OpenAI (simulate.mts:54), so the
     // cap check must be skipped entirely -- a breached cap must not 429 a request that would never
     // have incurred any spend.
-    const restoreConfig = overrideDynamicConfigFieldsForTest(spendCapConfig, {
-      daily_cap_microunits: 0,
-    })
-    try {
+    await withReservedAiUsageDay(0, async () => {
       const owner = await createTestUser()
       const community = await insertTestCommunity({
         createdById: owner.id,
@@ -237,8 +226,6 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
         .expect(200)
 
       expect(res.body.simulation.sample_count).toBe(0)
-    } finally {
-      restoreConfig()
-    }
+    })
   })
 })

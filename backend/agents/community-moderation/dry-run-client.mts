@@ -6,12 +6,7 @@ import {
   type StructuredDecisionFetch,
   type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
-import {
-  assertDailySpendCapNotBreached,
-  latchAccountingUncertainty,
-  SpendCapBreachError,
-} from '@services/ai-usage'
-import { getUtcDayFromDate } from '@ts-shared/utils/dates'
+import { assertDailySpendCapNotBreached, SpendCapBreachError } from '@services/ai-usage'
 import type { ClassifierModelProvider } from '@voucha/types'
 
 /**
@@ -46,8 +41,8 @@ function resolveApiKey(
 
 /**
  * Billing hooks for a preview that has no classifier run: the same three obligations a run's hooks
- * carry (admit under the daily cap before the request, record what the provider billed, latch an
- * ambiguous billed attempt), with no durable attempt reservation because a dry run keeps no
+ * carry (admit under the daily cap before the request and record what the provider billed),
+ * with no durable attempt reservation because a dry run keeps no
  * lifecycle state to reserve against.
  */
 function createDryRunBillingHooks(communityId: string): StructuredDecisionAttemptHooks {
@@ -70,12 +65,6 @@ function createDryRunBillingHooks(communityId: string): StructuredDecisionAttemp
         communityId,
         postId: null,
         createdAt: response.requestStartedAt,
-      })
-    },
-    onUnknownBilledAttempt: async attempt => {
-      await latchAccountingUncertainty({
-        requestDay: getUtcDayFromDate(attempt.requestStartedAt),
-        source: 'unknown_billed_attempt',
       })
     },
   }

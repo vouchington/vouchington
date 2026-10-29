@@ -52,8 +52,7 @@ function isProvider(value: unknown): value is ModelProvider {
 
 /**
  * Why a `{ provider, model }` cannot be saved, or null when it can. The model must belong to its
- * provider and have a price row: an unpriced model would record unpriced usage, which the daily
- * spend cap treats as a breach and parks every agent job.
+ * provider and have a price row so the configured model can be estimated before spend.
  */
 export function describeInvalidModelSelection(provider: unknown, model: unknown): string | null {
   if (!isProvider(provider)) return `provider must be one of ${MODEL_PROVIDERS.join(', ')}`

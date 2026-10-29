@@ -6,15 +6,9 @@ let lastSpendCapBreachReportedAt: number | undefined
 
 export type SpendCapBreachContext = {
   agentJobName: string
-  dailyTotalMicrounits: number | null
+  dailyTotalMicrounits: number
   dailyCapMicrounits: number
-  // 'cap_exceeded': the summed total reached the cap. 'unpriced_rows': at least one row in
-  // today's window has no pricing-table entry (pricing_status = 'unpriced'), so the summed total
-  // is a known undercount and the check fails closed without trusting it — distinct from an
-  // actual cap breach so an operator can tell "we hit the cap" from "we can't price today's
-  // usage," which need different responses.
-  reason: 'cap_exceeded' | 'unpriced_rows' | 'accounting_uncertain'
-  uncertaintySource?: 'ledger_write_failed' | 'unknown_billed_attempt' | 'latch_read_failed'
+  reason: 'cap_exceeded'
 }
 
 /**
@@ -36,7 +30,6 @@ export function recordSpendCapBreach(context: SpendCapBreachContext): void {
       reason: 'ai_spend_cap_breach',
       agent_job_name: context.agentJobName,
       breach_reason: context.reason,
-      ...(context.uncertaintySource && { uncertainty_source: context.uncertaintySource }),
     },
     extra: {
       dailyTotalMicrounits: context.dailyTotalMicrounits,

@@ -20,9 +20,6 @@ const success = {
 function response(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status })
 }
-function onUnknownBilledAttemptMock() {
-  return vi.fn<NonNullable<StructuredDecisionAttemptHooks['onUnknownBilledAttempt']>>()
-}
 function client(fetch: StructuredDecisionFetch, hooks?: StructuredDecisionAttemptHooks) {
   return createStructuredDecisionClient({
     transport: 'openrouter',
@@ -141,84 +138,5 @@ describe('structured-decision resilience', () => {
       client(fetch).decide(malformed as unknown as StructuredDecisionRequest),
     ).rejects.toMatchObject({ code: 'invalid-request' })
     expect(fetch).not.toHaveBeenCalled()
-  })
-})
-
-describe('ambiguous-billed-attempt latching', () => {
-  it('latches an unknown billed attempt on a network error, and never retries', async () => {
-    const cause = Object.assign(new Error('reset'), { code: 'ECONNRESET' })
-    const failure = new TypeError('fetch failed', { cause })
-    const fetch = vi.fn<StructuredDecisionFetch>().mockRejectedValue(failure)
-    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
-
-    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
-      code: 'provider-error',
-      cause: failure,
-    })
-
-    expect(fetch).toHaveBeenCalledOnce()
-    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
-    expect(onUnknownBilledAttempt).toHaveBeenCalledWith(expect.objectContaining({ error: failure }))
-  })
-
-  it.each([
-    ['408 request timeout', 408],
-    ['409 conflict', 409],
-    ['429 rate limit', 429],
-    ['500 server error', 500],
-    ['529 overloaded', 529],
-  ])('latches an unknown billed attempt on %s, and never retries', async (_name, status) => {
-    const fetch = vi
-      .fn<StructuredDecisionFetch>()
-      .mockResolvedValue(response({ error: 'x' }, status))
-    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
-
-    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
-      code: 'provider-error',
-      status,
-    })
-
-    expect(fetch).toHaveBeenCalledOnce()
-    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
-  })
-
-  it('latches an unknown billed attempt on malformed JSON in an otherwise-2xx response', async () => {
-    const fetch = vi
-      .fn<StructuredDecisionFetch>()
-      .mockResolvedValue(new Response('{', { status: 200 }))
-    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
-
-    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
-      code: 'invalid-response',
-    })
-
-    expect(fetch).toHaveBeenCalledOnce()
-    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
-  })
-
-  it('does not latch on an explicit caller abort', async () => {
-    const controller = new AbortController()
-    controller.abort(new Error('caller cancelled'))
-    const fetch = vi.fn<StructuredDecisionFetch>()
-    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
-
-    await expect(
-      client(fetch, { onUnknownBilledAttempt }).decide(request, controller.signal),
-    ).rejects.toThrow('caller cancelled')
-
-    expect(fetch).not.toHaveBeenCalled()
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
-  })
-
-  it('does not latch on an ordinary non-ambiguous 4xx response', async () => {
-    const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(response({}, 400))
-    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
-
-    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
-      status: 400,
-    })
-
-    expect(fetch).toHaveBeenCalledOnce()
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 })

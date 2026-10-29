@@ -36,7 +36,7 @@ function jobContext(overrides: { register?: () => Promise<void>; settle?: () => 
 }
 
 describe('background response ownership and usage', () => {
-  it('records inline usage and admits a delayed recovery job for the response', () =>
+  it('records inline usage and removes the delayed recovery job after billing', () =>
     withReservedAiUsageDay(1_000_000, async () => {
       const responseId = `resp_${randomUUID()}`
       const agentSlug = `inline-${randomUUID()}`
@@ -44,9 +44,7 @@ describe('background response ownership and usage', () => {
         await callWithCreatedResponse(agentSlug, responseId)
         await expect(countAiUsageRecordsForAgent(agentSlug, tokens)).resolves.toBe(1)
         const recovery = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
-        expect(recovery?.data.backgroundResponses).toEqual([
-          expect.objectContaining({ responseId, agentSlug }),
-        ])
+        expect(recovery ?? null).toBeNull()
       } finally {
         const recovery = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
         if (recovery) await recovery.remove()

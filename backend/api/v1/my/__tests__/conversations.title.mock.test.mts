@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestConversationMessage } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { createConversation } from '@services/conversations-messages/create'
 import { getConversationById } from '@services/conversations-messages'
 import { spendCapConfig } from '@services/ai-usage'
@@ -113,13 +114,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   })
 
   it('returns 429 and does not call the model when the daily spend cap is breached', async () => {
-    await spendCapConfig.waitForInitialization()
-    // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
-    // this breaches on the very first call regardless of what other tests have written today.
-    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
-      daily_cap_microunits: 0,
-    })
-    try {
+    await withReservedAiUsageDay(0, async () => {
       const suffix = crypto.randomUUID().slice(0, 8)
       const conv = await createConversation(user.id, '')
       await createTestConversationMessage({
@@ -136,19 +131,13 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
       await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(429)
 
       expect(generateJson).not.toHaveBeenCalled()
-    } finally {
-      restore()
-    }
+    })
   })
 
   it('returns 200 with the local "New Conversation" fallback for an empty conversation even when the spend cap is breached', async () => {
     // Reproduces #8773 Finding 3: the route's no-messages path never calls the model, so the
     // spend cap must not gate it -- a breached cap should never turn this free fallback into a 429.
-    await spendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
-      daily_cap_microunits: 0,
-    })
-    try {
+    await withReservedAiUsageDay(0, async () => {
       const conv = await createConversation(user.id, '')
 
       const request = createRequest()
@@ -157,9 +146,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
 
       expect(response.body.conversation.title).toBe('New Conversation')
       expect(generateJson).not.toHaveBeenCalled()
-    } finally {
-      restore()
-    }
+    })
   })
 })
 

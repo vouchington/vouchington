@@ -25,7 +25,6 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.3.0",
-    "@vouchington/http-transport": "^0.1.0",
     "undici": "^8.12.3"
   }
 }

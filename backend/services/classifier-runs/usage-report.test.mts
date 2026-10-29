@@ -124,20 +124,16 @@ describe('classifier usage report: remote runs (real PG)', () => {
     })
   })
 
-  it('counts a duplicate response once, with the first attribution kept', async () => {
+  it('counts repeated billed calls separately', async () => {
     const setup = await createPostClassifierExecutionFixture(true, false)
     await startProviderAttempts(setup, 1)
-    const responseId = `decision-duplicate-${setup.run.runId}`
-
-    await expect(recordBilledCall(setup, { latencyMs: 80, responseId })).resolves.toBe('recorded')
-    await expect(recordBilledCall(setup, { latencyMs: 999, responseId })).resolves.toBe(
-      'already-recorded',
-    )
+    await recordBilledCall(setup, { latencyMs: 80 })
+    await recordBilledCall(setup, { latencyMs: 999 })
 
     expect(await usageOf(setup)).toMatchObject({
-      providerCalls: 1,
-      costMicrounits: '2000',
-      latencyMsTotal: 80,
+      providerCalls: 2,
+      costMicrounits: '4000',
+      latencyMsTotal: 1079,
     })
   })
 

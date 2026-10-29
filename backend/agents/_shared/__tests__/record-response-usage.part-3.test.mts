@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
-import type { latchAccountingUncertainty as latchAccountingUncertaintyFn } from '@services/ai-usage'
 import {
   getBackgroundResponseHooks,
   getOpenAIResponseAttemptHooks,
@@ -103,62 +102,5 @@ describe('callRecordingModelUsage attempt hooks', () => {
     retryGuardSettled.resolve()
     await expect(call).resolves.toBe(expected)
     expect(retryContinued).toBe(true)
-  })
-
-  it('awaits the unknown-billed latch and propagates a latch failure', async () => {
-    const latchCalled = Promise.withResolvers<void>()
-    const latchSettled = Promise.withResolvers<void>()
-    const latchAccountingUncertainty = vi
-      .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => {
-        latchCalled.resolve()
-        await latchSettled.promise
-      })
-    const providerError = new Error('connection reset after provider accepted the request')
-    const call = callRecordingModelUsage(
-      async () => {
-        const hooks = getOpenAIResponseAttemptHooks()
-        if (!hooks) throw new Error('Expected response attempt hooks')
-        await hooks.onUnknownBilledAttempt({
-          requestStartedAt: new Date('2026-08-16T12:00:00.000Z'),
-          error: providerError,
-        })
-        throw providerError
-      },
-      params('attempt-hooks-test'),
-      {
-        assertDailySpendCapNotBreached: async () => null,
-        latchAccountingUncertainty,
-        recordModelUsage: vi.fn<typeof recordModelUsage>(),
-      },
-    )
-    const callRejection = call.catch((err: unknown) => err)
-
-    await latchCalled.promise
-    expect(latchAccountingUncertainty).toHaveBeenCalledExactlyOnceWith({
-      requestDay: '2026-08-16',
-      source: 'unknown_billed_attempt',
-    })
-    latchSettled.resolve()
-    await expect(callRejection).resolves.toBe(providerError)
-
-    const latchError = new Error('latch unavailable')
-    await expect(
-      callRecordingModelUsage(
-        async () => {
-          const hooks = getOpenAIResponseAttemptHooks()
-          if (!hooks) throw new Error('Expected response attempt hooks')
-          await hooks.onUnknownBilledAttempt({ requestStartedAt: new Date(), error: providerError })
-          throw providerError
-        },
-        params('attempt-hooks-test'),
-        {
-          assertDailySpendCapNotBreached: async () => null,
-          latchAccountingUncertainty: async () => {
-            throw latchError
-          },
-        },
-      ),
-    ).rejects.toBe(latchError)
   })
 })

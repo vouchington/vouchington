@@ -38,7 +38,6 @@ import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
 import { cleanupTerminalEmbeddingBatches } from './cleanup-embedding-batches.mts'
 import { cleanupCompletedImportBatches } from './cleanup-import-batches.mts'
 import { cleanupExpiredUserDataRequestAttempts } from './cleanup-user-data-request-attempts.mts'
-import { cleanupOldProviderResponseKeys } from './cleanup-provider-response-keys.mts'
 import { cleanupOldMediaDeliveryChanges } from './cleanup-media-delivery-changes.mts'
 import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
 import { cleanupMembershipOperational } from './cleanup-membership-operational-families.mts'
@@ -182,7 +181,6 @@ type DataRetentionCleanupOptions = {
   completedAdminImportBatches?: OptionalRetentionLimits<CleanupOptions>
   completedRssImportBatches?: OptionalRetentionLimits<CleanupOptions>
   expiredUserDataRequestAttempts?: OptionalRetentionLimits<CleanupOptions>
-  oldProviderResponseKeys?: OptionalRetentionLimits<CleanupOptions>
   oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
   classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
     activeSweeps?: readonly string[]
@@ -232,7 +230,6 @@ type DataRetentionCleanupResult = {
   completedAdminImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
   completedRssImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
   expiredUserDataRequestAttempts: Awaited<ReturnType<typeof cleanupExpiredUserDataRequestAttempts>>
-  oldProviderResponseKeys: CleanupResult
   oldMediaDeliveryChanges: CleanupResult
   classifierRecords: ClassifierCleanupResult
   sesBounceEvents: NotificationEmailCleanupResult
@@ -358,9 +355,6 @@ export async function runDataRetentionCleanup(
   const expiredUserDataRequestAttempts = await cleanupExpiredUserDataRequestAttempts(
     withLimits(options.expiredUserDataRequestAttempts),
   )
-  const oldProviderResponseKeys = await cleanupOldProviderResponseKeys(
-    withLimits(options.oldProviderResponseKeys),
-  )
   const oldMediaDeliveryChanges = await cleanupOldMediaDeliveryChanges(
     withLimits(options.oldMediaDeliveryChanges),
   )
@@ -431,7 +425,6 @@ export async function runDataRetentionCleanup(
     completedAdminImportBatches,
     completedRssImportBatches,
     expiredUserDataRequestAttempts,
-    oldProviderResponseKeys,
     oldMediaDeliveryChanges,
     classifierRecords,
     sesBounceEvents,

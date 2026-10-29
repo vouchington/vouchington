@@ -1,27 +1,14 @@
 import { recordSpendCapBreach } from '@modules/on-error'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
-import {
-  getAccountingUncertaintySource,
-  type AccountingUncertaintySource,
-} from './accounting-uncertainty.mts'
 import { getDailyAiCostTotalMicrounits } from './daily-total.mts'
 import { getSpendCapFields, spendCapConfig } from './spend-cap-config.mts'
 
-type SpendCapBreachBase = {
+type SpendCapBreach = {
+  reason: 'cap_exceeded'
+  totalMicrounits: number
   dailyCapMicrounits: number
   day: string
 }
-
-type SpendCapBreach =
-  | (SpendCapBreachBase & {
-      reason: 'cap_exceeded' | 'unpriced_rows'
-      totalMicrounits: number
-    })
-  | (SpendCapBreachBase & {
-      reason: 'accounting_uncertain'
-      totalMicrounits: null
-      uncertaintySource: AccountingUncertaintySource | 'latch_read_failed'
-    })
 
 /**
  * Thrown by a provider-call boundary (`callRecordingModelUsage`, the free-retry attempt
@@ -34,7 +21,6 @@ export class SpendCapBreachError extends Error {
   readonly breach: SpendCapBreach
   readonly status = 429
   readonly statusCode = 429
-  readonly expose = true
 
   constructor(breach: SpendCapBreach) {
     super(formatBreachMessage(breach))
@@ -47,14 +33,12 @@ export type SpendCapGuardDeps = {
   waitForSpendCapConfig: () => Promise<void>
   getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
-  getAccountingUncertaintySource: typeof getAccountingUncertaintySource
 }
 
 const defaultGuardDeps: SpendCapGuardDeps = {
   waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
   getSpendCapFields,
   getDailyAiCostTotalMicrounits,
-  getAccountingUncertaintySource,
 }
 
 /**
@@ -65,8 +49,8 @@ const defaultGuardDeps: SpendCapGuardDeps = {
  * call, so a cap change takes effect everywhere spend can happen. A hardcoded list of call sites
  * here has gone stale twice already; do not restore one -- grep call sites that produce billed
  * provider spend (`createOpenAIResponse` and the structured-decision call entry points) instead
- * of trusting a comment. If `getCurrentUtcDay()` advances during the async config, latch,
- * or ledger reads, evaluation restarts for the new day before any admit-or-block decision.
+ * of trusting a comment. If `getCurrentUtcDay()` advances during the async config or usage read,
+ * evaluation restarts for the new day before any admit-or-block decision.
  */
 export async function evaluateSpendCapBreach(
   deps: Partial<SpendCapGuardDeps> = {},
@@ -80,7 +64,8 @@ async function evaluateUntilUtcDayStable(
 ): Promise<SpendCapBreach | null> {
   const day = getCurrentUtcDay()
   const result = await evaluateSpendCapBreachForDay(merged, day)
-  if (getCurrentUtcDay() === day || remainingRestarts === 0) return result
+  if (getCurrentUtcDay() === day) return result
+  if (remainingRestarts === 0) return null
   return evaluateUntilUtcDayStable(merged, remainingRestarts - 1)
 }
 
@@ -88,32 +73,29 @@ async function evaluateSpendCapBreachForDay(
   merged: SpendCapGuardDeps,
   day: string,
 ): Promise<SpendCapBreach | null> {
-  await merged.waitForSpendCapConfig()
-  const spendCap = merged.getSpendCapFields()
-  if (!spendCap.enabled) return null
-  let uncertaintySource: AccountingUncertaintySource | 'latch_read_failed' | null
   try {
-    uncertaintySource = await merged.getAccountingUncertaintySource(day)
-  } catch {
-    uncertaintySource = 'latch_read_failed'
-  }
-  if (uncertaintySource) {
+    await merged.waitForSpendCapConfig()
+    const spendCap = merged.getSpendCapFields()
+    if (
+      !spendCap.enabled ||
+      !Number.isSafeInteger(spendCap.daily_cap_microunits) ||
+      spendCap.daily_cap_microunits < 0
+    )
+      return null
+    const dailyTotal = await merged.getDailyAiCostTotalMicrounits(day)
+    const { totalMicrounits } = dailyTotal
+    if (dailyTotal.day !== day || !Number.isSafeInteger(totalMicrounits) || totalMicrounits < 0)
+      return null
+    if (totalMicrounits <= spendCap.daily_cap_microunits) return null
     return {
-      reason: 'accounting_uncertain',
-      totalMicrounits: null,
+      reason: 'cap_exceeded',
+      totalMicrounits,
       dailyCapMicrounits: spendCap.daily_cap_microunits,
       day,
-      uncertaintySource,
     }
-  }
-  const dailyTotal = await merged.getDailyAiCostTotalMicrounits(day)
-  const { totalMicrounits, hasUnpricedRows } = dailyTotal
-  if (!hasUnpricedRows && totalMicrounits < spendCap.daily_cap_microunits) return null
-  return {
-    reason: hasUnpricedRows ? 'unpriced_rows' : 'cap_exceeded',
-    totalMicrounits,
-    dailyCapMicrounits: spendCap.daily_cap_microunits,
-    day,
+  } catch {
+    // Usage and config are best-effort reporting inputs. An unavailable read cannot stop a call.
+    return null
   }
 }
 
@@ -142,16 +124,10 @@ export async function assertDailySpendCapNotBreached(
     dailyTotalMicrounits: breach.totalMicrounits,
     dailyCapMicrounits: breach.dailyCapMicrounits,
     reason: breach.reason,
-    ...(breach.reason === 'accounting_uncertain' && {
-      uncertaintySource: breach.uncertaintySource,
-    }),
   })
   return breach
 }
 
 function formatBreachMessage(breach: SpendCapBreach): string {
-  if (breach.reason === 'accounting_uncertain') {
-    return `AI spend accounting is uncertain (${breach.uncertaintySource}) for ${breach.day}`
-  }
-  return `AI spend cap breached (${breach.reason}): ${breach.totalMicrounits} >= ${breach.dailyCapMicrounits} microunits for ${breach.day}`
+  return `AI spend cap breached (${breach.reason}): ${breach.totalMicrounits} > ${breach.dailyCapMicrounits} microunits for ${breach.day}`
 }

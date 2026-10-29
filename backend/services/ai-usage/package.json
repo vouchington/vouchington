@@ -29,7 +29,6 @@
     "@services/pagination": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.3.0",
     "@vouchington/postgres": "^0.1.2",

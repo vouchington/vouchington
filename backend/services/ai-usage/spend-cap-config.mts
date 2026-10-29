@@ -4,13 +4,8 @@ export const SPEND_CAP_CONFIG_KEY = 'ai-spend-cap'
 
 export type SpendCapNumberField = 'daily_cap_microunits'
 
-// `enabled: false` is NOT a kill switch -- it disables cap enforcement entirely, permitting
-// unlimited spend (`processAIAgentWorkerJob` skips the check when disabled). The true zero-spend
-// kill switch is `daily_cap_microunits: 0`: `totalMicrounits >= 0` is always true (totals are
-// non-negative), so the very first job of the day breaches and every subsequent job defers. The
-// floor is therefore 0, not a small positive number -- a nonzero-but-tiny cap (e.g. $0.10/day)
-// cannot provide a real full stop anyway, since the first admitted call can itself cost more than
-// the floor.
+// `enabled: false` disables cap enforcement entirely. A zero cap admits calls until some
+// priced spend is recorded, then blocks while the known total remains positive.
 export const SPEND_CAP_MIN_VALUES: Record<SpendCapNumberField, number> = {
   daily_cap_microunits: 0,
 }

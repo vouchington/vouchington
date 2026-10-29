@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
-  countAiUsageOpenAIResponseKeys,
-  countAiUsageRecordsForResponseId,
+  countAiUsageRecordsForAgent,
   createTestFutureUtcDay,
   createTestPost,
   createTestUser,
@@ -105,7 +104,6 @@ describe('recordAiUsage', () => {
     const post = await createTestPost({ user })
 
     await recordAiUsage({
-      responseId: `resp_openrouter_${randomUUID()}`,
       communityId: null,
       postId: post.id,
       agentSlug: 'test-openrouter-billed-cost',
@@ -135,12 +133,7 @@ describe('recordAiUsage', () => {
       model: 'unknown-model',
       serviceTier: 'default',
       usage: usage(10, 5),
-      // Backdated off today's UTC day on purpose (#8773 Finding 2): getCommunityAiCostTotals below
-      // has no time predicate, so this row's day is otherwise free to pick, and
-      // assertDailySpendCapNotBreached fails closed on ANY unpriced row in *today's*
-      // getDailyAiCostTotalMicrounits window -- an unpriced row landing on the real current day
-      // would flakily 429 every other guarded-route test in this parallel Vitest project
-      // (e.g. contact-drafts.test.mts's success cases) depending on commit order.
+      // Keep the fixture outside the current spend window so this totals test stays isolated.
       createdAt: new Date(`${createTestFutureUtcDay()}T12:00:00.000Z`),
     })
     // getCommunityAiCostTotals orders DESC by cost, so a zero-cost community ties with every other
@@ -158,11 +151,10 @@ describe('recordAiUsage', () => {
     expect(entry?.unpriced_request_count).toBe(1)
   })
 
-  it('records one ledger row when the same OpenAI response is replayed', async () => {
-    const responseId = `resp_${randomUUID()}`
+  it('appends a second ledger row when the same usage is recorded again', async () => {
+    const agentSlug = `test-usage-retry-${randomUUID()}`
     const options = {
-      responseId,
-      agentSlug: 'test-response-id-replay',
+      agentSlug,
       provider: 'openai' as const,
       transport: 'direct' as const,
       model: 'gpt-6-luna',
@@ -170,17 +162,17 @@ describe('recordAiUsage', () => {
       usage: usage(11, 7),
     }
 
-    await expect(recordAiUsage(options)).resolves.toBe('recorded')
-    await expect(recordAiUsage(options)).resolves.toBe('already-recorded')
-    await expect(countAiUsageOpenAIResponseKeys(responseId)).resolves.toBe(1)
-    await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+    await recordAiUsage(options)
+    await recordAiUsage(options)
+    await expect(
+      countAiUsageRecordsForAgent(agentSlug, { inputTokens: 11, outputTokens: 7 }),
+    ).resolves.toBe(2)
   })
 
-  it('records one ledger row when concurrent callers use the same OpenAI response id', async () => {
-    const responseId = `resp_${randomUUID()}`
+  it('appends one row per concurrent call', async () => {
+    const agentSlug = `test-usage-concurrent-${randomUUID()}`
     const options = {
-      responseId,
-      agentSlug: 'test-response-id-concurrent',
+      agentSlug,
       provider: 'openai' as const,
       transport: 'direct' as const,
       model: 'gpt-6-luna',
@@ -188,19 +180,16 @@ describe('recordAiUsage', () => {
       usage: usage(12, 8, { reportedCostUsd: 0.001 }),
     }
 
-    const outcomes = await Promise.all(Array.from({ length: 8 }, () => recordAiUsage(options)))
-
-    expect(outcomes.filter(outcome => outcome === 'recorded')).toHaveLength(1)
-    expect(outcomes.filter(outcome => outcome === 'already-recorded')).toHaveLength(7)
-    await expect(countAiUsageOpenAIResponseKeys(responseId)).resolves.toBe(1)
-    await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+    await Promise.all(Array.from({ length: 8 }, () => recordAiUsage(options)))
+    await expect(
+      countAiUsageRecordsForAgent(agentSlug, { inputTokens: 12, outputTokens: 8 }),
+    ).resolves.toBe(8)
   })
 
-  it('keeps the first classifier run attribution when another run records the same response', async () => {
+  it('attributes each recorded call to its classifier run', async () => {
     const firstRunId = await reserveSyntheticRunId()
     const secondRunId = await reserveSyntheticRunId()
     const options = {
-      responseId: `decision-${randomUUID()}`,
       agentSlug: 'test-classifier-attribution',
       provider: 'openai' as const,
       transport: 'direct' as const,
@@ -209,12 +198,8 @@ describe('recordAiUsage', () => {
       usage: usage(11, 7, { reportedCostUsd: 0.002 }),
     }
 
-    await expect(
-      recordAiUsage({ ...options, classifierRunId: firstRunId, latencyMs: 120 }),
-    ).resolves.toBe('recorded')
-    await expect(
-      recordAiUsage({ ...options, classifierRunId: secondRunId, latencyMs: 900 }),
-    ).resolves.toBe('already-recorded')
+    await recordAiUsage({ ...options, classifierRunId: firstRunId, latencyMs: 120 })
+    await recordAiUsage({ ...options, classifierRunId: secondRunId, latencyMs: 900 })
 
     expect(await listAiUsageRecordsForClassifierRun(firstRunId)).toEqual([
       expect.objectContaining({
@@ -223,10 +208,16 @@ describe('recordAiUsage', () => {
         cost_microunits: '2000',
       }),
     ])
-    expect(await listAiUsageRecordsForClassifierRun(secondRunId)).toEqual([])
+    expect(await listAiUsageRecordsForClassifierRun(secondRunId)).toEqual([
+      expect.objectContaining({
+        latency_milliseconds: 900,
+        input_tokens: 11,
+        cost_microunits: '2000',
+      }),
+    ])
   })
 
-  it('attributes usage recorded without a response id to its run as well', async () => {
+  it('attributes usage to its run', async () => {
     const runId = await reserveSyntheticRunId()
 
     await recordAiUsage({
@@ -245,11 +236,10 @@ describe('recordAiUsage', () => {
     ])
   })
 
-  it('does not leave an idempotency key when the ledger insert fails', async () => {
-    const responseId = `resp_${randomUUID()}`
+  it('can record a valid call after an invalid ledger insert', async () => {
+    const agentSlug = `test-usage-insert-recovery-${randomUUID()}`
     const options = {
-      responseId,
-      agentSlug: 'test-response-id-atomicity',
+      agentSlug,
       provider: 'openai' as const,
       transport: 'direct' as const,
       model: 'gpt-6-luna',
@@ -258,9 +248,9 @@ describe('recordAiUsage', () => {
     }
 
     await expect(recordAiUsage(options)).rejects.toThrow('violates check constraint')
-    await expect(countAiUsageOpenAIResponseKeys(responseId)).resolves.toBe(0)
-
-    await expect(recordAiUsage({ ...options, usage: usage(13, 9) })).resolves.toBe('recorded')
-    await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+    await recordAiUsage({ ...options, usage: usage(13, 9) })
+    await expect(
+      countAiUsageRecordsForAgent(agentSlug, { inputTokens: 13, outputTokens: 9 }),
+    ).resolves.toBe(1)
   })
 })

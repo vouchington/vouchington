@@ -19,9 +19,8 @@ export const sessionValkeyClient = await upsertValkeyClientByUrl(config.session_
   readFrom: 'primary',
 })
 
-// DynamicConfig normally prefers replicas because its feature-flag reads are not on a consistency
-// boundary. Accounting uncertainty is fail-closed spend-control state, so it requires an isolated
-// primary-only client even when it shares the dynamic-config Valkey endpoint.
+// DynamicConfig normally prefers replicas for feature-flag reads. Moderation configuration reads
+// use this isolated primary client for current values even when the endpoint is shared.
 export const DYNAMIC_CONFIG_PRIMARY_READ_FROM = 'primary'
 
 export const dynamicConfigPrimaryValkeyClient = await upsertValkeyClientByUrl(

@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 export * from './ai-usage-classifier-runs.mts'
 
@@ -119,6 +120,26 @@ export async function findAiUsageRecordForPost(
   return rows[0] ?? null
 }
 
+/** Reads the newest ledger row for a fixture-owned community and workload. */
+export async function findAiUsageRecordForCommunity(
+  communityId: string,
+  agentSlug: string,
+): Promise<TestAiUsageRecordRow | null> {
+  const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForCommunity */
+    SELECT
+      model_provider, provider_transport, model, tier.service_tier AS service_tier_id,
+      input_tokens, cached_input_tokens,
+      cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
+      reasoning_output_tokens, pricing_status, cost_microunits, community_id
+    FROM ai_usage_records record
+    JOIN ai_service_tiers tier ON tier.id = record.service_tier_id
+    WHERE record.community_id = ${communityId} AND record.agent_slug = ${agentSlug}
+    ORDER BY record.id DESC
+    LIMIT 1
+  `)
+  return rows[0] ?? null
+}
+
 /**
  * For agents with no post/community scope (e.g. story-post, which generates a title/summary
  * before a post exists). Every row for these agents has post_id/community_id NULL, so there is
@@ -147,39 +168,27 @@ export async function findAiUsageRecordForAgent(
 }
 
 /**
- * Counts ai_usage_records rows for an agent + exact token usage. findAiUsageRecordForAgent's
- * LIMIT 1 can't distinguish "recorded once" from "recorded twice" -- idempotency tests (e.g. delayed
- * background-response recovery, #8836) need the exact count.
+ * Counts rows for a fixture-owned agent, optionally narrowed to exact token usage and UTC day.
+ * findAiUsageRecordForAgent's LIMIT 1 cannot distinguish a retried provider call.
  */
 export async function countAiUsageRecordsForAgent(
   agentSlug: string,
-  usage: { inputTokens: number; outputTokens: number },
+  usage?: { inputTokens: number; outputTokens: number },
+  day?: string,
 ): Promise<number> {
-  const { rows } = await read<{ count: string }>(sql`/* countAiUsageRecordsForAgent */
-    SELECT COUNT(*) AS count
-    FROM ai_usage_records
-    WHERE agent_slug = ${agentSlug}
-      AND input_tokens = ${usage.inputTokens}
-      AND output_tokens = ${usage.outputTokens}
-  `)
-  return Number(rows[0]?.count ?? 0)
-}
-
-export async function countAiUsageRecordsForResponseId(responseId: string): Promise<number> {
-  const { rows } = await read<{ count: string }>(sql`/* countAiUsageRecordsForResponseId */
-    SELECT COUNT(*) AS count
-    FROM ai_usage_provider_response_keys key
-    INNER JOIN ai_usage_records record ON record.id = key.ai_usage_record_id
-    WHERE key.response_id = ${responseId}
-  `)
-  return Number(rows[0]?.count ?? 0)
-}
-
-export async function countAiUsageOpenAIResponseKeys(responseId: string): Promise<number> {
-  const { rows } = await read<{ count: string }>(sql`/* countAiUsageOpenAIResponseKeys */
-    SELECT COUNT(*) AS count
-    FROM ai_usage_provider_response_keys
-    WHERE response_id = ${responseId}
-  `)
+  const query = sql`/* countAiUsageRecordsForAgent */
+    SELECT COUNT(*) AS count FROM ai_usage_records WHERE agent_slug = ${agentSlug}
+  `
+  if (usage) {
+    query.append(
+      sql` AND input_tokens = ${usage.inputTokens} AND output_tokens = ${usage.outputTokens}`,
+    )
+  }
+  if (day) {
+    const dayStartMs = Date.parse(`${day}T00:00:00.000Z`)
+    query.append(sql` AND id >= ${timestampToUuidv7LowerBound(dayStartMs)}
+      AND id < ${timestampToUuidv7LowerBound(dayStartMs + 24 * 60 * 60 * 1000)}`)
+  }
+  const { rows } = await read<{ count: string }>(query)
   return Number(rows[0]?.count ?? 0)
 }

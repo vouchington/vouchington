@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   acquireTestAiUsageDateReservation,
@@ -19,9 +18,8 @@ import {
 describe('parseDailyTotalMicrounits', () => {
   it('rethrows a non-RangeError from parsePostgresMoneyAmount instead of clamping it', () => {
     // '01' is non-canonical (leading zero), so parsePostgresMoneyAmount throws TypeError, not
-    // RangeError -- that must propagate as-is. Only the overflow RangeError is a safe-to-clamp
-    // "spend exceeded the cap" signal; any other error means the stored value itself is corrupt,
-    // and clamping it would silently mask that instead of surfacing it.
+    // RangeError. Overflow is checked and clamped before parsing; any other parse error means the
+    // stored value itself is corrupt and must surface instead of being masked by the clamp.
     expect(() => parseDailyTotalMicrounits('01')).toThrow(TypeError)
   })
 })
@@ -78,7 +76,6 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 350,
-      hasUnpricedRows: false,
       day: includedRowsDay,
     })
   })
@@ -87,9 +84,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
     // Reproduces the bug behind #8773 Finding 1: a background response created on one UTC day but
     // recorded (via claimAndRecordBackgroundResponseUsage, after the model call finishes or
     // reconcile.mts recovers it) on the next must still bucket by its createdAt, not by
-    // ai_usage_records.id's default "now" timestamp. Only the responseId-bearing branch of
-    // recordAiUsage honors createdAt (record.mts), so responseId is required here to exercise the
-    // fixed code path at all.
+    // ai_usage_records.id's default "now" timestamp. recordAiUsage honors createdAt (record.mts).
     //
     // createdAt is anchored at noon, not near midnight: PG18's uuidv7(interval) shift, evaluated
     // under this backend's America/Los_Angeles session timezone, drifts by exactly the DST offset
@@ -106,14 +101,11 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     vi.setSystemTime(new Date(`${insertDay}T00:00:05.000Z`))
     await recordAiUsage({
-      responseId: `resp_${randomUUID()}`,
       agentSlug: 'test-daily-total-backdate',
       provider: 'openai',
       transport: 'direct',
-      // Unpriced on purpose: hasUnpricedRows is a clean boolean signal that the row landed inside
-      // the queried day's id range, with no pricing-table math to duplicate in this assertion.
-      model: 'unknown-model',
-      serviceTier: 'default',
+      model: 'gpt-6-luna',
+      serviceTier: 'flex',
       usage: {
         inputTokens: 10,
         cacheReadTokens: 0,
@@ -127,20 +119,18 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     vi.setSystemTime(new Date(`${requestDay}T12:00:00.000Z`))
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
-      totalMicrounits: 0,
-      hasUnpricedRows: true,
+      totalMicrounits: 2,
       day: requestDay,
     })
 
     vi.setSystemTime(new Date(`${insertDay}T12:00:00.000Z`))
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 0,
-      hasUnpricedRows: false,
       day: insertDay,
     })
   })
 
-  it('returns hasUnpricedRows: true when a row in the window has no pricing-table entry, even though the priced total alone is nonzero', async () => {
+  it('sums known priced cost while ignoring an unpriced row', async () => {
     const day = await reserveDay()
     vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
 
@@ -159,18 +149,16 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 100,
-      hasUnpricedRows: true,
       day,
     })
   })
 
-  it('returns 0 and hasUnpricedRows: false for a day with no ai_usage_records rows', async () => {
+  it('returns 0 for a day with no ai_usage_records rows', async () => {
     const day = await reserveDay()
     vi.setSystemTime(new Date(`${day}T00:00:00.000Z`))
 
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 0,
-      hasUnpricedRows: false,
       day,
     })
   })
@@ -185,7 +173,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
       const second = getDailyAiCostTotalMicrounits()
       pending.push(first, second)
       expect(second).toBe(first)
-      await expect(first).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
+      await expect(first).resolves.toEqual({ totalMicrounits: 0, day })
       await insertTestAiUsageRecord({
         id: timestampToUuidv7LowerBound(now),
         costMicrounits: 321,
@@ -194,14 +182,14 @@ describe('getDailyAiCostTotalMicrounits', () => {
       const stale = getDailyAiCostTotalMicrounits()
       pending.push(stale)
       expect(stale).toBe(first)
-      await expect(stale).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
+      await expect(stale).resolves.toEqual({ totalMicrounits: 0, day })
       vi.setSystemTime(now + 60_000)
       const fresh = getDailyAiCostTotalMicrounits()
       const coalesced = getDailyAiCostTotalMicrounits()
       pending.push(fresh, coalesced)
       expect(fresh).not.toBe(first)
       expect(coalesced).toBe(fresh)
-      await expect(fresh).resolves.toEqual({ totalMicrounits: 321, hasUnpricedRows: false, day })
+      await expect(fresh).resolves.toEqual({ totalMicrounits: 321, day })
     } finally {
       await Promise.allSettled(pending)
     }
@@ -209,7 +197,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
   it('clamps to MAX_MONEY_AMOUNT instead of crashing when the raw SUM overflows the JSON-safe integer range', async () => {
     // A runaway ingestion day is exactly the scenario the spend cap exists to catch -- the guard
-    // must fail closed here (report the max representable amount, which trips any realistic cap)
+    // can retain a known lower bound here (above any realistic cap)
     // rather than let parsePostgresMoneyAmount's overflow RangeError crash the request.
     const day = await reserveDay()
     vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
@@ -228,7 +216,6 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: MAX_MONEY_AMOUNT,
-      hasUnpricedRows: false,
       day,
     })
   })
@@ -253,7 +240,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
     const day = await reserveDay()
     vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
     const cached = getDailyAiCostTotalMicrounits()
-    await expect(cached).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
+    await expect(cached).resolves.toEqual({ totalMicrounits: 0, day })
 
     await insertTestAiUsageRecord({
       id: timestampToUuidv7LowerBound(Date.now()),
@@ -267,7 +254,6 @@ describe('getDailyAiCostTotalMicrounits', () => {
       expect(firstRefresh).not.toBe(cached)
       await expect(firstRefresh).resolves.toEqual({
         totalMicrounits: 1,
-        hasUnpricedRows: false,
         day,
       })
       expect(getDailyAiCostTotalMicrounits()).toBe(firstRefresh)

@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { getAccountingUncertaintySource, SpendCapBreachError } from '../services/ai-usage/index.mts'
 import { describeClassifierPermanentFailures } from './classifier-provider-failure-permanent-tests.mts'
 import {
   billed,
@@ -12,7 +11,7 @@ import {
   TRANSIENT,
 } from './classifier-provider-failure-scenarios.mts'
 import { describeClassifierUsageLedger } from './classifier-usage-ledger-tests.mts'
-import { countAiUsageRecordsForResponseId } from './entities/ai-usage.mts'
+import { listAiUsageRecordsForClassifierRun } from './entities/ai-usage.mts'
 import { sentryCaptureMessageMock } from './vitest.setup.sentry-mock.mts'
 import { withReservedAiUsageDay } from './with-reserved-ai-usage-day.mts'
 import { withCurrentClassifierUsage } from './classifier-current-usage.mts'
@@ -60,8 +59,6 @@ export function describeClassifierProviderFailures(driver: ClassifierFailureDriv
       await withCurrentClassifierUsage(async trackRunId => {
         const run = await driver.prepare()
         trackRunId(run.runId)
-        const day = new Date().toISOString().slice(0, 10)
-        const uncertaintyBefore = await getAccountingUncertaintySource(day)
         const responseId = `decision-${randomUUID()}`
         const outage = failing(403, OUTAGE)
         const success = billed(responseId)
@@ -78,28 +75,26 @@ export function describeClassifierProviderFailures(driver: ClassifierFailureDriv
           outcomes_persisted_at: expect.any(Date),
           terminal_failed_at: null,
         })
-        await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
-        await expect(getAccountingUncertaintySource(day)).resolves.toBe(uncertaintyBefore)
+        await expect(listAiUsageRecordsForClassifierRun(run.runId)).resolves.toHaveLength(1)
       })
     })
 
-    it('keeps the spend-cap latch: an ambiguous 503 denies the retry before it reserves a second attempt', async () => {
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async day => {
+    it('allows a retry after an ambiguous 503 when known spend remains under the cap', async () => {
+      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
         const run = await driver.prepare()
         const retry = billed(`decision-${randomUUID()}`)
 
         await expect(run.execute(failing(503, { code: 503 }))).rejects.toMatchObject({
           retryClass: 'transient',
         })
-        await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
         await expect(run.claim()).resolves.toBe('claimed')
-        await expect(run.execute(retry)).rejects.toBeInstanceOf(SpendCapBreachError)
+        await expect(run.execute(retry)).resolves.toBe('persisted')
 
-        expect(retry).not.toHaveBeenCalled()
+        expect(retry).toHaveBeenCalledOnce()
         expect(await run.facts()).toMatchObject({
-          provider_attempts_started: 1,
+          provider_attempts_started: 2,
           terminal_failed_at: null,
-          lease_token: null,
+          outcomes_persisted_at: expect.any(Date),
         })
       })
     })

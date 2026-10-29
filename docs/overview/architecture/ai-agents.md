@@ -22,5 +22,5 @@ Sanitize external content before passing it to an agent. Use `sanitizePromptInje
 
 ## Retention
 
-Provider response keys are the temporary global uniqueness gate for partitioned usage records.
-They expire after the provider replay window while the usage ledger itself remains.
+The usage ledger keeps one row per recorded provider call, including retried calls. Background
+response IDs remain in the owning job until recovery or settlement completes.

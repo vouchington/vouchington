@@ -8,7 +8,7 @@ import {
 
 type RecordAgentResponseUsageParams = Omit<
   RecordModelUsageParams,
-  'responseId' | 'provider' | 'model' | 'serviceTier' | 'usage'
+  'provider' | 'model' | 'serviceTier' | 'usage'
 > & {
   // Pick, not the full CompletedOpenAIResponse: also accepts an OpenAIResponseNotCompletedError (failed or
   // incomplete responses still bill tokens), so callers record from the thrown error.
@@ -32,7 +32,6 @@ export async function recordAgentResponseUsage(
   await recordModelUsage(
     {
       ...rest,
-      responseId: response.id,
       provider,
       model: response.model ?? 'unknown-model',
       serviceTier: response.service_tier ?? 'unknown-tier',

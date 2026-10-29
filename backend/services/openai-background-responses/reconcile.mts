@@ -58,7 +58,6 @@ async function recordBestEffort(
 ): Promise<void> {
   try {
     await recordAiUsage({
-      responseId: candidate.responseId,
       agentSlug: candidate.agentSlug,
       communityId: candidate.communityId,
       postId: candidate.postId,

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
-  findAiUsageRecordForResponseId,
+  findAiUsageRecordForCommunity,
   insertTestCommunity,
 } from '@voucha/test-helpers'
 import {
@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { getAccountingUncertaintySource, SpendCapBreachError } from '@services/ai-usage'
+import { SpendCapBreachError } from '@services/ai-usage'
 import type { CommunityPromptDryRunConfiguration } from '@services/community-agent-prompts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { prepareCommunityPromptDryRun } from './dry-run.mts'
@@ -121,10 +121,10 @@ describe('community prompt dry run', () => {
 
       await dryRun.classify(parts)
 
-      await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
-        agent_slug: 'community-moderation-dry-run',
+      await expect(
+        findAiUsageRecordForCommunity(communityId, 'community-moderation-dry-run'),
+      ).resolves.toMatchObject({
         community_id: communityId,
-        post_id: null,
         input_tokens: 12,
         output_tokens: 0,
       })
@@ -141,21 +141,19 @@ describe('community prompt dry run', () => {
     })
   })
 
-  it('latches an ambiguous billed provider failure', async () => {
-    await withReservedAiUsageDay(1_000_000, async day => {
+  it('reports an ambiguous provider failure', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
       const { dryRun } = await prepare(async () => new Response('', { status: 503 }))
 
       await expect(dryRun.classify(parts)).rejects.toMatchObject({ code: 'provider-error' })
-      await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
     })
   })
 
-  it('fails a stalled call at the per-call deadline without latching uncertainty', async () => {
-    await withReservedAiUsageDay(1_000_000, async day => {
+  it('fails a stalled call at the per-call deadline', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
       const { dryRun } = await prepare(stalledFetch, {}, 20)
 
       await expect(dryRun.classify(parts)).rejects.toMatchObject({ name: 'TimeoutError' })
-      await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
     })
   })
 

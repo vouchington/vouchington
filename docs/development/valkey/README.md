@@ -23,8 +23,7 @@ point at one instance. Clients with the same URL are deduplicated unless given a
   ready-marker and live-filter reads. Cache reads prefer a replica.
 - `bloomValkeyClient` is isolated even when it shares the cache URL, so large Bloom rebuild batches
   cannot exhaust the cache client's inflight budget.
-- The dynamic-config group also holds the fail-closed AI accounting uncertainty latch. Ops may
-  `UNLINK` a day key to recover after an outage; never flush the group.
+- Never flush the dynamic-config group; it holds the current configuration values.
 
 ## Worker queue
 

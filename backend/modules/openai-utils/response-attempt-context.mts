@@ -4,9 +4,6 @@ export type OpenAIResponseAttempt = { attempt: number; requestStartedAt: Date }
 
 export interface OpenAIResponseAttemptHooks {
   beforeAttempt: (attempt: OpenAIResponseAttempt) => Promise<void>
-  onUnknownBilledAttempt: (
-    attempt: Omit<OpenAIResponseAttempt, 'attempt'> & { error: unknown },
-  ) => Promise<void>
 }
 
 const responseAttemptHooksContext = new AsyncLocalStorage<OpenAIResponseAttemptHooks>()

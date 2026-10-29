@@ -17,7 +17,6 @@ import {
 } from '@queues/ai-agents/config'
 import {
   evaluateSpendCapBreach,
-  getAccountingUncertaintySource,
   getDailyAiCostTotalMicrounits,
   getSpendCapFields,
   spendCapConfig,
@@ -40,7 +39,6 @@ type AIAgentsWorkerDeps = {
   waitForSpendCapConfig: () => Promise<void>
   getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
-  getAccountingUncertaintySource: typeof getAccountingUncertaintySource
   recordSpendCapBreach: typeof recordSpendCapBreach
   reportSpendCapRegistrationFailure: typeof onError
   queueName: typeof AI_AGENTS_QUEUE_NAME
@@ -57,7 +55,6 @@ const defaultDeps: AIAgentsWorkerDeps = {
   waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
   getSpendCapFields,
   getDailyAiCostTotalMicrounits,
-  getAccountingUncertaintySource,
   recordSpendCapBreach,
   reportSpendCapRegistrationFailure: onError,
   queueName: AI_AGENTS_QUEUE_NAME,
@@ -88,7 +85,6 @@ export async function processAIAgentWorkerJob(
       waitForSpendCapConfig: dependencies.waitForSpendCapConfig,
       getSpendCapFields: dependencies.getSpendCapFields,
       getDailyAiCostTotalMicrounits: dependencies.getDailyAiCostTotalMicrounits,
-      getAccountingUncertaintySource: dependencies.getAccountingUncertaintySource,
     })
     if (breach && (await jobWouldIncurSpend(job))) {
       dependencies.recordSpendCapBreach({
@@ -96,9 +92,6 @@ export async function processAIAgentWorkerJob(
         dailyTotalMicrounits: breach.totalMicrounits,
         dailyCapMicrounits: breach.dailyCapMicrounits,
         reason: breach.reason,
-        ...(breach.reason === 'accounting_uncertain' && {
-          uncertaintySource: breach.uncertaintySource,
-        }),
       })
       await delayForSpendCap(
         job,

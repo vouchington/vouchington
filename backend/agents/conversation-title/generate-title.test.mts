@@ -15,8 +15,8 @@ import openAIClient from '@modules/openai-utils/client'
 import {
   createTestUser,
   createTestConversationMessage,
-  countAiUsageRecordsForResponseId,
-  findAiUsageRecordForResponseId,
+  countAiUsageRecordsForAgent,
+  findAiUsageRecordForAgent,
 } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import {
@@ -53,8 +53,6 @@ describe('conversation title input and model owners', () => {
   })
 
   beforeEach(async () => {
-    // Only the external SDK credential boundary is controlled; the application client stays real.
-    // The direct transport keeps background mode and the delayed recovery job in play.
     await modelRoutingConfig.waitForInitialization()
     restoreRouting = overrideDynamicConfigFieldsForTest(modelRoutingConfig, {
       openai_transport: 'direct',
@@ -119,16 +117,14 @@ describe('conversation title input and model owners', () => {
   async function expectSettledResponse(
     responseId: string,
     fixture: ReturnType<typeof createTitleResponseStream>,
+    tokens = { inputTokens: 1, outputTokens: 1 },
   ): Promise<void> {
     expect(fixture.getRegistration()).toMatchObject({
       response_id: responseId,
       agent_slug: 'chat-generate-title',
     })
-    await expect(readTitleResponseRegistration(responseId)).resolves.toMatchObject({
-      response_id: responseId,
-      agent_slug: 'chat-generate-title',
-    })
-    await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+    await expect(readTitleResponseRegistration(responseId)).resolves.toBeNull()
+    await expect(findAiUsageRecordForAgent('chat-generate-title', tokens)).resolves.not.toBeNull()
     expect(cancel).not.toHaveBeenCalled()
     expect(retrieve).not.toHaveBeenCalled()
   }
@@ -168,7 +164,7 @@ describe('conversation title input and model owners', () => {
   })
 
   it('generates a trimmed title through the real model, recovery and billing owners', async () => {
-    await withReservedAiUsageDay(1_000_000, async () => {
+    await withReservedAiUsageDay(1_000_000, async day => {
       const input = await makeInput()
       const { responseId, fixture } = prepareResponse(' "Great Chat Title" ')
       create.mockResolvedValueOnce(fixture.stream)
@@ -185,8 +181,13 @@ describe('conversation title input and model owners', () => {
         expect.objectContaining({ maxRetries: 0 }),
       )
       await expectSettledResponse(responseId, fixture)
-      await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
-        agent_slug: 'chat-generate-title',
+      const titleUsage = { inputTokens: 1, outputTokens: 1 }
+      await expect(
+        countAiUsageRecordsForAgent('chat-generate-title', titleUsage, day),
+      ).resolves.toBe(1)
+      await expect(
+        findAiUsageRecordForAgent('chat-generate-title', titleUsage),
+      ).resolves.toMatchObject({
         model: 'gpt-6-luna-2026-10-01',
         service_tier_id: 'flex',
         input_tokens: 1,
@@ -261,10 +262,15 @@ describe('conversation title input and model owners', () => {
             : 'OpenAI response incomplete: max_output_tokens',
         )
         expect(create).toHaveBeenCalledOnce()
-        await expectSettledResponse(responseId, fixture)
-        const row = await findAiUsageRecordForResponseId(responseId)
+        await expectSettledResponse(responseId, fixture, {
+          inputTokens: 84_732,
+          outputTokens: 6391,
+        })
+        const row = await findAiUsageRecordForAgent('chat-generate-title', {
+          inputTokens: 84_732,
+          outputTokens: 6391,
+        })
         expect(row).toMatchObject({
-          agent_slug: 'chat-generate-title',
           model: 'gpt-6-luna-2026-10-01',
           service_tier_id: 'flex',
           input_tokens: 84_732,

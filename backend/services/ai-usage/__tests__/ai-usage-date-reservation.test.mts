@@ -42,7 +42,6 @@ describe('acquireTestAiUsageDateReservation', () => {
     vi.setSystemTime(new Date(`${second.day}T12:00:00.000Z`))
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 0,
-      hasUnpricedRows: false,
       day: second.day,
     })
   })

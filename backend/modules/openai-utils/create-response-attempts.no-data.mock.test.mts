@@ -57,14 +57,11 @@ describe('OpenAI response attempt accounting boundary', () => {
     >(() => Promise.resolve())
     vi.useFakeTimers()
 
-    const result = runWithOpenAIResponseAttemptHooks(
-      { beforeAttempt, onUnknownBilledAttempt: () => Promise.resolve() },
-      async () => {
-        const pending = createOpenAIResponse(params, options)
-        await vi.runAllTimersAsync()
-        return pending
-      },
-    )
+    const result = runWithOpenAIResponseAttemptHooks({ beforeAttempt }, async () => {
+      const pending = createOpenAIResponse(params, options)
+      await vi.runAllTimersAsync()
+      return pending
+    })
 
     await expect(result).resolves.toMatchObject({ status: 'completed' })
     expect(openAIMocks.create).toHaveBeenCalledTimes(2)
@@ -76,7 +73,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     expect(beforeAttempt).toHaveBeenNthCalledWith(2, expect.objectContaining({ attempt: 2 }))
   })
 
-  it('latches an ordinary create failure and never sends a second physical request', async () => {
+  it('propagates an ordinary create failure and never sends a second physical request', async () => {
     const error = new APIError(
       429,
       { code: 'rate_limit_exceeded' },
@@ -84,24 +81,17 @@ describe('OpenAI response attempt accounting boundary', () => {
       new Headers(),
     )
     openAIMocks.create.mockRejectedValueOnce(error)
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+        createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(error)
 
     expect(openAIMocks.create).toHaveBeenCalledTimes(1)
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ error }),
-    )
   })
 
-  it('throws an exhausted flex resource-unavailable error without latching it', async () => {
+  it('throws an exhausted flex resource-unavailable error after the retry budget', async () => {
     const error = new APIError(
       429,
       { code: 'resource_unavailable', message: 'Resource Unavailable' },
@@ -109,13 +99,10 @@ describe('OpenAI response attempt accounting boundary', () => {
       new Headers(),
     )
     openAIMocks.create.mockRejectedValue(error)
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
     vi.useFakeTimers()
 
     const result = runWithOpenAIResponseAttemptHooks(
-      { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
+      { beforeAttempt: () => Promise.resolve() },
       async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
     )
     const resultRejection = result.catch((err: unknown) => err)
@@ -123,64 +110,47 @@ describe('OpenAI response attempt accounting boundary', () => {
 
     await expect(resultRejection).resolves.toBe(error)
     expect(openAIMocks.create).toHaveBeenCalledTimes(3)
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch a non-billed bad request error', async () => {
+  it('propagates a non-billed bad request error', async () => {
     const error = new APIError(400, { code: 'invalid_request_error' }, 'Bad request', new Headers())
     openAIMocks.create.mockRejectedValueOnce(error)
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+        createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(error)
 
     expect(openAIMocks.create).toHaveBeenCalledTimes(1)
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch an APIUserAbortError from create after dispatch', async () => {
+  it('propagates an APIUserAbortError from create after dispatch', async () => {
     const error = new APIUserAbortError()
     openAIMocks.create.mockRejectedValueOnce(error)
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+        createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(error)
 
     expect(openAIMocks.create).toHaveBeenCalledTimes(1)
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch or call OpenAI when the request signal is already aborted', async () => {
+  it('does not call OpenAI when the request signal is already aborted', async () => {
     const controller = new AbortController()
     controller.abort()
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
 
     await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () =>
-          createOpenAIResponse(
-            { model: 'gpt-4.1-mini', input: 'hello' },
-            { signal: controller.signal },
-          ),
+      runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
+        createOpenAIResponse(
+          { model: 'gpt-4.1-mini', input: 'hello' },
+          { signal: controller.signal },
+        ),
       ),
     ).rejects.toThrow('This operation was aborted')
 
     expect(openAIMocks.create).not.toHaveBeenCalled()
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 })

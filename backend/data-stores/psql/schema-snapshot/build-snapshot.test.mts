@@ -15,7 +15,7 @@ describe('buildSchemaSnapshot', () => {
           comment: null,
         },
         {
-          table_name: 'ai_usage_provider_response_keys',
+          table_name: 'bedrock_embedding_batches',
           relkind: 'r',
           partition_strategy: '',
           partition_key: null,
@@ -45,7 +45,7 @@ describe('buildSchemaSnapshot', () => {
         accessClass: 'target-scoped',
       },
     })
-    expect(snapshot.tables.ai_usage_provider_response_keys).toMatchObject({
+    expect(snapshot.tables.bedrock_embedding_batches).toMatchObject({
       growth: 'bounded',
       partition: null,
     })
