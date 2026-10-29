@@ -499,6 +499,10 @@ checks:
       command: [pnpm, run, article-links:check]
       fileArgs: none
       always: true
+    - name: ast-grep-config-parity
+      command: [pnpm, run, ast-grep:config-check]
+      fileArgs: none
+      always: true
     - name: live-repository-policies
       command: [node, ci/check-repository-policy-scans.mts]
       fileArgs: none
