@@ -29,6 +29,10 @@ probed fresh on every run, so a stale marker demotes instead of being trusted, a
 against a still-valid stronger worktree preserves the stronger capability.
 `./dev/reset-worktree` is the intentional invalidation boundary.
 
+Backend and web runs on non-main worktrees also save the applied migration ledger to
+`.initialized-migrations`. Readiness then demotes the worktree to `monorepo` (`stale-migrations`) and the next
+initialization rebuilds the disposable database when an applied migration was edited in place after that run.
+
 If `createdb` or `psql` reports "no such file" or "connection refused", confirm the host PostgreSQL
 service is running and retry with `source .env && ./dev/initialize web`. Correct `DATABASE_URL` in
 `.env` rather than substituting `PGHOST`. For web validation recovery see

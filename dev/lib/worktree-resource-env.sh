@@ -75,7 +75,22 @@ worktree_resource_load_operation_lock() {
   source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)/node_modules/vouchington-tooling/scripts/worktree/operation-lock.sh"
 }
 worktree_resource_acquire_operation_lock() {
-  worktree_resource_load_operation_lock && worktree_operation_lock_acquire "$WORKTREE_RESOURCE_OPERATION_LOCK_ROOT"
+  worktree_resource_load_operation_lock || return 1
+  worktree_operation_lock_acquire "$WORKTREE_RESOURCE_OPERATION_LOCK_ROOT" && return 0
+  worktree_resource_report_lock_holder
+  return 1
+}
+# Names who holds the host-wide resource lock and states that initialization stopped before
+# writing a .initialized marker, so the next step is clear after a foreign lock.
+worktree_resource_report_lock_holder() {
+  local lock_path="$WORKTREE_RESOURCE_OPERATION_LOCK_ROOT/lock" token holder_pid=unknown
+  if [ -L "$lock_path" ]; then
+    token=$(readlink "$lock_path" 2>/dev/null || true)
+    holder_pid=$(cat "$WORKTREE_RESOURCE_OPERATION_LOCK_ROOT/$token" 2>/dev/null || true)
+    holder_pid=${holder_pid:-unknown}
+  fi
+  echo "Error: worktree resource lock $lock_path is held by PID $holder_pid; no .initialized marker was written." >&2
+  echo "Wait for that process to finish (ps -p $holder_pid) and rerun ./dev/initialize; if it is gone, the lock is stale and the next run clears it." >&2
 }
 worktree_resource_release_operation_lock() {
   worktree_resource_load_operation_lock && worktree_operation_lock_release
@@ -102,6 +117,36 @@ worktree_resource_is_main() {
   return 0
 }
 
+# WORKTREE_DIR is a resource id (the hashed `d<12 hex>` ./dev/initialize writes to .env), never a
+# filesystem path. Prints what was expected and how to fix it when given anything path-shaped.
+worktree_resource_validate_dir_shape() {
+  local value=${1:-}
+  case "$value" in
+    */*)
+      echo "Error: WORKTREE_DIR must be a worktree resource id such as d0123456789ab, not a path: '$value'." >&2
+      echo "Fix: unset WORKTREE_DIR and run 'source .env' (or rerun ./dev/initialize <mode>) so it holds the id written to .env." >&2
+      return 1
+      ;;
+  esac
+}
+
+# Prints the first applied-migration checksum that no longer matches its file, using the ledger
+# snapshot ./dev/initialize stored beside .initialized. No snapshot means nothing was recorded.
+worktree_resource_initialized_migration_drift() {
+  local repo_root=$1 snapshot=${INITIALIZED_MIGRATIONS_FILE:-$1/.initialized-migrations}
+  [ -f "$snapshot" ] || return 0
+  node "$repo_root/dev/lib/migration-ledger-drift.mts" "$repo_root/backend/data-stores/psql/migrations" <"$snapshot"
+}
+
+worktree_resource_registry_append() {
+  local registry_dir=$1 registry=$2 line=$3
+  if ! mkdir -p "$registry_dir" 2>/dev/null || ! printf '%s\n' "$line" >>"$registry" 2>/dev/null; then
+    echo "Error: cannot write the worktree resource registry at $registry (permission denied or read-only)." >&2
+    echo "Fix: make $registry_dir writable by this user, or run from a shell whose HOME is writable." >&2
+    return 1
+  fi
+}
+
 register_worktree_resource_path() {
   local path=$1
   local physical_path
@@ -111,11 +156,10 @@ register_worktree_resource_path() {
   [ -n "$path" ] || return 0
   physical_path=$(cd "$path" && pwd -P) || return 1
   worktree_resource_is_main "$physical_path" && return 0
-  mkdir -p "$registry_dir"
   if [ -f "$registry" ] && grep -Fxq "$physical_path" "$registry"; then
     return 0
   fi
-  printf '%s\n' "$physical_path" >>"$registry"
+  worktree_resource_registry_append "$registry_dir" "$registry" "$physical_path"
 }
 
 register_disposable_checkout_path() {
@@ -126,11 +170,10 @@ register_disposable_checkout_path() {
 
   [ -n "$path" ] || return 0
   physical_path=$(cd "$path" && pwd -P) || return 1
-  mkdir -p "$registry_dir"
   if [ -f "$registry" ] && grep -Fxq "$physical_path" "$registry"; then
     return 0
   fi
-  printf '%s\n' "$physical_path" >>"$registry"
+  worktree_resource_registry_append "$registry_dir" "$registry" "$physical_path"
 }
 
 refuse_shared_resources_on_disposable() {
@@ -144,6 +187,7 @@ refuse_shared_resources_on_disposable() {
     return 0
   fi
   current_dir=$(worktree_resource_current_dir "$repo_root")
+  worktree_resource_validate_dir_shape "${WORKTREE_DIR:-}" || exit 1
   if [ -z "${WORKTREE_DIR:-}" ] || [ "$WORKTREE_DIR" != "$current_dir" ]; then
     echo "Error: $script_name refuses to operate on another checkout's resources from a disposable clone." >&2
     exit 1
@@ -253,6 +297,16 @@ worktree_resource_validate_backend_init() {
       export WORKTREE_RESOURCE_STATUS=main-resource
       return 1
     fi
+  fi
+}
+
+# Readiness (not ownership): succeeds only when no applied migration was edited in place since
+# the last initialization. Kept apart from the ownership validators so teardown and reset can
+# still remove the resources of a worktree whose database went stale.
+worktree_resource_validate_migrations_current() {
+  if [ -n "$(worktree_resource_initialized_migration_drift "$1" 2>/dev/null)" ]; then
+    export WORKTREE_RESOURCE_STATUS=stale-migrations
+    return 1
   fi
 }
 

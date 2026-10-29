@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { readFile, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -18,10 +18,12 @@ import { cleanupWorktreeDirs, makeWorktreeDir } from '../test-helpers/initialize
 
 // Runs reset_database_if_schema_mismatch against DB_NAME's default database URL, returning the
 // dropdb/createdb calls it made.
-async function resetIfSchemaMismatch(worktreeDir: string, script: string) {
+async function resetIfSchemaMismatch(worktreeDir: string, script: string, snapshot?: string) {
+  const cwd = await makeWorktreeDir(worktreeDir)
+  if (snapshot !== undefined) await writeFile(join(cwd, '.initialized-migrations'), snapshot)
   return runRecordedInitialize({
-    cwd: await makeWorktreeDir(worktreeDir),
-    env: { DATABASE_URL: '' },
+    cwd,
+    env: { DATABASE_URL: '', INITIALIZED_MIGRATIONS_FILE: join(cwd, '.initialized-migrations') },
     script: `${recordDropdbAndCreatedb()}\n${script}\nreset_database_if_schema_mismatch >/dev/null`,
   })
 }
@@ -126,6 +128,35 @@ describe('initialize stale database checks', () => {
     DB_NAME=voucha-feature-db-healthy-checksum
     ${ledgerProbe(await migrationChecksum())}
     `,
+    )
+
+    expect(output).toBe('')
+  })
+
+  it('resets a disposable database when the saved initialization snapshot is stale', async () => {
+    const output = await resetIfSchemaMismatch(
+      'feature-db-reset-stale-snapshot',
+      `
+    DB_NAME=voucha-feature-db-reset-stale-snapshot
+    ${ledgerProbe(await migrationChecksum())}
+    `,
+      `${migrationId}\t${'a'.repeat(64)}\n`,
+    )
+
+    expect(output).toBe(
+      'drop:voucha-feature-db-reset-stale-snapshot\ncreate:voucha-feature-db-reset-stale-snapshot',
+    )
+  })
+
+  it('keeps a database whose saved initialization snapshot still matches', async () => {
+    const checksum = await migrationChecksum()
+    const output = await resetIfSchemaMismatch(
+      'feature-db-keep-fresh-snapshot',
+      `
+    DB_NAME=voucha-feature-db-keep-fresh-snapshot
+    ${ledgerProbe(checksum)}
+    `,
+      `${migrationId}\t${checksum}\n`,
     )
 
     expect(output).toBe('')

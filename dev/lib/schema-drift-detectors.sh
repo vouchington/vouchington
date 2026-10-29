@@ -130,5 +130,16 @@ detect_stale_schema_reason() {
     fi
   done
 
-  detect_migration_checksum_schema_drift "$database_url" "$migrations_directory"
+  stale_schema_reason=$(detect_migration_checksum_schema_drift "$database_url" "$migrations_directory")
+  if [ -n "$stale_schema_reason" ]; then
+    printf '%s\n' "$stale_schema_reason"
+    return 0
+  fi
+
+  # A migration edited in place after the last initialization makes the saved snapshot stale
+  # even when the database ledger still matches, so the .initialized marker cannot be reused.
+  stale_schema_reason=$(worktree_resource_initialized_migration_drift "$REPO_ROOT")
+  if [ -n "$stale_schema_reason" ]; then
+    printf 'initialized migration snapshot is stale: %s\n' "$stale_schema_reason"
+  fi
 }

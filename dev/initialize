@@ -1019,6 +1019,17 @@ reset_database_if_schema_mismatch() {
     )
 }
 
+# Saves the applied migration ledger (id and checksum) beside .initialized so readiness can prove
+# later that no applied migration was edited in place. Written only after migrations succeed.
+write_initialized_migration_snapshot() {
+    local snapshot=${INITIALIZED_MIGRATIONS_FILE:-$REPO_ROOT/.initialized-migrations}
+    local ledger
+
+    [ "${IS_MAIN:-false}" = true ] && return 0
+    ledger=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$DATABASE_URL" --no-password -At -F $'\t' -c "SELECT id, checksum FROM migrations ORDER BY id") || return 1
+    printf '%s\n' "$ledger" >"$snapshot"
+}
+
 print_unsupported_database_target_error() {
     local variable_name=$1
 
@@ -1220,6 +1231,10 @@ mode_at_least() {
 worktree_validated_capability() {
     local repo_root=$1
 
+    if ! worktree_resource_validate_migrations_current "$repo_root"; then
+        printf '%s' monorepo
+        return 0
+    fi
     if worktree_resource_validate_web_init "$repo_root"; then
         printf '%s' web
         return 0
@@ -1397,6 +1412,8 @@ main() {
     local PRESERVED_CAPABILITY=""
 
     cd "$REPO_ROOT"
+
+    worktree_resource_validate_dir_shape "${WORKTREE_DIR:-}" || exit 1
 
     echo -e "${BLUE}=== Voucha Worktree Initializer (mode: $MODE) ===${NC}\n"
 
@@ -1646,6 +1663,7 @@ main() {
         source .env
         set +a
         (cd backend && pnpm run db:migrate)
+        write_initialized_migration_snapshot
         echo ""
 
         if [ "$MODE" = web ]; then
