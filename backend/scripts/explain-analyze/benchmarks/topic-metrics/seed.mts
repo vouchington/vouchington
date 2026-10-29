@@ -45,7 +45,8 @@ export async function seedTopicMetricsBenchmark({
     write(`
       /* benchmarkTopicMetricsIneligiblePost */
       UPDATE posts
-      SET latest_clearance_change_id = NULL,
+      SET clearance_version = posts.clearance_version + 1,
+          clearance_changed_at = NULL,
           approved_at = NULL
       WHERE id = (
         SELECT relation.subject_id

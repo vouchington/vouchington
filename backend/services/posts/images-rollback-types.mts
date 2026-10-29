@@ -4,8 +4,8 @@ export type PostImageRollback = {
   images: Array<{ image_id: string; order_index: number; caption: string }>
   currentLlmModerationContentSha256: Buffer
   llmModerationContentSha256: Buffer
-  currentLatestClearanceChangeId: string | null
-  latestClearanceChangeId: string | null
+  currentClearanceVersion: string | null
+  clearanceVersion: string
   approvedAt: Date | null
   rejectedAt: Date | null
   inReviewAt: Date | null

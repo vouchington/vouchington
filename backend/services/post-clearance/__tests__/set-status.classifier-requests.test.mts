@@ -85,7 +85,11 @@ describe('approving a post returns the requests the sweep retired (real PG)', ()
         'approved',
         null,
         {},
-        { reason: 'rollback', compensates_change_id: 'change', restores_change_id: null },
+        {
+          reason: 'rollback',
+          compensates_clearance_version: '1',
+          restores_clearance_version: null,
+        },
       )
 
       expect(await sweptPostIds()).toContain(fixture.post.id)

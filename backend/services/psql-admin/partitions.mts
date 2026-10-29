@@ -8,8 +8,8 @@ import {
 import {
   CLASSIFIER_RESULT_PARTITION_TABLES,
   USER_DATA_REQUEST_PARTITION_TABLES,
-  PARTITION_DROP_POLICIES,
 } from '@data-stores/psql/config-driven/utils/partition-config'
+import { PARTITION_DROP_POLICIES } from '@data-stores/psql/config-driven/utils/partition-drop-policies'
 import { classifierRangeFromChild } from '@data-stores/psql/migration-runner/classifier-partition-range'
 import {
   getMonthlyPartitionUpperBound,

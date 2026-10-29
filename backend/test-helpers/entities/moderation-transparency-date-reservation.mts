@@ -47,7 +47,8 @@ export async function acquireTestModerationTransparencyDateReservation(): Promis
         ) AS occupied`,
         [FIRST_YEAR, SLOT_YEARS, slot],
       )
-      if (!rows[0]?.occupied) return createReservation(client, slot)
+      if (rows[0]?.occupied) continue
+      return createReservation(client, slot)
     }
     throw new Error('No unused moderation transparency test date slot remains')
   } catch (err) {

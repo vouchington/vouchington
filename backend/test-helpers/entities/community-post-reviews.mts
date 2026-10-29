@@ -69,6 +69,21 @@ export async function insertTestPendingCommunityPostReview(options: {
   )
 }
 
+export async function insertTestCommunityReviewChange(options: {
+  communityId: string
+  postId: string
+  changedById: string | null
+}): Promise<string | null> {
+  const { rows } = await write<{ post_author_user_id: string | null }>(sql`
+    /* insertTestCommunityReviewChange */
+    INSERT INTO community_post_review_changes
+      (community_id, post_id, changed_by_id, change_type, is_platform_override)
+    VALUES (${options.communityId}, ${options.postId}, ${options.changedById}, 'approve', FALSE)
+    RETURNING post_author_user_id
+  `)
+  return rows[0]!.post_author_user_id
+}
+
 /**
  * Records an automod flag on the post's review row for the post's current content digest, the
  * way the community classifier's review-queue and unpublish effects will. Change the digest

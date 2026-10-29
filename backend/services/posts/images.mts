@@ -50,7 +50,7 @@ export async function setPostImages(
         structured_data,
         ai_summary_markdown,
         llm_moderation_content_sha256,
-        latest_clearance_change_id,
+        clearance_version,
         approved_at,
         rejected_at,
         in_review_at,
@@ -90,7 +90,7 @@ export async function setPostImages(
         ) AS t(image_id, order_index, caption)
       `)
       }
-      let currentLatestClearanceChangeId: string | null = null
+      let currentClearanceVersion: string | null = null
       await runSequentially([
         () =>
           syncPostImagePlacements(
@@ -105,11 +105,7 @@ export async function setPostImages(
       WHERE id = ${post.id}
         `),
         async () => {
-          currentLatestClearanceChangeId = await resetPostImageClearance(
-            query,
-            post.id,
-            currentUser.id,
-          )
+          currentClearanceVersion = await resetPostImageClearance(query, post.id, currentUser.id)
         },
       ])
 
@@ -149,8 +145,8 @@ export async function setPostImages(
           images: previousImages,
           currentLlmModerationContentSha256: moderationSha,
           llmModerationContentSha256: llm_moderation_content_sha256,
-          currentLatestClearanceChangeId,
-          latestClearanceChangeId: latest_clearance_change_id,
+          currentClearanceVersion,
+          clearanceVersion: clearance_version,
           approvedAt: approved_at,
           rejectedAt: rejected_at,
           inReviewAt: in_review_at,

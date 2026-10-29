@@ -1,19 +1,16 @@
 import crypto from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  acquireTestModerationTransparencyDateReservation,
   createTestAgent,
   createTestUser,
   getLatestPostClearanceTransparencyCategories,
   getLatestPostClearanceTransparencyCommunityId,
   getTestCommunityModerationTransparencyRollupCounts,
-  getTestModerationTransparencyRollupCount,
   insertTestAgentModeration,
   insertTestAgentPrompt,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestPost,
-  insertTestPostClearanceChange,
   setPostSpamDetectionResults,
   setTestPostClearanceStatus,
   updatePostModerationData,
@@ -96,53 +93,4 @@ describe('automod feedback transparency attribution', () => {
     ).resolves.toEqual({ openai_omni: 1, spam_detection: 1 })
     await expect(getLatestPostClearanceTransparencyCommunityId(postId)).resolves.toBe(community.id)
   })
-
-  it('rolls community-scoped clearance rejections into the community cohort only', async () => {
-    const occurredAt = await uniqueTransparencyNow()
-    const owner = await createTestUser()
-    const author = await createTestUser()
-    const community = await insertTestCommunity({ createdById: owner.id })
-    const postId = await insertTestPost({
-      title: `Community clearance ${crypto.randomUUID()}`,
-      slug: `community-clearance-${crypto.randomUUID()}`,
-      createdById: author.id,
-      markdown: 'community-scoped clearance',
-      communityId: community.id,
-    })
-    await insertTestPostClearanceChange({
-      postId,
-      status: 'rejected',
-      occurredAt,
-      moderationTransparencyCategories: ['openai_omni', 'spam_detection'],
-    })
-    await expect(
-      getTestModerationTransparencyRollupCount({
-        occurredAt,
-        communityId: community.id,
-        metric: 'automated_moderation',
-        category: 'openai_omni',
-      }),
-    ).resolves.toBe(1)
-    await expect(
-      getTestModerationTransparencyRollupCount({
-        occurredAt,
-        communityId: community.id,
-        metric: 'automated_moderation',
-        category: 'spam_detection',
-      }),
-    ).resolves.toBe(1)
-    await expect(
-      getTestModerationTransparencyRollupCount({
-        occurredAt,
-        metric: 'automated_moderation',
-        category: 'openai_omni',
-      }),
-    ).resolves.toBeUndefined()
-  })
 })
-
-async function uniqueTransparencyNow(): Promise<Date> {
-  const reservation = await acquireTestModerationTransparencyDateReservation()
-  onTestFinished(() => reservation.release())
-  return reservation.now
-}

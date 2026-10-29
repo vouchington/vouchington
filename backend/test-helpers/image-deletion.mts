@@ -108,6 +108,5 @@ export function captureImageDeletionTransactions() {
 export async function readImageDeletionPostOutcome(postId: string) {
   const state = await getPostModerationResetState(postId)
   if (!state) throw new Error('Owned deletion fixture post disappeared')
-  const { latest_clearance_change_id: _changeId, ...outcome } = state
-  return outcome
+  return state
 }

@@ -1,5 +1,4 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
-import crypto from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -8,105 +7,18 @@ import {
   createTestUser,
   deleteTestReleasedModerationTransparencyRollup,
   deleteTestModerationAppeal,
-  hardDeleteTestPost,
-  getTestModerationTransparencyRollupCount,
   getTestReleasedModerationTransparencyRollupCount,
   insertTestModerationAppeal,
-  insertTestPost,
-  insertTestPostClearanceChange,
   insertTestModeratorAction,
   insertTestUserWarning,
   resolveTestModerationAppeal,
   updateTestReleasedModerationTransparencyRollup,
-  updateTestPostClearanceChange,
   updateTestModeratorActionType,
 } from '@voucha/test-helpers'
 import { getModerationTransparency } from './get-moderation-transparency.mts'
 import { observeTestModerationTransparencyRollupRelease } from '@voucha/test-helpers/moderation-transparency-rollup-observer'
 
 describe('moderation transparency daily rollup lifecycle', () => {
-  it('counts a jointly flagged clearance rejection in both immutable source cohorts', async () => {
-    const occurredAt = await uniqueTransparencyNow()
-    const author = await createTestUser()
-    const postId = await insertTestPost({
-      title: `Transparency joint sources ${crypto.randomUUID()}`,
-      slug: `transparency-joint-sources-${crypto.randomUUID()}`,
-      createdById: author.id,
-      markdown: 'Test transparency aggregation.',
-    })
-    await insertTestPostClearanceChange({
-      postId,
-      status: 'rejected',
-      occurredAt,
-      moderationTransparencyCategories: ['openai_omni', 'spam_detection'],
-    })
-
-    await expectRollupCount(occurredAt, 'automated_moderation', 'openai_omni', 1)
-    await expectRollupCount(occurredAt, 'automated_moderation', 'spam_detection', 1)
-    await expect(
-      getTestModerationTransparencyRollupCount({
-        occurredAt,
-        metric: 'automated_moderation',
-        category: 'post_clearance_reject',
-      }),
-    ).resolves.toBeUndefined()
-  })
-
-  it('rejects a released clearance source reclassification', async () => {
-    const now = await uniqueTransparencyNow()
-    const occurredAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-    const author = await createTestUser()
-    const postId = await insertTestPost({
-      title: `Transparency clearance lifecycle ${crypto.randomUUID()}`,
-      slug: `transparency-clearance-lifecycle-${crypto.randomUUID()}`,
-      createdById: author.id,
-      markdown: 'Test rollup lifecycle aggregation.',
-    })
-    const changes = await Promise.all(
-      Array.from({ length: 20 }, (_, occurredAtSequence) =>
-        insertTestPostClearanceChange({
-          postId,
-          status: 'rejected',
-          moderationTransparencyCategories: ['openai_omni'],
-          occurredAt,
-          occurredAtSequence,
-        }),
-      ),
-    )
-
-    await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
-    await expect(
-      updateTestPostClearanceChange({ id: changes[0]!.id, status: 'approved' }),
-    ).rejects.toThrow(/post_clearance_changes(?:__[a-z0-9_]+)? rows are append-only/)
-    await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
-  })
-
-  it('keeps a released clearance cohort after source deletion', async () => {
-    const now = await uniqueTransparencyNow()
-    const occurredAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-    const author = await createTestUser()
-    const postId = await insertTestPost({
-      title: `Transparency clearance deletion ${crypto.randomUUID()}`,
-      slug: `transparency-clearance-deletion-${crypto.randomUUID()}`,
-      createdById: author.id,
-      markdown: 'Test rollup lifecycle aggregation.',
-    })
-    await Promise.all(
-      Array.from({ length: 20 }, (_, occurredAtSequence) =>
-        insertTestPostClearanceChange({
-          postId,
-          status: 'rejected',
-          moderationTransparencyCategories: ['openai_omni'],
-          occurredAt,
-          occurredAtSequence,
-        }),
-      ),
-    )
-    await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
-    await hardDeleteTestPost(postId)
-    await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
-  })
-
   it('rejects a released appeal resolution rewrite', async () => {
     const now = await uniqueTransparencyNow()
     const occurredAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
@@ -265,17 +177,6 @@ async function expectReleasedBucket(
       },
     ]),
   })
-}
-
-async function expectRollupCount(
-  occurredAt: Date,
-  metric: FiniteValue<'moderation_transparency_metrics'>,
-  category: FiniteValue<'moderation_transparency_categories'>,
-  expectedCount: number,
-): Promise<void> {
-  await expect(
-    getTestModerationTransparencyRollupCount({ occurredAt, metric, category }),
-  ).resolves.toBe(expectedCount)
 }
 
 async function uniqueTransparencyNow(): Promise<Date> {

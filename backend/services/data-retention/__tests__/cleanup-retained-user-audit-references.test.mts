@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import {
   appendOnlyRetainedUserAuditTables,
+  attachRetainedPostClearanceActorForTest,
   insertTestRetainedUserAuditRow,
   retainedUserAuditReferences,
 } from '@voucha/test-helpers/entities/retained-user-audit-references'
@@ -21,6 +22,18 @@ const postOwnedAuditReferences = retainedUserAuditReferences.filter(
 )
 
 describe('retained user root cleanup with audit references', () => {
+  it('keeps a current post clearance actor until the post is removed', async () => {
+    const post = await createTestPost()
+    const actorId = await attachRetainedPostClearanceActorForTest(post.id)
+
+    await cleanupRetainedIdentityRoots(1_000, { user: [actorId] })
+    expect(await hasTestRetainedIdentityRoot('user', actorId)).toBe(true)
+
+    await hardDeleteTestPost(post.id)
+    await cleanupRetainedIdentityRoots(1_000, { user: [actorId] })
+    expect(await hasTestRetainedIdentityRoot('user', actorId)).toBe(false)
+  })
+
   it.each(postOwnedAuditReferences)(
     'keeps the user root while a $table row names it and reclaims it once the post is gone',
     async ({ table }) => {

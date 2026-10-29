@@ -18,6 +18,8 @@ import {
   getLatestPostClearanceDecision,
   getLatestPostClearanceTransparencyCategories,
   getTestPostClearanceState,
+  getTestCurrentPostClearance,
+  setTestPostClearanceStatus,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -198,7 +200,42 @@ describe('setPostImages clearance rollback', () => {
     await expect(getLatestPostClearanceTransparencyCategories(postId)).resolves.toEqual([])
   })
 
-  it('rejects an image rollback that lacks the compensated clearance change', async () => {
+  it('refuses a stale image rollback when clearance transitions share a timestamp', async () => {
+    const creator = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Same timestamp rollback ${randomUUID()}`,
+      slug: `same-timestamp-rollback-${randomUUID()}`,
+      createdById: creator.id,
+      markdown: 'Post with rapid clearance changes',
+      clearanceStatus: 'pending',
+    })
+    const hash = Buffer.alloc(32, 7)
+    await setPostLLMModerationContentSha256(postId, hash)
+    const occurredAt = new Date(Date.now())
+    await setTestPostClearanceStatus(postId, 'approved', creator.id, occurredAt, 1)
+    const prior = await getTestCurrentPostClearance(postId)
+    await setTestPostClearanceStatus(postId, 'rejected', creator.id, occurredAt, 2)
+    const current = await getTestCurrentPostClearance(postId)
+    expect(current!.clearance_changed_at).toEqual(prior!.clearance_changed_at)
+    expect(current!.clearance_version).not.toBe(prior!.clearance_version)
+    await expect(
+      rollbackPostImages(
+        postId,
+        createPostImageRollbackFixture({
+          currentLlmModerationContentSha256: hash,
+          llmModerationContentSha256: hash,
+          currentClearanceVersion: prior!.clearance_version,
+          clearanceVersion: '0',
+        }),
+      ),
+    ).resolves.toBe(false)
+    await expect(getTestCurrentPostClearance(postId)).resolves.toMatchObject({
+      clearance_version: current!.clearance_version,
+      clearance_status: 'rejected',
+    })
+  })
+
+  it('refuses an image rollback without a matching clearance version', async () => {
     const creator = await createTestUser()
     const suffix = randomUUID()
     const postId = await insertTestPost({
@@ -217,10 +254,10 @@ describe('setPostImages clearance rollback', () => {
         createPostImageRollbackFixture({
           currentLlmModerationContentSha256: hash,
           llmModerationContentSha256: hash,
-          currentLatestClearanceChangeId: null,
-          latestClearanceChangeId: randomUUID(),
+          currentClearanceVersion: null,
+          clearanceVersion: '1',
         }),
       ),
-    ).rejects.toThrow(`Post image rollback is missing the compensated change for post ${postId}`)
+    ).resolves.toBe(false)
   })
 })

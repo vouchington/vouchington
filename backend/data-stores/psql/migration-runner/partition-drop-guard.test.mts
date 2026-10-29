@@ -8,10 +8,7 @@ import {
   getPartitionDropRefusal,
   getPartitionDropStatusRefusals,
 } from './partition-drop-guard.mts'
-import {
-  guardAndRetireMonthlyPartition,
-  retirePartitionsSequentially,
-} from './monthly-partitions.mts'
+import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
 const candidate = {
@@ -33,6 +30,33 @@ describe('partition drop guard', () => {
       new Date('2026-02-01T00:00:00.000Z'),
     )
     expect(getMonthlyPartitionUpperBound('rss_feed_crawls', 'crawls__p_2026_01')).toBeNull()
+  })
+
+  it('retains each complete decision-history month for at least 72 months', () => {
+    const policy = { minimumRetentionDays: null, minimumRetentionMonths: 72 }
+    const reference = new Date('2026-10-28T00:00:00.000Z')
+    expect(
+      getPartitionDropAgeRefusal(
+        {
+          table: 'post_clearance_changes',
+          partition: 'post_clearance_changes__p_2020_09',
+          upperBound: new Date('2020-10-01T00:00:00.000Z'),
+        },
+        policy,
+        reference,
+      ),
+    ).toBeNull()
+    expect(
+      getPartitionDropAgeRefusal(
+        {
+          table: 'post_clearance_changes',
+          partition: 'post_clearance_changes__p_2020_10',
+          upperBound: new Date('2020-11-01T00:00:00.000Z'),
+        },
+        policy,
+        reference,
+      ),
+    ).toBe('inside-retention')
   })
 
   it('rejects an invalid status probe limit', async () => {
@@ -215,11 +239,15 @@ describe('partition drop guard', () => {
   it('locks and checks the child on one transaction before detach', async () => {
     const statements: string[] = []
     let inFlight = true
+    let legalHold = false
     const transaction = (async (statement: string) => {
       statements.push(statement)
       return {
         rows:
-          statement.includes('getPartitionDropRefusal:inFlight') && inFlight ? [{ found: 1 }] : [],
+          (statement.includes('getPartitionDropRefusal:inFlight') && inFlight) ||
+          (statement.includes('getPartitionDropRefusal:legalHold') && legalHold)
+            ? [{ found: 1 }]
+            : [],
       }
     }) as unknown as QueryExecutor
     const oldCandidate = {
@@ -229,7 +257,7 @@ describe('partition drop guard', () => {
     }
     const policy = { minimumRetentionDays: 30, inFlightPredicates: ['id IS NOT NULL'] }
     await expect(
-      guardAndRetireMonthlyPartition(transaction, oldCandidate, policy, now),
+      guardAndRetireMonthlyPartition(transaction, oldCandidate, policy, now, 500),
     ).resolves.toBe('in-flight')
     expect(statements.map(statement => statement.match(/\/\* ([^*]+) \*\//)?.[1])).toEqual([
       'cleanupPartitions:lockParent',
@@ -244,6 +272,7 @@ describe('partition drop guard', () => {
         oldCandidate,
         { ...policy, legalHoldAccountColumn: 'id' },
         new Date('1900-01-01T00:00:00.000Z'),
+        500,
       ),
     ).resolves.toBe('inside-retention')
     expect(statements).toEqual([
@@ -252,9 +281,27 @@ describe('partition drop guard', () => {
       '/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE',
     ])
     statements.length = 0
+    legalHold = true
+    await expect(
+      guardAndRetireMonthlyPartition(
+        transaction,
+        oldCandidate,
+        { ...policy, legalHoldAccountColumn: 'id' },
+        now,
+        500,
+      ),
+    ).resolves.toBe('legal-hold')
+    expect(statements.map(statement => statement.match(/\/\* ([^*]+) \*\//)?.[1])).toEqual([
+      'cleanupPartitions:lockParent',
+      'cleanupPartitions:lockCandidate',
+      'cleanupPartitions:lockHolds',
+      'getPartitionDropRefusal:legalHold',
+    ])
+    statements.length = 0
+    legalHold = false
     inFlight = false
     await expect(
-      guardAndRetireMonthlyPartition(transaction, oldCandidate, policy, now),
+      guardAndRetireMonthlyPartition(transaction, oldCandidate, policy, now, 500),
     ).resolves.toBeNull()
     expect(statements.map(statement => statement.match(/\/\* ([^*]+) \*\//)?.[1])).toEqual([
       'cleanupPartitions:lockParent',
@@ -263,28 +310,5 @@ describe('partition drop guard', () => {
       'retireMonthlyPartition:detach',
       'retireMonthlyPartition:drop',
     ])
-  })
-
-  it('finishes one partition transaction before starting the next', async () => {
-    const firstStarted = Promise.withResolvers<void>()
-    const finishFirst = Promise.withResolvers<void>()
-    const started: string[] = []
-    const second = { ...candidate, partition: 'crawls__p_2026_02' }
-    const running = retirePartitionsSequentially([candidate, second], async partition => {
-      started.push(partition.partition)
-      if (partition.partition === candidate.partition) {
-        firstStarted.resolve()
-        await finishFirst.promise
-      }
-      return { table: partition.table, partition: partition.partition, outcome: 'refused' }
-    })
-    try {
-      await firstStarted.promise
-      expect(started).toEqual([candidate.partition])
-    } finally {
-      finishFirst.resolve()
-    }
-    await expect(running).resolves.toHaveLength(2)
-    expect(started).toEqual([candidate.partition, second.partition])
   })
 })

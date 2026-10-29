@@ -98,7 +98,7 @@ describe('setPostImages', () => {
     ])
     await expect(getLatestPostClearanceMetadata(postId)).resolves.toMatchObject({
       reason: 'image_update_enqueue_rollback',
-      compensates_change_id: expect.any(String),
+      compensates_clearance_version: expect.any(String),
     })
   })
   it('resets approved clearance before publishing an image change', async () => {

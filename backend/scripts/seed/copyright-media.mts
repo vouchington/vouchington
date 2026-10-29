@@ -49,9 +49,12 @@ export async function seedCopyrightMedia(
       INSERT INTO post_clearance_changes (post_id, change_type, metadata)
       SELECT id, 'approve', '{"source":"dev-seed"}'::jsonb FROM posts
       WHERE id = ${postId} AND approved_at IS NULL
-      RETURNING id, post_id, created_at
+      RETURNING post_id, created_at, changed_by_id, public_reason_code, is_platform_override
     )
-    UPDATE posts SET latest_clearance_change_id = inserted_change.id,
+    UPDATE posts SET clearance_version = posts.clearance_version + 1, clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
+      clearance_public_reason_code = inserted_change.public_reason_code,
+      clearance_is_platform_override = inserted_change.is_platform_override,
       approved_at = inserted_change.created_at, rejected_at = NULL, in_review_at = NULL
     FROM inserted_change WHERE posts.id = inserted_change.post_id
   `)

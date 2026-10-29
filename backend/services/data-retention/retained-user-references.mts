@@ -10,6 +10,7 @@ export function retainedRelationReferences(subjectType: string): [string, string
 
 export const RETAINED_USER_REFERENCES = [
   ['users', 'id'],
+  ['posts', 'clearance_changed_by_id'],
   ['communities', 'created_by_id'],
   ['images', 'created_by_id'],
   ['retained_image_identities', 'created_by_id'],
@@ -34,7 +35,9 @@ export const RETAINED_USER_REFERENCES = [
   ['copyright_decision_rationales', 'recorded_by_id'],
   ['post_moderation_dispositions', 'actor_user_id'],
   ['post_clearance_changes', 'changed_by_id'],
+  ['post_clearance_changes', 'post_author_user_id'],
   ['community_post_review_changes', 'changed_by_id'],
+  ['community_post_review_changes', 'post_author_user_id'],
   ['copyright_notice_lifecycle_changes', 'changed_by_id'],
   ['copyright_notice_email_correspondence_reviews', 'reviewed_by_id'],
   ['copyright_notice_email_intake_notice_links', 'correspondence_reviewed_by_id'],

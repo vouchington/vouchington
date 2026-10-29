@@ -10,7 +10,7 @@ export async function insertTestPost(data: {
   id?: string
   title: string
   slug: string
-  createdById: string
+  createdById: string | null
   markdown: string
   postType?:
     | 'discussion'

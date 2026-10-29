@@ -107,6 +107,10 @@ contract. Swift and .NET handling of expired appeal history and nullable annotat
 still need verification; native executable and rendered evidence has not been assessed, so this
 change makes no native parity completion claim.
 
+Platform post-removal appeals expose the final author-safe reason through the existing nullable
+`public_reason` field. Private transition notes stay in expiring history and are not copied into
+new appeals. This changes no response shape or native parity claim.
+
 ## Copyright filing and staff matches
 
 The web notice form discloses whether a filing will be attributed to a signed-in user or a guest.
