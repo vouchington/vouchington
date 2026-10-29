@@ -4,6 +4,7 @@ import type { MonthlyPartitionTableConfig } from '@vouchington/postgres/partitio
 import {
   COPYRIGHT_HISTORY_PARTITION_TABLES,
   CRAWL_PARTITION_TABLES,
+  POST_REVISION_PARTITION_TABLES,
   RSS_PARTITION_TABLES,
   TOPIC_REVISION_PARTITION_TABLES,
 } from './partition-config-monthly.mts'
@@ -11,6 +12,7 @@ import {
 export {
   COPYRIGHT_HISTORY_PARTITION_TABLES,
   CRAWL_PARTITION_TABLES,
+  POST_REVISION_PARTITION_TABLES,
   RSS_PARTITION_TABLES,
   TOPIC_REVISION_PARTITION_TABLES,
 } from './partition-config-monthly.mts'
@@ -64,12 +66,6 @@ export const USER_KEY_PARTITION_TABLES: string[] = [
 ]
 
 /**
- * Revision tables - partitioned by UUIDv7 timestamp
- * Default partition, split by adding explicit range partitions when needed
- */
-export const REVISION_PARTITION_TABLES: string[] = ['post_revisions']
-
-/**
  * Growth ledger tables - partitioned by UUIDv7 id
  * Default partition, split by adding explicit range partitions when needed
  */
@@ -81,13 +77,12 @@ export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
   'session_referral_attributions',
 ]
 
-/**
- * All tables that require monthly RANGE partitions (crawl and RSS history with retention)
- */
+/** All tables that require monthly RANGE partitions with retention. */
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
   ...COPYRIGHT_HISTORY_PARTITION_TABLES,
+  ...POST_REVISION_PARTITION_TABLES,
   ...TOPIC_REVISION_PARTITION_TABLES,
 ]
 
@@ -115,7 +110,6 @@ export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Obje
     ...CLASSIFIER_RESULT_PARTITION_TABLES,
     ...USER_SESSION_PARTITION_TABLES,
     ...USER_KEY_PARTITION_TABLES,
-    ...REVISION_PARTITION_TABLES,
     ...DEFERRED_LEDGER_PARTITION_TABLES,
   ].map(table => [table, { minimumRetentionDays: null }]),
 )
@@ -163,6 +157,13 @@ PARTITION_DROP_POLICIES.topic_revisions = {
   minimumRetentionMonths: 12,
   legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
   retirementReferenceTables: ['topics', 'users'],
+}
+
+PARTITION_DROP_POLICIES.post_revisions = {
+  minimumRetentionDays: null,
+  minimumRetentionMonths: 72,
+  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+  retirementReferenceTables: ['posts', 'users'],
 }
 
 // Security call audits may be retired only after the privacy-policy window. The legal

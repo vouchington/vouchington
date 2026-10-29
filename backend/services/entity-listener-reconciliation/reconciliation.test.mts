@@ -1,5 +1,8 @@
-import { randomUUID, randomInt } from 'node:crypto'
-import { insertTestReconciliationRevisionClocks } from '@voucha/test-helpers/entities/reconciliation-revisions'
+import { randomUUID } from 'node:crypto'
+import {
+  createTestReconciliationClock,
+  insertTestReconciliationRevisionClocks,
+} from '@voucha/test-helpers/entities/reconciliation-revisions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { entityReconciliationConfig } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
@@ -48,7 +51,7 @@ describe('entity-listener reconciliation', () => {
   })
 
   it('scans only changes inside its configured lookback and recovers an expanded window', async () => {
-    const now = new Date(Date.UTC(2200, 0, 1) + randomInt(0, 1000000000))
+    const now = new Date(createTestReconciliationClock())
     const actor = await createTestUser()
     const post = await createTestPost()
     const older = await insertTestReconciliationRevisionClocks(

@@ -17,11 +17,12 @@ unbounded-table policies, with their rationale and reconsideration triggers, liv
 - Monthly children are retired by `cleanupPartitions`. Explicit UUIDv7 ranges may also be
   retired when their table owner declares a minimum retention window and the drop guard proves
   that the whole range is old enough. A default child has no upper bound and cannot be dropped.
-- Retained topic revision history starts with monthly children at bootstrap. Current content and
-  attribution belong to the topic, so retirement can remove every revision in an expired child.
+- Post and topic revision history starts with monthly children at bootstrap. Current post state,
+  topic content, and attribution belong to their owning rows, so retirement can remove every
+  revision in an expired child.
   Scheduled cleanup traverses bounded catalog pages; ordered continuation jobs carry the last
   partition position and keep one reference date for the sweep.
-  Topic history retirement takes its referenced-table and history locks without waiting, so an
+  Revision history retirement takes its referenced-table and history locks without waiting, so an
   active writer cannot form a lock cycle with foreign-key teardown. Contention leaves the child
   intact for a later sweep.
 - Every drop is checked in the backend against its declared window, open legal holds and

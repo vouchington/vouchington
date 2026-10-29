@@ -5,7 +5,7 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
--- Post revisions: RANGE partitioned by id (UUIDv7) for partition-wise locality
+-- Post revisions: monthly UUIDv7 ranges retire as whole partitions.
 CREATE TABLE IF NOT EXISTS post_revisions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL,

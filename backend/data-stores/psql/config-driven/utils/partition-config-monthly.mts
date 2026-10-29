@@ -33,6 +33,13 @@ export const TOPIC_REVISION_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   monthlyPartitionTable('topic_revisions', { retentionDays: 0, futureMonths: 2 }),
 ]
 
+// retentionDays: 0 marks both revision tables for filterRetainedMonthlyPartitionTables;
+// PARTITION_DROP_POLICIES.minimumRetentionMonths sets their real windows.
+/** Post revision history expires by whole monthly child after 72 calendar months. */
+export const POST_REVISION_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
+  monthlyPartitionTable('post_revisions', { retentionDays: 0, futureMonths: 2 }),
+]
+
 /**
  * Crawl tables - partitioned by UUIDv7 timestamp
  * Monthly partitions for 30-day retention via partition drop
