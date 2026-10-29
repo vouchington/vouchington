@@ -47,6 +47,7 @@ import {
   type VoteRetentionContinuationData,
 } from '@queues/psql/types'
 import {
+  admitCopyrightRetentionContinuation,
   processCopyrightRetentionContinuation,
   unfinishedCopyrightFamilies,
 } from './processors/copyright-retention.mts'
@@ -134,18 +135,8 @@ export default async function processPsql(
       const userPurge = result.softDeletedUsers.hasMore
         ? result.softDeletedUsers.userPurge
         : undefined
-      if (!data?.continuation && activeCopyrightFamilies.length > 0) {
-        if (!jobId) throw new Error('Copyright retention continuation needs the current job ID')
-        const runId = createHash('sha256').update(jobId).digest('hex')
-        await enqueueCleanup({
-          runId,
-          step: 1,
-          activeClassifierSweeps: [],
-          activeMembershipFamilies: [],
-          activePostModerationKinds: [],
-          copyrightFamilies: activeCopyrightFamilies,
-        })
-      }
+      if (!data?.continuation)
+        await admitCopyrightRetentionContinuation(activeCopyrightFamilies, jobId, enqueueCleanup)
       if (
         activeClassifierSweeps.length > 0 ||
         activeMembershipFamilies.length > 0 ||
