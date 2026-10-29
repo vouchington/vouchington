@@ -194,6 +194,7 @@
 
 - `typesafe`
 - `openrouter`
+- `openai`
 
 ## `classifier_primitives`
 
