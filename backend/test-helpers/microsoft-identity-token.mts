@@ -45,5 +45,5 @@ export function createMicrosoftIdentitySigningFixture() {
 
 /** Normalize the actual undici request argument while keeping provider mocks typed. */
 export function getMicrosoftFixtureRequestUrl(url: Parameters<typeof undiciFetch>[0]): string {
-  return typeof url === 'string' ? url : url instanceof URL ? url.href : url.url
+  return typeof url === 'string' ? url : 'url' in url ? url.url : url.href
 }

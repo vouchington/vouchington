@@ -130,7 +130,10 @@ export async function connectSdkCatalog<T>(
   return makeClient(
     new URL(`http://localhost${testCase.server.routePath}`),
     async (input, init) => {
-      const request = new Request(input, init)
+      const request =
+        typeof input !== 'string' && 'url' in input
+          ? new Request(input, init)
+          : new Request(input.toString(), init)
       if (request.method !== 'POST') return new Response(null, { status: 405 })
       const parsedBody: unknown = await request.clone().json()
       return runWithCredentialRequestContext(origin, () =>

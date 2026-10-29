@@ -53,7 +53,7 @@ describe('worker-cpu Grafana heartbeat', () => {
     const addGracefulShutdownCallback = vi.fn<(callback: () => Promise<void>) => number>(() => 1)
     const firstScheduled = Promise.withResolvers<void>()
     let scheduled: (() => Promise<void>) | undefined
-    const clearTimeout = vi.fn<typeof globalThis.clearTimeout>()
+    const clearTimeout = vi.fn<(timer: ReturnType<typeof globalThis.setTimeout>) => void>()
     const timer = {
       unref: vi.fn<() => ReturnType<typeof globalThis.setTimeout>>(),
     } as unknown as ReturnType<typeof globalThis.setTimeout>
@@ -99,7 +99,7 @@ describe('worker-cpu Grafana heartbeat', () => {
         vi.fn<
           (callback: () => Promise<void>, delay: number) => ReturnType<typeof globalThis.setTimeout>
         >(),
-      clearTimeout: vi.fn<typeof globalThis.clearTimeout>(),
+      clearTimeout: vi.fn<(timer: ReturnType<typeof globalThis.setTimeout>) => void>(),
       addGracefulShutdownCallback,
     })
 
@@ -137,7 +137,7 @@ describe('worker-cpu Grafana heartbeat', () => {
       fetch,
       onError,
       setTimeout,
-      clearTimeout: vi.fn<typeof globalThis.clearTimeout>(),
+      clearTimeout: vi.fn<(timer: ReturnType<typeof globalThis.setTimeout>) => void>(),
       addGracefulShutdownCallback: vi.fn<(callback: () => Promise<void>) => number>(() => 1),
     })
     const runHeartbeat = await scheduled.promise

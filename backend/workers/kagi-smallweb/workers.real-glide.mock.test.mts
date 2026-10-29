@@ -39,9 +39,7 @@ describe('Kagi paged dispatcher through the background handler', () => {
     fetchSpy.mockImplementation(
       async input =>
         new Response(
-          lists.get(
-            typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-          ),
+          lists.get(typeof input === 'string' ? input : 'url' in input ? input.url : input.href),
         ),
     )
     const restoreImport = overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {
@@ -127,9 +125,7 @@ describe('Kagi paged dispatcher through the background handler', () => {
     fetchSpy.mockImplementation(
       async input =>
         new Response(
-          lists.get(
-            typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-          ),
+          lists.get(typeof input === 'string' ? input : 'url' in input ? input.url : input.href),
         ),
     )
     const restoreImport = overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {

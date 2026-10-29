@@ -6,10 +6,12 @@ const TENANT_TOKEN_URL = (tenantId: string) =>
 const COLLECTIONS_SCOPE = 'https://onestore.microsoft.com/b2b/keys/create/collections/.default'
 const PURCHASE_SCOPE = 'https://onestore.microsoft.com/b2b/keys/create/purchase/.default'
 
+type TicketFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+
 export async function createMicrosoftStoreServiceTickets(options: {
   userId: string
   config?: { tenantId: string; clientId: string; clientSecret: string }
-  fetch?: typeof fetch
+  fetch?: TicketFetch
 }): Promise<MicrosoftStoreServiceTickets> {
   const config = options.config ?? microsoftStoreServiceConfig()
   const providerFetch = options.fetch ?? getExternalFetch()
@@ -26,7 +28,7 @@ export async function createMicrosoftStoreServiceTickets(options: {
 }
 
 async function requestTicket(
-  fetcher: typeof fetch,
+  fetcher: TicketFetch,
   config: { tenantId: string; clientId: string; clientSecret: string },
   resource: string,
 ) {

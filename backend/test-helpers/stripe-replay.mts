@@ -1,4 +1,5 @@
-import Stripe from 'stripe'
+import type Stripe from 'stripe'
+import { createStripeClient } from '@vouchington/stripe'
 import {
   loadRecordedResponse,
   type ProviderReplay,
@@ -28,9 +29,12 @@ export const STRIPE_REPLAY_SECRET_KEY = ['sk', 'test', 'replay_fixture'].join('_
  * does not retry, so a request nothing answers fails at once instead of sleeping through a backoff.
  */
 export function createReplayStripeClient(fetch: ProviderReplay['fetch']): Stripe {
-  return new Stripe(STRIPE_REPLAY_SECRET_KEY, {
-    httpClient: Stripe.createFetchHttpClient(fetch),
-    maxNetworkRetries: 0,
+  return createStripeClient({
+    apiKey: STRIPE_REPLAY_SECRET_KEY,
+    fetch,
+    // Preserve the Stripe SDK's default instead of adopting the wrapper's shorter timeout.
+    timeoutMs: 80_000,
+    config: { maxNetworkRetries: 0 },
   })
 }
 
@@ -52,7 +56,10 @@ export type StripeRoutes = {
 export function routeStripeReplay(replay: ProviderReplay): StripeRoutes {
   const routes = new Map<string, { responses: RecordedResponse[]; served: number }>()
   const fetch: ProviderReplay['fetch'] = (input, init) => {
-    const request = new Request(input, init)
+    const request =
+      typeof input !== 'string' && 'url' in input
+        ? new Request(input, init)
+        : new Request(input.toString(), init)
     const key = `${request.method} ${new URL(request.url).pathname}`
     const route = routes.get(key)
     if (!route) return Promise.reject(new Error(`Stripe replay has no route for ${key}`))

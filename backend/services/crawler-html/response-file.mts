@@ -89,7 +89,7 @@ function createResponseReadable(body: ReadableStream<Uint8Array>): Readable {
 }
 
 function cancelReader(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
+  reader: Pick<ReadableStreamDefaultReader<Uint8Array>, 'cancel'>,
   onComplete: () => void,
 ): void {
   void reader.cancel().then(onComplete, onComplete)
