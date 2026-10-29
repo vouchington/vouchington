@@ -219,4 +219,29 @@ describe('concurrent Stripe membership source routing', () => {
       withTestMembershipUserLocked(member.id, async () => undefined),
     ).resolves.toBeUndefined()
   })
+
+  it('releases the holder and drains the blocked action when the callback fails', async () => {
+    const member = await createTestUser()
+    const failure = new Error('membership update failed while the action was blocked')
+    let actionCompleted = false
+
+    await expect(
+      runTestActionWhileMembershipUserLocked({
+        userId: member.id,
+        lockingQueryComment: '/* withTestMembershipUserLocked */',
+        startAction: () =>
+          withTestMembershipUserLocked(member.id, async () => {
+            actionCompleted = true
+          }),
+        whileActionBlocked: async () => {
+          throw failure
+        },
+      }),
+    ).rejects.toBe(failure)
+
+    expect(actionCompleted).toBe(true)
+    await expect(
+      withTestMembershipUserLocked(member.id, async () => undefined),
+    ).resolves.toBeUndefined()
+  })
 })

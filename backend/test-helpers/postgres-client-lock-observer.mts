@@ -17,7 +17,7 @@ import {
 
 const actionScope = new AsyncLocalStorage<object>()
 
-/** Own only the first selected pool's Promise checkout of this action or actual HTTP request. */
+/** Own the first selected pool's Promise checkout of this action or actual HTTP request. */
 export async function withTestOwnedPostgresWait<Result>(
   options: TestOwnedPostgresWaitOptions,
   action: (waitForLock: (operation: Promise<unknown>) => Promise<void>) => Promise<Result>,
@@ -147,10 +147,12 @@ export async function withTestOwnedPostgresWait<Result>(
                 (options.requestId !== undefined &&
                   getOptionalRequestClientInfo()?.requestId === options.requestId)
               if (!owned || claimed) return Reflect.apply(target, receiver, args)
+              // Pool.query uses the callback overload internally. Let pre-read queries pass through
+              // and observe the first explicit Promise checkout (the transaction under test).
+              if (args.some(arg => typeof arg === 'function'))
+                return Reflect.apply(target, receiver, args)
               requireOpen()
               claimed = true
-              if (args.some(arg => typeof arg === 'function'))
-                throw new Error('Owned first PostgreSQL checkout must use the Promise overload')
               pendingConnect = (Reflect.apply(target, receiver, args) as Promise<PoolClient>).then(
                 async client => {
                   if (closed) {
