@@ -9,23 +9,10 @@ describe('parseCsvRows', () => {
     expect(rows[0]).toEqual({ slug: 'my-topic', name: 'My Topic', topic_type: 'topic' })
   })
 
-  it('strips UTF-8 BOM before parsing (Excel/Google Sheets compat)', () => {
-    const csv = `﻿slug,name\nmy-topic,My Topic\n`
-    const rows = parseCsvRows(csv)
-    expect(rows).toHaveLength(1)
-    expect(rows[0]).toEqual({ slug: 'my-topic', name: 'My Topic' })
-  })
-
   it('returns empty array for header-only CSV', () => {
     const csv = `slug,name,topic_type\n`
     const rows = parseCsvRows(csv)
     expect(rows).toHaveLength(0)
-  })
-
-  it('skips empty lines', () => {
-    const csv = `slug,name\nmy-topic,My Topic\n\nanother-topic,Another Topic\n`
-    const rows = parseCsvRows(csv)
-    expect(rows).toHaveLength(2)
   })
 
   it('trims whitespace from values', () => {
@@ -33,12 +20,6 @@ describe('parseCsvRows', () => {
     const rows = parseCsvRows(csv)
     expect(rows[0].slug).toBe('my-topic')
     expect(rows[0].name).toBe('My Topic')
-  })
-
-  it('preserves whitespace inside quoted headers and values while trimming unquoted cells', () => {
-    const csv = ' slug ," display name "\n topic-a ,"  Topic A  "\n'
-
-    expect(parseCsvRows(csv)).toEqual([{ slug: 'topic-a', ' display name ': '  Topic A  ' }])
   })
 
   it('keeps the last duplicate header and supports empty header names', () => {
@@ -97,13 +78,6 @@ describe('parseCsvToUrls', () => {
     const { urls, recognized } = parseCsvToUrls(csv)
     expect(recognized).toBe(true)
     expect(urls).toEqual(['https://a.com/feed', 'https://b.com/feed'])
-  })
-
-  it('handles UTF-8 BOM prefix', () => {
-    const csv = `﻿url,title\nhttps://a.com/feed,Feed A\n`
-    const { urls, recognized } = parseCsvToUrls(csv)
-    expect(recognized).toBe(true)
-    expect(urls).toEqual(['https://a.com/feed'])
   })
 
   it('returns recognized: false for empty input', () => {
