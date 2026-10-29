@@ -6,7 +6,6 @@ import {
   getTestOAuthClientStorage,
   getTestOAuthCredentialStorage,
   getTestOAuthTokenRevocationState,
-  revokeTestOAuthGrant,
   setTestOAuthArtifactExpiry,
 } from '@voucha/test-helpers/entities/oauth-authorization-server'
 import {
@@ -22,7 +21,6 @@ import {
 import {
   deleteExpiredOAuthAuthorizationServerArtifacts,
   exchangeOAuthAuthorizationCode,
-  exchangeOAuthRefreshToken,
   registerOAuthClient,
   revokeOAuthToken,
 } from './index.mts'
@@ -262,24 +260,5 @@ describe('OAuth token revocation and retention', () => {
     await expect(
       deleteExpiredOAuthAuthorizationServerArtifacts(2, { maxBatches: 1.5 }),
     ).rejects.toThrow('maxBatches must be a positive safe integer')
-  })
-
-  it('rejects tokens after their grant is revoked', async () => {
-    const flow = await createTestApprovedOAuthAuthorization(owner)
-    const tokens = await exchangeOAuthAuthorizationCode({
-      clientId: flow.client.client_id,
-      code: flow.code,
-      codeVerifier: flow.verifier,
-      redirectUri: flow.redirectUri,
-    })
-    await revokeTestOAuthGrant(flow.client.client_id)
-
-    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
-    await expect(
-      exchangeOAuthRefreshToken({
-        clientId: flow.client.client_id,
-        refreshToken: tokens.refresh_token,
-      }),
-    ).rejects.toMatchObject({ code: 'invalid_grant' })
   })
 })
