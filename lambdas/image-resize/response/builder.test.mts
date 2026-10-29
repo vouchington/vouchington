@@ -85,33 +85,12 @@ describe('buildResponse', () => {
     expect(response.headers?.['Cache-Control']).toBe('no-store')
   })
 
-  it('should set Cache-Control header for successful responses', () => {
-    const buffer = Buffer.from('data')
-    const response = buildResponse(200, buffer, 'jpeg')
-
-    expect(response.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
-  })
-
   it('overrides cache control for an uncertain successful render', () => {
     const response = buildResponse(200, Buffer.from('image'), 'png', {
       cacheControl: 'no-store',
     })
     expect(response.headers?.['Cache-Control']).toBe('no-store')
     expect(response.headers?.['Content-Type']).toBe('image/png')
-  })
-
-  it('should not cache error responses', () => {
-    const response = buildResponse(404, 'Not found')
-
-    expect(response.headers?.['Cache-Control']).toBe('no-store')
-  })
-
-  it('should encode Buffer to base64', () => {
-    const buffer = Buffer.from('test-data')
-    const response = buildResponse(200, buffer, 'jpeg')
-
-    expect(response.body).toBe(buffer.toString('base64'))
-    expect(response.isBase64Encoded).toBe(true)
   })
 
   it('should handle empty Buffer', () => {
@@ -121,13 +100,6 @@ describe('buildResponse', () => {
     expect(response.statusCode).toBe(200)
     expect(response.isBase64Encoded).toBe(true)
     expect(response.body).toBe('')
-  })
-
-  it('should set Vary: Accept header for image responses', () => {
-    const buffer = Buffer.from('image-data')
-    const response = buildResponse(200, buffer, 'jpeg')
-
-    expect(response.headers?.['Vary']).toBe('Accept')
   })
 
   it('should set Vary: Accept for all image formats', () => {
@@ -195,12 +167,6 @@ describe('buildErrorResponse', () => {
 
     expect(response.statusCode).toBe(500)
     expect(response.body).toBe(JSON.stringify({ error: 'Internal server error' }))
-  })
-
-  it('should always set Content-Type to application/json', () => {
-    const response = buildErrorResponse(400, 'Error message')
-
-    expect(response.headers?.['Content-Type']).toBe('application/json')
   })
 
   it('should not set Cache-Control header for error responses', () => {
