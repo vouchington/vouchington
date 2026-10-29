@@ -32,7 +32,7 @@ export const DEFAULT_MODEL_SELECTION: Readonly<ModelSelection> = {
   model: 'claude-haiku-5-5',
 }
 
-export const DEFAULT_OPENAI_TRANSPORT: OpenAITransport = 'openrouter'
+export const DEFAULT_OPENAI_TRANSPORT: OpenAITransport = 'direct'
 
 function fieldPrefix(slug: ModelServiceSlug): string {
   return slug.replaceAll('-', '_')

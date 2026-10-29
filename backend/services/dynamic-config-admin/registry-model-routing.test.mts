@@ -14,9 +14,9 @@ function defaults(): DynamicConfigFields {
 }
 
 describe('ai-model-routing registry entry', () => {
-  it('defaults every service to Haiku 5.5 and the OpenRouter transport', () => {
+  it('defaults every service to Haiku 5.5 and the direct transport', () => {
     const fields = defaults()
-    expect(fields.openai_transport).toBe('openrouter')
+    expect(fields.openai_transport).toBe('direct')
     expect(fields[providerFieldName('report-judgement')]).toBe('anthropic')
     expect(fields[modelFieldName('report-judgement')]).toBe('claude-haiku-5-5')
     expect(() => entry().validate?.(fields)).not.toThrow()
