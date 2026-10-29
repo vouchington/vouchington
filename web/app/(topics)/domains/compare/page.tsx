@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
@@ -12,6 +13,8 @@ import { domainHref, topicHref } from '@/lib/links/entity-href'
 import { PageWithAside } from '@/components/page-with-aside'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { isUUID } from '@ts-shared/utils/validation'
+import type { Hostname } from '@/types/hostnames'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +30,12 @@ export const metadata: Metadata = createPageMetadata({
 export default async function DomainsComparePage({ searchParams }: PageProps) {
   const t = await getTranslations()
   const params = await searchParams
-  const hostnamesParam = typeof params.hostnames === 'string' ? params.hostnames : ''
+  const hostnamesParam =
+    typeof params.hostnames === 'string'
+      ? params.hostnames
+      : params.hostnames === undefined && typeof params.ids === 'string'
+        ? params.ids
+        : ''
   const hostnames = hostnamesParam
     ? [
         ...new Set(
@@ -40,12 +48,30 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
     getCurrentUser(),
     hostnames.length > 0 ? getHostnamesCompare(hostnames) : Promise.resolve(null),
   ])
-  const requestedHostnames = new Set(hostnames.map(hostname => hostname.toLowerCase()))
-  const validDomains = compareData
-    ? Object.values(compareData.hostnames).filter(hostname =>
-        requestedHostnames.has(hostname.hostname.toLowerCase()),
-      )
-    : []
+  const resolvedHostnames = compareData ? Object.values(compareData.hostnames) : []
+  const matchingDomains = hostnames
+    .map(value =>
+      resolvedHostnames.find(
+        hostname =>
+          hostname.id.toLowerCase() === value.toLowerCase() ||
+          hostname.hostname.toLowerCase() === value.toLowerCase(),
+      ),
+    )
+    .filter((hostname): hostname is Hostname => hostname !== undefined)
+  const validDomains = matchingDomains.filter(
+    (hostname, index, values) => values.findIndex(value => value.id === hostname.id) === index,
+  )
+  const hasNoncanonicalHostname = resolvedHostnames.some(({ hostname }) =>
+    hostnames.some(value => hostname.toLowerCase() === value.toLowerCase() && hostname !== value),
+  )
+  if (params.ids !== undefined || hostnames.some(isUUID) || hasNoncanonicalHostname) {
+    const canonical = validDomains.map(hostname => hostname.hostname).join(',')
+    permanentRedirect(
+      canonical
+        ? `/domains/compare?hostnames=${encodeURIComponent(canonical)}`
+        : '/domains/compare',
+    )
+  }
 
   const breadcrumbItems = buildBreadcrumbsForPath('/domains/compare', {
     isAuthenticated: !!currentUser,

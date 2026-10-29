@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
@@ -17,30 +17,50 @@ import type {
 } from '@/types/api-responses'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { ModlogFilters } from '@/components/admin/modlog-filters'
+import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
 export const metadata: Metadata = createNoIndexMetadata('Mod Log | Admin')
 
 export default async function AdminModlogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ after?: string; community?: string; actor?: string }>
+  searchParams: Promise<{
+    after?: string
+    community?: string
+    actor?: string
+    community_id?: string
+    actor_user_id?: string
+  }>
 }) {
-  const t = await getTranslations()
   await requireAdmin()
+  const t = await getTranslations()
   const params = await searchParams
+  const requestedCommunity = params.community === undefined ? params.community_id : params.community
+  const requestedActor = params.actor === undefined ? params.actor_user_id : params.actor
   const [community, actor] = await Promise.all([
-    params.community
-      ? serverApi.get<CommunityResponseBody>(
-          `/api/v1/communities/${encodeURIComponent(params.community)}`,
+    requestedCommunity
+      ? returnNullForMissingEntity(
+          serverApi.get<CommunityResponseBody>(
+            `/api/v1/communities/${encodeURIComponent(requestedCommunity)}`,
+          ),
         )
       : null,
-    params.actor
-      ? serverApi.get<UserResponseBody>(`/api/v1/users/${encodeURIComponent(params.actor)}`)
+    requestedActor
+      ? returnNullForMissingEntity(
+          serverApi.get<UserResponseBody>(`/api/v1/users/${encodeURIComponent(requestedActor)}`),
+        )
       : null,
   ])
-  if (params.community && community?.community.slug !== params.community) notFound()
-  if (params.actor && actor?.user.username !== params.actor) notFound()
+  if (requestedCommunity && !community?.community.slug) notFound()
+  if (requestedActor && !actor?.user.username) notFound()
   const filters = { community: community?.community.slug, actor: actor?.user.username }
+  if (
+    params.community_id !== undefined ||
+    params.actor_user_id !== undefined ||
+    (requestedCommunity && requestedCommunity !== filters.community) ||
+    (requestedActor && requestedActor !== filters.actor)
+  )
+    permanentRedirect(buildPageUrl(filters, params.after))
 
   const data = await serverApi.get<ModlogResponseBody>('/api/v1/admin/modlog', {
     searchParams: {

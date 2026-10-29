@@ -8,10 +8,19 @@ const notFoundMock = vi.hoisted(() =>
     throw new Error('NEXT_HTTP_ERROR_FALLBACK;404')
   }),
 )
+const permanentRedirectMock = vi.hoisted(() =>
+  vi.fn<(path: string) => never>(path => {
+    throw new Error(`permanentRedirect:${path}`)
+  }),
+)
 vi.mock(
   import('next/navigation'),
   () =>
-    ({ ...navMockModule, notFound: notFoundMock }) as unknown as typeof import('next/navigation'),
+    ({
+      ...navMockModule,
+      notFound: notFoundMock,
+      permanentRedirect: permanentRedirectMock,
+    }) as unknown as typeof import('next/navigation'),
 )
 
 const requireAdminMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -83,6 +92,7 @@ const dataWithAction = {
 describe('AdminModlogPage', () => {
   beforeEach(() => {
     notFoundMock.mockClear()
+    permanentRedirectMock.mockClear()
     requireAdminMock.mockReset()
     requireAdminMock.mockResolvedValue(undefined)
     serverApiGetMock.mockReset()
@@ -150,22 +160,74 @@ describe('AdminModlogPage', () => {
     )
   })
 
-  it('rejects a community ID in the natural-key URL', async () => {
+  it('redirects a community ID to its canonical slug', async () => {
     serverApiGetMock.mockResolvedValue({
       community: { id: 'community-uuid', slug: 'test-community' },
     })
     await expect(
       AdminModlogPage({ searchParams: Promise.resolve({ community: 'community-uuid' }) }),
-    ).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404')
-    expect(notFoundMock).toHaveBeenCalledOnce()
+    ).rejects.toThrow('permanentRedirect:/admin/modlog?community=test-community')
+    expect(notFoundMock).not.toHaveBeenCalled()
   })
 
-  it('rejects a user ID in the natural-key URL', async () => {
+  it('redirects a user ID to its canonical username', async () => {
     serverApiGetMock.mockResolvedValue({ user: { id: 'user-uuid', username: 'moderator' } })
     await expect(
       AdminModlogPage({ searchParams: Promise.resolve({ actor: 'user-uuid' }) }),
+    ).rejects.toThrow('permanentRedirect:/admin/modlog?actor=moderator')
+    expect(notFoundMock).not.toHaveBeenCalled()
+  })
+
+  it('redirects legacy ID params to canonical filters and preserves the cursor', async () => {
+    serverApiGetMock.mockImplementation((path: string) => {
+      if (path === '/api/v1/communities/community-uuid')
+        return Promise.resolve({ community: { id: 'community-uuid', slug: 'test-community' } })
+      if (path === '/api/v1/users/user-uuid')
+        return Promise.resolve({ user: { id: 'user-uuid', username: 'moderator' } })
+      return Promise.resolve(emptyData)
+    })
+    await expect(
+      AdminModlogPage({
+        searchParams: Promise.resolve({
+          community_id: 'community-uuid',
+          actor_user_id: 'user-uuid',
+          after: 'cursor-abc',
+        }),
+      }),
+    ).rejects.toThrow(
+      'permanentRedirect:/admin/modlog?community=test-community&actor=moderator&after=cursor-abc',
+    )
+    expect(serverApiGetMock).not.toHaveBeenCalledWith('/api/v1/admin/modlog', expect.anything())
+  })
+
+  it('uses canonical filters ahead of legacy ID aliases', async () => {
+    serverApiGetMock.mockImplementation((path: string) =>
+      path === '/api/v1/communities/test-community'
+        ? Promise.resolve({ community: { id: 'community-uuid', slug: 'test-community' } })
+        : Promise.resolve(emptyData),
+    )
+    await expect(
+      AdminModlogPage({
+        searchParams: Promise.resolve({ community: 'test-community', community_id: 'other-uuid' }),
+      }),
+    ).rejects.toThrow('permanentRedirect:/admin/modlog?community=test-community')
+    expect(serverApiGetMock).not.toHaveBeenCalledWith('/api/v1/communities/other-uuid')
+  })
+
+  it('fails closed when an ID has no canonical username', async () => {
+    serverApiGetMock.mockResolvedValue({ user: { id: 'user-uuid', username: null } })
+    await expect(
+      AdminModlogPage({ searchParams: Promise.resolve({ actor_user_id: 'user-uuid' }) }),
     ).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404')
-    expect(notFoundMock).toHaveBeenCalledOnce()
+    expect(permanentRedirectMock).not.toHaveBeenCalled()
+  })
+
+  it('checks admin authorization before resolving a legacy identifier', async () => {
+    requireAdminMock.mockRejectedValue(new Error('Unauthorized'))
+    await expect(
+      AdminModlogPage({ searchParams: Promise.resolve({ community_id: 'community-uuid' }) }),
+    ).rejects.toThrow('Unauthorized')
+    expect(serverApiGetMock).not.toHaveBeenCalled()
   })
 
   it('renders pagination', async () => {

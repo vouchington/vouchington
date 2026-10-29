@@ -1,9 +1,19 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import DomainsComparePage from './page'
 
 const compare = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const redirect = vi.hoisted(() =>
+  vi.fn<(path: string) => never>(path => {
+    throw new Error(`permanentRedirect:${path}`)
+  }),
+)
+vi.mock(
+  import('next/navigation'),
+  () => ({ ...navMockModule, permanentRedirect: redirect }) as typeof import('next/navigation'),
+)
 vi.mock(
   import('@/lib/api/server/hostnames'),
   () =>
@@ -47,17 +57,65 @@ const hostname = {
   hostname: 'example.com',
   topic_id: null,
 }
-const compareData = { hostnames: { [hostname.id]: hostname }, topics: {}, hostname_elections: {} }
+const secondHostname = {
+  id: '019f0000-0000-7000-8000-000000000002',
+  hostname: 'test.org',
+  topic_id: null,
+}
+const compareData = {
+  hostnames: { [hostname.id]: hostname, [secondHostname.id]: secondHostname },
+  topics: {},
+  hostname_elections: {},
+}
 
 describe('DomainsComparePage natural-key URL', () => {
-  beforeEach(() => compare.mockResolvedValue(compareData))
+  beforeEach(() => {
+    compare.mockReset()
+    compare.mockResolvedValue(compareData)
+    redirect.mockClear()
+  })
 
-  it('does not display or compare a record resolved through an ID query', async () => {
-    render(await DomainsComparePage({ searchParams: Promise.resolve({ hostnames: hostname.id }) }))
-    expect(compare).toHaveBeenCalledWith([hostname.id])
+  it('redirects an ID in the hostname parameter to its canonical hostname', async () => {
+    await expect(
+      DomainsComparePage({
+        searchParams: Promise.resolve({ hostnames: hostname.id.toUpperCase() }),
+      }),
+    ).rejects.toThrow('permanentRedirect:/domains/compare?hostnames=example.com')
+    expect(compare).toHaveBeenCalledWith([hostname.id.toUpperCase()])
+  })
+
+  it('redirects a legacy ID list in requested order', async () => {
+    await expect(
+      DomainsComparePage({
+        searchParams: Promise.resolve({ ids: `${secondHostname.id},${hostname.id}` }),
+      }),
+    ).rejects.toThrow('permanentRedirect:/domains/compare?hostnames=test.org%2Cexample.com')
+  })
+
+  it('prefers canonical hostname input when both query forms are present', async () => {
+    await expect(
+      DomainsComparePage({
+        searchParams: Promise.resolve({ hostnames: hostname.hostname, ids: secondHostname.id }),
+      }),
+    ).rejects.toThrow('permanentRedirect:/domains/compare?hostnames=example.com')
+    expect(compare).toHaveBeenCalledWith([hostname.hostname])
+  })
+
+  it('cleans an unknown legacy ID without rendering it', async () => {
+    compare.mockResolvedValue({ hostnames: {}, topics: {}, hostname_elections: {} })
+    await expect(
+      DomainsComparePage({ searchParams: Promise.resolve({ ids: 'unknown-id' }) }),
+    ).rejects.toThrow('permanentRedirect:/domains/compare')
+  })
+
+  it('keeps the empty state for an unknown canonical hostname', async () => {
+    compare.mockResolvedValue({ hostnames: {}, topics: {}, hostname_elections: {} })
+    render(
+      await DomainsComparePage({ searchParams: Promise.resolve({ hostnames: 'missing.example' }) }),
+    )
     expect(screen.getByTestId('selected-hostnames')).toBeEmptyDOMElement()
     expect(screen.queryByText(hostname.hostname)).not.toBeInTheDocument()
-    expect(screen.getByTestId('selected-hostnames')).not.toHaveTextContent(hostname.id)
+    expect(redirect).not.toHaveBeenCalled()
   })
 
   it('keeps a matching canonical hostname', async () => {
@@ -65,5 +123,12 @@ describe('DomainsComparePage natural-key URL', () => {
       await DomainsComparePage({ searchParams: Promise.resolve({ hostnames: hostname.hostname }) }),
     )
     expect(screen.getByTestId('selected-hostnames')).toHaveTextContent(hostname.hostname)
+  })
+
+  it('redirects a resolvable hostname with noncanonical casing', async () => {
+    await expect(
+      DomainsComparePage({ searchParams: Promise.resolve({ hostnames: 'EXAMPLE.COM' }) }),
+    ).rejects.toThrow('permanentRedirect:/domains/compare?hostnames=example.com')
+    expect(compare).toHaveBeenCalledWith(['EXAMPLE.COM'])
   })
 })
