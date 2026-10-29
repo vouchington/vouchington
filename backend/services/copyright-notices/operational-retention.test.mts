@@ -146,7 +146,7 @@ describe('copyright operational retention', () => {
     })
     expect((await readCopyrightIntakeRetentionState(erasedIntake.id)).intakeExists).toBe(false)
     const orphanId = orphan!.id
-    expect(await readCopyrightOperationalRow('orphan_email_thread_tokens', orphanId)).toBe(true)
+    expect(await readCopyrightOperationalRow('email_thread_tokens', orphanId)).toBe(true)
     const intake = await createRetentionParsedEmail('referenced-thread-token')
     await recordCopyrightEmailThreadReferences({
       intakeId: intake.id,
@@ -165,7 +165,7 @@ describe('copyright operational retention', () => {
       scanned: 1,
       deleted: 1,
     })
-    expect(await readCopyrightOperationalRow('orphan_email_thread_tokens', orphanId)).toBe(false)
+    expect(await readCopyrightOperationalRow('email_thread_tokens', orphanId)).toBe(false)
 
     await positionCopyrightOperationalCursor('orphan_email_thread_tokens', referenced!.id)
     await expect(
@@ -174,9 +174,7 @@ describe('copyright operational retention', () => {
       scanned: 1,
       deleted: 0,
     })
-    expect(await readCopyrightOperationalRow('orphan_email_thread_tokens', referenced!.id)).toBe(
-      true,
-    )
+    expect(await readCopyrightOperationalRow('email_thread_tokens', referenced!.id)).toBe(true)
   })
 
   it('deletes old unlinked email evidence and keeps the SES receipt for exact replay', async () => {
