@@ -1,7 +1,6 @@
 import { Readable, Transform, compose } from 'node:stream'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { fetch } from 'undici'
-import type { Response } from 'undici'
+import { fetch as undiciFetch, type Response } from 'undici'
 import { HttpResponseSizeError } from '@vouchington/sentry'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 
@@ -40,7 +39,7 @@ export async function fetchFeedList(
   if (cached?.etag) headers['If-None-Match'] = cached.etag
   if (cached?.lastModified) headers['If-Modified-Since'] = cached.lastModified
 
-  const response = await fetch(url, {
+  const response = await undiciFetch(url, {
     dispatcher: getExternalRequestDispatcher(),
     headers,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
