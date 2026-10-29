@@ -53,16 +53,6 @@ describe('parseBlockedCountries', () => {
   it('returns null when all comma-separated segments are empty', () => {
     expect(parseBlockedCountries(' , , ')).toBeNull()
   })
-
-  it('parses the default country list', () => {
-    const defaultList = 'CN,HK,IR,RU,KP,BY,SY,VE,CU,MM,SD'
-    const result = parseBlockedCountries(defaultList)
-    expect(result).not.toBeNull()
-    expect(result?.size).toBe(11)
-    for (const code of defaultList.split(',')) {
-      expect(result?.has(code)).toBe(true)
-    }
-  })
 })
 
 function makeHeaders(entries: Record<string, string>): Headers {

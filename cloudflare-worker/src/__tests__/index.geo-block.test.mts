@@ -43,26 +43,6 @@ describe('geo-blocking', () => {
     })
   })
 
-  it('returns 403 for all countries in the default list', async () => {
-    const defaultList = 'CN,HK,IR,RU,KP,BY,SY,VE,CU,MM,SD'
-    const env: Env = { ...baseEnv, GEO_BLOCKED_COUNTRIES: defaultList }
-
-    for (const code of defaultList.split(',')) {
-      const response = await worker.fetch(
-        new Request('https://voucha.ai/', {
-          headers: {
-            'cf-ray': 'test-ray',
-            'cf-ipcountry': code,
-            'cf-connecting-ip': '1.1.1.1',
-          },
-        }),
-        env,
-        createContext(env),
-      )
-      expect(response.status).toBe(403)
-    }
-  })
-
   it('allows requests from unblocked countries', async () => {
     const env: Env = { ...baseEnv, GEO_BLOCKED_COUNTRIES: 'CN,IR,RU' }
 

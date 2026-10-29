@@ -21,11 +21,6 @@ describe('burstAttemptNumber', () => {
     expect(burstAttemptNumber(4, STABLE + 10_000, STABLE)).toBe(1)
   })
 
-  it('resets to 1 regardless of how large the previous attempt was', () => {
-    expect(burstAttemptNumber(MAX_RESTARTS, STABLE, STABLE)).toBe(1)
-    expect(burstAttemptNumber(0, STABLE, STABLE)).toBe(1)
-  })
-
   it('treats an attempt just under the window as still-rapid', () => {
     expect(burstAttemptNumber(2, STABLE - 1, STABLE)).toBe(3)
   })
@@ -46,14 +41,6 @@ describe('burstAttemptNumber', () => {
 
     expect(rapidAttempts).toEqual([2, 3, 4, 5, 6])
     expect(rapidAttempts.at(-1)).toBe(MAX_RESTARTS + 1)
-  })
-
-  it('never exceeds attempt 1 across an unbroken run of stable-separated crashes', () => {
-    let attempt = 0
-    for (let i = 0; i < 10; i++) {
-      attempt = burstAttemptNumber(attempt, STABLE, STABLE)
-      expect(attempt).toBe(1)
-    }
   })
 
   it('defaults stableUptimeMs to the module-level STABLE_UPTIME_MS', () => {

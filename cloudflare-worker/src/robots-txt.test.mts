@@ -44,15 +44,10 @@ describe('generateRobotsTxt', () => {
     expect(wildcardBlock).not.toContain('Disallow: /md/')
   })
 
-  it('contains a block for every AI crawler', () => {
-    for (const crawler of AI_CRAWLERS) {
-      expect(output).toContain(`User-agent: ${crawler}`)
-    }
-  })
-
   it('AI crawler blocks have Allow: / and all ROBOTS_DISALLOW_PREFIXES', () => {
     for (const crawler of AI_CRAWLERS) {
       const blockStart = output.indexOf(`User-agent: ${crawler}`)
+      expect(blockStart).toBeGreaterThan(-1)
       const blockEnd = output.indexOf('\n\n', blockStart)
       const block = output.slice(blockStart, blockEnd)
 
@@ -84,26 +79,6 @@ describe('generateRobotsTxt', () => {
 
   it('output has no Crawl-delay directive', () => {
     expect(output).not.toContain('Crawl-delay')
-  })
-
-  it('new AI bots each have Allow: / in output', () => {
-    const newBots = [
-      'ClaudeBot',
-      'OAI-SearchBot',
-      'Amazonbot',
-      'CCBot',
-      'Meta-ExternalAgent',
-      'DuckAssistBot',
-      'Google-CloudVertexBot',
-      'Bytespider',
-    ]
-    for (const bot of newBots) {
-      const blockStart = output.indexOf(`User-agent: ${bot}`)
-      expect(blockStart).toBeGreaterThan(-1)
-      const blockEnd = output.indexOf('\n\n', blockStart)
-      const block = output.slice(blockStart, blockEnd)
-      expect(block).toContain('Allow: /')
-    }
   })
 
   it('has no duplicate User-agent lines', () => {

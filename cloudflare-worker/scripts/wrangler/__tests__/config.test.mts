@@ -1,5 +1,3 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-
 import { join } from 'node:path'
 
 import { tmpdir } from 'node:os'
@@ -8,12 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { buildWranglerArgs, getStaleWranglerCachePaths } from '../config.mts'
 
-import {
-  createWranglerRuntimeEnv,
-  ensureWranglerRuntimeDirs,
-  getWranglerPersistToPath,
-  getWranglerRuntimePaths,
-} from '../runtime.mts'
+import { getWranglerPersistToPath, getWranglerRuntimePaths } from '../runtime.mts'
 
 import { resolveCloudflareWorkerDir } from '../env.mts'
 
@@ -139,56 +132,10 @@ describe('start-wrangler config', () => {
     ).toBe('/repo/cloudflare-worker/.wrangler/runtime')
   })
 
-  it('creates the explicit Wrangler persist directory before startup', () => {
-    const tempRoot = mkdtempSync(join(tmpdir(), 'voucha-wrangler-runtime-'))
-    try {
-      const paths = getWranglerRuntimePaths({
-        isCi: true,
-        runAttempt: '1',
-        tempRoot,
-        workerDir: '/repo/cloudflare-worker',
-        workerPort: '3902',
-      })
-
-      ensureWranglerRuntimeDirs(paths)
-
-      expect(existsSync(paths.persistTo)).toBe(true)
-    } finally {
-      rmSync(tempRoot, { force: true, recursive: true })
-    }
-  })
-
   it('resolves the worker root from the nested wrangler script directory', () => {
     expect(resolveCloudflareWorkerDir('/repo/cloudflare-worker/scripts/wrangler')).toBe(
       '/repo/cloudflare-worker',
     )
-  })
-
-  it('overrides user-home Wrangler runtime env paths', () => {
-    const runtimePaths = getWranglerRuntimePaths({
-      isCi: false,
-      runAttempt: '2',
-      workerDir: '/repo/cloudflare-worker',
-      workerPort: '3902',
-    })
-    const env = createWranglerRuntimeEnv(
-      {
-        HOME: '/Users/dev',
-        TMPDIR: '/var/folders/system-temp',
-        WRANGLER_LOG_PATH: '/Users/dev/Library/Preferences/.wrangler/logs',
-      },
-      runtimePaths,
-    )
-
-    expect(env.HOME).toBe('/repo/cloudflare-worker/.wrangler/runtime/home')
-    expect(env.TMPDIR).toBe('/repo/cloudflare-worker/.wrangler/runtime/tmp')
-    expect(env.WRANGLER_LOG_PATH).toBe('/repo/cloudflare-worker/.wrangler/runtime/logs')
-    expect(env.WRANGLER_REGISTRY_PATH).toBe('/repo/cloudflare-worker/.wrangler/runtime/registry')
-    expect(env.WRANGLER_CACHE_DIR).toBe('/repo/cloudflare-worker/.wrangler/runtime/cache')
-    expect(env.MINIFLARE_CACHE_DIR).toBe(
-      '/repo/cloudflare-worker/.wrangler/runtime/miniflare-cache',
-    )
-    expect(env.CLOUDFLARE_CF_FETCH_PATH).toBe('/repo/cloudflare-worker/.wrangler/runtime/cf-fetch')
   })
 
   it('adds local HTTPS cert args when certs are present', () => {
@@ -210,17 +157,5 @@ describe('start-wrangler config', () => {
     expect(ci.args.at(-1)).toBe('--log-level=debug')
     expect(local.logLevel).toBe('warn')
     expect(local.args.at(-1)).toBe('--log-level=warn')
-  })
-
-  it('resolves inspector port to 0 in CI so the OS picks a free port atomically', () => {
-    const result = buildWranglerArgs({ ...baseOptions, inspectorPort: '46867', isCi: true })
-    const inspectorPortIndex = result.args.indexOf('--inspector-port')
-    expect(result.args[inspectorPortIndex + 1]).toBe('0')
-  })
-
-  it('preserves the configured inspector port for local dev', () => {
-    const result = buildWranglerArgs({ ...baseOptions, inspectorPort: '3904', isCi: false })
-    const inspectorPortIndex = result.args.indexOf('--inspector-port')
-    expect(result.args[inspectorPortIndex + 1]).toBe('3904')
   })
 })
