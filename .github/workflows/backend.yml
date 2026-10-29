@@ -43,7 +43,7 @@ jobs:
   typecheck-bun:
     needs: [changes]
     if: needs.changes.outputs.area-backend == 'true'
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       contents: read
@@ -56,7 +56,7 @@ jobs:
         timeout-minutes: 5
       - name: Typecheck backend with Bun declarations
         run: pnpm --dir backend run typecheck:bun
-        timeout-minutes: 3
+        timeout-minutes: 5
 
   prepare-postgres:
     needs: [static-backend]

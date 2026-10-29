@@ -1,7 +1,7 @@
 {
   "allowedLabels": ["ubuntu-slim", "ubuntu-latest", "ubuntu-24.04-arm"],
   "requiredJobs": [
-    { "workflow": "backend.yml", "job": "typecheck-bun", "runsOn": "ubuntu-slim" },
+    { "workflow": "backend.yml", "job": "typecheck-bun", "runsOn": "ubuntu-latest" },
     { "workflow": "static.yml", "job": "static", "runsOn": "ubuntu-latest" },
     { "workflow": "backend.yml", "job": "backend", "runsOn": "ubuntu-latest" },
     { "workflow": "web.yml", "job": "web", "runsOn": "ubuntu-latest" },
@@ -38,7 +38,7 @@
       "label": "ubuntu-slim",
       "forbidServices": true,
       "forbiddenActions": {
-        "prefixes": ["docker/"],
+        "prefixes": ["docker/", "vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@"],
         "contains": ["/docker/"],
         "exact": ["./.github/actions/setup-backend"]
       }
