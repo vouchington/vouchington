@@ -8,6 +8,8 @@ export const BASELINE_FINGERPRINTS = [
   // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_generic_plan|force_generic_plan:relation__user__follow__rss_feed',
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_generic_plan|force_generic_plan:users',
+  'engagement-follow-topics|0|getFollowTopicsRecipients:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'engagement-follow-topics|0|getFollowTopicsRecipients:force_custom_plan|force_custom_plan:users',
   'engagement-follow-topics|0|getFollowTopicsRecipients:force_generic_plan|force_generic_plan:relation__user__follow__topic',
   'engagement-follow-topics|0|getFollowTopicsRecipients:force_generic_plan|force_generic_plan:users',
   'engagement-post-referral-link|0|getPostReferralLinkRecipients:force_generic_plan|force_generic_plan:users',
