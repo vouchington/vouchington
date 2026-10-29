@@ -3,9 +3,12 @@
 [Back to Dev Environment Reference](README.md#cleanup)
 
 `./dev/cleanup` (supports `--yes`) reclaims finished worktrees first, then the databases and Valkey
-containers they leave behind, and prunable worktrees; `./dev/status` warns about them. The
-`post-merge` hook runs `./dev/cleanup --yes` so a pull that lands a merged PR frees its worktree;
-nothing runs at session start, because an agent session never deletes other worktrees implicitly.
+containers they leave behind, and prunable worktrees; `./dev/status` warns about them. Run cleanup
+explicitly as maintenance when finished worktrees accumulate. Git pulls and agent session startup
+do not run cleanup, so they do not wait for repository-wide scans or implicitly delete worktrees.
+Scans are bounded so one run stays short; an incomplete scan prints the `./dev/cleanup` command
+that continues it under the same operation lock (`./dev/cleanup --help` lists the scan options).
+
 Reclaim runs only through `./dev/cleanup`, inside the host-wide operation lock, so it never
 races another worktree's `./dev/initialize` and the sandbox exclusion covers it. Keep and deletion
 rules are in the
