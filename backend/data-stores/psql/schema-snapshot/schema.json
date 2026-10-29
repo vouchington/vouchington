@@ -84704,10 +84704,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
-        "children": "default",
+        "accessClass": "retention-window",
+        "children": "monthly",
         "key": "id",
-        "retentionOwner": null,
+        "retentionOwner": "cleanupPartitions",
         "strategy": "RANGE"
       },
       "physicalPartition": {
