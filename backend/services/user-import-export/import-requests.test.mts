@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -14,7 +15,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { createTopicRecommendation } from '@services/topic-recommendations'
+import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import { importSingleRssFeed, importTopics } from './index.mts'
 import { createRssFeedImportRowForTest } from '@voucha/test-helpers/rss-feed-import-rows'
 import { autoFollowOnRecommendationApproval } from './auto-follow-on-approval.mts'
@@ -219,7 +220,8 @@ describe('user import requests', () => {
 
   it('follows users when pending topic import recommendations are approved', async () => {
     const secondUser = await createTestUser()
-    const recommendation = await createTopicRecommendation(
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
       user,
       WEB_PROVENANCE,
       {
@@ -260,7 +262,8 @@ describe('user import requests', () => {
   })
 
   it('does not fail approval when a pending topic import cannot be followed', async () => {
-    const recommendation = await createTopicRecommendation(
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
       user,
       WEB_PROVENANCE,
       {

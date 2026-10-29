@@ -9,7 +9,7 @@ import { lockPostPublication, recordPostPublicationChange } from '@services/post
 import { currentUserCanWithdrawTopicRecommendation } from './authorization.mts'
 import type { TopicRecommendationPost } from './types.mts'
 
-export function getWithdrawRejectionReason(
+function getWithdrawRejectionReason(
   currentUser: PrivateUser,
   recommendation: TopicRecommendationPost,
 ): string {
