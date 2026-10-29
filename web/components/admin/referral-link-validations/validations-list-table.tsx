@@ -2,19 +2,19 @@ import Link from 'next/link'
 import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
 import type { getTranslations } from '@/lib/i18n/get-translations'
+import { referralValidationHref } from '@/lib/links/entity-href'
 
 interface ValidationsListTableProps {
   validations: ReferralLinkValidation[]
-  /** Base path for validation links, e.g. `/referral-program/<slug>/validations`. */
-  basePath: string
+  programSlug: string
   t: Awaited<ReturnType<typeof getTranslations>>
 }
 
 /**
  * Presentational table of referral-link validation sets. Scoped under a referral
- * program via `basePath` so links resolve to the program's validation routes.
+ * program via its slug so links resolve to the program's validation routes.
  */
-export function ValidationsListTable({ validations, basePath, t }: ValidationsListTableProps) {
+export function ValidationsListTable({ validations, programSlug, t }: ValidationsListTableProps) {
   return (
     <AdminTableShell
       aria-label={t(
@@ -57,7 +57,7 @@ export function ValidationsListTable({ validations, basePath, t }: ValidationsLi
               <td className='whitespace-nowrap px-6 py-4 text-sm font-medium text-foreground'>
                 <Link
                   prefetch={false}
-                  href={`${basePath}/${v.id}`}
+                  href={referralValidationHref(programSlug, v)}
                   // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                   data-pw={`validation-link-${v.id}`}
                   className='text-primary hover:text-primary/80'

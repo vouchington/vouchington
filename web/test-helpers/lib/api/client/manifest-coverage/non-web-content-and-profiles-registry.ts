@@ -57,7 +57,7 @@ export const contentAndProfilesEndpointRegistry = {
   },
   'native.admin-landing-page-analytics.default': {
     method: 'GET',
-    path: '/api/v1/admin/landing-pages/landing-page-1/analytics',
+    path: '/api/v1/admin/users/fixture-user/landing-pages/links/analytics',
   },
   'native.landing-page-candidates.default': {
     method: 'GET',

@@ -545,7 +545,7 @@
       "required": ["penalty"],
       "type": "object"
     },
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
       "additionalProperties": false,
       "properties": {
         "analytics": {
@@ -11769,6 +11769,22 @@
       },
       "required": ["user"],
       "type": "object"
+    },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_user_id": {
+          "type": "string"
+        },
+        "owner_username": {
+          "type": "string"
+        },
+        "page_slug": {
+          "type": "string"
+        }
+      },
+      "required": ["owner_user_id", "owner_username", "page_slug"],
+      "type": "object"
     }
   },
   "components": {
@@ -19330,8 +19346,12 @@
                 "additionalProperties": false,
                 "required": ["type", "path"],
                 "properties": {
-                  "type": { "const": "exclude" },
-                  "path": { "type": "string" }
+                  "type": {
+                    "const": "exclude"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -41592,14 +41612,17 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
       "path": {
         "properties": {
-          "pageId": {
+          "username": {
+            "type": "string"
+          },
+          "slug": {
             "type": "string"
           }
         },
-        "required": ["pageId"],
+        "required": ["username", "slug"],
         "type": "object"
       }
     },
@@ -51132,6 +51155,17 @@
           }
         },
         "required": ["userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "path": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": ["pageId"],
         "type": "object"
       }
     }

@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getTranslations } from '@/lib/i18n/get-translations'
@@ -14,22 +14,30 @@ import { PageWithAside } from '@/components/page-with-aside'
 import { domainHref, urlHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { ExternalLink } from '@/components/ui/external-link'
+import { isUUID } from '@ts-shared/utils/validation-core'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = createNoIndexMetadata()
 
-export default async function UrlDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function UrlDetailPage({ params }: { params: Promise<{ urlValue: string }> }) {
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/login')
   const t = await getTranslations()
 
-  const { id } = await params
-  const data = await getUrl(id)
+  const { urlValue } = await params
+  let urlInput: string
+  try {
+    urlInput = decodeURIComponent(urlValue)
+  } catch {
+    notFound()
+  }
+  const data = await getUrl(urlInput)
   if (!data) notFound()
   if (!data.can_view_crawl_history) notFound()
+  if (isUUID(urlInput)) permanentRedirect(urlHref(data.url))
 
-  const crawls = await getUrlCrawls(id, { searchParams: { limit: '20' } })
+  const crawls = await getUrlCrawls(urlInput, { searchParams: { limit: '20' } })
 
   const { url, can_trigger_crawl, url_type, rss_feed_id } = data
 
@@ -75,6 +83,7 @@ export default async function UrlDetailPage({ params }: { params: Promise<{ id: 
         <UrlCrawlsPage
           data={crawls}
           urlId={url.id}
+          url={url.url}
         />
       </div>
     </PageWithAside>

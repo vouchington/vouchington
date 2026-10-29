@@ -14,12 +14,12 @@ import {
 } from '@/lib/api/client/referral-link-validations'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { referralValidationHref } from '@/lib/links/entity-href'
 
 interface ValidationFormProps {
   existing?: ReferralLinkValidation | null
   onSaved?: (validation: ReferralLinkValidation) => void
-  /** Base path for the validation detail route, e.g. `/referral-program/<slug>/validations`. */
-  basePath: string
+  programSlug: string
   /** If set, the newly created validation will be linked to this referral program. */
   referralProgramId?: string | null
 }
@@ -27,7 +27,7 @@ interface ValidationFormProps {
 export function ValidationForm({
   existing,
   onSaved,
-  basePath,
+  programSlug,
   referralProgramId,
 }: ValidationFormProps) {
   const t = useTranslations()
@@ -51,7 +51,7 @@ export function ValidationForm({
             t('extracted.referralLinkValidations.validationForm.validationUpdated_81a195cb'),
           )
           onSaved?.(result.validation)
-          replace(`${basePath}/${result.validation.id}`)
+          replace(referralValidationHref(programSlug, result.validation))
         } else {
           let validation: ReferralLinkValidation
           if (referralProgramId) {
@@ -71,7 +71,7 @@ export function ValidationForm({
             t('extracted.referralLinkValidations.validationForm.validationCreated_30231380'),
           )
           onSaved?.(validation)
-          push(`${basePath}/${validation.id}`)
+          push(referralValidationHref(programSlug, validation))
         }
       } catch (err) {
         onError(err, {

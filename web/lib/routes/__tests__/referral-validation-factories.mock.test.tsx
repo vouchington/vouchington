@@ -2,17 +2,27 @@ import '@/test-helpers/i18n/mock-json-messages'
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 
-const { mockGet, mockGetTopic, mockGetReferralProgramValidations, mockNotFound, mockRequireAdmin } =
-  vi.hoisted(() => ({
-    mockGet: vi.fn<VitestLooseMock>(),
-    mockGetTopic: vi.fn<VitestLooseMock>(),
-    mockGetReferralProgramValidations: vi.fn<VitestLooseMock>(),
-    mockNotFound: vi.fn<VitestLooseMock>(() => {
-      throw new Error('NEXT_NOT_FOUND')
-    }),
-    mockRequireAdmin: vi.fn<VitestLooseMock>(),
-  }))
+const {
+  mockGet,
+  mockGetTopic,
+  mockGetReferralProgramValidations,
+  mockNotFound,
+  mockPermanentRedirect,
+  mockRequireAdmin,
+} = vi.hoisted(() => ({
+  mockGet: vi.fn<VitestLooseMock>(),
+  mockGetTopic: vi.fn<VitestLooseMock>(),
+  mockGetReferralProgramValidations: vi.fn<VitestLooseMock>(),
+  mockNotFound: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_NOT_FOUND')
+  }),
+  mockPermanentRedirect: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_PERMANENT_REDIRECT')
+  }),
+  mockRequireAdmin: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(
   import('@/lib/api/server'),
@@ -27,7 +37,9 @@ vi.mock(
   import('next/navigation'),
   () =>
     ({
+      ...navMockModule,
       notFound: mockNotFound,
+      permanentRedirect: mockPermanentRedirect,
     }) as unknown as typeof import('next/navigation'),
 )
 vi.mock(
@@ -73,8 +85,8 @@ vi.mock(
   import('@/components/admin/referral-link-validations/validations-list-table'),
   () =>
     ({
-      ValidationsListTable: ({ basePath }: { basePath: string }) => (
-        <div data-testid={`list-table:${basePath}`} />
+      ValidationsListTable: ({ programSlug }: { programSlug: string }) => (
+        <div data-testid={`list-table:${programSlug}`} />
       ),
     }) as unknown as typeof import('@/components/admin/referral-link-validations/validations-list-table'),
 )
@@ -84,14 +96,14 @@ vi.mock(
     ({
       ValidationForm: ({
         existing,
-        basePath,
+        programSlug,
         referralProgramId,
       }: {
         existing?: { slug: string }
-        basePath: string
+        programSlug: string
         referralProgramId?: string | null
       }) => (
-        <form data-testid={`validation-form:${basePath}`}>
+        <form data-testid={`validation-form:${programSlug}`}>
           {existing && <span data-testid='existing-slug'>{existing.slug}</span>}
           {referralProgramId && <span data-testid='referral-program-id'>{referralProgramId}</span>}
         </form>
@@ -111,10 +123,14 @@ import {
 } from '../referral-validation-factories'
 
 const program = { id: 'rp-uuid', slug: 'amex-rp', name: 'Amex RP', topic_type: 'referral_program' }
+const programUuid = '019e0000-0000-7000-8000-000000000005'
+const validationUuid = '019e0000-0000-7000-8000-000000000006'
+const nav = createNavMock()
 
 describe('referral-validation-factories', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    nav.reset()
     mockGet.mockReset() // clear queued one-time responses so prior tests don't bleed into next
     mockRequireAdmin.mockResolvedValue({ id: 'admin', roles: ['administrator'] })
     mockGetTopic.mockResolvedValue({ topic: program })
@@ -122,12 +138,10 @@ describe('referral-validation-factories', () => {
   })
 
   describe('list page', () => {
-    it('renders the validations table scoped to the program base path', async () => {
+    it('renders the validations table scoped to the program slug', async () => {
       const { default: Page } = createReferralProgramValidationsListPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp' }) }))
-      expect(
-        screen.getByTestId('list-table:/referral-program/amex-rp/validations'),
-      ).toBeInTheDocument()
+      expect(screen.getByTestId('list-table:amex-rp')).toBeInTheDocument()
     })
 
     it('calls getReferralProgramValidations with the program UUID (not slug)', async () => {
@@ -160,21 +174,38 @@ describe('referral-validation-factories', () => {
       )
       expect(mockGetTopic).not.toHaveBeenCalled()
     })
+
+    it('redirects an admin UUID lookup to the program slug', async () => {
+      const { default: Page } = createReferralProgramValidationsListPage()
+      await expect(Page({ params: Promise.resolve({ id: programUuid }) })).rejects.toThrow(
+        'NEXT_PERMANENT_REDIRECT',
+      )
+      expect(mockPermanentRedirect).toHaveBeenCalledWith('/referral-program/amex-rp/validations')
+      expect(mockGetReferralProgramValidations).not.toHaveBeenCalled()
+    })
   })
 
   describe('new page', () => {
-    it('renders the create form with the program base path', async () => {
+    it('renders the create form with the program slug', async () => {
       const { default: Page } = createReferralProgramValidationNewPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp' }) }))
-      expect(
-        screen.getByTestId('validation-form:/referral-program/amex-rp/validations'),
-      ).toBeInTheDocument()
+      expect(screen.getByTestId('validation-form:amex-rp')).toBeInTheDocument()
     })
 
     it('passes the referralProgramId to the form for link-on-create', async () => {
       const { default: Page } = createReferralProgramValidationNewPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp' }) }))
       expect(screen.getByTestId('referral-program-id')).toHaveTextContent('rp-uuid')
+    })
+
+    it('redirects a program UUID to the canonical new-validation route', async () => {
+      const { default: Page } = createReferralProgramValidationNewPage()
+      await expect(Page({ params: Promise.resolve({ id: programUuid }) })).rejects.toThrow(
+        'NEXT_PERMANENT_REDIRECT',
+      )
+      expect(mockPermanentRedirect).toHaveBeenCalledWith(
+        '/referral-program/amex-rp/validations/new',
+      )
     })
   })
 
@@ -213,6 +244,15 @@ describe('referral-validation-factories', () => {
       ).rejects.toThrow('NEXT_NOT_FOUND')
     })
 
+    it('does not redirect a validation UUID linked to another program', async () => {
+      mockGet.mockResolvedValueOnce({ validation })
+      const { default: Page } = createReferralProgramValidationDetailPage()
+      await expect(
+        Page({ params: Promise.resolve({ id: programUuid, validationId: validationUuid }) }),
+      ).rejects.toThrow('NEXT_NOT_FOUND')
+      expect(mockPermanentRedirect).not.toHaveBeenCalled()
+    })
+
     it('renders when accessed by slug and validation is linked (compares resolved UUID)', async () => {
       // validationId in URL is the slug 'chase', but the API resolves it to id 'val-1'.
       // The guard must compare the resolved validation.id (not the raw slug) against the
@@ -223,6 +263,25 @@ describe('referral-validation-factories', () => {
       render(await Page({ params: Promise.resolve({ id: 'amex-rp', validationId: 'chase' }) }))
       expect(screen.getByTestId('existing-slug')).toHaveTextContent('chase')
     })
+
+    it.each([
+      [programUuid, 'chase'],
+      ['amex-rp', validationUuid],
+      [programUuid, validationUuid],
+    ])(
+      'redirects UUID segments only after linked validation resolution',
+      async (id, validationId) => {
+        mockGetReferralProgramValidations.mockResolvedValue({ results: [validation] })
+        mockGet.mockResolvedValueOnce({ validation })
+        const { default: Page } = createReferralProgramValidationDetailPage()
+        await expect(Page({ params: Promise.resolve({ id, validationId }) })).rejects.toThrow(
+          'NEXT_PERMANENT_REDIRECT',
+        )
+        expect(mockPermanentRedirect).toHaveBeenCalledWith(
+          '/referral-program/amex-rp/validations/chase',
+        )
+      },
+    )
   })
 
   it('exposes generateMetadata on each factory', async () => {

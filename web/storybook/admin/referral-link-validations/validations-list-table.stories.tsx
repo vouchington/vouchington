@@ -23,8 +23,6 @@ const validations: ReferralLinkValidation[] = [
   },
 ]
 
-const basePath = '/referral-program/amex-referrals/validations'
-
 const meta = {
   title: 'Admin/Validations List Table',
 } satisfies Meta
@@ -37,7 +35,7 @@ export const WithSets: Story = {
     <StoryFrame>
       <ValidationsListTable
         validations={validations}
-        basePath={basePath}
+        programSlug='amex-referrals'
         t={t}
       />
     </StoryFrame>
@@ -49,7 +47,7 @@ export const Empty: Story = {
     <StoryFrame>
       <ValidationsListTable
         validations={[]}
-        basePath={basePath}
+        programSlug='amex-referrals'
         t={t}
       />
     </StoryFrame>

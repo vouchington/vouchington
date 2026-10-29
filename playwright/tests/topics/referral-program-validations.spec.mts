@@ -60,7 +60,7 @@ test.describe('Referral Program Validations', () => {
   test('shows validation detail page with edit heading and rules table', async ({ page }) => {
     await navigateTo(
       page,
-      `/referral-program/${referralProgram.referralProgramTopicSlug}/validations/${referralProgram.validationId}`,
+      `/referral-program/${referralProgram.referralProgramTopicSlug}/validations/${referralProgram.validationSlug}`,
     )
 
     await expect(page.getByTestId('validation-edit-heading')).toBeVisible()
@@ -77,7 +77,7 @@ test.describe('Referral Program Validations', () => {
   test('shows rule form when add rule button clicked', async ({ page }) => {
     await navigateTo(
       page,
-      `/referral-program/${referralProgram.referralProgramTopicSlug}/validations/${referralProgram.validationId}`,
+      `/referral-program/${referralProgram.referralProgramTopicSlug}/validations/${referralProgram.validationSlug}`,
     )
 
     await page.getByTestId('validation-rules-add-button').click()

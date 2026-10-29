@@ -1,13 +1,14 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getUrl, getUrlCrawl } from '@/lib/api/server/urls'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { PageWithAside } from '@/components/page-with-aside'
 import { CrawlMetaTags } from '@/components/urls/crawl-meta-tags'
-import { createUrlPathname, domainHref, urlHref } from '@/lib/links/entity-href'
+import { domainHref, urlCrawlHref, urlHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { isUUID } from '@ts-shared/utils/validation-core'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,21 +17,28 @@ export const metadata = createNoIndexMetadata()
 export default async function CrawlDetailPage({
   params,
 }: {
-  params: Promise<{ id: string; crawlId: string }>
+  params: Promise<{ urlValue: string; crawlId: string }>
 }) {
   const t = await getTranslations()
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/login')
 
-  const { id, crawlId } = await params
+  const { urlValue, crawlId } = await params
+  let urlInput: string
+  try {
+    urlInput = decodeURIComponent(urlValue)
+  } catch {
+    notFound()
+  }
 
   // Check access via URL detail flags
-  const urlData = await getUrl(id)
+  const urlData = await getUrl(urlInput)
   if (!urlData) notFound()
   if (!urlData.can_view_crawl_history) notFound()
 
-  const data = await getUrlCrawl(id, crawlId)
+  const data = await getUrlCrawl(urlInput, crawlId)
   if (!data) notFound()
+  if (isUUID(urlInput)) permanentRedirect(urlCrawlHref(urlData.url, crawlId))
   const { crawl, og_image_sideload } = data
 
   const hasMetaData =
@@ -38,7 +46,7 @@ export default async function CrawlDetailPage({
     !!crawl.language ||
     crawl.embed_metadata != null
 
-  const urlPath = urlHref(id)
+  const urlPath = urlHref(urlData.url)
   const breadcrumbItems = buildBreadcrumbsForPath(urlPath, {
     isAuthenticated: true,
     tail: [
@@ -46,7 +54,7 @@ export default async function CrawlDetailPage({
         ? [{ name: 'Domains', path: domainHref(urlData.url.hostname) }]
         : []),
       { name: 'URL', path: urlPath },
-      { name: 'Crawl', path: createUrlPathname(id, `/crawls/${crawlId}`) },
+      { name: 'Crawl', path: urlCrawlHref(urlData.url, crawlId) },
     ],
   })
 

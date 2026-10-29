@@ -4,6 +4,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { TopicRecommendationEditablePostWithId } from './topic-recommendation-editable-state'
 import type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
+import type { Post } from '@/types/posts'
 import { TopicRecommendationDialog } from './topic-recommendation-dialog'
 import { TopicRecommendationsTableRow } from './topic-recommendations-table-row'
 import { useTopicRecommendationActions } from './topic-recommendations-table-actions'
@@ -15,7 +16,7 @@ interface Props {
     'post_elections' | 'election_votes' | 'markdown_to_html' | 'users'
   > & {
     results: Array<Pick<PostsResponseBody['results'][number], 'id'>>
-    posts: Record<string, TopicRecommendationTablePost>
+    posts: PostsResponseBody['posts']
   }
   isAdmin: boolean
   hideDownCount?: boolean
@@ -23,22 +24,32 @@ interface Props {
 
 export type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 
+function assertRecommendationSlugs(
+  posts: PostsResponseBody['posts'],
+): asserts posts is Record<string, Post & { slug: string }> {
+  for (const post of Object.values(posts)) {
+    if (!post.slug) throw new Error('Topic recommendation is missing its slug')
+  }
+}
+
 export function TopicRecommendationsTable({ data, isAdmin, hideDownCount = false }: Props) {
+  const tablePosts = data.posts
+  assertRecommendationSlugs(tablePosts)
   const t = useTranslations()
   const actions = useTopicRecommendationActions(
     data.results.flatMap(r => {
-      const p = data.posts[r.id]
+      const p = tablePosts[r.id]
       return p?.topic_recommendation ? [p.id] : []
     }),
   )
 
   const posts = data.results.flatMap(result => {
-    const post = data.posts[result.id]
+    const post = tablePosts[result.id]
     return post?.topic_recommendation && !actions.withdrawnIds.has(post.id) ? [post] : []
   })
 
   const orderedPostIds = posts.map(p => p.id)
-  const selected = actions.selectedId ? (data.posts[actions.selectedId] ?? null) : null
+  const selected = actions.selectedId ? (tablePosts[actions.selectedId] ?? null) : null
   const selectedHtml = actions.selectedId ? (data.markdown_to_html?.[actions.selectedId] ?? '') : ''
   const selectedElection = selected?.id ? data.post_elections?.[selected.id] : undefined
   const selectedVote = selected?.id ? data.election_votes?.[selected.id] : undefined
@@ -53,9 +64,9 @@ export function TopicRecommendationsTable({ data, isAdmin, hideDownCount = false
     return actions.handleApprove(post, actions.editableState)
   }
 
-  function handleReject(post: TopicRecommendationEditablePostWithId) {
+  const handleReject = (post: TopicRecommendationEditablePostWithId) => {
     if (!actions.editableState) return Promise.resolve()
-    return actions.handleReject(data.posts, post, actions.editableState)
+    return actions.handleReject(tablePosts, post, actions.editableState)
   }
 
   function openDialog(post: TopicRecommendationTablePost) {
@@ -122,7 +133,7 @@ export function TopicRecommendationsTable({ data, isAdmin, hideDownCount = false
         hideDownCount={hideDownCount}
         orderedPostIds={orderedPostIds}
         users={data.users}
-        navigateToId={id => actions.navigateToId(data.posts, id)}
+        navigateToId={id => actions.navigateToId(tablePosts, id)}
         setEditableState={actions.setEditableState}
         onApprove={handleApprove}
         onOpenChange={open => !open && actions.closeDialog()}

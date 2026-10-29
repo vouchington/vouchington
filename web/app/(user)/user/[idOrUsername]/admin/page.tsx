@@ -60,8 +60,11 @@ export default async function UserAdminPage({ params }: PageProps) {
       className='space-y-6'
     >
       {isAdmin && <UserAdminPanel user={profileData.user} />}
-      {showLandingPageAnalytics && (
-        <LandingPageAnalyticsCard landingPages={landingPagesData?.results ?? []} />
+      {showLandingPageAnalytics && profileData.user.username && (
+        <LandingPageAnalyticsCard
+          username={profileData.user.username}
+          landingPages={landingPagesData?.results ?? []}
+        />
       )}
       <MembershipRefundPanel
         actorUserId={currentUser.id}

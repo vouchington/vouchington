@@ -1280,7 +1280,7 @@
       "clients": {
         "web": {
           "status": "full",
-          "uiEvidence": ["web/app/admin/landing-pages/[pageId]/analytics/page.tsx"],
+          "uiEvidence": ["web/app/(landing)/landing/[idOrUsername]/[slug]/analytics/page.tsx"],
           "behaviorTests": []
         },
         "swift": {

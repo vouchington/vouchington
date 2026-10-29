@@ -1,4 +1,5 @@
 import nativeLandingPageItemsMutationDefault from '../../../../api-fixtures/v1/responses/native.landing-page-items-mutation.default.json'
+import webAdminLandingPageIdentityDefault from '../../../../api-fixtures/v1/responses/web.admin-landing-page-identity.default.json'
 import nativePaidUrlCrawlDefault from '../../../../api-fixtures/v1/responses/native.paid.url-crawl.default.json'
 import nativePaidUrlCrawlsDefault from '../../../../api-fixtures/v1/responses/native.paid.url-crawls.default.json'
 import nativeRssFeedItemDetailDefault from '../../../../api-fixtures/v1/responses/native.rss-feed-item.detail.default.json'
@@ -33,6 +34,7 @@ import type {
   UserReferralLinkWithDetails,
 } from '@/types/api-responses'
 import type { LandingPageDetailResponseBody } from '@/types/api-responses/memberships-referrals-and-admin'
+import type { AdminLandingPageCanonicalIdentity } from '@/lib/api/server/admin-landing-pages'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 import { STORY_PAGE_DECLARATIONS } from './story-pages'
@@ -42,6 +44,12 @@ const landingPageItemsMutationFixture =
 
 export const CONTENT_REFERRALS_DECLARATIONS = [
   ...STORY_PAGE_DECLARATIONS,
+  defineWebApiFixture<AdminLandingPageCanonicalIdentity>()(
+    'web.admin-landing-page-identity.default',
+    webAdminLandingPageIdentityDefault,
+    context =>
+      context.server.adminLandingPages.getAdminLandingPageCanonicalIdentity('landing-page-1'),
+  ),
   defineWebApiFixture<LandingPageDetailResponseBody>()(
     'native.landing-page-items-mutation.default',
     landingPageItemsMutationFixture,

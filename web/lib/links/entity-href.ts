@@ -1,5 +1,6 @@
 export * from './topic-hrefs'
 export * from './list-hrefs'
+import { createTopicPathname } from './topic-hrefs'
 
 export type UserTab = 'reviews' | 'discussions' | 'comments' | 'landing'
 
@@ -70,24 +71,40 @@ export function modmailThreadHref(community: string | SlugInput, thread: string 
   return `/messages/modmail/${slugOrValue(community)}/${idOrValue(thread)}`
 }
 
-export function createUrlPathname(url: string | IdInput, suffix = ''): string {
-  return `/url/${idOrValue(url)}${suffix}`
+export function urlHref(url: string | { url: string }, suffix = ''): string {
+  const urlValue = typeof url === 'string' ? url : url.url
+  return `/url/${encodeURIComponent(urlValue)}${suffix}`
 }
 
-export function urlHref(url: string | IdInput): string {
-  return `/url/${idOrValue(url)}`
+export function urlCrawlHref(url: string | { url: string }, crawl: string | IdInput): string {
+  return urlHref(url, `/crawls/${idOrValue(crawl)}`)
 }
 
 export function domainHref(domain: string | HostnameInput): string {
   return `/domain/${typeof domain === 'string' ? domain : 'hostname' in domain ? domain.hostname : domain.id}`
 }
 
-export function topicRecommendationHref(recommendation: string | IdInput, suffix = ''): string {
-  return `/topic-recommendations/${idOrValue(recommendation)}${suffix}`
+export function topicRecommendationHref(recommendation: string | SlugInput, suffix = ''): string {
+  return `/topic-recommendations/${slugOrValue(recommendation)}${suffix}`
 }
 
-export function topicClaimHref(topic: string | IdInput): string {
-  return `/topic-claims/${idOrValue(topic)}`
+export function topicClaimHref(topic: string | SlugInput): string {
+  return `/topic-claims/${slugOrValue(topic)}`
+}
+
+export function referralValidationHref(
+  program: string | SlugInput,
+  validation: string | SlugInput,
+): string {
+  return `${createTopicPathname({ topic_type: 'referral_program', slug: slugOrValue(program) }, '/validations')}/${slugOrValue(validation)}`
+}
+
+export function adminLandingPageAnalyticsHref(
+  owner: string | { username: string },
+  page: string | SlugInput,
+): string {
+  const username = typeof owner === 'string' ? owner : owner.username
+  return `/landing/${username}/${slugOrValue(page)}/analytics`
 }
 
 export function landingPageHref(owner: string | { username: string }): string {

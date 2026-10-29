@@ -9,6 +9,12 @@ interface AdminLandingPageAnalyticsResponseBody {
   analytics: LandingPageAnalytics
 }
 
+export interface AdminLandingPageCanonicalIdentity {
+  owner_user_id: string
+  owner_username: string
+  page_slug: string
+}
+
 export const getAdminLandingPagesForUser = cache(
   async (
     userId: string,
@@ -25,12 +31,27 @@ export const getAdminLandingPagesForUser = cache(
 
 export const getAdminLandingPageAnalytics = cache(
   async (
-    pageId: string,
+    username: string,
+    slug: string,
     options?: { headers?: Record<string, string> },
   ): Promise<AdminLandingPageAnalyticsResponseBody | null> => {
     return returnNullForMissingEntity(
       serverApi.get<AdminLandingPageAnalyticsResponseBody>(
-        `/api/v1/admin/landing-pages/${encodeURIComponent(pageId)}/analytics`,
+        `/api/v1/admin/users/${encodeURIComponent(username)}/landing-pages/${encodeURIComponent(slug)}/analytics`,
+        options,
+      ),
+    )
+  },
+)
+
+export const getAdminLandingPageCanonicalIdentity = cache(
+  async (
+    pageId: string,
+    options?: { headers?: Record<string, string> },
+  ): Promise<AdminLandingPageCanonicalIdentity | null> => {
+    return returnNullForMissingEntity(
+      serverApi.get<AdminLandingPageCanonicalIdentity>(
+        `/api/v1/admin/landing-pages/${encodeURIComponent(pageId)}`,
         options,
       ),
     )

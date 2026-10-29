@@ -1,14 +1,7 @@
-/**
- * Factory functions for referral-link-validation management pages, scoped under a
- * Referral Program topic: `/referral-program/:id/validations[/new|/:validationId]`.
- *
- * Every factory gates with `requireAdmin()`, then `notFound()`s unless the resolved
- * topic's `topic_type === 'referral_program'`. The list route shows validations linked to
- * the program; the new route creates and links a validation in one step.
- */
+/** Admin-gated referral program validation pages. */
 
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
@@ -24,9 +17,10 @@ import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-en
 import { getTopic, getReferralProgramValidations, serverApi } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { createTopicPathname } from '@/lib/links/entity-href'
+import { createTopicPathname, referralValidationHref } from '@/lib/links/entity-href'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import type { Topic } from '@/types/topics'
+import { isUUID } from '@ts-shared/utils/validation-core'
 
 interface ListPageProps {
   params: Promise<{ id: string }>
@@ -56,6 +50,7 @@ export function createReferralProgramValidationsListPage() {
   async function ReferralProgramValidationsListPage({ params }: ListPageProps) {
     const { id } = await params
     const { topic, basePath } = await loadReferralProgram(id)
+    if (isUUID(id)) permanentRedirect(basePath)
 
     const [data, t] = await Promise.all([
       getReferralProgramValidations(topic.id),
@@ -82,7 +77,7 @@ export function createReferralProgramValidationsListPage() {
         </AdminPageHeader>
         <ValidationsListTable
           validations={data.results}
-          basePath={basePath}
+          programSlug={topic.slug}
           t={t}
         />
       </div>
@@ -104,6 +99,7 @@ export function createReferralProgramValidationNewPage() {
   async function NewReferralProgramValidationPage({ params }: ListPageProps) {
     const { id } = await params
     const { topic, basePath } = await loadReferralProgram(id)
+    if (isUUID(id)) permanentRedirect(createTopicPathname(topic, '/validations/new'))
 
     return (
       <div className='space-y-4'>
@@ -120,7 +116,7 @@ export function createReferralProgramValidationNewPage() {
         />
         <div className='max-w-lg'>
           <ValidationForm
-            basePath={basePath}
+            programSlug={topic.slug}
             referralProgramId={topic.id}
           />
         </div>
@@ -157,6 +153,9 @@ export function createReferralProgramValidationDetailPage() {
     // raw route segment, which may be a slug) so slug-based detail URLs still work.
     if (!programValidations.results.some(v => v.id === validationData.validation.id)) notFound()
     const { validation } = validationData
+    if (isUUID(id) || isUUID(validationId)) {
+      permanentRedirect(referralValidationHref(topic, validation))
+    }
 
     const rulesData = await serverApi.get<{ results: ReferralLinkValidationRule[] }>(
       `/api/v1/referral-link-validations/${validation.id}/rules`,
@@ -185,7 +184,7 @@ export function createReferralProgramValidationDetailPage() {
           </h2>
           <ValidationForm
             existing={validation}
-            basePath={basePath}
+            programSlug={topic.slug}
           />
         </div>
         <ValidationRulesTable

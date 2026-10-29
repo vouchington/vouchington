@@ -14,6 +14,7 @@ describe('admin landing pages', () => {
   let admin: PrivateUser
   let regularUser: PrivateUser
   let landingPageId: string
+  let landingPageSlug: string
 
   beforeAll(async () => {
     admin = await createTestUserDirect({ administrator: true, withEmail: true })
@@ -21,6 +22,7 @@ describe('admin landing pages', () => {
 
     const page = await createTestLandingPage(regularUser.id, 'Admin landing page')
     landingPageId = page.landingPageId
+    landingPageSlug = page.slug
     await createTestLandingPageProfileLinkItem(regularUser.id, landingPageId)
   })
 
@@ -112,11 +114,15 @@ describe('admin landing pages', () => {
     })
   })
 
-  describe('GET /api/v1/admin/landing-pages/:pageId/analytics', () => {
+  describe('GET /api/v1/admin/users/:username/landing-pages/:slug/analytics', () => {
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
-      await request.get(`/api/v1/admin/landing-pages/${landingPageId}/analytics`).expect(403)
+      await request
+        .get(
+          `/api/v1/admin/users/${regularUser.username}/landing-pages/${landingPageSlug}/analytics`,
+        )
+        .expect(403)
     })
 
     it('returns landing page detail and analytics for admins', async () => {
@@ -124,7 +130,9 @@ describe('admin landing pages', () => {
       await request.authenticateAs(admin)
 
       const before = await request
-        .get(`/api/v1/admin/landing-pages/${landingPageId}/analytics`)
+        .get(
+          `/api/v1/admin/users/${regularUser.username}/landing-pages/${landingPageSlug}/analytics`,
+        )
         .expect(200)
 
       const referredA = await createTestUserDirect()
@@ -135,7 +143,9 @@ describe('admin landing pages', () => {
       ])
 
       const after = await request
-        .get(`/api/v1/admin/landing-pages/${landingPageId}/analytics`)
+        .get(
+          `/api/v1/admin/users/${regularUser.username}/landing-pages/${landingPageSlug}/analytics`,
+        )
         .expect(200)
 
       expect(after.body.landing_page.id).toBe(landingPageId)
@@ -149,7 +159,34 @@ describe('admin landing pages', () => {
     it('returns 404 for a missing page', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request.get(`/api/v1/admin/landing-pages/${v7()}/analytics`).expect(404)
+      await request
+        .get(`/api/v1/admin/users/${regularUser.username}/landing-pages/missing/analytics`)
+        .expect(404)
+    })
+  })
+
+  describe('GET /api/v1/admin/landing-pages/:pageId', () => {
+    it('resolves an active page to its owner username and slug for admins', async () => {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      const response = await request.get(`/api/v1/admin/landing-pages/${landingPageId}`).expect(200)
+      expect(response.body).toEqual({
+        owner_user_id: regularUser.id,
+        owner_username: regularUser.username,
+        page_slug: landingPageSlug,
+      })
+    })
+
+    it('does not disclose page identity to a non-admin', async () => {
+      const request = createRequest()
+      await request.authenticateAs(regularUser)
+      await request.get(`/api/v1/admin/landing-pages/${landingPageId}`).expect(403)
+    })
+
+    it('returns 404 for an unknown page', async () => {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      await request.get(`/api/v1/admin/landing-pages/${v7()}`).expect(404)
     })
   })
 })

@@ -1,4 +1,5 @@
-import { test, expect } from '../../helpers/test.mts'
+import { randomUUID } from 'node:crypto'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   navigateTo,
   requireTestValue,
@@ -6,9 +7,55 @@ import {
 } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { recentSeedCrawlId } from '../../../backend/scripts/seeds/crawl-ids.mts'
+import { insertTestCrawl, insertTestUrlDirect } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin URLs', () => {
   test.use({ storageState: ADMIN_AUTH_STATE })
+
+  test.describe('encoded URL route', () => {
+    let encodedUrl = ''
+    let encodedCrawlId = ''
+    let encodedCrawlTitle = ''
+
+    test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
+      const suffix = randomUUID()
+      const rawUrl = `https://example.com/roundtrip-${suffix}/a%2Fb?q=one%26two`
+      const decodedDecoy = `https://example.com/roundtrip-${suffix}/a/b?q=one&two`
+      const url = requireTestValue(
+        await insertTestUrlDirect(null, rawUrl),
+        'Failed to create encoded URL fixture',
+      )
+      await insertTestUrlDirect(null, decodedDecoy)
+      encodedUrl = rawUrl
+      encodedCrawlTitle = `Encoded path crawl ${suffix}`
+      const crawl = await insertTestCrawl({
+        urlId: url.id,
+        statusCode: 200,
+        title: encodedCrawlTitle,
+        markdown: `Only the encoded URL has this crawl: ${suffix}`,
+      })
+      encodedCrawlId = crawl.id
+    })
+
+    test('round-trips an encoded URL through its detail page and crawl link', async ({ page }) => {
+      const detailPath = `/url/${encodeURIComponent(encodedUrl)}`
+      const crawlPath = `${detailPath}/crawls/${encodedCrawlId}`
+      await navigateTo(page, detailPath)
+
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(encodedUrl)
+      await expect(page.getByTestId('url-page-source-link')).toHaveAttribute('href', encodedUrl)
+
+      const viewCrawl = page.locator('tbody tr').getByRole('link')
+      await expect(viewCrawl).toHaveAttribute('href', crawlPath)
+      await viewCrawl.click()
+
+      await expect(page).toHaveURL(crawlPath)
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Crawl Details')
+      await expect(page.locator('main')).toContainText(encodedCrawlTitle)
+      await expect(page.locator('main')).toContainText('Only the encoded URL has this crawl')
+    })
+  })
 
   test('should redirect unauthenticated users to login', async ({ page }) => {
     await page.context().clearCookies()
@@ -82,10 +129,9 @@ test.describe('Admin URLs', () => {
 
   test('should view URL detail with inline crawls list', async ({ page }) => {
     // Navigate directly to avoid pagination issues (seed URLs are not on page 1 of the list)
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    await navigateTo(page, `/url/${urlId}`)
+    await navigateTo(page, `/url/${encodeURIComponent('https://example.com/page1')}`)
 
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1/)
 
     // h1 is the URL string itself
     await expect(page.getByRole('heading', { level: 1 })).toContainText('https://example.com/page1')
@@ -108,9 +154,8 @@ test.describe('Admin URLs', () => {
 
   test('should trigger URL crawl', async ({ page }) => {
     // Navigate directly to avoid pagination issues (seed URLs are not on page 1 of the list)
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    await navigateTo(page, `/url/${urlId}`)
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
+    await navigateTo(page, `/url/${encodeURIComponent('https://example.com/page1')}`)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1/)
 
     // Click trigger crawl button
     const triggerCrawlBtn = page.locator('button').filter({ hasText: /trigger crawl/i })
@@ -124,7 +169,7 @@ test.describe('Admin URLs', () => {
     ).toBeVisible()
 
     // URL should not have changed
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1/)
     // h1 still shows the URL
     await expect(page.getByRole('heading', { level: 1 })).toContainText('https://example.com/page1')
   })
@@ -133,11 +178,13 @@ test.describe('Admin URLs', () => {
     // Navigate directly to a known seed crawl to avoid interference from triggered crawls.
     // crawlId comes from crawl-ids.mts, which uses a guarded recent UTC day so it
     // matches what seedPlaywrightTestData() inserts across UTC midnight.
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
     const crawlId = recentSeedCrawlId(2)
-    await navigateTo(page, `/url/${urlId}/crawls/${crawlId}`)
+    await navigateTo(
+      page,
+      `/url/${encodeURIComponent('https://example.com/page1')}/crawls/${crawlId}`,
+    )
 
-    await expect(page).toHaveURL(/\/url\/[a-f0-9-]+\/crawls\/[a-f0-9-]+/)
+    await expect(page).toHaveURL(/\/url\/https%3A%2F%2Fexample.com%2Fpage1\/crawls\/[a-f0-9-]+/)
 
     // Check crawl detail page
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Crawl Details')

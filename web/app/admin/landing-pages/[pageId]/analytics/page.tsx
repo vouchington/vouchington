@@ -1,36 +1,25 @@
-export const dynamic = 'force-dynamic'
-
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { getAdminLandingPageAnalytics } from '@/lib/api/server/admin-landing-pages'
-import { LandingPageAnalyticsDashboard } from '@/components/my/landing-page-analytics-dashboard'
+import {
+  getAdminLandingPageAnalytics,
+  getAdminLandingPageCanonicalIdentity,
+} from '@/lib/api/server/admin-landing-pages'
+import { adminLandingPageAnalyticsHref } from '@/lib/links/entity-href'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
-export const metadata: Metadata = createNoIndexMetadata('Landing Page Analytics | Admin')
+export const dynamic = 'force-dynamic'
+export const metadata = createNoIndexMetadata('Landing Page Analytics | Admin')
 
-interface PageProps {
+export default async function LegacyAdminLandingPageAnalyticsPage({
+  params,
+}: {
   params: Promise<{ pageId: string }>
-}
-
-export default async function AdminLandingPageAnalyticsPage({ params }: PageProps) {
+}) {
   await requireAdmin()
   const { pageId } = await params
-  let analyticsData: Awaited<ReturnType<typeof getAdminLandingPageAnalytics>> = null
-  try {
-    analyticsData = await getAdminLandingPageAnalytics(pageId)
-  } catch (err) {
-    console.error('Failed to load admin landing page analytics:', err)
-  }
-
-  if (!analyticsData) {
-    notFound()
-  }
-
-  return (
-    <LandingPageAnalyticsDashboard
-      analytics={analyticsData.analytics}
-      items={analyticsData.landing_page.items}
-    />
-  )
+  const identity = await getAdminLandingPageCanonicalIdentity(pageId)
+  if (!identity) notFound()
+  const analytics = await getAdminLandingPageAnalytics(identity.owner_username, identity.page_slug)
+  if (!analytics) notFound()
+  permanentRedirect(adminLandingPageAnalyticsHref(identity.owner_username, identity.page_slug))
 }

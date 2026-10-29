@@ -4,12 +4,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { LandingPage } from '@/types/landing-pages'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { adminLandingPageAnalyticsHref } from '@/lib/links/entity-href'
 
 interface LandingPageAnalyticsCardProps {
+  username: string
   landingPages: LandingPage[]
 }
 
-export async function LandingPageAnalyticsCard({ landingPages }: LandingPageAnalyticsCardProps) {
+export async function LandingPageAnalyticsCard({
+  username,
+  landingPages,
+}: LandingPageAnalyticsCardProps) {
   const t = await getTranslations()
   return (
     <Card>
@@ -49,7 +54,7 @@ export async function LandingPageAnalyticsCard({ landingPages }: LandingPageAnal
                   size='sm'
                 >
                   <Link
-                    href={`/admin/landing-pages/${page.id}/analytics`}
+                    href={adminLandingPageAnalyticsHref(username, page)}
                     prefetch={false}
                     data-pw='admin-user-landing-page-analytics-link'
                     aria-label={t(

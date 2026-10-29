@@ -3,7 +3,8 @@ import sql from 'sql-template-strings'
 import { validateUUID } from '@modules/utils'
 import assert from 'http-assert'
 import type { LandingPage, LandingPageItemRow } from './types.mts'
-import { lockUserLandingPages } from './shared.mts'
+import { lockUserLandingPages, validateLandingPageSlug } from './shared.mts'
+import { getPublicUserByAny } from '@services/users'
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 
 export async function getLockedLandingPageRowForUser(
@@ -34,16 +35,36 @@ export async function getLandingPageRowForUser(
   return rows[0] as LandingPage
 }
 
-export async function getLandingPageRowById(pageId: string): Promise<LandingPage> {
-  validateUUID(pageId)
-  const { rows } = await read(sql`/* getLandingPageRowById */
+export async function getLandingPageRowByUsernameAndSlug(
+  username: string,
+  slug: string,
+): Promise<LandingPage> {
+  const user = await getPublicUserByAny(username)
+  assert(user?.username, 404, 'Landing page not found')
+  const { rows } = await read(sql`/* getLandingPageRowByUsernameAndSlug */
     SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
     FROM user_landing_pages
-    WHERE id = ${pageId}
+    WHERE user_id = ${user.id} AND slug = ${validateLandingPageSlug(slug)}
     LIMIT 1
   `)
   assert(rows[0], 404, 'Landing page not found')
   return rows[0] as LandingPage
+}
+
+export async function getLandingPageCanonicalIdentityById(
+  pageId: string,
+): Promise<{ owner_user_id: string; owner_username: string; page_slug: string }> {
+  validateUUID(pageId)
+  const { rows } = await read(sql`/* getLandingPageCanonicalIdentityById */
+    SELECT page.user_id AS owner_user_id, owner.username AS owner_username, page.slug AS page_slug
+    FROM user_landing_pages page
+    JOIN users owner ON owner.id = page.user_id
+      AND owner.deleted_at IS NULL AND owner.username IS NOT NULL
+    WHERE page.id = ${pageId}
+    LIMIT 1
+  `)
+  assert(rows[0], 404, 'Landing page not found')
+  return rows[0] as { owner_user_id: string; owner_username: string; page_slug: string }
 }
 
 export async function getLandingPageItemRows(pageId: string): Promise<LandingPageItemRow[]> {

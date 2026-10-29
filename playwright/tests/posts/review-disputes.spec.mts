@@ -16,9 +16,10 @@ import { SEEDED_IDS } from '../../../integration-tests/web/helpers/constants.mts
 let smModeratorId = ''
 let reviewerId = ''
 let disputedReviewId = ''
-let claimFormTopicId = ''
+let claimFormTopicSlug = ''
 let manualClaimTopicId = ''
-let verificationTopicId = ''
+let manualClaimTopicSlug = ''
+let verificationTopicSlug = ''
 let verificationClaimId = ''
 const verificationClaimEvidence = `Deterministic Playwright topic claim ${randomSuffix()}`
 
@@ -37,14 +38,16 @@ test.beforeAll(async () => {
   await insertTestReviewDispute({ postId: disputedReviewId, topicId, disputantUserId: reviewer.id })
 
   const suffix = randomSuffix()
-  claimFormTopicId = await insertTestTopic({
+  claimFormTopicSlug = `claim-form-test-${suffix}`
+  await insertTestTopic({
     name: `Claim form test topic ${suffix}`,
-    slug: `claim-form-test-${suffix}`,
+    slug: claimFormTopicSlug,
     createdById: reviewer.id,
   })
+  manualClaimTopicSlug = `manual-claim-test-${suffix}`
   manualClaimTopicId = await insertTestTopic({
     name: `Manual claim test topic ${suffix}`,
-    slug: `manual-claim-test-${suffix}`,
+    slug: manualClaimTopicSlug,
     createdById: reviewer.id,
   })
   await insertTestTopicClaim({
@@ -52,16 +55,15 @@ test.beforeAll(async () => {
     claimantUserId: reviewer.id,
     submittedAt: null,
   })
-  verificationTopicId = (
-    await createTestTopic({
-      user: reviewer,
-      name: `Claim verification test topic ${suffix}`,
-      slug: `claim-verification-test-${suffix}`,
-      hostname: `claim-verification-${suffix}.voucha.ai`,
-    })
-  ).id
+  verificationTopicSlug = `claim-verification-test-${suffix}`
+  const verificationTopic = await createTestTopic({
+    user: reviewer,
+    name: `Claim verification test topic ${suffix}`,
+    slug: verificationTopicSlug,
+    hostname: `claim-verification-${suffix}.voucha.ai`,
+  })
   verificationClaimId = await insertTestTopicClaim({
-    topicId: verificationTopicId,
+    topicId: verificationTopic.id,
     claimantUserId: reviewer.id,
     claimedRole: 'Owner',
     evidence: verificationClaimEvidence,
@@ -148,7 +150,7 @@ test.describe('Review page - pending dispute', () => {
 test.describe('Topic claim form states', () => {
   test('unclaimed topic renders a claim form', async ({ page }) => {
     await loginAsUser(page, reviewerId)
-    await navigateTo(page, `/topic-claims/${claimFormTopicId}`)
+    await navigateTo(page, `/topic-claims/${claimFormTopicSlug}`)
 
     await expect(page.getByTestId('claim-topic-form')).toBeVisible()
     await expect(page.getByTestId('claim-submit')).toBeVisible()
@@ -156,7 +158,7 @@ test.describe('Topic claim form states', () => {
 
   test('claimed topic renders its domain verification panel', async ({ page }) => {
     await loginAsUser(page, reviewerId)
-    await navigateTo(page, `/topic-claims/${verificationTopicId}`)
+    await navigateTo(page, `/topic-claims/${verificationTopicSlug}`)
 
     await expect(page.getByTestId('domain-verification-panel')).toBeVisible()
     await expect(page.getByRole('tab', { name: 'DNS TXT Record' })).toBeVisible()
@@ -165,7 +167,7 @@ test.describe('Topic claim form states', () => {
 
   test('claimed topic without a hostname renders manual evidence', async ({ page }) => {
     await loginAsUser(page, reviewerId)
-    await navigateTo(page, `/topic-claims/${manualClaimTopicId}`)
+    await navigateTo(page, `/topic-claims/${manualClaimTopicSlug}`)
 
     await expect(page.getByTestId('domain-verification-panel')).toBeVisible()
     await expect(page.getByTestId('evidence-textarea')).toBeVisible()
@@ -175,7 +177,7 @@ test.describe('Topic claim form states', () => {
   test('domain verification exposes its backend failure', async ({ page }) => {
     await loginAsUser(page, reviewerId)
     await page.route(
-      `**/api/v1/topics/${verificationTopicId}/claims/${verificationClaimId}/domain-verification`,
+      `**/api/v1/topics/${verificationTopicSlug}/claims/${verificationClaimId}/domain-verification`,
       route =>
         route.fulfill({
           status: 422,
@@ -183,7 +185,7 @@ test.describe('Topic claim form states', () => {
           body: JSON.stringify({ message: 'Verification record was not found.' }),
         }),
     )
-    await navigateTo(page, `/topic-claims/${verificationTopicId}`)
+    await navigateTo(page, `/topic-claims/${verificationTopicSlug}`)
     await page.getByTestId('domain-tabs-generate-verification-token').click()
     await expect(page.getByTestId('verification-token-instructions-copy-dns-value')).toBeVisible()
     await expect(page.getByTestId('verify-domain')).toBeVisible()

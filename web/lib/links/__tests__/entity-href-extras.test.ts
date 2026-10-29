@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
   compareHref,
+  adminLandingPageAnalyticsHref,
   createCommunityPathname,
   createPostPathname,
   createUserPathname,
-  createUrlPathname,
   domainHref,
   landingPageHref,
   landingPageNamedHref,
@@ -14,9 +14,11 @@ import {
   podcastCategoryHref,
   podcastsHref,
   reviewHref,
+  referralValidationHref,
   topicClaimHref,
   topicRecommendationHref,
   urlHref,
+  urlCrawlHref,
 } from '../entity-href'
 
 describe('messagesHref', () => {
@@ -45,8 +47,11 @@ describe('entity primitives', () => {
   })
 
   it('builds URL entity paths', () => {
-    expect(createUrlPathname({ id: 'url-1' }, '/crawls/crawl-1')).toBe('/url/url-1/crawls/crawl-1')
-    expect(urlHref('url-1')).toBe('/url/url-1')
+    const url = 'https://example.com/a%2Fb?q=one&two'
+    const segment = encodeURIComponent(url)
+    expect(urlHref({ url }, '/crawls/crawl-1')).toBe(`/url/${segment}/crawls/crawl-1`)
+    expect(urlHref(url)).toBe(`/url/${segment}`)
+    expect(urlCrawlHref(url, { id: 'crawl-1' })).toBe(`/url/${segment}/crawls/crawl-1`)
   })
 
   it('builds post paths from a route slug', () => {
@@ -66,12 +71,22 @@ describe('entity primitives', () => {
 
 describe('topic recommendation and claim hrefs', () => {
   it('builds topic recommendation detail and edit paths', () => {
-    expect(topicRecommendationHref({ id: 'rec-1' })).toBe('/topic-recommendations/rec-1')
-    expect(topicRecommendationHref('rec-1', '/edit')).toBe('/topic-recommendations/rec-1/edit')
+    expect(topicRecommendationHref({ slug: 'suggest-card' })).toBe(
+      '/topic-recommendations/suggest-card',
+    )
+    expect(topicRecommendationHref('suggest-card', '/edit')).toBe(
+      '/topic-recommendations/suggest-card/edit',
+    )
   })
 
   it('builds topic claim paths', () => {
-    expect(topicClaimHref('topic-1')).toBe('/topic-claims/topic-1')
+    expect(topicClaimHref({ slug: 'chase-sapphire' })).toBe('/topic-claims/chase-sapphire')
+  })
+
+  it('builds referral validation paths from both slugs', () => {
+    expect(referralValidationHref('chase-sapphire', { slug: 'personal-link' })).toBe(
+      '/referral-program/chase-sapphire/validations/personal-link',
+    )
   })
 })
 
@@ -85,6 +100,12 @@ describe('landing page hrefs', () => {
   it('builds owner landing page paths', () => {
     expect(myLandingPageHref({ slug: 'bonus' })).toBe('/my/landing-page/bonus')
     expect(myLandingPageHref('bonus', '/analytics')).toBe('/my/landing-page/bonus/analytics')
+  })
+
+  it('builds admin analytics paths under the landing page', () => {
+    expect(adminLandingPageAnalyticsHref('alice', { slug: 'bonus' })).toBe(
+      '/landing/alice/bonus/analytics',
+    )
   })
 })
 

@@ -63,6 +63,18 @@ describe('TopicRecommendationsTable', () => {
     expect(screen.getByText('Recommendation rationale')).toBeDefined()
   })
 
+  it('rejects a recommendation without its canonical post slug', () => {
+    const post = data.posts['rec-1']!
+    const missingSlugData: PostsResponseBody = {
+      ...data,
+      posts: { ...data.posts, 'rec-1': { ...post, slug: null } },
+    }
+
+    expect(() => renderTable({ tableData: missingSlugData })).toThrow(
+      'Topic recommendation is missing its slug',
+    )
+  })
+
   it('lets admins approve from the modal', async () => {
     mockUpdate.mockResolvedValue(makeTopicRecommendationMutationResponse())
     mockApprove.mockResolvedValue({
@@ -125,6 +137,10 @@ describe('TopicRecommendationsTable', () => {
     renderTable()
 
     const withdrawButton = screen.getByRole('button', { name: 'Withdraw' })
+    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
+      'href',
+      '/topic-recommendations/proposed-topic-recommendation/edit',
+    )
     expect(withdrawButton).toContainElement(screen.getByTestId('recommendation-withdraw-icon'))
     fireEvent.click(withdrawButton)
     fireEvent.click(

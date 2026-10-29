@@ -88,10 +88,10 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'native.admin-landing-page-analytics.default',
     method: 'GET',
-    path: '/api/v1/admin/landing-pages/landing-page-1/analytics',
+    path: '/api/v1/admin/users/fixture-user/landing-pages/links/analytics',
     route: {
-      routeTemplate: '/api/v1/admin/landing-pages/:pageId/analytics',
-      pathParams: { pageId: 'landing-page-1' },
+      routeTemplate: '/api/v1/admin/users/:username/landing-pages/:slug/analytics',
+      pathParams: { username: 'fixture-user', slug: 'links' },
     },
     auth: 'fixture-admin',
     status: 200,
@@ -101,6 +101,24 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
     },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/admin/landing-pages.mts'],
+  },
+  {
+    id: 'web.admin-landing-page-identity.default',
+    method: 'GET',
+    path: '/api/v1/admin/landing-pages/landing-page-1',
+    route: {
+      routeTemplate: '/api/v1/admin/landing-pages/:pageId',
+      pathParams: { pageId: 'landing-page-1' },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: {
+      owner_user_id: 'user-abc',
+      owner_username: 'fixture-user',
+      page_slug: 'links',
+    },
+    consumers: ['web'],
+    migratedFrom: ['web/lib/api/server/admin-landing-pages.ts'],
   },
   {
     id: 'native.landing-page-candidates.default',
