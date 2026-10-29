@@ -1,3 +1,4 @@
+import type { Response } from 'undici'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { dirname } from 'node:path'

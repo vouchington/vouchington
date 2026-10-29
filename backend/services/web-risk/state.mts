@@ -70,7 +70,9 @@ export function createWebRiskState({
     return urls.map((_, index) => ({ cleanCached: result[index] === '1', coolingDown }))
   }
 
-  async function setProviderCooldownFromResponse(response: Response): Promise<void> {
+  async function setProviderCooldownFromResponse(response: {
+    headers: Pick<Headers, 'get'>
+  }): Promise<void> {
     const retryAfterMs = parseRetryAfter(response.headers.get('retry-after'), now())
     const seconds = Math.max(1, Math.ceil((retryAfterMs ?? DEFAULT_COOLDOWN_SECONDS * 1000) / 1000))
     await setProviderCooldown(seconds)

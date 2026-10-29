@@ -1,6 +1,6 @@
 import onError from '@modules/on-error'
 import { UnrecoverableError, unrecoverable } from '@vouchington/queue-errors'
-import undici from 'undici'
+import undici, { type Response } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import {
   getSourceCacheHeaders,

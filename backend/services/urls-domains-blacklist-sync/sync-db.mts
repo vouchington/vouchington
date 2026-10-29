@@ -1,3 +1,4 @@
+import type { Response } from 'undici'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
