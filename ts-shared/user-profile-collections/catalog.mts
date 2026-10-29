@@ -40,10 +40,6 @@ export const PRIVATE_USER_PROFILE_COLLECTIONS = USER_PROFILE_COLLECTIONS.filter(
   collection => collection.access === 'owner',
 )
 
-export const PUBLIC_USER_PROFILE_COLLECTIONS = USER_PROFILE_COLLECTIONS.filter(
-  collection => collection.access === 'public',
-)
-
 export function getProfileCollectionRouteSuffix(collection: UserProfileCollection): string {
   return `${collection.routeSegment}/${collection.routeListType}`
 }

@@ -1,6 +1,6 @@
 import { buildMembershipBenefitCatalog as buildCatalog } from '@vouchington/memberships'
 
-export const MEMBERSHIP_BENEFIT_CATALOG_VERSION = 1
+const MEMBERSHIP_BENEFIT_CATALOG_VERSION = 1
 
 export type MembershipBenefitPlan = 'free' | 'plus' | 'pro'
 export type MembershipBenefitPlacement = 'card' | 'comparison'
@@ -164,7 +164,7 @@ export const membershipBenefitCatalog = buildMembershipBenefitCatalog({
   ],
 })
 
-export function buildMembershipBenefitCatalog(
+function buildMembershipBenefitCatalog(
   catalog: MembershipBenefitCatalog,
 ): MembershipBenefitCatalog {
   const { plans: _, ...publicCatalog } = buildCatalog(

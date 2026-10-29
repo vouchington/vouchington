@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   PRIVATE_USER_PROFILE_COLLECTIONS,
-  PUBLIC_USER_PROFILE_COLLECTIONS,
   USER_PROFILE_COLLECTIONS,
   getProfileCollectionRouteSuffix,
 } from './catalog.mts'
@@ -16,7 +15,11 @@ describe('@ts-shared/user-profile-collections catalog', () => {
   })
 
   it('keeps current public profile collection routes explicit', () => {
-    expect(PUBLIC_USER_PROFILE_COLLECTIONS.map(getProfileCollectionRouteSuffix)).toEqual([
+    expect(
+      USER_PROFILE_COLLECTIONS.filter(collection => collection.access === 'public').map(
+        getProfileCollectionRouteSuffix,
+      ),
+    ).toEqual([
       'topics/following',
       'users/following',
       'users/followers',

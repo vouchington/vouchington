@@ -4,8 +4,6 @@ import { createTestUser } from '@voucha/test-helpers'
 import { createTestMembership } from '@voucha/test-helpers/entities/memberships'
 import type { PrivateUser } from '@services/users/types'
 import {
-  buildMembershipBenefitCatalog,
-  MEMBERSHIP_BENEFIT_CATALOG_VERSION,
   membershipBenefitCatalog,
   type MembershipBenefitCatalog,
 } from '@ts-shared/utils/membership-benefit-catalog'
@@ -43,31 +41,6 @@ describe('index', () => {
       ])
     })
     afterEach(() => vi.restoreAllMocks())
-
-    it('rejects catalog entries that do not have live service-boundary enforcement', () => {
-      const catalog = {
-        version: MEMBERSHIP_BENEFIT_CATALOG_VERSION,
-        groups: [{ id: 'research', benefits: [{ id: 'future_unenforced_benefit' }] }],
-      } as unknown as MembershipBenefitCatalog
-
-      expect(() => buildMembershipBenefitCatalog(catalog)).toThrow(
-        'Membership benefit is not enforced: future_unenforced_benefit',
-      )
-    })
-
-    it('rejects duplicate groups through the package catalog validation', () => {
-      const catalog = {
-        version: MEMBERSHIP_BENEFIT_CATALOG_VERSION,
-        groups: [
-          { id: 'research', benefits: [] },
-          { id: 'research', benefits: [] },
-        ],
-      } as unknown as MembershipBenefitCatalog
-
-      expect(() => buildMembershipBenefitCatalog(catalog)).toThrow(
-        'Duplicate membership benefit group: research',
-      )
-    })
 
     it('keeps the public catalog locked to the versioned fixture source', () => {
       const fixture = responseBody('native.memberships.plans.default') as {

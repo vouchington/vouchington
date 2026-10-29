@@ -1,8 +1,9 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  deriveDataRequestStatus,
+  attachDerivedStatus,
   type DataRequestStatus,
+  type UserDataRequestRow,
 } from '@voucha/types/entities/account-data-request'
 
 export async function expireUserDataRequestForTest(requestId: string): Promise<void> {
@@ -30,22 +31,14 @@ export async function getUserDataRequestStatusAndS3KeyForTest(
 ): Promise<{ status: DataRequestStatus; s3_key: string | null } | null> {
   const { rows } = await read(
     sql`/* getUserDataRequestStatusAndS3KeyForTest */
-    SELECT processing_started_at, completed_at, failed_at, s3_key, expires_at
+    SELECT *
     FROM user_data_requests
     WHERE id = ${requestId}
   `,
   )
-  const row = rows[0] as
-    | {
-        processing_started_at: Date | null
-        completed_at: Date | null
-        failed_at: Date | null
-        s3_key: string | null
-        expires_at: Date | null
-      }
-    | undefined
+  const row = rows[0] as UserDataRequestRow | undefined
   if (!row) return null
-  return { status: deriveDataRequestStatus(row), s3_key: row.s3_key }
+  return { status: attachDerivedStatus(row).status, s3_key: row.s3_key }
 }
 
 export async function makeUserDataRequestRecoverableForTest(
