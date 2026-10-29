@@ -8,7 +8,7 @@ type WorkerQueuePolicy = {
 }
 
 // SQS consumers are I/O-capable queues, so that group is contained in the I/O group.
-export function validateWorkerQueuePolicy(value: unknown): WorkerQueuePolicy {
+function validateWorkerQueuePolicy(value: unknown): WorkerQueuePolicy {
   return validateQueuePolicy(value, ['cpuOnlyQueues', 'ioCapableQueues', 'sqsConsumerQueues'], {
     containedIn: { sqsConsumerQueues: 'ioCapableQueues' },
   }) as WorkerQueuePolicy

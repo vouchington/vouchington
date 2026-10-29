@@ -281,6 +281,14 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
     },
+    "backend/services/queue-monitoring": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/modules/worker-queue-inventory": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/queues/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,

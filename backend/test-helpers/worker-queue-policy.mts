@@ -1,5 +1,6 @@
 import {
-  policyManagedWorkerQueueNames,
+  allLiveWorkerQueueNames,
+  UNIVERSAL_WORKER_QUEUE_NAMES,
   workerQueuePolicySource,
 } from '@modules/worker-queue-inventory'
 
@@ -8,6 +9,9 @@ export function sqsConsumerQueueNames(): string[] {
 }
 
 export function policyManagedGlideQueueNames(): string[] {
-  const sqsQueueNames = new Set<string>(sqsConsumerQueueNames())
-  return policyManagedWorkerQueueNames().filter(queueName => !sqsQueueNames.has(queueName))
+  const nonGlideQueueNames = new Set<string>([
+    ...sqsConsumerQueueNames(),
+    ...UNIVERSAL_WORKER_QUEUE_NAMES,
+  ])
+  return allLiveWorkerQueueNames().filter(queueName => !nonGlideQueueNames.has(queueName))
 }

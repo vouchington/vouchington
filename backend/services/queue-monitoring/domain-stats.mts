@@ -1,20 +1,20 @@
 import type { Queue } from 'glide-mq'
 
-export const DOMAIN_STATS_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
-export type DomainStatsState = (typeof DOMAIN_STATS_STATES)[number]
+const DOMAIN_STATS_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
+type DomainStatsState = (typeof DOMAIN_STATS_STATES)[number]
 
 /**
  * A job count from a capped scan. `complete: false` means the scan stopped at the cap, so
  * `count` is a lower bound and a client shows it as `count+`.
  */
-export type DomainStateCount = { count: number; complete: boolean }
+type DomainStateCount = { count: number; complete: boolean }
 export type DomainStateCounts = Record<DomainStatsState, DomainStateCount>
 
 type StatsQueue = Pick<Queue, 'searchJobs' | 'getJobs'>
 
 /** Job names in the queue-wide read of a state, and whether that read reached its end. */
-export type SharedStateRead = { names: readonly string[]; complete: boolean }
-export type SharedStateReads = Record<'waiting' | 'active' | 'delayed', SharedStateRead>
+type SharedStateRead = { names: readonly string[]; complete: boolean }
+type SharedStateReads = Record<'waiting' | 'active' | 'delayed', SharedStateRead>
 
 const SHARED_STATES = ['waiting', 'active', 'delayed'] as const
 

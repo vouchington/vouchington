@@ -4,7 +4,7 @@ export { workerQueuePolicySource }
 
 export const UNIVERSAL_WORKER_QUEUE_NAMES = ['heartbeat'] as const
 
-export function policyManagedWorkerQueueNames(): string[] {
+function policyManagedWorkerQueueNames(): string[] {
   return [...workerQueuePolicySource.cpuOnlyQueues, ...workerQueuePolicySource.ioCapableQueues]
 }
 

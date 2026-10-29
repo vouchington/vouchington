@@ -1,4 +1,4 @@
-export type Backfill = {
+type Backfill = {
   id: string
   queue_name: string
   job_name: string
