@@ -7,8 +7,8 @@ remain separate from this classifier lifecycle.
 
 ## Decisions and subjects
 
-[Structured decisions](structured-decisions.md) owns Jev's Noul, Choice and Score primitives and
-the explicit TypeSafe or OpenRouter transport selection. The transport makes one attempt and never
+[Structured decisions](structured-decisions.md) owns the Noul, Choice and Score primitives and
+the explicit OpenAI, OpenRouter or TypeSafe transport selection. The transport makes one attempt and never
 switches providers. Noul answers independent questions; Choice assigns probabilities to criteria
 in one question; Score returns a native scalar decision. The
 classifier call layer binds Noul questions or Choice criteria to
@@ -30,9 +30,9 @@ every expected candidate must have exactly one valid answer.
 
 C6's completion transaction writes C7's durable request. C7 runs on the same shared lifecycle,
 adds only topics C6 did not apply, and never overrides existing relations or changes publication.
-Unlike C5, C6, C8 and C9 it is not a Jev classifier: it is a bounded tool-using agent on the
+Unlike C5, C6, C8 and C9 it is not a structured-decision classifier: it is a bounded tool-using agent on the
 model provider layer that answers with facts only (topic ids
-from its captured candidates), so it has no Jev model, probability or threshold.
+from its captured candidates), so it has no decision model, probability or threshold.
 
 ## Receipt, dispatch and recovery
 
@@ -104,7 +104,7 @@ owns completion-time permissions and effects.
 
 ## Provider and removal boundaries
 
-Fixed classifiers use Jev through the structured-decision boundary; the local C5 detector performs
+Fixed classifiers use OpenAI Decisions through the structured-decision boundary, with Jev retained as a per-classifier fallback; the local C5 detector performs
 no provider call. The retained focused OpenRouter agents are
 appeal resolution,
 dispute resolution,

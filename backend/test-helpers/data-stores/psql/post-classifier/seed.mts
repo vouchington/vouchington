@@ -1,5 +1,9 @@
 import { write } from '@data-stores/psql'
-import { POST_CLASSIFIER_REMOTE_QUESTIONS } from '@voucha/types/entities/post-classifier'
+import {
+  POST_CLASSIFIER_MODEL_NAME,
+  POST_CLASSIFIER_MODEL_PROVIDER,
+  POST_CLASSIFIER_REMOTE_QUESTIONS,
+} from '@voucha/types/entities/post-classifier'
 import sql from 'sql-template-strings'
 
 type CandidateRow = {
@@ -93,7 +97,7 @@ export async function replacePostClassifierThreshold(
 
 export async function rotatePostClassifierPrompt(
   nextPrompt: string,
-  modelName = 'typesafe/jev-1.13',
+  modelName: string = POST_CLASSIFIER_MODEL_NAME,
 ): Promise<void> {
   await write(sql`/* deactivatePostClassifierPromptForTest */
     UPDATE classifier_prompt_versions SET deactivated_at = CURRENT_TIMESTAMP
@@ -105,7 +109,7 @@ export async function rotatePostClassifierPrompt(
       classifier_id, prompt, model_name, model_provider,
       default_lower_threshold, default_upper_threshold, activated_at
     )
-    SELECT classifier.id, ${nextPrompt}, ${modelName}, 'openrouter',
+    SELECT classifier.id, ${nextPrompt}, ${modelName}, ${POST_CLASSIFIER_MODEL_PROVIDER}::classifier_model_providers,
       0.2500, 0.7500, CURRENT_TIMESTAMP
     FROM classifiers classifier WHERE classifier.slug = 'post-classifier'
   `)

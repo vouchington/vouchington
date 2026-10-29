@@ -1,28 +1,37 @@
 # Structured decisions
 
-`@modules/structured-decisions` is the provider-neutral boundary for Jev's native Noul, Choice,
-and Score decisions. Later classifier work owns candidate selection, persistence, thresholding, and
+`@modules/structured-decisions` is the provider-neutral boundary for native Noul, Choice, and Score
+decisions. OpenAI Decisions (`gpt-6-luna`) is the default provider because its usage draws on the
+credits included with our Codex plan; TypeSafe's Jev, reached through OpenRouter, stays a
+selectable fallback. Later classifier work owns candidate selection, persistence, thresholding, and
 side effects; this module owns only a strict remote call and normalized result.
 
 ```mermaid
 flowchart LR
   Caller[Classifier call layer] --> Client[Structured-decision client]
+  Client --> OpenAI[OpenAI Decisions]
   Client --> TypeSafe[TypeSafe System One]
   Client --> OpenRouter[OpenRouter Decisions]
-  TypeSafe --> Decode[Strict decoder]
+  OpenAI --> Decode[Strict decoder]
+  TypeSafe --> Decode
   OpenRouter --> Decode
   Decode --> Result[Typed results, native answers, and raw envelope]
 ```
 
-Callers explicitly select one transport, and each jev classifier entry point takes the same
-`{ provider, model }` shape as the model-backed agents: `provider` is the transport (`openrouter` or
-`typesafe`) and `model` is the jev model, both read from the classifier row, which stays their single
-source because its thresholds are calibrated per model (`StructuredDecisionModelSelection`). The
+Callers explicitly select one transport, and each classifier entry point takes the same
+`{ provider, model }` shape as the model-backed agents: `provider` is the transport (`openai`,
+`openrouter` or `typesafe`) and `model` is the decision model, both read from the classifier row,
+which stays their single source because its thresholds are calibrated per model
+(`StructuredDecisionModelSelection`). The fallback is therefore a configuration change, never a
+runtime failover: answering with Jev after an OpenAI failure would apply thresholds calibrated for
+another model. The seeded thresholds were calibrated against Jev and carry over until they are
+recalibrated for `gpt-6-luna`. OpenAI offers no flex tier for Decisions, so requests run at
+Standard; Decisions bills input only, so the ledger records its output tokens as zero. The
 client makes exactly one attempt per call and never
 retries; optional `beforeAttempt`/`onBilledResponse` hooks let a caller
 record billed usage and enforce a spend cap without this module ever importing a billing service
 itself. `@agents/_shared/structured-decision-billing-hooks.mts` owns that reusable composition for
-agent callers; `@agents/post-classifier` uses its fixed OpenRouter/Jev client factory in the
+agent callers; `@agents/post-classifier` uses its catalog's fixed provider and model in the
 post-classifier worker for remote candidate sets. Local-only post-classifier work makes no provider
 wired into a queue dispatch. Every returned answer must
 match one requested ID and primitive, use valid probabilities, and completely cover the request.

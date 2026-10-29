@@ -51,7 +51,7 @@ describe('0635-00-05-seed-story-clustering-classifier (real DB)', () => {
 
     const promptRows = await listLocalActiveClassifierPromptVersions(classifier!.id)
     expect(promptRows).toHaveLength(1)
-    expect(promptRows[0]!.model_name).toBe('typesafe/jev-1.13')
+    expect(promptRows[0]!.model_name).toBe('gpt-6-luna')
 
     const user = await getLocalTestUserRawByUsername('story-clustering-classifier')
     expect(user).not.toBeNull()

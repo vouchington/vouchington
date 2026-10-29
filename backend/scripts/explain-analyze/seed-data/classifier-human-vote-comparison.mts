@@ -79,7 +79,7 @@ export async function seedClassifierHumanVoteComparison(): Promise<void> {
        id, classifier_id, prompt, model_name, model_provider,
        default_lower_threshold, default_upper_threshold
      )
-     SELECT id, classifier_id, 'Classify the subject.', 'typesafe/jev-1.13', 'typesafe', 0.2500, 0.7500
+     SELECT id, classifier_id, 'Classify the subject.', 'gpt-6-luna', 'openai', 0.2500, 0.7500
      FROM unnest($1::uuid[], $2::uuid[]) AS row(id, classifier_id)
      ON CONFLICT DO NOTHING`,
     [prompts.map(([id]) => id), prompts.map(([, classifierId]) => classifierId)],

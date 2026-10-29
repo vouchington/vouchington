@@ -16,7 +16,7 @@ import {
   createPostClassifierExecutionFixture,
   initializePostClassifierExecutionTests,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
-import { createPostClassifierOpenRouterClient } from './classifier-client.mts'
+import { createPostClassifierClient } from './classifier-client.mts'
 import { executePostClassifierRun } from './classifier-execute.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { JEV_OPENROUTER_SELECTION } from '@voucha/test-helpers/agents/classifiers/fixtures'
@@ -42,7 +42,7 @@ function createBillingDependencies(
       throw new Error('local detector must not run')
     },
     createClient: hooks =>
-      createPostClassifierOpenRouterClient(
+      createPostClassifierClient(
         {
           postId: input.post.id,
           communityId: input.community.id,

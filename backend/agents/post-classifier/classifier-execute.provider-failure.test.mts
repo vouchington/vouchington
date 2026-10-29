@@ -11,7 +11,7 @@ import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-st
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { Response } from 'undici'
-import { createPostClassifierOpenRouterClient } from './classifier-client.mts'
+import { createPostClassifierClient } from './classifier-client.mts'
 import { executePostClassifierRun } from './classifier-execute.mts'
 import { JEV_OPENROUTER_SELECTION } from '@voucha/test-helpers/agents/classifiers/fixtures'
 
@@ -32,7 +32,7 @@ function dependencies(input: Fixture, fetch: StructuredDecisionFetch, apiKey = '
       detector_model_version: 'test-model',
     }),
     createClient: (hooks: { classifierRunId: string; beforeAttempt: () => Promise<void> }) =>
-      createPostClassifierOpenRouterClient(
+      createPostClassifierClient(
         {
           postId: input.post.id,
           communityId: input.community.id,

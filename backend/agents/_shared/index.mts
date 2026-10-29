@@ -1,7 +1,10 @@
 export { callAgentModel, type AgentModelCaller } from './call-agent-model.mts'
 export { callAgentToolTurn, type AgentToolTurnCaller } from './call-agent-tool-turn.mts'
 export { recordAgentResponseUsage } from './record-response-usage.mts'
-export { createStructuredDecisionBillingHooks } from './structured-decision-billing-hooks.mts'
+export {
+  createStructuredDecisionBillingHooks,
+  structuredDecisionUsageRecord,
+} from './structured-decision-billing-hooks.mts'
 export {
   QUEUED_BACKGROUND_RETRY_POLICY,
   SYNCHRONOUS_REQUEST_RETRY_POLICY,

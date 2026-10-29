@@ -1,30 +1,18 @@
 import { createStructuredDecisionBillingHooks } from '@agents/_shared'
 import {
   createStructuredDecisionClient,
+  structuredDecisionApiKey,
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
   type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
-import type { ClassifierModelProvider } from '@voucha/types'
 
 type StoryClusteringClientOptions = {
   /** The external-provider boundary is injectable only for deterministic tests. */
   fetch?: StructuredDecisionFetch
-  /** Tests may avoid process-wide credential mutation; production uses OPENROUTER_API_KEY. */
+  /** Tests may avoid process-wide credential mutation; production reads the transport's key. */
   apiKey?: string
-}
-
-/**
- * The seeded `story-clustering-classifier` is always `openrouter`. An operator reconfiguring it to
- * another provider gets no key source, so building the client throws and the run ends through the
- * shared client-unavailable path instead of spending or looping.
- */
-function resolveApiKey(provider: ClassifierModelProvider, options: StoryClusteringClientOptions) {
-  if (provider !== 'openrouter') {
-    throw new Error(`Story clustering classifier has no API key source for provider '${provider}'`)
-  }
-  return options.apiKey ?? process.env.OPENROUTER_API_KEY ?? ''
 }
 
 /**
@@ -45,7 +33,7 @@ export function createStoryClusteringClient(
   return createStructuredDecisionClient({
     transport: input.selection.provider,
     model: input.selection.model,
-    apiKey: resolveApiKey(input.selection.provider, options),
+    apiKey: structuredDecisionApiKey(input.selection.provider, options.apiKey),
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: 'story-clustering',

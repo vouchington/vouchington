@@ -13,7 +13,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE classifier_model_providers AS ENUM ('typesafe', 'openrouter');
+  CREATE TYPE classifier_model_providers AS ENUM ('typesafe', 'openrouter', 'openai');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

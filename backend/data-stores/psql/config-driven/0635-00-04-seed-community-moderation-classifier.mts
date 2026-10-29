@@ -1,8 +1,8 @@
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import { MODERATION_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 
-const MODEL_NAME = 'typesafe/jev-1.13'
-const MODEL_PROVIDER = 'openrouter'
+const MODEL_NAME = 'gpt-6-luna'
+const MODEL_PROVIDER = 'openai'
 const DEFAULT_LOWER_THRESHOLD = '0.2500'
 const DEFAULT_UPPER_THRESHOLD = '0.7500'
 

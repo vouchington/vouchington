@@ -51,7 +51,7 @@ describe('0635-00-04-seed-community-moderation-classifier (real DB)', () => {
       candidate_kind: 'community_prompt',
       stored_candidates: 0,
       active_prompts: 1,
-      model_provider: 'openrouter',
+      model_provider: 'openai',
       default_lower_threshold: '0.2500',
       default_upper_threshold: '0.7500',
       created_by_username: MODERATION_SYSTEM_USERNAME,

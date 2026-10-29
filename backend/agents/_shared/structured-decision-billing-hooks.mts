@@ -51,16 +51,8 @@ async function recordStructuredDecisionUsage(
   recordUsage: typeof recordAgentResponseUsage,
 ): Promise<void> {
   await recordUsage({
-    response: {
-      id: typeof response.id === 'string' ? response.id : undefined,
-      model: typeof response.model === 'string' ? response.model : undefined,
-      usage: response.usage,
-      service_tier: undefined,
-    },
+    ...structuredDecisionUsageRecord(response),
     agentSlug: subject.workload,
-    // The jev classifiers run TypeSafe's model, whichever transport reaches it.
-    provider: 'typesafe',
-    transport: response.transport,
     postId: subject.postId,
     communityId: subject.communityId,
     classifier: {
@@ -70,4 +62,23 @@ async function recordStructuredDecisionUsage(
     },
     createdAt: response.requestStartedAt,
   })
+}
+
+/**
+ * The ledger fields of one billed structured decision. OpenAI Decisions reports no service tier and
+ * bills input at the model's Standard rates but no output, so its output tokens record as zero.
+ * Jev is TypeSafe's model, whichever transport reaches it.
+ */
+export function structuredDecisionUsageRecord(response: StructuredDecisionBilledResponse) {
+  const openai = response.transport === 'openai'
+  return {
+    response: {
+      id: typeof response.id === 'string' ? response.id : undefined,
+      model: typeof response.model === 'string' ? response.model : undefined,
+      usage: openai ? { ...response.usage, output_tokens: 0 } : response.usage,
+      service_tier: openai ? ('default' as const) : undefined,
+    },
+    provider: openai ? 'openai' : 'typesafe',
+    transport: openai ? 'direct' : response.transport,
+  }
 }

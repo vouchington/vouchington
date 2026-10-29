@@ -25,9 +25,8 @@ export async function buildAutotaggerGoldenCases(
     import('../agents/autotagger/classifier-run-bindings.mts'),
   ])
   const configuration = await getActiveClassifierConfigurationBySlugFromPrimary('tagging')
-  if (configuration?.modelProvider !== 'openrouter') {
-    throw new Error('The tagging classifier must have an active OpenRouter configuration.')
-  }
+  // The eval asks OpenRouter/Jev, the retained fallback, with the active prompt and thresholds.
+  if (!configuration) throw new Error('The tagging classifier must have an active configuration.')
 
   return Promise.all(
     fixtures.map(async fixture => {
