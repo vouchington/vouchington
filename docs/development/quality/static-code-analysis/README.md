@@ -94,6 +94,8 @@ The root Vitest config installs a `configureVitest` plugin that rejects an effec
 
 ## Live policy inputs and finite controls
 
+The released ast-grep parity checker validates tracked local rules against the installed shared pack in required static CI. Configuration drift and copied pack rules fail before scanning application code; unit tests exercise the local rule-directory transformation with finite inputs.
+
 Article link validation runs in required static CI through the released checker and the application’s parser, link rewriter, and raw renderer. This keeps committed-content validation out of unit-test discovery while checking the HTML the application produces. Raw rendering is separate from entity enrichment so this check does not need live data services.
 
 The root repository-file policy command runs the released Docker image mirror and Trivy scan and

@@ -43,6 +43,9 @@ jobs:
       - name: Check article links
         run: pnpm run article-links:check
         timeout-minutes: 2
+      - name: Check ast-grep config parity
+        run: pnpm run ast-grep:config-check
+        timeout-minutes: 1
       - name: Typecheck scripts
         shell: bash
         run: pnpm exec tsc --noEmit --project tsconfig.json
