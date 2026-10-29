@@ -1,12 +1,7 @@
-import { afterAll, describe, expect, it } from 'vitest'
-import { onGracefulShutdown } from '../index.mts'
+import { describe, expect, it } from 'vitest'
 import { withCopyrightHistoryHoldScene } from '../../../test-helpers/copyright-history-hold-scene.mts'
 
 describe('monthly copyright history legal preservation', () => {
-  afterAll(async () => {
-    await onGracefulShutdown()
-  })
-
   it('uses case parties and the repeat account, excluding reviewer and unrelated holds', async () => {
     await withCopyrightHistoryHoldScene(async scene => {
       const lifecycle = () => scene.check('copyright_notice_lifecycle_changes')
