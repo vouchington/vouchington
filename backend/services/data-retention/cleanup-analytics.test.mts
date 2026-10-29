@@ -7,7 +7,8 @@ import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/p
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { flush as flushFirehose } from '../../data-stores/analytics/backend-firehose.mts'
 import * as firehoseProvider from '../../modules/aws/firehose.mts'
-import { cleanupAnalyticsLocalFiles, runDataRetentionCleanup } from './cleanup.mts'
+import { cleanupAnalyticsLocalFiles } from './cleanup-analytics-local.mts'
+import { runDataRetentionCleanup } from './cleanup.mts'
 
 describe('cleanupAnalyticsLocalFiles', () => {
   const originalAnalyticsBackend = process.env.ANALYTICS_BACKEND
