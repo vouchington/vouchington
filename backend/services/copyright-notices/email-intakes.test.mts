@@ -32,6 +32,37 @@ function readRecoverableResponseIds(responseId: string) {
 }
 
 describe('copyright email intake persistence', () => {
+  it('rolls back a failed evidence copy and retries the same SES message without copying on replay', async () => {
+    const sesMessageId = `ses-copy-retry-${crypto.randomUUID()}`
+    const rawStorageKey = `email/${sesMessageId}/original.eml`
+    const input = {
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey,
+      rawSha256: Buffer.alloc(32, 12),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    }
+    await expect(
+      createCopyrightEmailIntake({ ...input, preserveRawEvidence: async () => 'wrong-key' }),
+    ).rejects.toMatchObject({ status: 500 })
+
+    const created = await createCopyrightEmailIntake({
+      ...input,
+      preserveRawEvidence: async () => rawStorageKey,
+    })
+    expect(created.isNew).toBe(true)
+    await expect(
+      createCopyrightEmailIntake({
+        ...input,
+        preserveRawEvidence: async () => {
+          throw new Error('A replay must not copy evidence again')
+        },
+      }),
+    ).resolves.toEqual({ intake: created.intake, isNew: false })
+  })
+
   it('keeps the source and advisory recommendation private and replay-safe', async () => {
     const sesMessageId = `ses-copyright-${crypto.randomUUID()}`
     const input = {
