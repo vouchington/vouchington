@@ -12,6 +12,16 @@ CREATE TYPE content_creation_channels AS ENUM ('web', 'swift', 'dotnet', 'api', 
 COMMENT ON TYPE content_creation_channels IS 'Channel that created a row: a first-party client (web, swift, dotnet), a credentialed agent path (api, mcp), or a platform job (system).';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_reject_always()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION '%', COALESCE(TG_ARGV[0], TG_TABLE_NAME || ' rows are immutable')
+    USING ERRCODE = 'check_violation';
+END;
+$$;
+COMMENT ON FUNCTION fn_reject_always() IS 'Always rejects the statement; the optional first trigger argument replaces the default message.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE

@@ -217,16 +217,10 @@ CREATE TRIGGER trigger_notifications_capture_push_intent
 AFTER INSERT OR UPDATE OF id ON notifications
 FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();
 
-CREATE OR REPLACE FUNCTION fn_reject_notification_conversation_change() RETURNS TRIGGER AS $$
-BEGIN
-  RAISE EXCEPTION 'Notification conversation cannot change after creation';
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trigger_assert_notification_conversation_immutable
 BEFORE UPDATE OF conversation_id ON notifications
 FOR EACH ROW WHEN (OLD.conversation_id IS DISTINCT FROM NEW.conversation_id)
-EXECUTE FUNCTION fn_reject_notification_conversation_change();
+EXECUTE FUNCTION fn_reject_always('Notification conversation cannot change after creation');
 
 COMMENT ON TABLE web_push_endpoint_owners IS 'Global exact browser endpoint owner; SHA-256 digest serializes endpoint claims while exact endpoint comparison detects digest collisions.';
 COMMENT ON COLUMN web_push_endpoint_owners.endpoint_digest IS 'SHA-256 digest of endpoint, used as the global registry primary key.';
