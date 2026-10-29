@@ -14,8 +14,7 @@ describe('getUndispatchedJudgements', () => {
     const createdAt = Date.now()
     const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
       dispatch_min_age_seconds: 600,
-      dispatch_max_age_seconds: 601,
-      dispatch_batch_size: 2000,
+      dispatch_batch_size: 2,
     })
     const now = vi.spyOn(Date, 'now')
     try {

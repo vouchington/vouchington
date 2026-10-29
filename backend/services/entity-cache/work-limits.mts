@@ -16,6 +16,10 @@ export const entityCacheWorkMaxValues = {
   hostname_invalidation_retry_ceiling_seconds: 3600,
 }
 
+export const entityCacheWorkMinValues = {
+  hostname_invalidation_lease_seconds: 60,
+}
+
 export const entityCacheWorkConfig = new DynamicConfig({
   key: 'entity-cache-work-config',
   fieldTypes: {
@@ -28,8 +32,11 @@ export const entityCacheWorkConfig = new DynamicConfig({
 })
 
 export function getEntityCacheWorkLimit(field: keyof typeof defaultFields): number {
-  return getBoundedPositiveIntegerField(entityCacheWorkConfig, field, {
+  const value = getBoundedPositiveIntegerField(entityCacheWorkConfig, field, {
     defaultValue: defaultFields[field],
     maxValue: entityCacheWorkMaxValues[field],
   })
+  return field === 'hostname_invalidation_lease_seconds'
+    ? Math.max(entityCacheWorkMinValues.hostname_invalidation_lease_seconds, value)
+    : value
 }

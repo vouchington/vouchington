@@ -100,7 +100,8 @@ async function deferHostnameCacheInvalidations(items: ClaimedHostname[]): Promis
     UPDATE url_hostname_cache_invalidation_work_items work
     SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
         available_at = CURRENT_TIMESTAMP +
-          (LEAST($2::int, power(2, LEAST(attempt_count, 8))) * INTERVAL '1 second')
+          (LEAST($2::int, power(2, LEAST(attempt_count, CEIL(LOG(2, $2::numeric)))))
+            * INTERVAL '1 second')
     FROM failed, failed_ids
     WHERE work.url_hostname_id = ANY(failed_ids.ids)
       AND work.url_hostname_id = failed.url_hostname_id

@@ -4,7 +4,11 @@ import {
   openaiModerationWorkConfig,
   openaiModerationWorkMaxValues,
 } from '@services/openai-moderation/work-limits'
-import { entityCacheWorkConfig, entityCacheWorkMaxValues } from '@services/entity-cache/work-limits'
+import {
+  entityCacheWorkConfig,
+  entityCacheWorkMaxValues,
+  entityCacheWorkMinValues,
+} from '@services/entity-cache/work-limits'
 import {
   hostnameBlockingWorkConfig,
   hostnameBlockingWorkMaxValues,
@@ -38,6 +42,7 @@ export const backgroundWorkEntries2 = [
     config: entityCacheWorkConfig,
     label: 'Entity Cache',
     maxValues: entityCacheWorkMaxValues,
+    minValues: entityCacheWorkMinValues,
     descriptions: {
       bloom_backfill_batch_size: 'Bloom backfill batch size for entity cache processing.',
       delete_keys_per_batch: 'Delete keys per batch for entity cache processing.',
