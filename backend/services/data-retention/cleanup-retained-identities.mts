@@ -53,14 +53,27 @@ async function cleanupRetainedIdentityFamily(
           [family],
         )
       ).rows[0]
-  const { rows: candidates } = await query<{ id: string }>(
-    `/* listRetainedIdentityCleanupCandidates */
-    SELECT id FROM ${table}
-    WHERE ($1::uuid[] IS NOT NULL AND id = ANY($1::uuid[]))
-       OR ($1::uuid[] IS NULL AND ($2::uuid IS NULL OR id > $2::uuid))
-    ORDER BY id LIMIT $3`,
-    [identityIds ?? null, progress?.cursor_identity_id ?? null, pageSize + 1],
-  )
+  // Keep the resume predicate unconditional. A nullable-cursor OR makes a generic plan
+  // filter every earlier identity before reaching the first row of a later page.
+  const { rows: candidates } = identityIds
+    ? await query<{ id: string }>(
+        `/* listRetainedIdentityCleanupCandidates:scoped */
+         SELECT id FROM ${table} WHERE id = ANY($1::uuid[])
+         ORDER BY id LIMIT $2`,
+        [identityIds, pageSize + 1],
+      )
+    : progress?.cursor_identity_id
+      ? await query<{ id: string }>(
+          `/* listRetainedIdentityCleanupCandidates:resume */
+           SELECT id FROM ${table} WHERE id > $1::uuid
+           ORDER BY id LIMIT $2`,
+          [progress.cursor_identity_id, pageSize + 1],
+        )
+      : await query<{ id: string }>(
+          `/* listRetainedIdentityCleanupCandidates:first */
+           SELECT id FROM ${table} ORDER BY id LIMIT $1`,
+          [pageSize + 1],
+        )
   const page = candidates.slice(0, pageSize)
   const unreferenced = references
     .map(([owner, column]) => `NOT EXISTS (SELECT 1 FROM ${owner} WHERE ${column} = locked.id)`)
