@@ -29,15 +29,6 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/get-current-user'),
 )
 vi.mock(
-  import('@/components/domains/domain-compare-picker'),
-  () =>
-    ({
-      DomainComparePicker: ({ initialHostnames }: { initialHostnames: string[] }) => (
-        <div data-testid='selected-hostnames'>{initialHostnames.join(',')}</div>
-      ),
-    }) as unknown as typeof import('@/components/domains/domain-compare-picker'),
-)
-vi.mock(
   import('@/components/domains/domain-trust-badge'),
   () =>
     ({
@@ -113,7 +104,7 @@ describe('DomainsComparePage natural-key URL', () => {
     render(
       await DomainsComparePage({ searchParams: Promise.resolve({ hostnames: 'missing.example' }) }),
     )
-    expect(screen.getByTestId('selected-hostnames')).toBeEmptyDOMElement()
+    expect(screen.getByRole('button', { name: 'Compare hostnames' })).toBeDisabled()
     expect(screen.queryByText(hostname.hostname)).not.toBeInTheDocument()
     expect(redirect).not.toHaveBeenCalled()
   })
@@ -122,7 +113,7 @@ describe('DomainsComparePage natural-key URL', () => {
     render(
       await DomainsComparePage({ searchParams: Promise.resolve({ hostnames: hostname.hostname }) }),
     )
-    expect(screen.getByTestId('selected-hostnames')).toHaveTextContent(hostname.hostname)
+    expect(screen.getByRole('button', { name: `${hostname.hostname} ×` })).toBeInTheDocument()
   })
 
   it('redirects a resolvable hostname with noncanonical casing', async () => {
@@ -130,5 +121,19 @@ describe('DomainsComparePage natural-key URL', () => {
       DomainsComparePage({ searchParams: Promise.resolve({ hostnames: 'EXAMPLE.COM' }) }),
     ).rejects.toThrow('permanentRedirect:/domains/compare?hostnames=example.com')
     expect(compare).toHaveBeenCalledWith(['EXAMPLE.COM'])
+  })
+
+  it('resets picker chips when comparison navigation changes and returns', async () => {
+    const page = (hostnames: string) =>
+      DomainsComparePage({ searchParams: Promise.resolve({ hostnames }) })
+    const { rerender } = render(await page(hostname.hostname))
+    rerender(await page(secondHostname.hostname))
+    expect(screen.getByRole('button', { name: `${secondHostname.hostname} ×` })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: `${hostname.hostname} ×` })).not.toBeInTheDocument()
+    rerender(await page(hostname.hostname))
+    expect(screen.getByRole('button', { name: `${hostname.hostname} ×` })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: `${secondHostname.hostname} ×` }),
+    ).not.toBeInTheDocument()
   })
 })

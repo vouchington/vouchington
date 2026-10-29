@@ -33,6 +33,27 @@ describe('native copyright fixtures', () => {
     })
   })
 
+  it('publishes inspectable staydown matches and unavailable context to Swift and .NET consumers', () => {
+    const fixture = findFixture('web.copyright.staff-queue.default')
+    expect(fixture.consumers).toEqual(expect.arrayContaining(['swift-core', 'dotnet-core']))
+    expect(fixture.body).toMatchObject({
+      copyright_notices: expect.arrayContaining([
+        expect.objectContaining({
+          staydown_matches: [
+            expect.objectContaining({
+              uploaded_by_username: 'photo-author',
+              image_placement: {
+                placement_id: expect.any(String),
+                placement_revision: 1,
+              },
+            }),
+            expect.objectContaining({ uploaded_by_username: null, image_placement: null }),
+          ],
+        }),
+      ]),
+    })
+  })
+
   it('publishes notice search and account labels to Swift and .NET contract consumers', () => {
     const search = webCopyrightEmailIntakeApiFixtureCases.find(
       fixture => fixture.id === 'web.copyright.email-notice-association-search',

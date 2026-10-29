@@ -111,7 +111,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
         end_cursor: 'copyright-staff-next',
       },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/staff-queue-route.mts',
       'web/lib/api/client/copyright-notices.ts',

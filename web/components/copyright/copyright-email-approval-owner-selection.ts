@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
 import {
   approvalTargetFields,
@@ -16,8 +16,7 @@ import onError from '@/lib/on-error'
 
 export function useCopyrightEmailApprovalOwnerSelection(
   target: CopyrightEmailApprovalTarget,
-  draft: CopyrightEmailApprovalDraft,
-  onChange: (draft: CopyrightEmailApprovalDraft) => void,
+  onChange: Dispatch<SetStateAction<CopyrightEmailApprovalDraft>>,
 ) {
   const [ownerLabel, setOwnerLabel] = useState('')
   const [choices, setChoices] = useState<CopyrightNoticeResolvedTarget[]>([])
@@ -25,10 +24,12 @@ export function useCopyrightEmailApprovalOwnerSelection(
   const selectionRequest = useRef(0)
 
   function update(changes: Partial<CopyrightEmailApprovalTarget>) {
-    onChange({
-      ...draft,
-      targets: draft.targets.map(item => (item.id === target.id ? { ...item, ...changes } : item)),
-    })
+    onChange(current => ({
+      ...current,
+      targets: current.targets.map(item =>
+        item.id === target.id ? { ...item, ...changes } : item,
+      ),
+    }))
   }
 
   function selectOwner(

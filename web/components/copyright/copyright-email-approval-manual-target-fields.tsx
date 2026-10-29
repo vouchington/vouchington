@@ -1,5 +1,7 @@
 'use client'
 
+import type { Dispatch, SetStateAction } from 'react'
+
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,14 +34,13 @@ type Props = {
   target: CopyrightEmailApprovalTarget
   index: number
   draft: CopyrightEmailApprovalDraft
-  onChange: (draft: CopyrightEmailApprovalDraft) => void
+  onChange: Dispatch<SetStateAction<CopyrightEmailApprovalDraft>>
   error: string | undefined
 }
 
 export function CopyrightEmailApprovalManualTargetFields({
   target,
   index,
-  draft,
   onChange,
   error,
 }: Props) {
@@ -54,7 +55,7 @@ export function CopyrightEmailApprovalManualTargetFields({
     clearOwner,
     selectImage,
     resetSurface,
-  } = useCopyrightEmailApprovalOwnerSelection(target, draft, onChange)
+  } = useCopyrightEmailApprovalOwnerSelection(target, onChange)
 
   return (
     <div className='space-y-3'>

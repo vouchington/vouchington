@@ -3889,6 +3889,26 @@
                     "image_id": {
                       "type": "string"
                     },
+                    "image_placement": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "placement_id": {
+                              "type": "string"
+                            },
+                            "placement_revision": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["placement_id", "placement_revision"],
+                          "type": "object"
+                        }
+                      ]
+                    },
                     "match_kind": {
                       "enum": ["exact", "perceptual"],
                       "type": "string"
@@ -3901,16 +3921,28 @@
                     },
                     "uploaded_by_id": {
                       "type": "string"
+                    },
+                    "uploaded_by_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "hamming_distance",
                     "id",
                     "image_id",
+                    "image_placement",
                     "match_kind",
                     "matched_at",
                     "registered_image_id",
-                    "uploaded_by_id"
+                    "uploaded_by_id",
+                    "uploaded_by_username"
                   ],
                   "type": "object"
                 },

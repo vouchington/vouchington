@@ -2,9 +2,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
-import { recordCopyrightStaydownExactMatch } from '@services/copyright-notices/staydown-matches'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  fillCopyrightStaydownEntryHash,
+  recordCopyrightStaydownPerceptualMatches,
+  recordCopyrightStaydownExactMatch,
+} from '@services/copyright-notices/staydown-matches'
+import {
+  createTestUser,
+  insertTestImage,
+  setTestUserProfileImage,
+  getTestImageSurfacePlacements,
+  softDeleteUser,
+} from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { deliverInitialCopyrightWithhold } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   readCopyrightStaydownEntries,
@@ -26,6 +37,8 @@ type QueueCase = {
     image_id: string
     registered_image_id: string
     uploaded_by_id: string
+    uploaded_by_username: string | null
+    image_placement: { placement_id: string; placement_revision: number } | null
     match_kind: string
     hamming_distance: number
   }>
@@ -46,6 +59,8 @@ async function createMatchedCase() {
     .post(`/api/v1/copyright-form-intakes/${notice.intake.id}/reviews`)
     .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
     .expect(200)
+  // Acceptance records an intent; execute its normal delivery path before asserting withheld media.
+  await deliverInitialCopyrightWithhold(noticeId, {})
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   const imageId = aggregate!.targets[0]!.image_id
   const uploader = await createTestUser()
@@ -93,12 +108,53 @@ describe('copyright staydown staff review', () => {
           image_id: matched.imageId,
           registered_image_id: matched.imageId,
           uploaded_by_id: matched.uploader.id,
+          uploaded_by_username: matched.uploader.username,
+          image_placement: null,
           match_kind: 'exact',
           hamming_distance: 0,
         },
       ],
     })
     expect(Date.parse(queued!.waiting_since)).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('offers only live, permitted placements for inspecting matched image bytes', async () => {
+    const matched = await createMatchedCase()
+    const imageId = await insertTestImage(matched.uploader.id)
+    const hash = '01'.repeat(32)
+    await fillCopyrightStaydownEntryHash({ imageId: matched.imageId, perceptualHash: hash })
+    await recordCopyrightStaydownPerceptualMatches({ imageId, perceptualHash: hash })
+    await setTestUserProfileImage(matched.uploader.id, imageId)
+    const [placement] = await getTestImageSurfacePlacements({ userId: matched.uploader.id })
+
+    const queued = await readQueuedCase(matched.staff, matched.noticeId)
+    expect(queued?.staydown_matches.find(match => match.image_id === imageId)).toMatchObject({
+      uploaded_by_username: matched.uploader.username,
+      image_placement: {
+        placement_id: placement!.placement_id,
+        placement_revision: placement!.placement_revision,
+      },
+    })
+    // The original placement is withheld by the accepted case, so no preview may bypass it.
+    expect(
+      queued?.staydown_matches.find(match => match.image_id === matched.imageId)?.image_placement,
+    ).toBeNull()
+
+    await setTestUserProfileImage(matched.uploader.id, await insertTestImage(matched.uploader.id))
+    const afterReplacement = await readQueuedCase(matched.staff, matched.noticeId)
+    expect(
+      afterReplacement?.staydown_matches.find(match => match.image_id === imageId)?.image_placement,
+    ).toBeNull()
+
+    await setTestUserProfileImage(matched.uploader.id, imageId)
+    await softDeleteUser(matched.uploader.id)
+    const afterDeletion = await readQueuedCase(matched.staff, matched.noticeId)
+    expect(afterDeletion?.staydown_matches.find(match => match.image_id === imageId)).toMatchObject(
+      {
+        uploaded_by_username: null,
+        image_placement: null,
+      },
+    )
   })
 
   it('shows a bounded first page of pending matches and signals more work', async () => {

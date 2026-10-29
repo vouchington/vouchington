@@ -106,7 +106,8 @@ legal MCP share a bounded candidate search with opaque continuation; an empty re
 still have a continuation because the cursor advances over scanned candidates. The selected case
 ID remains an API fact used for association. Repeat-infringer account reads include a nullable
 username so staff presentation does not use a user ID as its label. Swift and .NET contract
-fixtures cover these response facts; native adoption and UI evidence are dependent work under
+fixtures also cover recognizable uploader and inspectable-image context for possible re-uploads,
+including unavailable or deleted content. Native adoption and UI evidence are dependent work under
 [clients #527](https://github.com/vouchington/vouchington-clients/issues/527).
 
 ## Classifier partition operations

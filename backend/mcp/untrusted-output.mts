@@ -46,6 +46,7 @@ const UNTRUSTED_FIELDS = new Set([
   'content_selectors',
   'work_description',
   'display_name',
+  'claimant_display_name',
   'contact',
   'statement',
   'category_text',

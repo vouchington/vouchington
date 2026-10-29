@@ -270,7 +270,7 @@
       "all": {
         "on": {
           "count": 23,
-          "list": 53000,
+          "list": 54000,
           "core": 16000,
           "output": 48000
         },
@@ -278,7 +278,7 @@
           "count": 8,
           "list": 30000,
           "core": 3000,
-          "output": 28000
+          "output": 29000
         }
       },
       "Reader": {
@@ -326,13 +326,13 @@
           "count": 8,
           "list": 30000,
           "core": 3000,
-          "output": 28000
+          "output": 29000
         }
       },
       "LegalWrite": {
         "on": {
           "count": 23,
-          "list": 53000,
+          "list": 54000,
           "core": 16000,
           "output": 48000
         },
@@ -340,7 +340,7 @@
           "count": 8,
           "list": 30000,
           "core": 3000,
-          "output": 28000
+          "output": 29000
         }
       }
     }

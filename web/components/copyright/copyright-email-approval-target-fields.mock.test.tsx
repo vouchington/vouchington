@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type SetStateAction } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
@@ -32,7 +32,7 @@ describe('CopyrightEmailApprovalTargetFields', () => {
         draft={draft({
           targets: [failedTarget('group-1'), failedTarget('group-2')],
         })}
-        onChange={vi.fn<(draft: CopyrightEmailApprovalDraft) => void>()}
+        onChange={vi.fn<(draft: SetStateAction<CopyrightEmailApprovalDraft>) => void>()}
       />,
     )
 

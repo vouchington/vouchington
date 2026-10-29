@@ -1,3 +1,4 @@
+import type { SetStateAction } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CopyrightEmailApprovalFields } from './copyright-email-approval-fields'
@@ -39,7 +40,7 @@ function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightE
 
 describe('CopyrightEmailApprovalFields', () => {
   it('edits statutory fields, removes a hosted image, and adds another', () => {
-    const onChange = vi.fn<(next: CopyrightEmailApprovalDraft) => void>()
+    const onChange = vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()
     const { rerender } = render(
       <CopyrightEmailApprovalFields
         draft={draft()}

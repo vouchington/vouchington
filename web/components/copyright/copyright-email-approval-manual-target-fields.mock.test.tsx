@@ -1,5 +1,5 @@
 import '@/test-helpers/i18n/mock-json-messages'
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactNode, type SetStateAction } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
@@ -86,7 +86,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
         target={target}
         index={0}
         draft={draft}
-        onChange={vi.fn<(next: CopyrightEmailApprovalDraft) => void>()}
+        onChange={vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()}
         error='URL lookup failed'
       />,
     )
@@ -96,7 +96,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
   })
 
   it('clears stale owner and image selections when staff changes surface', () => {
-    const onChange = vi.fn<(next: CopyrightEmailApprovalDraft) => void>()
+    const onChange = vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()
     render(
       <CopyrightEmailApprovalManualTargetFields
         target={target}
@@ -109,13 +109,15 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Image surface 1' }), {
       target: { value: 'community-banner-image' },
     })
-    expect(onChange.mock.lastCall?.[0].targets[0]).toMatchObject({
+    const change = onChange.mock.lastCall![0]
+    const updated = typeof change === 'function' ? change(draft) : change
+    expect(updated.targets[0]).toMatchObject({
       surface: 'community-banner-image',
       post_id: '',
       image_id: '',
       community_id: undefined,
     })
-    expect(onChange.mock.lastCall?.[0].targets[1]).toEqual(draft.targets[1])
+    expect(updated.targets[1]).toEqual(draft.targets[1])
   })
 
   it('resolves the selected owner URL and stores only its matching image', async () => {
@@ -150,7 +152,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
           index={0}
           draft={value}
           onChange={next => {
-            latest.current = next
+            latest.current = typeof next === 'function' ? next(latest.current) : next
             setValue(next)
           }}
           error='URL lookup failed'
@@ -195,7 +197,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
           index={0}
           draft={value}
           onChange={next => {
-            latest.current = next
+            latest.current = typeof next === 'function' ? next(latest.current) : next
             setValue(next)
           }}
           error={undefined}
@@ -235,7 +237,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
           index={0}
           draft={value}
           onChange={next => {
-            latest.current = next
+            latest.current = typeof next === 'function' ? next(latest.current) : next
             setValue(next)
           }}
           error={undefined}

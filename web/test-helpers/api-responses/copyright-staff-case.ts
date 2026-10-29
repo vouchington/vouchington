@@ -150,6 +150,8 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
         image_id: 'image-9',
         registered_image_id: 'image-1',
         uploaded_by_id: 'user-uploader',
+        uploaded_by_username: 'photographer',
+        image_placement: null,
         match_kind: 'perceptual',
         hamming_distance: 4,
         matched_at: '2026-10-05T00:00:00Z',

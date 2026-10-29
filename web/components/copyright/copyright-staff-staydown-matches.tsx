@@ -1,5 +1,8 @@
 'use client'
 
+import Link from 'next/link'
+import { userHref } from '@/lib/links/entity-href'
+import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { Button } from '@/components/ui/button'
 import { reviewCopyrightStaydownMatch } from '@/lib/api/client/copyright-staydown'
@@ -39,7 +42,36 @@ export function CopyrightStaffStaydownMatches({
           key={match.id}
         >
           <span>
-            {describeMatch(match)} A member uploaded this image <TimeAgo date={match.matched_at} />.
+            {describeMatch(match)}{' '}
+            {match.uploaded_by_username ? (
+              <Link
+                href={userHref({ id: match.uploaded_by_id, username: match.uploaded_by_username })}
+              >
+                @{match.uploaded_by_username}
+              </Link>
+            ) : (
+              'A former member'
+            )}{' '}
+            uploaded this image <TimeAgo date={match.matched_at} />.{' '}
+            {match.image_placement ? (
+              <a
+                href={getPlacementImageUrl(
+                  match.image_placement.placement_id,
+                  match.image_placement.placement_revision,
+                  match.image_id,
+                  { width: 1200 },
+                )}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='underline'
+              >
+                Inspect matching image
+              </a>
+            ) : (
+              <span className='text-muted-foreground'>
+                No inspectable published image is available.
+              </span>
+            )}
           </span>
           <Button
             data-pw='copyright-staff-staydown-matches-mark-reviewed'

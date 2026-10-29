@@ -43,6 +43,47 @@ describe('CopyrightNoticeTargetPicker', () => {
     expect(screen.queryByLabelText('Hosted image 1: first')).not.toBeInTheDocument()
   })
 
+  it('selects only the second picker when its image caption is clicked', async () => {
+    const first = makeTarget('first')
+    const second = makeTarget('second')
+    mockResolveTargets.mockResolvedValueOnce([first]).mockResolvedValueOnce([second])
+    const firstChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()
+    const secondChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()
+    render(
+      <>
+        <CopyrightNoticeTargetPicker
+          targets={[]}
+          onChange={firstChange}
+          initialUrl={first.target_url}
+          legend='First material'
+        />
+        <CopyrightNoticeTargetPicker
+          targets={[]}
+          onChange={secondChange}
+          initialUrl={second.target_url}
+          legend='Second material'
+        />
+      </>,
+    )
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'First material' })).getByRole('button', {
+        name: 'Find hosted material',
+      }),
+    )
+    await screen.findByText('first')
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Second material' })).getByRole('button', {
+        name: 'Find hosted material',
+      }),
+    )
+    const caption = await screen.findByText('second')
+    firstChange.mockClear()
+    secondChange.mockClear()
+    fireEvent.click(caption)
+    expect(secondChange).toHaveBeenCalledWith([second])
+    expect(firstChange).not.toHaveBeenCalled()
+  })
+
   it('clears resolved images when lookup fails', async () => {
     mockResolveTargets.mockRejectedValue(new Error('not found'))
     const onChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()

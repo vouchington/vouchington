@@ -43,7 +43,6 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
         ),
       ].slice(0, 10)
     : []
-
   const [currentUser, compareData] = await Promise.all([
     getCurrentUser(),
     hostnames.length > 0 ? getHostnamesCompare(hostnames) : Promise.resolve(null),
@@ -72,7 +71,6 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
         : '/domains/compare',
     )
   }
-
   const breadcrumbItems = buildBreadcrumbsForPath('/domains/compare', {
     isAuthenticated: !!currentUser,
     userRoles: currentUser?.roles ?? [],
@@ -101,7 +99,10 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        <DomainComparePicker initialHostnames={validDomains.map(hostname => hostname.hostname)} />
+        <DomainComparePicker
+          key={hostnamesParam}
+          initialHostnames={validDomains.map(hostname => hostname.hostname)}
+        />
 
         {validDomains.length === 0 ? (
           <div

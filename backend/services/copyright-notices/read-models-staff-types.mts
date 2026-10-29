@@ -128,6 +128,9 @@ export type CopyrightStaffCase = {
     image_id: string
     registered_image_id: string
     uploaded_by_id: string
+    uploaded_by_username: string | null
+    /** A policy-checked published placement for inspecting the matched image, when available. */
+    image_placement: { placement_id: string; placement_revision: number } | null
     match_kind: FiniteValue<'copyright_staydown_match_kinds'>
     /** Differing bits out of 64; 0 for an exact match. */
     hamming_distance: number

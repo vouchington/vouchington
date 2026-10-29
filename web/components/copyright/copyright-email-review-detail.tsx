@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type Dispatch, type SetStateAction } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { CopyrightEmailApprovalFields } from './copyright-email-approval-fields'
@@ -50,7 +50,7 @@ export function CopyrightEmailReviewDetail({
   manualFallbackReason: string
   replyEmail: string
   correspondenceDraft: CopyrightEmailCorrespondenceDraft
-  onChangeDraft: (draft: CopyrightEmailApprovalDraft) => void
+  onChangeDraft: Dispatch<SetStateAction<CopyrightEmailApprovalDraft>>
   onChangeRationale: (value: string) => void
   onChangeManualFallbackReason: (value: string) => void
   onChangeReplyEmail: (value: string) => void

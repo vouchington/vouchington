@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -38,6 +38,7 @@ export function CopyrightNoticeTargetPicker({
   lockUrl?: boolean
   surface?: CopyrightNoticeResolvedTarget['surface']
 }) {
+  const instanceId = useId()
   const [targetUrl, setTargetUrl] = useState(initialUrl)
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
   const [resolving, setResolving] = useState(false)
@@ -107,7 +108,7 @@ export function CopyrightNoticeTargetPicker({
             <p className='text-sm text-muted-foreground'>Hosted use: {targetUrl}</p>
           ) : (
             <LabeledInput
-              id='copyright-target-url'
+              id={`${instanceId}-copyright-target-url`}
               label='Hosted use URL'
               type='url'
               value={targetUrl}
@@ -141,7 +142,7 @@ export function CopyrightNoticeTargetPicker({
         <div className='space-y-2'>
           {resolvedTargets.map((target, index) => {
             const key = copyrightNoticeTargetKey(target)
-            const id = `copyright-notice-target-${index}`
+            const id = `${instanceId}-copyright-notice-target-${index}`
             const label = target.caption.trim() || `Image ${target.order_index + 1}`
             return (
               <Label

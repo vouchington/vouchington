@@ -1,5 +1,5 @@
 import '@/test-helpers/i18n/mock-json-messages'
-import { useState } from 'react'
+import { useState, type SetStateAction } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -147,7 +147,7 @@ describe('copyright approval manual owner paths', () => {
             index={0}
             draft={value}
             onChange={next => {
-              latest.current = next
+              latest.current = typeof next === 'function' ? next(latest.current) : next
               setValue(next)
             }}
             error={undefined}
@@ -190,7 +190,7 @@ describe('copyright approval manual owner paths', () => {
         target={initial.targets[0]!}
         index={0}
         draft={initial}
-        onChange={vi.fn<(next: CopyrightEmailApprovalDraft) => void>()}
+        onChange={vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()}
         error={undefined}
       />,
     )
@@ -221,7 +221,7 @@ describe('copyright approval manual owner paths', () => {
         target={initial.targets[0]!}
         index={0}
         draft={initial}
-        onChange={vi.fn<(next: CopyrightEmailApprovalDraft) => void>()}
+        onChange={vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()}
         error={undefined}
       />,
     )
@@ -254,7 +254,7 @@ describe('copyright approval manual owner paths', () => {
         target={initial.targets[0]!}
         index={0}
         draft={initial}
-        onChange={vi.fn<(next: CopyrightEmailApprovalDraft) => void>()}
+        onChange={vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()}
         error={undefined}
       />,
     )

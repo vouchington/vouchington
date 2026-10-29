@@ -1,5 +1,7 @@
 'use client'
 
+import type { Dispatch, SetStateAction } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,7 +24,7 @@ export function CopyrightEmailApprovalTargetFields({
   onChange,
 }: {
   draft: CopyrightEmailApprovalDraft
-  onChange: (draft: CopyrightEmailApprovalDraft) => void
+  onChange: Dispatch<SetStateAction<CopyrightEmailApprovalDraft>>
 }) {
   const { errors, resolved } = useCopyrightEmailApprovalTargetResolution(draft, onChange)
   const groups = uniqueTargetGroups(draft.targets)
