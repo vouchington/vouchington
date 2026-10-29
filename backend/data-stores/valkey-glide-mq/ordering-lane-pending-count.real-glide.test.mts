@@ -155,6 +155,10 @@ describe('native inbound ordering backlog count', () => {
     const ordering = `${prefix}:{${name}}:ordering`
     const meta = `${prefix}:{${name}}:meta`
     try {
+      await workerQueueCommandClient.hset(ordering, { [orderingKey]: '' })
+      await expect(getOrderingLanePendingCount(name, orderingKey, prefix)).rejects.toThrow(
+        'malformed',
+      )
       await workerQueueCommandClient.hset(ordering, { [orderingKey]: 'malformed' })
       await expect(getOrderingLanePendingCount(name, orderingKey, prefix)).rejects.toThrow(
         'malformed',

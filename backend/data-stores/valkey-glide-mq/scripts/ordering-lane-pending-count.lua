@@ -2,4 +2,4 @@
 -- integer shape and treats missing/inconsistent metadata as an admission failure.
 local allocated = redis.call('HGET', KEYS[1], ARGV[1])
 local done = redis.call('HGET', KEYS[2], ARGV[2])
-return { allocated or '', done or '' }
+return { allocated or '__missing__', done or '__missing__' }
