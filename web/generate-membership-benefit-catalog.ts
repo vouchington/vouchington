@@ -7,11 +7,12 @@ const artifactUrl = new URL(
 )
 
 /** Importing the producer validates every benefit before any output is written. */
-export function generateMembershipBenefitCatalog(output = artifactUrl, check = false): void {
+function generateMembershipBenefitCatalog(): void {
+  const check = process.argv.includes('--check')
   const content = `${JSON.stringify(membershipBenefitCatalog, null, 2)}\n`
   if (check) {
     if (
-      JSON.stringify(JSON.parse(readFileSync(output, 'utf8'))) !==
+      JSON.stringify(JSON.parse(readFileSync(artifactUrl, 'utf8'))) !==
       JSON.stringify(membershipBenefitCatalog)
     ) {
       throw new Error(
@@ -23,13 +24,12 @@ export function generateMembershipBenefitCatalog(output = artifactUrl, check = f
   // Type generation also loads Next config. Preserve formatter-owned bytes when
   // the freshly validated catalog has not changed, while replacing stale data.
   if (
-    existsSync(output) &&
-    JSON.stringify(JSON.parse(readFileSync(output, 'utf8'))) ===
+    existsSync(artifactUrl) &&
+    JSON.stringify(JSON.parse(readFileSync(artifactUrl, 'utf8'))) ===
       JSON.stringify(membershipBenefitCatalog)
   )
     return
-  writeFileSync(output, content)
+  writeFileSync(artifactUrl, content)
 }
 
-if (import.meta.main)
-  generateMembershipBenefitCatalog(artifactUrl, process.argv.includes('--check'))
+generateMembershipBenefitCatalog()
