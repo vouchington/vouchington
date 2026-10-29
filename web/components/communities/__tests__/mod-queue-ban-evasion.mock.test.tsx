@@ -153,7 +153,7 @@ describe('ModQueueBanEvasionInfo', () => {
     expect(screen.queryByText('@Banned Member')).not.toBeInTheDocument()
 
     rerender(<ModQueueBanEvasionInfo banEvasion={banEvasion} />)
-    expect(screen.getByRole('link', { name: '@banned-user' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'banned-user' })).toHaveAttribute(
       'href',
       '/user/banned-user',
     )

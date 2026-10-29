@@ -5,7 +5,7 @@ import type {
   ReviewDisputeStatus,
 } from '@ts-shared/utils/moderation-catalogs'
 
-export interface ReviewDisputeActorSummary {
+interface ReviewDisputeActorSummary {
   id: string
   username: string | null
   verified_display_name: string | null

@@ -7,6 +7,7 @@ import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import type {
   IntegrityPenaltiesState,
   IntegrityPenaltyRecord,
@@ -50,6 +51,28 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
           : t('extracted.flags.integrityPenalties.notAvailable_89f46cc0')
   const isActive = penalty.revoked_at === null
   const isReconciling = !!state.reconciliationRequired[penalty.id]
+  const deletedUserLabel = t('shared.user.deletedUser')
+  const userLabel = getUserLabel(
+    {
+      username: penalty.user_username,
+      display_account: { name: penalty.user_display_name },
+    },
+    deletedUserLabel,
+  )
+  const creatorLabel = getUserLabel(
+    {
+      username: penalty.creator_username,
+      display_account: { name: penalty.creator_display_name },
+    },
+    deletedUserLabel,
+  )
+  const revokerLabel = getUserLabel(
+    {
+      username: penalty.revoker_username,
+      display_account: { name: penalty.revoker_display_name },
+    },
+    deletedUserLabel,
+  )
   return (
     <tr
       className='align-top hover:bg-muted/50'
@@ -62,13 +85,10 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
             prefetch={false}
             className='text-link hover:underline'
           >
-            {penalty.user_display_name ?? penalty.user_username}
+            {userLabel}
           </Link>
         ) : (
-          <span>
-            {penalty.user_display_name ??
-              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
-          </span>
+          <span>{userLabel}</span>
         )}
       </td>
       <td className='px-4 py-4 text-sm text-foreground'>{knownReason}</td>
@@ -86,15 +106,12 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
               className='text-link hover:underline'
             >
               {t('extracted.flags.integrityPenalties.byActor_3cba3612', {
-                actor: penalty.creator_display_name ?? penalty.creator_username,
+                actor: creatorLabel,
               })}
             </Link>
           </div>
         ) : penalty.created_by_id ? (
-          <div>
-            {penalty.creator_display_name ??
-              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
-          </div>
+          <div>{creatorLabel}</div>
         ) : null}
       </td>
       <td className='px-4 py-4 text-sm'>
@@ -114,15 +131,12 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
                   className='text-link hover:underline'
                 >
                   {t('extracted.flags.integrityPenalties.byActor_3cba3612', {
-                    actor: penalty.revoker_display_name ?? penalty.revoker_username,
+                    actor: revokerLabel,
                   })}
                 </Link>
               </div>
             ) : penalty.revoked_by_id ? (
-              <div>
-                {penalty.revoker_display_name ??
-                  t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
-              </div>
+              <div>{revokerLabel}</div>
             ) : null}
           </div>
         ) : null}

@@ -13,6 +13,7 @@ import {
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 type IntegrityFlagActionDomain = 'report' | 'vote'
 
@@ -28,6 +29,10 @@ export function IntegrityFlagResolvedActor({
   resolverDisplayName: string | null
 }) {
   const t = useTranslations()
+  const actorLabel = getUserLabel(
+    { username: resolverUsername, display_account: { name: resolverDisplayName } },
+    t('shared.user.deletedUser'),
+  )
   return (
     <div className='text-xs text-muted-foreground'>
       <time dateTime={resolvedAt}>{formatUtcDate(resolvedAt)}</time>
@@ -38,14 +43,11 @@ export function IntegrityFlagResolvedActor({
           className='block font-mono text-link hover:underline'
         >
           {t('extracted.flags.integrityPenalties.byActor_3cba3612', {
-            actor: resolverDisplayName ?? resolverUsername,
+            actor: actorLabel,
           })}
         </Link>
       ) : resolvedById ? (
-        <span>
-          {resolverDisplayName ??
-            t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
-        </span>
+        <span>{actorLabel}</span>
       ) : null}
     </div>
   )

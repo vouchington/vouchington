@@ -20,6 +20,7 @@ import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatNumber, formatUtcDate } from '@ts-shared/utils/format'
 import type { DailyTypedCountDataPoint, ModerationAnalytics } from '@/types/moderation-analytics'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 const axisTick = { fontSize: 11 }
 const colors = ['#2563eb', '#16a34a', '#f97316', '#db2777', '#0891b2', '#7c3aed']
@@ -315,11 +316,13 @@ export default function ModerationAnalyticsDashboard({
                   return (
                     <tr key={moderator.actor_user_id}>
                       <td className='py-3 pr-4 font-medium'>
-                        {user?.verified_display_name ||
-                          user?.username ||
-                          t(
-                            'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
-                          )}
+                        {getUserLabel(
+                          {
+                            username: user?.username,
+                            display_account: { name: user?.verified_display_name },
+                          },
+                          t('shared.user.deletedUser'),
+                        )}
                       </td>
                       <td className='py-3 pr-4'>{formatNumber(moderator.total, uiLocale)}</td>
                       <td className='py-3 pr-4 text-muted-foreground'>

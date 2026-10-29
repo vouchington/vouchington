@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/client/topic-claims'
 import { getTopicClaimState, type TopicClaim } from '@/types/topic-claims'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface TopicClaimReviewProps {
   claim: TopicClaim
@@ -103,9 +104,13 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
               : claim.topic_name}
           </p>
           <p className='text-xs text-muted-foreground'>
-            {claim.claimant_display_name ??
-              claim.claimant_username ??
-              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}{' '}
+            {getUserLabel(
+              {
+                username: claim.claimant_username,
+                display_account: { name: claim.claimant_display_name },
+              },
+              t('shared.user.deletedUser'),
+            )}{' '}
             <TimeAgo date={claim.created_at} />
           </p>
           <p className='mt-1 text-xs'>

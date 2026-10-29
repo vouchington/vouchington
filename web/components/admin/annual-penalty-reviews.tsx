@@ -6,6 +6,7 @@ import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { userHref } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import {
   useAnnualPenaltyReviews,
   type DuePenalty,
@@ -89,62 +90,71 @@ function AnnualPenaltyReviewsInner<P extends DuePenalty>({
       ) : null}
       {due.length > 0 ? (
         <ul className='mt-4 divide-y'>
-          {due.map(penalty => (
-            <li
-              key={penalty.id}
-              className='flex flex-wrap items-center justify-between gap-3 py-3'
-            >
-              <div className='text-sm'>
-                {penalty.user_username ? (
-                  <Link
-                    href={userHref({ id: penalty.user_id, username: penalty.user_username })}
-                    className='text-link hover:underline'
-                  >
-                    {penalty.user_display_name ?? penalty.user_username}
-                  </Link>
-                ) : (
-                  <span>{t('extracted.communities.communityMemberRow.unknownUser_0bca6947')}</span>
-                )}
-                <span className='ml-3'>{penalty.reason}</span>
-                <div className='text-muted-foreground'>
-                  {t('moderation.penaltyReviews.due')}:{' '}
-                  <time dateTime={penalty.review_due_at}>
-                    {formatUtcDate(penalty.review_due_at, locale)}
-                  </time>
-                </div>
-              </div>
-              <div className='flex flex-wrap gap-2'>
-                <Button
-                  variant='outline'
-                  size='touchSm'
-                  disabled={pendingId !== null || loading}
-                  onClick={() => applyAction(penalty.id, review)}
-                >
-                  {t('moderation.penaltyReviews.confirm')}
-                </Button>
-                <Button
-                  variant={confirmingRevokeId === penalty.id ? 'destructive' : 'outline'}
-                  size='touchSm'
-                  disabled={pendingId !== null || loading}
-                  onClick={() => revokePenalty(penalty.id)}
-                >
-                  {t(
-                    confirmingRevokeId === penalty.id
-                      ? 'extracted.flags.integrityPenalties.confirmRevoke_3ec93b2c'
-                      : 'extracted.flags.integrityPenalties.revoke_ec2f3e37',
+          {due.map(penalty => {
+            const userLabel = getUserLabel(
+              {
+                username: penalty.user_username,
+                display_account: { name: penalty.user_display_name },
+              },
+              t('shared.user.deletedUser'),
+            )
+            return (
+              <li
+                key={penalty.id}
+                className='flex flex-wrap items-center justify-between gap-3 py-3'
+              >
+                <div className='text-sm'>
+                  {penalty.user_username ? (
+                    <Link
+                      href={userHref({ id: penalty.user_id, username: penalty.user_username })}
+                      className='text-link hover:underline'
+                    >
+                      {userLabel}
+                    </Link>
+                  ) : (
+                    <span>{userLabel}</span>
                   )}
-                </Button>
-              </div>
-              {actionErrorId === penalty.id ? (
-                <p
-                  role='alert'
-                  className='text-sm text-destructive'
-                >
-                  {t('extracted.flags.integrityPenalties.resultUncertain_e24ec07b')}
-                </p>
-              ) : null}
-            </li>
-          ))}
+                  <span className='ml-3'>{penalty.reason}</span>
+                  <div className='text-muted-foreground'>
+                    {t('moderation.penaltyReviews.due')}:{' '}
+                    <time dateTime={penalty.review_due_at}>
+                      {formatUtcDate(penalty.review_due_at, locale)}
+                    </time>
+                  </div>
+                </div>
+                <div className='flex flex-wrap gap-2'>
+                  <Button
+                    variant='outline'
+                    size='touchSm'
+                    disabled={pendingId !== null || loading}
+                    onClick={() => applyAction(penalty.id, review)}
+                  >
+                    {t('moderation.penaltyReviews.confirm')}
+                  </Button>
+                  <Button
+                    variant={confirmingRevokeId === penalty.id ? 'destructive' : 'outline'}
+                    size='touchSm'
+                    disabled={pendingId !== null || loading}
+                    onClick={() => revokePenalty(penalty.id)}
+                  >
+                    {t(
+                      confirmingRevokeId === penalty.id
+                        ? 'extracted.flags.integrityPenalties.confirmRevoke_3ec93b2c'
+                        : 'extracted.flags.integrityPenalties.revoke_ec2f3e37',
+                    )}
+                  </Button>
+                </div>
+                {actionErrorId === penalty.id ? (
+                  <p
+                    role='alert'
+                    className='text-sm text-destructive'
+                  >
+                    {t('extracted.flags.integrityPenalties.resultUncertain_e24ec07b')}
+                  </p>
+                ) : null}
+              </li>
+            )
+          })}
         </ul>
       ) : null}
       {nextCursor ? (

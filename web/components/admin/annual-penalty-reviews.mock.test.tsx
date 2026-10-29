@@ -85,9 +85,7 @@ describe('AnnualPenaltyReviews', () => {
         reconcile={reconcile}
       />,
     )
-    expect(
-      screen.getByText('extracted.communities.communityMemberRow.unknownUser_0bca6947'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('shared.user.deletedUser')).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
     expect(getDue).not.toHaveBeenCalled()

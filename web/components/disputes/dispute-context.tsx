@@ -4,11 +4,8 @@ import Link from 'next/link'
 import { PostContentText } from '@/components/posts/post-content-text'
 import { reviewHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import type { ReviewDispute, ReviewDisputeActorSummary } from '@/types/review-disputes'
-
-function actorLabel(actor: ReviewDisputeActorSummary, deletedUser: string): string {
-  return actor.verified_display_name ?? actor.username ?? deletedUser
-}
+import type { ReviewDispute } from '@/types/review-disputes'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
   const t = useTranslations()
@@ -61,9 +58,12 @@ export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
       ) : null}
       {dispute.staff_context ? (
         <p>
-          {actorLabel(
-            dispute.staff_context.disputant,
-            t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
+          {getUserLabel(
+            {
+              username: dispute.staff_context.disputant.username,
+              display_account: { name: dispute.staff_context.disputant.verified_display_name },
+            },
+            t('shared.user.deletedUser'),
           )}
         </p>
       ) : null}

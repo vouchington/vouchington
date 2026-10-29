@@ -14,6 +14,7 @@ import {
 import { panelReducer } from './user-mod-notes-helpers'
 import { UserModContextSummary } from './user-mod-context-summary'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface UserModNotesPanelProps {
   targetUserId: string
@@ -120,9 +121,13 @@ export function UserModNotesPanel({ targetUserId, communityId }: UserModNotesPan
                   <p className='whitespace-pre-wrap break-words'>{note.body}</p>
                   <div className='flex items-center justify-between text-muted-foreground'>
                     <span>
-                      {note.author_display_name ??
-                        note.author_username ??
-                        t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+                      {getUserLabel(
+                        {
+                          username: note.author_username,
+                          display_account: { name: note.author_display_name },
+                        },
+                        t('shared.user.deletedUser'),
+                      )}
                     </span>
                     <div className='flex items-center gap-2'>
                       <span>
