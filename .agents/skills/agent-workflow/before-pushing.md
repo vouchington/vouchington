@@ -12,6 +12,16 @@
   will run for the diff with `pnpm exec no-mistakes impacted-checks --generic-only --changed-files
   <manifest>` ([planning § Static gate planning](../planning/references/impact-discovery.md#static-gate-planning)).
 - Run the generated-artifact checks that `impacted-checks` lists (catalogs, fixtures, snapshots, selector maps) and regenerate whatever they report stale. CI only catches these after a push.
+- When local impact selection fails, diagnose the cause while keeping selection unknown. For invocation failures,
+  native CLI reports with `--format json` write an `error` object: exit `75` means `lock_busy` or `lock_timeout`, while exit
+  `124` means `deadline`; `error.phase` identifies the interrupted phase. Read the current holder
+  without waiting with `pnpm exec no-mistakes lock status --format json` (PID, working directory,
+  command, and age when known). Preserve the failed command's stdout, stderr, and exit status; do
+  not stop another session's holder or change the configured budgets. The package-owned
+  `planning-impact` wrapper uses aggregate failure status and per-report diagnostics instead of
+  native CLI exit codes, so inspect those artifacts rather than assuming its status has the same
+  meaning. Keep impact selection incomplete until the required reports succeed; an invocation
+  failure is not a clean result. See the upstream [invocation contract](https://github.com/jonathanong/no-mistakes/blob/main/packages/no-mistakes/invocation-types.d.ts).
 - A change to paid live-provider code (`backend/agents/**` model files, `backend/modules/` provider clients, `backend/services/browser-crawl/**`) dispatches the matching provider and cites the run in the PR: `gh workflow run tests-backend-live-providers.yml --ref <branch> -f provider=<x>`. PR CI no longer runs those checks ([why](../../../docs/development/tests.md#live-provider-smoke-checks)).
 - Changes to manifests also follow [package metadata](../package-json-checklist/SKILL.md).
   Changes to guards follow [static analysis](../static-analysis-checklist/SKILL.md).
