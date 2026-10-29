@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type pg from 'pg'
 import { beginTransaction, writePool } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 /** Hold the live intake while erasure requests it, then write through the real receipt guard. */
@@ -47,13 +48,26 @@ export async function writeCopyrightEmailDuringErasure<T>(
       erasure = erase()
       void erasure.catch(err => erasureAtIntake.reject(err))
       await erasureAtIntake.promise
+      const recommendationId = uuidv7()
+      const inputSha256 = Buffer.alloc(32, 7)
+      const promptVersion = randomUUID()
+      await writer(sql`/* writeCopyrightEmailDuringErasure:identity */
+        INSERT INTO copyright_notice_email_intake_recommendation_identities
+          (id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
+        VALUES (${recommendationId}, ${intakeId}, ${inputSha256}, ${promptVersion})`)
       const { rows } = await writer<{ id: string }>(sql`
         /* writeCopyrightEmailDuringErasure */
         INSERT INTO copyright_notice_email_intake_recommendations
-          (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
+          (id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
            structured_output_ciphertext)
-        VALUES (${intakeId}, ${Buffer.alloc(32, 7)}, ${randomUUID()},
+        VALUES (${recommendationId}, ${intakeId}, ${inputSha256}, ${promptVersion},
           'lock-order-test', 'v1:lock-order-test') RETURNING id`)
+      await writer(sql`/* writeCopyrightEmailDuringErasure:owner */
+        UPDATE copyright_notice_email_intakes SET
+          current_recommendation_identity_id = ${recommendationId},
+          current_recommendation_output_ciphertext = 'v1:lock-order-test',
+          recommendation_completed_at = CURRENT_TIMESTAMP
+        WHERE id = ${intakeId}`)
       await writer.commit()
       return { erasure: await erasure, recommendationId: rows[0]!.id }
     } finally {

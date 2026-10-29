@@ -60,7 +60,7 @@ export async function releaseTestOpenPreservationHold(
   if (result.rowCount !== 1) throw new Error('Open preservation hold missing')
 }
 
-/** Two account rationales straddling a six-year cutoff; both have one older terminal review. */
+/** Two independent attempted-decision rationales straddling a six-year cutoff. */
 export async function insertTestRationaleAgePair(
   query: TransactionQuery,
   accountUserId: string,
@@ -70,13 +70,6 @@ export async function insertTestRationaleAgePair(
 ): Promise<readonly [string, string]> {
   const olderId = uuidv7({ msecs: olderAt.getTime() })
   const youngerId = uuidv7({ msecs: youngerAt.getTime() })
-  await query(
-    `/* insertTestRationaleAgePair:review */
-     INSERT INTO copyright_repeat_infringer_reviews
-       (account_user_id, opened_at, outcome, outcome_at, rationale_ciphertext)
-     VALUES ($1::uuid, $2::timestamptz, 'reinstatement', $2::timestamptz, 'synthetic-review')`,
-    [accountUserId, olderAt],
-  )
   await query(
     `/* insertTestRationaleAgePair:rationales */
      INSERT INTO copyright_decision_rationales

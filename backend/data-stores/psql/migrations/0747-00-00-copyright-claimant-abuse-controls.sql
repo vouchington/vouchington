@@ -14,7 +14,7 @@ CREATE TABLE copyright_claimant_misuse_events (
     'restriction_reversed_by_appeal'
   )),
   copyright_notice_submission_id uuid CONSTRAINT uq_copyright_claimant_misuse_events__notice_submission_id UNIQUE CONSTRAINT fk_copyright_claimant_misuse_events__notice_submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_submission_assessment_id uuid CONSTRAINT uq_copyri_claima_misuse_events__notice_submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_claimant_misuse_events__notice_submission_assessment REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
+  copyright_notice_submission_assessment_id uuid CONSTRAINT uq_copyri_claima_misuse_events__notice_submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_claimant_misuse_events__notice_submission_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
   copyright_restriction_id uuid UNIQUE REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   occurred_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

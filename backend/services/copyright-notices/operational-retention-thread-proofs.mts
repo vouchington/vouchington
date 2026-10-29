@@ -24,7 +24,6 @@ export type ThreadProofCursor = {
   cursor_blocker_phase: BlockerPhase | null
   cursor_blocker_child_id: string | null
   cursor_blocker_assessment_id: string | null
-  cursor_blocker_territorial_decision_id: string | null
   cursor_blocker_generation: string | null
 }
 
@@ -56,7 +55,6 @@ export async function checkCopyrightThreadProofPage(
     phase: cursor.cursor_blocker_phase,
     childId: cursor.cursor_blocker_child_id,
     assessmentId: cursor.cursor_blocker_assessment_id,
-    territorialDecisionId: cursor.cursor_blocker_territorial_decision_id,
     generation: cursor.cursor_blocker_generation,
   })
   if (blocker.blocked) {

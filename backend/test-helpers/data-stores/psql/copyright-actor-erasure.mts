@@ -9,7 +9,12 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   recipientUserId: null
   recipientUserErasedAt: Date
 }> {
-  const { rows } = await write<{ actor_user_id: string; notice_id: string; submission_id: string }>(
+  const { rows } = await write<{
+    actor_user_id: string
+    notice_id: string
+    submission_id: string
+    assessment_id: string
+  }>(
     sql`/* createCopyrightErasureAuditFixture */
       WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id),
       notice AS (
@@ -18,9 +23,17 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
       ), submission AS (
         INSERT INTO copyright_notice_submissions (copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
         SELECT id, 'notice', CURRENT_TIMESTAMP, 'staff', ${`body-${randomUUID()}`} FROM notice RETURNING id
+      ), assessment_identity AS (
+        INSERT INTO copyright_notice_submission_assessment_identities (
+          copyright_notice_id, copyright_notice_submission_id
+        ) SELECT notice.id, submission.id FROM notice CROSS JOIN submission
+        RETURNING id, copyright_notice_submission_id
       ), assessment AS (
-        INSERT INTO copyright_notice_submission_assessments (copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant)
-        SELECT submission.id, CURRENT_TIMESTAMP, actor.id, true FROM submission CROSS JOIN actor
+        INSERT INTO copyright_notice_submission_assessments (
+          id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+        ) SELECT assessment_identity.id, assessment_identity.copyright_notice_submission_id,
+          CURRENT_TIMESTAMP, actor.id, true FROM assessment_identity CROSS JOIN actor
+        RETURNING id, copyright_notice_submission_id
       ), correspondence AS (
         INSERT INTO copyright_notice_correspondence_messages (copyright_notice_id, direction, composition_kind, correspondence_kind, body_ciphertext, drafted_by_id)
         SELECT notice.id, 'outbound', 'staff', 'status_update', ${`message-${randomUUID()}`}, actor.id FROM notice CROSS JOIN actor
@@ -36,9 +49,18 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
         ) SELECT notice.id, actor.id, 'poster', 'poster_restriction_notice', 'in_app',
           ${`copyright-erasure-delivery-${randomUUID()}`} FROM notice CROSS JOIN actor
       )
-      SELECT actor.id AS actor_user_id, notice.id AS notice_id, submission.id AS submission_id FROM actor CROSS JOIN notice CROSS JOIN submission`,
+      SELECT actor.id AS actor_user_id, notice.id AS notice_id,
+        submission.id AS submission_id, assessment.id AS assessment_id
+      FROM actor CROSS JOIN notice CROSS JOIN submission CROSS JOIN assessment`,
   )
   const fixture = rows[0]!
+  await write(sql`/* createCopyrightErasureAuditFixture:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${fixture.assessment_id},
+      current_assessment_is_substantially_compliant = true,
+      current_assessed_at = CURRENT_TIMESTAMP, current_assessed_by_id = ${fixture.actor_user_id}
+    WHERE id = ${fixture.submission_id}
+  `)
   await write(
     sql`/* eraseCopyrightAuditActor */ DELETE FROM users WHERE id = ${fixture.actor_user_id}`,
   )

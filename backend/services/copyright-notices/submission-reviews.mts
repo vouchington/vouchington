@@ -295,16 +295,29 @@ export async function reviewCopyrightCounterNotice(input: {
   assert(submission.jurisdiction === 'us_dmca', 422, 'Only US DMCA counter-notices are supported')
   const reviewedAt = new Date()
   const aiAssisted = await copyrightSubmissionHasGuidance(input.submissionId, transaction)
+  const { rows: identityRows } = await transaction<{ id: string }>(sql`
+    /* reviewCopyrightCounterNotice:assessmentIdentity */
+    INSERT INTO copyright_notice_submission_assessment_identities (
+      copyright_notice_id, copyright_notice_submission_id
+    ) VALUES (${submission.copyright_notice_id}, ${input.submissionId}) RETURNING id
+  `)
   const { rows: assessmentRows } = await transaction<{
     id: string
   }>(sql`/* reviewCopyrightCounterNotice:assessment */
     INSERT INTO copyright_notice_submission_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
-    ) VALUES (${input.submissionId}, ${reviewedAt}, ${input.currentUser.id}, ${input.is_accepted})
+      id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+    ) VALUES (${identityRows[0]!.id}, ${input.submissionId}, ${reviewedAt}, ${input.currentUser.id}, ${input.is_accepted})
     RETURNING id
   `)
   const assessment = assessmentRows[0]
   assert(assessment, 500, 'Counter-notice assessment was not recorded')
+  await transaction(sql`/* reviewCopyrightCounterNotice:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${assessment.id},
+      current_assessment_is_substantially_compliant = ${input.is_accepted},
+      current_assessed_at = ${reviewedAt}, current_assessed_by_id = ${input.currentUser.id}
+    WHERE id = ${input.submissionId}
+  `)
   let deadlineId: string | null = null
   if (input.is_accepted) {
     await transaction(sql`/* reviewCopyrightCounterNotice:targets */

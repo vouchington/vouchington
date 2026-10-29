@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import type {
   CopyrightParticipantNoticeDetail,
@@ -10,7 +10,6 @@ import type {
 } from './read-models-notice-types.mts'
 import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
 import { selectEuParticipantSettlements } from './read-models-eu-settlements.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { territorialLabels } from './territorial-labels.mts'
 
 type SubmissionRow = CopyrightParticipantNoticeDetail['submissions'][number]
@@ -35,24 +34,23 @@ export async function getEuParticipantNoticeDetail(
   `)
   const notice = notices[0]
   if (!notice) return null
-  const decisionSql = sql`/* getEuParticipantNoticeDetail:decision */
-    SELECT decision.id, decision.outcome, decision.decided_at,
-      (SELECT MIN(redress_decision.decided_at)
-       FROM copyright_territorial_redress_requests request
-       JOIN copyright_territorial_redress_decisions redress_decision
-         ON redress_decision.copyright_territorial_redress_request_id = request.id
-       WHERE request.copyright_territorial_decision_id = decision.id
-         AND redress_decision.staff_disposition = 'revoke'
-         AND decision.outcome = 'no_action') AS reopened_at
-    FROM copyright_territorial_decisions decision
-    WHERE decision.copyright_notice_id = ${noticeId} AND decision.jurisdiction = 'eu_dsa' AND `
-  decisionSql.append(territorialDecisionIsLiveSql())
   const { rows: decisions } = await transaction<{
     id: string
     outcome: 'restrict' | 'no_action'
     decided_at: Date
     reopened_at: Date | null
-  }>(decisionSql)
+  }>(sql`/* getEuParticipantNoticeDetail:decision */
+    SELECT notice.current_territorial_decision_identity_id AS id,
+      notice.territorial_decision_outcome AS outcome,
+      notice.territorial_decided_at AS decided_at,
+      (SELECT MIN(request.decided_at)
+       FROM copyright_territorial_redress_requests request
+       WHERE request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
+         AND request.staff_disposition = 'revoke'
+         AND notice.territorial_decision_outcome = 'no_action') AS reopened_at
+    FROM copyright_notices notice
+    WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'
+      AND notice.current_territorial_decision_identity_id IS NOT NULL`)
   const decision = decisions[0]
   const targetSql = sql`/* getEuParticipantNoticeDetail:respondableTargets */
     SELECT DISTINCT target.id FROM copyright_notice_targets target CROSS JOIN LATERAL `
@@ -86,11 +84,9 @@ export async function getEuParticipantNoticeDetail(
         redress_decided_at: Date | null
       }>(sql`/* getEuParticipantNoticeDetail:ownComplaint */
         SELECT request.id, request.idempotency_key, request.filed_by, request.received_at,
-          request.explanation_ciphertext, redress_decision.staff_disposition,
-          redress_decision.rationale_ciphertext, redress_decision.decided_at AS redress_decided_at
+          request.explanation_ciphertext, request.staff_disposition,
+          request.rationale_ciphertext, request.decided_at AS redress_decided_at
         FROM copyright_territorial_redress_requests request
-        LEFT JOIN copyright_territorial_redress_decisions redress_decision
-          ON redress_decision.copyright_territorial_redress_request_id = request.id
         WHERE request.copyright_territorial_decision_id = ${decision.id}
           AND request.submitted_by_id = ${currentUser.id}
         ORDER BY request.id DESC LIMIT 1

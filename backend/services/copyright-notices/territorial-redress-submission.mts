@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -38,6 +38,7 @@ export async function submitTerritorialCopyrightRedress(
     id: string
     decided_at: Date
     outcome: 'restrict' | 'no_action'
+    authorizing_assessment_identity_id: string | null
     requester_user_id: string | null
   }>(selectTerritorialRedressParent(jurisdiction, noticeId))
   const parent = parents[0]
@@ -98,6 +99,8 @@ export async function submitTerritorialCopyrightRedress(
       jurisdiction,
       noticeId,
       parent.id,
+      parent.outcome,
+      parent.authorizing_assessment_identity_id,
       actor.id,
       notifier ? 'notifier' : poster ? 'poster' : 'reviewer',
       idempotencyKey,

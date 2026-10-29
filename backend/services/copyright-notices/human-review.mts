@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -87,18 +88,15 @@ export async function completeCopyrightMandatoryHumanReview(
     transaction,
   )
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
-    WITH change_id AS (SELECT uuidv7() AS id), inserted_change AS (
-      INSERT INTO copyright_notice_lifecycle_changes (id, copyright_notice_id, change_type, changed_by_id,
-        copyright_restriction_id, review_action, review_rationale_id)
-      SELECT id, ${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
-        ${input.restrictionId}, ${input.action}, id FROM change_id
-      RETURNING id, copyright_notice_id
-    )
-    INSERT INTO copyright_notice_lifecycle_change_rationales (id, copyright_notice_id, review_rationale_ciphertext)
-    SELECT id, copyright_notice_id, ${encryptSecret(
-      input.rationale,
-      `copyright-restriction-review:${input.restrictionId}`,
-    )} FROM inserted_change
+    INSERT INTO copyright_notice_lifecycle_changes (
+      id, copyright_notice_id, change_type, changed_by_id,
+      copyright_restriction_id, review_action, review_rationale_ciphertext
+    ) VALUES (
+      ${uuidv7()}, ${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
+      ${input.restrictionId}, ${input.action}, ${encryptSecret(
+        input.rationale,
+        `copyright-restriction-review:${input.restrictionId}`,
+      )})
   `)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)

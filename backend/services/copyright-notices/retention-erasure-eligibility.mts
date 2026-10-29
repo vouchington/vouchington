@@ -1,6 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
-import { COPYRIGHT_PRESERVATION_PARTIES_SQL } from './retention-erasure-preservation.mts'
+import { COPYRIGHT_PRESERVATION_PARTIES_SQL } from '@data-stores/psql/copyright-preservation-parties'
 import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'
 
 /**
@@ -75,30 +75,26 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
         AND NOT EXISTS (SELECT 1 FROM blocked WHERE blocked.notice_id = notice.id)
         AND GREATEST(
           notice.created_at,
-          (SELECT event.created_at FROM copyright_notice_lifecycle_changes event
-           WHERE event.copyright_notice_id = notice.id ORDER BY event.id DESC LIMIT 1),
+          notice.last_lifecycle_activity_at,
+          notice.last_guest_capability_activity_at,
           (SELECT max(intent.updated_at) FROM copyright_notice_delivery_work_items intent
            WHERE intent.copyright_notice_id = notice.id),
           (SELECT max(incident.updated_at) FROM copyright_repeat_infringer_incidents incident
            WHERE incident.copyright_notice_id = notice.id),
-          (SELECT max(capability.updated_at) FROM copyright_notice_guest_capabilities capability
-           WHERE capability.copyright_notice_id = notice.id),
-          (SELECT max(capability.expires_at) FROM copyright_notice_guest_capabilities capability
-           WHERE capability.copyright_notice_id = notice.id AND capability.revoked_at IS NULL),
           (SELECT max(held.released_at) FROM preservation held WHERE held.notice_id = notice.id),
           (SELECT max(GREATEST(intake.received_at, link.created_at))
             FROM copyright_notice_email_intake_notice_links link
             JOIN copyright_notice_email_intakes intake
               ON intake.id = link.copyright_notice_email_intake_id
             WHERE link.copyright_notice_id = notice.id AND link.link_kind = 'thread'),
-          (SELECT max(intake_review.reviewed_at)
+          (SELECT max(receipt.reviewed_at)
             FROM copyright_notice_email_intake_notice_links link
-            JOIN copyright_notice_email_intake_reviews intake_review
-              ON intake_review.copyright_notice_email_intake_receipt_id = link.copyright_notice_email_intake_id
+            JOIN copyright_notice_email_intake_receipts receipt
+              ON receipt.id = link.copyright_notice_email_intake_id
             WHERE link.copyright_notice_id = notice.id AND link.link_kind = 'thread'),
-          (SELECT max(review.reviewed_at)
-            FROM copyright_notice_email_correspondence_reviews review
-            WHERE review.copyright_notice_id = notice.id)
+          (SELECT max(link.correspondence_reviewed_at)
+            FROM copyright_notice_email_intake_notice_links link
+            WHERE link.copyright_notice_id = notice.id)
         ) <= ${cutoff}
     )
   `)

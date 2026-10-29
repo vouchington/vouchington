@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 
 export type LegalPhase = 'claimant' | 'submissions' | 'incidents' | 'targets' | 'done'
 export type LegalCursor = {

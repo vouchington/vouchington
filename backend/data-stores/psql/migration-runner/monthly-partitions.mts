@@ -61,10 +61,12 @@ export async function listMonthlyDropCandidates(
 
 export async function cleanupPartitions(
   referenceDate: Date = new Date(),
+  query: QueryExecutor = write,
+  begin: typeof beginTransaction = beginTransaction,
 ): Promise<PartitionDropOutcome[]> {
-  const candidates = await listMonthlyDropCandidates()
+  const candidates = await listMonthlyDropCandidates(query)
   const outcomes = await retirePartitionsSequentially(candidates, candidate =>
-    retireMonthlyPartitionCandidate(candidate, referenceDate),
+    retireMonthlyPartitionCandidate(candidate, referenceDate, begin),
   )
   for (const outcome of outcomes) console.info('Partition cleanup:', outcome)
   return outcomes
@@ -121,6 +123,13 @@ export async function guardAndRetireMonthlyPartition(
 ): Promise<PartitionDropRefusal | null> {
   const table = assertSafeSqlIdentifier(candidate.table)
   const partition = assertSafeSqlIdentifier(candidate.partition)
+  // Party writers update this generation before appending history. Fence them first so the
+  // final hold probe cannot miss an already-held account newly joining a case.
+  if (policy?.copyrightHistory) {
+    await transaction(
+      '/* cleanupPartitions:lockCopyrightParties */ LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE',
+    )
+  }
   // Ordinary DETACH needs ACCESS EXCLUSIVE on the parent, so take that final mode before the child
   // to avoid a lock-upgrade deadlock with concurrent readers and writers.
   await transaction(
@@ -129,7 +138,7 @@ export async function guardAndRetireMonthlyPartition(
   await transaction(
     `/* cleanupPartitions:lockCandidate */ LOCK TABLE ${partition} IN ACCESS EXCLUSIVE MODE`,
   )
-  if (policy?.legalHoldAccountColumn) {
+  if (policy?.legalHoldAccountColumn || policy?.copyrightHistory) {
     await transaction(
       `/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE`,
     )

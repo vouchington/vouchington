@@ -4,6 +4,7 @@ import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues
 import { getImagePlacementKey } from '@services/images/placements'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
@@ -59,11 +60,9 @@ export async function recordTerritorialCopyrightRedressDecision(
     /* recordTerritorialCopyrightRedressDecision:placementLocks */
     SELECT DISTINCT target.placement_id
     FROM copyright_territorial_redress_requests request
-    JOIN copyright_territorial_decisions decision
-      ON decision.id = request.copyright_territorial_decision_id
-    JOIN copyright_notice_targets target ON target.copyright_notice_id = decision.copyright_notice_id
+    JOIN copyright_notice_targets target ON target.copyright_notice_id = request.copyright_notice_id
     WHERE request.id = ${redressId}
-      AND decision.copyright_notice_submission_assessment_id IS NOT NULL
+      AND request.authorizing_assessment_identity_id IS NOT NULL
     ORDER BY target.placement_id
   `)
   for (const placement of placements) {
@@ -83,16 +82,32 @@ export async function recordTerritorialCopyrightRedressDecision(
     selectExistingTerritorialRedressDecision(redressId),
   )
   assert(!existing[0], 409, labels.redressDecisionExists)
+  const decisionId = uuidv7()
+  const rationaleCiphertext = encryptSecret(
+    rationale,
+    `${labels.redressDecisionPurpose}:${redressId}`,
+  )
+  await transaction(sql`/* recordTerritorialCopyrightRedressDecision:identity */
+    INSERT INTO copyright_territorial_redress_decision_identities
+      (id, copyright_territorial_redress_request_id)
+    VALUES (${decisionId}, ${redressId})`)
   const { rows } = await transaction<TerritorialCopyrightRedressDecision>(
     insertTerritorialRedressDecision(
+      decisionId,
       redressId,
       actor.id,
       disposition,
-      encryptSecret(rationale, `${labels.redressDecisionPurpose}:${redressId}`),
+      rationaleCiphertext,
     ),
   )
   const created = rows[0]
   assert(created, 500, labels.redressDecisionFailed)
+  await transaction(sql`/* recordTerritorialCopyrightRedressDecision:current */
+    UPDATE copyright_territorial_redress_requests SET
+      current_staff_decision_identity_id = ${created.id},
+      staff_disposition = ${created.staff_disposition}, decided_at = ${created.decided_at},
+      decided_by_id = ${actor.id}, rationale_ciphertext = ${rationaleCiphertext}
+    WHERE id = ${redressId}`)
   const restoreIntentIds: string[] = []
   const deliveries: CopyrightStatementDeliveryInput[] = []
   let staydownImageIds: string[] = []
@@ -101,10 +116,8 @@ export async function recordTerritorialCopyrightRedressDecision(
       /* recordTerritorialCopyrightRedressDecision:restrictions */
       SELECT restriction.id
       FROM copyright_territorial_redress_requests request
-      JOIN copyright_territorial_decisions decision
-        ON decision.id = request.copyright_territorial_decision_id
       JOIN copyright_restrictions restriction
-        ON restriction.authorizing_assessment_id = decision.copyright_notice_submission_assessment_id
+        ON restriction.authorizing_assessment_id = request.authorizing_assessment_identity_id
       WHERE request.id = ${redressId} AND restriction.lifted_at IS NULL
       ORDER BY restriction.id
     `)

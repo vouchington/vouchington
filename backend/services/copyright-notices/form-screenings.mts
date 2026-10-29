@@ -61,15 +61,12 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   const { rows: existingAssessments } = await transaction<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
-    SELECT assessment.id FROM copyright_notice_submission_assessments assessment
-    WHERE assessment.copyright_notice_submission_id = ${submissionId}
-      AND assessment.assessed_by_id IS NULL
-      AND assessment.is_substantially_compliant
-      AND assessment.copyright_notice_form_screening_id = ${intake.screening_id}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
-      )
+    SELECT current_assessment_identity_id AS id FROM copyright_notice_submissions
+    WHERE id = ${submissionId}
+      AND current_assessed_by_id IS NULL
+      AND current_assessment_is_substantially_compliant
+      AND current_assessment_form_screening_id = ${intake.screening_id}
+      AND current_assessment_identity_id IS NOT NULL
   `)
   const { rows: currentAssessments } = await transaction<{
     id: string
@@ -77,13 +74,11 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     is_substantially_compliant: boolean
   }>(
     sql`/* applyNonSpamSignedInCopyrightFormScreening:currentAssessment */
-      SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.is_substantially_compliant
-      FROM copyright_notice_submission_assessments assessment
-      WHERE assessment.copyright_notice_submission_id = ${submissionId}
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments newer
-          WHERE newer.supersedes_assessment_id = assessment.id
-        )`,
+      SELECT current_assessment_identity_id AS id,
+        current_assessment_form_screening_id AS copyright_notice_form_screening_id,
+        current_assessment_is_substantially_compliant AS is_substantially_compliant
+      FROM copyright_notice_submissions
+      WHERE id = ${submissionId} AND current_assessment_identity_id IS NOT NULL`,
   )
   const currentAssessment = currentAssessments[0]
   if (

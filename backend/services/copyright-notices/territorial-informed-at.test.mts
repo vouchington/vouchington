@@ -1,8 +1,8 @@
+import { insertTestHistoricalTerritorialComplaint } from '@voucha/test-helpers/copyright-territorial-historical-complaint'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import {
   createTestHistoricalEuDecisionWindow,
-  insertTestHistoricalTerritorialComplaint,
   insertTestTerritorialDecisionIntent,
   readTestTerritorialInformedWindow,
 } from '@voucha/test-helpers/copyright-territorial-historical-window'

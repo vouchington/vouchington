@@ -10,7 +10,6 @@ export const BLOCKER_PHASES = [
   'legal_hold_assessments',
   'action_work_items',
   'enforcement_assessments',
-  'enforcement_reversal_decisions',
   'enforcement_reversal_requests',
   'enforcement_screening_targets',
   'enforcement_screening_receipts',
@@ -28,7 +27,6 @@ export type BlockerCursor = {
   phase: BlockerPhase | null
   childId: string | null
   assessmentId: string | null
-  territorialDecisionId: string | null
   generation: string | null
 }
 export type BlockerPage = BlockerCursor & { blocked: boolean; done: boolean }
@@ -47,7 +45,6 @@ export function advanceCopyrightThreadBlockerPhase(
     phase,
     childId: null,
     assessmentId: null,
-    territorialDecisionId: null,
     blocked: false,
   }
 }
@@ -70,7 +67,6 @@ export function skipCopyrightThreadEnforcementAssessment(
     phase: 'enforcement_assessments',
     childId: cursor.assessmentId,
     assessmentId: null,
-    territorialDecisionId: null,
     blocked: false,
   }
 }

@@ -1,11 +1,13 @@
+import {
+  countCopyrightActiveRestrictionsAtPlacement,
+  readCopyrightActionIntentRevision,
+} from '@voucha/test-helpers/copyright-notice-schema-reads'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   completeCopyrightRestrictionHumanReview,
-  countCopyrightActiveRestrictionsAtPlacement,
   createCopyrightNoticeSchemaFixture,
   createSecondCopyrightRestrictionForPlacement,
   eraseCopyrightSchemaActor,
-  readCopyrightActionIntentRevision,
   readCopyrightErasedRestrictionActors,
   rejectCopyrightActionIntentDeletion,
   rejectCopyrightFinalReviewWithoutHuman,

@@ -37,13 +37,13 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions:placements */
     SELECT DISTINCT target.placement_id
     FROM copyright_restrictions restriction
-    JOIN copyright_notice_submission_assessments assessment
-      ON assessment.id = restriction.authorizing_assessment_id
+    JOIN copyright_notice_submission_assessment_identities authority
+      ON authority.id = restriction.authorizing_assessment_id
     JOIN copyright_notice_targets target
       ON target.id = restriction.copyright_notice_target_id
-    WHERE assessment.copyright_notice_submission_id = ${submissionId}
-      AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
-      AND assessment.copyright_notice_form_screening_id IS NOT NULL
+    WHERE authority.copyright_notice_submission_id = ${submissionId}
+      AND target.copyright_notice_id = ${noticeId}
+      AND restriction.is_authorizing_assessment_automated
       AND restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
     ORDER BY target.placement_id
   `)
@@ -60,13 +60,13 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
       human_review_action = COALESCE(restriction.human_review_action, 'reverse'),
       human_reviewed_by_id = CASE WHEN restriction.human_reviewed_at IS NULL THEN ${moderatorId}
         ELSE restriction.human_reviewed_by_id END
-    FROM copyright_notice_submission_assessments assessment
+    FROM copyright_notice_submission_assessment_identities authority
     CROSS JOIN copyright_notice_targets target
-    WHERE restriction.authorizing_assessment_id = assessment.id
+    WHERE restriction.authorizing_assessment_id = authority.id
       AND target.id = restriction.copyright_notice_target_id
-      AND assessment.copyright_notice_submission_id = ${submissionId}
-      AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
-      AND assessment.copyright_notice_form_screening_id IS NOT NULL
+      AND authority.copyright_notice_submission_id = ${submissionId}
+      AND target.copyright_notice_id = ${noticeId}
+      AND restriction.is_authorizing_assessment_automated
       AND restriction.lifted_at IS NULL
       AND restriction.human_review_action IS NULL
     RETURNING restriction.id

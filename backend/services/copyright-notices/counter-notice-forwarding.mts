@@ -22,24 +22,19 @@ export async function createCounterNoticeForwardingInTransaction(
     SELECT submission.copyright_notice_id AS notice_id, submission.id AS submission_id,
       submission.body_ciphertext, recipient.copyright_notice_delivery_work_item_id AS delivery_intent_id,
       recipient.email_ciphertext
-    FROM copyright_notice_submission_assessments assessment
-    JOIN copyright_notice_submissions submission ON submission.id = assessment.copyright_notice_submission_id
+    FROM copyright_notice_submissions submission
     JOIN copyright_notice_deadlines deadline
-      ON deadline.qualifying_counter_notice_assessment_id = assessment.id
+      ON deadline.qualifying_counter_notice_assessment_id = submission.current_assessment_identity_id
     JOIN copyright_notice_delivery_work_items receipt
       ON receipt.copyright_notice_id = submission.copyright_notice_id
       AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
       AND receipt.delivery_kind = 'claimant_receipt'
     JOIN copyright_notice_delivery_recipients recipient
       ON recipient.copyright_notice_delivery_work_item_id = receipt.id
-    WHERE assessment.id = ${input.assessmentId}
-      AND assessment.assessed_by_id IS NOT NULL
-      AND assessment.is_substantially_compliant
+    WHERE submission.current_assessment_identity_id = ${input.assessmentId}
+      AND submission.current_assessed_by_id IS NOT NULL
+      AND submission.current_assessment_is_substantially_compliant
       AND submission.kind = 'counter_notice'
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
-      )
     ORDER BY receipt.id
     LIMIT 1
   `)
@@ -61,9 +56,7 @@ export async function createCounterNoticeForwardingInTransaction(
       SELECT target.id, target.hosted_use_url
       FROM copyright_notice_counter_notice_assessment_targets scoped
       JOIN copyright_notice_targets target ON target.id = scoped.copyright_notice_target_id
-      JOIN copyright_notice_submission_assessments assessment
-        ON assessment.id = scoped.copyright_notice_submission_assessment_id
-      WHERE assessment.id = ${input.assessmentId}
+      WHERE scoped.copyright_notice_submission_assessment_id = ${input.assessmentId}
       ORDER BY target.id
     `,
   )

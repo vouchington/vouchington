@@ -4,10 +4,8 @@ import sql from 'sql-template-strings'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
 import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
 import { lockCopyrightRetentionCaseThreadTokens } from './retention-erasure-thread-tokens.mts'
-import {
-  COPYRIGHT_RETENTION_ERASURE,
-  eraseCopyrightRetentionTableSql,
-} from './retention-erasure-spec.mts'
+import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
+import { eraseCopyrightRetentionTableSql } from './retention-erasure-sql.mts'
 
 const CONNECTION_TIMEOUT_MS = 5_000
 const STATEMENT_TIMEOUT_MS = 20_000

@@ -4,7 +4,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { territorialLabels } from './territorial-labels.mts'
 
 /** Admit a guest notifier's reply to the live EU decision, using email receipt time. */
@@ -18,21 +17,19 @@ export async function createGuestTerritorialComplaintFromEmail(
   },
   transaction: TransactionQuery,
 ): Promise<void> {
-  const query = sql`/* createGuestTerritorialComplaintFromEmail:parent */
-    SELECT decision.id, decision.decided_at, receipt.requester_user_id
-    FROM copyright_territorial_decisions decision
-    JOIN copyright_territorial_notice_receipts receipt
-      ON receipt.copyright_notice_id = decision.copyright_notice_id
-      AND receipt.jurisdiction = decision.jurisdiction
-    WHERE decision.copyright_notice_id = ${input.noticeId}
-      AND decision.jurisdiction = 'eu_dsa' AND `
-  query.append(territorialDecisionIsLiveSql())
-  query.append(sql` FOR UPDATE OF decision`)
   const { rows } = await transaction<{
     id: string
     decided_at: Date
     requester_user_id: string | null
-  }>(query)
+  }>(sql`/* createGuestTerritorialComplaintFromEmail:parent */
+    SELECT notice.current_territorial_decision_identity_id AS id,
+      notice.territorial_decided_at AS decided_at, receipt.requester_user_id
+    FROM copyright_notices notice
+    JOIN copyright_territorial_notice_receipts receipt
+      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
+    WHERE notice.id = ${input.noticeId} AND notice.jurisdiction = 'eu_dsa'
+      AND notice.current_territorial_decision_identity_id IS NOT NULL
+    FOR UPDATE OF notice`)
   const parent = rows[0]
   assert(parent, 422, 'An EU decision is required before a complaint can be filed')
   assert(parent.requester_user_id === null, 409, 'Signed-in notifiers complain on the case page')

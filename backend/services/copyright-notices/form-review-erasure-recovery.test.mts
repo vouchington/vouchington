@@ -1,3 +1,4 @@
+import { createTestRetiredCopyrightAssessment } from '@voucha/test-helpers/copyright-retired-assessment'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
@@ -25,7 +26,7 @@ import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/service
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-async function createAutomatedCopyrightForm() {
+async function createAutomatedCopyrightForm(historyRetired = false) {
   const claimant = await createTestUser()
   const postId = await insertTestPost({
     title: `erased copyright reviewer ${crypto.randomUUID()}`,
@@ -67,13 +68,18 @@ async function createAutomatedCopyrightForm() {
     promptVersion: 'copyright-form-screening-v2',
     model: 'test-model',
   })
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: notice.intake.copyright_notice_submission_id,
-    assessedAt: new Date(),
-    currentUser: null,
-    substantiallyCompliant: true,
-    copyrightFormScreeningId: screeningId,
-  })
+  const assessment = historyRetired
+    ? await createTestRetiredCopyrightAssessment({
+        submissionId: notice.intake.copyright_notice_submission_id,
+        screeningId,
+      })
+    : await appendCopyrightSubmissionAssessment({
+        submissionId: notice.intake.copyright_notice_submission_id,
+        assessedAt: new Date(),
+        currentUser: null,
+        substantiallyCompliant: true,
+        copyrightFormScreeningId: screeningId,
+      })
   return { assessment, notice }
 }
 
@@ -97,8 +103,8 @@ async function recoverListedFormReview(intakeId: string): Promise<void> {
 describe('copyright rejected form-review recovery after actor erasure', () => {
   useAutomaticProvisionalWithholding()
 
-  it('reverses the automated restriction from the durable erased rejection', async () => {
-    const { assessment, notice } = await createAutomatedCopyrightForm()
+  it('reverses an automated restriction after its detailed assessment history retired', async () => {
+    const { assessment, notice } = await createAutomatedCopyrightForm(true)
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: notice.intake.copyright_notice_id,

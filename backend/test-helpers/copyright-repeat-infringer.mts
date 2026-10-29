@@ -86,9 +86,13 @@ export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
     created_at: Date
     updated_at: Date
   }>(sql`/* getTestCopyrightRepeatInfringerReview */
-    SELECT id, opened_at, outcome, outcome_at, created_at, updated_at
-    FROM copyright_repeat_infringer_reviews
-    WHERE id = ${reviewId}
+    SELECT identity.id, identity.created_at AS opened_at,
+      review.outcome, review.outcome_at, identity.created_at,
+      COALESCE(review.outcome_at, identity.created_at) AS updated_at
+    FROM copyright_repeat_infringer_review_identities identity
+    LEFT JOIN copyright_repeat_infringer_reviews review
+      ON review.copyright_repeat_infringer_review_identity_id = identity.id
+    WHERE identity.id = ${reviewId}
   `)
   return rows[0] ?? null
 }
@@ -96,11 +100,31 @@ export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
 export async function readTestRepeatInfringerOpenReviewIds(accountId: string): Promise<string[]> {
   const { rows } = await read<{ id: string }>(
     sql`/* readTestRepeatInfringerOpenReviewIds */
-    SELECT id FROM copyright_repeat_infringer_reviews
-    WHERE account_user_id = ${accountId} AND outcome IS NULL
+    SELECT current_open_review_identity_id AS id
+    FROM copyright_repeat_infringer_account_states
+    WHERE account_user_id = ${accountId} AND current_open_review_identity_id IS NOT NULL
   `,
   )
   return rows.map(row => row.id)
+}
+
+export async function readTestRepeatInfringerAccountState(accountId: string) {
+  const { rows } = await read<{
+    termination_in_effect: boolean
+    current_outcome: string | null
+    current_outcome_rationale_ciphertext: string | null
+    effective_termination_rationale_ciphertext: string | null
+    effective_termination_review_identity_id: string | null
+    effective_termination_decided_at: Date | null
+    effective_termination_decided_by_id: string | null
+  }>(sql`/* readTestRepeatInfringerAccountState */
+    SELECT termination_in_effect, current_outcome,
+      current_outcome_rationale_ciphertext, effective_termination_rationale_ciphertext,
+      effective_termination_review_identity_id,
+      effective_termination_decided_at, effective_termination_decided_by_id
+    FROM copyright_repeat_infringer_account_states WHERE account_user_id = ${accountId}
+  `)
+  return rows[0] ?? null
 }
 
 export async function readTestRepeatInfringerIncidents(accountId: string) {

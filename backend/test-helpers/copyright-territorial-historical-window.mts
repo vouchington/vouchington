@@ -2,12 +2,12 @@ import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { lockCopyrightJurisdictionPolicy } from '../services/copyright-notices/jurisdiction-policy.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 import { getTerritorialInformedWindow } from '../services/copyright-notices/territorial-informed-at.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from '../services/copyright-notices/correspondence.mts'
 
-/** An old guest decision, created in chronological order without rewriting immutable evidence. */
 export async function createTestHistoricalEuDecisionWindow(
   options: {
     decidedAt?: Date
@@ -41,6 +41,10 @@ export async function createTestHistoricalEuDecisionWindow(
   const labels = territorialLabels('eu_dsa')
   await using transaction = await beginTransaction()
   await lockCopyrightJurisdictionPolicy('eu_dsa', transaction)
+  const { rows: actors } = await transaction<{ id: string }>(sql`
+    /* createTestHistoricalEuDecisionWindow:actor */
+    INSERT INTO users DEFAULT VALUES RETURNING id`)
+  const actorId = actors[0]!.id
   const { rows: approvals } = await transaction<{ id: string }>(sql`
     /* createTestHistoricalEuDecisionWindow:approval */
     INSERT INTO copyright_jurisdiction_policy_approvals (jurisdiction, policy_version, approved_at)
@@ -74,22 +78,38 @@ export async function createTestHistoricalEuDecisionWindow(
       TRUE, ${receivedAt}
     )
   `)
+  const decisionId = uuidv7()
+  const rationaleCiphertext = encryptSecret('No action', `${labels.decisionPurpose}:${noticeId}`)
+  const publicExplanationCiphertext = encryptSecret(
+    'No action was taken',
+    `${labels.publicExplanationPurpose}:${noticeId}`,
+  )
+  await transaction(sql`/* createTestHistoricalEuDecisionWindow:decisionIdentity */
+    INSERT INTO copyright_territorial_decision_identities
+      (id, copyright_notice_id, jurisdiction)
+    VALUES (${decisionId}, ${noticeId}, 'eu_dsa')`)
   await transaction(sql`/* createTestHistoricalEuDecisionWindow:decision */
     INSERT INTO copyright_territorial_decisions (
-      copyright_notice_id, jurisdiction, decided_at, outcome, automation_disclosure,
+      id, copyright_notice_id, jurisdiction, decided_at, decided_by_id, outcome, automation_disclosure,
       rationale_ciphertext, public_explanation_ciphertext
     ) VALUES (
-      ${noticeId}, 'eu_dsa', ${decidedAt}, 'no_action', 'human',
-      ${encryptSecret('No action', `${labels.decisionPurpose}:${noticeId}`)},
-      ${encryptSecret('No action was taken', `${labels.publicExplanationPurpose}:${noticeId}`)}
+      ${decisionId}, ${noticeId}, 'eu_dsa', ${decidedAt}, ${actorId}, 'no_action', 'human',
+      ${rationaleCiphertext}, ${publicExplanationCiphertext}
     )
   `)
-  const state = options.initialState ?? 'sent'
+  await transaction(sql`/* createTestHistoricalEuDecisionWindow:currentDecision */
+    UPDATE copyright_notices SET
+      current_territorial_decision_identity_id = ${decisionId},
+      territorial_decision_outcome = 'no_action', territorial_decided_at = ${decidedAt},
+      territorial_decided_by_id = ${actorId},
+      territorial_rationale_ciphertext = ${rationaleCiphertext},
+      territorial_public_explanation_ciphertext = ${publicExplanationCiphertext}
+    WHERE id = ${noticeId}`)
   await insertTestTerritorialDecisionIntentInTransaction(transaction, {
     noticeId,
     role: 'claimant',
     userId: null,
-    state,
+    state: options.initialState ?? 'sent',
     at: sentAt,
   })
   await transaction.commit()
@@ -159,30 +179,4 @@ export async function readTestTerritorialInformedWindow(input: {
   const window = await getTerritorialInformedWindow(input, transaction)
   await transaction.commit()
   return window
-}
-
-export async function insertTestHistoricalTerritorialComplaint(input: {
-  noticeId: string
-  requesterUserId: string
-  idempotencyKey: string
-  receivedAt: Date
-}): Promise<string> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ id: string }>(sql`
-    /* insertTestHistoricalTerritorialComplaint */
-    INSERT INTO copyright_territorial_redress_requests (
-      copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
-      submitted_by_id, filed_by, idempotency_key, explanation_ciphertext, received_at
-    ) SELECT ${input.noticeId}, 'eu_dsa', decision.id, ${input.requesterUserId}, 'notifier',
-      ${input.idempotencyKey},
-      ${encryptSecret('Earlier complaint', `${territorialLabels('eu_dsa').redressPurpose}:${input.idempotencyKey}`)},
-      ${input.receivedAt}
-    FROM copyright_territorial_decisions decision
-    WHERE decision.copyright_notice_id = ${input.noticeId} AND decision.jurisdiction = 'eu_dsa'
-    RETURNING id
-  `)
-  const id = rows[0]?.id
-  if (!id) throw new Error('Historical complaint was not inserted')
-  await transaction.commit()
-  return id
 }

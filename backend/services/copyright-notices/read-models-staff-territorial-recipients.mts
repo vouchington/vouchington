@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import sql from 'sql-template-strings'
 import { copyrightDecisionDeliveryKinds } from './delivery-types.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
@@ -36,8 +36,10 @@ export async function selectTerritorialStaffRecipients(
       CROSS JOIN LATERAL `
   statement.append(copyrightPlacementPartiesSql('notify'))
   statement.append(sql` party
-      WHERE EXISTS (SELECT 1 FROM copyright_territorial_decisions decision
-          WHERE decision.id = decided.decision_id AND decision.outcome = 'restrict')
+      WHERE EXISTS (SELECT 1 FROM copyright_notices notice
+          WHERE notice.id = decided.notice_id
+            AND notice.current_territorial_decision_identity_id = decided.decision_id
+            AND notice.territorial_decision_outcome = 'restrict')
     )
     SELECT recipient.notice_id AS copyright_notice_id, recipient.role, recipient.user_id,
       MIN(intent.sent_at) FILTER (WHERE intent.state = 'sent' AND intent.sent_at >= decided.decided_at) AS informed_at,

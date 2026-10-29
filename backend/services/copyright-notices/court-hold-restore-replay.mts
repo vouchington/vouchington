@@ -97,7 +97,7 @@ async function originalRestorationAuthorityIsValid(
     /* replayEligibleCopyrightRestoreIntentsInTransaction:originalCounterNotice */
     SELECT EXISTS (
       SELECT 1 FROM copyright_notice_deadlines deadline
-      JOIN copyright_notice_submission_assessments assessment
+      JOIN copyright_notice_submission_assessment_identities assessment
         ON assessment.id = deadline.qualifying_counter_notice_assessment_id
       JOIN copyright_notice_submissions submission ON submission.id = assessment.copyright_notice_submission_id
       JOIN copyright_notice_counter_notice_assessment_targets scope
@@ -106,9 +106,9 @@ async function originalRestorationAuthorityIsValid(
       WHERE deadline.id = ${legal.copyright_notice_deadline_id}
         AND deadline.copyright_notice_id = ${legal.copyright_notice_id}
         AND restriction.id = ${legal.copyright_restriction_id}
-        AND submission.kind = 'counter_notice' AND assessment.is_substantially_compliant
-        AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_assessments newer
-          WHERE newer.supersedes_assessment_id = assessment.id)
+        AND submission.kind = 'counter_notice'
+        AND submission.current_assessment_identity_id = assessment.id
+        AND submission.current_assessment_is_substantially_compliant
     ) AS valid
   `)
   return rows[0]?.valid ?? false

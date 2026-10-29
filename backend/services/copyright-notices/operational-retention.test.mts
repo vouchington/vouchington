@@ -18,10 +18,10 @@ import {
   seedUnusedCopyrightGuestCapability,
 } from '@voucha/test-helpers/copyright-operational-guest-capabilities'
 import {
-  readCopyrightIntakeRetentionState,
   seedCopyrightIntakeLegalDelivery,
   seedCopyrightIntakeAuditReview,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
+import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import { createRetentionSignedInForm } from '@voucha/test-helpers/services/copyright-notices/retention-signed-in-form'
@@ -274,7 +274,7 @@ describe('copyright operational retention', () => {
       }),
     ).resolves.toBe(false)
     await expect(seedCopyrightIntakeAuditReview(intake.id)).rejects.toThrow(
-      'copyright email intake is under retention erasure',
+      'erased copyright email intake cannot accept a recommendation',
     )
     await expect(seedCopyrightIntakeLegalDelivery(intake.id)).rejects.toThrow(
       'copyright email intake is under retention erasure',

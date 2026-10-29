@@ -111,10 +111,12 @@ export async function admitCopyrightEmailCorrespondence(input: {
   const { rows: admittedRows } = await transaction<
     AdmittedCorrespondence & { action: 'admitted' | 'rejected' }
   >(sql`/* admitCopyrightEmailCorrespondence:existing */
-    SELECT copyright_notice_submission_id AS submission_id,
-      copyright_notice_correspondence_message_id AS correspondence_id, action
-    FROM copyright_notice_email_correspondence_reviews
-    WHERE copyright_notice_email_intake_id = ${input.intakeId} AND action IN ('admitted', 'rejected')
+    SELECT correspondence_submission_id AS submission_id,
+      correspondence_message_id AS correspondence_id,
+      correspondence_action AS action
+    FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      AND correspondence_action IN ('admitted', 'rejected')
   `)
   const prior = admittedRows[0]
   if (prior) {
@@ -191,6 +193,16 @@ export async function admitCopyrightEmailCorrespondence(input: {
   `)
   const correspondence = correspondenceRows[0]
   assert(correspondence, 500, 'Failed to record copyright email correspondence')
+  const rationaleCiphertext = encryptSecret(
+    input.rationale,
+    copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
+  )
+  const manualFallbackCiphertext = input.manualFallbackReason
+    ? encryptSecret(
+        input.manualFallbackReason,
+        copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
+      )
+    : null
   await transaction(sql`/* admitCopyrightEmailCorrespondence:review */
     INSERT INTO copyright_notice_email_correspondence_reviews (
       copyright_notice_email_intake_id, copyright_notice_id, action, kind,
@@ -200,10 +212,20 @@ export async function admitCopyrightEmailCorrespondence(input: {
     ) VALUES (
       ${input.intakeId}, ${pending.notice_id}, 'admitted', ${input.kind}::copyright_notice_email_correspondence_review_kinds, ${input.recommendationId}, ${submission.id},
       ${correspondence.id}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.amazon_ses_message_id))},
-      ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.amazon_ses_message_id)) : null}
+      ${rationaleCiphertext},
+      ${manualFallbackCiphertext}
     )
   `)
+  await transaction(sql`/* admitCopyrightEmailCorrespondence:currentDecision */
+    UPDATE copyright_notice_email_intake_notice_links SET
+      correspondence_action = 'admitted', correspondence_kind = ${input.kind},
+      correspondence_submission_id = ${submission.id},
+      correspondence_message_id = ${correspondence.id},
+      correspondence_reviewed_at = CURRENT_TIMESTAMP,
+      correspondence_reviewed_by_id = ${input.currentUser.id},
+      correspondence_rationale_ciphertext = ${rationaleCiphertext},
+      correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
   await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_correspondence_id)
@@ -273,8 +295,9 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   const { rows: existingRows } = await transaction<{
     action: 'admitted' | 'rejected'
   }>(sql`/* rejectCopyrightEmailCorrespondence:existing */
-    SELECT action FROM copyright_notice_email_correspondence_reviews
-    WHERE copyright_notice_email_intake_id = ${input.intakeId} AND action IN ('admitted', 'rejected')
+    SELECT correspondence_action AS action FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      AND correspondence_action IN ('admitted', 'rejected')
   `)
   if (existingRows[0]) {
     assert(
@@ -285,6 +308,16 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     await transaction.commit()
     return { noticeId: pending.notice_id, isDuplicate: true }
   }
+  const rationaleCiphertext = encryptSecret(
+    input.rationale,
+    copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
+  )
+  const manualFallbackCiphertext = input.manualFallbackReason
+    ? encryptSecret(
+        input.manualFallbackReason,
+        copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
+      )
+    : null
   await transaction(sql`/* rejectCopyrightEmailCorrespondence */
     INSERT INTO copyright_notice_email_correspondence_reviews (
       copyright_notice_email_intake_id, copyright_notice_id, action, kind,
@@ -292,9 +325,17 @@ export async function rejectCopyrightEmailCorrespondence(input: {
       rationale_ciphertext, manual_fallback_reason_ciphertext
     ) VALUES (${input.intakeId}, ${pending.notice_id}, 'rejected', ${input.kind}::copyright_notice_email_correspondence_review_kinds,
       ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.amazon_ses_message_id))},
-      ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.amazon_ses_message_id)) : null})
+      ${rationaleCiphertext},
+      ${manualFallbackCiphertext})
   `)
+  await transaction(sql`/* rejectCopyrightEmailCorrespondence:currentDecision */
+    UPDATE copyright_notice_email_intake_notice_links SET
+      correspondence_action = 'rejected', correspondence_kind = ${input.kind},
+      correspondence_reviewed_at = CURRENT_TIMESTAMP,
+      correspondence_reviewed_by_id = ${input.currentUser.id},
+      correspondence_rationale_ciphertext = ${rationaleCiphertext},
+      correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
   await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_email_intake_id)
@@ -309,8 +350,8 @@ async function assertNoInitialIntakeReview(
   intakeId: string,
 ): Promise<void> {
   const { rows } = await transaction(sql`/* copyrightEmailIntake:noInitialReview */
-    SELECT 1 FROM copyright_notice_email_intake_reviews
-    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
+    SELECT 1 FROM copyright_notice_email_intake_receipts
+    WHERE id = ${intakeId} AND review_decision IS NOT NULL
   `)
   assert(!rows[0], 409, 'Thread-linked copyright email cannot receive an initial intake review')
 }
@@ -322,7 +363,7 @@ async function assertRecommendationScope(
 ): Promise<void> {
   if (!recommendationId) return
   const { rows } = await transaction(sql`/* reviewCopyrightEmailCorrespondence:recommendation */
-    SELECT id FROM copyright_notice_email_intake_recommendations
+    SELECT id FROM copyright_notice_email_intake_recommendation_identities
     WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}
   `)
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')

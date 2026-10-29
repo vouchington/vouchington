@@ -9,13 +9,13 @@ import {
 } from '@voucha/test-helpers/copyright-operational-retention'
 import {
   linkTestCopyrightEmailIntake,
-  readCopyrightIntakeRetentionState,
   readCopyrightThreadReferenceState,
   seedCopyrightIntakeAuditReview,
   seedCopyrightThreadRetirement,
   seedCopyrightThreadPartySubmission,
   seedTestCopyrightAncestorEdge,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
+import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
 import {
   insertPreservationHoldForTest,

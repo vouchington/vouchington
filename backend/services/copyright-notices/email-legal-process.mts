@@ -49,8 +49,8 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
   await assertNoInitialIntakeThreadBarrier(transaction, input.intakeId)
   const { rows: decisions } = await transaction(
     sql`/* recordCopyrightEmailIntakeLegalProcess:existing */
-      SELECT 1 FROM copyright_notice_email_intake_reviews
-      WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`,
+      SELECT 1 FROM copyright_notice_email_intake_receipts
+      WHERE id = ${input.intakeId} AND review_decision IS NOT NULL`,
   )
   assert(!decisions[0], 409, 'Copyright email intake was already decided')
   await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess */
@@ -64,5 +64,10 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
       )}
     )
   `)
+  await transaction(sql`/* recordCopyrightEmailIntakeLegalProcess:currentDecision */
+    UPDATE copyright_notice_email_intake_receipts SET
+      review_decision = 'legal_process', reviewed_at = CURRENT_TIMESTAMP,
+      reviewed_by_id = ${input.currentUser.id}
+    WHERE id = ${input.intakeId}`)
   await transaction.commit()
 }

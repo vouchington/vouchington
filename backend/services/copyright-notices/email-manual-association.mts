@@ -105,18 +105,12 @@ export async function associateCopyrightEmailIntakeWithNotice(
   const { rows: links } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:link */
     INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind
-    ) VALUES (${intakeId}, ${noticeId}, 'thread')
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
+    ) VALUES (${intakeId}, ${noticeId}, 'thread', 'pending')
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
     RETURNING id
   `)
   if (!links[0]) throw copyrightEmailThreadChangedError()
-  await transaction(sql`
-    /* associateCopyrightEmailIntakeWithNotice:pendingReview */
-    INSERT INTO copyright_notice_email_correspondence_reviews (
-      copyright_notice_email_intake_id, copyright_notice_id, action
-    ) VALUES (${intakeId}, ${noticeId}, 'pending')
-  `)
   await transaction(sql`
     /* associateCopyrightEmailIntakeWithNotice:audit */
     INSERT INTO copyright_notice_lifecycle_changes (
@@ -157,9 +151,10 @@ async function readIntakeDecision(
     SELECT intake.id,
       EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
         WHERE link.copyright_notice_email_intake_id = intake.id) AS linked,
-      EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-        WHERE review.copyright_notice_email_intake_receipt_id = intake.id) AS reviewed
-    FROM copyright_notice_email_intakes intake WHERE intake.id = ${intakeId}
+      receipt.review_decision IS NOT NULL AS reviewed
+    FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+    WHERE intake.id = ${intakeId}
   `)
   return rows[0]
 }

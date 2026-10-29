@@ -24,6 +24,15 @@ CREATE TABLE copyright_notices (
   received_at timestamptz NOT NULL,
   accepted_at timestamptz,
   provisional_withholding_at timestamptz,
+  current_territorial_decision_identity_id uuid,
+  territorial_authorizing_assessment_identity_id uuid,
+  territorial_decision_outcome copyright_territorial_decision_outcomes,
+  territorial_decided_at timestamptz,
+  territorial_decided_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  territorial_rationale_ciphertext text,
+  territorial_public_explanation_ciphertext text,
+  last_lifecycle_activity_at timestamptz,
+  last_guest_capability_activity_at timestamptz,
   claimant_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   claimant_display_name text,
   claimant_contact_ciphertext text NOT NULL,
@@ -34,7 +43,15 @@ CREATE TABLE copyright_notices (
   -- Composite-foreign-key target: EU/UK territorial rows pin their notice to its jurisdiction.
   CONSTRAINT uq_copyright_notices__id_jurisdiction UNIQUE (id, jurisdiction),
   CHECK (accepted_at IS NULL OR accepted_at >= received_at),
-  CHECK (provisional_withholding_at IS NULL OR (accepted_at IS NOT NULL AND provisional_withholding_at >= accepted_at))
+  CHECK (provisional_withholding_at IS NULL OR (accepted_at IS NOT NULL AND provisional_withholding_at >= accepted_at)),
+  CONSTRAINT chk_copyright_notices__territorial_result CHECK (
+    (current_territorial_decision_identity_id IS NULL AND territorial_decision_outcome IS NULL
+      AND territorial_decided_at IS NULL AND territorial_decided_by_id IS NULL
+      AND territorial_rationale_ciphertext IS NULL AND territorial_public_explanation_ciphertext IS NULL)
+    OR (jurisdiction IN ('eu_dsa', 'uk') AND current_territorial_decision_identity_id IS NOT NULL
+      AND territorial_decision_outcome IS NOT NULL AND territorial_decided_at IS NOT NULL
+      AND territorial_decided_by_id IS NOT NULL)
+  )
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -72,17 +89,28 @@ CREATE TABLE copyright_restrictions (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   authorizing_assessment_id uuid NOT NULL,
+  is_authorizing_assessment_automated boolean NOT NULL DEFAULT false,
   copyright_notice_target_id uuid NOT NULL,
   imposed_at timestamptz NOT NULL,
   lifted_at timestamptz,
   imposed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  lifted_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  lifted_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  administrator_lift_decided_at timestamptz,
+  administrator_lift_decided_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  administrator_lift_rationale_ciphertext text,
   human_reviewed_at timestamptz,
   human_review_action copyright_restriction_human_review_actions CHECK (human_review_action IN ('confirm', 'modify', 'reverse')),
   human_reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (lifted_at IS NULL OR lifted_at >= imposed_at),
+  CONSTRAINT chk_copyright_restrictions__administrator_lift CHECK (
+    (administrator_lift_decided_at IS NULL AND administrator_lift_decided_by_id IS NULL
+      AND administrator_lift_rationale_ciphertext IS NULL)
+    OR (administrator_lift_decided_at IS NOT NULL AND administrator_lift_decided_by_id IS NOT NULL
+      AND (administrator_lift_rationale_ciphertext IS NULL
+        OR char_length(administrator_lift_rationale_ciphertext) BETWEEN 1 AND 1048576))
+  ),
   CHECK (human_reviewed_at IS NULL OR human_reviewed_at >= imposed_at),
   CHECK (
     (human_reviewed_at IS NULL AND human_review_action IS NULL AND human_reviewed_by_id IS NULL)
@@ -113,13 +141,25 @@ CREATE TABLE copyright_notice_submissions (
   source_kind copyright_notice_submission_source_kinds NOT NULL CHECK (source_kind IN ('signed_in_form', 'guest_form', 'email', 'staff')),
   body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 1 AND 1048576),
   copyright_notice_guest_capability_id uuid,
+  current_assessment_identity_id uuid,
+  current_assessment_is_substantially_compliant boolean,
+  current_assessed_at timestamptz,
+  current_assessed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  current_assessment_form_screening_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT copyright_submission_guest_capability_shape CHECK (
     copyright_notice_guest_capability_id IS NULL
     OR (source_kind = 'guest_form' AND kind IN ('supplement', 'withdrawal', 'court_or_ccb_hold'))
   ),
-  CONSTRAINT copyright_notice_submissions_id_notice_unique UNIQUE (id, copyright_notice_id)
+  CONSTRAINT copyright_notice_submissions_id_notice_unique UNIQUE (id, copyright_notice_id),
+  CONSTRAINT chk_copyright_notice_submissions__current_assessment CHECK (
+    (current_assessment_identity_id IS NULL AND current_assessment_is_substantially_compliant IS NULL
+      AND current_assessed_at IS NULL AND current_assessed_by_id IS NULL AND current_assessment_form_screening_id IS NULL)
+    OR (current_assessment_identity_id IS NOT NULL AND current_assessment_is_substantially_compliant IS NOT NULL
+      AND current_assessed_at IS NOT NULL
+      AND (current_assessed_by_id IS NOT NULL OR current_assessment_form_screening_id IS NOT NULL))
+  )
 );
 
 -- A case-level generation fences paged legal-party proof against newly introduced parties.
@@ -201,26 +241,50 @@ CREATE TRIGGER trigger_update_copyright_artifacts_scope
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_submission_assessment_identities (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_id uuid NOT NULL,
+  copyright_notice_submission_id uuid NOT NULL,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT uq_copyright_notice_submission_assessment_identities__notice_id UNIQUE (copyright_notice_id, id),
+  CONSTRAINT uq_copyright_assessment_identities__submission_identity UNIQUE (copyright_notice_submission_id, id),
+  CONSTRAINT fk_copyright_assessment_identities__submission
+    FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id)
+    REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT
+);
+ALTER TABLE copyright_notice_submissions
+  ADD CONSTRAINT fk_copyright_notice_submissions__current_assessment_identity
+  FOREIGN KEY (id, current_assessment_identity_id)
+  REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_submissions VALIDATE CONSTRAINT fk_copyright_notice_submissions__current_assessment_identity;
+ALTER TABLE copyright_notices
+  ADD CONSTRAINT fk_copyright_notices__territorial_assessment_identity
+  FOREIGN KEY (id, territorial_authorizing_assessment_identity_id)
+  REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notices VALIDATE CONSTRAINT fk_copyright_notices__territorial_assessment_identity;
+
 CREATE TABLE copyright_notice_submission_assessments (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_form_screening_id uuid,
   copyright_notice_submission_id uuid NOT NULL,
-  supersedes_assessment_id uuid CONSTRAINT uq_copyrigh_notice_submissi_assessmen__supersedes_assessment_id UNIQUE,
+  supersedes_assessment_id uuid,
   assessed_at timestamptz NOT NULL,
-  assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  assessed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   is_substantially_compliant boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT fk_copyright_assessments__parent_notice
-    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
-    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
+  CONSTRAINT fk_copyright_assessments__identity
+    FOREIGN KEY (copyright_notice_submission_id, id)
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT,
   CONSTRAINT uq_copyright_notice_submission_assessments__notice_id__id UNIQUE (copyright_notice_id, id),
   CONSTRAINT uq_copyright_notice_submission_assessments__submission_id__id UNIQUE (copyright_notice_submission_id, id),
   CONSTRAINT fk_copyright_assessments__supersedes_submission
     FOREIGN KEY (copyright_notice_submission_id, supersedes_assessment_id)
-    REFERENCES copyright_notice_submission_assessments(copyright_notice_submission_id, id) ON DELETE RESTRICT
-);
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT
+) PARTITION BY RANGE (id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_assessments_scope
   BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW
@@ -237,7 +301,7 @@ CREATE TABLE copyright_notice_counter_notice_assessment_targets (
   PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id),
   CONSTRAINT fk_copyright_counter_targets__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
-    REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE CASCADE,
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_counter_targets__target_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
     REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
@@ -245,7 +309,7 @@ CREATE TABLE copyright_notice_counter_notice_assessment_targets (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_counter_targets_scope
   BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW
-  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessments', 'copyright_notice_submission_assessment_id');
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessment_identities', 'copyright_notice_submission_assessment_id');
 COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -330,7 +394,7 @@ COMMENT ON COLUMN copyright_notice_legal_hold_resolutions.copyright_notice_id IS
 CREATE TABLE copyright_notice_deadlines (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  qualifying_counter_notice_assessment_id uuid NOT NULL CONSTRAINT uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
+  qualifying_counter_notice_assessment_id uuid NOT NULL CONSTRAINT uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
   earliest_restoration_at timestamptz NOT NULL,
   escalation_at timestamptz NOT NULL,
   restoration_deadline_at timestamptz NOT NULL,
@@ -401,13 +465,14 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   media_delivery_registry_record_id uuid,
   copyright_notice_guest_capability_id uuid,
   review_action copyright_review_actions CHECK (review_action IN ('confirm', 'reverse')),
-  review_rationale_id uuid CHECK (review_rationale_id IS NULL OR review_rationale_id = id),
+  review_rationale_ciphertext text CONSTRAINT chk_copyright_lifecycle_changes__review_rationale
+    CHECK (char_length(review_rationale_ciphertext) BETWEEN 1 AND 65536),
   is_counter_notice_accepted boolean,
   recovery_source copyright_notice_lifecycle_change_recovery_sources CHECK (recovery_source IN ('durable_review', 'durable_decision')),
   replay_reason copyright_notice_lifecycle_change_replay_reasons CHECK (replay_reason = 'operator_replay'),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK ((review_action IS NULL AND review_rationale_id IS NULL)
-    OR (change_type = 'mandatory_human_review_completed' AND review_action IS NOT NULL AND review_rationale_id IS NOT NULL)),
+  CHECK ((review_action IS NULL AND review_rationale_ciphertext IS NULL)
+    OR (change_type = 'mandatory_human_review_completed' AND review_action IS NOT NULL AND review_rationale_ciphertext IS NOT NULL)),
   CHECK (is_counter_notice_accepted IS NULL OR change_type = 'counter_notice_reviewed'),
   CHECK (recovery_source IS NULL OR change_type = 'submission_assessed'),
   CHECK (replay_reason IS NULL OR change_type IN ('copyright_action_replayed', 'media_delivery_registry_replayed')),
@@ -466,7 +531,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
     REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_lifecycle_events__assessment_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
-    REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_lifecycle_events__artifact_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id)
     REFERENCES copyright_notice_evidence_artifacts(copyright_notice_id, id) ON DELETE RESTRICT,
@@ -480,32 +545,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
     FOREIGN KEY (copyright_notice_id, copyright_restriction_id)
     REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE RESTRICT,
   UNIQUE (copyright_notice_id, id)
-);
-
-
--- Private ciphertext is erasable; the legal change row and its actor remain immutable.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE copyright_notice_lifecycle_change_rationales (
-  id uuid PRIMARY KEY REFERENCES copyright_notice_lifecycle_changes(id) ON DELETE CASCADE,
-  copyright_notice_id uuid NOT NULL,
-  review_rationale_ciphertext text NOT NULL CONSTRAINT chk_copyr_notic_lifec_chang_ration__review_rationale_ciphertext CHECK (char_length(review_rationale_ciphertext) BETWEEN 1 AND 65536),
-  CONSTRAINT fk_copyright_notice_lifecycle_change_rationales__notice__ FOREIGN KEY (copyright_notice_id, id)
-    REFERENCES copyright_notice_lifecycle_changes(copyright_notice_id, id) ON DELETE CASCADE
-    DEFERRABLE INITIALLY DEFERRED
-);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_lifecycle_change_rationales__notice ON copyright_notice_lifecycle_change_rationales(copyright_notice_id);
-ALTER TABLE copyright_notice_lifecycle_changes
-  ADD CONSTRAINT fk_copyright_lifecycle_changes__review_rationale
-  FOREIGN KEY (review_rationale_id) REFERENCES copyright_notice_lifecycle_change_rationales(id)
-  ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED NOT VALID;
-ALTER TABLE copyright_notice_lifecycle_changes VALIDATE CONSTRAINT fk_copyright_lifecycle_changes__review_rationale;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_lifecycle_changes__review_rationale ON copyright_notice_lifecycle_changes(review_rationale_id) WHERE review_rationale_id IS NOT NULL;
-COMMENT ON TABLE copyright_notice_lifecycle_change_rationales IS 'Erasable encrypted review rationale beside an immutable legal lifecycle change.';
-COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.id IS 'Owning lifecycle change id; the rationale is a parent-identified companion.';
-COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.copyright_notice_id IS 'Notice scope enforced together with the owning change by a composite foreign key.';
-COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.review_rationale_ciphertext IS 'Private review rationale; only the controlled retention workflow can erase it.';
+) PARTITION BY RANGE (id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_action_work_items (
@@ -703,6 +743,12 @@ CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restriction
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
 CREATE INDEX idx_copyright_notice_submissions__notice_id ON copyright_notice_submissions(copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_submissions__current_assessment
+  ON copyright_notice_submissions(copyright_notice_id, current_assessment_identity_id)
+  WHERE current_assessment_identity_id IS NOT NULL;
+CREATE INDEX idx_copyright_notice_submissions__current_assessment_global
+  ON copyright_notice_submissions(current_assessment_identity_id)
+  WHERE current_assessment_identity_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_targets__notice_id ON copyright_notice_targets(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_id) WHERE submitted_by_id IS NOT NULL;
@@ -785,9 +831,12 @@ CREATE INDEX idx_copyright_notice_lifecycle_changes__actor ON copyright_notice_l
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE logical_table_name text;
 BEGIN
+  SELECT relname INTO logical_table_name FROM pg_class
+    WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
   IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on'
-    AND TG_TABLE_NAME IN (
+    AND logical_table_name IN (
       'copyright_notice_email_intakes', 'copyright_notice_email_intake_parses',
       'copyright_notice_email_intake_attachments',
       'copyright_notice_email_intake_recommendations',
@@ -795,7 +844,7 @@ BEGIN
       'copyright_notice_email_message_ancestors'
     ) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
-    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+    IF fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;
   RAISE EXCEPTION 'copyright legal receipt and evidence records are immutable' USING ERRCODE = 'check_violation';
 END;
@@ -819,12 +868,15 @@ COMMENT ON FUNCTION fn_reject_copyright_missing_storage_object() IS 'Reject miss
 CREATE OR REPLACE FUNCTION fn_reject_copyright_immutable_with_actor_erasure()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
+  logical_table_name text;
   actor_column text;
   old_actor jsonb;
   new_actor jsonb;
 BEGIN
+  SELECT relname INTO logical_table_name FROM pg_class
+    WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
-    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+    IF fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';
@@ -899,27 +951,15 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';
   END IF;
-  IF OLD.submitted_by_id IS NOT NULL
-    AND NEW.submitted_by_id IS NULL
-    AND ROW(
-      OLD.id,
-      OLD.copyright_notice_id,
-      OLD.kind,
-      OLD.received_at,
-      OLD.source_kind,
-      OLD.body_ciphertext,
-      OLD.copyright_notice_guest_capability_id,
-      OLD.created_at
-    ) IS NOT DISTINCT FROM ROW(
-      NEW.id,
-      NEW.copyright_notice_id,
-      NEW.kind,
-      NEW.received_at,
-      NEW.source_kind,
-      NEW.body_ciphertext,
-      NEW.copyright_notice_guest_capability_id,
-      NEW.created_at
-    ) THEN
+  IF (NEW.submitted_by_id IS NOT DISTINCT FROM OLD.submitted_by_id
+      OR (OLD.submitted_by_id IS NOT NULL AND NEW.submitted_by_id IS NULL))
+    AND (to_jsonb(OLD) - ARRAY['submitted_by_id', 'current_assessment_identity_id',
+      'current_assessment_is_substantially_compliant', 'current_assessed_at',
+      'current_assessed_by_id', 'current_assessment_form_screening_id'])
+      IS NOT DISTINCT FROM
+      (to_jsonb(NEW) - ARRAY['submitted_by_id', 'current_assessment_identity_id',
+      'current_assessment_is_substantially_compliant', 'current_assessed_at',
+      'current_assessed_by_id', 'current_assessment_form_screening_id']) THEN
     RETURN NEW;
   END IF;
   RAISE EXCEPTION 'copyright legal receipt records are immutable' USING ERRCODE = 'check_violation';
@@ -953,7 +993,7 @@ CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE UPDATE
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('resolved_by_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_identity()
@@ -1012,6 +1052,13 @@ BEGIN
     AND OLD.provisional_withholding_at IS DISTINCT FROM NEW.provisional_withholding_at THEN
     RAISE EXCEPTION 'copyright notice provisional withholding timestamp is immutable' USING ERRCODE = 'check_violation';
   END IF;
+  IF OLD.current_territorial_decision_identity_id IS NULL
+    AND NEW.current_territorial_decision_identity_id IS NOT NULL
+    AND (NEW.territorial_rationale_ciphertext IS NULL
+      OR NEW.territorial_public_explanation_ciphertext IS NULL) THEN
+    RAISE EXCEPTION 'current territorial decision requires rationale and public explanation'
+      USING ERRCODE = 'check_violation';
+  END IF;
   RETURN NEW;
 END;
 $$;
@@ -1028,8 +1075,8 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';
   END IF;
-  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at)
-    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at)
+  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at, OLD.is_authorizing_assessment_automated)
+    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at, NEW.is_authorizing_assessment_automated)
     OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN
     RAISE EXCEPTION 'copyright restriction origin is immutable' USING ERRCODE = 'check_violation';
   END IF;
@@ -1037,6 +1084,19 @@ BEGIN
     AND (OLD.lifted_at IS DISTINCT FROM NEW.lifted_at
       OR (OLD.lifted_by_id IS DISTINCT FROM NEW.lifted_by_id AND NEW.lifted_by_id IS NOT NULL)) THEN
     RAISE EXCEPTION 'copyright restriction lift is immutable' USING ERRCODE = 'check_violation';
+  END IF;
+  IF OLD.administrator_lift_decided_at IS NOT NULL
+    AND ROW(OLD.administrator_lift_decided_at, OLD.administrator_lift_decided_by_id,
+      OLD.administrator_lift_rationale_ciphertext)
+      IS DISTINCT FROM ROW(NEW.administrator_lift_decided_at, NEW.administrator_lift_decided_by_id,
+        NEW.administrator_lift_rationale_ciphertext)
+    AND NOT fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
+    RAISE EXCEPTION 'copyright administrator lift decision is immutable' USING ERRCODE = 'check_violation';
+  END IF;
+  IF OLD.administrator_lift_decided_at IS NULL
+    AND NEW.administrator_lift_decided_at IS NOT NULL
+    AND NEW.administrator_lift_rationale_ciphertext IS NULL THEN
+    RAISE EXCEPTION 'administrator lift decision requires rationale' USING ERRCODE = 'check_violation';
   END IF;
   IF OLD.human_reviewed_at IS NOT NULL
     AND (ROW(OLD.human_reviewed_at, OLD.human_review_action)
@@ -1047,7 +1107,23 @@ BEGIN
   END IF;
   IF OLD.human_reviewed_at IS NULL
     AND NEW.human_reviewed_at IS NOT NULL
-    AND NEW.human_reviewed_by_id IS NULL THEN
+    AND NEW.human_reviewed_by_id IS NULL
+    AND NOT (
+      NEW.human_review_action = 'reverse'
+      AND NEW.is_authorizing_assessment_automated
+      AND EXISTS (
+        SELECT 1 FROM copyright_notice_submission_assessment_identities assessment
+        JOIN copyright_notice_submissions submission
+          ON submission.id = assessment.copyright_notice_submission_id
+        JOIN copyright_notice_form_intakes intake
+          ON intake.copyright_notice_submission_id = submission.id
+        JOIN copyright_notice_form_intake_reviews review
+          ON review.copyright_notice_form_intake_id = intake.id
+        WHERE assessment.id = NEW.authorizing_assessment_id
+          AND assessment.copyright_notice_id = NEW.copyright_notice_id
+          AND NOT review.is_accepted AND review.reviewed_by_id IS NULL
+      )
+    ) THEN
     RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;
@@ -1188,6 +1264,14 @@ COMMENT ON COLUMN copyright_notices.legal_basis IS 'Legal basis for the case; th
 COMMENT ON COLUMN copyright_notices.received_at IS 'Immutable timestamp when Voucha originally received the allegation.';
 COMMENT ON COLUMN copyright_notices.accepted_at IS 'When deterministic or staff validation accepted the allegation into the authenticated member record.';
 COMMENT ON COLUMN copyright_notices.provisional_withholding_at IS 'When the case first caused a provisional restriction; NULL when no restriction was imposed.';
+COMMENT ON COLUMN copyright_notices.current_territorial_decision_identity_id IS 'Retained identity of the current EU or UK decision; history expiration never changes the final case result.';
+COMMENT ON COLUMN copyright_notices.territorial_decision_outcome IS 'Current EU or UK merits result while this case exists.';
+COMMENT ON COLUMN copyright_notices.territorial_decided_at IS 'Time staff reached the current EU or UK merits result.';
+COMMENT ON COLUMN copyright_notices.territorial_decided_by_id IS 'Retained staff identity for the current EU or UK decision.';
+COMMENT ON COLUMN copyright_notices.territorial_rationale_ciphertext IS 'Encrypted current EU or UK decision rationale retained with the case.';
+COMMENT ON COLUMN copyright_notices.territorial_public_explanation_ciphertext IS 'Encrypted public explanation of the current EU or UK decision retained with the case.';
+COMMENT ON COLUMN copyright_notices.last_lifecycle_activity_at IS 'Latest legal lifecycle activity retained as a case clock after detailed event history expires.';
+COMMENT ON COLUMN copyright_notices.last_guest_capability_activity_at IS 'Latest guest capability update or natural expiry activity retained after live token pruning.';
 COMMENT ON COLUMN copyright_notices.claimant_user_id IS 'Signed-in claimant account linked to the member record; NULL for guest/email claimants or after account deletion.';
 COMMENT ON COLUMN copyright_notices.claimant_display_name IS 'Immutable claimant display-name snapshot for authorized legal and staff use.';
 COMMENT ON COLUMN copyright_notices.claimant_contact_ciphertext IS 'Authenticated ciphertext containing private claimant contact details.';
@@ -1288,7 +1372,7 @@ COMMENT ON COLUMN copyright_notice_evidence_artifacts.sha256 IS 'SHA-256 digest 
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.media_type_id IS 'Untrusted declared or detected media type used only for quarantined processing.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved artifact byte length for bounds and integrity checks.';
 
-COMMENT ON TABLE copyright_notice_lifecycle_changes IS 'Append-only legal workflow audit trail.';
+COMMENT ON TABLE copyright_notice_lifecycle_changes IS 'Monthly append-only legal workflow audit trail; final results and activity clocks live on their owners.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_id IS 'Legal case whose transition or correspondence event was recorded; NULL only for a replayed email-intake reply, which belongs to no case.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.change_type IS 'Versioned legal workflow event name.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.changed_by_id IS 'Retained user or staff actor identity for the event; NULL only for events that do not require an actor.';
@@ -1306,7 +1390,7 @@ COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_delivery_w
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.media_delivery_registry_record_id IS 'Media delivery registry record replayed by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_guest_capability_id IS 'Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_action IS 'Human review outcome stored on a mandatory-review event.';
-COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_rationale_id IS 'Required parent-identified encrypted rationale companion for mandatory human review; member timelines expose no ciphertext.';
+COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_rationale_ciphertext IS 'Encrypted mandatory-review explanation within this finite legal history row; member timelines expose no ciphertext.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.is_counter_notice_accepted IS 'Whether the counter-notice review accepted the counter-notice.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.recovery_source IS 'Durable record used to recover an assessed submission.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.replay_reason IS 'Why an operator replayed a failed action or registry record.';
@@ -1329,10 +1413,47 @@ COMMENT ON COLUMN copyright_notice_action_work_items.lease_token IS 'Opaque work
 CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE INSERT ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_copyright_lifecycle_change_rationales_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_change_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE OR REPLACE FUNCTION fn_record_copyright_case_lifecycle_activity() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.copyright_notice_id IS NOT NULL THEN
+    UPDATE copyright_notices notice
+    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, NEW.created_at)
+    WHERE notice.id = NEW.copyright_notice_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_record_copyright_case_lifecycle_activity
+AFTER INSERT ON copyright_notice_lifecycle_changes
+FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_case_lifecycle_activity();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);
 CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id
   ON copyright_notice_evidence_artifacts (storage_object_id)
   WHERE storage_object_id IS NOT NULL;
+
+COMMENT ON TABLE copyright_notice_submission_assessment_identities IS 'Minimal stable assessment ids and owner scope that survive detailed assessment history retirement without conferring authorization.';
+COMMENT ON COLUMN copyright_notice_submission_assessment_identities.id IS 'Published UUIDv7 assessment identity; detailed assessments use this id while they exist.';
+COMMENT ON COLUMN copyright_notice_submission_assessment_identities.copyright_notice_id IS 'Owning case scope for durable exact-authority references.';
+COMMENT ON COLUMN copyright_notice_submission_assessment_identities.copyright_notice_submission_id IS 'Owning submission for the published assessment identity.';
+COMMENT ON COLUMN copyright_notice_submission_assessment_identities.created_at IS 'Identity creation time derived from its UUIDv7 id.';
+COMMENT ON COLUMN copyright_notices.current_territorial_decision_identity_id IS 'Current EU or UK published decision identity; result and authority are stored on this case.';
+COMMENT ON COLUMN copyright_notices.territorial_authorizing_assessment_identity_id IS 'Exact retained assessment identity that authorized the current territorial restriction, if any.';
+COMMENT ON COLUMN copyright_notices.territorial_decision_outcome IS 'Current final territorial result independent of detailed decision history.';
+COMMENT ON COLUMN copyright_notices.territorial_decided_at IS 'Time the current territorial decision was made.';
+COMMENT ON COLUMN copyright_notices.territorial_decided_by_id IS 'Retained staff identity that made the current territorial decision.';
+COMMENT ON COLUMN copyright_notices.territorial_rationale_ciphertext IS 'Encrypted current territorial rationale, erasable after case retention while the result survives.';
+COMMENT ON COLUMN copyright_notices.territorial_public_explanation_ciphertext IS 'Encrypted current public territorial explanation, erasable after case retention.';
+COMMENT ON COLUMN copyright_notices.last_lifecycle_activity_at IS 'Monotonic case activity from lifecycle events, retained when event partitions retire.';
+COMMENT ON COLUMN copyright_notices.last_guest_capability_activity_at IS 'Monotonic issuance, revocation, or unrevoked-expiry activity retained after a live guest token is pruned.';
+COMMENT ON COLUMN copyright_notice_submissions.current_assessment_identity_id IS 'Current published assessment identity; result fields on this submission remain authoritative after history retirement.';
+COMMENT ON COLUMN copyright_notice_submissions.current_assessment_is_substantially_compliant IS 'Current compliance result independent of detailed assessment history.';
+COMMENT ON COLUMN copyright_notice_submissions.current_assessed_at IS 'Time the current assessment result was recorded.';
+COMMENT ON COLUMN copyright_notice_submissions.current_assessed_by_id IS 'Retained human assessor identity; null only for a screened automated assessment.';
+COMMENT ON COLUMN copyright_notice_submissions.current_assessment_form_screening_id IS 'Current automated form-screening source, if an automated assessment was used.';
+COMMENT ON COLUMN copyright_restrictions.is_authorizing_assessment_automated IS 'Immutable snapshot of whether the original authorizing assessment was automated.';
+COMMENT ON COLUMN copyright_restrictions.administrator_lift_decided_at IS 'Time staff decided an administrator lift, independent of later restoration completion.';
+COMMENT ON COLUMN copyright_restrictions.administrator_lift_decided_by_id IS 'Retained staff identity that decided the administrator lift.';
+COMMENT ON COLUMN copyright_restrictions.administrator_lift_rationale_ciphertext IS 'Encrypted current administrator lift rationale, erasable after case retention.';

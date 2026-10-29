@@ -20,12 +20,14 @@ export async function readCopyrightThreadEnforcementPage(
       /* scanCopyrightThreadEnforcementAssessment */
       WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
       page AS MATERIALIZED (
-        SELECT id, copyright_notice_submission_id, copyright_notice_form_screening_id,
-          is_substantially_compliant FROM copyright_notice_submission_assessments
+        SELECT current_assessment_identity_id AS id, id AS copyright_notice_submission_id,
+          current_assessment_form_screening_id AS copyright_notice_form_screening_id,
+          current_assessment_is_substantially_compliant AS is_substantially_compliant
+        FROM copyright_notice_submissions
         WHERE copyright_notice_id = (SELECT notice_id FROM owner)
-          AND id > COALESCE(${cursor.childId}::uuid,
+          AND current_assessment_identity_id > COALESCE(${cursor.childId}::uuid,
             '00000000-0000-0000-0000-000000000000'::uuid)
-        ORDER BY id LIMIT 1
+        ORDER BY current_assessment_identity_id LIMIT 1
       )
       SELECT assessment.id,
         assessment.copyright_notice_form_screening_id IS NOT NULL AS requires_screening,
@@ -43,9 +45,6 @@ export async function readCopyrightThreadEnforcementPage(
           AND intake.has_accuracy_authority_under_penalty_of_perjury
           AND char_length(intake.electronic_signature_ciphertext) > 0
         ))
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments newer
-          WHERE newer.supersedes_assessment_id = assessment.id LIMIT 1)
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_form_intakes intake
           JOIN copyright_notice_form_intake_reviews review
@@ -76,71 +75,38 @@ export async function readCopyrightThreadEnforcementPage(
     if (!assessment.pending) return { ...cursor, childId: assessment.id, blocked: false }
     return {
       ...cursor,
-      phase: 'enforcement_reversal_decisions',
+      phase: 'enforcement_reversal_requests',
       assessmentId: assessment.id,
       childId: null,
-      blocked: false,
-    }
-  }
-  if (cursor.phase === 'enforcement_reversal_decisions') {
-    const { rows } = await transaction<{ id: string; outcome: string }>(sql`
-      /* scanCopyrightThreadEnforcementReversalDecisions */
-      WITH owner AS MATERIALIZED (SELECT ${cursor.assessmentId}::uuid AS assessment_id)
-      SELECT id, outcome FROM copyright_territorial_decisions
-      WHERE copyright_notice_submission_assessment_id = (SELECT assessment_id FROM owner)
-        AND id > COALESCE(${cursor.childId}::uuid,
-          '00000000-0000-0000-0000-000000000000'::uuid)
-      ORDER BY id LIMIT 1`)
-    const decision = rows[0]
-    if (!decision) {
-      const { rows: assessments } = await transaction<{
-        copyright_notice_form_screening_id: string | null
-      }>(sql`/* readCopyrightThreadEnforcementAssessmentScreening */
-        SELECT copyright_notice_form_screening_id
-        FROM copyright_notice_submission_assessments
-        WHERE id = ${cursor.assessmentId} LIMIT 1`)
-      return {
-        ...cursor,
-        phase: assessments[0]?.copyright_notice_form_screening_id
-          ? 'enforcement_screening_targets'
-          : 'enforcement_targets',
-        childId: null,
-        territorialDecisionId: null,
-        blocked: false,
-      }
-    }
-    if (decision.outcome !== 'restrict') {
-      return { ...cursor, childId: decision.id, blocked: false }
-    }
-    return {
-      ...cursor,
-      phase: 'enforcement_reversal_requests',
-      childId: null,
-      territorialDecisionId: decision.id,
       blocked: false,
     }
   }
   if (cursor.phase === 'enforcement_reversal_requests') {
     const { rows } = await transaction<{ id: string; revoked: boolean }>(sql`
       /* scanCopyrightThreadEnforcementReversalRequests */
-      WITH owner AS MATERIALIZED (SELECT ${cursor.territorialDecisionId}::uuid AS decision_id),
+      WITH owner AS MATERIALIZED (SELECT ${cursor.assessmentId}::uuid AS assessment_id),
       page AS MATERIALIZED (
-        SELECT id FROM copyright_territorial_redress_requests
-        WHERE copyright_territorial_decision_id = (SELECT decision_id FROM owner)
+        SELECT id, staff_disposition FROM copyright_territorial_redress_requests
+        WHERE authorizing_assessment_identity_id = (SELECT assessment_id FROM owner)
           AND id > COALESCE(${cursor.childId}::uuid,
             '00000000-0000-0000-0000-000000000000'::uuid)
         ORDER BY id LIMIT ${batchSize}
       )
-      SELECT page.id, redress.staff_disposition = 'revoke' AS revoked FROM page
-      LEFT JOIN copyright_territorial_redress_decisions redress
-        ON redress.copyright_territorial_redress_request_id = page.id`)
+      SELECT id, staff_disposition = 'revoke' AS revoked FROM page`)
     if (rows.some(row => row.revoked)) return skipCopyrightThreadEnforcementAssessment(cursor)
     if (rows.length < batchSize) {
+      const { rows: assessments } = await transaction<{
+        copyright_notice_form_screening_id: string | null
+      }>(sql`/* readCopyrightThreadEnforcementAssessmentScreening */
+        SELECT current_assessment_form_screening_id AS copyright_notice_form_screening_id
+        FROM copyright_notice_submissions
+        WHERE current_assessment_identity_id = ${cursor.assessmentId} LIMIT 1`)
       return {
         ...cursor,
-        phase: 'enforcement_reversal_decisions',
-        childId: cursor.territorialDecisionId,
-        territorialDecisionId: null,
+        phase: assessments[0]?.copyright_notice_form_screening_id
+          ? 'enforcement_screening_targets'
+          : 'enforcement_targets',
+        childId: null,
         blocked: false,
       }
     }

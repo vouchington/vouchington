@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
+import {
+  createTestExpiredTerritorialDecisionHistory,
+  decideTestExpiredTerritorialRedress,
+} from '@voucha/test-helpers/copyright-expired-territorial-history'
 import { seedCopyrightFormScreeningAttemptPair } from '@voucha/test-helpers/copyright-operational-retention'
 import { seedUnusedCopyrightGuestCapability } from '@voucha/test-helpers/copyright-operational-guest-capabilities'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
@@ -22,7 +26,6 @@ const initialCursor: BlockerCursor = {
   phase: null,
   childId: null,
   assessmentId: null,
-  territorialDecisionId: null,
   generation: null,
 }
 
@@ -41,6 +44,33 @@ async function walkEnforcement(noticeId: string) {
 }
 
 describe('bounded copyright thread blocker proof', () => {
+  it('uses retained redress result after the challenged decision history expires', async () => {
+    const scene = await createTestExpiredTerritorialDecisionHistory('restrict')
+    const cursor: BlockerCursor = {
+      ...initialCursor,
+      phase: 'enforcement_reversal_requests',
+      assessmentId: scene.assessmentId,
+    }
+    const requestPage = await readTestCopyrightThreadEnforcementPage(scene.noticeId, cursor)
+    expect(requestPage).toMatchObject({
+      phase: 'enforcement_reversal_requests',
+      childId: scene.requestId,
+      blocked: false,
+    })
+    expect(await readTestCopyrightThreadEnforcementPage(scene.noticeId, requestPage)).toMatchObject(
+      {
+        phase: 'enforcement_targets',
+        blocked: false,
+      },
+    )
+    await decideTestExpiredTerritorialRedress(scene.requestId, 'revoke')
+    expect(await readTestCopyrightThreadEnforcementPage(scene.noticeId, cursor)).toMatchObject({
+      phase: 'enforcement_assessments',
+      childId: scene.assessmentId,
+      blocked: false,
+    })
+  })
+
   it('finds owed enforcement on a raw target page and settles after that target is restricted', async () => {
     const fixture = await createAssessedUsDmcaCopyrightNoticeFixture({
       postTitlePrefix: 'thread blocker enforcement',
@@ -59,7 +89,7 @@ describe('bounded copyright thread blocker proof', () => {
       phase: 'enforcement_assessments',
     }
     const assessment = await readTestCopyrightThreadEnforcementPage(noticeId, cursor)
-    expect(assessment.phase).toBe('enforcement_reversal_decisions')
+    expect(assessment.phase).toBe('enforcement_reversal_requests')
     const decisions = await readTestCopyrightThreadEnforcementPage(noticeId, assessment)
     expect(decisions.phase).toBe('enforcement_targets')
     const pending = await readTestCopyrightThreadEnforcementPage(noticeId, decisions)

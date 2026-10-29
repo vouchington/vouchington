@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 
 type CopyrightEmailRecommendationInput = {
@@ -62,23 +63,39 @@ async function appendWithCurrentLink(
       SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
       WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
   if ((currentLinks[0]?.copyright_notice_id ?? null) !== noticeId) return 'link-changed'
-  const { rowCount } = await transaction(sql`/* appendCopyrightEmailIntakeRecommendation */
+  if (noticeId) {
+    const { rows: erased } =
+      await transaction(sql`/* appendCopyrightEmailIntakeRecommendation:erasure */
+      SELECT 1 FROM copyright_notice_retention_erasures
+      WHERE copyright_notice_id = ${noticeId} LIMIT 1`)
+    if (erased[0]) return false
+  }
+  const recommendationId = uuidv7()
+  const outputCiphertext = encryptSecret(
+    JSON.stringify(input.structuredOutput),
+    copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
+  )
+  const { rows: insertedIdentity } = await transaction<{ id: string }>(sql`
+    /* appendCopyrightEmailIntakeRecommendation:identity */
+    INSERT INTO copyright_notice_email_intake_recommendation_identities
+      (id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
+    VALUES (${recommendationId}, ${input.intakeId}, ${input.inputSha256}, ${input.promptVersion})
+    ON CONFLICT (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
+    DO NOTHING RETURNING id`)
+  if (insertedIdentity.length === 0) return false
+  await transaction(sql`/* appendCopyrightEmailIntakeRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations (
-      copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model, structured_output_ciphertext
-    ) SELECT source.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
-      ${encryptSecret(JSON.stringify(input.structuredOutput), copyrightEmailIntakePurpose(intake.amazon_ses_message_id))}
-    FROM copyright_notice_email_intakes source
-    WHERE source.id = ${input.intakeId} AND source.raw_storage_object_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-        WHERE receipt.id = source.id AND receipt.erased_at IS NULL)
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        JOIN copyright_notice_retention_erasures erased
-          ON erased.copyright_notice_id = link.copyright_notice_id
-        WHERE link.copyright_notice_email_intake_id = source.id
-      )
-    ON CONFLICT (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version) DO NOTHING
+      id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
+      structured_output_ciphertext
+    ) VALUES (${recommendationId}, ${input.intakeId}, ${input.inputSha256}, ${input.promptVersion},
+      ${input.model}, ${outputCiphertext})
   `)
+  await transaction(sql`/* appendCopyrightEmailIntakeRecommendation:current */
+    UPDATE copyright_notice_email_intakes SET
+      recommendation_completed_at = CURRENT_TIMESTAMP,
+      current_recommendation_identity_id = ${recommendationId},
+      current_recommendation_output_ciphertext = ${outputCiphertext}
+    WHERE id = ${input.intakeId}`)
   await transaction.commit()
-  return rowCount === 1
+  return true
 }

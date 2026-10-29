@@ -14,7 +14,7 @@ export async function resetCopyrightThreadRetentionCursor(
       cursor_legal_hold_generation = NULL, cursor_case_party_generation = NULL,
       cursor_legal_latest_release_at = NULL,
       cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
-      cursor_blocker_assessment_id = NULL, cursor_blocker_territorial_decision_id = NULL,
+      cursor_blocker_assessment_id = NULL,
       cursor_blocker_generation = NULL
     WHERE kind = 'email_thread_references'`)
 }
@@ -32,7 +32,7 @@ export async function advanceCopyrightThreadCaseCursor(
       cursor_legal_hold_generation = NULL, cursor_case_party_generation = NULL,
       cursor_legal_latest_release_at = NULL,
       cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
-      cursor_blocker_assessment_id = NULL, cursor_blocker_territorial_decision_id = NULL,
+      cursor_blocker_assessment_id = NULL,
       cursor_blocker_generation = NULL,
       sweep_upper_bound_record_id = ${upperBound}::uuid
     WHERE kind = 'email_thread_references'`)
@@ -64,7 +64,6 @@ export async function saveCopyrightThreadBlockerProof(
     SET cursor_blocker_phase = ${blocker.phase},
       cursor_blocker_child_id = ${blocker.childId}::uuid,
       cursor_blocker_assessment_id = ${blocker.assessmentId}::uuid,
-      cursor_blocker_territorial_decision_id = ${blocker.territorialDecisionId}::uuid,
       cursor_blocker_generation = ${blocker.generation}::bigint,
       sweep_upper_bound_record_id = ${upperBound}::uuid
     WHERE kind = 'email_thread_references'`)

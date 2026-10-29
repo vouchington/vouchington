@@ -12,7 +12,7 @@ export type Source =
   | 'github_friends'
   | 'x_friends'
   | 'copyright_rationales_erased'
-  | 'copyright_rationales_noncase'
+  | 'copyright_rationales_attempts'
 
 export const SOURCES: readonly Source[] = [
   'oauth_events',
@@ -26,7 +26,7 @@ export const SOURCES: readonly Source[] = [
   'github_friends',
   'x_friends',
   'copyright_rationales_erased',
-  'copyright_rationales_noncase',
+  'copyright_rationales_attempts',
 ]
 
 export type SourcePlan = {
@@ -174,13 +174,12 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         deletePredicate: 'fn_copyright_decision_rationale_retention_eligible(target, $2)',
         deletePredicateUsesCutoff: true,
       }
-    case 'copyright_rationales_noncase':
+    case 'copyright_rationales_attempts':
       return {
         table: 'copyright_decision_rationales',
         keyAt: 'target.created_at',
         cutoffAt: calendarYearsAgo(now, 6),
-        predicate: `target.id < $1::uuid AND target.copyright_notice_id IS NULL
-          AND target.rationale_ciphertext <> 'erased'`,
+        predicate: `target.id < $1::uuid AND target.rationale_ciphertext <> 'erased'`,
         deletePredicate: 'fn_copyright_decision_rationale_retention_eligible(target, $2)',
         deletePredicateUsesCutoff: true,
       }

@@ -1,6 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { eraseCopyrightRetentionTableSql } from '../../../services/copyright-notices/retention-erasure-spec.mts'
+import { eraseCopyrightRetentionTableSql } from '../../../services/copyright-notices/retention-erasure-sql.mts'
 
 type CopyrightRetentionErasureTable = Parameters<typeof eraseCopyrightRetentionTableSql>[0]
 

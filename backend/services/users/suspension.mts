@@ -111,15 +111,9 @@ export async function unsuspendUser(
   const { rows: termination } = await query<{ blocked: boolean }>(sql`
     /* unsuspendUser:copyrightTermination */
     SELECT EXISTS (
-      SELECT 1 FROM copyright_repeat_infringer_reviews terminated
-      WHERE terminated.account_user_id = ${userId}
-        AND terminated.outcome = 'terminate'
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_repeat_infringer_reviews reinstated
-          WHERE reinstated.account_user_id = terminated.account_user_id
-            AND reinstated.outcome = 'reinstatement'
-            AND reinstated.outcome_at > terminated.outcome_at
-        )
+      SELECT 1 FROM copyright_repeat_infringer_account_states account_state
+      WHERE account_state.account_user_id = ${userId}
+        AND account_state.termination_in_effect
     ) AS blocked
   `)
   if (termination[0]?.blocked) {

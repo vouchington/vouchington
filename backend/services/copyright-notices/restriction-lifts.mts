@@ -7,7 +7,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanLiftCopyrightRestriction } from './authorization.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 import { applyCopyrightConfirmationConsequencesInTransaction } from './staydown-registration.mts'
 
@@ -36,13 +36,11 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   const { rows: locked } = await transaction<{
     target_id: string
     lifted_at: Date | null
-    lift_recorded: boolean
+    administrator_lift_decided_at: Date | null
   }>(sql`
     /* liftCopyrightRestrictionWithoutSetter:lock */
-    SELECT target.id AS target_id, restriction.lifted_at, EXISTS (
-      SELECT 1 FROM copyright_restriction_administrator_lifts administrator_lift
-      WHERE administrator_lift.copyright_restriction_id = restriction.id
-    ) AS lift_recorded
+    SELECT target.id AS target_id, restriction.lifted_at,
+      restriction.administrator_lift_decided_at
     FROM copyright_notices notice
     JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
     JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
@@ -52,7 +50,7 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   const restriction = locked[0]
   assert(restriction, 404, 'Copyright restriction not found')
   assert(
-    restriction.lifted_at === null && !restriction.lift_recorded,
+    restriction.lifted_at === null && restriction.administrator_lift_decided_at === null,
     409,
     'Copyright restriction is already lifted',
   )
@@ -63,13 +61,24 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
     .append(sql` party WHERE target.id = ${restriction.target_id}) AS has_responder`)
   const { rows: responders } = await transaction<{ has_responder: boolean }>(respondersSql)
   assert(!responders[0]?.has_responder, 409, 'A live account can respond to this restriction')
+  const rationaleCiphertext = encryptSecret(
+    input.rationale,
+    `copyright-restriction-lift:${input.restrictionId}`,
+  )
+  await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:current */
+    UPDATE copyright_restrictions
+    SET administrator_lift_decided_at = ${input.liftedAt},
+      administrator_lift_decided_by_id = ${input.currentUser.id},
+      administrator_lift_rationale_ciphertext = ${rationaleCiphertext}
+    WHERE id = ${input.restrictionId} AND administrator_lift_decided_at IS NULL
+  `)
   const { rows: lifts } = await transaction<{ id: string }>(sql`
     /* liftCopyrightRestrictionWithoutSetter:insert */
     INSERT INTO copyright_restriction_administrator_lifts (
       copyright_restriction_id, lifted_at, lifted_by_id, rationale_ciphertext
     ) VALUES (
       ${input.restrictionId}, ${input.liftedAt}, ${input.currentUser.id},
-      ${encryptSecret(input.rationale, `copyright-restriction-lift:${input.restrictionId}`)}
+      ${rationaleCiphertext}
     ) RETURNING id
   `)
   const lift = lifts[0]

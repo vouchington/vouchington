@@ -20,6 +20,7 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
     placement_id: string
     restriction_id: string
     submission_id: string
+    assessment_id: string
     target_id: string
   }>(sql`/* createCopyrightNoticeSchemaFixture */
     WITH image AS (
@@ -46,32 +47,51 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
       INSERT INTO copyright_notice_submissions (copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
       SELECT id, 'notice', CURRENT_TIMESTAMP, 'staff', ${`v1:test-body:${randomUUID()}`} FROM notice
       RETURNING id
+    ), assessment_identity AS (
+      INSERT INTO copyright_notice_submission_assessment_identities (
+        copyright_notice_id, copyright_notice_submission_id
+      ) SELECT notice.id, submission.id FROM notice CROSS JOIN submission
+      RETURNING id, copyright_notice_submission_id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
-      ) SELECT id, CURRENT_TIMESTAMP, ${actorUserId}, true FROM submission
-      RETURNING id
-    ), restriction AS (
+        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+      ) SELECT id, copyright_notice_submission_id, CURRENT_TIMESTAMP, ${actorUserId}, true
+        FROM assessment_identity
+      RETURNING id, copyright_notice_submission_id
+    )
+    SELECT notice.id AS notice_id, submission.id AS submission_id, assessment.id AS assessment_id,
+      target.id AS target_id, placement.image_id, placement.placement_id
+    FROM notice CROSS JOIN submission CROSS JOIN assessment CROSS JOIN target CROSS JOIN placement`)
+  await write(sql`/* createCopyrightNoticeSchemaFixture:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${rows[0]!.assessment_id},
+      current_assessment_is_substantially_compliant = true,
+      current_assessed_at = CURRENT_TIMESTAMP, current_assessed_by_id = ${actorUserId}
+    WHERE id = ${rows[0]!.submission_id}
+  `)
+  const { rows: enforcementRows } = await write<{
+    action_intent_id: string
+    restriction_id: string
+  }>(sql`
+    /* createCopyrightNoticeSchemaFixture:restriction */
+    WITH restriction AS (
       INSERT INTO copyright_restrictions (
         copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id
-      ) SELECT target.id, assessment.id, CURRENT_TIMESTAMP, ${actorUserId}
-        FROM target CROSS JOIN assessment
+      ) VALUES (${rows[0]!.target_id}, ${rows[0]!.assessment_id}, CURRENT_TIMESTAMP, ${actorUserId})
       RETURNING id
     ), intent AS (
       INSERT INTO copyright_notice_action_work_items (copyright_restriction_id, expected_placement_revision, action)
-      SELECT id, 1, 'withhold' FROM restriction
-      RETURNING id
+      SELECT id, 1, 'withhold' FROM restriction RETURNING id
     )
-    SELECT intent.id AS action_intent_id, notice.id AS notice_id, restriction.id AS restriction_id,
-      submission.id AS submission_id, target.id AS target_id, placement.image_id, placement.placement_id
-    FROM intent CROSS JOIN notice CROSS JOIN restriction CROSS JOIN submission CROSS JOIN target CROSS JOIN placement`)
+    SELECT intent.id AS action_intent_id, restriction.id AS restriction_id FROM intent CROSS JOIN restriction
+  `)
   return {
-    actionIntentId: rows[0]!.action_intent_id,
+    actionIntentId: enforcementRows[0]!.action_intent_id,
     actorUserId,
     noticeId: rows[0]!.notice_id,
     imageId: rows[0]!.image_id,
     placementId: rows[0]!.placement_id,
-    restrictionId: rows[0]!.restriction_id,
+    restrictionId: enforcementRows[0]!.restriction_id,
     submissionId: rows[0]!.submission_id,
     targetId: rows[0]!.target_id,
   }
@@ -118,7 +138,12 @@ export async function readCopyrightErasedRestrictionActors(fixture: CopyrightNot
 export async function createSecondCopyrightRestrictionForPlacement(
   fixture: CopyrightNoticeSchemaFixture,
 ): Promise<void> {
-  await write(sql`/* createSecondCopyrightRestrictionForPlacement */
+  const { rows } = await write<{
+    submission_id: string
+    assessment_id: string
+    actor_id: string
+    target_id: string
+  }>(sql`/* createSecondCopyrightRestrictionForPlacement */
     WITH second_actor AS (INSERT INTO users DEFAULT VALUES RETURNING id), second_notice AS (
       INSERT INTO copyright_notices (jurisdiction, legal_basis, received_at, accepted_at, claimant_contact_ciphertext, work_description, policy_version)
       SELECT jurisdiction, legal_basis, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${`v1:test-contact:${randomUUID()}`}, ${`Second test work ${randomUUID()}`}, policy_version
@@ -138,36 +163,33 @@ export async function createSecondCopyrightRestrictionForPlacement(
         copyright_notice_id, kind, received_at, source_kind, body_ciphertext
       ) SELECT id, 'notice', CURRENT_TIMESTAMP, 'staff', ${`v1:test-body:${randomUUID()}`}
         FROM second_notice RETURNING id
+    ), second_assessment_identity AS (
+      INSERT INTO copyright_notice_submission_assessment_identities (
+        copyright_notice_id, copyright_notice_submission_id
+      ) SELECT second_notice.id, second_submission.id
+        FROM second_notice CROSS JOIN second_submission
+      RETURNING id, copyright_notice_submission_id
     ), second_assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
-      ) SELECT second_submission.id, CURRENT_TIMESTAMP, second_actor.id, true
-        FROM second_submission CROSS JOIN second_actor RETURNING id
+        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+      ) SELECT second_assessment_identity.id,
+        second_assessment_identity.copyright_notice_submission_id,
+        CURRENT_TIMESTAMP, second_actor.id, true
+        FROM second_assessment_identity CROSS JOIN second_actor
+        RETURNING id, copyright_notice_submission_id
     )
-    INSERT INTO copyright_restrictions (
-      copyright_notice_target_id, authorizing_assessment_id, imposed_at
-    ) SELECT second_target.id, second_assessment.id, CURRENT_TIMESTAMP
-      FROM second_target CROSS JOIN second_assessment`)
-}
-
-export async function countCopyrightActiveRestrictionsAtPlacement(
-  fixture: CopyrightNoticeSchemaFixture,
-): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`/* countCopyrightRestrictionsForPlacement */
-    SELECT count(*)::integer AS count FROM copyright_restrictions restriction
-    INNER JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE target.placement_id = (SELECT placement_id FROM copyright_notice_targets WHERE id = ${fixture.targetId})
-      AND restriction.lifted_at IS NULL`)
-  return rows[0]!.count
-}
-
-export async function readCopyrightActionIntentRevision(
-  fixture: CopyrightNoticeSchemaFixture,
-): Promise<number> {
-  const { rows } = await read<{
-    expected_placement_revision: number
-  }>(sql`/* readCopyrightIntentRevision */
-    SELECT expected_placement_revision FROM copyright_notice_action_work_items
-    WHERE id = ${fixture.actionIntentId}`)
-  return rows[0]!.expected_placement_revision
+    SELECT second_submission.id AS submission_id, second_assessment.id AS assessment_id,
+      second_actor.id AS actor_id, second_target.id AS target_id
+    FROM second_submission CROSS JOIN second_assessment CROSS JOIN second_actor CROSS JOIN second_target`)
+  await write(sql`/* createSecondCopyrightRestrictionForPlacement:currentAssessment */
+    UPDATE copyright_notice_submissions
+    SET current_assessment_identity_id = ${rows[0]!.assessment_id},
+      current_assessment_is_substantially_compliant = true,
+      current_assessed_at = CURRENT_TIMESTAMP, current_assessed_by_id = ${rows[0]!.actor_id}
+    WHERE id = ${rows[0]!.submission_id}
+  `)
+  await write(sql`/* createSecondCopyrightRestrictionForPlacement:restriction */
+    INSERT INTO copyright_restrictions (copyright_notice_target_id, authorizing_assessment_id, imposed_at)
+    VALUES (${rows[0]!.target_id}, ${rows[0]!.assessment_id}, CURRENT_TIMESTAMP)
+  `)
 }

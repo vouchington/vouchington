@@ -49,13 +49,14 @@ function businessPageSql(
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (page.link_kind = 'thread' AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_email_intake_reviews review
-          WHERE review.copyright_notice_email_intake_receipt_id = page.copyright_notice_email_intake_id
+          SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+          WHERE receipt.id = page.copyright_notice_email_intake_id
+            AND receipt.review_decision IS NOT NULL
           LIMIT 1
         ) AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_email_correspondence_reviews review
-          WHERE review.copyright_notice_email_intake_id = page.copyright_notice_email_intake_id
-            AND review.action IN ('admitted', 'rejected') LIMIT 1
+          SELECT 1 FROM copyright_notice_email_intake_notice_links reviewed
+          WHERE reviewed.copyright_notice_email_intake_id = page.copyright_notice_email_intake_id
+            AND reviewed.correspondence_action IN ('admitted', 'rejected') LIMIT 1
         )) AS blocked FROM page`
     case 'incidents':
       return sql`/* scanCopyrightThreadIncidentBlockers */

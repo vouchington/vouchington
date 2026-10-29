@@ -99,8 +99,12 @@ function appendDueStatutoryRestorationSource(query: SQLStatement, now: Date): vo
   query.append(sql`
     FROM copyright_notice_deadlines deadline
     JOIN copyright_notices notice ON notice.id = deadline.copyright_notice_id
-    JOIN copyright_notice_submission_assessments assessment
+    JOIN copyright_notice_submission_assessment_identities assessment
       ON assessment.id = deadline.qualifying_counter_notice_assessment_id
+    JOIN copyright_notice_submissions submission
+      ON submission.id = assessment.copyright_notice_submission_id
+      AND submission.current_assessment_identity_id = assessment.id
+      AND submission.current_assessment_is_substantially_compliant
     JOIN copyright_notice_counter_notice_assessment_targets assessment_target
       ON assessment_target.copyright_notice_submission_assessment_id = assessment.id
     JOIN copyright_notice_targets target ON target.id = assessment_target.copyright_notice_target_id

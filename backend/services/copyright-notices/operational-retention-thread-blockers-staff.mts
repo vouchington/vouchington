@@ -40,32 +40,25 @@ function staffPageSql(
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
-        SELECT page.id, NOT EXISTS (
-          SELECT 1 FROM copyright_territorial_decisions decision
-          WHERE decision.copyright_notice_id = page.copyright_notice_id
-            AND decision.jurisdiction = page.jurisdiction LIMIT 1
-        ) AS blocked FROM page`
+        SELECT page.id,
+          notice.current_territorial_decision_identity_id IS NULL AS blocked
+        FROM page JOIN copyright_notices notice ON notice.id = page.copyright_notice_id`
     case 'territorial_redress':
       return sql`/* scanCopyrightThreadTerritorialRedressBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
-          SELECT id, copyright_territorial_decision_id
+          SELECT id, copyright_territorial_decision_id, staff_disposition
           FROM copyright_territorial_redress_requests
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (
-          successor.id IS NULL AND (
-            redress.id IS NULL OR (decision.outcome = 'no_action'
-              AND redress.staff_disposition = 'revoke')
-          )
+          notice.current_territorial_decision_identity_id = page.copyright_territorial_decision_id
+          AND (page.staff_disposition IS NULL OR
+            (notice.territorial_decision_outcome = 'no_action'
+              AND page.staff_disposition = 'revoke'))
         ) AS blocked FROM page
-        JOIN copyright_territorial_decisions decision
-          ON decision.id = page.copyright_territorial_decision_id
-        LEFT JOIN copyright_territorial_decisions successor
-          ON successor.supersedes_decision_id = decision.id
-        LEFT JOIN copyright_territorial_redress_decisions redress
-          ON redress.copyright_territorial_redress_request_id = page.id`
+        JOIN copyright_notices notice ON notice.id = ${noticeId}`
     case 'restrictions':
       return sql`/* scanCopyrightThreadRestrictionBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),

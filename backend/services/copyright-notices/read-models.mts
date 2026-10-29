@@ -10,7 +10,7 @@ import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 import {
   copyrightTimelineEventTypesFor,
@@ -62,7 +62,8 @@ export async function getCopyrightStaffEmailIntake(
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
       intake.spf_verdict, intake.dkim_verdict, intake.dmarc_verdict, intake.spam_verdict, intake.virus_verdict,
       parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,
-      recommendation.id AS recommendation_id, recommendation.structured_output_ciphertext,
+      intake.current_recommendation_identity_id AS recommendation_id,
+      intake.current_recommendation_output_ciphertext AS structured_output_ciphertext,
       link.link_kind, link.copyright_notice_id AS linked_notice_id, `
   intakeQuery.append(copyrightEmailDuplicateMessageIdSql())
   intakeQuery.append(sql` AS has_duplicate_message_id, `)
@@ -72,7 +73,6 @@ export async function getCopyrightStaffEmailIntake(
   intakeQuery.append(sql` AS has_reply_reference
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
-    LEFT JOIN LATERAL (SELECT id, structured_output_ciphertext FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_receipt_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
     WHERE intake.id = ${intakeId}

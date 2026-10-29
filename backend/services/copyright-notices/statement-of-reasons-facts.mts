@@ -1,16 +1,11 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import {
-  automatedAssessmentSql,
-  automaticRestrictionSql,
-  aiGuidanceSql,
-} from './automated-assessment-sql.mts'
+import { aiGuidanceSql } from './automated-assessment-sql.mts'
 import type { CopyrightStatementInput } from './statement-of-reasons.mts'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
 export type CopyrightStatementFacts = Pick<
   CopyrightStatementInput,
@@ -64,6 +59,7 @@ export type CopyrightStatementFactsRow = {
   ai_guidance: boolean
   claimant_has_account: boolean
   public_explanation_ciphertext: string | null
+  authority_is_current: boolean
   position: number
 }
 
@@ -75,49 +71,48 @@ export function copyrightStatementFactsSql(
   return sql`
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.legal_basis,
       notice.claimant_user_id IS NOT NULL AS claimant_has_account,
+      CASE WHEN authority.restriction_id IS NOT NULL THEN EXISTS (
+        SELECT 1 FROM copyright_restrictions restriction
+        WHERE restriction.id = authority.restriction_id
+          AND restriction.copyright_notice_id = notice.id
+          AND (authority.assessment_id IS NULL
+            OR restriction.authorizing_assessment_id = authority.assessment_id)
+      ) WHEN authority.assessment_id IS NOT NULL THEN EXISTS (
+        SELECT 1 FROM copyright_notice_submissions submission
+        WHERE submission.copyright_notice_id = notice.id
+          AND submission.current_assessment_identity_id = authority.assessment_id
+      ) ELSE TRUE END AS authority_is_current,
       ARRAY(SELECT target.hosted_use_url FROM copyright_notice_targets target
         WHERE target.copyright_notice_id = notice.id AND target.id = authority.target_id
           AND `
     .append(copyrightPlacementPublicVisibleSql())
     .append(sql` ORDER BY target.id) AS target_urls,
-      (`)
-    .append(
-      sql`EXISTS (SELECT 1 FROM copyright_notice_submission_assessments assessment WHERE assessment.id = authority.assessment_id AND (`,
-    )
-    .append(automatedAssessmentSql())
-    .append(
-      sql`)) OR EXISTS (SELECT 1 FROM copyright_restrictions restriction WHERE restriction.id = authority.restriction_id AND (`,
-    )
-    .append(automaticRestrictionSql())
-    .append('))) AS automated_decision, ')
+      (EXISTS (SELECT 1 FROM copyright_notice_submissions submission
+        WHERE submission.copyright_notice_id = notice.id
+          AND submission.current_assessment_identity_id = authority.assessment_id
+          AND submission.current_assessment_form_screening_id IS NOT NULL)
+       OR EXISTS (SELECT 1 FROM copyright_restrictions restriction
+        WHERE restriction.id = authority.restriction_id
+          AND restriction.copyright_notice_id = notice.id
+          AND restriction.is_authorizing_assessment_automated)) AS automated_decision, `)
     .append(aiGuidanceSql())
     .append(
       sql` AS ai_guidance,
-      territorial_decision.public_explanation_ciphertext, authority.position
+      CASE WHEN notice.territorial_authorizing_assessment_identity_id IS NOT DISTINCT FROM COALESCE(
+        authority.assessment_id,
+        (SELECT restriction.authorizing_assessment_id FROM copyright_restrictions restriction
+          WHERE restriction.id = authority.restriction_id)
+      ) THEN notice.territorial_public_explanation_ciphertext
+      ELSE NULL END AS public_explanation_ciphertext,
+      authority.position
     FROM unnest(
       ${authorities.map(authority => authority.targetId ?? null)}::uuid[],
       ${authorities.map(authority => authority.restrictionId ?? null)}::uuid[],
       ${authorities.map(authority => authority.assessmentId ?? null)}::uuid[]
     ) WITH ORDINALITY AS authority(target_id, restriction_id, assessment_id, position)
     JOIN copyright_notices notice ON notice.id = ${noticeId}
-    LEFT JOIN LATERAL (
-      SELECT decision.public_explanation_ciphertext
-      FROM copyright_territorial_decisions decision
-      WHERE decision.copyright_notice_id = notice.id
-        AND decision.jurisdiction = notice.jurisdiction
-        AND `.append(territorialDecisionIsLiveSql()).append(sql`
-        AND (
-          (authority.assessment_id IS NULL AND authority.restriction_id IS NULL)
-          OR decision.copyright_notice_submission_assessment_id = COALESCE(
-            authority.assessment_id,
-            (SELECT restriction.authorizing_assessment_id FROM copyright_restrictions restriction
-              WHERE restriction.id = authority.restriction_id)
-          )
-        )
-      LIMIT 1
-    ) territorial_decision ON true
     ORDER BY authority.position
-  `),
+  `,
     )
 }
 
@@ -128,6 +123,11 @@ export function copyrightStatementFactsFromRows(
   expected: number,
 ): CopyrightStatementFacts[] {
   assert(rows.length === expected, 404, 'Copyright notice not found')
+  assert(
+    rows.every(row => row.authority_is_current),
+    409,
+    'Copyright statement authority is stale',
+  )
   return rows.map(row => ({
     noticeId: row.id,
     receivedAt: new Date(row.received_at),

@@ -13,7 +13,7 @@ const sharedDbScopeTables = {
   getPendingCopyrightAgentDispatches: 'copyright_notice_dispatch_sources',
   searchDueStatutoryCopyrightRestorationDeadlineIds: 'copyright_notice_deadlines',
   searchRecoverableCopyrightFormReviewIntakeIds: 'copyright_notice_form_intake_reviews',
-  searchPendingCopyrightEnforcementAssessmentIds: 'copyright_notice_submission_assessments',
+  searchPendingCopyrightEnforcementAssessmentIds: 'copyright_notice_submissions',
   searchRecoverableCopyrightActionIntentIds: 'copyright_notice_action_work_items',
   searchBlockedCopyrightHoldRestorationNoticeIds: 'copyright_notices',
   searchSuspendedClaimantAutomaticRestrictionNoticeIds: 'copyright_notices',

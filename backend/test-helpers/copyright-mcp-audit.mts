@@ -9,15 +9,6 @@ export async function insertTestAccountCopyrightRationale(
   recordedAt: Date,
 ): Promise<string> {
   const rationaleId = uuidv7({ msecs: recordedAt.getTime() })
-  const reviewId = uuidv7({ msecs: recordedAt.getTime() })
-  await write(
-    `/* insertTestAccountCopyrightRationale:terminalReview */
-     INSERT INTO copyright_repeat_infringer_reviews
-       (id, account_user_id, opened_at, outcome, outcome_at, rationale_ciphertext)
-     VALUES ($1::uuid, $2::uuid, $3::timestamptz, 'reinstatement',
-       $3::timestamptz, 'synthetic-review')`,
-    [reviewId, accountUserId, recordedAt],
-  )
   await write(
     `/* insertTestAccountCopyrightRationale:rationale */
      INSERT INTO copyright_decision_rationales

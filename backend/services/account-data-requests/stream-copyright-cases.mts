@@ -1,6 +1,6 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 
 /**

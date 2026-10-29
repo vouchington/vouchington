@@ -124,12 +124,15 @@ async function admitCopyrightEmailIntake(
     submission_id: string | null
   }>(
     sql`/* promoteCopyrightEmailIntake:priorPromotion */
-      SELECT review.decision, review.promoted_copyright_notice_id, submission.id AS submission_id
-      FROM copyright_notice_email_intake_reviews review
+      SELECT receipt.review_decision AS decision,
+        link.copyright_notice_id AS promoted_copyright_notice_id, submission.id AS submission_id
+      FROM copyright_notice_email_intake_receipts receipt
+      LEFT JOIN copyright_notice_email_intake_notice_links link
+        ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
       LEFT JOIN copyright_notice_submissions submission
-        ON submission.copyright_notice_id = review.promoted_copyright_notice_id
+        ON submission.copyright_notice_id = link.copyright_notice_id
         AND submission.kind = 'notice'
-      WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
+      WHERE receipt.id = ${intake.id} AND receipt.review_decision IS NOT NULL
     `,
   )
   const prior = priorPromotions[0]
@@ -231,9 +234,9 @@ async function assertNoThreadCorrespondenceDecision(
       AND link.link_kind = 'thread'
     UNION ALL
     SELECT 1
-    FROM copyright_notice_email_correspondence_reviews review
-    WHERE review.copyright_notice_email_intake_id = ${intakeId}
-      AND review.action IN ('admitted', 'rejected')
+    FROM copyright_notice_email_intake_notice_links decided_link
+    WHERE decided_link.copyright_notice_email_intake_id = ${intakeId}
+      AND decided_link.correspondence_action IN ('admitted', 'rejected')
     LIMIT 1
   `)
   assert(!rows[0], 409, 'Thread-linked copyright email cannot be approved as an initial intake')
@@ -248,7 +251,7 @@ async function assertRecommendationScope(
   const { rows } = await transaction<{
     id: string
   }>(sql`/* promoteCopyrightEmailIntake:recommendation */
-    SELECT id FROM copyright_notice_email_intake_recommendations
+    SELECT id FROM copyright_notice_email_intake_recommendation_identities
     WHERE id = ${recommendationId} AND copyright_notice_email_intake_receipt_id = ${intakeId}
   `)
   assert(rows[0], 422, 'Email recommendation does not belong to this intake')
@@ -318,6 +321,11 @@ async function recordEmailPromotion(
         purpose,
       )}, ${noticeId})
   `)
+  await transaction(sql`/* promoteCopyrightEmailIntake:currentDecision */
+    UPDATE copyright_notice_email_intake_receipts SET
+      review_decision = 'approved', reviewed_at = CURRENT_TIMESTAMP,
+      reviewed_by_id = ${input.currentUser.id}
+    WHERE id = ${intake.id}`)
   const { rows: initialLinks } = await transaction<{ copyright_notice_email_intake_id: string }>(
     sql`/* promoteCopyrightEmailIntake:initialThreadLink */
     INSERT INTO copyright_notice_email_intake_notice_links (

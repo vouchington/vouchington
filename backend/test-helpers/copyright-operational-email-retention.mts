@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from './entities/index.mts'
 
 export async function seedCopyrightIntakeLegalDelivery(intakeId: string): Promise<string> {
@@ -46,21 +47,37 @@ export async function seedCopyrightIntakeAuditReview(
   recommendationId: string
 }> {
   const reviewer = await createTestUserDirect()
-  const { rows: recommendation } = await write<{ id: string }>(sql`
+  const recommendationId = uuidv7()
+  const inputSha256 = randomBytes(32)
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedCopyrightIntakeAuditRecommendationIdentity */
+    INSERT INTO copyright_notice_email_intake_recommendation_identities
+      (id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
+    VALUES (${recommendationId}, ${intakeId}, ${inputSha256}, 'retention-test-v1')`)
+  await transaction(sql`
     /* seedCopyrightIntakeAuditRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations
-      (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
+      (id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
        structured_output_ciphertext)
-    VALUES (${intakeId}, ${randomBytes(32)}, 'retention-test-v1', 'test-model', 'v1:advisory')
-    RETURNING id`)
-  const recommendationId = recommendation[0]!.id
-  const { rows } = await write<{ id: string }>(sql`/* seedCopyrightIntakeAuditReview */
+    VALUES (${recommendationId}, ${intakeId}, ${inputSha256}, 'retention-test-v1', 'test-model', 'v1:advisory')`)
+  await transaction(sql`/* seedCopyrightIntakeAuditRecommendationOwner */
+    UPDATE copyright_notice_email_intakes SET
+      current_recommendation_identity_id = ${recommendationId},
+      current_recommendation_output_ciphertext = 'v1:advisory',
+      recommendation_completed_at = ${reviewedAt}
+    WHERE id = ${intakeId}`)
+  const { rows } = await transaction<{ id: string }>(sql`/* seedCopyrightIntakeAuditReview */
     INSERT INTO copyright_notice_email_intake_reviews
       (copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id,
        reviewed_by_id, reviewed_at, decision, rationale_ciphertext)
     VALUES (${intakeId}, ${recommendationId}, ${reviewer.id}, ${reviewedAt},
       'rejected', 'v1:test-rationale')
     RETURNING id`)
+  await transaction(sql`/* seedCopyrightIntakeAuditReviewOwner */
+    UPDATE copyright_notice_email_intake_receipts SET
+      review_decision = 'rejected', reviewed_at = ${reviewedAt}, reviewed_by_id = ${reviewer.id}
+    WHERE id = ${intakeId}`)
+  await transaction.commit()
   return { reviewId: rows[0]!.id, recommendationId }
 }
 
@@ -146,43 +163,4 @@ export async function seedCopyrightThreadPartySubmission(
       (copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext)
     VALUES (${noticeId}, ${submittedById}, 'supplement', ${new Date(0)},
       'signed_in_form', ${`v1:backdated-${randomUUID()}`})`)
-}
-
-export async function readCopyrightIntakeRetentionState(intakeId: string): Promise<{
-  intakeExists: boolean
-  receiptExists: boolean
-  hasRawObject: boolean
-  parseCount: number
-  deliveryBody: string | null
-  ancestorCount: number
-}> {
-  const { rows } = await read<{
-    intake_exists: boolean
-    receipt_exists: boolean
-    has_raw_object: boolean
-    parse_count: number
-    delivery_body: string | null
-    ancestor_count: number
-  }>(sql`/* readCopyrightIntakeRetentionState */
-    SELECT EXISTS (SELECT 1 FROM copyright_notice_email_intakes WHERE id = ${intakeId}) AS intake_exists,
-      EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId}) AS receipt_exists,
-      EXISTS (SELECT 1 FROM copyright_notice_email_intakes
-        WHERE id = ${intakeId} AND raw_storage_object_id IS NOT NULL) AS has_raw_object,
-      (SELECT COUNT(*)::integer FROM copyright_notice_email_intake_parses
-        WHERE copyright_notice_email_intake_id = ${intakeId}) AS parse_count,
-      (SELECT body_ciphertext FROM copyright_notice_delivery_work_items
-        WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
-        ORDER BY id DESC LIMIT 1) AS delivery_body,
-      (SELECT COUNT(*)::integer FROM copyright_notice_email_message_ancestors
-        WHERE reply_message_intake_receipt_id = ${intakeId}
-          OR ancestor_message_intake_receipt_id = ${intakeId}) AS ancestor_count`)
-  const row = rows[0]!
-  return {
-    intakeExists: row.intake_exists,
-    receiptExists: row.receipt_exists,
-    hasRawObject: row.has_raw_object,
-    parseCount: row.parse_count,
-    deliveryBody: row.delivery_body,
-    ancestorCount: row.ancestor_count,
-  }
 }

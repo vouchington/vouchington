@@ -32,7 +32,6 @@ export async function checkCopyrightThreadBlockerPage(
         phase: 'form_intake',
         childId: null,
         assessmentId: null,
-        territorialDecisionId: null,
         generation,
       }
     : { ...cursor, phase: cursor.phase ?? 'form_intake', generation }

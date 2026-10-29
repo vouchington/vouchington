@@ -1,10 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  appendCopyrightSubmissionAssessmentInTransaction,
-  type AssessmentInput,
-} from './compliance-assessment.mts'
-import type { CopyrightNoticeSubmissionAssessmentRecord } from './types.mts'
+import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance-assessment.mts'
+import type { AssessmentInput, CopyrightNoticeSubmissionAssessmentRecord } from './types.mts'
 export { appendCopyrightSubmissionAssessmentInTransaction } from './compliance-assessment.mts'
 
 export async function appendCopyrightSubmissionAssessment(

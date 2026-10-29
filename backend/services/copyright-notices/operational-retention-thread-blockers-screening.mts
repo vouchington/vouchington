@@ -42,18 +42,16 @@ export async function readCopyrightThreadScreeningPage(
           WHERE copyright_notice_id = (SELECT notice_id FROM owner)
         ),
         page AS MATERIALIZED (
-          SELECT assessment.id, assessment.copyright_notice_submission_id,
-            assessment.copyright_notice_form_screening_id,
-            assessment.is_substantially_compliant
-          FROM intake_source CROSS JOIN LATERAL (
-            SELECT id, copyright_notice_submission_id, copyright_notice_form_screening_id,
-              is_substantially_compliant
-            FROM copyright_notice_submission_assessments assessment
-            WHERE assessment.copyright_notice_submission_id = intake_source.copyright_notice_submission_id
-              AND assessment.id > COALESCE(${cursor.childId}::uuid,
-                '00000000-0000-0000-0000-000000000000'::uuid)
-            ORDER BY assessment.id LIMIT ${batchSize}
-          ) assessment
+          SELECT submission.current_assessment_identity_id AS id,
+            submission.id AS copyright_notice_submission_id,
+            submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id,
+            submission.current_assessment_is_substantially_compliant AS is_substantially_compliant
+          FROM intake_source
+          JOIN copyright_notice_submissions submission
+            ON submission.id = intake_source.copyright_notice_submission_id
+          WHERE submission.current_assessment_identity_id > COALESCE(${cursor.childId}::uuid,
+            '00000000-0000-0000-0000-000000000000'::uuid)
+          ORDER BY submission.current_assessment_identity_id LIMIT ${batchSize}
         )
         SELECT page.id, (page.is_substantially_compliant
           AND execution.state = 'completed'
@@ -66,11 +64,7 @@ export async function readCopyrightThreadScreeningPage(
           AND char_length(btrim(notice.work_description)) > 0
           AND intake.has_good_faith_belief
           AND intake.has_accuracy_authority_under_penalty_of_perjury
-          AND char_length(intake.electronic_signature_ciphertext) > 0
-          AND NOT EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments newer
-            WHERE newer.supersedes_assessment_id = page.id LIMIT 1
-          )) AS qualifies
+          AND char_length(intake.electronic_signature_ciphertext) > 0) AS qualifies
         FROM page
         JOIN copyright_notice_submissions submission
           ON submission.id = page.copyright_notice_submission_id

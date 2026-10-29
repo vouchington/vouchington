@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS copyright_decision_rationales (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id UUID REFERENCES copyright_notices (id) ON DELETE CASCADE,
   copyright_notice_email_intake_receipt_id UUID REFERENCES copyright_notice_email_intake_receipts (id) ON DELETE RESTRICT,
-  copyright_repeat_infringer_review_id UUID REFERENCES copyright_repeat_infringer_reviews (id) ON DELETE RESTRICT,
+  copyright_repeat_infringer_review_id UUID REFERENCES copyright_repeat_infringer_review_identities (id) ON DELETE RESTRICT,
   account_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   recorded_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   tool_name TEXT NOT NULL CHECK (tool_name ~ '^[a-z_]{1,64}$'),
@@ -183,7 +183,7 @@ CREATE TRIGGER trigger_copyright_email_correspondence_review_active_receipt
 CREATE TYPE security_retention_sources AS ENUM (
   'oauth_events', 'oauth_native_mints', 'oauth_grants', 'oauth_grant_anchors', 'oauth_clients', 'api_keys_revoked',
   'api_keys_expired', 'facebook_friends', 'github_friends', 'x_friends',
-  'copyright_rationales_erased', 'copyright_rationales_noncase'
+  'copyright_rationales_erased', 'copyright_rationales_attempts'
 );
 
 CREATE TABLE IF NOT EXISTS security_retention_cleanup_cursors (

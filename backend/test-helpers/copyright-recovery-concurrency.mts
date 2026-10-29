@@ -1,10 +1,8 @@
+import type { AssessmentInput } from '../services/copyright-notices/types.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
-import {
-  appendCopyrightSubmissionAssessmentInTransaction,
-  type AssessmentInput,
-} from '../services/copyright-notices/compliance-assessment.mts'
+import { appendCopyrightSubmissionAssessmentInTransaction } from '../services/copyright-notices/compliance-assessment.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 /** Commit a normal writer after recovery took its pre-lock READ COMMITTED snapshot. */

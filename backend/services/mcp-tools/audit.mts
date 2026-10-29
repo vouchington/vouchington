@@ -168,7 +168,7 @@ export async function recordMcpCallAudit(
          ON event.kind = 'repeat_incident' AND repeat_incident.id = event.target_id
        LEFT JOIN copyright_notice_email_intakes email_intake
          ON event.kind = 'email_intake' AND email_intake.id = event.target_id
-       LEFT JOIN copyright_repeat_infringer_reviews repeat_review
+       LEFT JOIN copyright_repeat_infringer_review_identities repeat_review
          ON event.kind = 'repeat_review' AND repeat_review.id = event.target_id
        LEFT JOIN retained_user_identities account_user
          ON event.kind = 'account_user' AND account_user.id = event.target_id

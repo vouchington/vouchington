@@ -149,13 +149,11 @@ async function getCurrentAssessment(
     copyright_notice_form_screening_id: string | null
   }>(
     sql`/* reviewCopyrightFormIntake:assessment */
-      SELECT assessment.id, assessment.is_substantially_compliant, assessment.copyright_notice_form_screening_id
-      FROM copyright_notice_submission_assessments assessment
-      WHERE assessment.copyright_notice_submission_id = ${submissionId}
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments newer
-          WHERE newer.supersedes_assessment_id = assessment.id
-        )`,
+      SELECT current_assessment_identity_id AS id,
+        current_assessment_is_substantially_compliant AS is_substantially_compliant,
+        current_assessment_form_screening_id AS copyright_notice_form_screening_id
+      FROM copyright_notice_submissions
+      WHERE id = ${submissionId} AND current_assessment_identity_id IS NOT NULL`,
   )
   return rows[0] ?? null
 }

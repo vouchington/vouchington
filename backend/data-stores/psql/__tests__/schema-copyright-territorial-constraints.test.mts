@@ -37,7 +37,7 @@ describe('copyright territorial table constraints', () => {
   it('rejects a child row of a wrong-jurisdiction notice', async () => {
     await expect(rejectUkDecisionForEuNotice()).rejects.toMatchObject({
       code: '23503',
-      constraint: 'fk_copyright_territorial_decisions__notice',
+      constraint: 'fk_copyright_territorial_decisions__identity',
     })
     await expect(rejectEuComplaintForUkNotice()).rejects.toMatchObject({
       code: '23503',

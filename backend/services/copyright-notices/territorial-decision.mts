@@ -16,7 +16,6 @@ import {
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { assertBoundedText, type TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
 export type TerritorialCopyrightDecisionInput = {
   text: string
@@ -70,24 +69,19 @@ export async function recordTerritorialCopyrightDecision(
   const receipt = receipts[0]
   assert(receipt, 404, labels.noticeNotFound)
   const { rows: existing } = await transaction<{
-    id: string
-    outcome: 'restrict' | 'no_action'
+    id: string | null
+    outcome: 'restrict' | 'no_action' | null
     revoked: boolean
-  }>(
-    sql`/* recordTerritorialCopyrightDecision:existing */
-      SELECT decision.id, decision.outcome, EXISTS (
+  }>(sql`/* recordTerritorialCopyrightDecision:existing */
+      SELECT notice.current_territorial_decision_identity_id AS id,
+        notice.territorial_decision_outcome AS outcome, EXISTS (
         SELECT 1 FROM copyright_territorial_redress_requests request
-        JOIN copyright_territorial_redress_decisions redress
-          ON redress.copyright_territorial_redress_request_id = request.id
-        WHERE request.copyright_territorial_decision_id = decision.id
-          AND redress.staff_disposition = 'revoke'
+        WHERE request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
+          AND request.staff_disposition = 'revoke'
       ) AS revoked
-      FROM copyright_territorial_decisions decision
-      WHERE decision.copyright_notice_id = ${noticeId} AND decision.jurisdiction = ${jurisdiction}
-        AND `
-      .append(territorialDecisionIsLiveSql())
-      .append(sql` FOR UPDATE OF decision`),
-  )
+      FROM copyright_notices notice
+      WHERE notice.id = ${noticeId} AND notice.jurisdiction = ${jurisdiction}
+      FOR UPDATE OF notice`)
   const previous = existing[0]
   assert(
     !(previous?.outcome === 'no_action' && previous.revoked && input.outcome === 'no_action'),
@@ -95,7 +89,7 @@ export async function recordTerritorialCopyrightDecision(
     'A reopened notice needs a restrict decision',
   )
   assert(
-    !previous ||
+    !previous?.id ||
       (previous.outcome === 'no_action' && previous.revoked && input.outcome === 'restrict'),
     409,
     labels.decisionExists,
@@ -132,21 +126,39 @@ export async function recordTerritorialCopyrightDecision(
     )
     assessmentId = assessment.id
   }
+  const decisionId = uuidv7()
+  const rationaleCiphertext = encryptSecret(text, `${labels.decisionPurpose}:${noticeId}`)
+  const publicExplanationCiphertext = encryptSecret(
+    publicExplanation,
+    `${labels.publicExplanationPurpose}:${noticeId}`,
+  )
+  await transaction(sql`/* recordTerritorialCopyrightDecision:identity */
+    INSERT INTO copyright_territorial_decision_identities
+      (id, copyright_notice_id, jurisdiction)
+    VALUES (${decisionId}, ${noticeId}, ${jurisdiction})`)
   const { rows } = await transaction<TerritorialCopyrightDecision>(sql`
     /* recordTerritorialCopyrightDecision */
     INSERT INTO copyright_territorial_decisions (
-      copyright_notice_id, jurisdiction, decided_by_id, outcome,
+      id, copyright_notice_id, jurisdiction, decided_by_id, outcome,
       copyright_notice_submission_assessment_id, supersedes_decision_id,
       automation_disclosure, rationale_ciphertext, public_explanation_ciphertext
     ) VALUES (
-      ${noticeId}, ${jurisdiction}, ${actor.id}, ${input.outcome}, ${assessmentId},
-      ${previous?.id ?? null}, 'human',
-      ${encryptSecret(text, `${labels.decisionPurpose}:${noticeId}`)},
-      ${encryptSecret(publicExplanation, `${labels.publicExplanationPurpose}:${noticeId}`)}
+      ${decisionId}, ${noticeId}, ${jurisdiction}, ${actor.id}, ${input.outcome}, ${assessmentId},
+      ${previous?.id ?? null}, 'human', ${rationaleCiphertext}, ${publicExplanationCiphertext}
     ) RETURNING id, decided_at, automation_disclosure, outcome
   `)
   const created = rows[0]
   assert(created, 500, labels.decisionFailed)
+  await transaction(sql`/* recordTerritorialCopyrightDecision:current */
+    UPDATE copyright_notices SET
+      current_territorial_decision_identity_id = ${created.id},
+      territorial_decision_outcome = ${created.outcome},
+      territorial_decided_at = ${created.decided_at},
+      territorial_decided_by_id = ${actor.id},
+      territorial_authorizing_assessment_identity_id = ${assessmentId},
+      territorial_rationale_ciphertext = ${rationaleCiphertext},
+      territorial_public_explanation_ciphertext = ${publicExplanationCiphertext}
+    WHERE id = ${noticeId}`)
   if (input.outcome === 'no_action') {
     await createCopyrightClaimantDecisionNoticeInTransaction(
       { noticeId, event: 'not_accepted' },

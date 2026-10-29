@@ -1,10 +1,8 @@
+import { insertTestHistoricalTerritorialComplaint } from '@voucha/test-helpers/copyright-territorial-historical-complaint'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { createTestTimedDsaReportAction } from '@voucha/test-helpers/dsa-report-timed-action'
-import {
-  createTestHistoricalEuDecisionWindow,
-  insertTestHistoricalTerritorialComplaint,
-} from '@voucha/test-helpers/copyright-territorial-historical-window'
+import { createTestHistoricalEuDecisionWindow } from '@voucha/test-helpers/copyright-territorial-historical-window'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
 import { readDsaCopyrightComplaintFigures } from './eu-reporting-complaints.mts'

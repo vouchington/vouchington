@@ -3,6 +3,7 @@ import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
   getMonthlyPartitionUpperBound,
+  getPartitionDropAgeRefusal,
   getPartitionDropRefusal,
   getPartitionDropStatusRefusals,
 } from './partition-drop-guard.mts'
@@ -109,6 +110,24 @@ describe('partition drop guard', () => {
         now,
       ),
     ).resolves.toBe('inside-retention')
+  })
+
+  it('keeps every month until its exclusive upper bound has aged 72 calendar months', () => {
+    const policy = { minimumRetentionDays: 2192, minimumRetentionMonths: 72 }
+    const february = { ...candidate, upperBound: new Date('2020-03-01T00:00:00.000Z') }
+    expect(getPartitionDropAgeRefusal(february, policy, new Date('2026-02-28T23:59:59.999Z'))).toBe(
+      'inside-retention',
+    )
+    expect(
+      getPartitionDropAgeRefusal(february, policy, new Date('2026-03-01T00:00:00.000Z')),
+    ).toBeNull()
+    const december = { ...candidate, upperBound: new Date('2020-01-01T00:00:00.000Z') }
+    expect(getPartitionDropAgeRefusal(december, policy, new Date('2025-12-31T23:59:59.999Z'))).toBe(
+      'inside-retention',
+    )
+    expect(
+      getPartitionDropAgeRefusal(december, policy, new Date('2026-01-01T00:00:00.000Z')),
+    ).toBeNull()
   })
 
   it('refuses a held account and unfinished work before detach', async () => {

@@ -100,10 +100,10 @@ export async function insertCopyrightEmailIntakeNoticeLink(
   }>(sql`/* linkCopyrightEmailIntakeToNotice */
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind,
-      matched_token_id
+      matched_token_id, correspondence_action
     ) VALUES (
       ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
-      ${matchedTokenId}
+      ${matchedTokenId}, ${input.linkKind === 'thread' ? 'pending' : null}
     ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
     RETURNING copyright_notice_id, link_kind
   `)
@@ -119,13 +119,5 @@ export async function insertCopyrightEmailIntakeNoticeLink(
   const linked =
     !!inserted[0] ||
     (retained?.copyright_notice_id === input.noticeId && retained?.link_kind === input.linkKind)
-  if (input.linkKind === 'thread' && linked) {
-    await transaction(sql`/* linkCopyrightEmailIntakeToNotice:pendingReview */
-      INSERT INTO copyright_notice_email_correspondence_reviews (
-        copyright_notice_email_intake_id, copyright_notice_id, action
-      ) VALUES (${input.intakeId}, ${input.noticeId}, 'pending')
-      ON CONFLICT (copyright_notice_email_intake_id, action) DO NOTHING
-    `)
-  }
   return linked
 }

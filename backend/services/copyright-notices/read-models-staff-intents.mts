@@ -46,12 +46,13 @@ export async function selectStaffEmailCorrespondence(
     CopyrightStaffCase['email_correspondence'][number] & { copyright_notice_id: string }
   >(sql`
     /* getPendingCopyrightStaffCase:emailCorrespondence */
-    SELECT review.copyright_notice_id, review.copyright_notice_submission_id AS submission_id,
-      review.kind, review.action, review.reviewed_at
-    FROM copyright_notice_email_correspondence_reviews review
-    WHERE review.copyright_notice_id = ANY(${noticeIds}::uuid[])
-      AND review.action IN ('admitted', 'rejected')
-    ORDER BY review.reviewed_at, review.id
+    SELECT link.copyright_notice_id, link.correspondence_submission_id AS submission_id,
+      link.correspondence_kind AS kind, link.correspondence_action AS action,
+      link.correspondence_reviewed_at AS reviewed_at
+    FROM copyright_notice_email_intake_notice_links link
+    WHERE link.copyright_notice_id = ANY(${noticeIds}::uuid[])
+      AND link.correspondence_action IN ('admitted', 'rejected')
+    ORDER BY link.correspondence_reviewed_at, link.id
   `)
   return groupByNotice(rows)
 }

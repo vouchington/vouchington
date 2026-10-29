@@ -31,12 +31,10 @@ export async function readDsaCopyrightComplaintFigures(
   if (noticeIds?.length === 0) return emptyDsaCopyrightComplaintFigures()
   const query = sql`/* readDsaCopyrightComplaintFigures */
     WITH received AS (
-      SELECT request.filed_by, complained.outcome::text AS outcome,
+      SELECT request.filed_by, request.challenged_decision_outcome::text AS outcome,
         `.append(inAreaTrustedFlaggerMatchSql(sql``.append('request.copyright_notice_id')))
     .append(sql` AS trusted
       FROM copyright_territorial_redress_requests request
-      JOIN copyright_territorial_decisions complained
-        ON complained.id = request.copyright_territorial_decision_id
       WHERE request.jurisdiction = 'eu_dsa'
         AND request.received_at >= ${periodStartedAt}
         AND request.received_at < ${periodEndedAt}`)
@@ -44,19 +42,15 @@ export async function readDsaCopyrightComplaintFigures(
   query
     .append(sql`
     ), decided AS (
-      SELECT complained.outcome::text AS outcome, decision.staff_disposition,
-        EXTRACT(EPOCH FROM (decision.decided_at - request.received_at)) / 3600.0 AS hours,
+      SELECT request.challenged_decision_outcome::text AS outcome, request.staff_disposition,
+        EXTRACT(EPOCH FROM (request.decided_at - request.received_at)) / 3600.0 AS hours,
         `)
     .append(inAreaTrustedFlaggerMatchSql(sql``.append('request.copyright_notice_id')))
     .append(sql` AS trusted
-      FROM copyright_territorial_redress_decisions decision
-      JOIN copyright_territorial_redress_requests request
-        ON request.id = decision.copyright_territorial_redress_request_id
-      JOIN copyright_territorial_decisions complained
-        ON complained.id = request.copyright_territorial_decision_id
+      FROM copyright_territorial_redress_requests request
       WHERE request.jurisdiction = 'eu_dsa'
-        AND decision.decided_at >= ${periodStartedAt}
-        AND decision.decided_at < ${periodEndedAt}`)
+        AND request.decided_at >= ${periodStartedAt}
+        AND request.decided_at < ${periodEndedAt}`)
   appendOwnedComplaintNoticeIds(query, noticeIds)
   query.append(sql`
     ), buckets AS (

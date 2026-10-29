@@ -7,7 +7,6 @@ export function initialCopyrightThreadScreeningCursor(): BlockerCursor {
     phase: 'form_intake',
     childId: null,
     assessmentId: null,
-    territorialDecisionId: null,
     generation: '0',
   }
 }

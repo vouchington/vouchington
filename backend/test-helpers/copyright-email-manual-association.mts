@@ -41,9 +41,10 @@ export async function readCopyrightEmailManualAssociationEvent(intakeId: string)
 export async function readCopyrightEmailManualAssociationReview(intakeId: string) {
   const { rows } = await read<{ copyright_notice_id: string; action: string }>(sql`
     /* readCopyrightEmailManualAssociationReview */
-    SELECT copyright_notice_id, action
-    FROM copyright_notice_email_correspondence_reviews
+    SELECT copyright_notice_id, correspondence_action AS action
+    FROM copyright_notice_email_intake_notice_links
     WHERE copyright_notice_email_intake_id = ${intakeId}
+      AND correspondence_action IS NOT NULL
   `)
   return rows
 }

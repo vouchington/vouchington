@@ -15,17 +15,20 @@ export async function deleteChildPage(
     // One review at most can retain a recommendation for this intake. The extra raw row
     // lets this page advance past that legal record without scanning the whole history.
     const { rowCount } = await transaction(sql`/* deleteUnlinkedCopyrightEmailRecommendations */
-      WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id), candidates AS (
+      WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id), candidates AS MATERIALIZED (
         SELECT id FROM copyright_notice_email_intake_recommendations
         WHERE copyright_notice_email_intake_receipt_id = (SELECT intake_id FROM owner)
         ORDER BY id LIMIT ${remaining + 1} FOR UPDATE
+      ), deletable AS MATERIALIZED (
+        SELECT candidate.id FROM candidates candidate
+        WHERE NOT EXISTS (
+          SELECT 1 FROM copyright_notice_email_intake_reviews review
+          WHERE review.copyright_notice_email_intake_recommendation_id = candidate.id)
+        ORDER BY candidate.id LIMIT ${remaining}
       )
       DELETE FROM copyright_notice_email_intake_recommendations recommendation
-      USING candidates
-      WHERE recommendation.id = candidates.id
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_email_intake_reviews review
-          WHERE review.copyright_notice_email_intake_recommendation_id = recommendation.id)`)
+      USING deletable
+      WHERE recommendation.id = deletable.id`)
     return rowCount ?? 0
   }
   const { rowCount } = await transaction(
@@ -60,10 +63,8 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
        WHERE parse.copyright_notice_email_intake_id = intake.id ORDER BY parse.id DESC LIMIT 1),
       (SELECT attachment.created_at FROM copyright_notice_email_intake_attachments attachment
        WHERE attachment.copyright_notice_email_intake_id = intake.id ORDER BY attachment.id DESC LIMIT 1),
-      (SELECT recommendation.created_at FROM copyright_notice_email_intake_recommendations recommendation
-       WHERE recommendation.copyright_notice_email_intake_receipt_id = intake.id ORDER BY recommendation.id DESC LIMIT 1),
-      (SELECT review.created_at FROM copyright_notice_email_intake_reviews review
-       WHERE review.copyright_notice_email_intake_receipt_id = intake.id ORDER BY review.id DESC LIMIT 1),
+      intake.recommendation_completed_at,
+      receipt.reviewed_at,
       (SELECT reference.created_at FROM copyright_notice_email_thread_references reference
        WHERE reference.copyright_notice_email_intake_id = intake.id ORDER BY reference.id DESC LIMIT 1),
       (SELECT max(delivery.updated_at) FROM copyright_notice_delivery_work_items delivery
@@ -76,13 +77,12 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       WHERE link.copyright_notice_email_intake_id = intake.id)
       OR EXISTS (SELECT 1 FROM copyright_notice_correspondence_messages correspondence
         WHERE correspondence.copyright_notice_email_intake_id = intake.id)
-      OR EXISTS (SELECT 1 FROM copyright_notice_email_correspondence_reviews review
-        WHERE review.copyright_notice_email_intake_id = intake.id)
+      OR EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = intake.id
+          AND link.correspondence_action IN ('admitted', 'rejected'))
       OR EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_email_intake_id = intake.id) AS is_linked,
-    EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-      WHERE review.copyright_notice_email_intake_receipt_id = intake.id
-        AND review.promoted_copyright_notice_id IS NOT NULL) AS has_promoted_review,
+    (receipt.review_decision = 'approved') AS has_promoted_review,
     EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
       WHERE delivery.copyright_notice_email_intake_receipt_id = intake.id
         AND delivery.state IN ('pending', 'claimed')) AS has_pending_delivery,

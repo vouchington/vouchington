@@ -21,11 +21,12 @@ export async function buildTerritorialRedressDecisionDelivery(
     submitted_by_id: string | null
     outcome: 'restrict' | 'no_action'
   }>(sql`/* createTerritorialRedressDecisionNotice:recipient */
-    SELECT request.jurisdiction, request.filed_by, request.submitted_by_id, decision.outcome
+    SELECT request.jurisdiction, request.filed_by, request.submitted_by_id,
+      notice.territorial_decision_outcome AS outcome
     FROM copyright_territorial_redress_requests request
-    JOIN copyright_territorial_decisions decision
-      ON decision.id = request.copyright_territorial_decision_id
+    JOIN copyright_notices notice ON notice.id = request.copyright_notice_id
     WHERE request.id = ${input.redressId} AND request.copyright_notice_id = ${input.noticeId}
+      AND notice.current_territorial_decision_identity_id = request.copyright_territorial_decision_id
   `)
   const request = rows[0]
   if (!request || request.jurisdiction !== 'eu_dsa' || request.filed_by === 'reviewer') return null

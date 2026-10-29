@@ -27,12 +27,19 @@ export function pendingCopyrightEnforcementSql(
   const since = automaticScope instanceof Date ? automaticScope : null
   return sql``
     .append(`SELECT ${select}
-    FROM copyright_notice_submission_assessments assessment
-    JOIN copyright_notice_submissions submission
-      ON submission.id = assessment.copyright_notice_submission_id
+    FROM copyright_notice_submissions submission
+    CROSS JOIN LATERAL (
+      SELECT submission.current_assessment_identity_id AS id,
+        uuid_extract_timestamp(submission.current_assessment_identity_id) AS created_at,
+        submission.id AS copyright_notice_submission_id,
+        submission.current_assessment_is_substantially_compliant AS is_substantially_compliant,
+        submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id,
+        submission.current_assessed_by_id AS assessed_by_id
+    ) assessment
     JOIN copyright_notice_targets target
       ON target.copyright_notice_id = submission.copyright_notice_id
     WHERE submission.kind = 'notice'
+      AND assessment.id IS NOT NULL
       AND assessment.is_substantially_compliant
       AND (assessment.copyright_notice_form_screening_id IS NULL OR
         fn_current_copyright_form_screening(submission.id, assessment.copyright_notice_form_screening_id))
@@ -43,11 +50,6 @@ export function pendingCopyrightEnforcementSql(
           ON review.copyright_notice_form_intake_id = intake.id
         WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
           AND NOT review.is_accepted
-      )
-      AND NOT EXISTS (
-        SELECT 1
-        FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
       )
       AND NOT `)
     .append(territorialAssessmentRevokedSql())

@@ -11,11 +11,11 @@ import {
   readCopyrightIntakeLegalDelivery,
   readCopyrightIntakeAuditReview,
   readCopyrightIntakeAuditRecommendation,
-  readCopyrightIntakeRetentionState,
   seedCopyrightIntakeLegalDelivery,
   seedCopyrightIntakeAuditReview,
   seedTestCopyrightAncestorEdge,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
+import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'

@@ -5,20 +5,17 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
     SELECT kind, id FROM (
       SELECT 'email'::text AS kind, intake.id
       FROM copyright_notice_email_intakes intake
+      JOIN copyright_notice_email_intake_receipts receipt
+        ON receipt.id = intake.id AND receipt.erased_at IS NULL
       JOIN copyright_notice_email_intake_parses parse
         ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
-      WHERE NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation
-        WHERE recommendation.copyright_notice_email_intake_receipt_id = intake.id
-      )
+      WHERE intake.raw_storage_object_id IS NOT NULL
+        AND intake.recommendation_completed_at IS NULL
+        AND receipt.review_decision IS NULL
       AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intake_reviews initial_review
-        WHERE initial_review.copyright_notice_email_intake_receipt_id = intake.id
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_correspondence_reviews decision
-        WHERE decision.copyright_notice_email_intake_id = intake.id
-          AND decision.action IN ('admitted', 'rejected')
+        SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = intake.id
+          AND link.correspondence_action IN ('admitted', 'rejected')
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links link
@@ -51,25 +48,16 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
         ON screening.id = execution.copyright_notice_form_screening_id
           AND fn_current_copyright_form_screening(submission.id, screening.id)
       LEFT JOIN LATERAL (
-        SELECT assessment.id
-        FROM copyright_notice_submission_assessments assessment
-        WHERE assessment.copyright_notice_submission_id = submission.id
-          AND assessment.assessed_by_id IS NULL
-          AND assessment.is_substantially_compliant
-          AND assessment.copyright_notice_form_screening_id = screening.id
-          AND NOT EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments newer
-            WHERE newer.supersedes_assessment_id = assessment.id
-          )
+        SELECT submission.current_assessment_identity_id AS id
+        WHERE submission.current_assessed_by_id IS NULL
+          AND submission.current_assessment_is_substantially_compliant
+          AND submission.current_assessment_form_screening_id = screening.id
       ) assessment ON true
       LEFT JOIN LATERAL (
-        SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.is_substantially_compliant
-        FROM copyright_notice_submission_assessments assessment
-        WHERE assessment.copyright_notice_submission_id = submission.id
-          AND NOT EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments newer
-            WHERE newer.supersedes_assessment_id = assessment.id
-          )
+        SELECT submission.current_assessment_identity_id AS id,
+          submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id,
+          submission.current_assessment_is_substantially_compliant AS is_substantially_compliant
+        WHERE submission.current_assessment_identity_id IS NOT NULL
       ) current_assessment ON true
       WHERE submission.source_kind = 'signed_in_form'
         AND NOT EXISTS (
@@ -120,11 +108,11 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
               )
               AND NOT EXISTS (
                 SELECT 1 FROM copyright_restrictions restriction
-                JOIN copyright_notice_submission_assessments authority
+                JOIN copyright_notice_submission_assessment_identities authority
                   ON authority.id = restriction.authorizing_assessment_id
                 WHERE restriction.copyright_notice_target_id = target.id
                   AND authority.copyright_notice_submission_id = submission.id
-                  AND authority.copyright_notice_form_screening_id IS NOT NULL
+                  AND restriction.is_authorizing_assessment_automated
                   AND restriction.lifted_at IS NOT NULL
               )
           )

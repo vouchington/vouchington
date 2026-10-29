@@ -21,29 +21,41 @@ export async function recordCopyrightRepeatInfringerReinstatement(
   await lockAuthorPublicationLifecycle(transaction, input.accountUserId)
   const { rows: blocked } = await transaction<{ id: string }>(sql`
     /* recordCopyrightRepeatInfringerReinstatement */
-    SELECT id FROM copyright_repeat_infringer_reviews terminated
-    WHERE terminated.account_user_id = ${input.accountUserId}
-      AND terminated.outcome = 'terminate'
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_repeat_infringer_reviews reinstated
-        WHERE reinstated.account_user_id = terminated.account_user_id
-          AND reinstated.outcome = 'reinstatement'
-          AND reinstated.outcome_at > terminated.outcome_at
-      )
+    SELECT account_user_id AS id FROM copyright_repeat_infringer_account_states
+    WHERE account_user_id = ${input.accountUserId} AND termination_in_effect
     FOR UPDATE
   `)
   assert(blocked[0], 409, 'Copyright termination is not in effect')
+  const { rows: identities } = await transaction<{ id: string }>(sql`
+    /* recordCopyrightRepeatInfringerReinstatement:identity */
+    INSERT INTO copyright_repeat_infringer_review_identities (account_user_id)
+    VALUES (${input.accountUserId}) RETURNING id
+  `)
+  const rationaleCiphertext = encryptSecret(
+    input.rationale,
+    `copyright-repeat-infringer-reinstatement:${input.accountUserId}:${input.recordedAt.toISOString()}`,
+  )
+  await transaction(sql`
+    /* recordCopyrightRepeatInfringerReinstatement:current */
+    UPDATE copyright_repeat_infringer_account_states
+    SET termination_in_effect = false, current_outcome = 'reinstatement',
+      current_outcome_at = ${input.recordedAt}, current_outcome_by_id = ${input.currentUser.id},
+      current_outcome_rationale_ciphertext = ${rationaleCiphertext},
+      current_decided_review_identity_id = ${identities[0]!.id},
+      effective_termination_review_identity_id = NULL,
+      effective_termination_decided_at = NULL,
+      effective_termination_decided_by_id = NULL, effective_termination_rationale_ciphertext = NULL
+    WHERE account_user_id = ${input.accountUserId} AND termination_in_effect
+  `)
   await transaction(sql`
     /* recordCopyrightRepeatInfringerReinstatement:insert */
     INSERT INTO copyright_repeat_infringer_reviews (
+      copyright_repeat_infringer_review_identity_id,
       account_user_id, opened_at, outcome, outcome_at, outcome_by_id, rationale_ciphertext
     ) VALUES (
-      ${input.accountUserId}, ${input.recordedAt}, 'reinstatement', ${input.recordedAt},
+      ${identities[0]!.id}, ${input.accountUserId}, ${input.recordedAt}, 'reinstatement', ${input.recordedAt},
       ${input.currentUser.id},
-      ${encryptSecret(
-        input.rationale,
-        `copyright-repeat-infringer-reinstatement:${input.accountUserId}:${input.recordedAt.toISOString()}`,
-      )}
+      ${rationaleCiphertext}
     )
   `)
   await transaction.commit()
