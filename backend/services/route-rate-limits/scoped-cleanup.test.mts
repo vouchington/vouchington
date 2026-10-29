@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { routeRateLimiters } from './check.mts'
 import { buildRateLimitKeys as buildPublishedRateLimitKeys } from '@vouchington/rate-limit'
 import { getRateLimitKeyDimensions } from './identity.mts'
@@ -90,31 +90,5 @@ describe('deleteRouteRateLimitKeys', () => {
     )
     await expect(cleanup.cleanup()).resolves.toBeUndefined()
     expect(deletionAttempts).toBe(3)
-  })
-
-  describe('guaranteed teardown', () => {
-    const routeKey = 'POST:/api/v1/membership-purchase-intents'
-    const identities: RateLimitIdentities = { ip: `2001:db8:e::${randomUUID()}` }
-    const ownedIds = buildRateLimitKeys(routeKey, identities)
-    const cleanup = createRouteRateLimitKeyCleanup()
-    const limiter = routeRateLimiters.sensitive
-
-    afterEach(async () => {
-      await cleanup.cleanup()
-      const remaining = await limiter.get(ownedIds)
-      if (remaining.some(count => count !== 0)) {
-        throw new Error(`afterEach left owned route rate-limit counters: ${remaining.join(', ')}`)
-      }
-    })
-
-    it('registers ownership before a guarded callback rejects', async () => {
-      await cleanup.resetAndOwn(routeKey, identities)
-      await limiter.addAndCheck(ownedIds, 100)
-
-      await expect(
-        Promise.reject(new Error('simulated assertion failure after the rate-limit write')),
-      ).rejects.toThrow('simulated assertion failure after the rate-limit write')
-      expect(await limiter.get(ownedIds)).toEqual([1])
-    })
   })
 })

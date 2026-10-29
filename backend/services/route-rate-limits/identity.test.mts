@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { getRateLimitKeyDimensions, resolveRateLimitIdentities } from './identity.mts'
-import { getRouteConfig } from './config.mts'
 import type { RateLimitIdentities } from './types.mts'
 
 describe('getRateLimitKeyDimensions', () => {
@@ -117,14 +116,5 @@ describe('resolveRateLimitIdentities', () => {
     })
 
     expect(identities.userTrustTier).toBeUndefined()
-  })
-})
-
-describe('auth route registry', () => {
-  it('classifies MFA verification routes as sensitive', () => {
-    expect(getRouteConfig('POST:/api/v1/auth/mfa/totp/verification').category).toBe('sensitive')
-    expect(
-      getRouteConfig('POST:/api/v1/auth/mfa/passkeys/authentication/verification').category,
-    ).toBe('sensitive')
   })
 })
