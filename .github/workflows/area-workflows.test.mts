@@ -131,8 +131,7 @@ describe('area workflows', () => {
         // The area static checks gate it; without them, it selects the area itself.
         gated:
           staticJobs.length > 0
-            ? staticJobs.every(job => needs.includes(job)) ||
-              ((reportOnly[area] ?? []).includes(id) && (jobs[id]!.if?.includes(selected) ?? false))
+            ? staticJobs.every(job => needs.includes(job))
             : (jobs[id]!.if?.includes(selected) ?? false),
       }
     }

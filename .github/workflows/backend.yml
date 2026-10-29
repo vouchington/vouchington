@@ -41,7 +41,7 @@ jobs:
 
   # Report Bun compatibility separately while Node remains the production runtime.
   typecheck-bun:
-    needs: [changes]
+    needs: [changes, static-backend]
     if: needs.changes.outputs.area-backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 8
