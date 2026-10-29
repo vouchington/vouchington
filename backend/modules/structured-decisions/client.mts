@@ -4,6 +4,7 @@ import {
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
   classifyByStatus,
+  classifyOpenAIFailure,
   classifyOpenRouterFailure,
   classifyProviderResponse,
   decodeOpenAIResult,
@@ -26,6 +27,7 @@ const OPENROUTER_MODEL = /^typesafe\/jev-1\.13(?:-[A-Za-z0-9.]+)?$/
 const TYPESAFE_MODEL = /^(?:typesafe\/)?(?:jev-latest|jev-1\.13(?:\.0)?(?:-[A-Za-z0-9.]+)?)$/
 
 function classifierFor(transport: CreateStructuredDecisionClientOptions['transport']) {
+  if (transport === 'openai') return classifyOpenAIFailure
   return transport === 'openrouter' ? classifyOpenRouterFailure : classifyByStatus
 }
 
