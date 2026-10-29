@@ -22,7 +22,7 @@
     "@queues/background-cpu": "workspace:^",
     "@services/analytics": "workspace:^",
     "glide-mq": "^0.20.0",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.14.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

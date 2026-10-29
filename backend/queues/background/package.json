@@ -25,6 +25,6 @@
     "@voucha/types": "workspace:^",
     "@vouchington/worker-runtime": "^0.3.1",
     "glide-mq": "^0.20.0",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.14.0"
   }
 }
