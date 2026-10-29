@@ -52,6 +52,8 @@ describe('acquireTestAiUsageDateReservation', () => {
     })
 
     expect(first.day).not.toBe(second.day)
+    expect(Date.parse(first.day)).toBeLessThan(Date.now())
+    expect(Date.parse(second.day)).toBeLessThan(Date.now())
   })
 
   it('does not advance authenticated fixture ids beyond the restored real clock', async () => {

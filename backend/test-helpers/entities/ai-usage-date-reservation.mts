@@ -42,11 +42,10 @@ export async function acquireTestAiUsageDateReservation(
     for (let attempt = 0; attempt < ordinarySlots.length; attempt++) {
       const index = (ordinarySlotCursor + attempt) % ordinarySlots.length
       const slot = ordinarySlots[index]!
-      if (
-        options.notBefore &&
-        Date.parse(`${getSlotDay(slot)}T12:00:00.000Z`) < options.notBefore.getTime()
-      )
-        continue
+      if (options.notBefore) {
+        if (Date.parse(`${getSlotDay(slot)}T12:00:00.000Z`) < options.notBefore.getTime()) continue
+        // Fake clocks inside a future day would advance the shared UUIDv7 monotonic state past the real clock.
+      } else if ((slot + 1) * SLOT_MS > startOfUtcDay(Date.now())) continue
       if (!(await tryAcquireSlot(client, slot))) continue
       if (await slotIsClean(client, slot)) {
         ordinarySlotCursor = (index + 1) % ordinarySlots.length
@@ -136,6 +135,10 @@ async function releaseSlotLock(client: PoolClient, slot: number): Promise<void> 
   )
   if (!rows[0]?.unlocked)
     throw new Error('PostgreSQL did not release the AI usage date reservation')
+}
+
+function startOfUtcDay(ms: number): number {
+  return ms - (ms % DAY_MS)
 }
 
 function getSlotDay(slot: number): string {
