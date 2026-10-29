@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -26,6 +26,8 @@ export function CopyrightNoticeTargetPicker({
   legend = 'Hosted material',
   hint,
   postImagesOnly = false,
+  lockUrl = false,
+  surface,
 }: {
   targets: CopyrightNoticeResolvedTarget[]
   onChange: (targets: CopyrightNoticeResolvedTarget[]) => void
@@ -33,7 +35,10 @@ export function CopyrightNoticeTargetPicker({
   legend?: string
   hint?: ReactNode
   postImagesOnly?: boolean
+  lockUrl?: boolean
+  surface?: CopyrightNoticeResolvedTarget['surface']
 }) {
+  const instanceId = useId()
   const [targetUrl, setTargetUrl] = useState(initialUrl)
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
   const [resolving, setResolving] = useState(false)
@@ -49,7 +54,9 @@ export function CopyrightNoticeTargetPicker({
     try {
       const resolved = await resolveCopyrightNoticeTargets(requestedUrl)
       if (request !== resolutionRequest.current) return
-      const choices = postImagesOnly ? copyrightStaffPostImageChoices(resolved) : resolved
+      const choices = (postImagesOnly ? copyrightStaffPostImageChoices(resolved) : resolved).filter(
+        item => !surface || item.surface === surface,
+      )
       setResolvedTargets(choices)
       setLookupFailed(choices.length === 0)
       onChange([])
@@ -97,14 +104,18 @@ export function CopyrightNoticeTargetPicker({
       </p>
       <div className='flex gap-2'>
         <div className='flex-1'>
-          <LabeledInput
-            id='copyright-target-url'
-            label='Hosted use URL'
-            type='url'
-            value={targetUrl}
-            onChange={event => updateUrl(event.target.value)}
-            required
-          />
+          {lockUrl ? (
+            <p className='text-sm text-muted-foreground'>Hosted use: {targetUrl}</p>
+          ) : (
+            <LabeledInput
+              id={`${instanceId}-copyright-target-url`}
+              label='Hosted use URL'
+              type='url'
+              value={targetUrl}
+              onChange={event => updateUrl(event.target.value)}
+              required
+            />
+          )}
         </div>
         <Button
           data-pw='copyright-notice-target-picker-resolve'
@@ -131,7 +142,7 @@ export function CopyrightNoticeTargetPicker({
         <div className='space-y-2'>
           {resolvedTargets.map((target, index) => {
             const key = copyrightNoticeTargetKey(target)
-            const id = `copyright-notice-target-${index}`
+            const id = `${instanceId}-copyright-notice-target-${index}`
             const label = target.caption.trim() || `Image ${target.order_index + 1}`
             return (
               <Label

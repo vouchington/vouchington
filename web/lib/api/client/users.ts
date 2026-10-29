@@ -3,6 +3,7 @@
 import { clientApi } from './instance'
 import { authRecoveryFetch } from './auth-recovery-fetch'
 import { assertPathIdentifier } from './path-identifiers'
+import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
 import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 import type {
   UserResponseBody,
@@ -12,6 +13,19 @@ import type {
   UserModNote,
 } from '@/types/api-responses'
 import type { UpdateUserBody } from '@/types/user'
+
+export function fetchUser(
+  idOrUsername: string,
+  options?: { includeBio?: boolean },
+): Promise<UserResponseBody | null> {
+  const safe = assertPathIdentifier(idOrUsername)
+  return returnNullForMissingEntity(
+    clientApi.get<UserResponseBody>(
+      `/api/v1/users/${encodeURIComponent(safe)}`,
+      options?.includeBio ? { searchParams: { include_bio: '1' } } : undefined,
+    ),
+  )
+}
 
 interface SearchUsersOptions {
   q: string

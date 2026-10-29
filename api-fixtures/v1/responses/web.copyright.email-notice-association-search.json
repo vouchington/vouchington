@@ -1,0 +1,16 @@
+{
+  "copyright_notices": [
+    {
+      "claimant_display_name": "Claimant",
+      "id": "00000000-0000-7000-8000-000000000841",
+      "jurisdiction": "us_dmca",
+      "received_at": "2026-10-13T12:00:00.000Z",
+      "work_description": "Harbour photograph"
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  }
+}

@@ -3028,28 +3028,35 @@
       "required": ["copyright_notice"],
       "type": "object"
     },
-    "GET:/api/v1/copyright-notices/:id/association-target": {
+    "GET:/api/v1/copyright-notices/association-targets": {
       "additionalProperties": false,
       "properties": {
-        "copyright_notice": {
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string"
+        "copyright_notices": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "claimant_display_name": { "type": ["string", "null"] },
+              "id": { "type": "string" },
+              "jurisdiction": { "enum": ["us_dmca", "eu_dsa"], "type": "string" },
+              "received_at": { "type": "string" },
+              "work_description": { "type": "string" }
             },
-            "jurisdiction": {
-              "enum": ["us_dmca", "eu_dsa", "uk"],
-              "type": "string"
-            },
-            "received_at": {
-              "type": "string"
-            }
+            "required": [
+              "claimant_display_name",
+              "id",
+              "jurisdiction",
+              "received_at",
+              "work_description"
+            ],
+            "type": "object"
           },
-          "required": ["id", "jurisdiction", "received_at"],
-          "type": "object"
+          "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         }
       },
-      "required": ["copyright_notice"],
+      "required": ["copyright_notices", "page_info"],
       "type": "object"
     },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
@@ -3352,9 +3359,12 @@
                     "state": {
                       "enum": ["blocked", "claimed", "completed", "failed", "pending", "stale"],
                       "type": "string"
+                    },
+                    "target_id": {
+                      "type": "string"
                     }
                   },
-                  "required": ["action", "failure_message", "id", "state"],
+                  "required": ["action", "failure_message", "id", "state", "target_id"],
                   "type": "object"
                 },
                 "type": "array"
@@ -3882,6 +3892,29 @@
                     "image_id": {
                       "type": "string"
                     },
+                    "image_placement": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "placement_id": {
+                              "type": "string"
+                            },
+                            "placement_revision": {
+                              "type": "number"
+                            },
+                            "image_id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["image_id", "placement_id", "placement_revision"],
+                          "type": "object"
+                        }
+                      ]
+                    },
                     "match_kind": {
                       "enum": ["exact", "perceptual"],
                       "type": "string"
@@ -3894,16 +3927,32 @@
                     },
                     "uploaded_by_id": {
                       "type": "string"
+                    },
+                    "uploaded_by_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "target_id": {
+                      "type": "string"
                     }
                   },
                   "required": [
                     "hamming_distance",
                     "id",
                     "image_id",
+                    "image_placement",
                     "match_kind",
                     "matched_at",
                     "registered_image_id",
-                    "uploaded_by_id"
+                    "target_id",
+                    "uploaded_by_id",
+                    "uploaded_by_username"
                   ],
                   "type": "object"
                 },
@@ -16418,6 +16467,9 @@
         "account_user_id": {
           "type": "string"
         },
+        "account_username": {
+          "anyOf": [{ "type": "null" }, { "type": "string" }]
+        },
         "incident_id": {
           "type": "string"
         },
@@ -16440,6 +16492,7 @@
       },
       "required": [
         "account_user_id",
+        "account_username",
         "incident_id",
         "is_operative",
         "open_review_id",
@@ -43440,15 +43493,13 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/copyright-notices/:id/association-target": {
-      "path": {
+    "GET:/api/v1/copyright-notices/association-targets": {
+      "query": {
         "properties": {
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          }
+          "after": { "type": "string" },
+          "q": { "type": "string", "minLength": 2, "maxLength": 200 }
         },
-        "required": ["id"],
+        "required": ["q"],
         "type": "object"
       }
     },

@@ -21,8 +21,8 @@ async function openCase(
   await loginAsMfaUser(page, fixture.moderator.id)
   await navigateTo(page, '/copyright/review-queue')
   const item = page
-    .getByRole('article')
-    .filter({ has: page.getByRole('heading', { name: `Case ${fixture.noticeId}`, exact: true }) })
+    .getByTestId('copyright-staff-case')
+    .and(page.locator(`[data-notice-id="${fixture.noticeId}"]`))
   await revealOwnedQueueItem(page, item, QUEUE_ENDPOINT)
   return item
 }

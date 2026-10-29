@@ -3,12 +3,22 @@ import nativeMyPushSubscriptionsPaginated from '../../../../api-fixtures/v1/resp
 import nativeUsersDataRequestCreateDefault from '../../../../api-fixtures/v1/responses/native.users.data-request.create.default.json'
 import nativeUsersDataRequestDefault from '../../../../api-fixtures/v1/responses/native.users.data-request.default.json'
 import nativeUsersDeleteDefault from '../../../../api-fixtures/v1/responses/native.users.delete.default.json'
+import nativeUsersProfileDefault from '../../../../api-fixtures/v1/responses/native.users.profile.default.json'
 import type { ApiKey } from '@/types/api-keys'
-import type { ListResponse, WebPushSubscriptionsResponseBody } from '@/types/api-responses'
+import type {
+  ListResponse,
+  UserResponseBody,
+  WebPushSubscriptionsResponseBody,
+} from '@/types/api-responses'
 import type { CreateOrConflictDataRequestResponse, DataRequest } from '@/lib/api/client/users'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const ACCOUNT_DECLARATIONS = [
+  defineWebApiFixture<UserResponseBody>()(
+    'native.users.profile.default',
+    nativeUsersProfileDefault,
+    context => context.client.users.fetchUser('alice', { includeBio: true }),
+  ),
   defineWebApiFixture<ListResponse<ApiKey>>()(
     'native.my.api-keys.paginated',
     nativeMyApiKeysPaginated,

@@ -85,7 +85,7 @@ export const sdkCatalogCases = [
     scopes: ['copyright-notices:read', 'copyright-notices:write'] as ApiScope[],
     plan: null,
     admin: true,
-    count: 22,
+    count: 23,
   },
 ] as const
 

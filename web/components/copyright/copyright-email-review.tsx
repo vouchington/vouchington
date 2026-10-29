@@ -218,7 +218,9 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
               correspondenceDraft={correspondenceDraft}
               onChangeDraft={value => {
                 draftEdited.current = true
-                setDraft(value)
+                setDraft(current =>
+                  current === null ? null : typeof value === 'function' ? value(current) : value,
+                )
               }}
               onChangeRationale={setRationale}
               onChangeManualFallbackReason={setManualFallbackReason}

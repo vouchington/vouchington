@@ -95,7 +95,7 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
         },
       ],
     },
-    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: [
       'https://github.com/vouchington/vouchington-clients/blob/main/dotnet-clients/tests/Voucha.Client.Core.Tests/Api/VouchaApiClientUserNotificationTests.cs',
     ],

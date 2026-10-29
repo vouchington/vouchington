@@ -5,6 +5,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueueItem as makeQueueItem,
@@ -49,7 +50,7 @@ describe('CopyrightEmailReview empty state', () => {
     intakesClient.rejectCopyrightEmailIntake.mockResolvedValue({ reply_queued: true })
     render(<CopyrightEmailReview data={makeQueuePage([makeQueueItem()])} />)
 
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
     fireEvent.change(await screen.findByLabelText('Review rationale'), {
       target: { value: 'Not a copyright notice.' },
     })

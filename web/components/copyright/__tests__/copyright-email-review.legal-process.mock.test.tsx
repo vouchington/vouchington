@@ -5,6 +5,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueueItem as makeQueueItem,
@@ -25,7 +26,7 @@ const mockList = intakesClient.listCopyrightEmailIntakes
 const mockRecord = intakesClient.recordCopyrightEmailIntakeLegalProcess
 
 async function selectIntake(id: string) {
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(id) }))
+  fireEvent.click(getCopyrightEmailQueueButton(id)!)
   await waitFor(() => {
     expect(screen.getByRole('heading', { name: 'Staff-private evidence' })).toBeInTheDocument()
   })
@@ -55,7 +56,7 @@ describe('CopyrightEmailReview legal process', () => {
     ).toBeVisible()
     expect(mockRecord).toHaveBeenCalledExactlyOnceWith(intakeId, 'Subpoena for records.')
     expect(screen.queryByRole('heading', { name: 'Staff-private evidence' })).toBeNull()
-    expect(screen.queryByRole('button', { name: new RegExp(intakeId) })).toBeNull()
+    expect(getCopyrightEmailQueueButton(intakeId)).toBeNull()
     expect(screen.getByText('No copyright emails need review.')).toBeVisible()
   })
 

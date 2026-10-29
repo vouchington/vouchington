@@ -2,7 +2,7 @@
 import app from '../../app.mts'
 import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryInteger } from '@vouchington/pagination'
+import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
 import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embeddings-batch/image-similarity'
@@ -34,10 +34,8 @@ import {
   admitCopyrightEmailCorrespondenceDecision,
   rejectCopyrightEmailCorrespondenceDecision,
 } from '@services/copyright-notices/copyright-email-decision-actions'
-import {
-  associateCopyrightEmailIntakeWithNotice,
-  getCopyrightNoticeAssociationTarget,
-} from '@services/copyright-notices/email-manual-association'
+import { associateCopyrightEmailIntakeWithNotice } from '@services/copyright-notices/email-manual-association'
+import { searchCopyrightNoticeAssociationTargets } from '@services/copyright-notices/association-search'
 import { replayCopyrightDeliveryIntentAndEnqueue } from '@services/copyright-notices/copyright-mcp-write-actions'
 import {
   parseCopyrightAppealDecisionInput,
@@ -399,21 +397,23 @@ app.route('/api/v1/copyright-email-intakes/:id/notice-associations').post(async 
   ctx.json(association)
 })
 
-app.route('/api/v1/copyright-notices/:id/association-target').get(async (ctx: Context) => {
+const associationSearchQuery = defineQueryContract({ q: queryString(), after: queryString() })
+
+app.route('/api/v1/copyright-notices/association-targets').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/copyright-notices/association-targets', associationSearchQuery)
   setPrivateNoStoreCacheHeaders(ctx)
   const currentUser = await requireAuthAndRateLimit(
     ctx,
     currentUserCanReviewCopyrightNotices,
-    'GET:/api/v1/copyright-notices/:id/association-target',
+    'GET:/api/v1/copyright-notices/association-targets',
   )
   assertNotSuspended(currentUser)
-  const noticeId = validateUUIDParam(ctx, 'id')
-  validateRequestContract(ctx, 'GET:/api/v1/copyright-notices/:id/association-target', {
-    path: ctx.params,
+  const q = typeof ctx.query.q === 'string' ? ctx.query.q : ''
+  const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
+  validateRequestContract(ctx, 'GET:/api/v1/copyright-notices/association-targets', {
+    query: { q, ...(after ? { after } : {}) },
   })
-  const notice = await getCopyrightNoticeAssociationTarget(currentUser, noticeId)
-  ctx.assert(notice, 404, 'Copyright notice not found')
-  ctx.json({ copyright_notice: notice })
+  ctx.json(await searchCopyrightNoticeAssociationTargets(currentUser, q, after))
 })
 
 app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context) => {

@@ -15768,66 +15768,6 @@
       "source": "backend/api/v1/copyright-notices/index.mts",
       "statusKnowledge": "default"
     },
-    "GET:/api/v1/copyright-notices/:id/association-target": {
-      "bodyKind": "content",
-      "hash": "ee1a3707259f67125e49d2de7db8ca939eff1f91371871273cf1af8ba0bf438e",
-      "mediaType": "application/json",
-      "mediaTypeKnowledge": "known",
-      "method": "GET",
-      "routeTemplate": "/api/v1/copyright-notices/:id/association-target",
-      "schema": {
-        "definitions": {},
-        "root": {
-          "additionalProperties": false,
-          "properties": {
-            "copyright_notice": {
-              "required": true,
-              "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "jurisdiction": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "literal",
-                          "value": "us_dmca"
-                        },
-                        {
-                          "type": "literal",
-                          "value": "eu_dsa"
-                        },
-                        {
-                          "type": "literal",
-                          "value": "uk"
-                        }
-                      ]
-                    }
-                  },
-                  "received_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "type": "object"
-              }
-            }
-          },
-          "type": "object"
-        }
-      },
-      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
-      "statusKnowledge": "default"
-    },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "bodyKind": "content",
       "hash": "5c7e8ff40e229ad90a4f47ffaa0db6559c18e62bbe661e0d2f24dc13f43014b4",
@@ -17119,6 +17059,89 @@
       "source": "backend/api/v1/copyright-notices/index.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts": {
+      "bodyKind": "content",
+      "hash": "0d1c191fafafc9fce6fe41b07c37443326212cbef8102068aa2aea07111147fd",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/repeat-infringer-accounts",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_repeat_infringer_accounts": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "account_user_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "account_username": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "incident_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "is_operative": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "open_review_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "termination_in_effect": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/repeat-infringer-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "bodyKind": "content",
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940",
@@ -17410,9 +17433,131 @@
       "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/association-targets": {
+      "bodyKind": "content",
+      "hash": "3657b68d95d98364fd3b4617681391d023cc6166efe9fa7980ab6d7a3023fa0d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/association-targets",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_notices": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claimant_display_name": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "jurisdiction": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "us_dmca"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "eu_dsa"
+                          }
+                        ]
+                      }
+                    },
+                    "received_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "work_description": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "end_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "has_next_page": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "start_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "5455bcbaeed77daa8dd38c58bbaebe4cbbc66db4240ba7047e705a180f4e55ea",
+      "hash": "003a245a950976a8fac8a811714da90a520fb81ce4bea44e766b1504c34dcb26",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -18605,6 +18750,12 @@
                                   }
                                 ]
                               }
+                            },
+                            "target_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
                             }
                           },
                           "type": "object"
@@ -19539,6 +19690,41 @@
                                 "type": "string"
                               }
                             },
+                            "image_placement": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "image_id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "placement_id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "placement_revision": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                ]
+                              }
+                            },
                             "match_kind": {
                               "required": true,
                               "schema": {
@@ -19567,10 +19753,30 @@
                                 "type": "string"
                               }
                             },
+                            "target_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
                             "uploaded_by_id": {
                               "required": true,
                               "schema": {
                                 "type": "string"
+                              }
+                            },
+                            "uploaded_by_username": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -106624,7 +106830,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/users/:idOrSlug#self",
       "bodyFile": "responses/native.users.profile.default.json",
-      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.users.profile.default",
       "method": "GET",
       "migratedFrom": [
@@ -107496,9 +107702,36 @@
     },
     {
       "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts",
+      "bodyFile": "responses/native.copyright.repeat-infringer-accounts.json",
+      "consumers": ["web", "swift-core", "dotnet-core"],
+      "id": "native.copyright.repeat-infringer-accounts",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/repeat-infringer-routes.mts",
+        "web/lib/api/client/copyright-repeat-infringer.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/repeat-infringer-accounts",
+      "responseSchema": {
+        "hash": "319ebbe81cd00edd89a24eb39e18e6ef46abc1f75ae4f9d0768561cb55753198",
+        "key": "native.copyright.repeat-infringer-accounts"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000804"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/repeat-infringer-accounts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/review-queue",
       "bodyFile": "responses/web.copyright.staff-queue.default.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.staff-queue.default",
       "method": "GET",
       "migratedFrom": [
@@ -107508,7 +107741,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "dd491e9123313c06724d5067378954cc5ac0831665e4b98db5dd64e49396fb8b",
+        "hash": "192f0ce3575e2d0022667a2235af16e04ac7c7e2c8c48885359bc42bba9e0e8a",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {
@@ -107743,25 +107976,25 @@
     },
     {
       "auth": "fixture-admin",
-      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/association-target",
-      "bodyFile": "responses/web.copyright.email-notice-association-target.json",
-      "consumers": ["web"],
-      "id": "web.copyright.email-notice-association-target",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/association-targets",
+      "bodyFile": "responses/web.copyright.email-notice-association-search.json",
+      "consumers": ["web", "swift-core", "dotnet-core"],
+      "id": "web.copyright.email-notice-association-search",
       "method": "GET",
       "migratedFrom": [
         "backend/api/v1/copyright-notices/moderator-routes.mts",
-        "web/lib/api/client/copyright-notice-association-target.ts"
+        "web/lib/api/client/copyright-notice-association-search.ts"
       ],
-      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000841/association-target",
+      "path": "/api/v1/copyright-notices/association-targets",
+      "query": {
+        "q": "Claimant"
+      },
       "responseSchema": {
-        "hash": "00c6c18a071795d87305d6ba91934aa25fbab7569befb8eed235e02e009d8a1a",
-        "key": "web.copyright.email-notice-association-target"
+        "hash": "5815ab48b0954aea24d95778ba2254349552dea1a5db77a48c2e984f2c48c61a",
+        "key": "web.copyright.email-notice-association-search"
       },
       "route": {
-        "pathParams": {
-          "id": "00000000-0000-7000-8000-000000000841"
-        },
-        "routeTemplate": "/api/v1/copyright-notices/:id/association-target"
+        "routeTemplate": "/api/v1/copyright-notices/association-targets"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"

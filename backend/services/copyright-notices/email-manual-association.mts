@@ -1,4 +1,4 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
@@ -15,31 +15,6 @@ import {
 } from './email-thread-review-path.mts'
 
 type IntakeDecision = { id: string; linked: boolean; reviewed: boolean }
-
-export type CopyrightNoticeAssociationTarget = {
-  id: string
-  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
-  received_at: string
-}
-
-/** Resolve a staff-selected case by id without imposing the public accepted-case filter. */
-export async function getCopyrightNoticeAssociationTarget(
-  currentUser: PrivateUser,
-  noticeId: string,
-): Promise<CopyrightNoticeAssociationTarget | undefined> {
-  assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
-  const { rows } = await read<CopyrightNoticeAssociationTarget>(sql`
-    /* getCopyrightNoticeAssociationTarget */
-    SELECT id, jurisdiction, received_at FROM copyright_notices notice
-    WHERE id = ${noticeId}
-      AND jurisdiction IN ('us_dmca', 'eu_dsa')
-      AND NOT EXISTS (
-      SELECT 1 FROM copyright_notice_retention_erasures erasure
-      WHERE erasure.copyright_notice_id = notice.id
-    )
-  `)
-  return rows[0]
-}
 
 /** Associate exactly one unresolved intake; later replies use the normal threading path. */
 export async function associateCopyrightEmailIntakeWithNotice(

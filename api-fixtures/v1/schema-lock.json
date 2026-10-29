@@ -325,10 +325,6 @@
       ],
       "hash": "e0f7f088c24e8b98ffda3c50279ef899de8a5d4f97737190f148c00a568e9173"
     },
-    "GET:/api/v1/copyright-notices/:id/association-target": {
-      "fixtureIds": ["web.copyright.email-notice-association-target"],
-      "hash": "ee1a3707259f67125e49d2de7db8ca939eff1f91371871273cf1af8ba0bf438e"
-    },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],
       "hash": "5c7e8ff40e229ad90a4f47ffaa0db6559c18e62bbe661e0d2f24dc13f43014b4"
@@ -349,6 +345,10 @@
       ],
       "hash": "d4f384126d38b42bb29d7bd8e76e44f972d4ff3b58ab6cd8a6f01bd17c362cad"
     },
+    "GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts": {
+      "fixtureIds": ["native.copyright.repeat-infringer-accounts"],
+      "hash": "0d1c191fafafc9fce6fe41b07c37443326212cbef8102068aa2aea07111147fd"
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"
@@ -357,9 +357,13 @@
       "fixtureIds": ["web.copyright.eu.territorial-complaints"],
       "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544"
     },
+    "GET:/api/v1/copyright-notices/association-targets": {
+      "fixtureIds": ["web.copyright.email-notice-association-search"],
+      "hash": "3657b68d95d98364fd3b4617681391d023cc6166efe9fa7980ab6d7a3023fa0d"
+    },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default", "web.copyright.staff-queue.territorial"],
-      "hash": "5455bcbaeed77daa8dd38c58bbaebe4cbbc66db4240ba7047e705a180f4e55ea"
+      "hash": "003a245a950976a8fac8a811714da90a520fb81ce4bea44e766b1504c34dcb26"
     },
     "GET:/api/v1/copyright-trusted-flaggers": {
       "fixtureIds": ["copyright.trusted-flaggers.list"],
@@ -1857,6 +1861,10 @@
       "fixtureIds": ["native.community.pending-reports.paginated"],
       "hash": "e50d0e43b8d7c9b8b1d31a98593248bc1f5754cbf3687ea03ff2729e32825b2f"
     },
+    "native.copyright.repeat-infringer-accounts": {
+      "fixtureIds": ["native.copyright.repeat-infringer-accounts"],
+      "hash": "319ebbe81cd00edd89a24eb39e18e6ef46abc1f75ae4f9d0768561cb55753198"
+    },
     "native.dynamic-config.history.default": {
       "fixtureIds": ["native.dynamic-config.history.default"],
       "hash": "e62e1eca9461241ed77a1e020aa5ed7f37b8efff0310bf60ee82f148b4c091a0"
@@ -3213,9 +3221,9 @@
       "fixtureIds": ["web.copyright.email-intake-rejection.reply-queued"],
       "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
     },
-    "web.copyright.email-notice-association-target": {
-      "fixtureIds": ["web.copyright.email-notice-association-target"],
-      "hash": "00c6c18a071795d87305d6ba91934aa25fbab7569befb8eed235e02e009d8a1a"
+    "web.copyright.email-notice-association-search": {
+      "fixtureIds": ["web.copyright.email-notice-association-search"],
+      "hash": "5815ab48b0954aea24d95778ba2254349552dea1a5db77a48c2e984f2c48c61a"
     },
     "web.copyright.eu.dispute-settlements.participant": {
       "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],
@@ -3291,7 +3299,7 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "dd491e9123313c06724d5067378954cc5ac0831665e4b98db5dd64e49396fb8b"
+      "hash": "192f0ce3575e2d0022667a2235af16e04ac7c7e2c8c48885359bc42bba9e0e8a"
     },
     "web.copyright.staff-queue.territorial": {
       "fixtureIds": ["web.copyright.staff-queue.territorial"],

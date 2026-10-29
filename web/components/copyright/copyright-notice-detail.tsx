@@ -9,6 +9,7 @@ import {
 import { CopyrightNoticeStatements } from './copyright-notice-statements'
 import { copyrightTimelineEventLabel } from './copyright-timeline-event-label'
 import { TextLink } from '@/components/ui/text-link'
+import { copyrightCaseLabel } from './copyright-case-label'
 
 const EMPTY_STATEMENTS: CopyrightParticipantNoticeDetail['statements'] = []
 
@@ -24,7 +25,7 @@ export function CopyrightNoticeDetailView({
   return (
     <section className='space-y-5'>
       <div>
-        <p className='text-sm text-muted-foreground'>Case {notice.id}</p>
+        <p className='text-sm text-muted-foreground'>{copyrightCaseLabel(notice)}</p>
         <h1 className='text-3xl font-bold'>Copyright notice</h1>
         <p className='text-sm text-muted-foreground'>
           Accepted {new Date(notice.accepted_at).toLocaleDateString()}

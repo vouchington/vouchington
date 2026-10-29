@@ -107,6 +107,7 @@ export type CopyrightStaffCase = {
   }>
   action_intents: Array<{
     id: string
+    target_id: string
     action: FiniteValue<'copyright_notice_action_intent_actions'>
     state: FiniteValue<'copyright_notice_action_intent_states'>
     failure_message: string | null
@@ -127,7 +128,11 @@ export type CopyrightStaffCase = {
     /** The matching image; for an exact match, the registered image itself. */
     image_id: string
     registered_image_id: string
+    target_id: string
     uploaded_by_id: string
+    uploaded_by_username: string | null
+    /** A policy-checked published placement for inspecting the matched image, when available. */
+    image_placement: { image_id: string; placement_id: string; placement_revision: number } | null
     match_kind: FiniteValue<'copyright_staydown_match_kinds'>
     /** Differing bits out of 64; 0 for an exact match. */
     hamming_distance: number

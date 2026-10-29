@@ -6,6 +6,7 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 
 type CopyrightRepeatInfringerNoticeAccount = {
   account_user_id: string
+  account_username: string | null
   incident_id: string
   is_operative: boolean
   open_review_id: string | null
@@ -24,11 +25,13 @@ export async function listCopyrightRepeatInfringerAccountsForNotice(
   const { rows } = await read<CopyrightRepeatInfringerNoticeAccount>(sql`
     /* listCopyrightRepeatInfringerAccountsForNotice */
     SELECT incident.account_user_id,
+      account.username AS account_username,
       incident.id AS incident_id,
       incident.is_operative,
       open_review.id AS open_review_id,
       COALESCE(account_state.is_termination_in_effect, false) AS termination_in_effect
     FROM copyright_repeat_infringer_incidents incident
+    LEFT JOIN users account ON account.id = incident.account_user_id AND account.deleted_at IS NULL
     LEFT JOIN copyright_repeat_infringer_account_states account_state
       ON account_state.account_user_id = incident.account_user_id
     LEFT JOIN copyright_repeat_infringer_review_identities open_review

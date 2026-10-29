@@ -1512,7 +1512,8 @@
     "I200": [["after", "limit", "review_due", "source", "source_flag_id", "status", "user_id"]],
     "I201": [["destination_id_or_slug", "source_id_or_slug"]],
     "I202": [["operation_id", "source_id_or_slug"]],
-    "I203": [["page_id"]]
+    "I203": [["page_id"]],
+    "I204": [["after", "q"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4548,6 +4549,22 @@
     ]
   },
   "additions": {
+    "GET:/api/v1/copyright-notices/association-targets": {
+      "pullRequest": 4375,
+      "contracts": [
+        {
+          "audience": "legal",
+          "facts": "F11",
+          "inputFields": "I204",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "search_copyright_notices_for_association",
+            "option": null
+          },
+          "decision": false
+        }
+      ]
+    },
     "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
       "pullRequest": 2763,
       "contracts": [

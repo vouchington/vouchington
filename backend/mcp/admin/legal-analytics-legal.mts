@@ -9,6 +9,8 @@ import {
   copyrightStaffQueueParser,
   listCopyrightStaffQueuePage,
 } from '@services/copyright-notices/staff-queue-page'
+import { searchCopyrightNoticeAssociationTargets } from '@services/copyright-notices/association-search'
+import { stripPersonalDetails } from '@services/copyright-notices/contact-redaction'
 import { adminInput, createAdminTool, PAGE_INPUT, UUID_INPUT } from './create-admin-tool.mts'
 import { redactCopyrightContactFields, redactCopyrightQueueCase } from './copyright-redaction.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
@@ -51,6 +53,34 @@ const notice = createAdminTool<{ id: string }>({
     return redactCopyrightContactFields({ copyright_notice })
   },
 })
+const associationSearchApi = {
+  method: 'GET',
+  path: '/api/v1/copyright-notices/association-targets',
+} as const
+const associationSearch = createAdminTool<{ q: string; after?: string }>({
+  name: 'search_copyright_notices_for_association',
+  description:
+    'Find eligible copyright cases by claimant, work, or received date for email association.',
+  scope: 'copyright-notices:read',
+  api: associationSearchApi,
+  parameters: adminInput(
+    { q: { type: 'string', minLength: 2, maxLength: 200 }, after: { type: 'string' } },
+    ['q'],
+  ),
+  outputSchema: adminRouteOutputSchema(associationSearchApi),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: async (user, args) => {
+    assertNotSuspended(user)
+    const page = await searchCopyrightNoticeAssociationTargets(user, args.q, args.after)
+    return {
+      ...page,
+      copyright_notices: page.copyright_notices.map(notice => ({
+        ...notice,
+        work_description: stripPersonalDetails(notice.work_description),
+      })),
+    }
+  },
+})
 const repeatApi = {
   method: 'GET',
   path: '/api/v1/copyright-notices/:id/repeat-infringer-accounts',
@@ -73,4 +103,4 @@ const repeatAccounts = createAdminTool<{ id: string }>({
     })
   },
 })
-export const adminLegalTools = [reviewQueue, notice, repeatAccounts]
+export const adminLegalTools = [reviewQueue, notice, associationSearch, repeatAccounts]

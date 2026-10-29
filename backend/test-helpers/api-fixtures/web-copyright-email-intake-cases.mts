@@ -40,26 +40,31 @@ function rejectionCase(
 
 export const webCopyrightEmailIntakeApiFixtureCases: ApiFixtureCase[] = [
   {
-    id: 'web.copyright.email-notice-association-target',
+    id: 'web.copyright.email-notice-association-search',
     method: 'GET',
-    path: '/api/v1/copyright-notices/00000000-0000-7000-8000-000000000841/association-target',
+    path: '/api/v1/copyright-notices/association-targets',
     route: {
-      routeTemplate: '/api/v1/copyright-notices/:id/association-target',
-      pathParams: { id: '00000000-0000-7000-8000-000000000841' },
+      routeTemplate: '/api/v1/copyright-notices/association-targets',
     },
+    query: { q: 'Claimant' },
     auth: 'fixture-admin',
     status: 200,
     body: {
-      copyright_notice: {
-        id: '00000000-0000-7000-8000-000000000841',
-        jurisdiction: 'us_dmca',
-        received_at: '2026-10-13T12:00:00.000Z',
-      },
+      copyright_notices: [
+        {
+          id: '00000000-0000-7000-8000-000000000841',
+          jurisdiction: 'us_dmca',
+          received_at: '2026-10-13T12:00:00.000Z',
+          claimant_display_name: 'Claimant',
+          work_description: 'Harbour photograph',
+        },
+      ],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/moderator-routes.mts',
-      'web/lib/api/client/copyright-notice-association-target.ts',
+      'web/lib/api/client/copyright-notice-association-search.ts',
     ],
   },
   {

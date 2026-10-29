@@ -1,4 +1,5 @@
 import { ClientRequest } from '@vouchington/api-client'
+import type { CopyrightRepeatInfringerAccountRecord } from '@/lib/api/client/copyright-repeat-infringer'
 
 let copyrightStaffCaseFixture = false
 const previousGet = ClientRequest.prototype.get
@@ -25,10 +26,13 @@ const guestCapabilities = {
   page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
 }
 
-const repeatInfringerAccounts = {
+const repeatInfringerAccounts: {
+  copyright_repeat_infringer_accounts: CopyrightRepeatInfringerAccountRecord[]
+} = {
   copyright_repeat_infringer_accounts: [
     {
       account_user_id: 'user-uploader',
+      account_username: 'harbour-uploader',
       incident_id: 'incident-1',
       is_operative: true,
       open_review_id: 'review-1',

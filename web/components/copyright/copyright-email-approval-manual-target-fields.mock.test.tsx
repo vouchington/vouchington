@@ -1,11 +1,21 @@
-import type { ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import '@/test-helpers/i18n/mock-json-messages'
+import { useState, type ReactNode, type SetStateAction } from 'react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 
-type ManualTargetProps = React.ComponentProps<typeof CopyrightEmailApprovalManualTargetFields>
-
+const resolvedTargets = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchPost = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchPosts = vi.hoisted(() => vi.fn<VitestLooseMock>())
+vi.mock(
+  import('@/lib/api/client/posts'),
+  () => ({ fetchPost, fetchPosts }) as unknown as typeof import('@/lib/api/client/posts'),
+)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
+  resolveCopyrightNoticeTargets: resolvedTargets,
+}))
 vi.mock(
   import('@/components/ui/select'),
   () =>
@@ -36,15 +46,15 @@ vi.mock(
     }) as unknown as typeof import('@/components/ui/select'),
 )
 
-const baseTarget: CopyrightEmailApprovalDraft['targets'][number] = {
+const target: CopyrightEmailApprovalDraft['targets'][number] = {
   id: 'first',
   group_id: 'group-1',
   surface: 'post-image',
   post_id: 'post-1',
-  user_id: 'user-1',
-  user_profile_link_id: 'link-1',
-  topic_id: 'topic-1',
-  community_id: 'community-1',
+  user_id: undefined,
+  user_profile_link_id: undefined,
+  topic_id: undefined,
+  community_id: undefined,
   image_id: 'image-1',
   target_url: 'https://voucha.ai/discussion/one',
   resolution_status: 'failed',
@@ -58,63 +68,193 @@ const draft: CopyrightEmailApprovalDraft = {
   has_good_faith_belief: false,
   has_accuracy_authority_under_penalty_of_perjury: false,
   electronic_signature: '',
-  targets: [baseTarget, { ...baseTarget, id: 'second', group_id: 'group-2' }],
+  targets: [target, { ...target, id: 'second' }],
 }
 
 describe('CopyrightEmailApprovalManualTargetFields', () => {
-  it.each([
-    ['post-image', 'Post ID', 'post_id'],
-    ['user-profile-image', 'User ID', 'user_id'],
-    ['user-profile-link-image', 'Profile link ID', 'user_profile_link_id'],
-    ['topic-logo-image', 'Topic ID', 'topic_id'],
-    ['topic-hero-image', 'Topic ID', 'topic_id'],
-    ['community-profile-image', 'Community ID', 'community_id'],
-    ['community-banner-image', 'Community ID', 'community_id'],
-  ] as const)('edits the %s owner ID in the manual fallback', (surface, label, key) => {
-    const updateTarget = vi.fn<ManualTargetProps['updateTarget']>()
+  beforeEach(() => {
+    fetchPosts.mockResolvedValue({
+      posts: {
+        'post-2': { id: 'post-2', title: 'Harbour', post_type: 'discussion' },
+      },
+    })
+  })
+
+  it('offers a post search and hosted image picker without asking for an ID', () => {
     render(
       <CopyrightEmailApprovalManualTargetFields
-        target={{ ...baseTarget, surface }}
+        target={target}
         index={0}
         draft={draft}
-        onChange={vi.fn<ManualTargetProps['onChange']>()}
-        updateTarget={updateTarget}
+        onChange={vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()}
         error='URL lookup failed'
       />,
     )
     expect(screen.getByRole('alert')).toHaveTextContent('URL lookup failed')
-    fireEvent.change(screen.getByLabelText(`${label} 1`), { target: { value: 'verified-owner' } })
-    fireEvent.change(screen.getByLabelText('Image ID 1'), { target: { value: 'verified-image' } })
-    expect(updateTarget).toHaveBeenCalledWith('first', key, 'verified-owner')
-    expect(updateTarget).toHaveBeenCalledWith('first', 'image_id', 'verified-image')
+    expect(screen.getByPlaceholderText(/Search posts/)).toHaveValue('')
+    expect(screen.queryByPlaceholderText(/resolved .*id/i)).not.toBeInTheDocument()
   })
 
-  it('clears owner IDs for only the changed target when staff switches image surface', () => {
-    const onChange = vi.fn<(next: CopyrightEmailApprovalDraft) => void>()
+  it('clears stale owner and image selections when staff changes surface', () => {
+    const onChange = vi.fn<(next: SetStateAction<CopyrightEmailApprovalDraft>) => void>()
     render(
       <CopyrightEmailApprovalManualTargetFields
-        target={baseTarget}
+        target={target}
         index={0}
         draft={draft}
         onChange={onChange}
-        updateTarget={vi.fn<ManualTargetProps['updateTarget']>()}
         error={undefined}
       />,
     )
     fireEvent.change(screen.getByRole('combobox', { name: 'Image surface 1' }), {
       target: { value: 'community-banner-image' },
     })
-    const next = onChange.mock.lastCall?.[0]
-    expect(next?.targets[0]).toMatchObject({
-      id: 'first',
+    const change = onChange.mock.lastCall![0]
+    const updated = typeof change === 'function' ? change(draft) : change
+    expect(updated.targets[0]).toMatchObject({
       surface: 'community-banner-image',
       post_id: '',
-      image_id: 'image-1',
-      user_id: undefined,
-      user_profile_link_id: undefined,
-      topic_id: undefined,
+      image_id: '',
       community_id: undefined,
     })
-    expect(next?.targets[1]).toEqual(draft.targets[1])
+    expect(updated.targets[1]).toEqual(draft.targets[1])
+  })
+
+  it('resolves the selected owner URL and stores only its matching image', async () => {
+    const ownerUrl = new URL('/discussion/harbour', window.location.origin).href
+    fetchPost.mockResolvedValue({
+      post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
+    })
+    resolvedTargets.mockResolvedValue([
+      {
+        surface: 'post-image',
+        post_id: 'post-2',
+        image_id: 'image-2',
+        target_url: ownerUrl,
+        order_index: 0,
+        caption: 'Harbour image',
+      },
+      {
+        surface: 'post-image',
+        post_id: 'another-post',
+        image_id: 'wrong-image',
+        target_url: ownerUrl,
+        order_index: 1,
+        caption: 'Wrong image',
+      },
+    ])
+    const latest = { current: draft }
+    function Harness() {
+      const [value, setValue] = useState(draft)
+      return (
+        <CopyrightEmailApprovalManualTargetFields
+          target={value.targets[0]!}
+          index={0}
+          draft={value}
+          onChange={next => {
+            latest.current = typeof next === 'function' ? next(latest.current) : next
+            setValue(next)
+          }}
+          error='URL lookup failed'
+        />
+      )
+    }
+    render(<Harness />)
+    fireEvent.change(screen.getByPlaceholderText(/Search posts/), {
+      target: { value: 'Harbour' },
+    })
+    fireEvent.click(await screen.findByRole('option', { name: /Harbour/ }))
+    expect(fetchPosts).toHaveBeenCalledWith({
+      q: 'Harbour',
+      limit: 10,
+      signal: expect.any(AbortSignal),
+    })
+    expect(screen.queryByText('post-2')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Hosted use URL')).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Find hosted material' })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    await waitFor(() => expect(resolvedTargets).toHaveBeenCalledWith(ownerUrl))
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Harbour image/ }))
+    expect(latest.current.targets[0]).toMatchObject({
+      post_id: 'post-2',
+      image_id: 'image-2',
+      target_url: ownerUrl,
+      resolution_status: 'pending',
+    })
+    expect(latest.current.targets[1]).toEqual(draft.targets[1])
+  })
+
+  it('locks a selected owner until staff explicitly clears it', async () => {
+    fetchPost.mockResolvedValue({
+      post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
+    })
+    const latest = { current: draft }
+    function Harness() {
+      const [value, setValue] = useState(draft)
+      return (
+        <CopyrightEmailApprovalManualTargetFields
+          target={value.targets[0]!}
+          index={0}
+          draft={value}
+          onChange={next => {
+            latest.current = typeof next === 'function' ? next(latest.current) : next
+            setValue(next)
+          }}
+          error={undefined}
+        />
+      )
+    }
+    render(<Harness />)
+    fireEvent.change(screen.getByPlaceholderText(/Search posts/), {
+      target: { value: 'Harbour' },
+    })
+    fireEvent.click(await screen.findByRole('option', { name: /Harbour/ }))
+    expect(screen.queryByPlaceholderText(/Search posts/)).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Find hosted material' })
+    fireEvent.click(screen.getByRole('button', { name: 'Choose different owner' }))
+    expect(latest.current.targets[0]).toMatchObject({
+      post_id: '',
+      image_id: '',
+      resolution_status: 'failed',
+    })
+    expect(screen.getByPlaceholderText(/Search posts/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
+  })
+
+  it('ignores a late owner lookup after staff clears the selection', async () => {
+    let finishLookup!: (value: unknown) => void
+    fetchPost.mockReturnValueOnce(
+      new Promise(resolve => {
+        finishLookup = resolve
+      }),
+    )
+    const latest = { current: draft }
+    function Harness() {
+      const [value, setValue] = useState(draft)
+      return (
+        <CopyrightEmailApprovalManualTargetFields
+          target={value.targets[0]!}
+          index={0}
+          draft={value}
+          onChange={next => {
+            latest.current = typeof next === 'function' ? next(latest.current) : next
+            setValue(next)
+          }}
+          error={undefined}
+        />
+      )
+    }
+    render(<Harness />)
+    fireEvent.change(screen.getByPlaceholderText(/Search posts/), {
+      target: { value: 'Harbour' },
+    })
+    fireEvent.click(await screen.findByRole('option', { name: /Harbour/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Choose different owner' }))
+    finishLookup({
+      post: { id: 'post-2', title: 'Harbour', post_type: 'discussion', slug: 'harbour' },
+    })
+    await waitFor(() => expect(fetchPost).toHaveBeenCalledWith('post-2'))
+    expect(latest.current.targets[0]).toMatchObject({ post_id: '', image_id: '' })
+    expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
   })
 })

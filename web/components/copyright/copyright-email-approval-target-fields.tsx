@@ -1,5 +1,7 @@
 'use client'
 
+import type { Dispatch, SetStateAction } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,7 +24,7 @@ export function CopyrightEmailApprovalTargetFields({
   onChange,
 }: {
   draft: CopyrightEmailApprovalDraft
-  onChange: (draft: CopyrightEmailApprovalDraft) => void
+  onChange: Dispatch<SetStateAction<CopyrightEmailApprovalDraft>>
 }) {
   const { errors, resolved } = useCopyrightEmailApprovalTargetResolution(draft, onChange)
   const groups = uniqueTargetGroups(draft.targets)
@@ -48,19 +50,6 @@ export function CopyrightEmailApprovalTargetFields({
             ]
           : []
       }),
-    })
-  }
-
-  function updateTarget(
-    id: string,
-    key: 'post_id' | 'user_id' | 'user_profile_link_id' | 'topic_id' | 'community_id' | 'image_id',
-    value: string,
-  ) {
-    onChange({
-      ...draft,
-      targets: draft.targets.map(target =>
-        target.id === id ? { ...target, [key]: value } : target,
-      ),
     })
   }
 
@@ -164,7 +153,6 @@ export function CopyrightEmailApprovalTargetFields({
           index={index}
           draft={draft}
           onChange={onChange}
-          updateTarget={updateTarget}
           error={errors[target.id]}
         />
       )}

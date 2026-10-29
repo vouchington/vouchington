@@ -1413,7 +1413,7 @@
     "legal": {
       "list_copyright_review_queue": {
         "measured": {
-          "list": 14841,
+          "list": 15280,
           "core": 300
         },
         "max": {
@@ -1431,9 +1431,19 @@
           "core": 1000
         }
       },
+      "search_copyright_notices_for_association": {
+        "measured": {
+          "list": 1375,
+          "core": 327
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
       "list_repeat_infringer_accounts": {
         "measured": {
-          "list": 999,
+          "list": 1083,
           "core": 255
         },
         "max": {

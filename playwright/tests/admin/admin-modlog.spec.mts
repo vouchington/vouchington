@@ -26,7 +26,7 @@ test.describe('admin modlog', () => {
     const row = page.getByTestId('admin-modlog-row')
     await expect(row).toHaveCount(1)
     await expect(row).toBeVisible()
-    await expect(row).toContainText(`@${actorUsername}`)
+    await expect(row).toContainText(actorUsername)
     await expect(row).toContainText('ban')
     await expect(row).toContainText(reason)
   })

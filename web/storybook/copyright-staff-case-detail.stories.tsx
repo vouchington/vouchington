@@ -4,8 +4,8 @@ import {
   CopyrightStaffComplaint,
   CopyrightStaffCorrespondence,
   CopyrightStaffCounterNotices,
-  CopyrightStaffIntentRecovery,
 } from '@/components/copyright/copyright-staff-case-detail'
+import { CopyrightStaffIntentRecovery } from '@/components/copyright/copyright-staff-intent-recovery'
 import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
 
 const notice = makeBusyUsStaffCase()

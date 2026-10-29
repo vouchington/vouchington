@@ -11,7 +11,7 @@ export async function selectStaffActionIntents(
     CopyrightStaffCase['action_intents'][number] & { copyright_notice_id: string }
   >(sql`
     /* getPendingCopyrightStaffCase:actionIntents */
-    SELECT target.copyright_notice_id, intent.id, intent.action, intent.state, intent.failure_message
+    SELECT target.copyright_notice_id, target.id AS target_id, intent.id, intent.action, intent.state, intent.failure_message
     FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id

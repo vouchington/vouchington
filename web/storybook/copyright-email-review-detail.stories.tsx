@@ -35,7 +35,11 @@ function StatefulDetail(props: DetailProps) {
       draft={draft}
       manualFallbackReason={fallback}
       onChangeCorrespondenceDraft={setCorrespondence}
-      onChangeDraft={setDraft}
+      onChangeDraft={value =>
+        setDraft(current =>
+          current === null ? null : typeof value === 'function' ? value(current) : value,
+        )
+      }
       onChangeManualFallbackReason={setFallback}
       onChangeRationale={setRationale}
       onChangeReplyEmail={setReplyEmail}

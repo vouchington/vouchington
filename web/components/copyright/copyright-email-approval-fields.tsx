@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,7 @@ export function CopyrightEmailApprovalFields({
   onChange,
 }: {
   draft: CopyrightEmailApprovalDraft
-  onChange: (draft: CopyrightEmailApprovalDraft) => void
+  onChange: Dispatch<SetStateAction<CopyrightEmailApprovalDraft>>
 }) {
   const set = <K extends keyof CopyrightEmailApprovalDraft>(
     key: K,

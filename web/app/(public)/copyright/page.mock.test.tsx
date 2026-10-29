@@ -162,7 +162,9 @@ describe('copyright pages', () => {
     })
     mockEmailQueue.mockResolvedValue(makeCopyrightEmailQueuePage())
     render(await CopyrightNoticesPage({ searchParams: Promise.resolve({ after: 'cursor' }) }))
-    expect(screen.getByText('Case notice-1')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /us_dmca · .* · Claimant unavailable/ }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Load more accepted copyright notices')).toBeInTheDocument()
     render(await NewCopyrightNoticePage())
     expect(screen.getByText('notice form')).toBeInTheDocument()

@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { Button } from '@/components/ui/button'
 import {
   recordCopyrightRepeatInfringerDisposition,
@@ -24,11 +26,18 @@ export function RepeatInfringerAccount({
   rationale: string
   submit: SubmitReview
 }) {
+  const t = useTranslations()
+  const accountLabel = getUserLabel(
+    { username: account.account_username },
+    t('shared.user.deletedUser'),
+  )
   const disabled = pending || !canSubmit
   return (
     <section className='space-y-2'>
       <h3 className='font-medium'>Repeat-infringer review</h3>
-      <p className='text-sm text-muted-foreground'>Account {account.account_user_id}</p>
+      <p className='text-sm text-muted-foreground'>
+        Account {account.account_username ? `@${accountLabel}` : accountLabel}
+      </p>
       {account.is_operative ? (
         <div className='flex flex-wrap gap-2'>
           <DecisionButton

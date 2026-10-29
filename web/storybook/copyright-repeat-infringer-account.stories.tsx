@@ -4,6 +4,7 @@ import { RepeatInfringerAccount } from '@/components/copyright/copyright-repeat-
 
 const account = {
   account_user_id: '019f0000-0000-7000-8000-0000000000a1',
+  account_username: 'photo-author',
   incident_id: '019f0000-0000-7000-8000-0000000000a2',
   is_operative: true,
   open_review_id: null,

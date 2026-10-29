@@ -5,6 +5,7 @@ import {
   replayCopyrightActionIntent,
   replayCopyrightDeliveryIntent,
 } from '@/lib/api/client/copyright-notices'
+import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
@@ -61,6 +62,28 @@ describe('CopyrightStaffQueue recovery actions', () => {
       })
     },
   )
+
+  it('links each failed media action to its exact hosted use and handles a missing target', () => {
+    const notice = makeNotice()
+    notice.targets = makeBusyUsStaffCase().targets.toReversed()
+    notice.action_intents = [
+      { ...notice.action_intents[0]!, target_id: 'target-1' },
+      { ...notice.action_intents[0]!, id: 'missing-target-intent', target_id: 'missing-target' },
+    ]
+    render(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [notice],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
+      />,
+    )
+    expect(
+      screen.getByRole('link', { name: 'https://voucha.ai/discussion/park-photo' }),
+    ).toHaveAttribute('href', 'https://voucha.ai/discussion/park-photo')
+    expect(screen.getByText(/Original hosted use unavailable/)).toBeInTheDocument()
+    expect(screen.queryByText('missing-target')).toBeNull()
+  })
 
   it('shows whether an emailed information request reached the claimant on the case', () => {
     const notice = makeNotice()
@@ -124,8 +147,8 @@ describe('CopyrightStaffQueue recovery actions', () => {
         }}
       />,
     )
-    const euCase = screen.getByText('Case eu-case').closest('article')!
-    const usCase = screen.getByText('Case us-case').closest('article')!
+    const euCase = screen.getByRole('heading', { name: /eu_dsa ·/ }).closest('article')!
+    const usCase = screen.getByRole('heading', { name: /us_dmca ·/ }).closest('article')!
     expect(within(euCase).getByText('EU/UK notice details')).toBeVisible()
     expect(within(euCase).getByText('Territorial notice review')).toBeVisible()
     expect(within(euCase).queryByText('Guest access')).toBeNull()
@@ -183,6 +206,7 @@ function makeNotice(): CopyrightStaffQueueItem {
     action_intents: [
       {
         id: 'action-intent-123',
+        target_id: 'target-1',
         action: 'withhold',
         state: 'failed',
         failure_message: 'Delivery provider unavailable.',

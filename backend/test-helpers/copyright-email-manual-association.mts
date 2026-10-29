@@ -2,21 +2,28 @@ import { randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import type { PrivateUser } from '../services/users/types.mts'
+import { searchCopyrightNoticeAssociationTargets } from '../services/copyright-notices/association-search.mts'
 
 /** The smallest accepted case row for a staff association boundary. */
 export async function createCopyrightNoticeForManualAssociation(
   accepted = true,
   jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk' | 'other' = 'us_dmca',
+  workDescription = `work-${randomUUID()}`,
+  noticeId?: string,
+  claimantDisplayName: string | null = null,
+  receivedAt?: Date,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`
     /* createCopyrightNoticeForManualAssociation */
     INSERT INTO copyright_notices (
-      jurisdiction, legal_basis, received_at, accepted_at,
-      claimant_contact_ciphertext, work_description, policy_version
+      id, jurisdiction, legal_basis, received_at, accepted_at,
+      claimant_display_name, claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP,
+      COALESCE(${noticeId ?? null}::uuid, uuidv7()), ${jurisdiction}, 'copyright',
+      COALESCE(${receivedAt ?? null}::timestamptz, CURRENT_TIMESTAMP),
       CASE WHEN ${accepted} THEN CURRENT_TIMESTAMP ELSE NULL END,
-      ${`cipher-${randomUUID()}`}, ${`work-${randomUUID()}`}, 'test-v1'
+      ${claimantDisplayName}, ${`cipher-${randomUUID()}`}, ${workDescription}, 'test-v1'
     ) RETURNING id
   `)
   return rows[0]!.id
@@ -81,4 +88,19 @@ export async function markTestCopyrightNoticeErasedAndCommit(noticeId: string): 
   await using transaction = await beginTransaction()
   await markTestCopyrightNoticeErased(noticeId, transaction)
   await transaction.commit()
+}
+
+/** Runs the real search under a transaction-local session timezone, then rolls it back. */
+export async function searchTestCopyrightAssociationsInTimeZone(
+  currentUser: PrivateUser,
+  query: string,
+  after: string,
+  timeZone: 'America/Los_Angeles' | 'Asia/Tokyo',
+) {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* searchTestCopyrightAssociationsInTimeZone */
+    SELECT set_config('TimeZone', ${timeZone}, true)`)
+  return await searchCopyrightNoticeAssociationTargets(currentUser, query, after, {
+    query: transaction,
+  })
 }

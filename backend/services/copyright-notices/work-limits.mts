@@ -8,6 +8,7 @@ const additionalDefaults = {
 export const copyrightNoticesAdditionalMaxValues = {
   delivery_lease_minutes: 360,
   screening_lease_minutes: 360,
+  association_search_candidate_rows: 1000,
 }
 
 export const copyrightSweepConfig = new DynamicConfig({
@@ -17,9 +18,23 @@ export const copyrightSweepConfig = new DynamicConfig({
     max_batches_per_run: 'number',
     delivery_lease_minutes: 'number',
     screening_lease_minutes: 'number',
+    association_search_candidate_rows: 'number',
   },
-  defaultFields: { batch_size: 100, max_batches_per_run: 20, ...additionalDefaults },
+  defaultFields: {
+    batch_size: 100,
+    max_batches_per_run: 20,
+    association_search_candidate_rows: 100,
+    ...additionalDefaults,
+  },
 })
+
+/** Bound the id-ordered candidate window before evaluating staff notice search text. */
+export function getCopyrightAssociationSearchCandidateRows(): number {
+  return getBoundedPositiveIntegerField(copyrightSweepConfig, 'association_search_candidate_rows', {
+    defaultValue: 100,
+    maxValue: copyrightNoticesAdditionalMaxValues.association_search_candidate_rows,
+  })
+}
 
 export function getCopyrightSweepLimits() {
   return {

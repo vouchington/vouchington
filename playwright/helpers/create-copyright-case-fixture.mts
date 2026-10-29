@@ -62,6 +62,8 @@ export async function createCopyrightCaseFixture() {
   return {
     poster,
     moderator,
+    claimantName: `Claimant ${suffix}`,
+    publicClaimantName: requireTestValue(claimant.username, 'Claimant username missing'),
     noticeId: intake.copyright_notice_id,
     targetId: target.id,
     hostedUseUrl,

@@ -6,6 +6,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake,
   makeCopyrightEmailQueueItem,
@@ -19,7 +20,7 @@ vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOrigina
   ...(await importOriginal()),
   ...targetsClient,
 }))
-vi.mock(import('@/lib/api/client/copyright-notice-association-target'), () => pickerClient)
+vi.mock(import('@/lib/api/client/copyright-notice-association-search'), () => pickerClient)
 
 describe('manual copyright email notice association', () => {
   beforeEach(() => {
@@ -40,12 +41,17 @@ describe('manual copyright email notice association', () => {
       copyright_notice: { id: noticeId },
       copyright_email_intake: { id: intakeId },
     })
-    pickerClient.getCopyrightNoticeAssociationTarget.mockResolvedValue({
-      copyright_notice: {
-        id: noticeId,
-        jurisdiction: 'us_dmca',
-        received_at: '2026-10-13T12:00:00.000Z',
-      },
+    pickerClient.searchCopyrightNoticeAssociationTargets.mockResolvedValue({
+      copyright_notices: [
+        {
+          id: noticeId,
+          jurisdiction: 'us_dmca',
+          received_at: '2026-10-13T12:00:00.000Z',
+          claimant_display_name: 'Dana Whitfield',
+          work_description: 'Harbour photograph',
+        },
+      ],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     })
     render(
       <CopyrightEmailReview
@@ -54,12 +60,12 @@ describe('manual copyright email notice association', () => {
         ])}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
     await screen.findByRole('heading', { name: 'Staff-private evidence' })
     fireEvent.change(screen.getByLabelText('Find existing copyright notice'), {
-      target: { value: noticeId },
+      target: { value: 'Dana' },
     })
-    fireEvent.click(await screen.findByRole('option', { name: new RegExp(noticeId) }))
+    fireEvent.click(await screen.findByRole('option', { name: /Dana Whitfield/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Associate with existing notice' }))
     await waitFor(() => {
       expect(intakesClient.associateCopyrightEmailIntakeWithNotice).toHaveBeenCalledWith(
@@ -74,7 +80,7 @@ describe('manual copyright email notice association', () => {
       copyright_email_intake: { ...makeCopyrightEmailIntake(), review_path: 'initial' },
     })
     render(<CopyrightEmailReview data={makeCopyrightEmailQueuePage()} />)
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
     await screen.findByRole('heading', { name: 'Staff-private evidence' })
 
     expect(screen.queryByLabelText('Find existing copyright notice')).not.toBeInTheDocument()

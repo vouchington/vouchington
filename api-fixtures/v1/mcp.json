@@ -31318,7 +31318,7 @@
                     "additionalProperties": false,
                     "properties": {
                       "claimant_display_name": {
-                        "$ref": "#/$defs/S1"
+                        "$ref": "#/$defs/S2"
                       },
                       "claimant_user_id": {
                         "type": "string"
@@ -31495,7 +31495,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "claimant_display_name": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "claimant_user_id": {
                       "type": "string"
@@ -31676,7 +31676,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "claimant_display_name": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "claimant_user_id": {
                       "type": "string"
@@ -31857,7 +31857,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "claimant_display_name": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "claimant_user_id": {
                       "type": "string"
@@ -43891,9 +43891,12 @@
                                 "stale"
                               ],
                               "type": "string"
+                            },
+                            "target_id": {
+                              "type": "string"
                             }
                           },
-                          "required": ["action", "failure_message", "id", "state"],
+                          "required": ["action", "failure_message", "id", "state", "target_id"],
                           "type": "object"
                         },
                         "type": "array"
@@ -44576,6 +44579,29 @@
                             "image_id": {
                               "type": "string"
                             },
+                            "image_placement": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "placement_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_revision": {
+                                      "type": "number"
+                                    },
+                                    "image_id": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["image_id", "placement_id", "placement_revision"],
+                                  "type": "object"
+                                }
+                              ]
+                            },
                             "match_kind": {
                               "enum": ["exact", "perceptual"],
                               "type": "string"
@@ -44588,16 +44614,25 @@
                             },
                             "uploaded_by_id": {
                               "type": "string"
+                            },
+                            "uploaded_by_username": {
+                              "$ref": "#/$defs/S2"
+                            },
+                            "target_id": {
+                              "type": "string"
                             }
                           },
                           "required": [
                             "hamming_distance",
                             "id",
                             "image_id",
+                            "image_placement",
                             "match_kind",
                             "matched_at",
                             "registered_image_id",
-                            "uploaded_by_id"
+                            "target_id",
+                            "uploaded_by_id",
+                            "uploaded_by_username"
                           ],
                           "type": "object"
                         },
@@ -45251,6 +45286,126 @@
         },
         {
           "tool": {
+            "name": "search_copyright_notices_for_association",
+            "title": "Search copyright notices for association",
+            "description": "Find eligible copyright cases by claimant, work, or received date for email association.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "q": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 200
+                },
+                "after": {
+                  "type": "string"
+                }
+              },
+              "required": ["q"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_notices": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "claimant_display_name": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "jurisdiction": {
+                        "enum": ["us_dmca", "eu_dsa"],
+                        "type": "string"
+                      },
+                      "received_at": {
+                        "type": "string"
+                      },
+                      "work_description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "claimant_display_name",
+                      "id",
+                      "jurisdiction",
+                      "received_at",
+                      "work_description"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "page_info": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_notices", "page_info"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/copyright-notices/association-targets"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "list_repeat_infringer_accounts",
             "title": "List repeat infringer accounts",
             "description": "List repeat-infringer accounts attached to one copyright notice.",
@@ -45275,6 +45430,16 @@
                       "account_user_id": {
                         "type": "string"
                       },
+                      "account_username": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "incident_id": {
                         "type": "string"
                       },
@@ -45297,6 +45462,7 @@
                     },
                     "required": [
                       "account_user_id",
+                      "account_username",
                       "incident_id",
                       "is_operative",
                       "open_review_id",

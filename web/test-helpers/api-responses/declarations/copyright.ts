@@ -11,6 +11,7 @@ import webCopyrightGuestFilingReceived from '../../../../api-fixtures/v1/respons
 import webCopyrightGuestInformationRequested from '../../../../api-fixtures/v1/responses/web.copyright.guest-information.requested.json'
 import webCopyrightStaffQueueDefault from '../../../../api-fixtures/v1/responses/web.copyright.staff-queue.default.json'
 import webCopyrightStaffQueueTerritorial from '../../../../api-fixtures/v1/responses/web.copyright.staff-queue.territorial.json'
+import nativeCopyrightRepeatInfringerAccounts from '../../../../api-fixtures/v1/responses/native.copyright.repeat-infringer-accounts.json'
 import type {
   CopyrightNoticesPage,
   CopyrightNoticeDetail,
@@ -18,9 +19,20 @@ import type {
   CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
 import type { CopyrightGuestCapabilitiesPage } from '@/lib/api/client/copyright-guest'
+import type { CopyrightRepeatInfringerAccountRecord } from '@/lib/api/client/copyright-repeat-infringer'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const COPYRIGHT_DECLARATIONS = [
+  defineWebApiFixture<{
+    copyright_repeat_infringer_accounts: CopyrightRepeatInfringerAccountRecord[]
+  }>()(
+    'native.copyright.repeat-infringer-accounts',
+    nativeCopyrightRepeatInfringerAccounts,
+    context =>
+      context.client.copyrightRepeatInfringer.listCopyrightRepeatInfringerAccounts(
+        '00000000-0000-7000-8000-000000000804',
+      ),
+  ),
   defineWebApiFixture<CopyrightNoticesPage>()(
     'web.copyright.notices.default',
     webCopyrightNoticesDefault,

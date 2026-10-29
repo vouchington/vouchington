@@ -64,7 +64,11 @@ export interface WebFixtureClientEndpointContext {
     | 'rejectCopyrightEmailIntake'
     | 'requestCopyrightEmailIntakeInformation'
   >
-  readonly copyrightNoticeAssociationTarget: typeof import('@/lib/api/client/copyright-notice-association-target')
+  readonly copyrightNoticeAssociationSearch: typeof import('@/lib/api/client/copyright-notice-association-search')
+  readonly copyrightRepeatInfringer: Pick<
+    typeof import('@/lib/api/client/copyright-repeat-infringer'),
+    'listCopyrightRepeatInfringerAccounts'
+  >
   readonly copyrightEuDisputeSettlements: Pick<
     typeof import('@/lib/api/client/copyright-eu-dispute-settlements'),
     'listCopyrightEuDisputeSettlements'
@@ -167,7 +171,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly users: Pick<
     typeof import('@/lib/api/client/users'),
-    'createUserDataRequest' | 'deleteUser' | 'getUserDataRequest'
+    'createUserDataRequest' | 'deleteUser' | 'fetchUser' | 'getUserDataRequest'
   >
   readonly warnings: Pick<typeof import('@/lib/api/client/warnings'), 'issueCommunityUserWarning'>
 }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { randomUUID } from 'node:crypto'
 import {
   createRecommendedMcpCopyrightEmailIntake,
   publishTestHostedPostImageDelivery,
@@ -147,15 +148,20 @@ describe('copyright email approval parity between REST and MCP', () => {
   )
 
   it('lets staff resolve an existing case for the picker before acceptance', async () => {
-    const noticeId = await createCopyrightNoticeForManualAssociation(false)
+    const workDescription = `searched-work-${randomUUID()}`
+    const noticeId = await createCopyrightNoticeForManualAssociation(
+      false,
+      'us_dmca',
+      workDescription,
+    )
     const staff = createRequest()
     await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
     const response = await staff
-      .get(`/api/v1/copyright-notices/${noticeId}/association-target`)
+      .get(`/api/v1/copyright-notices/association-targets?q=${encodeURIComponent(workDescription)}`)
       .expect(200)
-    expect(response.body).toMatchObject({
-      copyright_notice: { id: noticeId, jurisdiction: 'us_dmca' },
-    })
+    expect(response.body.copyright_notices).toContainEqual(
+      expect.objectContaining({ id: noticeId, jurisdiction: 'us_dmca' }),
+    )
   })
 
   it.each(['REST', 'MCP'] as const)(
