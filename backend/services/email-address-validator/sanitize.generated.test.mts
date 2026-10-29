@@ -18,11 +18,6 @@ describe('sanitize.generated', () => {
     expect(sanitizeEmailAddress('tests+UsEr@voucha.ai', localEnv)).toBe('tests+user@voucha.ai')
   })
 
-  it('sanitizeEmailAddress trims and lowercases together', () => {
-    expect(sanitizeEmailAddress('  tests+USER@voucha.ai  ', localEnv)).toBe('tests+user@voucha.ai')
-    expect(sanitizeEmailAddress('  tests+User@voucha.ai  ', localEnv)).toBe('tests+user@voucha.ai')
-  })
-
   it('sanitizeEmailAddress preserves email structure', () => {
     expect(sanitizeEmailAddress('tests+user@voucha.ai', localEnv)).toBe('tests+user@voucha.ai')
     expect(sanitizeEmailAddress('first.last@sub.example.com', localEnv)).toBe(

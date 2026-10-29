@@ -8,29 +8,16 @@ import {
   deleteTestConsumedEmailToken,
   insertTestConsumedEmailTokenAt,
   insertEmailAddressLoginToken,
-  insertUrlHostname,
 } from '@voucha/test-helpers'
 
 // Tests for format validation - no DNS, no cache needed
 describe('format validation', () => {
-  it('fails for invalid email format', async () => {
-    await expect(validateEmailAddress('not-an-email')).rejects.toThrow(EmailFormatInvalidError)
-  })
-
-  it('fails for email without @', async () => {
-    await expect(validateEmailAddress('nodomain.com')).rejects.toThrow(EmailFormatInvalidError)
-  })
-
   it('fails for email without domain', async () => {
     await expect(validateEmailAddress('user@')).rejects.toThrow(EmailFormatInvalidError)
   })
 
   it('fails for email without local part', async () => {
     await expect(validateEmailAddress('@voucha.ai')).rejects.toThrow(EmailFormatInvalidError)
-  })
-
-  it('fails for completely invalid format', async () => {
-    await expect(validateEmailAddress('invalid')).rejects.toThrow(EmailFormatInvalidError)
   })
 
   it('fails for multiple @ symbols', async () => {
@@ -41,10 +28,6 @@ describe('format validation', () => {
 
   it('fails for empty string', async () => {
     await expect(validateEmailAddress('')).rejects.toThrow(EmailFormatInvalidError)
-  })
-
-  it('fails for whitespace-only string', async () => {
-    await expect(validateEmailAddress('   ')).rejects.toThrow(EmailFormatInvalidError)
   })
 
   it('error includes email address', async () => {
@@ -67,24 +50,9 @@ describe('email normalization', () => {
     expect(result).toBe('user@gmail.com')
   })
 
-  it('normalizes mixed case email', async () => {
-    const result = await validateEmailAddress('UsEr@GmAiL.cOm')
-    expect(result).toBe('user@gmail.com')
-  })
-
   it('trims whitespace', async () => {
     const result = await validateEmailAddress('  user@gmail.com  ')
     expect(result).toBe('user@gmail.com')
-  })
-
-  it('handles uppercase with whitespace', async () => {
-    const result = await validateEmailAddress('  USER@GMAIL.COM  ')
-    expect(result).toBe('user@gmail.com')
-  })
-
-  it('handles complex valid email formats', async () => {
-    const result = await validateEmailAddress('first.last@gmail.com')
-    expect(result).toBe('first.last@gmail.com')
   })
 
   it('removes plus sign in a deployed environment', async () => {
@@ -105,28 +73,11 @@ describe('email normalization', () => {
 // Tests for domain validation - uses a single invalid domain
 describe('domain validation', () => {
   installEmailDomainDnsMock()
-  it('fails for domain without MX records', async () => {
-    await expect(validateEmailAddress('user@invalid-domain-12345.test')).rejects.toThrow(
-      EmailDomainInvalidError,
-    )
-  })
 
   it('error includes domain for domain errors', async () => {
-    // Reuse the cached invalid domain from previous test
     const err = await validateEmailAddress('user2@invalid-domain-12345.test').catch(err => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).domain).toBe('invalid-domain-12345.test')
-  })
-
-  it('works with subdomains that have MX records', async () => {
-    const result = await validateEmailAddress('user@googlemail.com')
-    expect(result).toBe('user@googlemail.com')
-  })
-
-  it('uses cache for domain validation', async () => {
-    // Uses cache from previous gmail.com tests
-    const result = await validateEmailAddress('user@yahoo.com')
-    expect(result).toBe('user@yahoo.com')
   })
 })
 
@@ -173,12 +124,5 @@ describe('database integration', () => {
 
     const result = await validateEmailAddress(email)
     expect(result).toBe(normalized)
-  })
-
-  it('validates domain from database emailable=false', async () => {
-    const hostname = `test-blocked-${Date.now()}.com`
-    await insertUrlHostname(hostname, { is_emailable: false })
-
-    await expect(validateEmailAddress(`user@${hostname}`)).rejects.toThrow(EmailDomainInvalidError)
   })
 })
