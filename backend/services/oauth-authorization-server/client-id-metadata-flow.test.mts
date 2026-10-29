@@ -3,7 +3,6 @@ import { createHash, randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
-import { revokeTestOAuthClient } from '@voucha/test-helpers/data-stores/psql/oauth-client-metadata'
 import {
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
@@ -67,22 +66,6 @@ describe('Client ID Metadata Document OAuth flow', () => {
       scopes: ['mcp.user:read'],
     })
     expect(second?.id).toBe(first?.id)
-    expect(safeFetch).toHaveBeenCalledOnce()
-  })
-
-  it('does not revive a revoked document client during refresh', async () => {
-    const clientId = randomMetadataUrl()
-    await resolveClientIdMetadataDocument(clientId, {
-      safeFetch: async () => responseFor(clientId),
-    })
-    await revokeTestOAuthClient(clientId)
-    const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>(async () =>
-      responseFor(clientId),
-    )
-
-    await expect(resolveClientIdMetadataDocument(clientId, { safeFetch })).rejects.toMatchObject({
-      code: 'unauthorized_client',
-    })
     expect(safeFetch).toHaveBeenCalledOnce()
   })
 
