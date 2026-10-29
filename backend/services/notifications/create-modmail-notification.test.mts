@@ -20,22 +20,6 @@ async function setupCommunityAndThread(ownerId: string, subjectId: string) {
 }
 
 describe('create-modmail-notification', () => {
-  it('creates a modmail notification', async () => {
-    const owner = await createTestUser()
-    const subject = await createTestUser()
-    const { community, thread } = await setupCommunityAndThread(owner.id, subject.id)
-
-    const result = await createModmailNotifications(
-      [owner.id],
-      thread.id,
-      `/communities/${community.slug}/settings/moderation`,
-    )
-
-    expect(result).toHaveLength(1)
-    expect(result[0]!.user_id).toBe(owner.id)
-    expect(result[0]!.id).toBeTruthy()
-  })
-
   it('upserts on conflict', async () => {
     const owner = await createTestUser()
     const subject = await createTestUser()
@@ -44,6 +28,8 @@ describe('create-modmail-notification', () => {
     const targetPath = `/communities/${community.slug}/settings/moderation`
     const first = await createModmailNotifications([owner.id], thread.id, targetPath)
     expect(first).toHaveLength(1)
+    expect(first[0]!.user_id).toBe(owner.id)
+    expect(first[0]!.id).toBeTruthy()
 
     const second = await createModmailNotifications([owner.id], thread.id, targetPath)
     expect(second).toHaveLength(1)
