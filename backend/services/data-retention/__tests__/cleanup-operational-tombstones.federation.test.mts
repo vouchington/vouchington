@@ -3,7 +3,7 @@ import {
   beginTransaction,
   countOperationalActiveLikesForTest,
   createTestExpiryWindow,
-  insertOperationalInboxWorkForTest,
+  insertOperationalInboxEnvelopeForTest,
   insertOperationalLocalPostForTest,
   insertOperationalRemoteActorForTest,
   insertOperationalRemoteFollowForTest,
@@ -102,7 +102,7 @@ describe('ActivityPub operational retention', () => {
     )
     await insertOperationalRemoteFollowForTest(query, followed.id, userId)
     await recordLike(postId, liked.id, `${liked.actorUri}/likes/live`, { query })
-    await insertOperationalInboxWorkForTest(query, queued.id, queued.actorUri)
+    await insertOperationalInboxEnvelopeForTest(query, queued.id, queued.actorUri)
 
     const options = {
       batchSize: 1,

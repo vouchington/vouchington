@@ -54,8 +54,8 @@ export const PLANS: Record<GenericFamily, Plan> = {
         WHERE like_row.remote_actor_id = source.id
       )
       AND NOT EXISTS (
-        SELECT 1 FROM activitypub_inbox_delivery_work_items work_item
-        WHERE work_item.remote_actor_id = source.id
+        SELECT 1 FROM activitypub_inbox_envelopes envelope
+        WHERE envelope.remote_actor_id = source.id
       )`,
     retentionDays: 90,
   },

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 
 export async function insertOperationalRemoteActorForTest(
@@ -67,22 +67,27 @@ export async function insertOperationalRemoteFollowForTest(
   )
 }
 
-export async function insertOperationalInboxWorkForTest(
+export async function insertOperationalInboxEnvelopeForTest(
   query: TransactionQuery,
   remoteActorId: string,
   actorUri: string,
 ): Promise<void> {
   await query(
-    `/* insertOperationalInboxWorkForTest */
-     INSERT INTO activitypub_inbox_delivery_work_items
+    `/* insertOperationalInboxEnvelopeForTest */
+     INSERT INTO activitypub_inbox_envelopes
        (request_method, request_target, expected_host, signature_header,
         digest_header, date_header, raw_body, claimed_activity_id,
         claimed_activity_type, claimed_actor_uri, sender_hostname,
-        remote_actor_id, verified_at, sender_allowed_at)
+        remote_actor_id, verified_at, sender_allowed_at, request_digest)
      VALUES ('POST', '/ap/inbox', 'voucha.test', 'signature', 'digest', 'date',
              ''::bytea, $1, 'Like', $2, 'retention.example', $3,
-             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-    [`${actorUri}/activities/${randomUUID()}`, actorUri, remoteActorId],
+             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $4)`,
+    [
+      `${actorUri}/activities/${randomUUID()}`,
+      actorUri,
+      remoteActorId,
+      createHash('sha256').update(randomUUID()).digest('hex'),
+    ],
   )
 }
 
