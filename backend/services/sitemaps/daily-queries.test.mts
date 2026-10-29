@@ -1,32 +1,82 @@
+import { randomUUID } from 'node:crypto'
+import {
+  createTestTopic,
+  createTestUser,
+  insertTestPost,
+  insertTestPostReview,
+  setPostVotesScoreUp,
+} from '@voucha/test-helpers'
+import { archivePostForTopHashtagTest } from '@voucha/test-helpers/entities/top-hashtags'
 import { describe, expect, it } from 'vitest'
-import { buildPostsForDayQuery } from './daily-queries.mts'
+import { readPostsForDayPage } from './daily-queries.mts'
 
-describe('daily sitemap queries', () => {
-  it('applies the fixed high water, keyset, and run cap', () => {
-    const query = buildPostsForDayQuery('article', '2026-06-10', {
-      highWaterId: '0199a000-0000-7000-8000-000000000010',
-      afterId: '0199a000-0000-7000-8000-000000000009',
-      limit: 2,
+function ownedDay(): string {
+  const year = 4000 + (Number.parseInt(randomUUID().slice(0, 4), 16) % 5000)
+  return `${year}-06-10`
+}
+
+describe('daily sitemap pages', () => {
+  it('pages only eligible posts from the requested day below the fixed high water', async () => {
+    const day = ownedDay()
+    const author = await createTestUser()
+    const ids: string[] = []
+    for (const hour of [12, 13, 14]) {
+      const id = await insertTestPost({
+        title: 'Sitemap article',
+        slug: `sitemap-article-${randomUUID()}`,
+        markdown: 'Article body',
+        createdById: author.id,
+        postType: 'article',
+        createdAt: new Date(`${day}T${hour}:00:00.000Z`),
+      })
+      await setPostVotesScoreUp(id, 1)
+      ids.push(id)
+    }
+    await archivePostForTopHashtagTest(ids[1]!, author.id)
+
+    const initial = await readPostsForDayPage('article', day, { limit: 1 })
+    expect(initial.map(row => row.id)).toEqual([ids[2]])
+    const first = await readPostsForDayPage('article', day, { highWaterId: ids[2], limit: 1 })
+    expect(first.map(row => row.id)).toEqual([ids[2]])
+    const second = await readPostsForDayPage('article', day, {
+      highWaterId: ids[2],
+      afterId: ids[2],
+      limit: 1,
     })
-    expect(query.text).toMatch(/p\.id <= \$\d+/)
-    expect(query.text).toMatch(/p\.id < \$\d+/)
-    expect(query.text).toMatch(/LIMIT \$\d+/)
-    expect(query.values.at(-1)).toBe(2)
+    expect(second.map(row => row.id)).toEqual([ids[0]])
+    const bounded = await readPostsForDayPage('article', day, { highWaterId: ids[1], limit: 1 })
+    expect(bounded.map(row => row.id)).toEqual([ids[0]])
   })
 
-  it('excludes archived posts from daily sitemap coverage', () => {
-    const query = buildPostsForDayQuery('article', '2026-06-10').text
+  it('returns rating freshness for reviews and no rating freshness for articles', async () => {
+    const day = ownedDay()
+    const author = await createTestUser()
+    const topic = await createTestTopic({ user: author })
+    const reviewId = await insertTestPost({
+      title: 'Sitemap review',
+      slug: `sitemap-review-${randomUUID()}`,
+      markdown: 'Review body',
+      createdById: author.id,
+      postType: 'review',
+      createdAt: new Date(`${day}T12:00:00.000Z`),
+    })
+    await setPostVotesScoreUp(reviewId, 1)
+    await insertTestPostReview(reviewId, topic.id)
+    const articleId = await insertTestPost({
+      title: 'Sitemap article',
+      slug: `sitemap-article-${randomUUID()}`,
+      markdown: 'Article body',
+      createdById: author.id,
+      postType: 'article',
+      createdAt: new Date(`${day}T13:00:00.000Z`),
+    })
+    await setPostVotesScoreUp(articleId, 1)
 
-    expect(query).toContain('p.archived_at IS NULL')
-  })
-
-  it('joins review ratings only for review posts', () => {
-    const review = buildPostsForDayQuery('review', '2026-06-10').text
-    const article = buildPostsForDayQuery('article', '2026-06-10').text
-
-    expect(review).toContain('pr.updated_at AS review_updated_at')
-    expect(review).toContain('post_review_topic_ratings')
-    expect(article).toContain('NULL::TIMESTAMPTZ AS review_updated_at')
-    expect(article).not.toContain('post_review_topic_ratings')
+    const reviews = await readPostsForDayPage('review', day, { highWaterId: reviewId, limit: 1 })
+    expect(reviews).toEqual([
+      expect.objectContaining({ id: reviewId, review_updated_at: expect.any(Date) }),
+    ])
+    const articles = await readPostsForDayPage('article', day, { highWaterId: articleId, limit: 1 })
+    expect(articles).toEqual([expect.objectContaining({ id: articleId, review_updated_at: null })])
   })
 })

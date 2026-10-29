@@ -36,6 +36,21 @@ export async function updateTestTopicAliasCategoryMappingOwner(
   )
 }
 
+export async function setTestTopicAliasUnlinkPending(
+  topicAliasId: string,
+  topicId: string,
+): Promise<void> {
+  await write(
+    `/* setTestTopicAliasUnlinkPending */
+      UPDATE topic_aliases
+      SET topic_id = NULL,
+          unlink_topic_id = $2,
+          unlink_requested_at = CURRENT_TIMESTAMP
+      WHERE id = $1`,
+    [topicAliasId, topicId],
+  )
+}
+
 export async function deleteTestTopicAliasForCategoryMapping(topicAliasId: string): Promise<void> {
   await write(
     `/* deleteTestTopicAliasForCategoryMapping */

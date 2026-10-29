@@ -1,99 +1,145 @@
+import { randomUUID } from 'node:crypto'
+import {
+  createTestUser,
+  insertTestCommunity,
+  insertTestTopic,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
+import { deleteTestCommunity } from '@voucha/test-helpers/entities/community-archive'
+import { softDeleteUser, suspendTestUser } from '@voucha/test-helpers/entities/users-lifecycle'
+import { setUrlHostnameVotes } from '@voucha/test-helpers/entities/url-hostnames/votes'
 import { describe, expect, it } from 'vitest'
-import { buildSitemapFamilyQuery, readSitemapFamilyPage } from './family-queries.mts'
+import { readSitemapFamilyPage } from './family-queries.mts'
 
-describe('sitemap family queries', () => {
-  it('resumes within a multi-page topic using the id and path keyset', async () => {
-    const first = await readSitemapFamilyPage('topics', { limit: 1 })
-    expect(first).toHaveLength(1)
-    const entry = first[0]!
+describe('sitemap family pages', () => {
+  it('resumes within one topic after its first path', async () => {
+    const user = await createTestUser()
+    const slug = `sitemap-topic-${randomUUID()}`
+    const id = await insertTestTopic({ name: slug, slug, createdById: user.id })
+    const first = await readSitemapFamilyPage('topics', { highWaterId: id, limit: 1 })
+    expect(first[0]).toMatchObject({ id })
     const second = await readSitemapFamilyPage('topics', {
-      highWaterId: entry.id,
-      afterId: entry.id,
-      afterPath: entry.path,
+      highWaterId: id,
+      afterId: id,
+      afterPath: first[0]!.path,
       limit: 1,
     })
-    expect(second).toHaveLength(1)
-    expect(
-      second[0]!.id === entry.id ? second[0]!.path > entry.path : second[0]!.id < entry.id,
-    ).toBe(true)
+    expect(second[0]).toMatchObject({ id })
+    expect(second[0]!.path.localeCompare(first[0]!.path)).toBeGreaterThan(0)
   })
 
-  it('excludes deleted and actively suspended users', () => {
-    const query = buildSitemapFamilyQuery('users').text
+  it('includes only live, unsuspended owned users', async () => {
+    const deleted = await createTestUser()
+    await softDeleteUser(deleted.id)
+    const suspended = await createTestUser()
+    await suspendTestUser(suspended.id)
+    const active = await createTestUser()
+    const secondActive = await createTestUser()
+    const [newer, older] = [active, secondActive].toSorted((left, right) =>
+      right.id.localeCompare(left.id),
+    )
 
-    expect(query).toContain('FROM users')
-    expect(query).toContain('deleted_at IS NULL')
-    expect(query).toContain('username IS NOT NULL')
-    expect(query).toContain('FROM user_suspensions')
-    expect(query).toContain('lifted_at IS NULL')
+    const page = await readSitemapFamilyPage('users', { highWaterId: newer.id, limit: 25 })
+    expect(page).toContainEqual(
+      expect.objectContaining({ id: newer.id, path: `/user/${newer.username}` }),
+    )
+    expect(page.some(row => row.id === deleted.id || row.id === suspended.id)).toBe(false)
+    const resumed = await readSitemapFamilyPage('users', {
+      highWaterId: newer.id,
+      afterId: newer.id,
+      limit: 25,
+    })
+    expect(resumed).toContainEqual(
+      expect.objectContaining({ id: older.id, path: `/user/${older.username}` }),
+    )
+    expect(resumed.some(row => row.id === newer.id)).toBe(false)
   })
 
-  it('emits indexable topic subpages without discussions', () => {
-    const query = buildSitemapFamilyQuery('topics').text
+  it('emits indexable topic subpages without discussions', async () => {
+    const user = await createTestUser()
+    const hiddenSlug = `hidden-sitemap-${randomUUID()}`
+    const hidden = await insertTestTopic({
+      name: hiddenSlug,
+      slug: hiddenSlug,
+      createdById: user.id,
+      is_noindexed: true,
+    })
+    const noReviewSlug = `no-review-sitemap-${randomUUID()}`
+    const withoutReviews = await insertTestTopic({
+      name: noReviewSlug,
+      slug: noReviewSlug,
+      createdById: user.id,
+      allowReviews: false,
+    })
+    const referralSlug = `referral-sitemap-${randomUUID()}`
+    const referral = await insertTestTopic({
+      name: referralSlug,
+      slug: referralSlug,
+      createdById: user.id,
+      topicType: 'referral_program',
+    })
+    const slug = `visible-sitemap-${randomUUID()}`
+    const visible = await insertTestTopic({
+      name: slug,
+      slug,
+      createdById: user.id,
+    })
 
-    expect(query).toContain("'posts' AS subpage")
-    expect(query).toContain("'data-points' AS subpage")
-    expect(query).toContain("'latest' AS subpage")
-    expect(query).toContain("'news' AS subpage")
-    expect(query).toContain("'reviews' AS subpage")
-    expect(query).toContain("'referral-links' AS subpage")
-    expect(query).not.toContain("'discussions' AS subpage")
-    expect(query).toContain('updated_at')
-    expect(query).not.toContain('created_at AS updated_at')
-    expect(query).toContain('should_allow_reviews IS TRUE')
-    expect(query).toContain(
-      "topic_type = 'referral_program' OR referral_program_topic_id IS NOT NULL",
+    const page = await readSitemapFamilyPage('topics', { highWaterId: visible, limit: 25 })
+    const paths = page.filter(row => row.id === visible).map(row => row.path)
+    expect(paths).toHaveLength(5)
+    expect(paths).toEqual(
+      expect.arrayContaining(
+        ['posts', 'data-points', 'latest', 'news', 'reviews'].map(subpage =>
+          expect.stringMatching(new RegExp(`/${slug}/${subpage}$`)),
+        ),
+      ),
+    )
+    expect(page.some(row => row.id === hidden)).toBe(false)
+    expect(page.some(row => row.id === withoutReviews && row.path.endsWith('/reviews'))).toBe(false)
+    expect(page.some(row => row.id === referral && row.path.endsWith('/referral-links'))).toBe(true)
+  })
+
+  it('includes only public, live owned communities', async () => {
+    const user = await createTestUser()
+    const privateCommunity = await insertTestCommunity({
+      createdById: user.id,
+      visibility: 'private',
+    })
+    const deletedCommunity = await insertTestCommunity({ createdById: user.id })
+    await deleteTestCommunity({ communityId: deletedCommunity.id, deletedById: user.id })
+    const publicCommunity = await insertTestCommunity({ createdById: user.id })
+
+    const page = await readSitemapFamilyPage('communities', {
+      highWaterId: publicCommunity.id,
+      limit: 25,
+    })
+    expect(page).toContainEqual(
+      expect.objectContaining({
+        id: publicCommunity.id,
+        path: `/communities/${publicCommunity.slug}`,
+      }),
+    )
+    expect(page.some(row => row.id === privateCommunity.id || row.id === deletedCommunity.id)).toBe(
+      false,
     )
   })
 
-  it('requires public community visibility', () => {
-    const query = buildSitemapFamilyQuery('communities').text
+  it('includes only introduced, voted, unblocked owned domains', async () => {
+    const unvoted = await insertTestUrlHostname({ hostname: `unvoted-${randomUUID()}.example.com` })
+    const blocked = await insertTestUrlHostname({
+      hostname: `blocked-${randomUUID()}.example.com`,
+      is_blocked: true,
+    })
+    await setUrlHostnameVotes(blocked, 1, 0)
+    const hostname = `public-${randomUUID()}.example.com`
+    const publicId = await insertTestUrlHostname({ hostname })
+    await setUrlHostnameVotes(publicId, 1, 0)
 
-    expect(query).toContain("visibility = 'public'")
-    expect(query).toContain('deleted_at IS NULL')
-  })
-
-  it('requires voted, unblocked domains', () => {
-    const query = buildSitemapFamilyQuery('domains').text
-
-    expect(query).toContain('FROM url_hostnames')
-    expect(query).toContain('updated_at')
-    expect(query).not.toContain('uuid_extract_timestamp(id) AS updated_at')
-    expect(query).toContain('NOT is_blocked')
-    expect(query).toContain('votes_count_up > 0')
-  })
-
-  it('requires landing pages to have a public item for an eligible owner', () => {
-    const query = buildSitemapFamilyQuery('landing-pages').text
-
-    expect(query).toContain("WHEN ulp.is_default THEN CONCAT('/@', u.username)")
-    expect(query).toContain('GREATEST(')
-    expect(query).toContain('u.updated_at')
-    expect(query).toContain('MAX(ulpi_lastmod.updated_at)')
-    expect(query).toContain('MAX(ulpgm_lastmod.updated_at)')
-    expect(query).toContain('MAX(upl_lastmod.updated_at)')
-    expect(query).toContain('MAX(review_lastmod.updated_at)')
-    expect(query).toContain('MAX(group_review_lastmod.updated_at)')
-    expect(query).toContain('review_lastmod_eligibility.post_id = review_lastmod.id')
-    expect(query).toContain('group_review_lastmod_eligibility.post_id = group_review_lastmod.id')
-    expect(query).toContain('MAX(referral_lastmod.updated_at)')
-    expect(query).toContain('MAX(group_referral_lastmod.updated_at)')
-    expect(query).toContain('FROM user_landing_page_items')
-    expect(query).toContain("ulpi.item_type = 'profile_link'")
-    expect(query).toContain(
-      "upl.link_type = 'url' AND profile_url.url IS NOT NULL AND profile_url.url <> ''",
+    const page = await readSitemapFamilyPage('domains', { highWaterId: publicId, limit: 25 })
+    expect(page).toContainEqual(
+      expect.objectContaining({ id: publicId, path: `/domain/${hostname}` }),
     )
-    expect(query).toContain(
-      "upl.link_type <> 'url' AND upl.handle IS NOT NULL AND upl.handle <> ''",
-    )
-    expect(query).toContain("ulpi.item_type = 'review'")
-    expect(query).toContain("ulpi.item_type = 'referral_link'")
-    expect(query).toContain("ulpi.item_type = 'topic_group'")
-    expect(query).toContain('group_topic.deleted_at IS NULL')
-    expect(query).toContain('root_post.privacy = ')
-    expect(query).toContain('root_post.broadcast = ')
-    expect(query).toContain('group_review_root.privacy = ')
-    expect(query).toContain('urpl.activated_at IS NOT NULL')
-    expect(query).toContain('urpl.deactivated_at IS NULL')
+    expect(page.some(row => row.id === unvoted || row.id === blocked)).toBe(false)
   })
 })

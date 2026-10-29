@@ -15,6 +15,7 @@ import {
   getTestRssFeedCategories,
   getTopicAliasCategoryMappingDirtyRowForTest,
   insertTestRssFeedCategory,
+  setTestTopicAliasUnlinkPending,
   updateTestTopicAliasCategoryMappingOwner,
 } from '@voucha/test-helpers'
 import { v7 as uuidv7 } from 'uuid'
@@ -181,6 +182,15 @@ describe('topic alias category mapping reconciliation', () => {
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest(ids)),
     ).resolves.toBe(1)
+    const orderedIds = ids.toSorted()
+    await expect(
+      owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(orderedIds[2]!)),
+    ).resolves.toMatchObject({ topic_alias_id: orderedIds[2] })
+    for (const processedId of orderedIds.slice(0, 2)) {
+      await expect(
+        owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(processedId)),
+      ).resolves.toBeUndefined()
+    }
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest([foreignId])),
     ).resolves.toBe(1)
@@ -201,6 +211,39 @@ describe('topic alias category mapping reconciliation', () => {
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest([foreignId])),
     ).resolves.toBe(1)
+  })
+
+  it('skips pending unlinks while draining an owned sibling', async () => {
+    const owned = ownDirtyRows()
+    const topic = await owned.run(() => createTestTopic())
+    const pendingAliasId = await owned.run(
+      () =>
+        createTestTopicAliasForCategoryMapping({
+          topicId: topic.id,
+          alias: `pending-unlink-${topic.id}`,
+        }),
+      id => owned.ids.push(id),
+    )
+    await owned.run(() => setTestTopicAliasUnlinkPending(pendingAliasId, topic.id))
+    const siblingId = uuidv7()
+    owned.ids.push(siblingId)
+    await owned.run(() =>
+      createTopicAliasCategoryMappingDirtyRowsForTest([
+        { topicAliasId: siblingId, alias: `sibling-${siblingId}` },
+      ]),
+    )
+
+    const result = await owned.run(() =>
+      processReconcileTopicAliasCategoryMappings(2, [pendingAliasId, siblingId]),
+    )
+    expect(result).toEqual({ reconciled: 1, updated: 0, hasMore: false })
+    await expect(
+      owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(pendingAliasId)),
+    ).resolves.toBeDefined()
+    await expect(
+      owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(siblingId)),
+    ).resolves.toBeUndefined()
+    await owned.run(() => deleteTestTopicAliasForCategoryMapping(pendingAliasId))
   })
 })
 

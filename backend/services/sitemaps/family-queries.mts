@@ -36,7 +36,7 @@ export async function readSitemapFamilyPage(
   return rows as SitemapFamilyEntry[]
 }
 
-export function buildSitemapFamilyQuery(family: SitemapFamilyType, options?: FamilyPageOptions) {
+function buildSitemapFamilyQuery(family: SitemapFamilyType, options: FamilyPageOptions) {
   switch (family) {
     case 'users':
       return buildUsersQuery(options)
@@ -51,7 +51,7 @@ export function buildSitemapFamilyQuery(family: SitemapFamilyType, options?: Fam
   }
 }
 
-function buildUsersQuery(options?: FamilyPageOptions) {
+function buildUsersQuery(options: FamilyPageOptions) {
   const query = sql`/* buildSitemapUsersQuery */
     SELECT id, CONCAT('/user/', username) AS path, updated_at
     FROM users
@@ -67,7 +67,7 @@ function buildUsersQuery(options?: FamilyPageOptions) {
   return appendFamilyBounds(query, options, false)
 }
 
-function buildTopicsQuery(options?: FamilyPageOptions) {
+function buildTopicsQuery(options: FamilyPageOptions) {
   const query = sql`/* buildSitemapTopicsQuery */
     WITH eligible_topics AS (
       SELECT
@@ -134,7 +134,7 @@ function buildTopicsQuery(options?: FamilyPageOptions) {
   return query
 }
 
-function buildCommunitiesQuery(options?: FamilyPageOptions) {
+function buildCommunitiesQuery(options: FamilyPageOptions) {
   const query = sql`/* buildSitemapCommunitiesQuery */
     SELECT id, CONCAT('/communities/', slug) AS path, updated_at
     FROM communities
@@ -144,7 +144,7 @@ function buildCommunitiesQuery(options?: FamilyPageOptions) {
   return appendFamilyBounds(query, options, false)
 }
 
-function buildDomainsQuery(options?: FamilyPageOptions) {
+function buildDomainsQuery(options: FamilyPageOptions) {
   const query = sql`/* buildSitemapDomainsQuery */
     SELECT id, CONCAT('/domain/', hostname) AS path, updated_at
     FROM url_hostnames
@@ -157,10 +157,9 @@ function buildDomainsQuery(options?: FamilyPageOptions) {
 
 function appendFamilyBounds<T extends ReturnType<typeof sql>>(
   query: T,
-  options: FamilyPageOptions | undefined,
+  options: FamilyPageOptions,
   includeSameId: boolean,
 ): T {
-  if (!options) return query
   if (options.highWaterId) query.append(sql` AND id <= ${options.highWaterId}`)
   if (options.afterId) {
     if (includeSameId) query.append(sql` AND id <= ${options.afterId}`)

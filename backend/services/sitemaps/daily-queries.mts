@@ -13,10 +13,10 @@ export async function readPostsForDayPage(
   return rows as SitemapPostWithId[]
 }
 
-export function buildPostsForDayQuery(
+function buildPostsForDayQuery(
   postType: SitemapPostType,
   day: string,
-  options?: { highWaterId?: string; afterId?: string; limit: number },
+  options: { highWaterId?: string; afterId?: string; limit: number },
 ) {
   const bounds = getUtcDayUuidv7Bounds(day)
 
@@ -36,10 +36,10 @@ export function buildPostsForDayQuery(
   query.append(buildLatestPostSlugJoinSql())
   query.append(buildEligiblePostsForDayWhereSql(postType, bounds))
   query.append(buildPostHasSlugExistsPredicateSql())
-  if (options?.highWaterId) query.append(sql` AND p.id <= ${options.highWaterId}`)
-  if (options?.afterId) query.append(sql` AND p.id < ${options.afterId}`)
+  if (options.highWaterId) query.append(sql` AND p.id <= ${options.highWaterId}`)
+  if (options.afterId) query.append(sql` AND p.id < ${options.afterId}`)
   query.append(sql` ORDER BY p.id DESC `)
-  if (options) query.append(sql` LIMIT ${options.limit}`)
+  query.append(sql` LIMIT ${options.limit}`)
 
   return query
 }
