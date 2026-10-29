@@ -15,7 +15,7 @@
       "__entity_type": "list_item",
       "created_at": "2026-06-28T10:06:00Z",
       "entity_id": "post-1",
-      "entity_label": "Saved discussion",
+      "entity_label": null,
       "id": "list-item-2",
       "item_type": "post",
       "list_id": "list-1",

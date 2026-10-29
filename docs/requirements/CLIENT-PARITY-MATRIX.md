@@ -81,8 +81,9 @@ this producer change makes no native UI parity claim.
 
 ## Saved list and community applicant labels
 
-List-item reads and add responses provide an entity label alongside the ID, so web and native
-clients can identify saved content without displaying an opaque UUID. Community application reads
+List-item reads and add responses provide a nullable factual entity label alongside the ID, so web
+and native clients can identify saved content without displaying an opaque UUID. Missing labels
+remain null in REST and MCP; clients render a localized untitled-post label. Community application reads
 include applicant profiles for each page, including applicants who have not joined the community;
 clients should display the name or username and use a deleted-user label when the profile is gone.
 These response additions preserve IDs for mutations and joins. Native presentation adoption remains

@@ -67,7 +67,7 @@ export const nativeListApiFixtureCases: ApiFixtureCase[] = [
           order_index: 1,
           created_at: '2026-06-28T10:06:00Z',
           media_type: null,
-          entity_label: 'Saved discussion',
+          entity_label: null,
         },
       },
     },

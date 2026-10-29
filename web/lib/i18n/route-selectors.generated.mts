@@ -175,7 +175,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/link/[id]/tags/[objectType]", selectorId: "web.route.7f0d2c447aef3e3c.035c880e1fde0528", hasMembership: true },
   { pattern: "/links", selectorId: "web.route.6ae53c18c06e579f.5d6e56a39f981ed4", hasMembership: true },
   { pattern: "/links/create", selectorId: "web.route.656c605003c503b4.06afbe3372d3180a", hasMembership: true },
-  { pattern: "/list/[id]", selectorId: "web.route.00443fb21ab666b4.b9d0b9d965f2bd21", hasMembership: true },
+  { pattern: "/list/[id]", selectorId: "web.route.00443fb21ab666b4.bf5c178e3f5a1c3d", hasMembership: true },
   { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.2e98783ef724941f", hasMembership: true },
   { pattern: "/memberships/grants", selectorId: "web.route.d6e41cc32db0397b.b3b315c5b47c34ac", hasMembership: true },
   { pattern: "/messages", selectorId: "web.route.6224befb41ec714a.0e7fcdbd29034ea6", hasMembership: true },

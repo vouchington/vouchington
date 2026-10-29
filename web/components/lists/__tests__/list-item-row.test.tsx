@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mergeMessages } from '@/lib/i18n/use-translations'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { render } from '@testing-library/react'
 import { ListItemRow } from '../list-item-row'
 import type { ListItem } from '@/types/api-responses'
@@ -57,6 +60,19 @@ describe('ListItemRow', () => {
     )
     expect(getByText('Saved story')).not.toBeNull()
     expect(queryByText('abc-123')).toBeNull()
+  })
+
+  it('translates an untitled post without exposing its ID', async () => {
+    mergeMessages('es', await loadJsonMessages('es'))
+    const { getByText, queryByText } = render(
+      <LocaleProvider locale='es'>
+        <ListItemRow
+          item={makeItem({ item_type: 'post', entity_label: null, entity_id: 'untitled-post-id' })}
+        />
+      </LocaleProvider>,
+    )
+    expect(getByText('Publicación sin título')).toBeInTheDocument()
+    expect(queryByText('untitled-post-id')).not.toBeInTheDocument()
   })
 
   it('renders time element with dateTime attribute', () => {

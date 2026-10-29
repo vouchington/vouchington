@@ -8365,7 +8365,14 @@
                                 "type": "string"
                               },
                               "entity_label": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
                               },
                               "order_index": {
                                 "type": "number"

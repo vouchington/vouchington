@@ -7,6 +7,7 @@ import {
   createTestRssFeedItemWithUrl,
   deleteTestPost,
   deleteTestPostSlugs,
+  setPostAiSummaryMarkdownForTest,
   insertTestRssFeed,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -100,29 +101,32 @@ describe('items service', () => {
   })
 
   describe('searchListItems', () => {
-    it('labels a titleless comment without a slug from its content', async () => {
-      const commentText = `Useful comment ${createRandomString(8)}`
+    it.each([
+      ['# Useful **comment** with a [link](https://example.com)', '', 'Useful comment with a link'],
+      ['   ', '**Summary** content', 'Summary content'],
+    ])('labels a no-slug comment from plain text: %s', async (markdown, summary, expectedLabel) => {
       const commentId = await insertTestPost({
         title: '',
         slug: `temporary-comment-${createRandomString(8)}`,
         createdById: user.id,
-        markdown: commentText,
+        markdown,
         postType: 'comment',
         rootId: postId,
         parentId: postId,
       })
       await deleteTestPostSlugs(commentId)
+      await setPostAiSummaryMarkdownForTest({ postId: commentId, aiSummaryMarkdown: summary })
       const commentList = await createList(user.id, WEB_PROVENANCE, {
         name: `Comment list ${createRandomString(8)}`,
       })
       const added = await addListItem(commentList.id, 'post', commentId)
       const found = (await searchListItems(commentList.id, { currentUserId: user.id })).results
 
-      expect(added.entity_label).toBe(commentText)
-      expect(found[0]?.entity_label).toBe(commentText)
+      expect(added.entity_label).toBe(expectedLabel)
+      expect(found[0]?.entity_label).toBe(expectedLabel)
     })
 
-    it('keeps a visible label through add, duplicate add, and search for an untitled no-slug comment', async () => {
+    it('keeps a missing label factual through add, duplicate add, and search for an untitled no-slug comment', async () => {
       const commentId = await insertTestPost({
         title: '',
         slug: `whitespace-comment-${createRandomString(8)}`,
@@ -141,9 +145,9 @@ describe('items service', () => {
 
       const duplicate = await addListItem(commentList.id, 'post', commentId)
       expect(duplicate.id).toBe(added.id)
-      expect(added.entity_label).toBe('Untitled post')
-      expect(duplicate.entity_label).toBe('Untitled post')
-      expect(found[0]?.entity_label).toBe('Untitled post')
+      expect(added.entity_label).toBeNull()
+      expect(duplicate.entity_label).toBeNull()
+      expect(found[0]?.entity_label).toBeNull()
     })
 
     it('hydrates labels for both entity types in the list query', async () => {

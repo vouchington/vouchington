@@ -22,7 +22,7 @@ const review: ListItem = {
   order_index: 0,
   created_at: posts[1]!.created_at,
   media_type: null,
-  entity_label: posts[1]!.title || posts[1]!.slug || 'Untitled post',
+  entity_label: posts[1]!.title || posts[1]!.slug || null,
 }
 
 const episode: ListItem = {

@@ -24,7 +24,7 @@ type Item = {
   list_id: string
   item_type: string
   entity_id: string
-  entity_label: string
+  entity_label: string | null
   media_type: string | null
 }
 type Page = {

@@ -29871,7 +29871,7 @@
     },
     "GET:/api/v1/lists/:id/items": {
       "bodyKind": "content",
-      "hash": "24153f0a8ad17b1a4e6f23e0ba81ed9d1b01fb9327a671b06e1917f484550dbd",
+      "hash": "fa48a686671b054db88646b504a18a58a4993b214e99d0540f0ac55f9cd1555e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -29903,7 +29903,15 @@
               "entity_label": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -103302,7 +103310,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "ea0b0a34b4e257eb648f2eb006898a7495b8d82eb10355eb7034fa8feb2d5250",
+        "hash": "cab99bab693a10dc60fdba9c0f6559aabd7c02f8d2dbd37e7b0ffd4c8d58af8e",
         "key": "native.list-items.default"
       },
       "route": {

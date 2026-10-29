@@ -23387,7 +23387,14 @@
           "type": "string"
         },
         "entity_label": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "id": {
           "type": "string"

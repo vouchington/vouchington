@@ -90,7 +90,11 @@ export async function addVisibleListItems(
       results.push({
         ...item,
         status: 'added',
-        list_item: { ...list_item, entity_label: await sanitizedTitle(list_item.entity_label) },
+        list_item: {
+          ...list_item,
+          entity_label:
+            list_item.entity_label === null ? null : await sanitizedTitle(list_item.entity_label),
+        },
       })
     } catch (err) {
       const status =

@@ -9,7 +9,7 @@ import { listPostDiscoveryFilter } from './listable.mts'
 import type { ListItem, ListItemType } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { rowToListItem } from './item-row.mts'
-import { postItemLabelSql } from './item-facts.mts'
+import { postItemFactsSql } from './item-facts.mts'
 export { addListItem } from './add-item.mts'
 
 export async function removeListItem(
@@ -56,7 +56,8 @@ export async function searchListItems(
         'rss_feed_item'::user_list_item_types AS item_type,
         li.rss_feed_item_id AS entity_id, li.order_index, li.created_at,
         rfi.media_type::text AS media_type,
-        COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url) AS entity_label
+        COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url) AS entity_label,
+        NULL::text AS label_markdown, NULL::text AS label_summary
       FROM user_list_rss_feed_items li
       JOIN rss_feed_items rfi ON rfi.id = li.rss_feed_item_id AND rfi.deleted_at IS NULL
       JOIN urls article_url ON article_url.id = rfi.url_id
@@ -73,8 +74,8 @@ export async function searchListItems(
         li.post_id AS entity_id, li.order_index, li.created_at,
         NULL::text AS media_type,
         `
-  query.append(postItemLabelSql('candidate_post'))
-  query.append(sql` AS entity_label
+  query.append(postItemFactsSql('candidate_post'))
+  query.append(sql`
       FROM user_list_posts li
       JOIN posts candidate_post
         ON candidate_post.id = li.post_id AND candidate_post.deleted_at IS NULL
@@ -86,7 +87,7 @@ export async function searchListItems(
   query.append(listPostDiscoveryFilter(options.currentUserId, options.isAdministrator === true))
   query.append(sql`
     )
-    SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type, entity_label
+    SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type, entity_label, label_markdown, label_summary
     FROM list_items
     WHERE true`)
 

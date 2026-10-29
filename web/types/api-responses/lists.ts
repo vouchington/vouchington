@@ -31,7 +31,7 @@ export type ListItem = {
   order_index: number
   created_at: string
   media_type: string | null
-  entity_label: string
+  entity_label: string | null
 }
 
 export interface ListResponseBody {

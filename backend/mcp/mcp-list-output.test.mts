@@ -152,6 +152,21 @@ describe('list read tool output schemas', () => {
 })
 
 describe('MCP list item labels', () => {
+  it('preserves a missing post label as null', async () => {
+    const item: ListItem = {
+      __entity_type: 'list_item',
+      id: 'untitled-item',
+      list_id: 'list-1',
+      item_type: 'post',
+      entity_id: 'untitled-post',
+      entity_label: null,
+      order_index: 0,
+      media_type: null,
+      created_at: new Date('2026-01-01T00:00:00Z'),
+    }
+    expect((await toMcpListItem(item)).entity_label).toBeNull()
+  })
+
   it.each(['post', 'rss_feed_item'] as const)(
     'sanitizes authored %s labels without changing the REST facts',
     async itemType => {

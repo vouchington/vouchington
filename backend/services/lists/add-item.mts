@@ -27,7 +27,8 @@ export async function addListItem(
       SELECT $1::uuid, entity_id FROM entity_facts
       RETURNING id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
     )
-    SELECT inserted.*, entity_facts.media_type, entity_facts.entity_label
+    SELECT inserted.*, entity_facts.media_type, entity_facts.entity_label,
+      entity_facts.label_markdown, entity_facts.label_summary
     FROM inserted JOIN entity_facts USING (entity_id)
     `,
     [listId, entityId],
@@ -39,7 +40,8 @@ export async function addListItem(
         `/* addListItem:existing */
         WITH entity_facts AS (${entityFacts})
         SELECT li.id, li.user_list_id AS list_id, li.${entityColumn} AS entity_id,
-          li.order_index, li.created_at, entity_facts.media_type, entity_facts.entity_label
+          li.order_index, li.created_at, entity_facts.media_type, entity_facts.entity_label,
+      entity_facts.label_markdown, entity_facts.label_summary
         FROM ${table} li JOIN entity_facts ON entity_facts.entity_id = li.${entityColumn}
         WHERE li.user_list_id = $1::uuid
           AND li.${entityColumn} = $2::uuid

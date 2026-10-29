@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ReviewTopicsFieldset } from './post-form-sections'
 import { useReviewTopicState } from './post-form/review-topic-state'
@@ -31,12 +31,10 @@ function SavedReview() {
 
 describe('ReviewTopicsFieldset', () => {
   afterEach(() => {
-    vi.useRealTimers()
     vi.clearAllMocks()
   })
 
   it('shows a replaceable unavailable topic while retaining its saved identity and rating', async () => {
-    vi.useFakeTimers()
     vi.mocked(fetchTopics).mockResolvedValue(
       makeTopicsSearchResponse({
         topics: [makeTopic({ id: 'replacement-topic', name: 'Replacement topic' })],
@@ -52,8 +50,7 @@ describe('ReviewTopicsFieldset', () => {
     expect(screen.queryByText('saved-topic-id')).not.toBeInTheDocument()
 
     fireEvent.change(input, { target: { value: 'Replacement' } })
-    await act(() => vi.advanceTimersByTimeAsync(300))
-    fireEvent.click(screen.getByRole('option', { name: 'Replacement topic' }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Replacement topic' }))
     expect(input).toHaveValue('Replacement topic')
     expect(screen.getByLabelText('Saved rating')).toHaveTextContent(
       '"topicId":"replacement-topic","rating":4',

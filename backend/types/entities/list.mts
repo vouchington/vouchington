@@ -28,5 +28,5 @@ export type ListItem = {
   order_index: number
   created_at: Date
   media_type: string | null
-  entity_label: string
+  entity_label: string | null
 }

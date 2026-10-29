@@ -1,6 +1,7 @@
 'use client'
 import { Badge } from '@/components/ui/badge'
 import type { ListItem } from '@/types/api-responses'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 const MEDIA_TYPE_LABELS: Record<string, string> = {
   article: 'Article',
@@ -13,6 +14,7 @@ interface ListItemRowProps {
 }
 
 export function ListItemRow({ item }: ListItemRowProps) {
+  const t = useTranslations()
   const label =
     item.item_type === 'post' ? 'Post' : (MEDIA_TYPE_LABELS[item.media_type ?? ''] ?? 'Article')
 
@@ -27,7 +29,9 @@ export function ListItemRow({ item }: ListItemRowProps) {
       >
         {label}
       </Badge>
-      <span className='min-w-0 flex-1 truncate text-sm'>{item.entity_label}</span>
+      <span className='min-w-0 flex-1 truncate text-sm'>
+        {item.entity_label ?? t('shared.post.untitled')}
+      </span>
       <time
         dateTime={item.created_at}
         className='shrink-0 text-xs text-muted-foreground'

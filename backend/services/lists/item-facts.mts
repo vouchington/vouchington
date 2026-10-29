@@ -5,7 +5,8 @@ export function itemFactsSql(itemType: ListItemType): string {
   if (itemType === 'rss_feed_item') {
     return `
       SELECT rfi.id AS entity_id, rfi.media_type::text AS media_type,
-        COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url) AS entity_label
+        COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url) AS entity_label,
+        NULL::text AS label_markdown, NULL::text AS label_summary
       FROM rss_feed_items rfi
       JOIN urls article_url ON article_url.id = rfi.url_id
       WHERE rfi.id = $2::uuid
@@ -13,17 +14,17 @@ export function itemFactsSql(itemType: ListItemType): string {
   }
   return `
     SELECT post.id AS entity_id, NULL::text AS media_type,
-      ${postItemLabelSql('post')} AS entity_label
+      ${postItemFactsSql('post')}
     FROM posts post
     WHERE post.id = $2::uuid
   `
 }
 
 /** Aliases are closed service-owned SQL identifiers, never caller input. */
-export function postItemLabelSql(alias: 'post' | 'candidate_post'): string {
-  return `COALESCE(NULLIF(BTRIM(${alias}.title), ''),
-    (SELECT MIN(slug) FROM post_slugs WHERE post_id = ${alias}.id),
-    LEFT(NULLIF(BTRIM(${alias}.markdown), ''), 80),
-    LEFT(NULLIF(BTRIM(${alias}.ai_summary_markdown), ''), 80),
-    'Untitled post')`
+export function postItemFactsSql(alias: 'post' | 'candidate_post'): string {
+  const label = `COALESCE(NULLIF(BTRIM(${alias}.title), ''),
+    (SELECT MIN(slug) FROM post_slugs WHERE post_id = ${alias}.id))`
+  return `${label} AS entity_label,
+    CASE WHEN ${label} IS NULL THEN ${alias}.markdown END AS label_markdown,
+    CASE WHEN ${label} IS NULL THEN ${alias}.ai_summary_markdown END AS label_summary`
 }
