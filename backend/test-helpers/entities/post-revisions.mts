@@ -4,6 +4,14 @@ import type { createPostRevision } from '../../services/post-revisions/index.mts
 
 type PostRevision = Awaited<ReturnType<typeof createPostRevision>>
 
+export async function readTestPostRevisionChild(revisionId: string): Promise<string | null> {
+  const { rows } = await write<{ partition: string }>(sql`
+    /* readTestPostRevisionChild */
+    SELECT tableoid::regclass::text AS partition FROM post_revisions WHERE id = ${revisionId}
+  `)
+  return rows[0]?.partition ?? null
+}
+
 export async function countPostImageRevisions(postId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* countPostImageRevisions */
     SELECT count(*)::int AS count

@@ -5,7 +5,7 @@ import {
   DEFERRED_LEDGER_PARTITION_TABLES,
   PARTITION_DROP_POLICIES,
   POST_PARTITION_TABLES,
-  REVISION_PARTITION_TABLES,
+  POST_REVISION_PARTITION_TABLES,
   TOPIC_REVISION_PARTITION_TABLES,
   USER_KEY_PARTITION_TABLES,
   USER_SESSION_PARTITION_TABLES,
@@ -20,7 +20,6 @@ describe('partition drop policy coverage', () => {
       ...USER_SESSION_PARTITION_TABLES,
       ...USER_DATA_REQUEST_PARTITION_TABLES,
       ...USER_KEY_PARTITION_TABLES,
-      ...REVISION_PARTITION_TABLES,
       ...DEFERRED_LEDGER_PARTITION_TABLES,
       ...ALL_MONTHLY_PARTITION_TABLES.map(config => config.table),
     ]
@@ -30,12 +29,21 @@ describe('partition drop policy coverage', () => {
     }
     for (const config of ALL_MONTHLY_PARTITION_TABLES) {
       expect(PARTITION_DROP_POLICIES[config.table]?.minimumRetentionDays).toBe(
-        config.table === 'topic_revisions' ? null : config.retentionDays,
+        config.table === 'topic_revisions' || config.table === 'post_revisions'
+          ? null
+          : config.retentionDays,
       )
     }
     expect(TOPIC_REVISION_PARTITION_TABLES).toContainEqual(
       expect.objectContaining({ table: 'topic_revisions', retentionDays: 0 }),
     )
     expect(PARTITION_DROP_POLICIES.topic_revisions?.minimumRetentionMonths).toBe(12)
+    expect(POST_REVISION_PARTITION_TABLES).toContainEqual(
+      expect.objectContaining({ table: 'post_revisions', retentionDays: 0 }),
+    )
+    expect(PARTITION_DROP_POLICIES.post_revisions).toMatchObject({
+      minimumRetentionMonths: 72,
+      retirementReferenceTables: ['posts', 'users'],
+    })
   })
 })

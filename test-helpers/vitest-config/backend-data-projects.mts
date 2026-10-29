@@ -4,18 +4,10 @@ import { backendNoDataUnitTestFiles } from './backend-core-projects.mts'
 const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
-  // Leave SQL attribution and cleanup headroom inside the project deadline.
   env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' },
   globalSetup: './test-helpers/vitest.setup.data-stores.mts',
   setupFiles: [
-    // Must run before glide-mq-workers: that setup preloads workers that transitively
-    // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
-    // first or the real SDK singleton gets bound during preload and tests can't intercept it.
-    // Registering it here (rather than relying on individual test files to import it) also
-    // guarantees the mock's per-test beforeEach reset runs for every file in this project —
-    // under isolate:false, a file that only imports the module gets the reset registered
-    // solely if it's the first file in its worker to do so, since the module body doesn't
-    // re-run for later files sharing the cached module graph.
+    // Load Sentry before glide workers bind it; this also registers each worker's reset.
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
     './test-helpers/vitest.setup.request-query-timing.mts',
     './test-helpers/vitest.setup.shared-db-scope-guard.mts',
@@ -55,9 +47,6 @@ const backendMocksProject = {
     ],
     globalSetup: './test-helpers/vitest.setup.data-stores.mts',
     setupFiles: [
-      // Must run before glide-mq-workers: that setup preloads workers that transitively
-      // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
-      // first or the real SDK singleton gets bound during preload and tests can't intercept it.
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
       './test-helpers/vitest.setup.request-query-timing.mts',
       './test-helpers/vitest.setup.shared-db-scope-guard.mts',
