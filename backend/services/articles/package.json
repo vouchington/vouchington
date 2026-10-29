@@ -37,7 +37,6 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
-    "@services/markdown": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }
