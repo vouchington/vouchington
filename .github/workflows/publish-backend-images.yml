@@ -139,9 +139,23 @@ jobs:
             remote_image="$GHCR_NAMESPACE/$target:$IMAGE_TAG"
             docker tag "$local_image" "$remote_image"
 
+            # GHCR intermittently rejects a push with "unknown blob". Re-pushing the same local image
+            # is idempotent -- uploaded layers are skipped and the tag still names the tested image --
+            # so a few short, bounded attempts replace an ejected merge-queue run.
+            #
             # The digest is read back from the push output rather than from `docker image
             # inspect`, whose RepoDigests can carry entries for other repositories.
-            push_output=$(docker push "$remote_image")
+            for attempt in 1 2 3; do
+              if push_output=$(timeout 75 docker push "$remote_image"); then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "::error::docker push of $remote_image failed after $attempt attempts."
+                exit 1
+              fi
+              echo "::warning::docker push attempt $attempt of $remote_image failed; retrying."
+              sleep $((attempt * 5))
+            done
             printf '%s\n' "$push_output"
             digest=$(printf '%s\n' "$push_output" |
               sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)
