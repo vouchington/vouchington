@@ -165,9 +165,7 @@ describe('OpenAI response integration boundary', () => {
         makeSdkResponse({ status: 'cancelled', id: 'resp-abc' }),
       )
 
-      const onResponseCreated = vi
-        .fn<(responseId: string) => Promise<boolean>>()
-        .mockResolvedValue(true)
+      const onResponseCreated = vi.fn<(responseId: string) => Promise<void>>().mockResolvedValue()
       await expect(
         runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
           runWithBackgroundResponseHooks({ onResponseCreated }, () =>

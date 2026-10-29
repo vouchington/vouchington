@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 export * from './ai-usage-classifier-runs.mts'
 
@@ -167,23 +168,27 @@ export async function findAiUsageRecordForAgent(
 }
 
 /**
- * Counts rows for a fixture-owned agent, optionally narrowed to exact token usage.
+ * Counts rows for a fixture-owned agent, optionally narrowed to exact token usage and UTC day.
  * findAiUsageRecordForAgent's LIMIT 1 cannot distinguish a retried provider call.
  */
 export async function countAiUsageRecordsForAgent(
   agentSlug: string,
   usage?: { inputTokens: number; outputTokens: number },
+  day?: string,
 ): Promise<number> {
-  const query = usage
-    ? sql`/* countAiUsageRecordsForAgent */
-        SELECT COUNT(*) AS count FROM ai_usage_records
-        WHERE agent_slug = ${agentSlug}
-          AND input_tokens = ${usage.inputTokens}
-          AND output_tokens = ${usage.outputTokens}
-      `
-    : sql`/* countAiUsageRecordsForAgent */
-        SELECT COUNT(*) AS count FROM ai_usage_records WHERE agent_slug = ${agentSlug}
-      `
+  const query = sql`/* countAiUsageRecordsForAgent */
+    SELECT COUNT(*) AS count FROM ai_usage_records WHERE agent_slug = ${agentSlug}
+  `
+  if (usage) {
+    query.append(
+      sql` AND input_tokens = ${usage.inputTokens} AND output_tokens = ${usage.outputTokens}`,
+    )
+  }
+  if (day) {
+    const dayStartMs = Date.parse(`${day}T00:00:00.000Z`)
+    query.append(sql` AND id >= ${timestampToUuidv7LowerBound(dayStartMs)}
+      AND id < ${timestampToUuidv7LowerBound(dayStartMs + 24 * 60 * 60 * 1000)}`)
+  }
   const { rows } = await read<{ count: string }>(query)
   return Number(rows[0]?.count ?? 0)
 }

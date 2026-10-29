@@ -18,9 +18,8 @@ import {
 describe('parseDailyTotalMicrounits', () => {
   it('rethrows a non-RangeError from parsePostgresMoneyAmount instead of clamping it', () => {
     // '01' is non-canonical (leading zero), so parsePostgresMoneyAmount throws TypeError, not
-    // RangeError -- that must propagate as-is. Only the overflow RangeError is a safe-to-clamp
-    // "spend exceeded the cap" signal; any other error means the stored value itself is corrupt,
-    // and clamping it would silently mask that instead of surfacing it.
+    // RangeError. Overflow is checked and clamped before parsing; any other parse error means the
+    // stored value itself is corrupt and must surface instead of being masked by the clamp.
     expect(() => parseDailyTotalMicrounits('01')).toThrow(TypeError)
   })
 })

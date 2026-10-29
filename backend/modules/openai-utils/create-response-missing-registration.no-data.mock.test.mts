@@ -47,7 +47,7 @@ describe('background response drain without durable registration', () => {
 
     await expect(
       runWithOpenAIResponseAttemptHooks({ beforeAttempt: () => Promise.resolve() }, async () =>
-        runWithBackgroundResponseHooks({ onResponseCreated: () => Promise.resolve(false) }, () =>
+        runWithBackgroundResponseHooks({ onResponseCreated: () => Promise.resolve() }, () =>
           createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
         ),
       ),

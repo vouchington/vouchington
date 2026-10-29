@@ -9,8 +9,8 @@ import { AsyncLocalStorage } from 'node:async_hooks'
  * backend/services/bluesky-accounts/session-lifecycle-context.mts.
  */
 export interface BackgroundResponseHooks {
-  /** Saves the response id before the drain advances past `response.created`; false if unsaved. */
-  onResponseCreated: (responseId: string) => Promise<boolean>
+  /** Attempts to save the response id before the drain advances past `response.created`. */
+  onResponseCreated: (responseId: string) => Promise<void>
 }
 
 const backgroundResponseHooksContext = new AsyncLocalStorage<BackgroundResponseHooks>()

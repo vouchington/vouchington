@@ -48,9 +48,7 @@ describe('background OpenAI response registration integration', () => {
         makeStreamEvent({ type: 'response.completed', sequence_number: 2, response }),
       ]),
     )
-    const onResponseCreated = vi
-      .fn<(responseId: string) => Promise<boolean>>()
-      .mockResolvedValue(true)
+    const onResponseCreated = vi.fn<(responseId: string) => Promise<void>>().mockResolvedValue()
 
     await runWithBackgroundResponseHooks({ onResponseCreated }, () =>
       createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
@@ -80,10 +78,9 @@ describe('background OpenAI response registration integration', () => {
       makeSdkResponse({ status: 'cancelled', id: 'resp-barrier' }),
     )
     const responseCreated = Promise.withResolvers<void>()
-    const onResponseCreated = vi.fn<(responseId: string) => Promise<boolean>>(async () => {
+    const onResponseCreated = vi.fn<(responseId: string) => Promise<void>>(async () => {
       responseCreated.resolve()
       await registrationGate
-      return true
     })
 
     const response = runWithBackgroundResponseHooks({ onResponseCreated }, () =>
