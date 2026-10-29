@@ -109,14 +109,24 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        timeout-minutes: 2
+      # Bound the whole action, including a post-transfer hang before it returns (#4328).
+      - name: Download prepared PostgreSQL database
+        id: download-postgres
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 1
         with:
           name: backend-postgres-${{ github.run_id }}
           path: ${{ runner.temp }}
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
+      - name: Explain prepared PostgreSQL download failure
+        if: ${{ failure() && steps.download-postgres.outcome == 'failure' }}
+        timeout-minutes: 1
+        run: |
+          message='Prepared PostgreSQL artifact download failed or did not exit within its 60-second deadline. Backend tests did not start; a transfer-success log does not mean the action returned.'
+          echo "::error title=Prepared PostgreSQL artifact download failed::$message"
+          printf '### Prepared PostgreSQL artifact download failed\n\n%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
       - name: Set service ports
         timeout-minutes: 1
         run: |

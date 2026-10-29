@@ -122,6 +122,11 @@ Dedicated native migration-control scenarios still execute migrations as the beh
 Snapshot validation runs on fresh migration output because PostgreSQL can re-parenthesize equivalent
 conditions during dump/restore.
 
+Artifact transfer success does not guarantee that the download action returned. If a backend-unit
+shard's prepared database download fails, inspect that step's error before investigating missing
+coverage: database restore, backend setup, and tests have not started, so missing coverage is a
+downstream consequence.
+
 <a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job (real AWS S3 only) and the Web
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their
 gates do not wait on them, they publish no LCOV, and `.pr-shepherdrc.yml` lists them under
