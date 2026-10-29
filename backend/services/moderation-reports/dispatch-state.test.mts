@@ -1,20 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser, insertTestReportJudgement } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { getUndispatchedJudgements } from './dispatch-state.mts'
+import { getUndispatchedJudgements, markJudgementDispatched } from './dispatch-state.mts'
 import { moderationReportsWorkConfig } from './work-limits.mts'
 
 describe('getUndispatchedJudgements', () => {
   it('recovers a judgement on the next five-minute sweep after it was too young', async () => {
     const user = await createTestUser()
+    // Keep the global one-row page clear of other tests' current judgements.
+    const createdAt = Date.now() + 24 * 60 * 60 * 1000
     const judgementId = await insertTestReportJudgement({
       entityType: 'user',
       entityId: user.id,
+      createdAt: new Date(createdAt),
     })
-    const createdAt = Date.now()
     const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
       dispatch_min_age_seconds: 600,
-      dispatch_batch_size: 2,
+      dispatch_batch_size: 1,
     })
     const now = vi.spyOn(Date, 'now')
     try {
@@ -29,6 +31,7 @@ describe('getUndispatchedJudgements', () => {
     } finally {
       now.mockRestore()
       restore()
+      await markJudgementDispatched(judgementId)
     }
   })
 })
