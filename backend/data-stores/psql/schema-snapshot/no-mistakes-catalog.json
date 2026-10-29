@@ -89154,6 +89154,16 @@
     "post_moderation_retention_cursors": {
       "checkConstraints": {},
       "columns": {
+        "cursor_lower_bound_record_id": {
+          "comment": "Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
         "cursor_record_id": {
           "comment": "Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.",
           "dataType": "uuid",
@@ -89173,16 +89183,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
-        },
-        "sweep_lower_bound_record_id": {
-          "comment": "Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
         },
         "sweep_upper_bound_record_id": {
           "comment": "Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.",

@@ -6,13 +6,13 @@ Durable UUIDv7 positions for bounded post moderation ledger retention.
 
 Not partitioned — growth: bounded.
 
-| Column                        | Type                              | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                          |
-| ----------------------------- | --------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| `kind`                        | `post_moderation_retention_kinds` | no       |                     |          |           |           | Ledger stream whose progress this row records.                                                                   |
-| `cursor_record_id`            | `uuid`                            | yes      |                     |          |           |           | Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.             |
-| `sweep_lower_bound_record_id` | `uuid`                            | yes      |                     |          |           |           | Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows. |
-| `sweep_upper_bound_record_id` | `uuid`                            | yes      |                     |          |           |           | Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.                                             |
-| `updated_at`                  | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP` |          |           |           | Time of the last committed progress update.                                                                      |
+| Column                         | Type                              | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                          |
+| ------------------------------ | --------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `kind`                         | `post_moderation_retention_kinds` | no       |                     |          |           |           | Ledger stream whose progress this row records.                                                                   |
+| `cursor_record_id`             | `uuid`                            | yes      |                     |          |           |           | Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.             |
+| `cursor_lower_bound_record_id` | `uuid`                            | yes      |                     |          |           |           | Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows. |
+| `sweep_upper_bound_record_id`  | `uuid`                            | yes      |                     |          |           |           | Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.                                             |
+| `updated_at`                   | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP` |          |           |           | Time of the last committed progress update.                                                                      |
 
 **Primary key:** `PRIMARY KEY (kind)`
 
