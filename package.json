@@ -38,6 +38,7 @@
     "test:web-api": "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; node ci/run-vitest-project-group.mts web-api \"$@\"' --",
     "api-fixtures:generate": "node backend/test-helpers/api-fixtures/generate.mts",
     "api-fixtures:check": "node backend/test-helpers/api-fixtures/generate.mts --check",
+    "article-links:check": "IMAGE_ORIGIN=https://images.example.test node ci/check-article-links.mts",
     "mcp:catalog": "node backend/scripts/generate-mcp-catalog.mts",
     "native-localization:check": "node dev/native-localization.mts --validate",
     "localization:catalog": "node dev/localization/catalog.mts",
@@ -169,7 +170,7 @@
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.5",
-    "vouchington-tooling": "^0.81.0",
+    "vouchington-tooling": "^0.82.0",
     "yaml": "^2.9.1"
   },
   "engines": {

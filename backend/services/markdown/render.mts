@@ -1,0 +1,70 @@
+import {
+  renderMarkdownToHtmlBatch as renderMarkdownToHtmlBatchNative,
+  renderMarkdownToHtml as renderMarkdownToHtmlNative,
+} from '@jongleberry/vurst-markdown'
+import { absolutizeSideloadImageSources } from '@modules/utils/absolute-sideload-html'
+import { parseSigningKeys } from '@vouchington/utils/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV, CURRENT_SIDELOAD_PATH_PREFIX } from '@ts-shared/url-signing'
+
+export type MarkdownRenderOptions = {
+  allowHtml?: boolean
+  nofollowLinks?: boolean
+  proxyImages?: boolean
+  imageProxySigningKeys?: string[]
+}
+
+type NormalizedRenderOptions = {
+  allowHtml: boolean
+  nofollowLinks: boolean
+  proxyImages: boolean
+  imageProxyUrlPrefix: string
+  imageProxySigningKeys: string[]
+}
+
+// Parse once at module load time to avoid re-parsing on every render call.
+let cachedSigningKeys: string[] | undefined
+
+function getSigningKeys(): string[] {
+  if (cachedSigningKeys !== undefined) return cachedSigningKeys
+  const keys = parseSigningKeys(process.env[SIDELOAD_SIGNING_KEYS_ENV])
+  cachedSigningKeys = keys
+  return keys
+}
+
+function normalizeRenderOptions(options: MarkdownRenderOptions): NormalizedRenderOptions {
+  return {
+    allowHtml: options.allowHtml ?? false,
+    nofollowLinks: options.nofollowLinks ?? true,
+    proxyImages: options.proxyImages ?? true,
+    imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
+    imageProxySigningKeys: options.imageProxySigningKeys ?? getSigningKeys(),
+  }
+}
+
+export async function renderMarkdownToHtml(
+  text: string | null | undefined,
+  options: MarkdownRenderOptions = {},
+): Promise<string> {
+  const normalized = typeof text === 'string' ? text.trim() : ''
+  if (!normalized) return ''
+
+  const normalizedOptions = normalizeRenderOptions(options)
+  const rendered = (await renderMarkdownToHtmlNative(Buffer.from(normalized), normalizedOptions))
+    .toString()
+    .trim()
+  return absolutizeSideloadImageSources(rendered)
+}
+
+export async function renderMarkdownToHtmlBatch(
+  texts: string[],
+  options: MarkdownRenderOptions = {},
+): Promise<string[]> {
+  if (texts.length === 0) return []
+
+  const normalizedOptions = normalizeRenderOptions(options)
+  const results = await renderMarkdownToHtmlBatchNative(
+    texts.map(t => Buffer.from(typeof t === 'string' ? t.trim() : '')),
+    normalizedOptions,
+  )
+  return results.map((buf: Buffer) => absolutizeSideloadImageSources(buf.toString().trim()))
+}
