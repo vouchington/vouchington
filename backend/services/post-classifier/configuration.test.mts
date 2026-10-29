@@ -154,7 +154,7 @@ describe('current post classifier configuration (real PG and Valkey)', () => {
     }
   })
 
-  it('rejects prompt/model drift while allowing a valid staff-authored prompt revision', async () => {
+  it('rejects prompt drift while pinning the active row model and provider', async () => {
     const owner = await createTestUser()
     const community = await insertTestCommunity({
       createdById: owner.id,
@@ -167,10 +167,14 @@ describe('current post classifier configuration (real PG and Valkey)', () => {
       await expect(
         resolvePostClassifierConfiguration(community.id, { detectorPackageVersion }),
       ).rejects.toThrow('does not match the fixed catalog')
-      await rotatePostClassifierPrompt(POST_CLASSIFIER_PROMPT, 'wrong-model')
-      await expect(
-        resolvePostClassifierConfiguration(community.id, { detectorPackageVersion }),
-      ).rejects.toThrow('does not match the fixed catalog')
+      await rotatePostClassifierPrompt(POST_CLASSIFIER_PROMPT, 'typesafe/jev-1.13', 'openrouter')
+      const resolved = await resolvePostClassifierConfiguration(community.id, {
+        detectorPackageVersion,
+      })
+      expect(resolved?.configuration.remote).toMatchObject({
+        modelName: 'typesafe/jev-1.13',
+        modelProvider: 'openrouter',
+      })
       await rotatePostClassifierPrompt(POST_CLASSIFIER_PROMPT)
       await expect(
         resolvePostClassifierConfiguration(community.id, { detectorPackageVersion }),

@@ -1,8 +1,4 @@
 import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'json' }
-import {
-  POST_CLASSIFIER_MODEL_NAME,
-  POST_CLASSIFIER_MODEL_PROVIDER,
-} from '@voucha/types/entities/post-classifier'
 import { createPostClassifierClient, executePostClassifierRun } from '@agents/post-classifier'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { randomUUID } from 'node:crypto'
@@ -35,22 +31,25 @@ export function createPostClassifierRegistration(
         ? await getPostByAny(lease.subject.postId, { readOnly: false })
         : null
       if (!post) return 'stale'
+      const remote = lease.resolved.configuration.remote
       return executePostClassifierRun(
         { adapter, post, lease, maxAttempts, signal },
         {
           detectLocal: detectAiGeneratedModeration,
-          createClient: hooks =>
-            createPostClassifierClient({
+          createClient: hooks => {
+            if (!remote) throw new Error('post classifier run has no remote configuration')
+            return createPostClassifierClient({
               postId: post.id,
               communityId: post.community_id,
-              // The fixed catalog: resolving the configuration already proved the row is exactly this.
+              // The active prompt version row's transport and model, pinned in the run configuration.
               selection: {
-                provider: POST_CLASSIFIER_MODEL_PROVIDER,
-                model: POST_CLASSIFIER_MODEL_NAME,
+                provider: remote.modelProvider,
+                model: remote.modelName,
               },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
-            }),
+            })
+          },
         },
       )
     },

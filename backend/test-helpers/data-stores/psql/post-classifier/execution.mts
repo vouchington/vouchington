@@ -23,11 +23,16 @@ export function createTestPostClassifierAdapter() {
   return createPostClassifierRunAdapter(POST_CLASSIFIER_TEST_DETECTOR_VERSION)
 }
 
+/** Restores the seeded active prompt version after a test rotated it. */
+export function reseedPostClassifierForTest() {
+  return runConfigDrivenStatementsInTransaction(generateSeed(), undefined)
+}
+
 export async function initializePostClassifierExecutionTests() {
   const { release } = await acquirePostClassifierSeedTestLock()
   try {
     await moderationConfig.waitForInitialization()
-    await runConfigDrivenStatementsInTransaction(generateSeed(), undefined)
+    await reseedPostClassifierForTest()
     return release
   } catch (err) {
     await release()
