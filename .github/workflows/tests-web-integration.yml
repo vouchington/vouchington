@@ -53,7 +53,7 @@ jobs:
         id: shards
         with:
           total: ${{ steps.shard-total.outputs.shard-total }}
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         if: ${{ !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
         timeout-minutes: 5
       - uses: ./.github/actions/build-web-targets
@@ -165,7 +165,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         with:
           suite: web-integration-shard-${{ matrix.shard }}
       - name: Upload full web-integration-shard-${{ matrix.shard }} LCOV to GitHub (attempt 2)
@@ -173,7 +173,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         with:
           suite: web-integration-shard-${{ matrix.shard }}
           name-suffix: -retry

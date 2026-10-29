@@ -38,7 +38,7 @@ jobs:
     steps:
       - id: authorize
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
@@ -46,13 +46,13 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         timeout-minutes: 5
 
       - id: parse
         timeout-minutes: 2
         if: steps.authorize.outputs.authorized == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-parse@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-parse@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         with:
           command: /shepherd
           mode: whole-body
@@ -167,7 +167,7 @@ jobs:
       - name: Acknowledge
         timeout-minutes: 2
         if: steps.gate.outputs.should_dispatch == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         with:
           command: /shepherd
           post-run-link: 'false'
@@ -185,7 +185,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         timeout-minutes: 5
 
       - name: Resolve trusted pr-shepherd version
@@ -226,7 +226,7 @@ jobs:
     name: Harness dispatch
     needs: [gate, render-prompt]
     if: needs.gate.outputs.should_dispatch == 'true'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
     permissions:
       contents: read
     secrets:
@@ -267,7 +267,7 @@ jobs:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         timeout-minutes: 5
       - name: Revalidate and patch the exact checkpoint comment
         timeout-minutes: 2
@@ -318,7 +318,7 @@ jobs:
     steps:
       - name: Revalidate trigger comment
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         with:
           mode: revalidate
           issue-number: ${{ needs.gate.outputs.pr_number }}
@@ -342,7 +342,7 @@ jobs:
       - name: Comment failure on PR
         timeout-minutes: 1
         if: steps.check.outputs.valid == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         with:
           status: failed
           target: ${{ needs.gate.outputs.pr_number }}
