@@ -146,7 +146,7 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
       expect(feedback?.metadata).toEqual({
         prompt_id: prompt.id,
         classifier_model_name: expect.any(String),
-        classifier_model_provider: 'openrouter',
+        classifier_model_provider: 'openai',
         test_text: 'Sample content to moderate',
         expected_flagged: false,
         actual_flagged: true,

@@ -11,7 +11,6 @@ import {
   type EfficiencyDriver,
   type EfficiencySeed,
 } from './classifier-call-efficiency-run.mts'
-import { OUTAGE } from './classifier-provider-failure-scenarios.mts'
 import {
   expireClassifierRunLeaseForTest,
   getSubjectClassifierRunFacts,
@@ -132,7 +131,10 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
       await withCurrentClassifierUsage(async trackRunId => {
         const run = await reserveSeededRun(driver.slug, seed)
         trackRunId(run.runId)
-        await expect(deliverRun(driver.slug, run)).rejects.toThrow(OUTAGE.message)
+        await expect(deliverRun(driver.slug, run)).rejects.toMatchObject({
+          status: 503,
+          retryClass: 'transient',
+        })
         expect(await deliverRun(driver.slug, run)).toBe('completed')
 
         expect(provider.requests).toHaveLength(2)

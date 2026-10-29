@@ -1,11 +1,12 @@
 import type { RequestInit } from 'undici'
 
 /** One asked question in the Jev dialect's shape, whichever dialect the request was sent in. */
-export type AskedQuestion = { type: string; criteria: Record<string, string> }
+export type AskedQuestion = { type: string; question: string; criteria: Record<string, string> }
 
 type OpenAIQuestion = {
   name: string
   type: string
+  instructions: string
   choices?: { value: string; description: string }[]
   levels?: { label: string; description: string }[]
 }
@@ -33,7 +34,8 @@ export function readAskedQuestions(init: RequestInit | undefined): Record<string
       const options = question.choices?.map(c => [c.value, c.description] as const)
       const levels = question.levels?.map(l => [l.label, l.description] as const)
       const type = question.type === 'predicate' ? 'noul' : question.type
-      return [question.name, { type, criteria: Object.fromEntries(options ?? levels ?? []) }]
+      const criteria = Object.fromEntries(options ?? levels ?? [])
+      return [question.name, { type, question: question.instructions, criteria }]
     }),
   )
 }

@@ -2,12 +2,15 @@ import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { vi } from 'vitest'
 import { fetchStructuredDecisionProvider } from '../modules/structured-decisions/transport.mts'
-import { OUTAGE } from './classifier-provider-failure-scenarios.mts'
 import {
   type AskedQuestion,
   decisionResponseBody,
+  isOpenAIDecisionRequest,
   readAskedQuestions,
 } from './structured-decision-dialect.mts'
+
+/** A 503 is transient in every decision dialect, so the run retries without being billed. */
+const UNAVAILABLE = { code: 503, message: 'No provider available' }
 
 type ProviderOptions = {
   /** Signals the real provider boundary and waits for its explicit response release. */
@@ -38,9 +41,18 @@ function answerFor(id: string, question: AskedQuestion, options: ProviderOptions
 }
 
 /**
- * Replaces the mocked provider transport (the test file mocks the module) with a billing provider:
- * every answered request reports 12 input tokens, 3 output tokens and 0.002 dollars (2000
- * millionths), so cost is never zero and a second bill would be visible in the ledger.
+ * Every answered request costs 0.002 dollars (2000 millionths), so cost is never zero and a second
+ * bill would be visible in the ledger. Jev reports that cost; OpenAI is priced from its 20,000 input
+ * tokens at luna's $0.10 per million, with no billed output.
+ */
+function billedUsage(init: Parameters<typeof fetchStructuredDecisionProvider>[1]) {
+  if (isOpenAIDecisionRequest(init)) return { input_tokens: 20_000, output_tokens: 0 }
+  return { input_tokens: 12, output_tokens: 3, cost: 0.002 }
+}
+
+/**
+ * Replaces the mocked provider transport (the test file mocks the module) with a billing provider
+ * whose every answered request bills `billedUsage`.
  */
 export function installEfficiencyProvider(options: ProviderOptions = {}): EfficiencyProvider {
   const requests: string[][] = []
@@ -51,7 +63,7 @@ export function installEfficiencyProvider(options: ProviderOptions = {}): Effici
     requests.push(Object.keys(questions))
     if (refusals > 0) {
       refusals -= 1
-      return Response.json({ error: OUTAGE }, { status: 403 })
+      return Response.json({ error: UNAVAILABLE }, { status: 503 })
     }
     await options.beforeResponse?.()
     const id = `decision-${randomUUID()}`
@@ -61,7 +73,7 @@ export function installEfficiencyProvider(options: ProviderOptions = {}): Effici
         id,
         model: 'typesafe/jev-1.13-20260917',
         provider: 'TypeSafe',
-        usage: { input_tokens: 12, output_tokens: 3, cost: 0.002 },
+        usage: billedUsage(init),
         answers: Object.entries(questions).map(([qid, question]) =>
           answerFor(qid, question, options),
         ),
