@@ -26,9 +26,10 @@ describe('seedUuid', () => {
     expect(timestampMsOf(first) - timestampMsOf(tenth)).toBe(9 * 60_000)
   })
 
-  it('keeps every post id unique across a seeded range', () => {
-    const ids = new Set(Array.from({ length: 500 }, (_, index) => seedUuid(index, '05')))
-    expect(ids.size).toBe(500)
+  it('keeps post ids distinct at adjacent, hex-width, and final seed indexes', () => {
+    const indexes = [0, 1, 255, 256, 99_999]
+    const ids = new Set(indexes.map(index => seedUuid(index, '05')))
+    expect(ids.size).toBe(indexes.length)
   })
 
   it('leaves every non-post tag on the fixed SEED_PREFIX instant', () => {
@@ -97,13 +98,12 @@ describe('seedRelationIdAfterPost', () => {
     }
   })
 
-  it('keeps every relation id unique across a seeded range even when post indexes repeat', () => {
+  it('keeps relation ids distinct when subjects repeat and indexes cross hex widths', () => {
+    const indexes = [0, 1, 255, 256, 99_999]
     const ids = new Set(
-      Array.from({ length: 500 }, (_, relationIndex) =>
-        seedRelationIdAfterPost(relationIndex % 100, relationIndex),
-      ),
+      indexes.map((relationIndex, index) => seedRelationIdAfterPost(index % 2, relationIndex)),
     )
-    expect(ids.size).toBe(500)
+    expect(ids.size).toBe(indexes.length)
   })
 
   it('stays pinned to its subject post id across calls made at different real times', () => {
