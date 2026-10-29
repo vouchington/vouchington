@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -19,6 +19,7 @@ async function runRebase(args: string[], env: Record<string, string>) {
 log="\${FAKE_COMMAND_LOG:?}"
 if [ "$1" = "-C" ]; then shift 2; fi
 printf 'git %s\\n' "$*" >> "$log"
+if [ "$1" = "merge-base" ]; then [ -n "\${FAKE_IS_ANCESTOR:-}" ]; fi
 `,
   )
   await writeFile(
@@ -26,6 +27,11 @@ printf 'git %s\\n' "$*" >> "$log"
     `#!/usr/bin/env bash
 log="\${FAKE_COMMAND_LOG:?}"
 printf 'gh %s\\n' "$*" >> "$log"
+if [ "$*" = "stack view --json" ]; then
+  [ -n "\${FAKE_STACK_JSON:-}" ] || exit 2
+  printf '%s' "$FAKE_STACK_JSON"
+fi
+if [ "$1 $2" = "pr view" ]; then printf 'lower-head\\n'; fi
 `,
   )
   await chmod(join(bin, 'git'), 0o755)
@@ -45,7 +51,7 @@ printf 'gh %s\\n' "$*" >> "$log"
         SANDBOX_RUNTIME: '',
         ...env,
         FAKE_COMMAND_LOG: logPath,
-        PATH: `${bin}:/usr/bin:/bin`,
+        PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
       },
     })
     return { exitCode: 0, log: await readFile(logPath, 'utf8'), stderr: result.stderr }
@@ -78,4 +84,59 @@ describe('rebase-onto-main', () => {
     expect(result.log).toContain('gh stack rebase')
     expect(result.log).not.toContain('git rebase origin/main')
   })
+
+  it('keeps gh stack rebase while several layers are open', async () => {
+    const result = await runRebase(['--stack', '--upstack'], {
+      FAKE_STACK_JSON: stackJson([false, false]),
+    })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('gh stack rebase --upstack')
+    expect(result.log).not.toContain('git rebase origin/main')
+  })
+
+  it('replays only the commits above a squash-merged lower layer', async () => {
+    const result = await runRebase(['--stack'], {
+      FAKE_IS_ANCESTOR: '1',
+      FAKE_STACK_JSON: stackJson([true, false]),
+    })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('gh pr view 100 --json headRefOid --jq .headRefOid')
+    expect(result.log).toContain('git rebase --onto origin/main lower-head')
+    expect(result.log).not.toContain('gh stack rebase')
+    expect(result.stderr).toContain('Only one open stack layer remains')
+  })
+
+  it('rebases onto origin/main when the merged head is not in the branch', async () => {
+    const result = await runRebase(['--stack'], { FAKE_STACK_JSON: stackJson([true, false]) })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('git rebase origin/main')
+    expect(result.log).not.toContain('--onto')
+  })
+
+  it('keeps gh stack rebase when run from a merged lower layer', async () => {
+    const result = await runRebase(['--stack', '--upstack'], {
+      FAKE_STACK_JSON: stackJson([true, false], 0),
+    })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('gh stack rebase --upstack')
+    expect(result.log).not.toContain('git rebase')
+  })
+
+  it('rebases a lone open layer onto origin/main', async () => {
+    const result = await runRebase(['--stack'], { FAKE_STACK_JSON: stackJson([false]) })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).not.toContain('gh pr view')
+    expect(result.log).toContain('git rebase origin/main')
+  })
 })
+
+function stackJson(merged: boolean[], current = merged.length - 1) {
+  return JSON.stringify({
+    branches: merged.map((isMerged, index) => ({
+      isCurrent: index === current,
+      isMerged,
+      name: `layer-${index}`,
+      pr: { number: 100 + index, state: isMerged ? 'MERGED' : 'OPEN' },
+    })),
+  })
+}
