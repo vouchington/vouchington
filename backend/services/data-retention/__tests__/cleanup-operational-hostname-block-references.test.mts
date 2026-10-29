@@ -83,6 +83,43 @@ describe('hostname-block operational retention references', () => {
     expect(penaltyRows[0]!.source_hostname_block_id).toBeNull()
   })
 
+  it('ignores the completed root self-reference when draining descendants', async () => {
+    await using query = await beginTransaction()
+    const now = new Date()
+    const root = await insertOperationalHostnameBlockForTest(query, {
+      feed: false,
+      liftedAt: new Date(now.getTime() - 3 * 365 * DAY_MS),
+    })
+    const child = await insertOperationalHostnameBlockForTest(query, {
+      feed: false,
+      liftedAt: null,
+    })
+    await query(
+      `/* attachCompletedHostnameRootForTest */
+       UPDATE url_hostname_blocks
+       SET relation_cleanup_root_block_id = $1::uuid,
+           relation_cleanup_completed_at = CASE WHEN id = $1::uuid THEN now() END
+       WHERE id = ANY($2::uuid[])`,
+      [root.id, [root.id, child.id]],
+    )
+    expect(
+      await cleanupOperationalTombstonesForTest('other_hostname_blocks', {
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        ids: [root.id],
+        borrowedQuery: query,
+      }),
+    ).toMatchObject({ deleted: 1, hasMore: false })
+    const { rows } = await query<{ id: string; root: string | null }>(
+      `/* readHostnameRootReferencesForTest */
+       SELECT id, relation_cleanup_root_block_id AS root FROM url_hostname_blocks
+       WHERE id = ANY($1::uuid[])`,
+      [[root.id, child.id]],
+    )
+    expect(rows).toEqual([{ id: child.id, root: null }])
+  })
+
   it('pages past an incomplete hostname cleanup root without erasing its ownership', async () => {
     await using query = await beginTransaction()
     await resetOperationalRetentionCursorForTest(query, 'other_hostname_blocks')

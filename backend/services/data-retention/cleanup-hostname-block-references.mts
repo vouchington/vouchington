@@ -19,7 +19,10 @@ export async function hasIncompleteHostnameCleanupRoot(
   return rows[0]!.protected
 }
 
-/** Mirrors the two SET NULL foreign keys before deleting a lifted hostname block. */
+/**
+ * Mirrors the two SET NULL foreign keys before deleting a lifted hostname block. The root's own
+ * self-reference stays until its final deletion so later block requests still find their root.
+ */
 export async function detachHostnameBlockReferences(
   query: TransactionQuery,
   blockId: string,
@@ -29,7 +32,7 @@ export async function detachHostnameBlockReferences(
     `/* detachHostnameBlockDescendantPage */
      WITH page AS (
        SELECT id FROM url_hostname_blocks
-       WHERE relation_cleanup_root_block_id = $1::uuid
+       WHERE relation_cleanup_root_block_id = $1::uuid AND id <> $1::uuid
        ORDER BY url_hostname_id LIMIT $2 FOR UPDATE SKIP LOCKED
      )
      UPDATE url_hostname_blocks child
@@ -56,7 +59,8 @@ export async function detachHostnameBlockReferences(
   const { rows } = await query<{ remains: boolean }>(
     `/* hasHostnameBlockReferences */
      SELECT EXISTS (
-       SELECT 1 FROM url_hostname_blocks WHERE relation_cleanup_root_block_id = $1::uuid
+       SELECT 1 FROM url_hostname_blocks
+       WHERE relation_cleanup_root_block_id = $1::uuid AND id <> $1::uuid
      ) OR EXISTS (
        SELECT 1 FROM vote_weight_penalties WHERE source_hostname_block_id = $1::uuid
      ) AS remains`,
