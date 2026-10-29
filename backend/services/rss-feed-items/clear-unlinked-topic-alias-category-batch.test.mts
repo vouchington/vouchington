@@ -32,13 +32,11 @@ import { deleteStaleCategoriesAndRetractVotes } from './reconcile-categories-del
 describe('topic alias unlink category page', () => {
   it('waits for snapshot item locks before category locks and rechecks a deleted text mapping', async () => {
     const suffix = randomUUID()
+    const aliasText = `snapshot-category-alias-${suffix}`
     const topic = await createTestTopic({
-      name: `Snapshot category owner ${suffix}`,
+      name: aliasText,
       slug: `snapshot-category-owner-${suffix}`,
     })
-    const aliasText = `snapshot-category-alias-${suffix}`
-    const [alias] = await createTopicAliases(topic.id, aliasText)
-    if (!alias) throw new Error('Expected linked alias')
     const feed = await insertTestRssFeedDirect({
       rssFeedUrl: `https://snapshot-category-${suffix}.example.com/feed.xml`,
     })
@@ -51,6 +49,8 @@ describe('topic alias unlink category page', () => {
     ])
     if (!item) throw new Error('Expected RSS item')
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [aliasText] }])
+    const [alias] = await createTopicAliases(topic.id, aliasText, { skipSideEffects: true })
+    if (!alias) throw new Error('Expected linked alias')
     expect(await countTestRssFeedItemAliasCategoryBindings(alias.id, [item.id])).toBe(0)
     await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
       expect.objectContaining({ category_text: aliasText, topic_id: topic.id }),

@@ -1,8 +1,21 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+import { tryLockAndAssertNoActiveTopicMerges } from '@services/topics/merge-preflight'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 
 type CategoryKey = { rss_feed_item_id: string; category_identity_id: string }
+
+/** Clear pages can enter with an alias publication lock; merge admission must fail fast. */
+export async function lockCategoryClearPage(
+  query: TransactionQuery,
+  topicIds: string[],
+  candidateItemIds: string[],
+  categoryKeys: CategoryKey[],
+): Promise<void> {
+  await tryLockAndAssertNoActiveTopicMerges(query, topicIds)
+  await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
+  return lockCategoryItemsAndRows(query, candidateItemIds, categoryKeys, 'clear')
+}
 
 /** Preserve the attachment → item → category lock order before the fresh owner check. */
 export async function lockCategoryBackfillPage(

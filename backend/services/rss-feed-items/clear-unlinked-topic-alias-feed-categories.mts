@@ -1,5 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+import { tryLockAndAssertNoActiveTopicMerges } from '@services/topics/merge-preflight'
+import createHttpError from 'http-errors'
 
 type FeedCategoryCandidate = {
   rss_feed_id: string
@@ -16,8 +18,7 @@ export async function clearUnlinkedTopicAliasFeedPage(
   rows: ReadonlyArray<{ rss_feed_id: string; category_identity_id: string }>,
 ): Promise<number> {
   if (rows.length === 0) return 0
-  const { rows: candidates } = await query<FeedCategoryCandidate>(
-    `/* clearUnlinkedTopicAliasFeedPage candidates */
+  const candidateSql = `/* clearUnlinkedTopicAliasFeedPage candidates */
      SELECT category.rss_feed_id, category.category_identity_id,
        category.topic_id AS previous_topic_id, replacement.topic_id AS replacement_topic_id
      FROM UNNEST($2::uuid[], $3::uuid[]) AS raw(rss_feed_id, category_identity_id)
@@ -44,23 +45,21 @@ export async function clearUnlinkedTopicAliasFeedPage(
      WHERE identity.category_text = LOWER($4::text)
        AND category.topic_id IS NOT NULL
        AND category.topic_id IS DISTINCT FROM replacement.topic_id
-     ORDER BY category.rss_feed_id, category.category_identity_id`,
-    [
-      topicAliasId,
-      rows.map(row => row.rss_feed_id),
-      rows.map(row => row.category_identity_id),
-      alias,
-    ],
-  )
+     ORDER BY category.rss_feed_id, category.category_identity_id`
+  const candidateParameters = [
+    topicAliasId,
+    rows.map(row => row.rss_feed_id),
+    rows.map(row => row.category_identity_id),
+    alias,
+  ]
+  const { rows: candidates } = await query<FeedCategoryCandidate>(candidateSql, candidateParameters)
   if (candidates.length === 0) return 0
-  await lockTopicRssFeedAttachmentLifecycles(
-    query,
-    candidates.flatMap(row =>
-      [row.previous_topic_id, row.replacement_topic_id].filter(
-        (topicId): topicId is string => topicId !== null,
-      ),
+  const topicIds = candidates.flatMap(row =>
+    [row.previous_topic_id, row.replacement_topic_id].filter(
+      (topicId): topicId is string => topicId !== null,
     ),
   )
+  await lockFeedCategoryTopics(query, topicIds)
   await query(
     `/* clearUnlinkedTopicAliasFeedPage lockCategories */
      SELECT category.rss_feed_id
@@ -78,6 +77,27 @@ export async function clearUnlinkedTopicAliasFeedPage(
     [alias],
   )
   if (linkedOwner.length > 0) return 0
+  const { rows: currentCandidates } = await query<FeedCategoryCandidate>(
+    candidateSql,
+    candidateParameters,
+  )
+  if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
+    throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
+  const replacementIds = [
+    ...new Set(
+      candidates.flatMap(row => (row.replacement_topic_id ? [row.replacement_topic_id] : [])),
+    ),
+  ]
+  if (replacementIds.length > 0) {
+    const { rows: activeReplacements } = await query<{ id: string }>(
+      `/* clearUnlinkedTopicAliasFeedPage activeReplacements */
+       SELECT id FROM topics WHERE id = ANY($1::uuid[])
+         AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
+      [replacementIds],
+    )
+    if (activeReplacements.length !== replacementIds.length)
+      throw createHttpError(409, 'RSS feed category replacement topic changed')
+  }
   const { rowCount } = await query(
     `/* clearUnlinkedTopicAliasFeedPage update */
      UPDATE rss_feed_categories category
@@ -87,7 +107,13 @@ export async function clearUnlinkedTopicAliasFeedPage(
      WHERE category.rss_feed_id = raw.rss_feed_id
        AND category.category_identity_id = raw.category_identity_id
        AND category.topic_id = raw.previous_topic_id
-       AND category.topic_id IS DISTINCT FROM raw.replacement_topic_id`,
+       AND category.topic_id IS DISTINCT FROM raw.replacement_topic_id
+       AND (raw.replacement_topic_id IS NULL OR EXISTS (
+         SELECT 1 FROM topics replacement
+         WHERE replacement.id = raw.replacement_topic_id
+           AND replacement.deleted_at IS NULL
+           AND replacement.merged_into_topic_id IS NULL
+       ))`,
     [
       candidates.map(row => row.rss_feed_id),
       candidates.map(row => row.category_identity_id),
@@ -95,5 +121,12 @@ export async function clearUnlinkedTopicAliasFeedPage(
       candidates.map(row => row.replacement_topic_id),
     ],
   )
-  return rowCount ?? 0
+  if (rowCount !== candidates.length)
+    throw createHttpError(409, 'RSS feed category mapping changed before update')
+  return rowCount
+}
+
+async function lockFeedCategoryTopics(query: TransactionQuery, topicIds: string[]): Promise<void> {
+  await tryLockAndAssertNoActiveTopicMerges(query, topicIds)
+  await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
 }
