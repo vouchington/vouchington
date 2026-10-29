@@ -42,7 +42,11 @@ export function CopyrightStaffCase({
   const canSubmit = rationale.length > 0
   const isUsNotice = notice.jurisdiction === 'us_dmca'
   return (
-    <article className='space-y-4 rounded border p-4'>
+    <article
+      className='space-y-4 rounded border p-4'
+      data-pw='copyright-staff-case'
+      data-notice-id={notice.id}
+    >
       <header>
         <h2 className='font-semibold'>{copyrightCaseLabel(notice)}</h2>
         <p className='text-sm text-muted-foreground'>

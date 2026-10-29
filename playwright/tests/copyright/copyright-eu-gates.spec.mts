@@ -77,8 +77,8 @@ test.describe('EU copyright controls with an approved policy', () => {
     await loginAsMfaUser(page, actors.staff.id)
     await navigateTo(page, '/copyright/review-queue')
     const item = page
-      .getByRole('article')
-      .filter({ has: page.getByRole('heading', { name: `Case ${noticeId}`, exact: true }) })
+      .getByTestId('copyright-staff-case')
+      .and(page.locator(`[data-notice-id="${noticeId}"]`))
     await revealOwnedQueueItem(page, item, '/api/v1/copyright-notices/review-queue')
     return item
   }
