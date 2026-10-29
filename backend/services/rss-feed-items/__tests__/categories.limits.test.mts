@@ -198,9 +198,7 @@ describe('categories limits', () => {
         hostname: `alias-backfill-${random}.example.com`,
       })
       const [linkedAlias] = await createTopicAliases(topic.id, [alias])
-
       const result = await processReconcileTopicAliasCategoryMappings(1, [linkedAlias!.id])
-
       expect(result).toMatchObject({ updated: 2, hasMore: true })
       await expect(
         processReconcileTopicAliasCategoryMappings(1, [linkedAlias!.id]),
@@ -216,7 +214,6 @@ describe('categories limits', () => {
       restoreBatchSize()
     }
   })
-
   it('waits for locked matching categories instead of treating them as exhausted', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const alias = `zzzz-locked-alias-${random}`
@@ -235,7 +232,6 @@ describe('categories limits', () => {
     })
     const [linkedAlias] = await createTopicAliases(topic.id, [alias])
     const rawPage = await readAliasBackfillRawPageForTest(linkedAlias!.id, alias)
-
     const ready = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
     const holderProcessId = Promise.withResolvers<number>()

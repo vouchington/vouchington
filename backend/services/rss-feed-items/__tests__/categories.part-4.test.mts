@@ -177,14 +177,12 @@ describe('categories', () => {
     const afterCategory = after?.categories?.find(c => c.topic?.id === backfillTopic.id)
     expect(afterCategory?.topic?.id).toBe(backfillTopic.id)
   })
-
   it('clears topic mappings and retracts direct categorizer support for an unlinked hashtag alias', async () => {
     const [alias] = await createTopicAliases(testTopicId, testAliases[0])
     await upsertRssFeedItemCategories([
       { rss_feed_item_id: testRssFeedItemId, categories: [`#${alias!.alias}`] },
     ])
     await unlinkTopicAlias(alias!.id, { expectedTopicId: testTopicId, skipSideEffects: true })
-
     await finishTopicAliasUnlinkForTest(alias!.id)
     await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
@@ -198,7 +196,6 @@ describe('categories', () => {
       getRssFeedItemCategoryTopicRelationDeletedAt(testRssFeedItemId, testTopicId),
     ).resolves.toBeNull()
   })
-
   it('waits for locked stale mappings before reporting cleanup complete', async () => {
     const [alias] = await createTopicAliases(testTopicId, testAliases[0])
     const categoryText = `#${alias!.alias}`

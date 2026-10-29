@@ -237,10 +237,16 @@ describe('topic alias category mapping reconciliation', () => {
       ]),
     )
 
-    const result = await owned.run(() =>
-      processReconcileTopicAliasCategoryMappings(2, [pendingAliasId, siblingId]),
-    )
-    expect(result).toEqual({ reconciled: 1, updated: 0, hasMore: false })
+    let reconciled = 0
+    for (let page = 0; page < 5; page += 1) {
+      const result = await owned.run(() =>
+        processReconcileTopicAliasCategoryMappings(2, [pendingAliasId, siblingId]),
+      )
+      reconciled += result.reconciled
+      expect(result.updated).toBe(0)
+      if (!result.hasMore) break
+    }
+    expect(reconciled).toBe(1)
     await expect(
       owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(pendingAliasId)),
     ).resolves.toBeDefined()

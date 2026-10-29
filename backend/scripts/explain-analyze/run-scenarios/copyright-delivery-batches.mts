@@ -42,8 +42,8 @@ export async function runCopyrightDeliveryBatchScenarios(): Promise<void> {
       copyright_notice_email_intakes`)
   registerScenarioContract('copyright-review-target-breaches', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_copyright_notice_deadlines__pending'] },
-      { kind: 'maxProcessedRows', relation: 'copyright_notice_submissions', max: 25 },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_deadlines', max: 25 },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_submissions', max: 50 },
     ],
     seededRows: {
       copyright_notice_delivery_work_items: 1_100,

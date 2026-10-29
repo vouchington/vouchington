@@ -10,6 +10,7 @@ export async function seedReviewTargetBreaches(noticeId: string): Promise<string
   const assessmentId = seedUuid(0, '2c')
   const deadlineId = seedUuid(0, '2d')
   const emailId = seedUuid(0, '2e')
+  const emailStorageObjectId = seedUuid(0, '2f')
   await write(
     `/* seedExplainReviewTargetBreaches:submission */
     INSERT INTO copyright_notice_submissions
@@ -42,14 +43,21 @@ export async function seedReviewTargetBreaches(noticeId: string): Promise<string
   )
   assert.ok(rows[0]?.id, 'Development seed must include a media type')
   await write(
+    `/* seedExplainReviewTargetBreaches:storageObject */
+     INSERT INTO copyright_notice_storage_objects (id, storage_key)
+     VALUES ($1::uuid, 'explain-review-target-breach-email') ON CONFLICT (id) DO NOTHING`,
+    [emailStorageObjectId],
+  )
+  await write(
     `/* seedExplainReviewTargetBreaches:email */
     INSERT INTO copyright_notice_email_intakes
-      (id, amazon_ses_message_id, received_at, raw_sha256, raw_media_type_id,
+      (id, amazon_ses_message_id, received_at, raw_storage_object_id,
+       raw_sha256, raw_media_type_id,
        raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict)
     VALUES ($1::uuid, 'explain-review-target-breach', NOW() - INTERVAL '3 hours',
-      decode(repeat('11', 32), 'hex'), $2::bigint, 1,
+      $3::uuid, decode(repeat('11', 32), 'hex'), $2::bigint, 1,
       'pass', 'pass', 'pass', 'pass', 'pass') ON CONFLICT (id) DO NOTHING`,
-    [emailId, rows[0].id],
+    [emailId, rows[0].id, emailStorageObjectId],
   )
   return emailId
 }

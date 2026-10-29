@@ -184,9 +184,7 @@ describe('bounded topic alias category reconciliation', () => {
           ).resolves.toMatchObject({ generation: successor!.generation })
         },
       )
-      await expect(
-        drainAlias(alias.id),
-      ).resolves.toMatchObject({ reconciled: 1, hasMore: false })
+      await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, hasMore: false })
       await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
       await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
         expect.objectContaining({ topic_id: nextOwner.id }),

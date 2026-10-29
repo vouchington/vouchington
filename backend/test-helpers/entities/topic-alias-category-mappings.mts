@@ -3,13 +3,11 @@ import { processReconcileTopicAliasCategoryMappings } from '../../services/rss-f
 import { backfillTopicTextItemPage } from '../../services/rss-feeds/topic-text-category-backfill.mts'
 import { readAliasCategoryRawPage } from '../../services/rss-feeds/topic-alias-category-raw-page.mts'
 import { getRssFeedItemsWorkLimit } from '../../services/rss-feed-items/work-limits.mts'
-
 export type TopicAliasCategoryMappingDirtyRowForTest = {
   alias: string
   generation: string
   topic_alias_id: string
 }
-
 export async function createTestTopicAliasForCategoryMapping({
   alias,
   topicId = null,
@@ -26,7 +24,6 @@ export async function createTestTopicAliasForCategoryMapping({
   )
   return rows[0]!.id
 }
-
 export async function updateTestTopicAliasCategoryMappingOwner(
   topicAliasId: string,
   topicId: string | null,
@@ -39,7 +36,6 @@ export async function updateTestTopicAliasCategoryMappingOwner(
     [topicId, topicAliasId],
   )
 }
-
 export async function setTestTopicAliasUnlinkPending(
   topicAliasId: string,
   topicId: string,
@@ -54,7 +50,6 @@ export async function setTestTopicAliasUnlinkPending(
     [topicAliasId, topicId],
   )
 }
-
 export async function deleteTestTopicAliasForCategoryMapping(topicAliasId: string): Promise<void> {
   await write(
     `/* deleteTestTopicAliasForCategoryMapping */
@@ -63,7 +58,6 @@ export async function deleteTestTopicAliasForCategoryMapping(topicAliasId: strin
     [topicAliasId],
   )
 }
-
 export async function getTopicAliasCategoryMappingDirtyRowForTest(
   topicAliasId: string,
 ): Promise<TopicAliasCategoryMappingDirtyRowForTest | undefined> {

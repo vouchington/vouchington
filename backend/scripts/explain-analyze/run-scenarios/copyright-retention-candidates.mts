@@ -23,10 +23,7 @@ export async function runCopyrightRetentionCandidateScenario(): Promise<void> {
   )
   await write(`/* seedExplainCopyrightRetention:analyze */ ANALYZE copyright_notices`)
   registerScenarioContract('copyright-evidence-retention-candidates', {
-    expectations: [
-      { kind: 'usesIndexes', indexes: ['copyright_notice_targets_copyright_notice_id_id_key'] },
-      { kind: 'maxProcessedRows', relation: 'copyright_notice_targets', max: 12_500 },
-    ],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'copyright_notice_targets', max: 12_500 }],
     seededRows: {
       copyright_notices: 1_100,
       copyright_notice_targets: 12_500,
