@@ -4,27 +4,33 @@ import { assertValidSendEmailOptions } from './email.mts'
 
 describe('assertValidSendEmailOptions', () => {
   it('valid options with text', () => {
-    assertValidSendEmailOptions({
-      to: 'tests@voucha.ai',
-      subject: 'Test Subject',
-      text: 'Hello',
-    })
+    assert.doesNotThrow(() =>
+      assertValidSendEmailOptions({
+        to: 'tests@voucha.ai',
+        subject: 'Test Subject',
+        text: 'Hello',
+      }),
+    )
   })
 
   it('valid options with html', () => {
-    assertValidSendEmailOptions({
-      to: 'tests@voucha.ai',
-      subject: 'Test Subject',
-      html: '<p>Hello</p>',
-    })
+    assert.doesNotThrow(() =>
+      assertValidSendEmailOptions({
+        to: 'tests@voucha.ai',
+        subject: 'Test Subject',
+        html: '<p>Hello</p>',
+      }),
+    )
   })
 
   it('valid options with array of recipients', () => {
-    assertValidSendEmailOptions({
-      to: ['tests@voucha.ai', 'tests+abc@voucha.ai'],
-      subject: 'Test Subject',
-      text: 'Hello',
-    })
+    assert.doesNotThrow(() =>
+      assertValidSendEmailOptions({
+        to: ['tests@voucha.ai', 'tests+abc@voucha.ai'],
+        subject: 'Test Subject',
+        text: 'Hello',
+      }),
+    )
   })
 
   it('throws 422 when to is missing', () => {
@@ -66,7 +72,7 @@ describe('assertValidSendEmailOptions', () => {
       'suppressionlist@simulator.amazonses.com',
       'ooto@simulator.amazonses.com',
     ]) {
-      assertValidSendEmailOptions({ to, subject: 'Test', text: 'Hello' })
+      assert.doesNotThrow(() => assertValidSendEmailOptions({ to, subject: 'Test', text: 'Hello' }))
     }
   })
 
