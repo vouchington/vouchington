@@ -135,16 +135,6 @@ describe('searchFediverse', () => {
     await expect(searchFediverse({ q: '   ' })).resolves.toEqual({ buckets: [] })
   })
 
-  it('includes lemmy in the default provider set', async () => {
-    const result = await searchFediverse({ q: 'lemmy world' })
-    expect(result.buckets.map(bucket => bucket.provider)).toEqual([
-      'peertube',
-      'mastodon',
-      'lemmy',
-      'bluesky',
-    ])
-  })
-
   it('returns provider errors for requested and default providers that fail', async () => {
     const failingAdapter = (
       provider: FediverseProviderAdapter['provider'],

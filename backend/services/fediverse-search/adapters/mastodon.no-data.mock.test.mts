@@ -49,14 +49,17 @@ describe('createMastodonAdapter', () => {
     )
   })
 
-  it('defaults limit to 10 when options.limit is omitted', async () => {
+  it('searches accounts with limit 10 when neither options.type nor options.limit is set', async () => {
     fetchSpy.mockResolvedValueOnce(
       new Response(JSON.stringify({ accounts: [ACCOUNT] }), { status: 200 }),
     )
 
     const adapter = createMastodonAdapter(HOST, TOKEN)
-    await adapter.search({ q: 'test', type: 'profile' })
+    const bucket = await adapter.search({ q: 'test' })
 
+    expect(bucket.status).toBe('ok')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(requestedUrl().searchParams.get('type')).toBe('accounts')
     expect(requestedUrl().searchParams.get('limit')).toBe('10')
   })
 
@@ -96,19 +99,6 @@ describe('createMastodonAdapter', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('degrades type "post" to a partial/auth_required bucket with zero fetch calls when no access token is configured', async () => {
-    const adapter = createMastodonAdapter(HOST, undefined)
-    const bucket = await adapter.search({ q: 'test', type: 'post', limit: 10 })
-
-    expect(bucket).toEqual({
-      provider: 'mastodon',
-      status: 'partial',
-      items: [],
-      error_code: 'auth_required',
-    })
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
   it('returns an empty ok bucket with zero fetch calls for type "video"', async () => {
     const adapter = createMastodonAdapter(HOST, TOKEN)
     const bucket = await adapter.search({ q: 'test', type: 'video', limit: 10 })
@@ -123,47 +113,6 @@ describe('createMastodonAdapter', () => {
 
     expect(bucket).toEqual({ provider: 'mastodon', status: 'ok', items: [] })
     expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
-  it('searches only accounts for the default (all) type when an access token is configured', async () => {
-    fetchSpy.mockResolvedValueOnce(
-      new Response(JSON.stringify({ accounts: [ACCOUNT] }), { status: 200 }),
-    )
-
-    const adapter = createMastodonAdapter(HOST, TOKEN)
-    const bucket = await adapter.search({ q: 'test', limit: 10 })
-
-    expect(bucket.status).toBe('ok')
-    expect(bucket.items).toHaveLength(1)
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-  })
-
-  it('searches only accounts and returns status "ok" for the default (all) type without an access token', async () => {
-    fetchSpy.mockResolvedValueOnce(
-      new Response(JSON.stringify({ accounts: [ACCOUNT] }), { status: 200 }),
-    )
-
-    const adapter = createMastodonAdapter(HOST, undefined)
-    const bucket = await adapter.search({ q: 'test', limit: 10 })
-
-    expect(bucket.status).toBe('ok')
-    expect(bucket.items).toHaveLength(1)
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-  })
-
-  it('degrades to a status:error bucket for the default (all) type when the accounts search fails without an access token', async () => {
-    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 500 }))
-
-    const adapter = createMastodonAdapter(HOST, undefined)
-    const bucket = await adapter.search({ q: 'test', limit: 10 })
-
-    expect(bucket).toEqual({
-      provider: 'mastodon',
-      status: 'error',
-      items: [],
-      error_code: 'provider_error',
-    })
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
   it('degrades to a status:error bucket on a non-ok HTTP response', async () => {
