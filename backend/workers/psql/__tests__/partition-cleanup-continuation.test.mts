@@ -102,6 +102,7 @@ describe('monthly partition cleanup continuation', () => {
       'partition-cleanup-current',
     )
     expect(cleanup).toHaveBeenCalledExactlyOnceWith(new Date(continuation.referenceDate), {
+      feedbackBatchSize: expect.any(Number),
       limit: 1,
       after,
     })

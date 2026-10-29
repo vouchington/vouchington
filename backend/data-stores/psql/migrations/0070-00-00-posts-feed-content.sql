@@ -78,8 +78,14 @@ CREATE TABLE IF NOT EXISTS posts (
     OR (votes_snapshot_xmax IS NOT NULL AND votes_snapshot_xip_count IS NOT NULL AND votes_snapshot_xip_count >= 0)
   ),
 
-  -- post clearance (FK to post_clearance_changes added in 0270)
-  latest_clearance_change_id UUID,
+  -- Current clearance result survives retirement of transition history.
+  clearance_changed_at TIMESTAMPTZ,
+  clearance_version BIGINT NOT NULL DEFAULT 0 CHECK (clearance_version >= 0),
+  clearance_changed_by_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  clearance_public_reason_code TEXT CHECK (clearance_public_reason_code IS NULL OR char_length(clearance_public_reason_code) BETWEEN 1 AND 100),
+  clearance_is_platform_override BOOLEAN NOT NULL DEFAULT FALSE,
+  has_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
+  CHECK (NOT clearance_is_platform_override OR (clearance_changed_by_id IS NOT NULL AND clearance_public_reason_code IS NOT NULL)),
   approved_at TIMESTAMPTZ,
   rejected_at TIMESTAMPTZ,
   in_review_at TIMESTAMPTZ,
@@ -257,7 +263,12 @@ BEFORE UPDATE OF
   privacy,
   is_anonymous,
   community_id,
-  latest_clearance_change_id,
+  clearance_changed_at,
+  clearance_version,
+  clearance_changed_by_id,
+  clearance_public_reason_code,
+  clearance_is_platform_override,
+  has_creation_moderation_bypass,
   approved_at,
   rejected_at,
   in_review_at,
@@ -310,6 +321,11 @@ WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous
 ON posts (created_by_id, is_anonymous)
 WHERE deleted_at IS NULL;
+
+-- RI-usable indexes for retained clearance actors and SET NULL audit-column FKs.
+CREATE INDEX IF NOT EXISTS idx_posts__clearance_changed_by_id
+ON posts (clearance_changed_by_id)
+WHERE clearance_changed_by_id IS NOT NULL;
 
 -- RI-usable indexes for the SET NULL audit-column FKs (posts is a large-audit table)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -459,7 +475,12 @@ COMMENT ON COLUMN posts.archived_at IS 'Timestamp when this post was archived; N
 COMMENT ON COLUMN posts.archived_by_id IS 'User who archived this post; NULL if not archived or user was deleted.';
 COMMENT ON COLUMN posts.data_point_vertical IS 'Discriminator for the structured data point schema (credit_card, bank_account). NULL for non-data-point posts.';
 COMMENT ON COLUMN posts.structured_data IS 'Structured JSONB payload for data point posts. Schema is determined by data_point_vertical.';
-COMMENT ON COLUMN posts.latest_clearance_change_id IS 'Most recent clearance transition for this post. FK added after post_clearance_changes because the tables reference each other.';
+COMMENT ON COLUMN posts.clearance_changed_at IS 'Timestamp of the current clearance result, including a reset to pending.';
+COMMENT ON COLUMN posts.clearance_version IS 'Monotonic per-post clearance transition number for exact race checks independent of retired history.';
+COMMENT ON COLUMN posts.clearance_changed_by_id IS 'Retained identity of the actor who decided the current clearance result.';
+COMMENT ON COLUMN posts.clearance_public_reason_code IS 'Current provider-neutral reason safe to show the author.';
+COMMENT ON COLUMN posts.clearance_is_platform_override IS 'Whether the current result is a platform staff override.';
+COMMENT ON COLUMN posts.has_creation_moderation_bypass IS 'Whether an administrator explicitly bypassed creation moderation; remains true after later resets.';
 COMMENT ON COLUMN posts.approved_at IS 'Set when the current derived clearance status is approved.';
 COMMENT ON COLUMN posts.rejected_at IS 'Set when the current derived clearance status is rejected.';
 COMMENT ON COLUMN posts.in_review_at IS 'Set when the current derived clearance status is in_review.';

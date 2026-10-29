@@ -1,23 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createCopyrightPartitionRetirementRecorder,
-  createPartitionRetirementFailureFixture,
-} from '@voucha/test-helpers/partition-retirement-failure'
+import { createPartitionRetirementFailureFixture } from '@voucha/test-helpers/partition-retirement-failure'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
-import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
-import {
-  listMonthlyDropCandidates,
-  type PartitionCleanupCursor,
-} from './monthly-partition-candidates.mts'
 import { write } from '../setup.mts'
-import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
+import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
   retireMonthlyPartitionCandidate,
   retirePartitionsSequentially,
-  type PartitionDropOutcome,
 } from './monthly-partitions.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
@@ -38,7 +29,36 @@ describe('createMonthlyPartitions', () => {
   })
 })
 
+const sweepCandidate = {
+  table: 'crawls',
+  partition: 'crawls__p_2026_01',
+  upperBound: new Date('2026-02-01T00:00:00.000Z'),
+}
+
 describe('monthly partition retirement', () => {
+  it('finishes one partition transaction before starting the next', async () => {
+    const firstStarted = Promise.withResolvers<void>()
+    const finishFirst = Promise.withResolvers<void>()
+    const started: string[] = []
+    const second = { ...sweepCandidate, partition: 'crawls__p_2026_02' }
+    const running = retirePartitionsSequentially([sweepCandidate, second], async partition => {
+      started.push(partition.partition)
+      if (partition.partition === sweepCandidate.partition) {
+        firstStarted.resolve()
+        await finishFirst.promise
+      }
+      return { table: partition.table, partition: partition.partition, outcome: 'refused' }
+    })
+    try {
+      await firstStarted.promise
+      expect(started).toEqual([sweepCandidate.partition])
+    } finally {
+      finishFirst.resolve()
+    }
+    await expect(running).resolves.toHaveLength(2)
+    expect(started).toEqual([sweepCandidate.partition, second.partition])
+  })
+
   it('reads one catalog page at a time using its durable keyset position', async () => {
     const first = await listMonthlyDropCandidates(write, 1)
     expect(first.candidates).toHaveLength(1)
@@ -65,93 +85,13 @@ describe('monthly partition retirement', () => {
   })
 
   it('refuses all managed children without detaching them when the window has not elapsed', async () => {
-    const outcomes = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'))
+    const page = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'), {
+      feedbackBatchSize: 500,
+    })
 
-    expect(outcomes.outcomes.length).toBeGreaterThan(0)
-    expect(outcomes.outcomes.every(outcome => outcome.outcome === 'refused')).toBe(true)
-    expect(outcomes.outcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
-  })
-
-  it('discovers bootstrapped copyright monthly children and preserves all ten inside six years', async () => {
-    const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
-    const candidates = await listTestMonthlyDropCandidates(write)
-    const copyright = candidates.filter(candidate => tables.includes(candidate.table))
-    expect(new Set(copyright.map(candidate => candidate.table))).toEqual(new Set(tables))
-    expect(copyright.every(candidate => candidate.upperBound instanceof Date)).toBe(true)
-
-    const outcomes: PartitionDropOutcome[] = []
-    let after: PartitionCleanupCursor | undefined
-    let finished = false
-    for (let pageNumber = 0; pageNumber < 10; pageNumber++) {
-      const page = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'), {
-        limit: 50,
-        after,
-      })
-      outcomes.push(...page.outcomes)
-      if (!page.hasMore) {
-        finished = true
-        break
-      }
-      after = page.nextCursor
-      if (!after) throw new Error('Monthly cleanup page has no continuation cursor')
-    }
-    expect(finished).toBe(true)
-    const copyrightOutcomes = outcomes.filter(outcome => tables.includes(outcome.table))
-    expect(copyrightOutcomes).toHaveLength(copyright.length)
-    expect(copyrightOutcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
-  })
-
-  it('routes all ten copyright children through guarded cleanup only at 72 calendar months', async () => {
-    const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
-    const before = createCopyrightPartitionRetirementRecorder(tables)
-    const beforeCandidates = await listMonthlyDropCandidates(before.query)
-    const refusals = await retirePartitionsSequentially(beforeCandidates.candidates, candidate =>
-      retireMonthlyPartitionCandidate(
-        candidate,
-        new Date('2026-02-28T23:59:59.999Z'),
-        before.begin,
-      ),
-    )
-    expect(refusals).toHaveLength(tables.length)
-    expect(refusals.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
-    expect(
-      before.statements.some(statement => statement.includes('retireMonthlyPartition:drop')),
-    ).toBe(false)
-
-    const boundary = createCopyrightPartitionRetirementRecorder(tables)
-    const boundaryCandidates = await listMonthlyDropCandidates(boundary.query)
-    const routed = await retirePartitionsSequentially(boundaryCandidates.candidates, candidate =>
-      retireMonthlyPartitionCandidate(
-        candidate,
-        new Date('2026-03-01T00:00:00.000Z'),
-        boundary.begin,
-      ),
-    )
-    expect(routed).toHaveLength(tables.length)
-    expect(routed.every(outcome => outcome.outcome === 'dropped')).toBe(true)
-    const holdLocks = boundary.statements.flatMap((statement, index) =>
-      statement.includes('cleanupPartitions:lockHolds') ? [index] : [],
-    )
-    const holdChecks = boundary.statements.flatMap((statement, index) =>
-      statement.includes('getPartitionDropRefusal:copyrightLegalHold') ? [index] : [],
-    )
-    const partyLocks = boundary.statements.flatMap((statement, index) =>
-      statement.includes('cleanupPartitions:lockCopyrightParties') ? [index] : [],
-    )
-    const parentLocks = boundary.statements.flatMap((statement, index) =>
-      statement.includes('cleanupPartitions:lockParent') ? [index] : [],
-    )
-    expect(partyLocks).toHaveLength(tables.length)
-    expect(partyLocks.every((index, position) => index < parentLocks[position]!)).toBe(true)
-    expect(holdLocks).toHaveLength(tables.length)
-    expect(holdChecks).toHaveLength(tables.length)
-    expect(holdLocks.every((index, position) => index < holdChecks[position]!)).toBe(true)
-    expect(
-      boundary.statements.filter(statement => statement.includes('retireMonthlyPartition:detach')),
-    ).toHaveLength(tables.length)
-    expect(
-      boundary.statements.filter(statement => statement.includes('retireMonthlyPartition:drop')),
-    ).toHaveLength(tables.length)
+    expect(page.outcomes.length).toBeGreaterThan(0)
+    expect(page.outcomes.every(outcome => outcome.outcome === 'refused')).toBe(true)
+    expect(page.outcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
   })
 
   it('refuses retirement and rolls back owned writes when acquiring its lock fails', async () => {
@@ -166,6 +106,7 @@ describe('monthly partition retirement', () => {
           upperBound: new Date('1800-02-01T00:00:00.000Z'),
         },
         now,
+        500,
         fixture.begin,
       ),
     ).resolves.toEqual({
@@ -179,7 +120,6 @@ describe('monthly partition retirement', () => {
     ])
     await expect(fixture.readMarkdown()).resolves.toBe(fixture.originalMarkdown)
   })
-
   it('treats a NOWAIT lock conflict as a normal refusal without reporting it', async () => {
     const partition = 'topic_revisions__p_1999_12'
     const fixture = await createPartitionRetirementFailureFixture({
@@ -196,6 +136,7 @@ describe('monthly partition retirement', () => {
           upperBound: new Date('2000-01-01T00:00:00.000Z'),
         },
         new Date('2013-01-15T00:00:00.000Z'),
+        500,
         fixture.begin,
       ),
     ).resolves.toEqual({

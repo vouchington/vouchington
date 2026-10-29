@@ -157,9 +157,11 @@ describe('GET /api/v1/appeals — list behavior', () => {
     expect(returnedAppeal.target_context).toMatchObject({
       type: 'post_removal',
       kind: 'platform',
-      public_reason: null,
+      public_reason: 'staff_rejected',
     })
+    expect(returnedAppeal.staff_context).toBeUndefined()
     expect(JSON.stringify(returnedAppeal)).not.toContain(internalRemovalNote)
+    expect(JSON.stringify(returnedAppeal)).not.toContain('private_note')
   })
 
   it('staff with mine=true only sees own appeals', async () => {

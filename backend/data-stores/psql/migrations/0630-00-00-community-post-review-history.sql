@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS community_post_review_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES community_post_reviews (post_id) ON DELETE CASCADE,
+  post_author_user_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   changed_by_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   change_type community_post_review_change_types NOT NULL,
   is_platform_override BOOLEAN NOT NULL,
@@ -18,6 +19,10 @@ CREATE TABLE IF NOT EXISTS community_post_review_changes (
 CREATE INDEX IF NOT EXISTS idx_community_post_review_changes__post_id__id
 ON community_post_review_changes (post_id, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_community_post_review_changes__post_author_user_id
+ON community_post_review_changes (post_author_user_id, id)
+WHERE post_author_user_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_community_post_review_changes__community_id__id
 ON community_post_review_changes (community_id, id DESC);
 
@@ -27,6 +32,7 @@ ON community_post_review_changes (changed_by_id);
 COMMENT ON TABLE community_post_review_changes IS 'Append-only audit history for community publication decisions and platform overrides.';
 COMMENT ON COLUMN community_post_review_changes.community_id IS 'Community whose publication decision changed.';
 COMMENT ON COLUMN community_post_review_changes.post_id IS 'Community post whose publication decision changed.';
+COMMENT ON COLUMN community_post_review_changes.post_author_user_id IS 'Retained identity of the post author when this decision occurred, or NULL for an authorless post; populated from posts by the insert trigger.';
 COMMENT ON COLUMN community_post_review_changes.changed_by_id IS 'Moderator or platform staff member who performed the action; retained even after the live user is deleted.';
 COMMENT ON COLUMN community_post_review_changes.change_type IS 'Publication action recorded by this immutable audit event.';
 COMMENT ON COLUMN community_post_review_changes.is_platform_override IS 'True when the action was exercised with global administrator or site-moderator authority.';
@@ -34,4 +40,6 @@ COMMENT ON COLUMN community_post_review_changes.reason_code IS 'Public-safe stab
 COMMENT ON COLUMN community_post_review_changes.private_note IS 'Private platform-staff context, never exposed to community moderators or public clients.';
 
 CREATE TRIGGER trigger_ensure_community_post_review_changes_actor BEFORE INSERT ON community_post_review_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE TRIGGER trigger_community_post_review_changes_post_author
+BEFORE INSERT ON community_post_review_changes FOR EACH ROW EXECUTE FUNCTION fn_project_post_history_author();
 CREATE TRIGGER trigger_community_post_review_changes_append_only BEFORE UPDATE OR DELETE ON community_post_review_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

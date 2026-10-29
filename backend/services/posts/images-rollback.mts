@@ -58,10 +58,10 @@ export async function rollbackPostImages(
     await lockPostPublication(query, postId)
     const { rows: postRows } = await query<{
       llm_moderation_content_sha256: Buffer | null
-      latest_clearance_change_id: string | null
+      clearance_version: string
     }>(sql`/* rollbackPostImages */
       SELECT llm_moderation_content_sha256,
-        latest_clearance_change_id
+        clearance_version
       FROM posts
       WHERE id = ${postId}
       FOR UPDATE
@@ -74,7 +74,7 @@ export async function rollbackPostImages(
         post.llm_moderation_content_sha256,
         rollback.currentLlmModerationContentSha256,
       ) ||
-      post.latest_clearance_change_id !== rollback.currentLatestClearanceChangeId
+      post.clearance_version !== rollback.currentClearanceVersion
     ) {
       if (post) {
         await ensureCurrentPostModerationVersion(postId, { query })
@@ -132,8 +132,8 @@ export async function rollbackPostImages(
       `),
       () => compensatePostRevision(postId, rollback.revisionId, { query }),
     ])
-    if (rollback.currentLatestClearanceChangeId !== rollback.latestClearanceChangeId) {
-      if (rollback.currentLatestClearanceChangeId === null) {
+    if (rollback.currentClearanceVersion !== rollback.clearanceVersion) {
+      if (rollback.currentClearanceVersion === null) {
         throw new Error(`Post image rollback is missing the compensated change for post ${postId}`)
       }
       await restorePostClearanceStatus(
@@ -143,8 +143,8 @@ export async function rollbackPostImages(
         { query },
         {
           reason: 'image_update_enqueue_rollback',
-          compensates_change_id: rollback.currentLatestClearanceChangeId,
-          restores_change_id: rollback.latestClearanceChangeId,
+          compensates_clearance_version: rollback.currentClearanceVersion,
+          restores_clearance_version: rollback.clearanceVersion,
         },
         {
           reasonCode: rollback.clearancePublicReasonCode ?? undefined,

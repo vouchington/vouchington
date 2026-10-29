@@ -45,7 +45,7 @@ export const APPEAL_SELECT = sql`
       'declared_language', p.declared_language,
       'lingua_rs_detected_language', p.lingua_rs_detected_language,
       'decided_at', ma.original_decided_at,
-      'public_reason', CASE WHEN ma.post_removal_kind = 'community' THEN ma.original_decision_reason ELSE NULL END,
+      'public_reason', ma.original_decision_reason,
       'community', CASE WHEN pc.id IS NULL THEN NULL ELSE jsonb_build_object('id', pc.id, 'name', pc.name) END
     )
     ELSE NULL
@@ -58,7 +58,7 @@ export const APPEAL_SELECT = sql`
       'profile_image_id', appellant.profile_image_id
     ),
     'original_decision', jsonb_build_object(
-      'internal_reason', ma.original_decision_reason,
+      'internal_reason', CASE WHEN ma.post_removal_kind = 'platform' THEN NULL ELSE ma.original_decision_reason END,
       'actor', CASE
         WHEN decision_actor_ref.id IS NULL THEN NULL
         ELSE jsonb_build_object(

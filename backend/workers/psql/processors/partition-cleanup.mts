@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { cleanupPartitions } from '@data-stores/psql/migrate'
 import { enqueueCleanupPartitionsContinuation } from '@queues/psql/enqueues'
+import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
 import { getPartitionCleanupLimit, partitionCleanupConfig } from '@queues/psql/config'
 import type { PsqlPartitionJobData } from '@queues/psql/types'
 
@@ -14,13 +15,17 @@ export async function processMonthlyPartitionCleanup(
   dependencies?: Partial<PartitionCleanupDependencies>,
   jobId?: string,
 ) {
-  await partitionCleanupConfig.waitForInitialization()
+  await Promise.all([
+    partitionCleanupConfig.waitForInitialization(),
+    dataRetentionConfig.waitForInitialization(),
+  ])
   const partitionReferenceDate = continuation ? new Date(continuation.referenceDate) : new Date()
   if (!Number.isFinite(partitionReferenceDate.getTime()))
     throw new Error('Invalid partition cleanup reference date')
   const partitionResult = await (dependencies?.cleanupPartitions ?? cleanupPartitions)(
     partitionReferenceDate,
     {
+      feedbackBatchSize: getDataRetentionLimits().batchSize,
       limit: getPartitionCleanupLimit(),
       after: continuation?.after,
     },

@@ -3,7 +3,13 @@ import {
   settleCopyrightSeedReads,
 } from '@voucha/test-helpers/copyright-seed'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  appendTestPlatformRejectionNote,
+  createTestUser,
+  getTestCurrentPostClearance,
+  insertTestPost,
+  setTestPostClearanceStatus,
+} from '@voucha/test-helpers'
 import { getCopyrightStaffEmailIntake } from '@services/copyright-notices'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { searchCopyrightStaffEmailIntakes } from '@services/copyright-notices/read-models-staff-email-intakes'
@@ -15,8 +21,29 @@ describe('seedCopyright', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const inputs = await createCopyrightSeedInputsForTest()
     inputs.now = new Date(inputs.now.getTime() - 3 * 60 * 60 * 1000)
+    await insertTestPost({
+      id: inputs.identity.postId,
+      title: 'Prior copyright seed post',
+      slug: `prior-copyright-seed-${inputs.identity.postId}`,
+      markdown: 'A pending post with prior staff clearance.',
+      createdById: moderator.id,
+      clearanceStatus: 'pending',
+    })
+    await setTestPostClearanceStatus(inputs.identity.postId, 'approved', moderator.id)
+    await appendTestPlatformRejectionNote(inputs.identity.postId, 'Prior staff note')
+    expect(await getTestCurrentPostClearance(inputs.identity.postId)).toMatchObject({
+      clearance_changed_by_id: moderator.id,
+      clearance_public_reason_code: 'staff_rejected',
+      clearance_is_platform_override: true,
+    })
     const foreign = await createParsedCopyrightEmailIntake(inputs.now)
     const first = await seedCopyright(inputs)
+    expect(await getTestCurrentPostClearance(inputs.identity.postId)).toMatchObject({
+      clearance_changed_by_id: null,
+      clearance_public_reason_code: null,
+      clearance_is_platform_override: false,
+      clearance_status: 'approved',
+    })
     const second = await seedCopyright(inputs)
     expect(second).toEqual(first)
 

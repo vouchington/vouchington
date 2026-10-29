@@ -56,6 +56,15 @@ export async function insertTestPostClearanceChange(options: {
   return rows[0]!
 }
 
+export async function readTestPostClearanceAuthor(changeId: string): Promise<string | null> {
+  const { rows } = await read<{ post_author_user_id: string | null }>(sql`
+    /* readTestPostClearanceAuthor */
+    SELECT post_author_user_id FROM post_clearance_changes WHERE id = ${changeId}::uuid
+  `)
+  if (!rows[0]) throw new Error('Expected a post clearance change')
+  return rows[0].post_author_user_id
+}
+
 /** Mutates an audit row only for trigger-maintenance regression coverage. */
 export async function updateTestPostClearanceChange(options: {
   id: string
@@ -74,18 +83,25 @@ export async function setTestPostClearanceStatus(
   postId: string,
   status: TestClearanceStatus,
   updatedById?: string | null,
+  occurredAt?: Date,
+  sequence = 0,
 ): Promise<{ id: string; community_id: string | null } | null> {
   const changeType = clearanceChangeType(status)
+  const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
   const { rows } = await write<{ id: string; community_id: string | null }>(sql`
     /* setTestPostClearanceStatus */
     WITH inserted_change AS (
-      INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
-      VALUES (${postId}, ${changeType}, ${updatedById ?? null})
-      RETURNING id, post_id, change_type, created_at
+      INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id)
+      VALUES (COALESCE(${changeId}::uuid, uuidv7()), ${postId}, ${changeType}, ${updatedById ?? null})
+      RETURNING id, post_id, change_type, created_at, changed_by_id, public_reason_code, is_platform_override
     )
     UPDATE posts
     SET
-      latest_clearance_change_id = inserted_change.id,
+      clearance_version = posts.clearance_version + 1,
+      clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
+      clearance_public_reason_code = inserted_change.public_reason_code,
+      clearance_is_platform_override = inserted_change.is_platform_override,
       approved_at = CASE WHEN inserted_change.change_type = 'approve' THEN inserted_change.created_at ELSE NULL END,
       rejected_at = CASE WHEN inserted_change.change_type = 'reject' THEN inserted_change.created_at ELSE NULL END,
       in_review_at = CASE WHEN inserted_change.change_type = 'mark_in_review' THEN inserted_change.created_at ELSE NULL END,
@@ -112,32 +128,46 @@ export async function setTestPostRejectedAt(postId: string, rejectedAt: Date): P
   `)
 }
 
-export async function appendTestPlatformRejectionNote(postId: string, note: string): Promise<void> {
-  await write(sql`/* appendTestPlatformRejectionNote */
+export async function appendTestPlatformRejectionNote(
+  postId: string,
+  note: string,
+  occurredAt?: Date,
+  sequence = 0,
+): Promise<string> {
+  const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
+  const { rows } = await write<{ id: string }>(sql`/* appendTestPlatformRejectionNote */
     WITH current_change AS (
-      SELECT post.id AS post_id, change.changed_by_id
+      SELECT post.id AS post_id, post.clearance_changed_by_id AS changed_by_id,
+        post.clearance_version + 1 AS next_clearance_version
       FROM posts post
-      JOIN post_clearance_changes change ON change.id = post.latest_clearance_change_id
       WHERE post.id = ${postId}
     ), inserted_change AS (
       INSERT INTO post_clearance_changes (
-        post_id, change_type, changed_by_id, public_reason_code, private_note,
-        is_platform_override, metadata
+        id, post_id, change_type, changed_by_id, public_reason_code, private_note,
+        is_platform_override, platform_override_clearance_version, metadata
       )
-      SELECT post_id, 'reject', changed_by_id, 'staff_rejected', ${note}, TRUE,
+      SELECT COALESCE(${changeId}::uuid, uuidv7()), post_id, 'reject', changed_by_id,
+        'staff_rejected', ${note}, TRUE, next_clearance_version,
         '{"test_fixture":true}'::jsonb
       FROM current_change
       WHERE changed_by_id IS NOT NULL
-      RETURNING id, post_id, created_at
+      RETURNING id, post_id, created_at, changed_by_id, public_reason_code, is_platform_override
     )
     UPDATE posts
-    SET latest_clearance_change_id = inserted_change.id,
-        approved_at = NULL,
+    SET clearance_version = posts.clearance_version + 1,
+      clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
+      clearance_public_reason_code = inserted_change.public_reason_code,
+      clearance_is_platform_override = inserted_change.is_platform_override,
+      approved_at = NULL,
         rejected_at = inserted_change.created_at,
         in_review_at = NULL
     FROM inserted_change
     WHERE posts.id = inserted_change.post_id
+    RETURNING inserted_change.id
   `)
+  if (!rows[0]) throw new Error('Expected a platform rejection change')
+  return rows[0].id
 }
 
 export async function getPostClearanceStatus(postId: string): Promise<string | null> {
@@ -253,4 +283,35 @@ export async function setPostSpamDetectionComplete(
     reasonCode: flagged ? 'spam_signal' : 'provider_pass',
     evidence: { composite_score: flagged ? 1 : 0, signals: [] },
   })
+}
+
+export async function getTestCurrentPostClearance(postId: string): Promise<{
+  clearance_version: string
+  clearance_changed_at: Date | null
+  clearance_changed_by_id: string | null
+  clearance_public_reason_code: string | null
+  clearance_is_platform_override: boolean
+  has_creation_moderation_bypass: boolean
+  clearance_status: string
+  clearance_reason: string | null
+} | null> {
+  const { rows } = await read<{
+    clearance_version: string
+    clearance_changed_at: Date | null
+    clearance_changed_by_id: string | null
+    clearance_public_reason_code: string | null
+    clearance_is_platform_override: boolean
+    has_creation_moderation_bypass: boolean
+    clearance_status: string
+    clearance_reason: string | null
+  }>(sql`/* getTestCurrentPostClearance */
+    SELECT post.clearance_version, post.clearance_changed_at,
+      post.clearance_changed_by_id, post.clearance_public_reason_code,
+      post.clearance_is_platform_override, post.has_creation_moderation_bypass,
+      status.clearance_status, status.clearance_reason
+    FROM posts post
+    JOIN view_post_clearance_status status ON status.post_id = post.id
+    WHERE post.id = ${postId}
+  `)
+  return rows[0] ?? null
 }

@@ -72,8 +72,15 @@ range retirement is operator initiated and checks the configured retention windo
 under the partition locks. Its batch and run checks use indexed existence probes, so a sealed range
 can grow beyond the creation row budget and still retire. If a producer holds the batch or run
 table, the retirement transaction refuses the operation without waiting on a reverse lock order.
-The scheduled monthly job owns independently retained monthly histories; classifier ranges remain
-operator initiated.
+The scheduled monthly job owns independently retained monthly histories, including post-clearance
+and community-publication transition history; classifier ranges remain operator initiated.
+Current post clearance facts live on the post, so expiry never removes a live decision. Before a
+clearance partition is detached, cleanup clears a bounded page of nullable training-feedback links;
+remaining links defer that partition to a later page. Moderation transparency reads its rollups and
+its short raw analytics window, not expired transitions. Each transition captures the post author's
+retained identity when present; authorless system posts keep a null author. The partition guard checks
+open account preservation holds against that immutable author, including for a soft-deleted author or
+post; a live post alone does not defer history retirement.
 
 Classifier run identities are a deduplication cache, while requests and usage are durable records.
 Prompt-backed cache entries become expendable after a newer prompt version is active; promptless

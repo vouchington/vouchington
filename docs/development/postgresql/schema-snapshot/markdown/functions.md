@@ -525,6 +525,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_i
  LANGUAGE plpgsql
 ```
 
+## `fn_project_post_history_author`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_post_history_author()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_record_user_data_request_attempt`
 
 ```sql

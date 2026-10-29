@@ -3,11 +3,9 @@ import crypto from 'node:crypto'
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
-  createSystemUser,
   insertTestAgentModeration,
   insertTestCommunity,
   insertTestCommunityAgentPrompt,
-  insertTestPostClearanceChange,
   insertTestModerationReportsForTarget,
   updateTestModerationReportReason,
   insertTestModerationAppeal,
@@ -16,7 +14,6 @@ import {
   insertTestUserWarning,
   resolveTestModerationAppeal,
 } from '@voucha/test-helpers'
-import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import {
   getCommunityModerationTransparency,
   getModerationTransparency,
@@ -131,66 +128,6 @@ describe('getModerationTransparency', () => {
       range: 'all',
       buckets: [],
     })
-  })
-
-  it('classifies mature OpenAI, spam, and system clearance cohorts without leaking source records', async () => {
-    const now = await uniqueTransparencyNow()
-    const occurredAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-    const suffix = crypto.randomUUID().slice(0, 8)
-    const [author, systemActor] = await Promise.all([
-      createTestUser(),
-      createSystemUser(MODERATION_SYSTEM_USERNAME),
-    ])
-    const postIds = await Promise.all(
-      ['openai', 'spam', 'system'].map(category =>
-        insertTestPost({
-          title: `Transparency ${category} ${suffix}`,
-          slug: `transparency-${category}-${suffix}`,
-          createdById: author.id,
-          markdown: 'Test transparency classification.',
-        }),
-      ),
-    )
-    await Promise.all([
-      ...Array.from({ length: 22 }, (_, occurredAtSequence) =>
-        insertTestPostClearanceChange({
-          postId: postIds[0]!,
-          status: 'rejected',
-          moderationTransparencyCategories: ['openai_omni'],
-          occurredAt,
-          occurredAtSequence,
-        }),
-      ),
-      ...Array.from({ length: 22 }, (_, occurredAtSequence) =>
-        insertTestPostClearanceChange({
-          postId: postIds[1]!,
-          status: 'rejected',
-          moderationTransparencyCategories: ['spam_detection'],
-          occurredAt,
-          occurredAtSequence: 100 + occurredAtSequence,
-        }),
-      ),
-      ...Array.from({ length: 22 }, (_, occurredAtSequence) =>
-        insertTestPostClearanceChange({
-          postId: postIds[2]!,
-          status: 'rejected',
-          changedById: systemActor.id,
-          moderationTransparencyCategories: ['post_clearance_reject'],
-          occurredAt,
-          occurredAtSequence: 200 + occurredAtSequence,
-        }),
-      ),
-    ])
-
-    const transparency = await getModerationTransparency('all', now)
-    const date = `${occurredAt.toISOString().slice(0, 7)}-01`
-    expect(transparency.buckets).toEqual(
-      expect.arrayContaining([
-        { date, metric: 'automated_moderation', category: 'openai_omni', count: 20 },
-        { date, metric: 'automated_moderation', category: 'spam_detection', count: 20 },
-        { date, metric: 'automated_moderation', category: 'post_clearance_reject', count: 20 },
-      ]),
-    )
   })
 
   it('releases only mature resolved appeal cohorts', async () => {

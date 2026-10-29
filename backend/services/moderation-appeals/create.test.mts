@@ -48,7 +48,7 @@ describe('createModerationAppeal', () => {
         id: postId,
         kind: 'platform',
         title: expect.stringContaining('Appeal Removal Post'),
-        public_reason: null,
+        public_reason: 'staff_rejected',
         community: null,
       })
       expect(appeal.target_context?.type).toBe('post_removal')
@@ -57,7 +57,7 @@ describe('createModerationAppeal', () => {
       }
       expect(appeal.target_context.decided_at).toEqual(expect.any(String))
       expect(appeal.staff_context).toBeDefined()
-      expect(appeal.staff_context!.original_decision.internal_reason).toBe(internalRemovalNote)
+      expect(appeal.staff_context!.original_decision.internal_reason).toBeNull()
       expect(appeal.staff_context!.original_decision.actor).toMatchObject({
         id: appellant.id,
         verified_display_name: null,

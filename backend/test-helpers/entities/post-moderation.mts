@@ -130,7 +130,7 @@ export async function getPostSpamDetectionState(postId: string): Promise<{
 }
 
 export async function getPostModerationResetState(postId: string): Promise<{
-  latest_clearance_change_id: string | null
+  clearance_version: string
   approved_at: Date | null
   rejected_at: Date | null
   in_review_at: Date | null
@@ -144,12 +144,12 @@ export async function getPostModerationResetState(postId: string): Promise<{
 } | null> {
   const [post, openai, spam] = await Promise.all([
     read<{
-      latest_clearance_change_id: string | null
+      clearance_version: string
       approved_at: Date | null
       rejected_at: Date | null
       in_review_at: Date | null
       llm_moderation_content_sha256: Buffer
-    }>(sql`/* getPostModerationResetState */ SELECT latest_clearance_change_id, approved_at,
+    }>(sql`/* getPostModerationResetState */ SELECT clearance_version, approved_at,
       rejected_at, in_review_at, llm_moderation_content_sha256 FROM posts WHERE id = ${postId}`),
     getPostModerationData(postId),
     getPostSpamDetectionState(postId),

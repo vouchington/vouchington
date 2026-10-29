@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { PARTITION_DROP_POLICIES } from '@data-stores/psql/config-driven/utils/partition-config'
+import { PARTITION_DROP_POLICIES } from '@data-stores/psql/config-driven/utils/partition-drop-policies'
 import {
   getPartitionDropRefusal,
   getPartitionDropStatusRefusals,

@@ -1601,6 +1601,9 @@
     "fn_project_moderation_transparency_clearance_insert_rollup": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_insert_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(change.id) AT TIME ZONE 'UTC')::date AS day,\n      change.moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      category, count(*)::integer AS delta\n    FROM new_clearance_changes change\n    CROSS JOIN LATERAL unnest(change.moderation_transparency_categories) AS category\n    WHERE change.change_type = 'reject'\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
     },
+    "fn_project_post_history_author": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_post_history_author()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT post.created_by_id INTO NEW.post_author_user_id\n  FROM posts AS post WHERE post.id = NEW.post_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'history post does not exist' USING ERRCODE = 'foreign_key_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_project_record_user_data_request_attempt": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.processing_started_at IS NOT NULL THEN\n    INSERT INTO user_data_request_attempts (\n      request_id,\n      processing_attempt_id,\n      started_at,\n      upload_lease_expires_at\n    ) VALUES (\n      NEW.id,\n      NEW.processing_attempt_id,\n      NEW.processing_started_at,\n      NULL\n    )\n    ON CONFLICT (request_id, processing_attempt_id) DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -20511,7 +20514,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "community_post_review_change_types"
         },
         "changed_by_id": {
@@ -20522,7 +20525,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "community_id": {
@@ -20544,7 +20547,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -20566,8 +20569,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "boolean"
+        },
+        "post_author_user_id": {
+          "collation": null,
+          "comment": "Retained identity of the post author when this decision occurred, or NULL for an authorless post; populated from posts by the insert trigger.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
         "post_id": {
           "collation": null,
@@ -20588,7 +20602,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "reason_code": {
@@ -20599,7 +20613,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         }
       },
@@ -20621,6 +20635,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "communities",
+          "validated": true
+        },
+        "community_post_review_changes_post_author_user_id_fkey": {
+          "columns": ["post_author_user_id"],
+          "definition": "FOREIGN KEY (post_author_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "community_post_review_changes_post_id_fkey": {
@@ -20702,6 +20725,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_post_review_changes__post_author_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_review_changes__post_author_user_id ON ONLY public.community_post_review_changes USING btree (post_author_user_id, id) WHERE (post_author_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_author_user_id",
+              "descending": false,
+              "expression": "post_author_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_author_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_post_review_changes__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -20731,10 +20781,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
-        "children": "default",
+        "accessClass": "retention-window",
+        "children": "monthly",
         "key": "id",
-        "retentionOwner": null,
+        "retentionOwner": "cleanupPartitions",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -20748,6 +20798,7 @@
       "relationKind": "partitioned table",
       "triggers": {
         "trigger_community_post_review_changes_append_only": "CREATE TRIGGER trigger_community_post_review_changes_append_only BEFORE DELETE OR UPDATE ON public.community_post_review_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()",
+        "trigger_community_post_review_changes_post_author": "CREATE TRIGGER trigger_community_post_review_changes_post_author BEFORE INSERT ON public.community_post_review_changes FOR EACH ROW EXECUTE FUNCTION fn_project_post_history_author()",
         "trigger_ensure_community_post_review_changes_actor": "CREATE TRIGGER trigger_ensure_community_post_review_changes_actor BEFORE INSERT ON public.community_post_review_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')"
       },
       "uniqueConstraints": {}
@@ -72291,13 +72342,20 @@
         "idx_moderation_training_feedbacks__post_clearance_change_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_training_feedbacks__post_clearance_change_id ON public.moderation_training_feedbacks USING btree (post_clearance_change_id) WHERE (post_clearance_change_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_moderation_training_feedbacks__post_clearance_change_id ON public.moderation_training_feedbacks USING btree (post_clearance_change_id, id) WHERE (post_clearance_change_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
               "column": "post_clearance_change_id",
               "descending": false,
               "expression": "post_clearance_change_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -82528,7 +82586,8 @@
     "post_clearance_changes": {
       "checkConstraints": {
         "post_clearance_changes_check": "CHECK (((NOT is_platform_override) OR ((changed_by_id IS NOT NULL) AND (public_reason_code IS NOT NULL))))",
-        "post_clearance_changes_check1": "CHECK (((private_note IS NULL) OR is_platform_override))",
+        "post_clearance_changes_check1": "CHECK ((is_platform_override = (platform_override_clearance_version IS NOT NULL)))",
+        "post_clearance_changes_check2": "CHECK (((private_note IS NULL) OR is_platform_override))",
         "post_clearance_changes_metadata_check": "CHECK ((jsonb_typeof(metadata) = 'object'::text))",
         "post_clearance_changes_moderation_transparency_categories_check": "CHECK ((((((moderation_transparency_categories = '{}'::moderation_transparency_categories[]) OR (moderation_transparency_categories = '{openai_omni}'::moderation_transparency_categories[])) OR (moderation_transparency_categories = '{spam_detection}'::moderation_transparency_categories[])) OR (moderation_transparency_categories = '{post_clearance_reject}'::moderation_transparency_categories[])) OR (moderation_transparency_categories = '{openai_omni,spam_detection}'::moderation_transparency_categories[])))",
         "post_clearance_changes_private_note_check": "CHECK (((private_note IS NULL) OR (char_length(private_note) <= 4000)))",
@@ -82543,7 +82602,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "post_clearance_change_types"
         },
         "changed_by_id": {
@@ -82554,7 +82613,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "created_at": {
@@ -82565,7 +82624,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -82587,7 +82646,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "boolean"
         },
         "is_platform_override": {
@@ -82598,7 +82657,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "boolean"
         },
         "metadata": {
@@ -82609,7 +82668,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "jsonb"
         },
         "moderation_transparency_categories": {
@@ -82620,7 +82679,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "moderation_transparency_categories[]"
         },
         "moderation_transparency_community_id": {
@@ -82631,7 +82690,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
+        "platform_override_clearance_version": {
+          "collation": null,
+          "comment": "Owning post clearance generation for an override note; NULL for other history events.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "bigint"
+        },
+        "post_author_user_id": {
+          "collation": null,
+          "comment": "Retained identity of the post author when this decision occurred, or NULL for an authorless post; populated from posts by the insert trigger.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "post_id": {
@@ -82653,7 +82734,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "public_reason_code": {
@@ -82664,7 +82745,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         }
       },
@@ -82673,6 +82754,15 @@
         "post_clearance_changes_changed_by_id_fkey": {
           "columns": ["changed_by_id"],
           "definition": "FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "post_clearance_changes_post_author_user_id_fkey": {
+          "columns": ["post_author_user_id"],
+          "definition": "FOREIGN KEY (post_author_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -82706,6 +82796,33 @@
             }
           ],
           "predicate": "(changed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_clearance_changes__post_author_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_clearance_changes__post_author_user_id ON ONLY public.post_clearance_changes USING btree (post_author_user_id, id) WHERE (post_author_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_author_user_id",
+              "descending": false,
+              "expression": "post_author_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_author_user_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -82760,10 +82877,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
-        "children": "default",
+        "accessClass": "retention-window",
+        "children": "monthly",
         "key": "id",
-        "retentionOwner": null,
+        "retentionOwner": "cleanupPartitions",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -82783,7 +82900,8 @@
         "trigger_moderation_transparency_clearance_scope_guard": "CREATE TRIGGER trigger_moderation_transparency_clearance_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.post_clearance_changes FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_moderation_transparency_clearance_scope_stamp": "CREATE TRIGGER trigger_moderation_transparency_clearance_scope_stamp BEFORE INSERT ON public.post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_update_clearance_transparency_scope()",
         "trigger_moderation_transparency_clearance_type_guard": "CREATE TRIGGER trigger_moderation_transparency_clearance_type_guard BEFORE UPDATE OF change_type ON public.post_clearance_changes FOR EACH ROW WHEN ((old.change_type IS DISTINCT FROM new.change_type)) EXECUTE FUNCTION fn_reject_mutation()",
-        "trigger_post_clearance_changes_append_only": "CREATE TRIGGER trigger_post_clearance_changes_append_only BEFORE DELETE OR UPDATE ON public.post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_post_clearance_changes_append_only": "CREATE TRIGGER trigger_post_clearance_changes_append_only BEFORE DELETE OR UPDATE ON public.post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()",
+        "trigger_post_clearance_changes_post_author": "CREATE TRIGGER trigger_post_clearance_changes_post_author BEFORE INSERT ON public.post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_project_post_history_author()"
       },
       "uniqueConstraints": {}
     },
@@ -86996,6 +87114,9 @@
         "posts_check5": "CHECK (((root_post_id IS NULL) OR (id > root_post_id)))",
         "posts_check6": "CHECK ((NOT ((broadcast = 'everyone'::broadcast_types) AND (privacy = 'private'::privacy_types))))",
         "posts_check7": "CHECK (((post_type <> 'comment'::post_types) OR ((broadcast = 'everyone'::broadcast_types) AND (privacy = 'public'::privacy_types))))",
+        "posts_check8": "CHECK (((NOT clearance_is_platform_override) OR ((clearance_changed_by_id IS NOT NULL) AND (clearance_public_reason_code IS NOT NULL))))",
+        "posts_clearance_public_reason_code_check": "CHECK (((clearance_public_reason_code IS NULL) OR ((char_length(clearance_public_reason_code) >= 1) AND (char_length(clearance_public_reason_code) <= 100))))",
+        "posts_clearance_version_check": "CHECK ((clearance_version >= 0))",
         "posts_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "posts_creation_source_url_id_check": "CHECK (((creation_source_url_id IS NULL) OR (post_type = 'link'::post_types)))",
         "posts_declared_language_check": "CHECK (((declared_language IS NULL) OR ((declared_language = lower(declared_language)) AND (length(declared_language) <= 10))))",
@@ -87028,7 +87149,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "archived_at": {
@@ -87039,7 +87160,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -87050,7 +87171,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 40,
           "type": "uuid"
         },
         "ban_evasion_post_embedding_input_sha256": {
@@ -87061,7 +87182,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 56,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -87072,7 +87193,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 51,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -87083,7 +87204,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 53,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -87094,7 +87215,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 54,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -87105,7 +87226,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 52,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -87116,7 +87237,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 55,
           "type": "integer"
         },
         "broadcast": {
@@ -87129,6 +87250,61 @@
           "nullable": false,
           "ordinalPosition": 10,
           "type": "broadcast_types"
+        },
+        "clearance_changed_at": {
+          "collation": null,
+          "comment": "Timestamp of the current clearance result, including a reset to pending.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 24,
+          "type": "timestamp with time zone"
+        },
+        "clearance_changed_by_id": {
+          "collation": null,
+          "comment": "Retained identity of the actor who decided the current clearance result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 26,
+          "type": "uuid"
+        },
+        "clearance_is_platform_override": {
+          "collation": null,
+          "comment": "Whether the current result is a platform staff override.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 28,
+          "type": "boolean"
+        },
+        "clearance_public_reason_code": {
+          "collation": null,
+          "comment": "Current provider-neutral reason safe to show the author.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 27,
+          "type": "text"
+        },
+        "clearance_version": {
+          "collation": null,
+          "comment": "Monotonic per-post clearance transition number for exact race checks independent of retired history.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 25,
+          "type": "bigint"
         },
         "community_id": {
           "collation": null,
@@ -87149,7 +87325,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -87160,7 +87336,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "created_via": {
@@ -87193,7 +87369,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 44,
           "type": "uuid"
         },
         "data_point_vertical": {
@@ -87204,7 +87380,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 41,
           "type": "text"
         },
         "declared_language": {
@@ -87215,7 +87391,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 45,
           "type": "text"
         },
         "deleted_at": {
@@ -87226,7 +87402,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -87237,8 +87413,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 38,
           "type": "uuid"
+        },
+        "has_creation_moderation_bypass": {
+          "collation": null,
+          "comment": "Whether an administrator explicitly bypassed creation moderation; remains true after later resets.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 29,
+          "type": "boolean"
         },
         "id": {
           "collation": null,
@@ -87259,7 +87446,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "is_anonymous": {
@@ -87273,17 +87460,6 @@
           "ordinalPosition": 12,
           "type": "boolean"
         },
-        "latest_clearance_change_id": {
-          "collation": null,
-          "comment": "Most recent clearance transition for this post. FK added after post_clearance_changes because the tables reference each other.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 24,
-          "type": "uuid"
-        },
         "lingua_rs_content_sha256": {
           "collation": null,
           "comment": null,
@@ -87292,7 +87468,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 47,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -87303,7 +87479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 50,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -87314,7 +87490,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 46,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -87325,7 +87501,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 48,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -87336,7 +87512,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 49,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -87347,7 +87523,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 52,
+          "ordinalPosition": 57,
           "type": "bytea"
         },
         "markdown": {
@@ -87402,7 +87578,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "root_post_id": {
@@ -87424,7 +87600,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 58,
           "type": "tsvector"
         },
         "structured_data": {
@@ -87435,7 +87611,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 42,
           "type": "jsonb"
         },
         "title": {
@@ -87457,7 +87633,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -87468,7 +87644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 36,
           "type": "uuid"
         },
         "url_id": {
@@ -87479,7 +87655,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 43,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -87613,6 +87789,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "posts_clearance_changed_by_id_fkey": {
+          "columns": ["clearance_changed_by_id"],
+          "definition": "FOREIGN KEY (clearance_changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "posts_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -87656,15 +87841,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "retained_post_identities",
-          "validated": true
-        },
-        "posts_latest_clearance_change_id_fkey": {
-          "columns": ["latest_clearance_change_id"],
-          "definition": "FOREIGN KEY (latest_clearance_change_id) REFERENCES post_clearance_changes(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "post_clearance_changes",
           "validated": true
         },
         "posts_parent_post_id_fkey": {
@@ -87868,6 +88044,26 @@
             }
           ],
           "predicate": "((deleted_at IS NULL) AND (broadcast = 'users'::broadcast_types))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__clearance_changed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__clearance_changed_by_id ON ONLY public.posts USING btree (clearance_changed_by_id) WHERE (clearance_changed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "clearance_changed_by_id",
+              "descending": false,
+              "expression": "clearance_changed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(clearance_changed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -88151,26 +88347,6 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_posts__latest_clearance_change_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__latest_clearance_change_id ON ONLY public.posts USING btree (latest_clearance_change_id) WHERE (latest_clearance_change_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "latest_clearance_change_id",
-              "descending": false,
-              "expression": "latest_clearance_change_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(latest_clearance_change_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -88572,7 +88748,7 @@
       "triggers": {
         "trigger_posts_content_provenance_immutable": "CREATE TRIGGER trigger_posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_posts_creation_source_url_id_immutable": "CREATE TRIGGER trigger_posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()",
-        "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_post_id, root_post_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_post_id, root_post_id, broadcast, privacy, is_anonymous, community_id, clearance_changed_at, clearance_version, clearance_changed_by_id, clearance_public_reason_code, clearance_is_platform_override, has_creation_moderation_bypass, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_register_retained_post_identity": "CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post')",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_posts_search_vector()"
       },
@@ -152206,7 +152382,7 @@
     },
     "view_post_clearance_status": {
       "comment": "Current post clearance derived from moderation lifecycle facts.",
-      "definition": " SELECT posts.id AS post_id,\n    posts.latest_clearance_change_id,\n        CASE\n            WHEN (posts.approved_at IS NOT NULL) THEN 'approved'::text\n            WHEN (posts.rejected_at IS NOT NULL) THEN 'rejected'::text\n            WHEN (posts.in_review_at IS NOT NULL) THEN 'in_review'::text\n            ELSE 'pending'::text\n        END AS clearance_status,\n    COALESCE(posts.approved_at, posts.rejected_at, posts.in_review_at, post_clearance_changes.created_at) AS clearance_updated_at,\n        CASE\n            WHEN ((posts.rejected_at IS NOT NULL) OR (posts.in_review_at IS NOT NULL)) THEN post_clearance_changes.public_reason_code\n            ELSE NULL::text\n        END AS clearance_reason\n   FROM (posts\n     LEFT JOIN post_clearance_changes ON ((post_clearance_changes.id = posts.latest_clearance_change_id)));",
+      "definition": " SELECT id AS post_id,\n        CASE\n            WHEN (approved_at IS NOT NULL) THEN 'approved'::text\n            WHEN (rejected_at IS NOT NULL) THEN 'rejected'::text\n            WHEN (in_review_at IS NOT NULL) THEN 'in_review'::text\n            ELSE 'pending'::text\n        END AS clearance_status,\n    COALESCE(approved_at, rejected_at, in_review_at, clearance_changed_at) AS clearance_updated_at,\n        CASE\n            WHEN ((rejected_at IS NOT NULL) OR (in_review_at IS NOT NULL)) THEN clearance_public_reason_code\n            ELSE NULL::text\n        END AS clearance_reason\n   FROM posts;",
       "materialized": false
     },
     "view_posts": {

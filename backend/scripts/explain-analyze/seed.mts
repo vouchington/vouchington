@@ -6,7 +6,7 @@ import { cleanupNotificationVisibility } from './seed-data/notification-visibili
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
-import { seedParentHistory } from './seed-data/parent-history.mts'
+import { seedPostCreationModerationBypass } from './seed-data/post-creation-moderation-bypass.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
   seedAnchorPostReviewTopicRating,
@@ -129,7 +129,7 @@ async function main() {
   await seedRewardsProgramStatuses(REWARDS_PROGRAM_STATUS_SEED_COUNT)
   await seedTopicParentRelations(500)
   await seedPosts(100_000)
-  await seedParentHistory()
+  await seedPostCreationModerationBypass()
   await seedSemanticPosts()
   await seedPostFeedShares()
   await seedUserRemovedPlatformPosts()

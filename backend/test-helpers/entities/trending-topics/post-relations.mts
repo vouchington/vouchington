@@ -32,7 +32,7 @@ export async function insertBatchPostRelations(params: {
       RETURNING id, post_id, created_at
     )
     UPDATE posts
-    SET latest_clearance_change_id = inserted_change.id,
+    SET clearance_version = posts.clearance_version + 1, clearance_changed_at = inserted_change.created_at,
       approved_at = inserted_change.created_at,
       rejected_at = NULL,
       in_review_at = NULL,

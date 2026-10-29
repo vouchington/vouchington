@@ -2,7 +2,7 @@ import {
   assertSafeSqlIdentifier,
   parseMonthlyPartitionName,
 } from '@vouchington/postgres/partitions'
-import type { PartitionDropPolicy } from '../config-driven/utils/partition-config.mts'
+import type { PartitionDropPolicy } from '../config-driven/utils/partition-drop-policies.mts'
 import type { QueryExecutor } from '../types.mts'
 import { copyrightHistoryHoldProbe } from './copyright-history-hold-probe.mts'
 
@@ -11,6 +11,7 @@ export type PartitionDropRefusal =
   | 'inside-retention'
   | 'legal-hold'
   | 'in-flight'
+  | 'feedback-references-pending'
 export type PartitionDropStatusReason = PartitionDropRefusal | 'check-pending'
 
 export type PartitionDropCandidate = {
@@ -50,6 +51,20 @@ export function getPartitionDropAgeRefusal(
   return candidate.upperBound.getTime() > cutoff ? 'inside-retention' : null
 }
 
+/** Seek the first indexed account at or after each hold, then compare it outside LIMIT. */
+function legalHoldAccountProbe(partition: string, column: string): string {
+  return `SELECT 1 FROM user_legal_preservation_holds AS hold
+    JOIN LATERAL (
+      SELECT candidate_row.${column} AS held_account_user_id
+      FROM ${partition} AS candidate_row
+      WHERE candidate_row.${column} >= hold.account_user_id
+      ORDER BY candidate_row.${column}, candidate_row.id
+      LIMIT 1
+    ) AS held_row ON held_row.held_account_user_id = hold.account_user_id
+    WHERE hold.released_at IS NULL
+    LIMIT 1`
+}
+
 /** One catalog-status round trip; each child contributes only index-backed LIMIT 1 probes. */
 export async function getPartitionDropStatusRefusals(
   query: QueryExecutor,
@@ -76,11 +91,7 @@ export async function getPartitionDropStatusRefusals(
     if (policy.legalHoldAccountColumn) {
       const column = assertSafeSqlIdentifier(policy.legalHoldAccountColumn)
       checks.push(`WHEN EXISTS (
-        SELECT 1 FROM user_legal_preservation_holds AS hold
-        WHERE hold.released_at IS NULL
-          AND EXISTS (SELECT 1 FROM ${partition} AS candidate_row
-            WHERE candidate_row.${column} = hold.account_user_id LIMIT 1)
-        LIMIT 1
+        ${legalHoldAccountProbe(partition, column)}
       ) THEN 'legal-hold'`)
     }
     if (policy.copyrightHistory) {
@@ -127,15 +138,7 @@ export async function getPartitionDropRefusal(
   if (policy.legalHoldAccountColumn) {
     const column = assertSafeSqlIdentifier(policy.legalHoldAccountColumn)
     const { rows } = await query(`/* getPartitionDropRefusal:legalHold */
-      SELECT 1
-      FROM user_legal_preservation_holds AS hold
-      WHERE hold.released_at IS NULL
-        AND EXISTS (
-          SELECT 1 FROM ${partition} AS candidate_row
-          WHERE candidate_row.${column} = hold.account_user_id
-          LIMIT 1
-        )
-      LIMIT 1`)
+      ${legalHoldAccountProbe(partition, column)}`)
     if (rows.length > 0) return 'legal-hold'
   }
 

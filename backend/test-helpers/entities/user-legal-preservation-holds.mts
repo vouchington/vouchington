@@ -1,4 +1,4 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, type QueryExecutor } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { decryptSecret } from '@modules/token-secrets'
 import type { getUserPreservationHoldState } from '../../services/users/preservation-holds.mts'
@@ -12,6 +12,17 @@ async function runInTransaction(statement: SQLStatement): Promise<{ id?: string 
   const { rows } = await query<{ id?: string }>(statement)
   await query.commit()
   return rows
+}
+
+/** Keep an owned hold within the caller's rollback-only partition guard test. */
+export async function insertPreservationHoldInTransactionForTest(
+  query: QueryExecutor,
+  accountUserId: string,
+): Promise<void> {
+  await query(sql`/* insertPreservationHoldInTransactionForTest */
+    INSERT INTO user_legal_preservation_holds
+      (account_user_id, placed_by_id, reference_ciphertext)
+    VALUES (${accountUserId}, ${accountUserId}, 'synthetic partition hold')`)
 }
 
 /** Inserts a hold directly so schema tests can exercise constraints the service never violates. */

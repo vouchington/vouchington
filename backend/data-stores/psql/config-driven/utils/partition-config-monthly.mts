@@ -56,3 +56,13 @@ export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   monthlyPartitionTable('crawl_chunks', { retentionDays: 30, dropPriority: 0, futureMonths: 2 }),
   monthlyPartitionTable('crawls', { retentionDays: 30, dropPriority: 1, futureMonths: 2 }),
 ]
+
+/**
+ * Monthly decision history is retired by whole guarded partitions after six years.
+ * `retentionDays: 0` admits these tables to the shared monthly catalog selector;
+ * the local drop guard enforces the exact 72-calendar-month minimum.
+ */
+export const DECISION_HISTORY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
+  monthlyPartitionTable('post_clearance_changes', { retentionDays: 0, futureMonths: 2 }),
+  monthlyPartitionTable('community_post_review_changes', { retentionDays: 0, futureMonths: 2 }),
+]

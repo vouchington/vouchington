@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { beginTransaction, getCapturedQueries, read } from '@data-stores/psql'
-import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import { assertCanDistribute } from '@services/follower-distributions/create-guards'
 import { hasPostCreationModerationBypass } from '@services/posts/create/moderation-bypass'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -41,27 +40,23 @@ export async function runFollowerDistributionScenarios(): Promise<void> {
   await runSelectedRecipientsScenario()
   registerScenarioContract('post-creation-moderation-bypass', {
     expectations: [
-      { kind: 'custom', name: 'parentHistoryLowerBound' },
-      { kind: 'maxProcessedRows', relation: 'post_clearance_changes', max: 10 },
+      { kind: 'custom', name: 'postCreationBypassPointRead' },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 1 },
     ],
-    crossPartition: {
-      post_clearance_changes:
-        'A parent lower bound skips older history but permits later changes across future ranges.',
-    },
   })
   await runAndCapture('post-creation-moderation-bypass', async () => {
     assert.equal(
       await hasPostCreationModerationBypass(seedPostId),
       true,
-      'The parent-history query must read its seeded bypass decision',
+      'The post point read must return its seeded bypass decision',
     )
   })
   const captured = getCapturedQueries().find(query =>
     query.text.includes('hasPostCreationModerationBypass'),
   )
-  const bound = captured?.text.match(/\bid\s*>=\s*\$(\d+)::uuid/u)
-  assert.ok(captured && bound, 'Moderation bypass must bind its parent-history lower bound')
-  assert.equal(captured.values[Number(bound[1]) - 1], getMinUUIDv7ForParentHistory(seedPostId))
+  const bound = captured?.text.match(/\bWHERE\s+id\s*=\s*\$(\d+)/iu)
+  assert.ok(captured && bound, 'Moderation bypass must bind the post id')
+  assert.equal(captured.values[Number(bound[1]) - 1], seedPostId)
 }
 
 // The recent-distribution check and the selected-follower check share one statement that runs

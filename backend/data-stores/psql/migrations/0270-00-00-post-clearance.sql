@@ -19,6 +19,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS post_clearance_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
+  post_author_user_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   change_type post_clearance_change_types NOT NULL,
   changed_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   public_reason_code TEXT CHECK (
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS post_clearance_changes (
   ),
   private_note TEXT CHECK (private_note IS NULL OR char_length(private_note) <= 4000),
   is_platform_override BOOLEAN NOT NULL DEFAULT FALSE,
+  platform_override_clearance_version BIGINT,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   is_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
   moderation_transparency_categories moderation_transparency_categories[] NOT NULL DEFAULT '{}',
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS post_clearance_changes (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (jsonb_typeof(metadata) = 'object'),
   CHECK (NOT is_platform_override OR (changed_by_id IS NOT NULL AND public_reason_code IS NOT NULL)),
+  CHECK (is_platform_override = (platform_override_clearance_version IS NOT NULL)),
   CHECK (private_note IS NULL OR is_platform_override),
   CHECK (moderation_transparency_categories IN (
     '{}', '{openai_omni}', '{spam_detection}', '{post_clearance_reject}',
@@ -55,27 +58,12 @@ BEGIN
   END IF;
 END $$;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'posts_latest_clearance_change_id_fkey'
-  ) THEN
-    ALTER TABLE posts
-      ADD CONSTRAINT posts_latest_clearance_change_id_fkey
-      FOREIGN KEY (latest_clearance_change_id)
-      REFERENCES post_clearance_changes(id)
-      ON DELETE SET NULL;
-  END IF;
-END $$;
-
--- RI-usable index for the latest_clearance_change_id FK
-CREATE INDEX IF NOT EXISTS idx_posts__latest_clearance_change_id
-ON posts (latest_clearance_change_id) WHERE latest_clearance_change_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__post_id__id
 ON post_clearance_changes (post_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__post_author_user_id
+ON post_clearance_changes (post_author_user_id, id)
+WHERE post_author_user_id IS NOT NULL;
 
 -- RI-usable index for the retained-user FK; RESTRICT checks must see every referencing audit row.
 CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__changed_by_id
@@ -91,16 +79,31 @@ WHERE deleted_at IS NULL AND (rejected_at IS NOT NULL OR in_review_at IS NOT NUL
 
 COMMENT ON TABLE post_clearance_changes IS 'Append-only audit log of post clearance transitions.';
 COMMENT ON COLUMN post_clearance_changes.post_id IS 'The post whose clearance state changed.';
+COMMENT ON COLUMN post_clearance_changes.post_author_user_id IS 'Retained identity of the post author when this decision occurred, or NULL for an authorless post; populated from posts by the insert trigger.';
 COMMENT ON COLUMN post_clearance_changes.change_type IS 'Type of clearance transition.';
 COMMENT ON COLUMN post_clearance_changes.changed_by_id IS 'User or admin who initiated the change; references the retained user identity so the audit row survives user deletion.';
 COMMENT ON COLUMN post_clearance_changes.public_reason_code IS 'Stable provider-neutral reason safe to expose to the affected author.';
 COMMENT ON COLUMN post_clearance_changes.private_note IS 'Private staff note; never returned in public or author post contracts.';
 COMMENT ON COLUMN post_clearance_changes.is_platform_override IS 'True when platform moderation staff intentionally overrode automated or community state.';
+COMMENT ON COLUMN post_clearance_changes.platform_override_clearance_version IS 'Owning post clearance generation for an override note; NULL for other history events.';
 COMMENT ON COLUMN post_clearance_changes.metadata IS 'Structured metadata about the clearance transition.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_categories IS 'Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_community_id IS 'Immutable community scope stamped from the post for global-transparency exclusion.';
 
 COMMENT ON COLUMN post_clearance_changes.is_creation_moderation_bypass IS 'True only for an explicit administrator bypass decision at post creation; later clearance changes cannot erase this fact.';
 
+CREATE OR REPLACE FUNCTION fn_project_post_history_author() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  SELECT post.created_by_id INTO NEW.post_author_user_id
+  FROM posts AS post WHERE post.id = NEW.post_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'history post does not exist' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_post_clearance_changes_post_author
+BEFORE INSERT ON post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_project_post_history_author();
 CREATE TRIGGER trigger_ensure_post_clearance_changes_actor BEFORE INSERT ON post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
 CREATE TRIGGER trigger_post_clearance_changes_append_only BEFORE UPDATE OR DELETE ON post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

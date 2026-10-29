@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import type { QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { registerOAuthClient } from '../../services/oauth-authorization-server/clients.mts'
 
 /** Append-only audit rows that name a user only through the retained identity root. */
@@ -34,6 +34,24 @@ export const appendOnlyRetainedUserAuditTables: readonly RetainedUserAuditTable[
 ]
 
 export type RetainedUserAuditTable = (typeof retainedUserAuditReferences)[number]['table']
+
+/** Model a post clearance actor whose live user was already deleted. */
+export async function attachRetainedPostClearanceActorForTest(postId: string): Promise<string> {
+  await using query = await beginTransaction()
+  const { rows: actors } = await query<{ id: string }>(
+    `/* attachRetainedPostClearanceActorForTest:identity */
+     INSERT INTO retained_user_identities (id) VALUES (uuidv7()) RETURNING id`,
+  )
+  const actorId = actors[0]!.id
+  const { rowCount } = await query(
+    `/* attachRetainedPostClearanceActorForTest:post */
+     UPDATE posts SET clearance_changed_by_id = $1::uuid WHERE id = $2::uuid`,
+    [actorId, postId],
+  )
+  if (rowCount !== 1) throw new Error('Retained post clearance actor needs one owned post')
+  await query.commit()
+  return actorId
+}
 
 /** `postId` scopes the post-owned audit rows; the OAuth and MCP audit rows carry no post. */
 export async function insertTestRetainedUserAuditRow(

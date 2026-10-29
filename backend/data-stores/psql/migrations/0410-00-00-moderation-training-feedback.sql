@@ -145,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__moderation_report_
   WHERE moderation_report_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__post_clearance_change_id
-  ON moderation_training_feedbacks (post_clearance_change_id)
+  ON moderation_training_feedbacks (post_clearance_change_id, id)
   WHERE post_clearance_change_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__review_dispute_id

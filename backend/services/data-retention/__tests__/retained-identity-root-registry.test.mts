@@ -49,6 +49,18 @@ describe('retained identity cleanup registry', () => {
       column: 'changed_by_id',
     })
     expect(foreignKeys).toContainEqual({
+      target: 'retained_user_identities',
+      owner: 'posts',
+      column: 'clearance_changed_by_id',
+    })
+    for (const owner of ['post_clearance_changes', 'community_post_review_changes']) {
+      expect(foreignKeys).toContainEqual({
+        target: 'retained_user_identities',
+        owner,
+        column: 'post_author_user_id',
+      })
+    }
+    expect(foreignKeys).toContainEqual({
       target: 'post_publication_community_identities',
       owner: 'classifier_runs',
       column: 'community_identity_id',
@@ -79,6 +91,7 @@ describe('retained identity cleanup registry', () => {
     }
     expect(unregisteredRetainedForeignKeys(foreignKeys, withoutClearance)).toEqual([
       'post_clearance_changes.changed_by_id -> retained_user_identities',
+      'post_clearance_changes.post_author_user_id -> retained_user_identities',
     ])
   })
 

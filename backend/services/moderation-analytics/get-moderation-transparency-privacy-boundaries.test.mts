@@ -13,7 +13,6 @@ import {
   insertTestModerationReportsForTarget,
   insertTestModeratorAction,
   insertTestPost,
-  insertTestPostClearanceChange,
   insertTestUserWarning,
   resolveTestModerationAppeal,
 } from '@voucha/test-helpers'
@@ -221,15 +220,6 @@ describe('moderation transparency privacy boundaries', () => {
           occurredAtSequence: 100 + occurredAtSequence,
         }),
       ),
-      ...Array.from({ length: 20 }, (_, occurredAtSequence) =>
-        insertTestPostClearanceChange({
-          postId,
-          status: 'rejected',
-          moderationTransparencyCategories: ['spam_detection'],
-          occurredAt,
-          occurredAtSequence,
-        }),
-      ),
       ...appeals.map(appeal =>
         resolveTestModerationAppeal({
           appealId: appeal.id,
@@ -250,7 +240,6 @@ describe('moderation transparency privacy boundaries', () => {
       ['reports', 'harassment'],
       ['reports', 'other'],
       ['moderation_actions', 'warn'],
-      ['automated_moderation', 'spam_detection'],
       ['appeals', 'deny'],
     ] as const) {
       expect(

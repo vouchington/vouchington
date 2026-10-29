@@ -1,21 +1,12 @@
 import onError from '@modules/on-error'
-import {
-  assertSafeSqlIdentifier,
-  parseMonthlyPartitionName,
-  retireMonthlyPartition,
-  createMonthlyPartitions as createPlatformMonthlyPartitions,
-} from '@vouchington/postgres/partitions'
-import {
-  ALL_MONTHLY_PARTITION_TABLES,
-  PARTITION_DROP_POLICIES,
-  type PartitionDropPolicy,
-} from '../config-driven/utils/partition-config.mts'
+import { createMonthlyPartitions as createPlatformMonthlyPartitions } from '@vouchington/postgres/partitions'
+import { ALL_MONTHLY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
+import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
 import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
-import { beforeRetireMonthlyPartition } from './before-retire-monthly-partition.mts'
+import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
 import {
   getPartitionDropAgeRefusal,
-  getPartitionDropRefusal,
   type PartitionDropCandidate,
   type PartitionDropRefusal,
 } from './partition-drop-guard.mts'
@@ -44,19 +35,64 @@ export async function createMonthlyPartitions(writer: QueryExecutor = write): Pr
 }
 
 export async function cleanupPartitions(
-  referenceDate: Date = new Date(),
-  options: { limit?: number; after?: PartitionCleanupCursor; query?: QueryExecutor } = {},
+  referenceDate: Date,
+  options: {
+    feedbackBatchSize: number
+    limit?: number
+    after?: PartitionCleanupCursor
+    query?: QueryExecutor
+  },
 ): Promise<PartitionCleanupPage> {
   const page = await listMonthlyDropCandidates(
     options.query ?? write,
     options.limit ?? DEFAULT_PARTITION_CLEANUP_LIMIT,
     options.after,
   )
-  const outcomes = await retirePartitionsSequentially(page.candidates, candidate =>
-    retireMonthlyPartitionCandidate(candidate, referenceDate),
+  const outcomes = await retireMonthlyDropCandidates(
+    page.candidates,
+    referenceDate,
+    options.feedbackBatchSize,
   )
   for (const outcome of outcomes) console.info('Partition cleanup:', outcome)
   return { outcomes, hasMore: page.hasMore, nextCursor: page.nextCursor }
+}
+
+/** One clearance partition per page bounds the feedback references cleared across candidates. */
+export async function retireMonthlyDropCandidates(
+  candidates: readonly PartitionDropCandidate[],
+  referenceDate: Date,
+  feedbackBatchSize: number,
+  retireOne: (candidate: PartitionDropCandidate) => Promise<PartitionDropOutcome> = candidate =>
+    retireMonthlyPartitionCandidate(candidate, referenceDate, feedbackBatchSize),
+): Promise<PartitionDropOutcome[]> {
+  let clearanceBatchUsed = false
+  return retirePartitionsSequentially(candidates, async candidate => {
+    const eligibleClearance =
+      candidate.table === 'post_clearance_changes' &&
+      !getPartitionDropAgeRefusal(
+        candidate,
+        PARTITION_DROP_POLICIES[candidate.table],
+        referenceDate,
+      )
+    if (eligibleClearance && clearanceBatchUsed) {
+      return {
+        table: candidate.table,
+        partition: candidate.partition,
+        outcome: 'refused',
+        reason: 'feedback-references-pending',
+      }
+    }
+    const outcome = await retireOne(candidate)
+    // An error may occur after the bounded update and roll back. Conservatively stop this page.
+    if (
+      eligibleClearance &&
+      (outcome.outcome === 'dropped' ||
+        outcome.reason === 'feedback-references-pending' ||
+        outcome.reason === 'retirement-error')
+    )
+      clearanceBatchUsed = true
+    return outcome
+  })
 }
 
 /** Retire one child transaction at a time; the next child starts only after the last settles. */
@@ -78,6 +114,7 @@ export async function retirePartitionsSequentially(
 export async function retireMonthlyPartitionCandidate(
   candidate: PartitionDropCandidate,
   referenceDate: Date,
+  feedbackBatchSize: number,
   begin: typeof beginTransaction = beginTransaction,
 ): Promise<PartitionDropOutcome> {
   const base = { table: candidate.table, partition: candidate.partition }
@@ -91,8 +128,12 @@ export async function retireMonthlyPartitionCandidate(
       candidate,
       policy,
       referenceDate,
+      feedbackBatchSize,
     )
-    if (reason) return { ...base, outcome: 'refused', reason }
+    if (reason) {
+      if (reason === 'feedback-references-pending') await transaction.commit()
+      return { ...base, outcome: 'refused', reason }
+    }
     await transaction.commit()
     return { ...base, outcome: 'dropped' }
   } catch (err) {
@@ -102,64 +143,4 @@ export async function retireMonthlyPartitionCandidate(
     onError(new Error(`Failed to retire partition ${candidate.partition}`, { cause: err }))
     return { ...base, outcome: 'refused', reason: 'retirement-error' }
   }
-}
-
-/** The caller owns the transaction and commits only after this guarded detach succeeds. */
-export async function guardAndRetireMonthlyPartition(
-  transaction: QueryExecutor,
-  candidate: PartitionDropCandidate,
-  policy: PartitionDropPolicy | undefined,
-  referenceDate: Date,
-): Promise<PartitionDropRefusal | null> {
-  const table = assertSafeSqlIdentifier(candidate.table)
-  const partition = assertSafeSqlIdentifier(candidate.partition)
-  // Party writers update this generation before appending history. Fence them first so the
-  // final hold probe cannot miss an already-held account newly joining a case.
-  if (policy?.copyrightHistory) {
-    await transaction(
-      '/* cleanupPartitions:lockCopyrightParties */ LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE',
-    )
-  }
-  // FK teardown during DETACH/DROP touches referenced tables. Acquire their final lock modes
-  // without waiting, before holding the history parent, so a topic writer cannot invert the order.
-  const retirementReferences = policy?.retirementReferenceTables ?? []
-  if (retirementReferences.length > 0) {
-    const referenceTables = retirementReferences
-      .map(referenceTable => assertSafeSqlIdentifier(referenceTable))
-      .join(', ')
-    await transaction(
-      `/* cleanupPartitions:lockReference */ LOCK TABLE ${referenceTables} IN ACCESS EXCLUSIVE MODE NOWAIT`,
-    )
-  }
-  // A raw history writer can take the parent before validating its referenced rows. Once we
-  // hold referenced-table locks, waiting for either history lock could deadlock with that writer.
-  const historyLockNowait = policy?.retirementReferenceTables?.length ? ' NOWAIT' : ''
-  // Ordinary DETACH needs ACCESS EXCLUSIVE on the parent, so take that final mode before the child
-  // to avoid a lock-upgrade deadlock with concurrent readers and writers.
-  await transaction(
-    `/* cleanupPartitions:lockParent */ LOCK TABLE ${table} IN ACCESS EXCLUSIVE MODE${historyLockNowait}`,
-  )
-  await transaction(
-    `/* cleanupPartitions:lockCandidate */ LOCK TABLE ${partition} IN ACCESS EXCLUSIVE MODE${historyLockNowait}`,
-  )
-  if (policy?.legalHoldAccountColumn || policy?.copyrightHistory) {
-    await transaction(
-      `/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE`,
-    )
-  }
-  const reason = await getPartitionDropRefusal(transaction, candidate, policy, referenceDate)
-  if (reason) return reason
-  const parsed = parseMonthlyPartitionName(candidate.partition)!
-  await retireMonthlyPartition(
-    transaction,
-    {
-      table: candidate.table,
-      partitionName: candidate.partition,
-      year: parsed.year,
-      month: parsed.month,
-      dropPriority: 0,
-    },
-    beforeRetireMonthlyPartition,
-  )
-  return null
 }

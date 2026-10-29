@@ -29,7 +29,12 @@ export type PostsTableRow = {
   votes_count_down: number
   votes_score_sort: number | null
   votes_score_net: number | null
-  latest_clearance_change_id: string | null
+  clearance_version: string
+  clearance_changed_at: Date | null
+  clearance_changed_by_id: string | null
+  clearance_public_reason_code: string | null
+  clearance_is_platform_override: boolean
+  has_creation_moderation_bypass: boolean
   approved_at: Date | null
   rejected_at: Date | null
   in_review_at: Date | null

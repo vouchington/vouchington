@@ -50,16 +50,21 @@ export async function createPartitionRetirementFailureFixture(
 }
 
 /** Record operator DDL routing while owning only an otherwise empty real transaction. */
-export function createCopyrightPartitionRetirementRecorder(tables: readonly string[]) {
+export function createCopyrightPartitionRetirementRecorder(
+  tables: readonly string[],
+  suffixes: readonly string[] = ['2020_02'],
+) {
   const statements: string[] = []
   const query: QueryExecutor = async input => {
     statements.push(typeof input === 'string' ? input : input.text)
     return {
-      rows: tables.map(table => ({
-        parent_table: table,
-        partition_table: `${table}__p_2020_02`,
-      })) as never[],
-      rowCount: tables.length,
+      rows: tables.flatMap(table =>
+        suffixes.map(suffix => ({
+          parent_table: table,
+          partition_table: `${table}__p_${suffix}`,
+        })),
+      ) as never[],
+      rowCount: tables.length * suffixes.length,
       command: 'SELECT',
       oid: 0,
       fields: [],
