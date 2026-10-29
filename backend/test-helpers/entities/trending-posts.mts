@@ -11,7 +11,7 @@ import { createRandomString } from '../data.mts'
 
 export type CreateTrendingPostDataOptions = {
   votesScoreUp?: number
-  postType?: 'discussion' | 'review' | 'data_point' | 'story' | 'topic_recommendation'
+  postType?: 'discussion' | 'review' | 'data_point' | 'story' | 'topic_recommendation' | 'article'
   createdAt?: Date
 }
 

@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { describe, expect, it } from 'vitest'
 import {
+  createTestBatch,
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
@@ -35,30 +36,39 @@ import {
   applyPostBatchUpdates,
   copyExistingPostEmbeddings,
 } from '@services/bedrock-embeddings-batch/entities/posts'
-import { copyExistingEmbeddings, copyExistingLockClause } from './reconcile-existing.mts'
+import { copyExistingEmbeddings } from './reconcile-existing.mts'
 
 function scopedCursorBefore(id: string, scope: string): string {
   const before = decodeUuidCursor(encodeUuidCursorBefore(id), isSimpleCursor, 'Invalid cursor')
   return encodeScopedUuidCursor(before.id, scope)
 }
 
-describe('copyExistingLockClause', () => {
-  it('uses typed lock checks for topic, post, and RSS feed item tables', () => {
-    expect(copyExistingLockClause('topics')).toContain('e.topic_id = topics.id')
-    expect(copyExistingLockClause('posts')).toContain('e.post_id = posts.id')
-    expect(copyExistingLockClause('rss_feed_items')).toContain(
-      'e.rss_feed_item_id = rss_feed_items.id',
-    )
-  })
-
-  it('uses composite typed lock checks for crawl chunks', () => {
-    expect(copyExistingLockClause('crawl_chunks')).toContain(
-      '(e.crawl_id, e.crawl_order_index) = (crawl_chunks.crawl_id, crawl_chunks.order_index)',
-    )
-  })
-})
-
 describe('post embedding batch ban-evasion follow-up', () => {
+  it('does not copy a cached post embedding while its batch owns the post', async () => {
+    const author = await createTestUser()
+    const suffix = randomUUID().slice(0, 8)
+    const postId = await insertTestPost({
+      title: `Owned cached post ${suffix}`,
+      slug: `owned-cached-post-${suffix}`,
+      markdown: 'Batch-owned post embedding.',
+      createdById: author.id,
+    })
+    const contentSha256 = randomBytes(32)
+    await setPostEmbeddingContentOnlySha256(postId, contentSha256)
+    await insertTestEmbeddings([
+      { content_sha256: contentSha256, embedding: makeRandomEmbedding() },
+    ])
+    await createTestBatch({ entityIds: [postId], jobType: 'posts' })
+
+    const page = await copyExistingPostEmbeddings({
+      after: scopedCursorBefore(postId, 'embedding-reconciliation:posts:id-asc'),
+      limit: 1,
+    })
+
+    expect(page).toMatchObject({ scannedCount: 1, updatedIds: [] })
+    await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({ input_sha: null })
+  })
+
   it('enqueues detection when copying an existing embedding onto a first community post', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()

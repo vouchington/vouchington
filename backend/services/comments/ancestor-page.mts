@@ -74,7 +74,7 @@ export async function getCommentAncestorTargetByAny(
   return rows[0] ?? null
 }
 
-export function buildCommentAncestorPageQuery({
+function buildCommentAncestorPageQuery({
   maxReturnedDepth,
   rootId,
   startId,

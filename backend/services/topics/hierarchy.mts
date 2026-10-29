@@ -10,7 +10,7 @@ const TOPIC_PARENT_RELATION_TABLE = getEntityRelationTableNameOrThrow({
   objectType: 'topic',
 })
 
-export const TOPIC_PARENT_IDS_QUERY = `/* getTopicParentIds */
+const TOPIC_PARENT_IDS_QUERY = `/* getTopicParentIds */
     SELECT object_id
     FROM ${TOPIC_PARENT_RELATION_TABLE}
     WHERE subject_id = $1
@@ -18,7 +18,7 @@ export const TOPIC_PARENT_IDS_QUERY = `/* getTopicParentIds */
     ORDER BY created_at ASC
     `
 
-export const TOPIC_CHILD_IDS_QUERY = `/* getTopicChildIds */
+const TOPIC_CHILD_IDS_QUERY = `/* getTopicChildIds */
     SELECT subject_id
     FROM ${TOPIC_PARENT_RELATION_TABLE}
     WHERE object_id = $1

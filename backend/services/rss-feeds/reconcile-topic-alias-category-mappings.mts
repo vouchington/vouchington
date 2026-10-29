@@ -51,7 +51,7 @@ async function getTopicAliasCategoryMappingDirtyRows(
   return rows
 }
 
-export function buildTopicAliasCategoryMappingDirtyRowsQuery(
+function buildTopicAliasCategoryMappingDirtyRowsQuery(
   limit = getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
   topicAliasIds?: readonly string[],
 ): SQLStatement {

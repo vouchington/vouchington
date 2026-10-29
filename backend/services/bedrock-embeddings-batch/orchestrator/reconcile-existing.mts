@@ -1,14 +1,9 @@
 import { getEmbeddingReconciliationPageSize } from '@services/bedrock-embeddings/batch/config'
 import { beginTransaction, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
-import {
-  EMBEDDING_COLUMNS,
-  EMBEDDING_TABLES,
-  EMBEDDINGS_TABLE,
-} from '@services/bedrock-embeddings/config'
+import { EMBEDDING_COLUMNS, EMBEDDINGS_TABLE } from '@services/bedrock-embeddings/config'
 import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 
-type EmbeddingTable = (typeof EMBEDDING_TABLES)[number]
 type ReconciliationTable = 'posts' | 'topics' | 'rss_feed_items'
 
 export type EmbeddingReconciliationPage = {
@@ -129,7 +124,7 @@ export async function copyExistingEmbeddings(
   return { updatedIds, scannedCount, nextCursor }
 }
 
-export function copyExistingLockClause(tableName: EmbeddingTable): string {
+function copyExistingLockClause(tableName: ReconciliationTable): string {
   switch (tableName) {
     case 'topics':
       return `AND NOT ${lockExistsClause('topics', 'topics.id')}`
@@ -137,7 +132,5 @@ export function copyExistingLockClause(tableName: EmbeddingTable): string {
       return `AND NOT ${lockExistsClause('posts', 'posts.id')}`
     case 'rss_feed_items':
       return `AND NOT ${lockExistsClause('rss_feed_items', 'rss_feed_items.id')}`
-    case 'crawl_chunks':
-      return `AND NOT ${lockExistsClause('crawl_chunks', '(crawl_chunks.crawl_id, crawl_chunks.order_index)')}`
   }
 }

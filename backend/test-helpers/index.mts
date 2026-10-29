@@ -60,7 +60,6 @@ export {
 } from './sql-posts.mts'
 export {
   createTestSqlStatement,
-  createCommentAncestorInputSqlForTest,
   createUniversalTopicFiltersBaseQueryForTest,
   createRssFeedItemHashtagFiltersBaseQueryForTest,
   createEligibleRssFeedItemsCteBaseQueryForTest,

@@ -70,7 +70,7 @@ export async function getUserPostsCollection(
   return { results, page_info }
 }
 
-export function getUserPostCollectionCursorScope(userId: string, listType: PostListType): string {
+function getUserPostCollectionCursorScope(userId: string, listType: PostListType): string {
   return `user-posts:${userId}:${listType}:${PRIVATE_POST_COLLECTION_CURSOR_ORDER_SCOPE}`
 }
 

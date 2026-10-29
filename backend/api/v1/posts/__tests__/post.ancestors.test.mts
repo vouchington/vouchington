@@ -21,6 +21,36 @@ describe('post.ancestors', () => {
     await followUser(follower, creator)
   })
   describe('GET /api/v1/posts/:idOrSlug/ancestors', () => {
+    it('resolves a comment slug through full-chain and bounded ancestor reads', async () => {
+      const suffix = crypto.randomUUID()
+      const rootId = await insertTestPost({
+        title: 'Slug ancestor root',
+        slug: `slug-ancestor-root-${suffix}`,
+        createdById: creator.id,
+        markdown: 'Root content',
+      })
+      const commentSlug = `slug-ancestor-comment-${suffix}`
+      const commentId = await insertTestPost({
+        title: '',
+        slug: commentSlug,
+        createdById: creator.id,
+        markdown: 'Comment content',
+        postType: 'comment',
+        rootId,
+        parentId: rootId,
+      })
+
+      for (const suffix of ['', '?limit=1']) {
+        const response = await createRequest()
+          .get(`/api/v1/posts/${commentSlug}/ancestors${suffix}`)
+          .expect(200)
+        expect(response.body.results.map((item: { id: string }) => item.id)).toEqual([
+          rootId,
+          commentId,
+        ])
+      }
+    })
+
     it('returns ancestors ordered from root to comment', async () => {
       const community = await insertTestCommunity({ createdById: creator.id })
       await insertTestCommunityMember({
