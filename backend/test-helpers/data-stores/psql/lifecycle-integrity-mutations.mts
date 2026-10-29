@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomBytes, randomUUID } from 'node:crypto'
 
 import { write } from '@data-stores/psql'
@@ -34,11 +33,11 @@ export async function insertContradictoryBedrockBatchLifecycle(): Promise<void> 
 
 export async function insertContradictoryRssImportRowLifecycle(userId: string): Promise<void> {
   const { rows } = await write<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* insertContradictoryRssImportRowLifecycle:batch */
     INSERT INTO user_rss_feed_import_batches (user_id, created_via, total_rows)
     VALUES (${userId}, 'system', 1)
     RETURNING id
-  `),
+  `,
   )
   await write(sql`/* rejectContradictoryRssImportRowLifecycle */
     INSERT INTO user_rss_feed_import_rows (
@@ -67,7 +66,7 @@ export async function insertActiveBlueskyAuthorizationWithoutHandle(userId: stri
 
 export async function rewriteTerminalImage(userId: string): Promise<void> {
   const { rows } = await write<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* rewriteTerminalImage:setup */
     INSERT INTO images (
       created_by_id, data, sha_256, s3_key, upload_started_at, upload_completed_at
     ) VALUES (
@@ -75,7 +74,7 @@ export async function rewriteTerminalImage(userId: string): Promise<void> {
       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )
     RETURNING id
-  `),
+  `,
   )
   await write(sql`/* rejectTerminalImageRewrite */
     UPDATE images
@@ -87,11 +86,11 @@ export async function rewriteTerminalImage(userId: string): Promise<void> {
 
 export async function rewriteTerminalDataRequest(): Promise<void> {
   const { rows } = await write<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* rewriteTerminalDataRequest:setup */
     INSERT INTO user_data_requests (processing_started_at, completed_at)
     VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     RETURNING id
-  `),
+  `,
   )
   await write(sql`/* rejectTerminalDataRequestRewrite */
     UPDATE user_data_requests
@@ -102,13 +101,13 @@ export async function rewriteTerminalDataRequest(): Promise<void> {
 export async function rewriteTerminalBedrockBatch(): Promise<void> {
   const id = mintUUIDv7()
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* rewriteTerminalBedrockBatch:setup */
     INSERT INTO bedrock_embedding_batches (
       id, model_id, job_type, submitted_at, completed_at
     ) VALUES (
       ${id}, 'test-model', 'topics', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )
-  `),
+  `,
   )
   await write(sql`/* rejectTerminalBedrockBatchRewrite */
     UPDATE bedrock_embedding_batches
@@ -118,12 +117,12 @@ export async function rewriteTerminalBedrockBatch(): Promise<void> {
 
 export async function rewriteTerminalRssImportBatch(userId: string): Promise<void> {
   const { rows } = await write<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* rewriteTerminalRssImportBatch:setup */
     INSERT INTO user_rss_feed_import_batches (
       user_id, created_via, total_rows, completed_rows, completed_at
     ) VALUES (${userId}, 'system', 1, 1, CURRENT_TIMESTAMP)
     RETURNING id
-  `),
+  `,
   )
   await write(sql`/* rejectTerminalRssImportBatchRewrite */
     UPDATE user_rss_feed_import_batches

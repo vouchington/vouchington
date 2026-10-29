@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -15,7 +14,7 @@ export async function getPostSubjectTablePartitionKinds(
   tableNames: string[],
 ): Promise<Array<{ table_name: string; partition_expression: string }>> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostSubjectTablePartitionKinds */
     SELECT
       parent.relname AS table_name,
       pg_get_partition_constraintdef(child.oid) AS partition_expression
@@ -24,7 +23,7 @@ export async function getPostSubjectTablePartitionKinds(
     JOIN pg_class child  ON pg_inherits.inhrelid  = child.oid
     WHERE parent.relname = ANY(${tableNames})
     ORDER BY parent.relname, child.relname
-  `),
+  `,
   )
   return rows as Array<{ table_name: string; partition_expression: string }>
 }
@@ -36,12 +35,12 @@ export async function getUserFollowTopicRelationsBySubjectIds(
   userIds: string[],
 ): Promise<Array<{ subject_id: string; object_id: string }>> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getUserFollowTopicRelationsBySubjectIds */
     SELECT subject_id, object_id
     FROM relation__user__follow__topic
     WHERE subject_id = ANY(${userIds})
       AND deleted_at IS NULL
-  `),
+  `,
   )
   return rows as Array<{ subject_id: string; object_id: string }>
 }
@@ -53,12 +52,12 @@ export async function getUserFollowTopicRelationsByTopicIds(
   topicIds: string[],
 ): Promise<Array<{ subject_id: string; object_id: string }>> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getUserFollowTopicRelationsByTopicIds */
     SELECT subject_id, object_id
     FROM relation__user__follow__topic
     WHERE object_id = ANY(${topicIds})
       AND deleted_at IS NULL
-  `),
+  `,
   )
   return rows as Array<{ subject_id: string; object_id: string }>
 }
@@ -71,11 +70,11 @@ export async function insertUserFollowTopicRelation(
   topicId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertUserFollowTopicRelation */
     INSERT INTO relation__user__follow__topic (subject_id, object_id)
     VALUES (${userId}, ${topicId})
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -90,18 +89,18 @@ export async function createTopicForRelationPartitionTest(
   sha256: string,
 ): Promise<string> {
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* createTopicForRelationPartitionTest */
     INSERT INTO topics (name, slug, created_by_id, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
     VALUES (${topicName}, ${topicSlug}, ${userId}, 'topic', ${sha256}, 'system')
     RETURNING id
-  `),
+  `,
   )
   const topicId = rows[0].id as string
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* createTopicForRelationPartitionTest:metrics */
     INSERT INTO topic_metrics (topic_id) VALUES (${topicId})
     ON CONFLICT (topic_id) DO NOTHING
-  `),
+  `,
   )
   return topicId
 }
