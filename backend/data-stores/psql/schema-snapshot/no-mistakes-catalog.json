@@ -1201,7 +1201,8 @@
         "rss_feed_item",
         "image",
         "membership",
-        "community_bridge"
+        "community_bridge",
+        "remote_actor"
       ]
     },
     "retained_identity_families": {
@@ -3233,6 +3234,38 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_post_like_activities__active_post_id__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_post_like_activities__active_post_id__id ON public.activitypub_post_like_activities USING btree (post_id, id) WHERE (undone_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(undone_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_activitypub_post_like_activities__confirmed_activity": {

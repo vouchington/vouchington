@@ -1579,6 +1579,7 @@
 - `image`
 - `membership`
 - `community_bridge`
+- `remote_actor`
 
 ## `retained_identity_families`
 
