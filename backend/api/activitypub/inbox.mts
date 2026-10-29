@@ -1,6 +1,10 @@
 import app from '../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getRemoteActorByKeyId } from '@services/remote-actors'
+import { getRemoteActorByKeyId, isRemoteActorFresh } from '@services/remote-actors'
+import { getRemoteActorsWorkLimit } from '@services/remote-actors/work-limits'
+import { getOrderingLanePendingCount } from '@data-stores/valkey-glide-mq/ordering-lane-pending-count'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import onError from '@modules/on-error'
 import { isFediverseInstanceApprovedByHostname } from '@services/fediverse-instances'
 import { extractSignatureKeyId, verifyDigest, verifySignature } from '@modules/http-signatures'
 import { getExpectedHost } from '@modules/api-utils'
@@ -56,6 +60,26 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
     return
   }
 
+  // The native ordering frontier includes jobs parked behind the inbound group as well as
+  // ready, active, and delayed work. Admission is a soft concurrent depth check; a read failure
+  // fails closed because this queue also carries other background domains.
+  let inboxBackedUp: boolean
+  try {
+    const pendingInbound = await getOrderingLanePendingCount(
+      BACKGROUND_QUEUE_NAME,
+      'activitypub:inbound',
+    )
+    inboxBackedUp = pendingInbound >= getRemoteActorsWorkLimit('inbound_backlog_cap')
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    rejectBackedUpActivityPubDelivery(ctx)
+    return
+  }
+  if (inboxBackedUp) {
+    rejectBackedUpActivityPubDelivery(ctx)
+    return
+  }
+
   const rawBody = await ctx.request.buffer(ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES)
   ctx.assert(verifyDigest(rawBody, digestHeader), 401, 'Digest verification failed')
   const contentTypeHeader = headerValue(ctx.req.headers['content-type'])
@@ -68,10 +92,11 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
   )
   ctx.assert(!Number.isNaN(new Date(dateHeader).getTime()), 401, 'Invalid date header')
   const activity = parseInboundActivity(rawBody)
-  // Cached actors can be verified before admission. Unknown actors are fetched by the I/O worker.
+  // Only fresh cached keys can be verified before admission. Stale or unknown actors are
+  // fetched by the I/O worker so rotated keys are checked against the current actor document.
   const cachedActor = await getRemoteActorByKeyId(keyId)
   let verifiedRemoteActorId: string | undefined
-  if (cachedActor) {
+  if (cachedActor && isRemoteActorFresh(cachedActor)) {
     const verification = verifySignature(
       ctx.req.method ?? 'POST',
       ctx.req.url ?? '/ap/inbox',
@@ -131,4 +156,9 @@ function parseHostname(uri: string): string | undefined {
 function rejectRateLimitedActivityPubDelivery(ctx: Context, retryAfterSeconds: number): never {
   ctx.set('Retry-After', String(retryAfterSeconds))
   ctx.throw(429, 'Too Many Requests')
+}
+
+function rejectBackedUpActivityPubDelivery(ctx: Context): never {
+  ctx.set('Retry-After', '60')
+  ctx.throw(503, 'Inbox temporarily unavailable')
 }

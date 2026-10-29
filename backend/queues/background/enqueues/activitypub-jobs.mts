@@ -56,8 +56,7 @@ export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubI
     priority: PRIORITY_TASK,
     ordering: INBOUND_ORDERING,
     sensitive: true,
-    // Keep the shared failed-record bound. Terminal protocol rejections complete the
-    // job, so a sender cannot grow this set by forcing a rejection.
+    // Sensitive envelope jobs are removed after completion or terminal failure.
     ...INBOX,
   },
 )

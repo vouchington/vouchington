@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
+import { registerActivityPubInboxJobCleanup } from '@voucha/test-helpers/activitypub-inbox-test-jobs'
+import { setTestRemoteActorFetchedAt } from '@voucha/test-helpers/entities/remote-actors'
 import { failNextOwnedActivityPubInboxEnqueue } from '@voucha/test-helpers/activitypub-inbox-enqueue-failure'
 import { postInbox, signInboxRequest } from '@voucha/test-helpers/activitypub-inbox-api-requests'
 import {
@@ -70,5 +73,55 @@ describe('POST /ap/inbox queue admission', () => {
       .set('x-request-id', requestId)
       .send(body)
       .expect(500)
+  })
+
+  it('defers a stale cached key to the worker so a rotated key can be fetched', async () => {
+    const { actorUri, keyId } = await createRemoteActorFixture()
+    await setTestRemoteActorFetchedAt(actorUri, new Date(Date.now() - 2 * 60 * 60 * 1000))
+    const body = makeBody(actorUri)
+    const { privateKeyPem: rotatedPrivateKey } = generateRsaSha256KeyPair()
+    const signed = signInboxRequest(body, keyId, rotatedPrivateKey)
+    const requestDigest = computeActivityPubInboxRequestDigest({
+      requestMethod: 'POST',
+      requestTarget: '/ap/inbox',
+      expectedHost: 'inbox-test.example',
+      signatureHeader: signed.signature,
+      digestHeader: signed.digest,
+      dateHeader: signed.date,
+      contentTypeHeader: 'application/activity+json',
+      rawBody: Buffer.from(body),
+    })
+    registerActivityPubInboxJobCleanup(requestDigest)
+
+    await postInbox(signed).send(body).expect(202)
+
+    const job = await backgroundQueue.getJob(`activitypub-inbox__${requestDigest}`)
+    expect(job?.data).toMatchObject({
+      requestDigest,
+      rawBodyBase64: Buffer.from(body).toString('base64'),
+    })
+    expect(job?.data).not.toHaveProperty('verifiedRemoteActorId')
+    expect(job?.data).not.toHaveProperty('senderAllowed')
+  })
+
+  it('rejects a fresh cached key with an invalid signature before enqueue', async () => {
+    const { actorUri, keyId } = await createRemoteActorFixture()
+    const body = makeBody(actorUri)
+    const { privateKeyPem: differentPrivateKey } = generateRsaSha256KeyPair()
+    const signed = signInboxRequest(body, keyId, differentPrivateKey)
+    const requestDigest = computeActivityPubInboxRequestDigest({
+      requestMethod: 'POST',
+      requestTarget: '/ap/inbox',
+      expectedHost: 'inbox-test.example',
+      signatureHeader: signed.signature,
+      digestHeader: signed.digest,
+      dateHeader: signed.date,
+      contentTypeHeader: 'application/activity+json',
+      rawBody: Buffer.from(body),
+    })
+    registerActivityPubInboxJobCleanup(requestDigest)
+
+    await postInbox(signed).send(body).expect(401)
+    expect(await backgroundQueue.getJob(`activitypub-inbox__${requestDigest}`)).toBeNull()
   })
 })

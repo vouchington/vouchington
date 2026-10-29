@@ -332,3 +332,9 @@ signer and applies the protocol activity; PostgreSQL retains activity replay ide
 state, not a second copy of queued request bodies. GlideMQ owns job locks, retries and sender
 delays. Valkey loss can discard an accepted delivery, and remote senders are not expected to retry
 after `202`.
+
+Inbound admission checks the lane's unfinished work, including jobs parked by concurrency limits
+and delayed retries, to protect shared queue storage. Saturation produces a retryable response
+before acceptance. This depth check is conservative when jobs finish out of order; concurrent
+admissions can cross the threshold. Sensitive envelopes are removed after terminal failure as well
+as completion, so retry exhaustion can discard a delivery that was already acknowledged.

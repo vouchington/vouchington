@@ -49,7 +49,8 @@ remain separate immutable events.
 
 Inbound ActivityPub acknowledges an accepted request after its signed envelope is admitted to
 GlideMQ. PostgreSQL does not retain a second copy for recovery: Valkey loss can therefore lose an
-accepted delivery, and remote senders are not expected to retry after `202`.
+accepted delivery. Exhausting a job's retries also drops its sensitive envelope after acceptance,
+and remote senders are not expected to retry after `202`.
 
 See also the [backend queue reference](../../overview/architecture/queues/README.md).
 

@@ -26,7 +26,7 @@ export interface RemoteActorRow {
 const REMOTE_ACTOR_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
 const REMOTE_ACTOR_STALE_KEY_FALLBACK_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
-function isFresh(row: RemoteActorRow, now: () => number): boolean {
+export function isRemoteActorFresh(row: RemoteActorRow, now: () => number = Date.now): boolean {
   return getCacheAgeMs(row, now) < REMOTE_ACTOR_CACHE_TTL_MS
 }
 
@@ -98,7 +98,7 @@ export async function getOrFetchRemoteActorByKeyId(
   now: () => number = Date.now,
 ): Promise<RemoteActorRow> {
   const existing = await getRemoteActorByKeyId(keyId)
-  if (existing && isFresh(existing, now)) return existing
+  if (existing && isRemoteActorFresh(existing, now)) return existing
 
   const actorUri = deriveActorUriFromKeyId(keyId)
   let document: RemoteActorDocument
