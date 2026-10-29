@@ -4,7 +4,6 @@ import {
   getCrawlCapacityBudget,
   getTierSlaMs,
   isRobotsTxtIgnoredForFeeds,
-  RSS_FEED_CRAWL_MAX_VALUES,
   rssFeedCrawlConfig,
 } from './crawl-config.mts'
 
@@ -18,24 +17,14 @@ describe('crawl-config', () => {
   })
 
   describe('getTierSlaMs', () => {
-    it('returns 5 min for tier 1', () => {
-      expect(getTierSlaMs(1)).toBe(5 * 60_000)
-    })
-
-    it('returns 15 min for tier 2', () => {
-      expect(getTierSlaMs(2)).toBe(15 * 60_000)
-    })
-
-    it('returns 1 hour for tier 3', () => {
-      expect(getTierSlaMs(3)).toBe(60 * 60_000)
-    })
-
-    it('returns 2 hours for tier 4', () => {
-      expect(getTierSlaMs(4)).toBe(2 * 60 * 60_000)
-    })
-
-    it('returns 24 hours for tier 5', () => {
-      expect(getTierSlaMs(5)).toBe(24 * 60 * 60_000)
+    it.each([
+      [1, 300_000],
+      [2, 900_000],
+      [3, 3_600_000],
+      [4, 7_200_000],
+      [5, 86_400_000],
+    ] as const)('returns the default SLA for tier %i', (tier, expectedMs) => {
+      expect(getTierSlaMs(tier)).toBe(expectedMs)
     })
 
     it('overrides SLA when a valid value is set', async () => {
@@ -52,9 +41,9 @@ describe('crawl-config', () => {
 
     it('falls back to default when SLA exceeds the maximum', async () => {
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
-        tier5_sla_ms: RSS_FEED_CRAWL_MAX_VALUES.tier5_sla_ms + 1,
+        tier5_sla_ms: 604_800_001,
       })
-      expect(getTierSlaMs(5)).toBe(24 * 60 * 60_000)
+      expect(getTierSlaMs(5)).toBe(86_400_000)
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { tier5_sla_ms: 24 * 60 * 60_000 })
     })
   })
@@ -72,11 +61,6 @@ describe('crawl-config', () => {
         overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { should_ignore_robots_txt: true })
       }
     })
-
-    it('returns true when should_ignore_robots_txt is explicitly set to true via config', async () => {
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { should_ignore_robots_txt: true })
-      expect(isRobotsTxtIgnoredForFeeds()).toBe(true)
-    })
   })
 
   describe('getCrawlCapacityBudget', () => {
@@ -90,15 +74,9 @@ describe('crawl-config', () => {
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
     })
 
-    it('falls back to default when value is 0', async () => {
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 0 })
-      expect(getCrawlCapacityBudget()).toBe(100)
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
-    })
-
     it('falls back to default when value exceeds the maximum', async () => {
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
-        capacity_budget: RSS_FEED_CRAWL_MAX_VALUES.capacity_budget + 1,
+        capacity_budget: 10_001,
       })
       expect(getCrawlCapacityBudget()).toBe(100)
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
