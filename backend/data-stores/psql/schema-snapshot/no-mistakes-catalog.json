@@ -1646,6 +1646,9 @@
     "fn_reject_agent_system_account()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_agent_system_account()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE account_kind platform_account_kinds;\nBEGIN\n  SELECT platform_account_kind INTO account_kind FROM users WHERE id = NEW.system_user_id FOR UPDATE;\n  IF account_kind IS DISTINCT FROM 'system' THEN\n    RAISE EXCEPTION 'Agents require a system account' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_reject_always()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_always()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION '%', COALESCE(TG_ARGV[0], TG_TABLE_NAME || ' rows are immutable')\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
     "fn_reject_classifier_activation_lifecycle()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_activation_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT NULL\n    AND NEW.deactivated_at IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NOT NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION '% activation lifecycle is immutable after each transition', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
     },
@@ -1748,9 +1751,6 @@
     "fn_reject_copyright_repeat_infringer_incident()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_incident()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incident identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
-    "fn_reject_copyright_repeat_infringer_review()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_review()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'completed copyright repeat-infringer review history is immutable'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
-    },
     "fn_reject_copyright_restriction_assessment_scope()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_assessment_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.authorizing_assessment_id IS DISTINCT FROM OLD.authorizing_assessment_id THEN\n    RAISE EXCEPTION 'copyright restriction authorizing assessment is immutable'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessment_identities assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    WHERE assessment.id = NEW.authorizing_assessment_id\n      AND assessment.copyright_notice_id = (\n        SELECT target.copyright_notice_id FROM copyright_notice_targets target\n        WHERE target.id = NEW.copyright_notice_target_id\n      )\n      AND submission.current_assessment_identity_id = assessment.id\n      AND submission.current_assessment_is_substantially_compliant\n      AND submission.kind = 'notice'\n      AND (\n        submission.source_kind <> 'guest_form'\n        OR EXISTS (\n          SELECT 1\n          FROM copyright_notice_form_intakes intake\n          JOIN copyright_notice_form_intake_reviews review\n            ON review.copyright_notice_form_intake_id = intake.id\n          WHERE intake.copyright_notice_submission_id = submission.id\n            AND review.is_accepted\n        )\n      )\n  ) THEN\n    RAISE EXCEPTION 'copyright restriction requires a current compliant notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1852,9 +1852,6 @@
     },
     "fn_reject_non_stripe_user_deletion_external_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.work_kind = 'stripe-customer' AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_lineages lineage\n    INNER JOIN membership_provider_contexts context\n      ON context.id = lineage.membership_provider_context_id\n    WHERE lineage.id = NEW.membership_provider_lineage_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'Stripe customer deletion work requires a Stripe lineage' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
-    },
-    "fn_reject_notification_conversation_change()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_notification_conversation_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'Notification conversation cannot change after creation';\nEND;\n$function$\n"
     },
     "fn_reject_notification_push_intent_conversation_mismatch()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_notification_push_intent_conversation_mismatch()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  notification_conversation_id UUID;\n  entering_pending BOOLEAN;\n  context_changed BOOLEAN;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    entering_pending := TRUE;\n    context_changed := TRUE;\n  ELSE\n    entering_pending := OLD.delivered_at IS NOT NULL OR OLD.suppressed_at IS NOT NULL\n      OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id;\n    context_changed := NEW.user_id IS DISTINCT FROM OLD.user_id\n      OR NEW.notification_id IS DISTINCT FROM OLD.notification_id\n      OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id;\n  END IF;\n  IF context_changed THEN\n    SELECT conversation_id INTO STRICT notification_conversation_id\n    FROM notifications WHERE user_id = NEW.user_id AND id = NEW.notification_id;\n    IF NEW.conversation_id IS DISTINCT FROM notification_conversation_id THEN\n      RAISE EXCEPTION 'Push intent conversation must match its notification';\n    END IF;\n  END IF;\n  IF entering_pending AND NEW.conversation_id IS NOT NULL\n    AND NEW.delivered_at IS NULL AND NEW.suppressed_at IS NULL THEN\n    -- Serialize new pending work with retention's FOR UPDATE parent lock.\n    PERFORM 1 FROM conversations WHERE id = NEW.conversation_id FOR KEY SHARE;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -43652,7 +43649,7 @@
       "relationKind": "partitioned table",
       "triggers": {
         "trigger_copyright_repeat_infringer_reviews_guard": {
-          "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review()"
+          "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_always('completed copyright repeat-infringer review history is immutable')"
         },
         "trigger_copyright_repeat_infringer_reviews_updated_at": {
           "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -80512,7 +80509,7 @@
       "relationKind": "partitioned table",
       "triggers": {
         "trigger_assert_notification_conversation_immutable": {
-          "definition": "CREATE TRIGGER trigger_assert_notification_conversation_immutable BEFORE UPDATE OF conversation_id ON public.notifications FOR EACH ROW WHEN ((old.conversation_id IS DISTINCT FROM new.conversation_id)) EXECUTE FUNCTION fn_reject_notification_conversation_change()"
+          "definition": "CREATE TRIGGER trigger_assert_notification_conversation_immutable BEFORE UPDATE OF conversation_id ON public.notifications FOR EACH ROW WHEN ((old.conversation_id IS DISTINCT FROM new.conversation_id)) EXECUTE FUNCTION fn_reject_always('Notification conversation cannot change after creation')"
         },
         "trigger_notifications_capture_push_intent": {
           "definition": "CREATE TRIGGER trigger_notifications_capture_push_intent AFTER INSERT OR UPDATE OF id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent()"

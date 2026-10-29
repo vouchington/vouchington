@@ -126,7 +126,7 @@ _none_
 
 **Triggers:**
 
-- `trigger_assert_notification_conversation_immutable`: `CREATE TRIGGER trigger_assert_notification_conversation_immutable BEFORE UPDATE OF conversation_id ON public.notifications FOR EACH ROW WHEN ((old.conversation_id IS DISTINCT FROM new.conversation_id)) EXECUTE FUNCTION fn_reject_notification_conversation_change()`
+- `trigger_assert_notification_conversation_immutable`: `CREATE TRIGGER trigger_assert_notification_conversation_immutable BEFORE UPDATE OF conversation_id ON public.notifications FOR EACH ROW WHEN ((old.conversation_id IS DISTINCT FROM new.conversation_id)) EXECUTE FUNCTION fn_reject_always('Notification conversation cannot change after creation')`
 - `trigger_notifications_capture_push_intent`: `CREATE TRIGGER trigger_notifications_capture_push_intent AFTER INSERT OR UPDATE OF id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent()`
 - `trigger_notifications_preserve_publication_target`: `CREATE TRIGGER trigger_notifications_preserve_publication_target BEFORE INSERT OR UPDATE OF post_id, rss_feed_item_id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_notification_publication_target()`
 - `trigger_notifications_retire_push_intent`: `CREATE TRIGGER trigger_notifications_retire_push_intent BEFORE UPDATE OF id ON public.notifications FOR EACH ROW WHEN ((old.id IS DISTINCT FROM new.id)) EXECUTE FUNCTION fn_project_retire_notification_push_intent()`

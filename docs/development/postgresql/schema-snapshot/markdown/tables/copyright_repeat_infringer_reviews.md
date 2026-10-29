@@ -43,5 +43,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_repeat_infringer_reviews_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review()`
+- `trigger_copyright_repeat_infringer_reviews_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_always('completed copyright repeat-infringer review history is immutable')`
 - `trigger_copyright_repeat_infringer_reviews_updated_at`: `CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
