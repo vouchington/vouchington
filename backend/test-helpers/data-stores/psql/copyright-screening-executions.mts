@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
 import { claimCopyrightFormScreening } from '../../../services/copyright-notices/form-screening-executions.mts'
@@ -50,6 +50,23 @@ export async function readTestCopyrightStaffScreening(noticeId: string) {
   const result = staffCases.get(noticeId)?.form_review?.screening
   await transaction.commit()
   return result
+}
+
+export async function readTestCopyrightScreeningCiphertexts(noticeId: string) {
+  const { rows } = await read<{
+    rationale_ciphertext: string
+    guidance_ciphertext: string
+  }>(sql`/* readTestCopyrightScreeningCiphertexts */
+    SELECT screening.rationale_ciphertext, screening.guidance_ciphertext
+    FROM copyright_notice_form_intakes intake
+    JOIN copyright_notice_form_screening_attempts attempt
+      ON attempt.copyright_notice_form_intake_id = intake.id
+      AND attempt.state = 'completed'
+    JOIN copyright_notice_form_screenings screening
+      ON screening.id = attempt.copyright_notice_form_screening_id
+    WHERE intake.copyright_notice_id = ${noticeId}
+    ORDER BY attempt.attempt_number DESC LIMIT 1`)
+  return rows[0]
 }
 
 /** Move the retry cutoff forward without rewriting the immutable claim facts. */

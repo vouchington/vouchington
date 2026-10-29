@@ -17,13 +17,13 @@ describe('restoration notices with another active restriction', () => {
       receivedAt: new Date(),
       claimantUserId: scene.claimant.id,
       claimantDisplayName: null,
-      claimantContactCiphertext: 'private',
+      claimantContact: 'private',
       workDescription: 'Other work',
       policyVersion: 'test',
       initialSubmission: {
         kind: 'notice',
         sourceKind: 'signed_in_form',
-        bodyCiphertext: 'private',
+        body: 'private',
       },
       targets: [
         {

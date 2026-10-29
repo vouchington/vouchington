@@ -1,3 +1,5 @@
+// Share the explicit offline provider boundary with the API process, not a production fallback.
+import '../../backend/test-helpers/copyright-key-object-cli.mts'
 import { createTestUser } from '../../backend/test-helpers/entities/users.mts'
 import { insertTestPost } from '../../backend/test-helpers/entities/posts.mts'
 import { insertTestImage } from '../../backend/test-helpers/entities/images-insert.mts'

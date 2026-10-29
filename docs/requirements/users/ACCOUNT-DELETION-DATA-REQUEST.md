@@ -99,8 +99,9 @@ payment/support audit without retaining either deleted account identifier.
    prior username, clears completed provider work keys to `NULL` while retaining non-identifying
    audit metadata and timestamps, and deletes the fully recomputed relation-impact worklist. A
    completed relation-effect pointer may then become `NULL`; pending effects require their typed
-   same-request impact pointer. A separate bounded retention sweep reclaims unreferenced retained
-   relation identities without expiring request or audit history.
+   same-request impact pointer. Completed deletion proof is retained for three years, then a bounded
+   cleanup removes the request and its completed child work. A separate bounded retention sweep can
+   then reclaim retained identities that no surviving record references.
 
 Stripe customer anonymization uses a request-derived provider idempotency key. The per-provider
 egress flag selects the direct or HTTP CONNECT transport without changing the operation or retrying
@@ -126,10 +127,13 @@ soft-deleted and do not check preservation holds. The final retention purge chec
 user advisory lock, so a hold placed after soft deletion cannot race the hard delete.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
-the account's personal data. Incident rows and repeat-infringer review outcomes and dates remain
-linked to `retained_user_identities` as the minimal 17 USC 512(i) record. Staff may finish an open
-review after deletion; a restrict or terminate outcome is recorded without attempting to suspend
-the deleted account.
+the account's personal data. Incident rows follow the case retention lifecycle. Each account-level
+review or reinstatement retains its encrypted rationale and outcome/date record for six years
+after that review's latest opening or outcome activity, then the bounded sweep deletes the whole
+row. Later independent account activity and staff-account erasure do not extend that period. Staff
+may finish a retained open review after account deletion; a restrict or terminate outcome is
+recorded without attempting to suspend the deleted account. Current suspension authority and its
+incident evidence remain independently governed by the case lifecycle.
 
 A preservation hold preserves what remains of an account while the owner decides, on a lawyer's
 advice, what a subpoena requires (see the

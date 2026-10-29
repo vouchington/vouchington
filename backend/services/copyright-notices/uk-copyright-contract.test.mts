@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { v7 as uuidv7 } from 'uuid'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   concealJurisdictionPolicyApprovals,
@@ -14,6 +15,7 @@ import {
 } from './uk-acknowledgment.mts'
 import { receiveUkCopyrightNotice } from './uk-notice-receipt.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
+import { prepareCopyrightEncryptionKey } from './encryption-keys.mts'
 import { recordUkCopyrightRedressDecision, submitUkCopyrightRedress } from './uk-redress.mts'
 import { recordUkCopyrightReview } from './uk-review.mts'
 import { recordCopyrightJurisdictionPolicyApproval } from './jurisdiction-policy.mts'
@@ -32,6 +34,7 @@ function noticeRequest(): TerritorialNoticeRequest {
 describe('UK copyright notice contracts', () => {
   it('blocks a concurrent jurisdiction approval while concealed approvals are uncommitted', async () => {
     const claimant = await createTestUser()
+    await using missingApprovalKey = await prepareCopyrightEncryptionKey('notice')
     const policyVersion = `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
@@ -45,6 +48,7 @@ describe('UK copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          { noticeId: uuidv7(), key: missingApprovalKey },
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })
@@ -52,6 +56,7 @@ describe('UK copyright notice contracts', () => {
 
   it('fails closed without an approved policy and after that approval is withdrawn', async () => {
     const claimant = await createTestUser()
+    await using missingApprovalKey = await prepareCopyrightEncryptionKey('notice')
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
       await expect(
@@ -61,8 +66,15 @@ describe('UK copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          { noticeId: uuidv7(), key: missingApprovalKey },
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+    })
+
+    await using acceptedNoticeKey = await prepareCopyrightEncryptionKey('notice')
+    await using withdrawnPolicyKey = await prepareCopyrightEncryptionKey('notice')
+    await withRolledBackTerritorialTransaction(async transaction => {
+      await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
       const approvalId = await insertJurisdictionPolicyApproval(
         transaction,
         'uk',
@@ -75,8 +87,9 @@ describe('UK copyright notice contracts', () => {
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
+        { noticeId: uuidv7(), key: acceptedNoticeKey },
       )
-      expect(opened.route_destination).toBe('staff_queue')
+      expect(opened?.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
@@ -85,6 +98,7 @@ describe('UK copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          { noticeId: uuidv7(), key: withdrawnPolicyKey },
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })

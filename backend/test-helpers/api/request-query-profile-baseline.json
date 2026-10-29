@@ -58,6 +58,14 @@
     "routes": ["POST /api/v1/topics/:referralProgramId/referral-program/validations"]
   },
   {
+    "annotation": "assertTopicMergeParentCompatibility",
+    "maxCount": 2,
+    "reason": "The batched ancestor walk runs before merge capture (merge-aliases.mts:52) and again after locking topic rows and reachable ancestors (:69), so a parent edge committed during the lock wait cannot create a cycle unnoticed. Each call issues one statement.",
+    "permanent": true,
+    "code": "backend/services/topics/merge-aliases.mts:52-72",
+    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
+  },
+  {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
     "maxCount": null,
     "reason": "Manual association rereads link and review state after the intake row lock and again after the notice row lock, so a link or review committed while it waited rejects the association",
@@ -154,6 +162,14 @@
     "routes": ["DELETE /api/v1/auth/oauth/:provider/connect"]
   },
   {
+    "annotation": "discoverCopyrightReplayLiveNotice",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
     "annotation": "ensureConsentVersion",
     "maxCount": null,
     "reason": "Recheck the active version FOR UPDATE after the optimistic read, then revoke the old active row before inserting its unique-active replacement",
@@ -163,6 +179,14 @@
       "POST /api/v1/auth/email-address/login",
       "POST /api/v1/auth/native/email-address/login"
     ]
+  },
+  {
+    "annotation": "expireElapsedMemberships",
+    "routes": ["DELETE /api/v1/membership-grants/:grantId"],
+    "maxCount": null,
+    "reason": "Expiring one projection can activate an already elapsed queued grant, so revocation must normalize through a variable number of rechecks before locking and checking the grant.",
+    "permanent": true,
+    "code": "backend/services/memberships/grants/expire-elapsed.mts:39-75"
   },
   {
     "annotation": "extendContributionAdmissionReplay",
@@ -189,6 +213,22 @@
     "routes": ["POST /api/v1/copyright-form-intakes/:id/reviews"]
   },
   {
+    "annotation": "findCopyrightReplayIdentity",
+    "maxCount": 3,
+    "reason": "One hot-replay preflight commits before independent key reservation; the final notice transaction rechecks racing first submissions; a separate acknowledgment transaction admits its own replay identity. Each transaction acquires its own candidate locks and verifies required key coverage exactly once.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-admission.mts:36",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "findCopyrightReplayIdentity",
+    "maxCount": 2,
+    "reason": "The hot-replay preflight commits before independent data-key reservation; the final form transaction reacquires its own candidate locks, key coverage and duplicate lookup to serialize racing first submissions. No data key is reserved for an already-known replay.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-intakes.mts:44",
+    "routes": ["POST /api/v1/copyright-notices"]
+  },
+  {
     "annotation": "getAutomodFeedbackContext:agent",
     "maxCount": null,
     "reason": "The feedback transaction re-reads the automod action after taking its locks to reject a concurrent change (backend/services/moderation-training/automod-feedback.mts:48-70)",
@@ -203,6 +243,17 @@
     "permanent": true,
     "code": "backend/services/posts/create/community-scope.mts:76",
     "routes": ["POST /api/v1/mcp"]
+  },
+  {
+    "annotation": "getLandingPageRowForUser",
+    "maxCount": null,
+    "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
+    "permanent": true,
+    "code": "backend/services/my/landing-pages/reads.mts:14",
+    "routes": [
+      "PATCH /api/v1/my/landing-pages/:pageId",
+      "PUT /api/v1/my/landing-pages/:pageId/items"
+    ]
   },
   {
     "annotation": "getLocalHostnamePolicies",
@@ -409,6 +460,22 @@
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
+    "annotation": "lockAllCopyrightReplayCandidates",
+    "maxCount": 3,
+    "reason": "One hot-replay preflight commits before independent key reservation; the final notice transaction rechecks racing first submissions; a separate acknowledgment transaction admits its own replay identity. Each transaction acquires its own candidate locks and verifies required key coverage exactly once.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-admission.mts:36",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "lockAllCopyrightReplayCandidates",
+    "maxCount": 2,
+    "reason": "The hot-replay preflight commits before independent data-key reservation; the final form transaction reacquires its own candidate locks, key coverage and duplicate lookup to serialize racing first submissions. No data key is reserved for an already-known replay.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-intakes.mts:44",
+    "routes": ["POST /api/v1/copyright-notices"]
+  },
+  {
     "annotation": "lockApiKeyOwner",
     "maxCount": null,
     "reason": "Read administrator roles after fn_lock_active_user_for_mutation to observe role changes that completed while acquiring the owner lock",
@@ -457,12 +524,101 @@
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
+    "annotation": "lockCopyrightBatchNoticeLifetimes",
+    "maxCount": 21,
+    "reason": "Admission or the territorial decision commits before enforcement. Each of at most twenty request targets is then imposed in its own independently validated transaction and needs its own key capability; the initial producer uses one more. A capability cannot cross those commits. Within each transaction all notification writers share one batch.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/enforce-assessment.mts:28",
+    "routes": [
+      "POST /api/v1/copyright-email-intakes/:id/approvals",
+      "POST /api/v1/copyright-eu-notices/:id/statements-of-reasons",
+      "POST /api/v1/copyright-uk-notices/:id/reviews"
+    ]
+  },
+  {
+    "annotation": "lockCopyrightIntakeCaseLifetimes",
+    "maxCount": 2,
+    "reason": "The intake owner is checked before and after its row lock: a first case association can commit while the caller waits, so the fresh lookup must fence that actual case. One transaction-scoped key capability serves the read or rejection and its delivery.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/encryption-key-batch.mts:64",
+    "routes": [
+      "GET /api/v1/copyright-email-intakes/:id",
+      "POST /api/v1/copyright-email-intakes/:id/approvals",
+      "POST /api/v1/copyright-email-intakes/:id/rejections",
+      "POST /api/v1/copyright-email-intakes/:id/legal-process"
+    ]
+  },
+  {
+    "annotation": "lockCopyrightIntakeCaseLifetimes",
+    "maxCount": 3,
+    "reason": "Correspondence admits the linked notice lifetime before locking the notice, then the intake key reader checks its case before and after the intake row lock. These nonblocking guards cover case erasure and first-association races without waiting in reverse owner order.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-correspondence-admission.mts:83",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/correspondence"]
+  },
+  {
+    "annotation": "lockCopyrightNewReplayGroup",
+    "maxCount": 2,
+    "reason": "Notice admission and acknowledgment record distinct replay families in separate committed transactions. Each retains the final duplicate SELECT and its own notice/group ownership proof; no per-item loop is involved.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-identity-create.mts:6",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "lockCopyrightNewReplayNotice",
+    "maxCount": 2,
+    "reason": "Notice admission and acknowledgment record distinct replay families in separate committed transactions. Each retains the final duplicate SELECT and its own notice/group ownership proof; no per-item loop is involved.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-identity-create.mts:6",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "lockCopyrightNoticeLifetime",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "lockCopyrightRawEvidenceCase",
+    "maxCount": 2,
+    "reason": "The raw MIME reader takes the shared case lifetime before the intake row lock, then rederives the actual linked case after that lock to cover first associations committed during its wait. Both guards remain held through the S3 stream and digest check.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-raw-evidence.mts:30",
+    "routes": ["GET /api/v1/copyright-email-intakes/:id/raw"]
+  },
+  {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
     "maxCount": null,
     "reason": "Recording a disposition locks the notice owners before taking the incident row lock, then the incident resync recomputes the owner set after the disposition insert so an owner added since the first lock is locked too",
     "permanent": true,
     "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138",
     "routes": ["POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions"]
+  },
+  {
+    "annotation": "lockCopyrightReplayIdentity",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "lockCopyrightReplayLiveNotice",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "lockCopyrightReplayRetentionGroup",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
   },
   {
     "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
@@ -628,6 +784,18 @@
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
+    "annotation": "readCopyrightBatchOwnerKeys",
+    "maxCount": 21,
+    "reason": "Admission or the territorial decision commits before enforcement. Each of at most twenty request targets is then imposed in its own independently validated transaction and needs its own key capability; the initial producer uses one more. A capability cannot cross those commits. Within each transaction all notification writers share one batch.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/enforce-assessment.mts:28",
+    "routes": [
+      "POST /api/v1/copyright-email-intakes/:id/approvals",
+      "POST /api/v1/copyright-eu-notices/:id/statements-of-reasons",
+      "POST /api/v1/copyright-uk-notices/:id/reviews"
+    ]
+  },
+  {
     "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
@@ -658,6 +826,14 @@
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:65",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
+  },
+  {
+    "annotation": "readExactLiveCopyrightReplayReceipt",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
@@ -729,6 +905,22 @@
     "routes": ["GET /api/v1/auth/oauth/:provider/broker-callback"]
   },
   {
+    "annotation": "recordCopyrightReplayIdentity",
+    "maxCount": 2,
+    "reason": "Notice admission and acknowledgment record distinct replay families in separate committed transactions. Each retains the final duplicate SELECT and its own notice/group ownership proof; no per-item loop is involved.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-identity-create.mts:6",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "recordExactLiveCopyrightReplayReceipt",
+    "maxCount": 2,
+    "reason": "Notice admission and acknowledgment record distinct replay families in separate committed transactions. Each retains the final duplicate SELECT and its own notice/group ownership proof; no per-item loop is involved.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-identity-create.mts:6",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
     "annotation": "recordMcpCallAudit",
     "maxCount": null,
     "reason": "The write-ahead audit row commits before the MCP call runs and the tool_error or rate_limited follow-up row is written after the call (backend/api/mcp-audit-helpers.mts:40-62)",
@@ -787,6 +979,30 @@
     "routes": ["POST /api/v1/my/import/topics"]
   },
   {
+    "annotation": "registerCopyrightReplayKeyVersions",
+    "maxCount": 3,
+    "reason": "One hot-replay preflight commits before independent key reservation; the final notice transaction rechecks racing first submissions; a separate acknowledgment transaction admits its own replay identity. Each transaction acquires its own candidate locks and verifies required key coverage exactly once.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-admission.mts:36",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "registerCopyrightReplayKeyVersions",
+    "maxCount": 2,
+    "reason": "The hot-replay preflight commits before independent data-key reservation; the final form transaction reacquires its own candidate locks, key coverage and duplicate lookup to serialize racing first submissions. No data key is reserved for an already-known replay.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-intakes.mts:44",
+    "routes": ["POST /api/v1/copyright-notices"]
+  },
+  {
+    "annotation": "rejectDuplicateCopyrightReplayAdmission",
+    "maxCount": 2,
+    "reason": "Notice admission and acknowledgment record distinct replay families in separate committed transactions. Each retains the final duplicate SELECT and its own notice/group ownership proof; no per-item loop is involved.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-identity-create.mts:6",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
     "annotation": "removeEmailAddress",
     "maxCount": null,
     "reason": "Lock the active user then email rows before checking last-auth-method and primary-address guards and deleting the target",
@@ -826,6 +1042,30 @@
     "permanent": true,
     "code": "backend/services/conversations-messages/client-generated-chat.mts:54",
     "routes": ["POST /api/v1/conversations/:conversationId/client-generated-chat"]
+  },
+  {
+    "annotation": "requireCopyrightReplayKeyCoverage",
+    "maxCount": 3,
+    "reason": "One hot-replay preflight commits before independent key reservation; the final notice transaction rechecks racing first submissions; a separate acknowledgment transaction admits its own replay identity. Each transaction acquires its own candidate locks and verifies required key coverage exactly once.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-admission.mts:36",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "requireCopyrightReplayKeyCoverage",
+    "maxCount": 2,
+    "reason": "The hot-replay preflight commits before independent data-key reservation; the final form transaction reacquires its own candidate locks, key coverage and duplicate lookup to serialize racing first submissions. No data key is reserved for an already-known replay.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-intakes.mts:44",
+    "routes": ["POST /api/v1/copyright-notices"]
+  },
+  {
+    "annotation": "resolveCopyrightDeliveryBatchOwners",
+    "maxCount": 21,
+    "reason": "The promotion receipt resolves its actual stored delivery FK in the admission transaction; each of at most twenty separately committed target enforcement transactions resolves its own decision deliveries. Notification writers share the resolved batch within each transaction.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/enforce-assessment.mts:28",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "resolveEntityRelationElectionTargetById",
@@ -873,6 +1113,22 @@
     "routes": ["POST /api/v1/my/api-keys/:id/rotate"]
   },
   {
+    "annotation": "serializeCopyrightReplayKeyVersions",
+    "maxCount": 3,
+    "reason": "One hot-replay preflight commits before independent key reservation; the final notice transaction rechecks racing first submissions; a separate acknowledgment transaction admits its own replay identity. Each transaction acquires its own candidate locks and verifies required key coverage exactly once.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-admission.mts:36",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "serializeCopyrightReplayKeyVersions",
+    "maxCount": 2,
+    "reason": "The hot-replay preflight commits before independent data-key reservation; the final form transaction reacquires its own candidate locks, key coverage and duplicate lookup to serialize racing first submissions. No data key is reserved for an already-known replay.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-intakes.mts:44",
+    "routes": ["POST /api/v1/copyright-notices"]
+  },
+  {
     "annotation": "setMyLandingPageDefault",
     "maxCount": null,
     "reason": "The current default must be cleared before setting the selected page because the partial unique index permits only one default per user (backend/services/my/landing-pages/set-default.mts:35-44)",
@@ -887,6 +1143,14 @@
     "permanent": true,
     "code": "backend/services/my/email-addresses.mts:21",
     "routes": ["PATCH /api/v1/my/email-addresses/:email"]
+  },
+  {
+    "annotation": "touchAuthorizedCopyrightReplay",
+    "maxCount": 2,
+    "reason": "The notice receipt and acknowledgment replay separate retained identity families in separate committed transactions. Each authenticates its requester, locks its live owner and touches its own replay clock; their exact live receipts cannot be combined.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-acknowledgment.mts:83",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
@@ -998,6 +1262,22 @@
     "routes": ["PUT /api/v1/my/financial-profile"]
   },
   {
+    "annotation": "verifyCopyrightReplayKeyVersions",
+    "maxCount": 3,
+    "reason": "One hot-replay preflight commits before independent key reservation; the final notice transaction rechecks racing first submissions; a separate acknowledgment transaction admits its own replay identity. Each transaction acquires its own candidate locks and verifies required key coverage exactly once.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/replay-admission.mts:36",
+    "routes": ["POST /api/v1/copyright-eu-notices", "POST /api/v1/copyright-uk-notices"]
+  },
+  {
+    "annotation": "verifyCopyrightReplayKeyVersions",
+    "maxCount": 2,
+    "reason": "The hot-replay preflight commits before independent data-key reservation; the final form transaction reacquires its own candidate locks, key coverage and duplicate lookup to serialize racing first submissions. No data key is reserved for an already-known replay.",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-intakes.mts:44",
+    "routes": ["POST /api/v1/copyright-notices"]
+  },
+  {
     "annotation": "verifyEmailVerificationToken",
     "maxCount": null,
     "reason": "After the active-user lock, consume the valid token before a fresh-snapshot address-ownership check and verified-address insert, preserving code-error precedence",
@@ -1020,14 +1300,6 @@
     "permanent": true,
     "code": "backend/services/mfa/protected-mfa-delete.mts:14",
     "routes": ["DELETE /api/v1/auth/passkeys/:id", "DELETE /api/v1/auth/totp/:id"]
-  },
-  {
-    "annotation": "expireElapsedMemberships",
-    "routes": ["DELETE /api/v1/membership-grants/:grantId"],
-    "maxCount": null,
-    "reason": "Expiring one projection can activate an already elapsed queued grant, so revocation must normalize through a variable number of rechecks before locking and checking the grant.",
-    "permanent": true,
-    "code": "backend/services/memberships/grants/expire-elapsed.mts:39-75"
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",

@@ -47,13 +47,13 @@ async function createFixture() {
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
     claimantUserId: claimant.id,
     claimantDisplayName: 'private snapshot',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'signed_in_form',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+      body: `notice-${crypto.randomUUID()}`,
     },
     targets: [
       {
@@ -136,7 +136,7 @@ describe('copyright delivery and correspondence persistence', () => {
       submissionId: null,
       correspondenceKind: 'status_update',
       compositionKind: 'deterministic_template',
-      bodyCiphertext: `status-${crypto.randomUUID()}`,
+      bodyText: `status-${crypto.randomUUID()}`,
       draftedById: null,
     })
     const intent = await createCopyrightDeliveryIntent({
@@ -166,7 +166,7 @@ describe('copyright delivery and correspondence persistence', () => {
       submissionId: null,
       correspondenceKind: 'receipt',
       compositionKind: 'deterministic_template',
-      bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+      bodyText: `receipt-${crypto.randomUUID()}`,
       draftedById: null,
     })
     const recipientEmail = `tests+copyright-delivery-${crypto.randomUUID()}@voucha.ai`
@@ -272,7 +272,7 @@ describe('copyright delivery and correspondence persistence', () => {
         submissionId: second.aggregate.submissions[0].id,
         correspondenceKind: 'status_update',
         compositionKind: 'agent',
-        bodyCiphertext: `draft-${crypto.randomUUID()}`,
+        bodyText: `draft-${crypto.randomUUID()}`,
         draftedById: null,
       }),
     ).rejects.toThrow('Copyright notice or case submission not found')
@@ -281,7 +281,7 @@ describe('copyright delivery and correspondence persistence', () => {
       submissionId: first.aggregate.submissions[0].id,
       correspondenceKind: 'status_update',
       compositionKind: 'agent',
-      bodyCiphertext: `draft-${crypto.randomUUID()}`,
+      bodyText: `draft-${crypto.randomUUID()}`,
       draftedById: null,
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(first.notice.id)

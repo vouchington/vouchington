@@ -1,3 +1,6 @@
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
+import { recordCopyrightSuspensionReliance } from './repeat-infringer-suspension-reliance.mts'
+import { recordCurrentCopyrightRepeatInfringerOutcome } from './repeat-infringer-outcome-current.mts'
 import {
   beginTransaction,
   registerPostCommitAction,
@@ -43,6 +46,9 @@ export async function recordCopyrightRepeatInfringerReviewOutcome(
   outcome: ReviewDecision
 }> {
   const run = async (transaction: TransactionQuery) => {
+    await transaction(
+      sql`/* lockCopyrightSuspensionRetentionLifetime */ SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`,
+    )
     const result = await recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       input,
       transaction,
@@ -96,6 +102,7 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
   const review = rows[0]
   assert(review, 409, 'Copyright repeat-infringer review is already decided')
   let shouldSuspendActiveAccount = false
+  let incidentIds: string[] = []
   if (suspendingOutcome) {
     const { rows: operativeIncidents } = await transaction<{
       id: string
@@ -107,13 +114,14 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       ) AS account_is_active
       FROM copyright_repeat_infringer_incidents
       WHERE account_user_id = ${review.account_user_id} AND is_operative
-      FOR UPDATE
+      ORDER BY id LIMIT 2 FOR UPDATE
     `)
     assert(
       operativeIncidents.length >= 2,
       409,
       'Restrict and terminate require two is_operative incidents',
     )
+    incidentIds = operativeIncidents.map(incident => incident.id)
     shouldSuspendActiveAccount = operativeIncidents[0]?.account_is_active ?? false
   }
   const rationaleCiphertext = encryptSecret(
@@ -134,38 +142,12 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
     RETURNING account_user_id
   `)
   assert(updated[0], 409, 'Copyright repeat-infringer review is already decided')
-  await transaction(sql`
-    /* recordCopyrightRepeatInfringerReviewOutcome:current */
-    UPDATE copyright_repeat_infringer_account_states
-    SET current_open_review_identity_id = NULL,
-      current_decided_review_identity_id = ${input.reviewId},
-      current_outcome = ${input.outcome},
-      current_outcome_at = ${input.recordedAt},
-      current_outcome_by_id = ${input.currentUser.id},
-      current_outcome_rationale_ciphertext = ${rationaleCiphertext},
-      effective_termination_rationale_ciphertext = CASE
-        WHEN ${input.outcome} = 'terminate' THEN ${rationaleCiphertext}::text
-        ELSE effective_termination_rationale_ciphertext
-      END,
-      effective_termination_review_identity_id = CASE
-        WHEN ${input.outcome} = 'terminate' THEN ${input.reviewId}::uuid
-        ELSE effective_termination_review_identity_id
-      END,
-      effective_termination_decided_at = CASE
-        WHEN ${input.outcome} = 'terminate' THEN ${input.recordedAt}::timestamptz
-        ELSE effective_termination_decided_at
-      END,
-      effective_termination_decided_by_id = CASE
-        WHEN ${input.outcome} = 'terminate' THEN ${input.currentUser.id}::uuid
-        ELSE effective_termination_decided_by_id
-      END,
-      is_termination_in_effect = CASE
-        WHEN ${input.outcome} = 'terminate' THEN true
-        ELSE is_termination_in_effect
-      END
-    WHERE account_user_id = ${review.account_user_id}
-      AND current_open_review_identity_id = ${input.reviewId}
-  `)
+  await recordCurrentCopyrightRepeatInfringerOutcome(
+    transaction,
+    input,
+    review.account_user_id,
+    rationaleCiphertext,
+  )
   let newlySuspended = false
   if (suspendingOutcome && shouldSuspendActiveAccount) {
     const suspension = await ensureUserSuspendedInTransaction(transaction, {
@@ -174,6 +156,11 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       reason: suspensionReason[suspendingOutcome],
     })
     newlySuspended = suspension.newlySuspended
+    await recordCopyrightSuspensionReliance(transaction, {
+      accountId: review.account_user_id,
+      outcome: suspendingOutcome,
+      incidentIds,
+    })
   }
   return { accountUserId: review.account_user_id, newlySuspended }
 }

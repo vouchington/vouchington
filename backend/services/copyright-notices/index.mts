@@ -11,7 +11,11 @@ export { appendCopyrightGuestFiling } from './guest-filings.mts'
 export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
-export { createCopyrightEmailIntake } from './email-intakes.mts'
+export {
+  createCopyrightEmailIntake,
+  withCopyrightEmailIntakeIdentityLock,
+  assertCopyrightEmailRetainedDigest,
+} from './email-intakes.mts'
 export type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 export { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
 export { recordCopyrightEmailParse } from './email-intake-parses.mts'
@@ -93,6 +97,7 @@ export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'
 export { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
 export { sweepCopyrightOperationalRetention } from './operational-retention.mts'
+export { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
 export { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
 export { sweepCopyrightCaseThreads } from './operational-retention-threading.mts'
 export {
@@ -127,3 +132,6 @@ export {
   listCopyrightTrustedFlaggers,
   recordCopyrightTrustedFlaggerChange,
 } from './trusted-flaggers.mts'
+
+export * from './retention-review-closures.mts'
+export * from './retention-receipt-preservation.mts'

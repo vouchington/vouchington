@@ -1,5 +1,9 @@
+import { lockCopyrightNoticeLifetime } from './notice-lifetime.mts'
+import { CopyrightReplayAdmission } from './replay-admission.mts'
+import { findCopyrightReplayIdentity } from './replay-identity-store.mts'
+import { recordCopyrightReplayIdentity } from './replay-identity-create.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -30,10 +34,33 @@ export async function submitTerritorialCopyrightRedress(
   const labels = territorialLabels(jurisdiction)
   assertIdempotencyKey(idempotencyKey)
   const text = assertBoundedText(explanation, 50_000, 'explanation is required')
+  // ast-grep-ignore: no-three-sequential-awaits -- The transaction, shared erasure lifetime, and notice row must be acquired in that order before replay metadata.
   await using transaction = await beginTransaction()
+  const noticeLifetime = await lockCopyrightNoticeLifetime(transaction, noticeId)
   await transaction(sql`/* submitTerritorialCopyrightRedress:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
+  const replayInput = {
+    family: 'territorial_redress' as const,
+    jurisdiction,
+    identity: JSON.stringify([actor.id, idempotencyKey]),
+    requester: actor.id,
+    request: JSON.stringify({ noticeId, explanation: text }),
+  }
+  const replayAdmission = await CopyrightReplayAdmission.open(
+    transaction,
+    replayInput,
+    noticeLifetime,
+  )
+  const retained = await findCopyrightReplayIdentity(replayAdmission)
+  if (retained) {
+    const replay = await retained.replay()
+    await transaction.commit()
+    assert(replay.liveSnapshot, 404, labels.decisionNotFound)
+    const result = replay.liveSnapshot as Record<string, unknown>
+    assert(typeof result.id === 'string', 500, 'Invalid retained territorial redress receipt')
+    return { id: result.id, is_duplicate: true }
+  }
   const { rows: parents } = await transaction<{
     id: string
     decided_at: Date
@@ -94,6 +121,12 @@ export async function submitTerritorialCopyrightRedress(
       'The complaint period for this decision has ended',
     )
   }
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: noticeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   const { rows } = await transaction<{ id: string }>(
     insertTerritorialRedressRequest(
       jurisdiction,
@@ -109,6 +142,9 @@ export async function submitTerritorialCopyrightRedress(
   )
   const created = rows[0]
   assert(created, 500, labels.redressFailed)
+  await recordCopyrightReplayIdentity(replayAdmission, noticeId, 'redress_received', {
+    id: created.id,
+  })
   await transaction.commit()
   return { id: created.id, is_duplicate: false }
 }

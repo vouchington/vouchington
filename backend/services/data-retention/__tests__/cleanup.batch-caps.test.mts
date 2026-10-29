@@ -34,6 +34,57 @@ import {
   getDataRetentionLimits,
 } from '../config.mts'
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// Every cleanup except the one under test sweeps a window that holds no rows, so the shared
+// database's other fixtures are untouched.
+function emptyScopedOptions(now: Date) {
+  const emptyWindow = { lowerBoundDate: new Date(now.getTime() + DAY_MS), now }
+  return {
+    voteBallotIdsByTable: {},
+    userAgentStringIds: [],
+    voteIntegrityFlagIds: [],
+    legalRecords: { recordIds: [] },
+    copyrightMinimalRecords: { noticeIds: [] },
+    paymentLedgers: { recordIds: [] },
+    retainedIdentityRootIds: {},
+    retainedRelationIdentityKeys: {},
+    retainedMediaBindingIds: [],
+    softDeletedUsers: emptyWindow,
+    histories: emptyWindow,
+    orphanedOAuthAccounts: emptyWindow,
+    oauthFriendEdges: { now: new Date('1970-01-02T00:00:00.000Z') },
+    expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
+    expiredOAuthServerArtifacts: emptyWindow,
+    expiredBlueskyLinkCompletions: emptyWindow,
+    abandonedBlueskyLinkSessions: emptyWindow,
+    expiredContributionAdmissions: emptyWindow,
+    expiredContributionQuotaConsumptions: emptyWindow,
+    expiredTopicImportAttempts: emptyWindow,
+    terminalNotificationPushIntents: emptyWindow,
+    deliveredMembershipEntitlementEffects: emptyWindow,
+    endedMembershipRenewalNotices: emptyWindow,
+    terminalGooglePlayAcknowledgments: emptyWindow,
+    terminalStripeEventWork: emptyWindow,
+    abandonedMembershipPurchaseIntents: emptyWindow,
+    emailAddressLoginTokens: emptyWindow,
+    phoneNumberLoginTokens: emptyWindow,
+    expiredUserSessions: emptyWindow,
+    webPushSubscriptionTombstones: emptyWindow,
+    oldModerationQueueClaims: emptyWindow,
+    oldModerationMediaReveals: emptyWindow,
+    federationRetention: { now: new Date(0) },
+    textEmbeddingCache: emptyWindow,
+    terminalEmbeddingBatches: emptyWindow,
+    oldMediaDeliveryChanges: emptyWindow,
+    classifierRecords: emptyWindow,
+    sesBounceEvents: emptyWindow,
+    systemPrunedNotifications: emptyWindow,
+    userDeletedNotifications: emptyWindow,
+    moderationEmailSends: emptyWindow,
+  }
+}
+
 describe('data retention per-run caps', () => {
   it.each([1, 1_000])('cleans exact owned retained pages capped at %i', async pageSize => {
     const postId = randomUUID()

@@ -1,6 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { beginTransaction, read } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { v7 as uuidv7 } from 'uuid'
+import {
+  prepareCopyrightEncryptionKey,
+  attachCopyrightEncryptionKey,
+  openCopyrightSecrets,
+} from '../services/copyright-notices/encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
@@ -21,7 +26,11 @@ export async function createTestDsaApprovalWithdrawalScene(
   const email = `withdrawal-${key}@example.test`
   const purpose = `${territorialLabels(jurisdiction).noticePurpose}:${key}`
   const hostedUseUrl = `https://voucha.ai/discussion/${post.postId}`
+  const noticeId = uuidv7()
+  const owner = { kind: 'notice' as const, id: noticeId }
+  await using prepared = await prepareCopyrightEncryptionKey('notice')
   await using transaction = await beginTransaction()
+  await attachCopyrightEncryptionKey(prepared, owner, transaction)
   const { rows: approvals } = await transaction<{ id: string }>(sql`
     /* createTestDsaApprovalWithdrawalScene:approval */
     INSERT INTO copyright_jurisdiction_policy_approvals
@@ -34,20 +43,21 @@ export async function createTestDsaApprovalWithdrawalScene(
   const { rows: notices } = await transaction<{ id: string }>(sql`
     /* createTestDsaApprovalWithdrawalScene:notice */
     INSERT INTO copyright_notices (
-      jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
+      id, jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
       claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP, ${post.claimant.id}, 'Owned notifier',
-      ${encryptSecret(email, `${purpose}:contact`)}, 'Photographic work', ${policyVersion}
+      ${noticeId}, ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP, ${post.claimant.id}, 'Owned notifier',
+      ${prepared.encrypt(email, `${purpose}:contact`, owner)}, 'Photographic work', ${policyVersion}
     ) RETURNING id
   `)
-  const noticeId = notices[0]?.id
-  if (!noticeId) throw new Error('Owned EU notice was not inserted')
+  if (!notices[0]?.id) throw new Error('Owned EU notice was not inserted')
+  await using secrets = await openCopyrightSecrets(owner, transaction, 'write')
+  const { encryptSecret } = secrets
   await transaction(sql`
     /* createTestDsaApprovalWithdrawalScene:receipt */
     INSERT INTO copyright_territorial_notice_receipts (
       copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
-      requester_user_id, requester_identity_sha256, idempotency_key, request_sha256,
+      requester_user_id, requester_identity_hmac, idempotency_key, request_sha256,
       hosted_use_url, grounds_ciphertext, notifier_email_ciphertext, has_good_faith_statement
     ) VALUES (
       ${noticeId}, ${jurisdiction}, ${approvalId}, ${post.claimant.id}, ${randomBytes(32)}, ${key}, ${randomBytes(32)},

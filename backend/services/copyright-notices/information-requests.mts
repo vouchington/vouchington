@@ -1,14 +1,12 @@
+import { lockCopyrightNoticeLifetime } from './notice-lifetime.mts'
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import {
-  copyrightCorrespondencePurpose,
-  createOutboundCopyrightCorrespondence,
-} from './correspondence.mts'
+import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { getCopyrightClaimantEmail } from './claimant-email.mts'
 
@@ -30,7 +28,13 @@ export async function requestCopyrightGuestInformation(input: {
     403,
     'Only copyright staff can request information',
   )
+  // ast-grep-ignore: no-three-sequential-awaits -- The transaction owns the case lifetime before the owner row and capability child locks.
   await using transaction = await beginTransaction()
+  await lockCopyrightNoticeLifetime(transaction, input.noticeId)
+  await using scopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: input.noticeId }],
+    transaction,
+  )
   const { rows } = await transaction<{ id: string }>(
     sql`/* requestCopyrightGuestInformation:capability */
     SELECT id FROM copyright_notice_guest_capabilities
@@ -39,9 +43,10 @@ export async function requestCopyrightGuestInformation(input: {
   `,
   )
   assert(rows[0], 404, 'Copyright guest capability was not found')
-  const claimantEmail = await getCopyrightClaimantEmail(input.noticeId, transaction)
+  const claimantEmail = await getCopyrightClaimantEmail(input.noticeId, transaction, scopes)
   assert(claimantEmail, 422, 'Copyright notice has no claimant email address to contact')
   const correspondenceId = uuidv7()
+  // ast-grep-ignore: no-three-sequential-awaits -- The correspondence ID must exist before its delivery FK, and both obligations precede the commit.
   const correspondence = await createOutboundCopyrightCorrespondence(
     {
       id: correspondenceId,
@@ -49,13 +54,11 @@ export async function requestCopyrightGuestInformation(input: {
       submissionId: null,
       correspondenceKind: 'request_information',
       compositionKind: 'staff',
-      bodyCiphertext: encryptSecret(
-        input.statement,
-        copyrightCorrespondencePurpose(correspondenceId),
-      ),
+      bodyText: input.statement,
       draftedById: input.currentUser.id,
     },
     transaction,
+    scopes,
   )
   await createCopyrightDeliveryIntent(
     {
@@ -70,6 +73,7 @@ export async function requestCopyrightGuestInformation(input: {
       recipientEmail: claimantEmail,
     },
     transaction,
+    scopes,
   )
   await transaction.commit()
   return { id: correspondence.id }

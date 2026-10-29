@@ -1,4 +1,7 @@
-import { copyrightConfig } from '@services/copyright-notices/config'
+import {
+  COPYRIGHT_RETENTION_WINDOW_MAX_VALUES,
+  copyrightConfig,
+} from '@services/copyright-notices/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateCopyrightDsaSorDatabaseFrom } from './registry-copyright-validators.mts'
 
@@ -27,13 +30,79 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     },
     evidenceRetentionDeletion: {
       description:
-        'Let the hourly sweep delete the stored evidence and claimant personal data of closed copyright cases once the retention period has passed, keeping only the minimal repeat-infringer record. Needs a retention period below and the evidence-bucket delete permission; read the copyright runbook before enabling.',
+        'Let the hourly sweep erase stored evidence and personal data of closed copyright cases after the retention period. Requires evidence-bucket delete permission; read the copyright runbook.',
     },
-    evidenceRetentionDays: {
+    caseRetentionMonths: {
       description:
-        'Days a copyright case is kept after its last lifecycle event before the retention sweep may delete its evidence. 0 means unset: nothing is deleted even when the switch is on. Set only to an owner-approved period.',
+        'Calendar months evidence and legal case records are kept after their final activity. 0 pauses erasure.',
       minValue: 0,
-      maxValue: 3650,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.caseRetentionMonths,
+      integer: true,
+    },
+    complaintWindowMonths: {
+      description: 'Complaint window after a final territorial decision.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.complaintWindowMonths,
+      integer: true,
+    },
+    replayRetentionMonths: {
+      description:
+        'Calendar months replay outcomes survive the later of case purge or last replay.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.replayRetentionMonths,
+      integer: true,
+    },
+    replayPolicyReviewedAt: {
+      description:
+        'UTC ISO date of the last actual operator review of replay retention policy. Empty means review required; cleanup never stamps this field.',
+    },
+    replayReviewMonths: {
+      description: 'Calendar months between reviews of retained replay identities.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.replayReviewMonths,
+      integer: true,
+    },
+    submissionKeyRetentionDays: {
+      description: 'Days raw copyright submission keys remain available.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.submissionKeyRetentionDays,
+      integer: true,
+    },
+    encryptionOrphanGraceHours: {
+      description:
+        'Hours an unclaimed data-key reservation survives before bounded orphan reclamation',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.encryptionOrphanGraceHours,
+      integer: true,
+    },
+    retentionCaseBatchSize: {
+      description: 'Maximum raw case IDs selected before retention eligibility work.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.retentionCaseBatchSize,
+      integer: true,
+    },
+    retentionProofPageSize: {
+      description: 'Maximum raw case-owned facts inspected by each retention proof page.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.retentionProofPageSize,
+      integer: true,
+    },
+    retentionProofMaxPages: {
+      description: 'Maximum total raw work pages per sweep, including the orphan reservation page.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.retentionProofMaxPages,
+      integer: true,
+    },
+    encryptionOwnerBatchSize: {
+      description: 'Maximum distinct owner keys loaded for one batched copyright mutation.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.encryptionOwnerBatchSize,
+      integer: true,
+    },
+    encryptionFetchConcurrency: {
+      description: 'Maximum concurrent authoritative copyright data-key object reads.',
+      minValue: 1,
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES.encryptionFetchConcurrency,
       integer: true,
     },
     emailThreadGraphMaxRows: {

@@ -20,6 +20,7 @@
     "@queues/background": "workspace:^",
     "@queues/emails": "workspace:^",
     "@services/account-data-requests": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
     "glide-mq": "^0.20.0"

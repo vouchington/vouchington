@@ -42,10 +42,10 @@ async function createEnforcementFixture() {
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
     claimantUserId: claimant.id,
     claimantDisplayName: 'private snapshot',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
+    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', body: 'notice' },
     targets: [
       {
         placementId: placement.placement_id,
@@ -64,7 +64,7 @@ async function createEnforcementFixture() {
     submissionId: submission.id,
     correspondenceKind: 'receipt',
     compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    bodyText: `receipt-${crypto.randomUUID()}`,
     draftedById: null,
   })
   await createCopyrightDeliveryIntent({

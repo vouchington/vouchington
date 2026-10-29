@@ -1,6 +1,6 @@
 import type { CopyrightSeedContext } from './copyright-context.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from '@services/copyright-notices/encryption-keys'
 import { copyrightSubmissionPurpose } from '@services/copyright-notices/submissions'
 import sql from 'sql-template-strings'
 
@@ -31,6 +31,12 @@ export async function seedCopyrightDeadline(input: {
   const { identity, now } = input.context
   const { submissionId, assessmentId, deadlineId } = identity
   await using transaction = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: input.noticeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   await transaction(sql`/* seedCopyrightDeadline:formReview */
     INSERT INTO copyright_notice_form_intake_reviews (
       copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext

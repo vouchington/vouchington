@@ -1,3 +1,4 @@
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
@@ -81,6 +82,10 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
     intentIds.push(intent.id)
   }
   // Each newly reviewed restriction requires durable notices, created together.
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: noticeId }],
+    transaction,
+  )
   await createCopyrightStatementDeliveriesInTransaction(
     await buildCopyrightReviewOutcomeDeliveries(
       rows.map(restriction => ({
@@ -89,8 +94,11 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
         action: 'reverse' as const,
       })),
       transaction,
+      ownerScopes,
     ),
     transaction,
+    [],
+    ownerScopes,
   )
   return { restrictionIds: rows.map(restriction => restriction.id), intentIds }
 }

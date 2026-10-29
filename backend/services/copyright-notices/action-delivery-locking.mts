@@ -1,4 +1,7 @@
-import type { TransactionQuery } from '@data-stores/psql/types'
+import type { OwnedTransaction, TransactionQuery } from '@data-stores/psql'
+import assert from 'http-assert'
+import { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
+import { lockCopyrightNoticeLifetime } from './notice-lifetime.mts'
 import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
@@ -32,20 +35,51 @@ export async function tryLockCopyrightActionClaim(
   return rows[0]?.locked ?? false
 }
 
-export async function getCopyrightActionPlacementKey(
+type CopyrightActionOwner = Pick<
+  LockedCopyrightActionDelivery,
+  'placement_id' | 'copyright_notice_id' | 'action' | 'copyright_notice_deadline_id'
+>
+
+/** Discover immutable owner FKs before author, placement and mutable legal row locks. */
+export async function lockCopyrightActionOwners(
   intentId: string,
   leaseToken: string,
-  query: TransactionQuery,
-): Promise<string | null> {
-  const { rows } = await query<{ placement_id: string }>(sql`
-    /* getCopyrightActionPlacementKey */
-    SELECT target.placement_id
+  query: OwnedTransaction,
+): Promise<{
+  owner: CopyrightActionOwner
+  accountLocks: CopyrightNoticeAccountLocks | null
+} | null> {
+  const { rows } = await query<CopyrightActionOwner>(sql`
+    /* lockCopyrightActionOwners */
+    SELECT target.placement_id, target.copyright_notice_id, intent.action, intent.copyright_notice_deadline_id
     FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken} AND intent.lease_expires_at > clock_timestamp()
   `)
-  return rows[0]?.placement_id ?? null
+  const owner = rows[0]
+  if (!owner) return null
+  const accountLocks =
+    owner.action === 'restore' && owner.copyright_notice_deadline_id
+      ? await CopyrightNoticeAccountLocks.acquire(owner.copyright_notice_id, query)
+      : null
+  if (!accountLocks) await lockCopyrightNoticeLifetime(query, owner.copyright_notice_id)
+  return { owner, accountLocks }
+}
+
+/** Authoritative mutable-row reads must still refer to the discovered owner after lock waits. */
+export function assertCopyrightActionOwner(
+  legal: LockedCopyrightActionDelivery,
+  owner: CopyrightActionOwner,
+): void {
+  assert(
+    legal.copyright_notice_id === owner.copyright_notice_id &&
+      legal.placement_id === owner.placement_id &&
+      legal.action === owner.action &&
+      legal.copyright_notice_deadline_id === owner.copyright_notice_deadline_id,
+    409,
+    'Copyright action ownership changed',
+  )
 }
 
 export async function lockCopyrightActionDelivery(

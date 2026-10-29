@@ -59,7 +59,7 @@ export async function readCopyrightEmailPromotionEffects(intakeId: string, place
       (SELECT count(*)::int FROM copyright_notice_delivery_work_items
        WHERE copyright_notice_email_intake_receipt_id = ${intakeId}) AS deliveries,
       (SELECT count(*)::int FROM copyright_notice_email_intake_notice_links
-       WHERE copyright_notice_email_intake_id = ${intakeId}
+       WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
          AND correspondence_action IS NOT NULL) AS thread_reviews,
       (SELECT count(*)::int FROM copyright_notice_targets
        WHERE placement_id = ${placementId}) AS notice_targets

@@ -5,7 +5,8 @@ import { persistDynamicConfigTestBaseline } from '@voucha/test-helpers/dynamic-c
 import {
   copyrightConfig,
   getAutomaticWithholdingThresholds,
-  getCopyrightEvidenceRetentionDays,
+  getCopyrightCaseRetentionMonths,
+  getCopyrightRetentionWindows,
   getCopyrightReviewTargetMinutes,
   getCopyrightDsaSorDatabaseFrom,
   isCopyrightEvidenceRetentionDeletionEnabled,
@@ -39,7 +40,7 @@ describe('copyright dynamic-config namespace', () => {
       .expect(400)
   })
 
-  it('launches with evidence retention deletion off and no retention period', async () => {
+  it('launches with evidence retention deletion on and a 72-month case period', async () => {
     const developer = await createTestUser({ extraRoles: ['developer'] })
     const request = createRequest()
     await request.authenticateAs(developer)
@@ -48,11 +49,12 @@ describe('copyright dynamic-config namespace', () => {
 
     expect(current.body.namespace.fields).toContainEqual(
       expect.objectContaining({
-        name: 'evidenceRetentionDays',
+        name: 'caseRetentionMonths',
         type: 'number',
-        value: 0,
-        default_value: 0,
+        value: 72,
+        default_value: 72,
         min_value: 0,
+        max_value: 1200,
         integer: true,
       }),
     )
@@ -60,15 +62,16 @@ describe('copyright dynamic-config namespace', () => {
       expect.objectContaining({
         name: 'evidenceRetentionDeletion',
         type: 'boolean',
-        value: false,
-        default_value: false,
+        value: true,
+        default_value: true,
       }),
     )
-    expect(await isCopyrightEvidenceRetentionDeletionEnabled()).toBe(false)
-    expect(await getCopyrightEvidenceRetentionDays()).toBeNull()
+    expect(await isCopyrightEvidenceRetentionDeletionEnabled()).toBe(true)
+    expect(await getCopyrightCaseRetentionMonths()).toBe(72)
+    expect(getCopyrightRetentionWindows().caseMonths).toBe(72)
     await request
       .patch(path)
-      .send({ config: { evidenceRetentionDays: -1 } })
+      .send({ config: { caseRetentionMonths: -1 } })
       .expect(400)
   })
 
@@ -86,8 +89,19 @@ describe('copyright dynamic-config namespace', () => {
       mcpDecisionTools: false,
       emailThreadGraphMaxRows: 1000,
       reviewTargetMinutes: 0,
-      evidenceRetentionDeletion: false,
-      evidenceRetentionDays: 0,
+      evidenceRetentionDeletion: true,
+      caseRetentionMonths: 72,
+      complaintWindowMonths: 6,
+      replayRetentionMonths: 120,
+      replayReviewMonths: 12,
+      replayPolicyReviewedAt: '',
+      submissionKeyRetentionDays: 30,
+      retentionCaseBatchSize: 25,
+      retentionProofPageSize: 50,
+      retentionProofMaxPages: 32,
+      encryptionOwnerBatchSize: 1000,
+      encryptionFetchConcurrency: 4,
+      encryptionOrphanGraceHours: 24,
       staydownMatching: false,
       trustedFlaggerPriority: false,
       dsaTransparencyReports: false,

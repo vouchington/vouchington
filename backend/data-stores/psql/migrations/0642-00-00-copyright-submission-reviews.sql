@@ -38,8 +38,8 @@ ALTER TABLE copyright_notice_appeal_recommendations
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_appeal_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_appeal_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_appeal_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
+  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE CASCADE,
   copyright_notice_appeal_recommendation_id uuid,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -50,7 +50,7 @@ CREATE TABLE copyright_notice_appeal_reviews (
 
   CONSTRAINT uq_copyrig_notice_appeal_reviews__submission_id__restriction_id UNIQUE (copyright_notice_submission_id, copyright_restriction_id),
   CONSTRAINT fk_copyright_notice_appeal_reviews__recommendation__submission FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id)
-    REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE CASCADE,
   CHECK ((copyright_notice_appeal_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))
 );
 

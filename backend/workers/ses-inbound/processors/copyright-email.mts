@@ -1,6 +1,8 @@
-import type {
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
+import {
+  assertCopyrightEmailRetainedDigest,
+  type createCopyrightEmailIntake,
+  type recordCopyrightEmailParse,
+  type withCopyrightEmailIntakeIdentityLock,
 } from '@services/copyright-notices'
 import { ErasedCopyrightEmailIntakeReplay } from '@services/copyright-notices/email-intakes'
 import type { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
@@ -16,6 +18,7 @@ import { copyrightEvidenceEmailKey as evidenceKey } from './evidence-key.mts'
 export type CopyrightEmailDependencies = {
   copySesInboundObjectToCopyrightEvidence: typeof copySesInboundObjectToCopyrightEvidence
   createCopyrightEmailIntake: typeof createCopyrightEmailIntake
+  withCopyrightEmailIntakeIdentityLock: typeof withCopyrightEmailIntakeIdentityLock
   enqueueCopyrightEmailIntake: typeof enqueueCopyrightEmailIntake
   loadSesInboundObjectAndHash: typeof loadSesInboundObjectAndHash
   loadSesInboundObjectVersion: typeof loadSesInboundObjectVersion
@@ -34,6 +37,7 @@ export async function processCopyrightInboundEmail(
     if (err instanceof ErasedCopyrightEmailIntakeReplay) return
     throw err
   }
+  if (!preserved) return
   const { intake, sourceIdentity } = preserved
   try {
     const email = await dependencies.parseSesInboundMime(
@@ -83,29 +87,41 @@ async function preserveCopyrightEvidence(
 ): Promise<{
   intake: Awaited<ReturnType<typeof createCopyrightEmailIntake>>['intake']
   sourceIdentity: Awaited<ReturnType<typeof loadSesInboundObjectAndHash>>['sourceIdentity']
-}> {
-  const { rawMime, digest, receivedAt, sourceIdentity } =
-    await dependencies.loadSesInboundObjectAndHash(data.objectKey)
-  rawMime.resume()
-  const raw = await digest
-  const rawStorageKey = evidenceKey(data.sesMessageId, raw.sha256)
-  const { intake } = await dependencies.createCopyrightEmailIntake({
-    sesMessageId: data.sesMessageId,
-    receivedAt,
-    rawStorageKey,
-    rawSha256: raw.sha256,
-    rawMimeType: 'message/rfc822',
-    rawByteSize: raw.byteSize,
-    sesVerdicts: raw.sesVerdicts,
-    preserveRawEvidence: () =>
-      dependencies.copySesInboundObjectToCopyrightEvidence(
-        data.objectKey,
-        data.sesMessageId,
-        raw.sha256,
-        sourceIdentity,
-      ),
-  })
-  return { intake, sourceIdentity }
+} | null> {
+  return dependencies.withCopyrightEmailIntakeIdentityLock(
+    data.sesMessageId,
+    async (transaction, erased) => {
+      const { rawMime, digest, receivedAt, sourceIdentity } =
+        await dependencies.loadSesInboundObjectAndHash(data.objectKey)
+      rawMime.resume()
+      const raw = await digest
+      if (erased) {
+        assertCopyrightEmailRetainedDigest(erased, raw)
+        return null
+      }
+      const rawStorageKey = evidenceKey(data.sesMessageId, raw.sha256)
+      const { intake } = await dependencies.createCopyrightEmailIntake(
+        {
+          sesMessageId: data.sesMessageId,
+          receivedAt,
+          rawStorageKey,
+          rawSha256: raw.sha256,
+          rawMimeType: 'message/rfc822',
+          rawByteSize: raw.byteSize,
+          sesVerdicts: raw.sesVerdicts,
+          preserveRawEvidence: () =>
+            dependencies.copySesInboundObjectToCopyrightEvidence(
+              data.objectKey,
+              data.sesMessageId,
+              raw.sha256,
+              sourceIdentity,
+            ),
+        },
+        transaction,
+      )
+      return { intake, sourceIdentity }
+    },
+  )
 }
 
 function isUntrustedShapeError(error: unknown): boolean {

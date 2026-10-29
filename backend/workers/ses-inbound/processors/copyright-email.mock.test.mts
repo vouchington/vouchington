@@ -199,6 +199,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         receivedAt: new Date('2026-07-01T12:00:00.000Z'),
         sesVerdicts,
       }),
+      expect.any(Function),
     )
     expect(enqueue).toHaveBeenCalledWith('intake-id')
     expect(recordParse).toHaveBeenCalledWith(

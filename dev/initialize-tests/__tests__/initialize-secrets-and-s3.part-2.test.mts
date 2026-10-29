@@ -81,6 +81,7 @@ describe('initialize secrets and S3 helpers', () => {
       API_KEY_CHECKSUM_SECRET='this is a fake test API key checksum secret'
       VOUCHA_OTP_TOKEN_HASH_SECRET='this is a fake test OTP HMAC secret'
       VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='fake-test-key:raw32:this fake test key is not secret'
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='fake-test-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
       S3_AWS_ACCESS_KEY_ID=s3-access-key
       S3_AWS_SECRET_ACCESS_KEY=s3-secret-key
       S3_AWS_SESSION_TOKEN=s3-session-token
@@ -115,6 +116,7 @@ describe('initialize secrets and S3 helpers', () => {
       API_KEY_CHECKSUM_SECRET='this is a fake test API key checksum secret'
       VOUCHA_OTP_TOKEN_HASH_SECRET='this is a fake test OTP HMAC secret'
       VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='fake-test-key:raw32:this fake test key is not secret'
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='fake-test-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
       FINAL_WEB_PUSH_PUBLIC_KEY=web-push-public
       FINAL_WEB_PUSH_PRIVATE_KEY=web-push-private
       FINAL_WEB_PUSH_SUBJECT=mailto:tests+local@voucha.ai
@@ -171,6 +173,7 @@ describe('initialize secrets and S3 helpers', () => {
       API_KEY_CHECKSUM_SECRET='this is a fake test API key checksum secret'
       VOUCHA_OTP_TOKEN_HASH_SECRET='this is a fake test OTP HMAC secret'
       VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='fake-test-key:raw32:this fake test key is not secret'
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='fake-test-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
       unset S3_AWS_ACCESS_KEY_ID
       unset S3_AWS_SECRET_ACCESS_KEY
       unset S3_AWS_SESSION_TOKEN
@@ -208,6 +211,7 @@ describe('initialize secrets and S3 helpers', () => {
       API_KEY_CHECKSUM_SECRET='this is a fake test API key checksum secret'
       VOUCHA_OTP_TOKEN_HASH_SECRET='this is a fake test OTP HMAC secret'
       VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='fake-test-key:raw32:this fake test key is not secret'
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='fake-test-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
       unset S3_AWS_ACCESS_KEY_ID
       unset S3_AWS_SECRET_ACCESS_KEY
       unset S3_AWS_SESSION_TOKEN

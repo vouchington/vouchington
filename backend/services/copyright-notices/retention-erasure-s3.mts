@@ -5,106 +5,59 @@ import {
 } from '@aws-sdk/client-s3'
 import { S3ImagesClient } from '@modules/aws'
 
-// S3 DeleteObjects accepts at most 1,000 keys: https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
-const DELETE_BATCH_SIZE = 1000
-
-/** Delete one physical version page for an exact key. A later call restarts at the remaining head. */
-export async function deleteCopyrightEvidenceObjectVersionPage(
+async function headVersions(
+  bucket: string,
   key: string,
-  workLimit: number,
-): Promise<{ hasMore: boolean; scanned: number }> {
-  if (!Number.isSafeInteger(workLimit) || workLimit < 1)
-    throw new Error('Invalid copyright evidence work limit')
-  const bucket = process.env.S3_BUCKET_COPYRIGHT_EVIDENCE?.trim()
-  if (!bucket) throw new Error('S3_BUCKET_COPYRIGHT_EVIDENCE is required to erase evidence')
+  pageSize: number,
+): Promise<{ versions: ObjectIdentifier[]; scanned: number }> {
   const page = await S3ImagesClient.send(
     new ListObjectVersionsCommand({
       Bucket: bucket,
       Prefix: key,
-      MaxKeys: Math.min(workLimit, DELETE_BATCH_SIZE),
+      MaxKeys: pageSize,
     }),
   )
-  const versions: ObjectIdentifier[] = []
-  for (const entry of [...(page.Versions ?? []), ...(page.DeleteMarkers ?? [])]) {
-    if (entry.Key === key && entry.VersionId)
-      versions.push({ Key: key, VersionId: entry.VersionId })
-  }
-  if (versions.length > 0) await deleteVersions(bucket, versions)
-  // Exact-key versions sort before longer keys sharing the prefix. This single-entry check
-  // confirms completion without traversing unrelated prefixed keys or every old version.
-  const confirmation = await S3ImagesClient.send(
-    new ListObjectVersionsCommand({
-      Bucket: bucket,
-      Prefix: key,
-      MaxKeys: 1,
-    }),
-  )
+  const entries = [...(page.Versions ?? []), ...(page.DeleteMarkers ?? [])]
+  if (page.IsTruncated && !entries.length)
+    throw new Error('Copyright version listing omitted its truncated head')
+  if (entries.length > pageSize)
+    throw new Error('Copyright version listing exceeded its requested cap')
+  if (entries.some(entry => !entry.Key || !entry.Key.startsWith(key) || !entry.VersionId))
+    throw new Error('Copyright version listing returned an invalid identity')
   return {
-    hasMore: [...(confirmation.Versions ?? []), ...(confirmation.DeleteMarkers ?? [])].some(
-      entry => entry.Key === key,
+    scanned: entries.length,
+    versions: entries.flatMap(entry =>
+      entry.Key === key ? [{ Key: key, VersionId: entry.VersionId! }] : [],
     ),
-    scanned: (page.Versions?.length ?? 0) + (page.DeleteMarkers?.length ?? 0),
-  }
-}
-
-/** Every stored version and delete marker whose key is exactly `key` (the listing is by prefix). */
-async function listVersions(bucket: string, key: string): Promise<ObjectIdentifier[]> {
-  const found: ObjectIdentifier[] = []
-  let keyMarker: string | undefined
-  let versionIdMarker: string | undefined
-  do {
-    // oxlint-disable-next-line no-await-in-loop -- each page's markers come from the previous page.
-    const page = await S3ImagesClient.send(
-      new ListObjectVersionsCommand({
-        Bucket: bucket,
-        Prefix: key,
-        KeyMarker: keyMarker,
-        VersionIdMarker: versionIdMarker,
-      }),
-    )
-    for (const entry of [...(page.Versions ?? []), ...(page.DeleteMarkers ?? [])]) {
-      if (entry.Key === key && entry.VersionId) found.push({ Key: key, VersionId: entry.VersionId })
-    }
-    keyMarker = page.IsTruncated ? page.NextKeyMarker : undefined
-    versionIdMarker = page.IsTruncated ? page.NextVersionIdMarker : undefined
-  } while (keyMarker !== undefined || versionIdMarker !== undefined)
-  return found
-}
-
-async function deleteVersions(bucket: string, versions: ObjectIdentifier[]): Promise<void> {
-  for (let start = 0; start < versions.length; start += DELETE_BATCH_SIZE) {
-    // oxlint-disable-next-line no-await-in-loop -- a failed batch must stop the keys after it.
-    const result = await S3ImagesClient.send(
-      new DeleteObjectsCommand({
-        Bucket: bucket,
-        Delete: { Objects: versions.slice(start, start + DELETE_BATCH_SIZE), Quiet: true },
-      }),
-    )
-    // DeleteObjects answers 200 even when individual versions were refused (missing IAM, hold).
-    if (result.Errors?.length) {
-      throw new Error(`Copyright evidence delete refused ${result.Errors.length} object versions`)
-    }
   }
 }
 
 /**
- * Permanently removes every version and delete marker of each key from the versioned evidence
- * bucket, then lists again to confirm nothing is left. It throws on any refusal or leftover so the
- * caller keeps the database rows that point at the objects; a rerun starts from whatever remains.
- * Keys are never put in an error message.
+ * Delete one bounded head batch, then confirm from a new head listing. Never reuse a deleted
+ * VersionIdMarker. S3 orders keys lexicographically, then versions (including delete markers),
+ * so an exact key precedes every longer prefix neighbor. An exact-key-free head proves absence.
+ * https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/ListVersionsRequest.html
  */
-export async function deleteCopyrightEvidenceObjectVersions(
-  keys: readonly string[],
-): Promise<void> {
-  if (keys.length === 0) return
+export async function deleteCopyrightEvidenceObjectVersionPage(
+  key: string,
+  pageSize: number,
+): Promise<{ hasMore: boolean; scanned: number }> {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1000)
+    throw new RangeError('Invalid copyright S3 version page cap')
   const bucket = process.env.S3_BUCKET_COPYRIGHT_EVIDENCE?.trim()
   if (!bucket) throw new Error('S3_BUCKET_COPYRIGHT_EVIDENCE is required to erase evidence')
-  for (const key of keys) {
-    // oxlint-disable-next-line no-await-in-loop -- one key at a time keeps a refusal attributable.
-    await deleteVersions(bucket, await listVersions(bucket, key))
-    // oxlint-disable-next-line no-await-in-loop -- the confirmation follows its own key's delete.
-    if ((await listVersions(bucket, key)).length > 0) {
-      throw new Error('Copyright evidence object versions remain after delete')
-    }
+  const page = await headVersions(bucket, key, pageSize)
+  if (!page.versions.length) return { hasMore: false, scanned: page.scanned }
+  const deleted = await S3ImagesClient.send(
+    new DeleteObjectsCommand({
+      Bucket: bucket,
+      Delete: { Objects: page.versions, Quiet: true },
+    }),
+  )
+  if (deleted.Errors?.length)
+    throw new Error('Copyright evidence object version deletion was refused')
+  return {
+    hasMore: (await headVersions(bucket, key, 1)).versions.length > 0,
+    scanned: page.scanned,
   }
 }

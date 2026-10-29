@@ -38,7 +38,7 @@ export async function recoverMissingDecisionAssessments(
           receipt.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
         FROM copyright_notice_email_intake_receipts receipt
         JOIN copyright_notice_email_intake_notice_links link
-          ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
+          ON link.copyright_notice_email_intake_receipt_id = receipt.id AND link.link_kind = 'initial'
         JOIN copyright_notice_submissions submission
           ON submission.copyright_notice_id = link.copyright_notice_id
           AND submission.kind = 'notice'

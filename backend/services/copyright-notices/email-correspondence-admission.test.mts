@@ -7,7 +7,6 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
-import { decryptSecret } from '@modules/token-secrets'
 import {
   createCopyrightEmailIntake,
   prepareCopyrightEmailDelivery,
@@ -18,9 +17,10 @@ import {
   admitCopyrightEmailCorrespondence,
   rejectCopyrightEmailCorrespondence,
 } from './email-correspondence-admission.mts'
-import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
+import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -42,10 +42,10 @@ describe('copyright email correspondence admission', () => {
       receivedAt: new Date(),
       claimantUserId: null,
       claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: 'Original photograph',
       policyVersion: 'test-v1',
-      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'email', body: 'ciphertext' },
       targets: [
         {
           placementId,
@@ -149,20 +149,23 @@ describe('copyright email correspondence admission', () => {
     )
 
     expect(submission).toBeDefined()
-    expect(
-      JSON.parse(
-        decryptSecret(
-          submission?.body_ciphertext ?? '',
-          copyrightSubmissionPurpose(admitted.submissionId),
+    {
+      await using caseSecrets = await openCopyrightSecrets({ kind: 'notice', id: notice.id })
+      expect(
+        JSON.parse(
+          caseSecrets.decryptSecret(
+            submission?.body_ciphertext ?? '',
+            copyrightSubmissionPurpose(admitted.submissionId),
+          ),
         ),
-      ),
-    ).toEqual(expect.objectContaining({ name: 'Hosted-material poster', targetIds: [targetId] }))
-    expect(
-      decryptSecret(
-        correspondence?.body_ciphertext ?? '',
-        copyrightEmailIntakePurpose(sesMessageId),
-      ),
-    ).toBe(rawBody)
+      ).toEqual(expect.objectContaining({ name: 'Hosted-material poster', targetIds: [targetId] }))
+      expect(
+        caseSecrets.decryptSecret(
+          correspondence?.body_ciphertext ?? '',
+          copyrightCorrespondencePurpose(admitted.correspondenceId),
+        ),
+      ).toBe(rawBody)
+    }
 
     await reviewCopyrightCounterNotice({
       submissionId: admitted.submissionId,
@@ -201,10 +204,10 @@ describe('copyright email correspondence admission', () => {
       receivedAt: new Date(),
       claimantUserId: null,
       claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: 'Original photograph',
       policyVersion: 'test-v1',
-      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'email', body: 'ciphertext' },
       targets: [
         {
           placementId,

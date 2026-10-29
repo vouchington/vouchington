@@ -1,7 +1,7 @@
 import { createCopyrightPosterNoticesInTransaction } from '../services/copyright-notices/restriction-poster-notices.mts'
-import { beginTransaction, read, write } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { openCopyrightSecretsForCiphertexts } from '../services/copyright-notices/encryption-keys.mts'
 import { copyrightCorrespondencePurpose } from '../services/copyright-notices/correspondence.mts'
 import {
   selectCopyrightStatementFacts,
@@ -11,7 +11,8 @@ import { createCopyrightReviewOutcomeNoticesInTransaction } from '../services/co
 import { createCopyrightClaimantDecisionNoticeInTransaction } from '../services/copyright-notices/claimant-decision-notices.mts'
 
 export async function readTestCopyrightStatementIntents(noticeId: string) {
-  const { rows } = await read<{
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{
     id: string
     delivery_kind: string
     channel: string
@@ -31,16 +32,27 @@ export async function readTestCopyrightStatementIntents(noticeId: string) {
       AND intent.delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'claimant_decision_notice')
     ORDER BY intent.id
   `)
-  return rows.map(row => ({
+  await using secrets = await openCopyrightSecretsForCiphertexts(
+    { kind: 'notice', id: noticeId },
+    rows.flatMap(row => [row.body_ciphertext, row.email_ciphertext]),
+    transaction,
+  )
+  const result = rows.map(row => ({
     ...row,
     text:
-      row.body_ciphertext && row.correspondence_id
-        ? decryptSecret(row.body_ciphertext, copyrightCorrespondencePurpose(row.correspondence_id))
+      row.body_ciphertext && row.body_ciphertext !== 'erased' && row.correspondence_id
+        ? secrets?.decryptSecret(
+            row.body_ciphertext,
+            copyrightCorrespondencePurpose(row.correspondence_id),
+          )
         : null,
-    email: row.email_ciphertext
-      ? decryptSecret(row.email_ciphertext, `copyright-delivery-recipient:${row.id}`)
-      : null,
+    email:
+      row.email_ciphertext && row.email_ciphertext !== 'erased'
+        ? secrets?.decryptSecret(row.email_ciphertext, `copyright-delivery-recipient:${row.id}`)
+        : null,
   }))
+  await transaction.commit()
+  return result
 }
 
 export async function readTestCopyrightStatementFacts(noticeId: string, restrictionId?: string) {

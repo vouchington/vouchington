@@ -30,25 +30,25 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
     OR (rationale.copyright_notice_email_intake_receipt_id IS NOT NULL AND (
       (rationale.rationale_ciphertext = 'erased'
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)
+          WHERE link.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id)
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
+          WHERE link.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
               WHERE erasure.copyright_notice_id = link.copyright_notice_id)))
       OR (EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
           JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
+          WHERE link.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id
             AND notice.jurisdiction IN ('eu_dsa', 'uk'))
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
           JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
+          WHERE link.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id
             AND ((notice.jurisdiction = 'us_dmca' AND NOT (rationale.rationale_ciphertext = 'erased'
               AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
                 WHERE erasure.copyright_notice_id = notice.id)))
               OR EXISTS (SELECT 1 FROM preserved_cases held
               WHERE held.notice_id = notice.id AND held.released_at IS NULL))))
       OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)
+          WHERE link.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id)
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
           WHERE receipt.id = rationale.copyright_notice_email_intake_receipt_id
             AND receipt.review_decision = 'rejected'

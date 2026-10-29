@@ -92,6 +92,7 @@ jobs:
           ANALYTICS_BACKEND: local
           ANALYTICS_LOCAL_DIR: ${{ runner.temp }}/native-mv-analytics
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-native-mv-ci-key:raw32:this fake test key is not secret
+          VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS: codex-test-replay-a:MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE=,codex-test-replay-b:R0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0c=
           VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake native MV CI OTP HMAC secret
           S3_BUCKET_IMAGES: test-images
           S3_BUCKET_IMAGE_UPLOADS: test-image-uploads

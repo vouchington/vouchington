@@ -26,6 +26,17 @@ export async function claimIneligiblePurchaseCancellationOperation(
     { provider: 'stripe', environment: providerEnvironment, applicationId: providerApplicationId },
     query,
   )
+  await query(sql`/* serializeRetainedCancellationIdentity */
+    SELECT pg_advisory_xact_lock(hashtextextended(
+      ${`membership-operation:${providerContextId}:${idempotencyKey}`}, 0))`)
+  const { rows: retained } = await query<{ id: string }>(sql`
+    /* getRetainedIneligiblePurchaseCancellation */
+    SELECT id FROM membership_operation_retained_identities
+    WHERE membership_provider_context_id = ${providerContextId}
+      AND idempotency_key = ${idempotencyKey}
+      AND operation_kind = 'cancel_source'
+      AND membership_lineage_binding_id = ${membershipLineageBindingId}`)
+  if (retained[0]) return { completed: true, leaseToken: null, id: retained[0].id, idempotencyKey }
   await query(sql`/* claimIneligiblePurchaseCancellation:insert */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,

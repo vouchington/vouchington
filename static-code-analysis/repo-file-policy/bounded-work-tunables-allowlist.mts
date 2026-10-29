@@ -11,11 +11,11 @@ export const workTunableAllowlistFile =
 
 export const workTunableAllowlist: readonly WorkTunableAllowEntry[] = [
   {
-    file: 'backend/services/copyright-notices/retention-erasure-s3.mts',
+    file: 'backend/services/copyright-notices/retention-minimal-purge.mts',
     ruleId: 'bounded-work-literal',
-    identifier: 'DELETE_BATCH_SIZE',
-    value: '1000',
+    identifier: 'MAX_PAGE_SIZE',
+    value: '50',
     reason:
-      'S3 DeleteObjects accepts at most 1,000 keys: https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html',
+      'Defensive hard ceiling for the internal purge service. The cleanup caller supplies its page size from the validated data-retention DynamicConfig; the service rejects a larger direct override.',
   },
 ]

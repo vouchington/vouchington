@@ -116,7 +116,7 @@ export async function linkTestCopyrightEmailIntake(
 ): Promise<void> {
   await write(sql`/* linkTestCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intake_notice_links
-      (copyright_notice_email_intake_id, copyright_notice_id, link_kind)
+      (copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind)
     VALUES (${intakeId}, ${noticeId}, 'initial')`)
 }
 

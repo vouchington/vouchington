@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import type { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import { createCopyrightPosterNoticesInTransaction } from './restriction-poster-notices.mts'
@@ -19,6 +20,7 @@ export async function completeUnavailableRestore(input: {
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
   dependencies: CopyrightActionDeliveryDependencies
+  accountLocks: CopyrightNoticeAccountLocks | null
 }): Promise<void> {
   await runSequentially([
     () =>
@@ -38,7 +40,12 @@ export async function completeUnavailableRestore(input: {
           'Restoration resolved without delivery because the placement is unavailable.',
         query: input.query,
       }),
-    () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
+    () =>
+      syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(
+        input.legal,
+        input.query,
+        input.accountLocks,
+      ),
     () =>
       insertCopyrightActionLifecycleEvent(
         input.legal,
@@ -54,6 +61,7 @@ export async function completeRestoreRetainingPlacement(input: {
   legal: LockedCopyrightActionDelivery
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
+  accountLocks: CopyrightNoticeAccountLocks | null
 }): Promise<boolean> {
   const { rows } = await input.query<{ blocked: boolean }>(sql`
     /* processCopyrightActionIntent:otherActiveRestrictions */
@@ -79,7 +87,12 @@ export async function completeRestoreRetainingPlacement(input: {
         completedAt: input.now,
         query: input.query,
       }),
-    () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
+    () =>
+      syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(
+        input.legal,
+        input.query,
+        input.accountLocks,
+      ),
     () =>
       insertCopyrightActionLifecycleEvent(
         input.legal,

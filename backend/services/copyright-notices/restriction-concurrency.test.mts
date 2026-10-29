@@ -55,13 +55,13 @@ describe('copyright restriction concurrency', () => {
       receivedAt: new Date('2026-06-30T16:00:00.000Z'),
       claimantUserId: null,
       claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: `work-${crypto.randomUUID()}`,
       policyVersion: 'test-v1',
       initialSubmission: {
         kind: 'notice',
         sourceKind: 'signed_in_form',
-        bodyCiphertext: `notice-${crypto.randomUUID()}`,
+        body: `notice-${crypto.randomUUID()}`,
       },
       targets: [
         {
@@ -144,13 +144,13 @@ describe('copyright restriction concurrency', () => {
       receivedAt: new Date('2026-06-30T16:00:00.000Z'),
       claimantUserId: claimant.id,
       claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: `work-${crypto.randomUUID()}`,
       policyVersion: 'test-v1',
       initialSubmission: {
         kind: 'notice',
         sourceKind: 'signed_in_form',
-        bodyCiphertext: `notice-${crypto.randomUUID()}`,
+        body: `notice-${crypto.randomUUID()}`,
       },
       targets: [
         {
@@ -169,7 +169,7 @@ describe('copyright restriction concurrency', () => {
       submissionId: aggregate.submissions[0].id,
       correspondenceKind: 'receipt',
       compositionKind: 'deterministic_template',
-      bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+      bodyText: `receipt-${crypto.randomUUID()}`,
       draftedById: null,
     })
     await createCopyrightDeliveryIntent({

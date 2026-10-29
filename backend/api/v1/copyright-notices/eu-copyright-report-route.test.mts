@@ -1,6 +1,6 @@
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { countEuTransparencyReportsBy } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
+import { countEuTransparencyReportsInPeriod } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { describe, expect, it } from 'vitest'
 import { readEuCopyrightTransparencyFigures } from '@services/copyright-notices/eu-reporting'
@@ -50,11 +50,18 @@ describe('DSA copyright transparency report GET', () => {
 
   it('counts a receipt after withdrawing its approval and does not persist GET output', async () => {
     const { administrator, claimant, staff, staffRequest } = await createTerritorialActors()
-    const periodStart = new Date(Date.now() - 60_000).toISOString()
-    const periodEnd = new Date(Date.now() + 86_400_000).toISOString()
-    const reportCount = await countEuTransparencyReportsBy(staff.id)
+    const paddingMs = Number.parseInt(crypto.randomUUID().slice(0, 8), 16) % 60_000
+    const periodCenter = Date.now()
+    const periodStart = new Date(periodCenter - 60_000 - paddingMs).toISOString()
+    const periodEnd = new Date(periodCenter + 60_000 + paddingMs).toISOString()
+    const reportCount = await countEuTransparencyReportsInPeriod(
+      new Date(periodStart),
+      new Date(periodEnd),
+    )
     const before = await staffRequest.get(reportPath(undefined, periodStart, periodEnd)).expect(200)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(reportCount)
+    expect(
+      await countEuTransparencyReportsInPeriod(new Date(periodStart), new Date(periodEnd)),
+    ).toBe(reportCount)
 
     const approval = await approveJurisdictionPolicy(administrator, 'eu_dsa')
     const foreignNoticeId = await seedPendingTerritorialNotice('eu_dsa', claimant)
@@ -93,7 +100,9 @@ describe('DSA copyright transparency report GET', () => {
     expect(after.body.copyright_eu_report.receipt_count).toBeGreaterThanOrEqual(
       before.body.copyright_eu_report.receipt_count + 1,
     )
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(reportCount)
+    expect(
+      await countEuTransparencyReportsInPeriod(new Date(periodStart), new Date(periodEnd)),
+    ).toBe(reportCount)
   })
 
   it.each(['csv_notices', 'csv_complaints'] as const)(

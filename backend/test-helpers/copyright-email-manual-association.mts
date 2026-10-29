@@ -1,9 +1,16 @@
+import { getCopyrightRetentionWindows } from '../services/copyright-notices/config.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { searchCopyrightNoticeAssociationTargets } from '../services/copyright-notices/association-search.mts'
+import { v7 as uuidv7 } from 'uuid'
+import {
+  attachCopyrightEncryptionKey,
+  prepareCopyrightEncryptionKey,
+} from '../services/copyright-notices/encryption-keys.mts'
+import { destroyCopyrightOwnerEncryptionKey } from '../services/copyright-notices/encryption-key-destruction.mts'
 
 /** The smallest accepted case row for a staff association boundary. */
 export async function createCopyrightNoticeForManualAssociation(
@@ -14,19 +21,27 @@ export async function createCopyrightNoticeForManualAssociation(
   claimantDisplayName: string | null = null,
   receivedAt?: Date,
 ): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`
+  const resolvedNoticeId = noticeId ?? uuidv7()
+  await using key = await prepareCopyrightEncryptionKey('notice')
+  await using transaction = await beginTransaction()
+  const owner = { kind: 'notice' as const, id: resolvedNoticeId }
+  await attachCopyrightEncryptionKey(key, owner, transaction)
+  await transaction(sql`
     /* createCopyrightNoticeForManualAssociation */
     INSERT INTO copyright_notices (
       id, jurisdiction, legal_basis, received_at, accepted_at,
       claimant_display_name, claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      COALESCE(${noticeId ?? null}::uuid, uuidv7()), ${jurisdiction}, 'copyright',
-      COALESCE(${receivedAt ?? null}::timestamptz, CURRENT_TIMESTAMP),
+      ${resolvedNoticeId},
+      ${jurisdiction}, 'copyright', COALESCE(${receivedAt ?? null}::timestamptz, CURRENT_TIMESTAMP),
       CASE WHEN ${accepted} THEN CURRENT_TIMESTAMP ELSE NULL END,
-      ${claimantDisplayName}, ${`cipher-${randomUUID()}`}, ${workDescription}, 'test-v1'
-    ) RETURNING id
+      ${claimantDisplayName},
+      ${key.encrypt(`contact-${randomUUID()}`, `manual-association-fixture:${resolvedNoticeId}:contact`, owner)},
+      ${workDescription}, 'test-v1'
+    )
   `)
-  return rows[0]!.id
+  await transaction.commit()
+  return resolvedNoticeId
 }
 
 /** Read only the immutable staff association event for this intake. */
@@ -50,7 +65,7 @@ export async function readCopyrightEmailManualAssociationReview(intakeId: string
     /* readCopyrightEmailManualAssociationReview */
     SELECT copyright_notice_id, correspondence_action AS action
     FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_id = ${intakeId}
+    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
       AND correspondence_action IS NOT NULL
   `)
   return rows
@@ -77,10 +92,12 @@ export async function markTestCopyrightNoticeErased(
 ): Promise<void> {
   await transaction(sql`/* markTestCopyrightNoticeErased:lock */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
+  await destroyCopyrightOwnerEncryptionKey({ kind: 'notice', id: noticeId }, transaction)
   await transaction(sql`/* markTestCopyrightNoticeErased:marker */
     INSERT INTO copyright_notice_retention_erasures
-      (copyright_notice_id, retention_days, erased_object_count)
-    VALUES (${noticeId}, 1, 0)`)
+      (copyright_notice_id, retention_days, erased_object_count, legal_clock_at)
+    VALUES (${noticeId}, 1, 0,
+      fn_project_copyright_minimal_record_legal_clock(${noticeId}, ${getCopyrightRetentionWindows().complaintMonths}))`)
 }
 
 /** Commit the retained erasure marker before a new inbound reply is parsed. */
@@ -103,4 +120,15 @@ export async function searchTestCopyrightAssociationsInTimeZone(
   return await searchCopyrightNoticeAssociationTargets(currentUser, query, after, {
     query: transaction,
   })
+}
+
+/** Deliberately creates a broken live-key state for fail-closed reader coverage. */
+export async function destroyTestCopyrightNoticeKeyWithoutErasureMarker(
+  noticeId: string,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* lockTestCopyrightNoticeForKeyDestruction */
+    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
+  await destroyCopyrightOwnerEncryptionKey({ kind: 'notice', id: noticeId }, transaction)
+  await transaction.commit()
 }

@@ -1,4 +1,4 @@
-import { decryptSecret } from '@modules/token-secrets'
+import type { ScopedCopyrightSecrets } from './encryption-keys.mts'
 import {
   copyrightEmailIntakePurpose,
   type CopyrightEmailIntake,
@@ -22,7 +22,9 @@ export type AttachmentCiphertexts = {
 export function decryptAgentIntake(
   intake: CopyrightEmailIntake & ParseCiphertexts,
   attachments: AttachmentCiphertexts[],
+  secrets: ScopedCopyrightSecrets,
 ): CopyrightEmailIntakeForAgent {
+  const { decryptSecret } = secrets
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   return {
     id: intake.id,

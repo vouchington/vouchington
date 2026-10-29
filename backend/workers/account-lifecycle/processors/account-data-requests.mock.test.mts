@@ -10,7 +10,6 @@ import type {
   markDataRequestReady,
   uploadExportToS3,
   wasDataRequestMadeBySubject,
-  writeExportFiles,
   zipDir,
 } from '@services/account-data-requests'
 import type { getPrivateUserByAny } from '@services/users/get'
@@ -35,7 +34,10 @@ const mockMarkDataRequestReady = vi.fn<typeof markDataRequestReady>()
 const mockPublishTerminalStatus =
   vi.fn<(requestId: string, status: 'ready' | 'failed') => Promise<void>>()
 const mockUploadExportToS3 = vi.fn<typeof uploadExportToS3>()
-const mockWriteExportFiles = vi.fn<typeof writeExportFiles>()
+type OwnedExportWriter = NonNullable<
+  NonNullable<Parameters<typeof processExportRequest>[2]>['writeExportFiles']
+>
+const mockWriteExportFiles = vi.fn<OwnedExportWriter>()
 const mockWasDataRequestMadeBySubject = vi.fn<typeof wasDataRequestMadeBySubject>()
 const mockZipDir = vi.fn<typeof zipDir>()
 const PROCESSING_ATTEMPT_ID = 'attempt-456'

@@ -6,7 +6,7 @@ import {
   copyrightEmailSubject,
   copyrightNotificationCopy,
 } from './statement-of-reasons-wording.mts'
-import { decryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { getVerifiedEmailAddress } from '@services/contribution-gating'
 import { createCopyrightNoticeNotification } from '@services/notifications'
 import assert from 'http-assert'
@@ -136,11 +136,13 @@ async function resolveCopyrightEmailRecipient(
   recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent',
 ): Promise<string> {
   const retainedRecipient = await getCopyrightDeliveryRecipient(intentId)
-  if (retainedRecipient)
-    return decryptSecret(
+  if (retainedRecipient) {
+    await using secrets = await openCopyrightSecrets({ kind: 'delivery', id: intentId })
+    return secrets.decryptSecret(
       retainedRecipient.email_ciphertext,
       `copyright-delivery-recipient:${retainedRecipient.copyright_notice_delivery_work_item_id}`,
     )
+  }
   if (recipientRole === 'poster' || recipientRole === 'informed_owner') {
     assert(recipientUserId, 422, 'Copyright poster delivery requires a member recipient')
     const email = await getVerifiedEmailAddress(recipientUserId)

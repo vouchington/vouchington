@@ -1,3 +1,4 @@
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
@@ -5,7 +6,6 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightHoldResolutionKind, CopyrightLegalHoldResolutionRecord } from './types.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import {
@@ -58,6 +58,12 @@ async function resolveCopyrightLegalHoldInTransaction(
   `)
   const assessment = assessmentRows[0]
   assert(assessment, 404, 'Copyright legal hold assessment not found')
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: assessment.copyright_notice_id },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   const { rows } = await transaction(sql`/* resolveCopyrightLegalHold */
     INSERT INTO copyright_notice_legal_hold_resolutions (
       copyright_notice_legal_hold_assessment_id, resolved_at, resolved_by_id, resolution_kind,

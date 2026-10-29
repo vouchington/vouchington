@@ -34,6 +34,10 @@ jobs:
     # Setup plus the 10-minute run step no longer fits in 10 minutes (run 39276118528).
     timeout-minutes: 20
     env:
+      NODE_ENV: test
+      WORKTREE_DIR: ci-explain-${{ github.run_id }}
+      S3_BUCKET_COPYRIGHT_EVIDENCE: test-copyright-evidence
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS: codex-test-replay-a:MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE=,codex-test-replay-b:R0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0c=
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
       S3_BUCKET_SITEMAPS: test-sitemaps
@@ -134,7 +138,7 @@ jobs:
         env:
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
           VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake explain-analyze CI OTP HMAC secret
-        run: node backend/scripts/seeds/dev-seed.mts
+        run: node --import ./backend/test-helpers/copyright-key-object-cli.mts backend/scripts/seeds/dev-seed.mts
         timeout-minutes: 3
       - name: Seed EXPLAIN data with resource samples
         timeout-minutes: 3
@@ -160,8 +164,8 @@ jobs:
           ) &
           sampler_pid=$!
           trap 'kill "$sampler_pid" 2>/dev/null || true; wait "$sampler_pid" 2>/dev/null || true' EXIT
-          node backend/scripts/explain-analyze/seed.mts
-      - run: node backend/scripts/explain-analyze/run.mts
+          node --import ./backend/test-helpers/copyright-key-object-cli.mts backend/scripts/explain-analyze/seed.mts
+      - run: node --import ./backend/test-helpers/copyright-key-object-cli.mts backend/scripts/explain-analyze/run.mts
         timeout-minutes: 10
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'

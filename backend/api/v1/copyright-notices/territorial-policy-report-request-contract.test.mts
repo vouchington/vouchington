@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
-import { countEuTransparencyReportsBy } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
+import { countEuTransparencyReportsInPeriod } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   approveJurisdictionPolicy,
@@ -8,6 +8,15 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 
 const SCHEMA_DIAGNOSTIC = /schema|must be|required|invalid/i
+
+function randomizedReportPeriod(): { period_start: string; period_end: string } {
+  const paddingMs = Number.parseInt(crypto.randomUUID().slice(0, 8), 16) % 60_000
+  const center = Date.now()
+  return {
+    period_start: new Date(center - 60_000 - paddingMs).toISOString(),
+    period_end: new Date(center + 60_000 + paddingMs).toISOString(),
+  }
+}
 
 describe('EU transparency report request contract', () => {
   useCopyrightIntakeEnvironment()
@@ -23,34 +32,54 @@ describe('EU transparency report request contract', () => {
   })
 
   it('rejects an unknown key before compiling a report', async () => {
-    const { staff, staffRequest } = await createTerritorialActors()
-    const body = {
-      period_start: new Date(Date.now() - 60_000).toISOString(),
-      period_end: new Date(Date.now() + 60_000).toISOString(),
-    }
+    const { staffRequest } = await createTerritorialActors()
+    const body = randomizedReportPeriod()
+    const before = await countEuTransparencyReportsInPeriod(
+      new Date(body.period_start),
+      new Date(body.period_end),
+    )
 
     await staffRequest
       .post(url)
       .send({ ...body, injected: true })
       .expect(422)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(0)
+    expect(
+      await countEuTransparencyReportsInPeriod(
+        new Date(body.period_start),
+        new Date(body.period_end),
+      ),
+    ).toBe(before)
     await staffRequest.post(url).send(body).expect(201)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(1)
+    expect(
+      await countEuTransparencyReportsInPeriod(
+        new Date(body.period_start),
+        new Date(body.period_end),
+      ),
+    ).toBe(before + 1)
   })
 
   it.each([
     ['period_start', 'period_start is required'],
     ['period_end', 'period_end is required'],
   ])('keeps the %s message for a mistyped field', async (field, message) => {
-    const { staff, staffRequest } = await createTerritorialActors()
-    const body = { period_start: new Date().toISOString(), period_end: new Date().toISOString() }
+    const { staffRequest } = await createTerritorialActors()
+    const body = randomizedReportPeriod()
+    const before = await countEuTransparencyReportsInPeriod(
+      new Date(body.period_start),
+      new Date(body.period_end),
+    )
 
     const rejected = await staffRequest
       .post(url)
       .send({ ...body, [field]: 1 })
       .expect(422)
     expect(rejected.body.message).toBe(message)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(0)
+    expect(
+      await countEuTransparencyReportsInPeriod(
+        new Date(body.period_start),
+        new Date(body.period_end),
+      ),
+    ).toBe(before)
   })
 })
 

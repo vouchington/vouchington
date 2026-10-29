@@ -5,6 +5,7 @@ import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyr
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import {
   appendCopyrightGuestFiling,
   createCopyrightCounterNotice,
@@ -21,6 +22,7 @@ const jobId = (submissionId: string) => `copyright_submission_guidance_${submiss
 
 describe('copyright submission guidance backlog with new intake off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
+  useFakeCopyrightEvidenceBucket()
 
   afterAll(closeTestDataStores)
 

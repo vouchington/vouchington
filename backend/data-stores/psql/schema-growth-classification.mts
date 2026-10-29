@@ -1,5 +1,6 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { buildUnboundedUnpartitionedTables as buildPlatformUnboundedTables } from '@vouchington/utils/schema-growth'
+import { LEGAL_IDENTITY_GROWTH_POLICIES } from './schema-growth-legal-identities.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
 import { RETAINED_RELATION_GROWTH_POLICIES } from './schema-growth-retained-identities.mts'
 import { AI_USAGE_GROWTH_POLICIES } from './schema-growth-ai-usage.mts'
@@ -93,6 +94,10 @@ export function buildUnboundedUnpartitionedTables(
     ],
     entries: [
       [
+        'copyright_repeat_infringer_reviews',
+        'Review traffic has no fixed cardinality bound. Each whole review row expires six calendar years after its own latest opening or outcome; bounded daily pages commit deletion and independent cyclic cursor progress together.',
+      ],
+      [
         'moderation_reports',
         'Unresolved reports remain available for staff action, with one pending report per reporter and target; resolved reports expire after 24 months. The open backlog has no time cap.',
       ],
@@ -164,6 +169,7 @@ export function buildUnboundedUnpartitionedTables(
             ],
       ),
       ...RETAINED_RELATION_GROWTH_POLICIES,
+      ...LEGAL_IDENTITY_GROWTH_POLICIES,
       [
         'activitypub_remote_follow_activities',
         'Active Follow cycles track live domain edges; replaced and undone cycles expire in bounded indexed pages from their terminal timestamp beyond the supported replay age.',

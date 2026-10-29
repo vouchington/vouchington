@@ -17,8 +17,8 @@ import { streamBookmarks } from './stream-bookmarks.mts'
 import { streamConsents, streamReferralAttributions } from './stream-consents.mts'
 import { streamFollowedRssFeeds } from './stream-followed-rss-feeds.mts'
 import { streamFollowedTopics } from './stream-followed-topics.mts'
-import { streamCopyrightExports } from './stream-copyright.mts'
 import { mergeCsvFiles } from './export-merge.mts'
+import { getDataRequestLimits } from './work-limits.mts'
 
 import { endWriteStream } from './export-utils.mts'
 export { zipDir } from './export-zip.mts'
@@ -35,8 +35,17 @@ const EXPORT_CSV_STRINGIFY_OPTIONS = {
 const RELATION_CSV_HEADER_LINE = 'object_id,object_label,predicate,created_at\n'
 const BOOKMARK_CSV_HEADER_LINE = 'object_id,predicate,created_at\n'
 
+export type CopyrightExportStreamFactory = (
+  userId: string,
+  batchSize: number,
+) => ReadonlyArray<{ file: string; rows: AsyncGenerator<Record<string, unknown>> }>
+
 /** Writes all export CSVs into exportDir. */
-export async function writeExportFiles(userId: string, exportDir: string): Promise<void> {
+export async function writeExportFiles(
+  userId: string,
+  exportDir: string,
+  copyrightStreams: CopyrightExportStreamFactory,
+): Promise<void> {
   // ast-grep-ignore: no-three-sequential-awaits -- serial CSV writes keep each cursor drain exclusive
   await mkdir(exportDir)
   await writeCsvFromGenerator(join(exportDir, 'profile.csv'), streamProfile(userId))
@@ -56,13 +65,17 @@ export async function writeExportFiles(userId: string, exportDir: string): Promi
     streamFollowedRssFeeds(userId),
   )
   await writeCsvFromGenerator(join(exportDir, 'followed-topics.csv'), streamFollowedTopics(userId))
-  await writeCopyrightCsvs(exportDir, userId)
+  await writeCopyrightCsvs(exportDir, userId, copyrightStreams)
   await writeBookmarksCsv(exportDir, userId)
   await writeEntityRelationsCsv(exportDir, userId)
 }
 
-async function writeCopyrightCsvs(dir: string, userId: string): Promise<void> {
-  for (const stream of streamCopyrightExports(userId)) {
+async function writeCopyrightCsvs(
+  dir: string,
+  userId: string,
+  copyrightStreams: CopyrightExportStreamFactory,
+): Promise<void> {
+  for (const stream of copyrightStreams(userId, getDataRequestLimits().batchSize)) {
     // oxlint-disable-next-line no-await-in-loop -- serial cursor drains release each PostgreSQL client before the next starts
     await writeCsvFromGenerator(join(dir, stream.file), stream.rows)
   }

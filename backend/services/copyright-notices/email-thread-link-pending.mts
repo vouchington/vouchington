@@ -32,7 +32,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
       JOIN copyright_notice_email_message_ancestors edge
         ON edge.reply_message_intake_receipt_id = graph_intake.intake_id
       LEFT JOIN copyright_notice_email_intake_notice_links ancestor_link
-        ON ancestor_link.copyright_notice_email_intake_id = edge.ancestor_message_intake_receipt_id
+        ON ancestor_link.copyright_notice_email_intake_receipt_id = edge.ancestor_message_intake_receipt_id
       WHERE (
         edge.ancestor_message_intake_receipt_id <> ${input.initialIntakeId}
         AND NOT EXISTS (
@@ -41,7 +41,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
         AND ancestor_link.copyright_notice_id IS DISTINCT FROM ${input.noticeId}
       ) OR EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links existing_link
-        WHERE existing_link.copyright_notice_email_intake_id = graph_intake.intake_id
+        WHERE existing_link.copyright_notice_email_intake_receipt_id = graph_intake.intake_id
           AND existing_link.copyright_notice_id IS DISTINCT FROM ${input.noticeId}
       )
       UNION
@@ -64,7 +64,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
       JOIN graph_intakes graph_intake ON graph_intake.intake_id = edge.reply_message_intake_receipt_id
     )
     INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
+      copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind, correspondence_action
     )
     SELECT descendant.intake_id, ${input.noticeId}, 'thread', 'pending'
     FROM descendants descendant
@@ -72,7 +72,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
       SELECT 1 FROM blocked blocked_intake WHERE blocked_intake.intake_id = descendant.intake_id
     )
     ORDER BY descendant.intake_id
-    ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+    ON CONFLICT (copyright_notice_email_intake_receipt_id) DO NOTHING
   `)
   await transaction(linkQuery)
 }

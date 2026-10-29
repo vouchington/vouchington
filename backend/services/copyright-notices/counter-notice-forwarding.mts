@@ -1,4 +1,4 @@
-import { decryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -40,6 +40,12 @@ export async function createCounterNoticeForwardingInTransaction(
   `)
   const row = rows[0]
   assert(row, 422, 'A compliant counter-notice requires a claimant delivery recipient')
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: row.notice_id },
+    transaction,
+    'write',
+  )
+  const { decryptSecret } = secrets
   const counterNotice = JSON.parse(
     decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
   ) as {

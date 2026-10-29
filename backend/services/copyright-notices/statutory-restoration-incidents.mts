@@ -1,4 +1,6 @@
 import type { OwnedTransaction } from '@data-stores/psql'
+import assert from 'http-assert'
+import type { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
 import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
 
@@ -14,7 +16,9 @@ export async function syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(
     'action' | 'copyright_notice_id' | 'copyright_notice_deadline_id'
   >,
   transaction: OwnedTransaction,
+  accountLocks: CopyrightNoticeAccountLocks | null,
 ): Promise<void> {
   if (legal.action !== 'restore' || !legal.copyright_notice_deadline_id) return
-  await syncCopyrightRepeatInfringerIncidents(legal.copyright_notice_id, transaction)
+  assert(accountLocks, 409, 'Copyright restoration account locks are missing')
+  await syncCopyrightRepeatInfringerIncidents(legal.copyright_notice_id, transaction, accountLocks)
 }

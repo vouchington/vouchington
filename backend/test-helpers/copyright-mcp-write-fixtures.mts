@@ -116,13 +116,13 @@ export async function createRecommendedMcpCopyrightCorrespondence(
     receivedAt: new Date(),
     claimantUserId: null,
     claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${randomUUID()}`,
+    claimantContact: `ciphertext-${randomUUID()}`,
     workDescription: 'Original photograph',
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'email',
-      bodyCiphertext: 'ciphertext',
+      body: 'ciphertext',
     },
     targets: [
       {

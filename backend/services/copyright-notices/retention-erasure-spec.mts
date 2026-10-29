@@ -1,49 +1,21 @@
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tokens.mts'
 
-/**
- * How an erased column is overwritten. Every overwrite keeps the column valid for its CHECK
- * constraints and never collides with a real value:
- * - `redact`: ciphertext becomes the literal `erased`; a NULL stays NULL so row-shape checks hold.
- * - `null`: a user id reference is dropped.
- * - `hex64`: a 64-character lookup token becomes a per-row digest, NULL stays NULL.
- * - `digest`: a 32-byte identity digest becomes a per-row digest.
- */
-export type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
-
-export type CopyrightRetentionErasureTable = {
-  table: string
-  columns: Record<string, CopyrightRetentionErasureKind>
-  /** The rows of the table that belong to one notice. */
-  scope: (noticeId: string) => SQLStatement
-}
+import {
+  table,
+  own,
+  viaSubmissions,
+  viaRestrictions,
+  viaFormIntakes,
+  emailIntakesOf,
+  viaEmailIntakes,
+  viaTerritorialRedress,
+  viaEmailReceipts,
+  type CopyrightRetentionErasureTable,
+} from './retention-erasure-table.mts'
 
 /** Prefix exposed for an intake whose storage-object reference was erased. */
 export const COPYRIGHT_ERASED_KEY_PREFIX = 'erased:'
-
-const own = (id: string) => sql`copyright_notice_id = ${id}`
-const viaSubmissions = (id: string) =>
-  sql`copyright_notice_submission_id IN
-    (SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${id})`
-const viaRestrictions = (id: string) =>
-  sql`copyright_restriction_id IN (SELECT restriction.id FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE target.copyright_notice_id = ${id})`
-const viaFormIntakes = (id: string) =>
-  sql`copyright_notice_form_intake_id IN
-    (SELECT id FROM copyright_notice_form_intakes WHERE copyright_notice_id = ${id})`
-const emailIntakesOf = (id: string) =>
-  sql`(SELECT copyright_notice_email_intake_id FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_id = ${id})`
-const viaEmailIntakes = (id: string) =>
-  sql`copyright_notice_email_intake_id IN `.append(emailIntakesOf(id))
-const viaEmailReceipts = (id: string) =>
-  sql`copyright_notice_email_intake_receipt_id IN `.append(emailIntakesOf(id))
-const table = (
-  name: string,
-  columns: CopyrightRetentionErasureTable['columns'],
-  scope: CopyrightRetentionErasureTable['scope'] = own,
-): CopyrightRetentionErasureTable => ({ table: name, columns, scope })
 
 /** Every table that holds claimant, poster, requester or reviewer text, and what is overwritten. */
 export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTable[] = [
@@ -68,7 +40,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   table('copyright_notice_submission_guidance', { guidance_ciphertext: 'redact' }, viaSubmissions),
   table('copyright_notice_form_intakes', {
     requester_user_id: 'null',
-    requester_identity_sha256: 'digest',
+    requester_identity_hmac: 'digest',
     electronic_signature_ciphertext: 'redact',
   }),
   table(
@@ -82,11 +54,11 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     'copyright_notice_email_intake_receipts',
     { review_rationale_ciphertext: 'redact' },
     id =>
-      sql`id IN (SELECT own_link.copyright_notice_email_intake_id
+      sql`id IN (SELECT own_link.copyright_notice_email_intake_receipt_id
       FROM copyright_notice_email_intake_notice_links own_link
       WHERE own_link.copyright_notice_id = ${id}
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other_link
-          WHERE other_link.copyright_notice_email_intake_id = own_link.copyright_notice_email_intake_id
+          WHERE other_link.copyright_notice_email_intake_receipt_id = own_link.copyright_notice_email_intake_receipt_id
             AND other_link.copyright_notice_id <> ${id}
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
               WHERE erased.copyright_notice_id = other_link.copyright_notice_id)))`,
@@ -194,4 +166,26 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
       emailIntakesOf(id),
     ),
   ),
+  table('copyright_territorial_notice_receipts', {
+    requester_user_id: 'null',
+    hosted_use_url: 'redact',
+    grounds_ciphertext: 'redact',
+    notifier_email_ciphertext: 'redact',
+  }),
+  table('copyright_territorial_decisions', {
+    rationale_ciphertext: 'redact',
+    public_explanation_ciphertext: 'redact',
+  }),
+  table('copyright_territorial_redress_requests', {
+    submitted_by_id: 'null',
+    explanation_ciphertext: 'redact',
+  }),
+  table(
+    'copyright_territorial_redress_decisions',
+    { rationale_ciphertext: 'redact' },
+    viaTerritorialRedress,
+  ),
+  table('copyright_eu_supervised_complaints', {
+    explanation_ciphertext: 'redact',
+  }),
 ]

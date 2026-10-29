@@ -41,6 +41,7 @@ const failed = [
 const expectedExtra = {
   erasedCount: 3,
   failedCount: 2,
+  orphanKeyFailedCount: 0,
   failures: failed,
 }
 
@@ -85,6 +86,18 @@ describe('recordCopyrightRetentionErasureFailure', () => {
     })
     expect(JSON.stringify(captureMessage.mock.calls)).not.toMatch(
       /storage|claimant|arn:|AccessDenied|\.pdf/i,
+    )
+  })
+
+  it('reports orphan key failures without key or object identifiers', () => {
+    expect(
+      recordCopyrightRetentionErasureFailure({ erased: 0, failed: [], orphanKeysFailed: 2 }),
+    ).toBe(true)
+    expect(captureMessage).toHaveBeenCalledWith(
+      'copyright_retention_erasure_failed',
+      expect.objectContaining({
+        extra: { erasedCount: 0, failedCount: 0, orphanKeyFailedCount: 2, failures: [] },
+      }),
     )
   })
 

@@ -25,13 +25,13 @@ describe('copyright in-app notification delivery', () => {
       receivedAt: new Date(),
       claimantUserId: user.id,
       claimantDisplayName: 'Claimant',
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: 'Original photograph',
       policyVersion: 'test-v1',
       initialSubmission: {
         kind: 'notice',
         sourceKind: 'signed_in_form',
-        bodyCiphertext: 'ciphertext',
+        body: 'ciphertext',
       },
       targets: [
         {

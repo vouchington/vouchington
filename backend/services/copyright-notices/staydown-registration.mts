@@ -1,3 +1,4 @@
+import type { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
 import type { OwnedTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueStaydownHash } from '@queues/content-analysis/enqueues/image-jobs'
@@ -59,8 +60,9 @@ async function registerCopyrightStaydownEntriesInTransaction(
 export async function applyCopyrightConfirmationConsequencesInTransaction(
   noticeId: string,
   transaction: OwnedTransaction,
+  heldAccounts: CopyrightNoticeAccountLocks,
 ): Promise<string[]> {
-  await syncCopyrightRepeatInfringerIncidents(noticeId, transaction)
+  await syncCopyrightRepeatInfringerIncidents(noticeId, transaction, heldAccounts)
   return registerCopyrightStaydownEntriesInTransaction(noticeId, transaction)
 }
 

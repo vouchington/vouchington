@@ -40,7 +40,7 @@ describe('findCopyrightImageSimilarityCandidates', () => {
       receivedAt: new Date(),
       claimantUserId: owner.id,
       claimantDisplayName: 'Copyright claimant',
-      claimantContactCiphertext: 'ciphertext',
+      claimantContact: 'ciphertext',
       workDescription: 'Original image',
       policyVersion: 'test',
       targets: [
@@ -51,7 +51,7 @@ describe('findCopyrightImageSimilarityCandidates', () => {
           hostedUseUrl: 'https://voucha.ai',
         }),
       ],
-      initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'staff', body: 'ciphertext' },
     })
     const targetId = await readCopyrightNoticeTargetId(notice.id)
 
@@ -86,7 +86,7 @@ describe('findCopyrightImageSimilarityCandidates', () => {
       receivedAt: new Date(),
       claimantUserId: owner.id,
       claimantDisplayName: 'Copyright claimant',
-      claimantContactCiphertext: 'ciphertext',
+      claimantContact: 'ciphertext',
       workDescription: 'Original image',
       policyVersion: 'test',
       targets: [
@@ -97,7 +97,7 @@ describe('findCopyrightImageSimilarityCandidates', () => {
           hostedUseUrl: 'https://voucha.ai',
         }),
       ],
-      initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'staff', body: 'ciphertext' },
     })
     const targetId = await readCopyrightNoticeTargetId(notice.id)
 

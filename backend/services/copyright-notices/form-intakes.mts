@@ -1,11 +1,21 @@
+import { CopyrightReplayAdmission } from './replay-admission.mts'
+import { preflightCopyrightReplay } from './admission-replay-preflight.mts'
+import { findCopyrightReplayIdentity } from './replay-identity-store.mts'
+import { recordCopyrightReplayIdentity } from './replay-identity-create.mts'
+import { v7 as uuidv7 } from 'uuid'
+import { prepareCopyrightEncryptionKey } from './encryption-keys.mts'
 import { createHash } from 'node:crypto'
+import { createCopyrightReplayDigest } from './replay-identity-hmac.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret, hashToken } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
 import { createCopyrightFormReceiptInTransaction } from './form-intake-receipt.mts'
+import {
+  decodeFormReceiptSnapshot,
+  type CopyrightFormIntakeRecord,
+} from './form-retained-receipt.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 import {
   resolveCopyrightImagePlacements,
@@ -31,42 +41,38 @@ export type CreateCopyrightFormIntakeInput = {
   }
 }
 
-export type CopyrightFormIntakeRecord = {
-  id: string
-  copyright_notice_id: string
-  copyright_notice_submission_id: string
-  requester_user_id: string | null
-}
-
 export async function createCopyrightFormIntake(
   input: CreateCopyrightFormIntakeInput,
   options: { now?: Date } = {},
 ): Promise<{ intake: CopyrightFormIntakeRecord; isDuplicate: boolean }> {
   assertStructuredNoticeStatutoryFields(input.request)
   const requestSha256 = createHash('sha256').update(stableRequestJson(input.request)).digest()
-  const requesterIdentitySha256 = createHash('sha256').update(input.requesterIdentity).digest()
+  const requesterIdentitySha256 = createCopyrightReplayDigest(
+    'requester',
+    input.requesterIdentity,
+  ).digest
+  const replayInput = {
+    family: 'form_notice' as const,
+    jurisdiction: 'us_dmca' as const,
+    identity: JSON.stringify([input.requesterIdentity, input.idempotencyKey]),
+    requester: input.requesterIdentity,
+    request: stableRequestJson(input.request),
+  }
+  const preflight = await preflightCopyrightReplay(replayInput)
+  if (preflight) {
+    assert(preflight.liveSnapshot, 404, 'Copyright notice not found')
+    return { intake: decodeFormReceiptSnapshot(preflight.liveSnapshot), isDuplicate: true }
+  }
+  const noticeId = uuidv7()
+  await using encryptionKey = await prepareCopyrightEncryptionKey('notice')
   await using transaction = await beginTransaction()
-  await transaction(sql`/* createCopyrightFormIntake:identityLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${requesterIdentitySha256.toString('hex')}, 0))
-  `)
-  const { rows: existingRows } = await transaction<
-    CopyrightFormIntakeRecord & { request_sha256: Buffer }
-  >(
-    sql`/* createCopyrightFormIntake:findDuplicate */
-      SELECT id, copyright_notice_id, copyright_notice_submission_id, requester_user_id, request_sha256
-      FROM copyright_notice_form_intakes
-      WHERE requester_identity_sha256 = ${requesterIdentitySha256} AND idempotency_key = ${input.idempotencyKey}
-  `,
-  )
-  const existing = existingRows[0]
+  const replayAdmission = await CopyrightReplayAdmission.open(transaction, replayInput)
+  const existing = await findCopyrightReplayIdentity(replayAdmission)
   if (existing) {
-    assert(
-      existing.request_sha256.equals(requestSha256),
-      409,
-      'Idempotency-Key was reused for a different request',
-    )
+    const replay = await existing.replay()
     await transaction.commit()
-    return { intake: existing, isDuplicate: true }
+    assert(replay.liveSnapshot, 404, 'Copyright notice not found')
+    return { intake: decodeFormReceiptSnapshot(replay.liveSnapshot), isDuplicate: true }
   }
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
   const now = options.now ?? new Date()
@@ -89,26 +95,25 @@ export async function createCopyrightFormIntake(
       receivedAt: now,
       claimantUserId: input.currentUser?.id ?? null,
       claimantDisplayName: input.request.claimantDisplayName,
-      claimantContactCiphertext: encryptSecret(input.request.claimantContact, purpose),
+      claimantContact: input.request.claimantContact,
+      secretPurpose: purpose,
       workDescription: input.request.workDescription,
       policyVersion: 'copyright-form-v1',
       targets,
       initialSubmission: {
         kind: 'notice',
         sourceKind: input.currentUser ? 'signed_in_form' : 'guest_form',
-        bodyCiphertext: encryptSecret(
-          JSON.stringify({
-            has_good_faith_belief: input.request.goodFaithBelief,
-            has_accuracy_authority_under_penalty_of_perjury:
-              input.request.accuracyAuthorityUnderPenaltyOfPerjury,
-            electronic_signature: input.request.electronicSignature,
-            claimant_targets: input.request.claimantTargets,
-          }),
-          purpose,
-        ),
+        body: JSON.stringify({
+          has_good_faith_belief: input.request.goodFaithBelief,
+          has_accuracy_authority_under_penalty_of_perjury:
+            input.request.accuracyAuthorityUnderPenaltyOfPerjury,
+          electronic_signature: input.request.electronicSignature,
+          claimant_targets: input.request.claimantTargets,
+        }),
       },
     },
     transaction,
+    { noticeId, key: encryptionKey },
   )
   const { rows: submissionRows } = await transaction<{
     id: string
@@ -121,18 +126,19 @@ export async function createCopyrightFormIntake(
   const { rows } = await transaction<CopyrightFormIntakeRecord>(sql`/* createCopyrightFormIntake */
     INSERT INTO copyright_notice_form_intakes (
       copyright_notice_id, copyright_notice_submission_id, requester_user_id,
-      requester_identity_sha256, idempotency_key, request_sha256, has_good_faith_belief,
+      requester_identity_hmac, idempotency_key, request_sha256, has_good_faith_belief,
       has_accuracy_authority_under_penalty_of_perjury, electronic_signature_ciphertext
     ) VALUES (
       ${notice.id}, ${submission.id}, ${input.currentUser?.id ?? null}, ${requesterIdentitySha256},
       ${input.idempotencyKey}, ${requestSha256}, ${input.request.goodFaithBelief},
       ${input.request.accuracyAuthorityUnderPenaltyOfPerjury},
-      ${encryptSecret(input.request.electronicSignature, purpose)}
+      ${encryptionKey.encrypt(input.request.electronicSignature, purpose, { kind: 'notice', id: notice.id })}
     )
-    RETURNING id, copyright_notice_id, copyright_notice_submission_id, requester_user_id
+    RETURNING id, copyright_notice_id, copyright_notice_submission_id
   `)
   const intake = rows[0]
   assert(intake, 500, 'Copyright form intake was not created')
+  // ast-grep-ignore: no-three-sequential-awaits -- screening admission precedes its claimant receipt, and both must succeed before the immutable exact-replay identity is stored in this transaction.
   await transaction(sql`/* createCopyrightFormIntake:screeningExecution */
     INSERT INTO copyright_notice_form_screening_attempts (
       copyright_notice_form_intake_id, attempt_number, started_at
@@ -147,6 +153,9 @@ export async function createCopyrightFormIntake(
     },
     transaction,
   )
+  await recordCopyrightReplayIdentity(replayAdmission, notice.id, 'notice_received', {
+    ...intake,
+  })
   await transaction.commit()
   return { intake, isDuplicate: false }
 }
@@ -160,7 +169,9 @@ export function copyrightFormSecretPurpose(idempotencyKey: string): string {
 }
 
 export function createCopyrightGuestIdentity(ipAddress: string): string {
-  return `guest:${hashToken('copyright-form-guest-identity', ipAddress)}`
+  // Server-only canonical input: persistence uses the separately versioned replay HMAC ring.
+  // Never persist or log this transient identity; unrelated OTP rotation must not alter replay.
+  return `guest:${ipAddress}`
 }
 
 function stableRequestJson(request: CreateCopyrightFormIntakeInput['request']): string {

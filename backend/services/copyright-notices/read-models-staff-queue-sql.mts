@@ -148,6 +148,15 @@ export function copyrightStaffQueueKeysSql({
         min(open_item.since) AS waiting_since,
         array_agg(DISTINCT open_item.reason ORDER BY open_item.reason) AS reasons
       FROM open_item
+      JOIN copyright_notices notice ON notice.id = open_item.copyright_notice_id
+      WHERE NOT EXISTS (
+        SELECT 1 FROM copyright_notice_retention_erasures erased
+        WHERE erased.copyright_notice_id = notice.id
+      )
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+          WHERE work.copyright_notice_identity_id = notice.id AND work.erasure_started_at IS NOT NULL
+        )
       `)
     .append(sql`
       GROUP BY open_item.copyright_notice_id

@@ -1,3 +1,4 @@
+import { getCopyrightRetentionWindows } from '../services/copyright-notices/config.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
@@ -49,8 +50,8 @@ async function writeAfterRetentionMarker<Result>(
       await waitForLock(lateWrite)
       await holder(sql`/* testLateCopyrightEmail:marker */
         INSERT INTO copyright_notice_retention_erasures
-          (copyright_notice_id, retention_days, erased_object_count)
-        VALUES (${noticeId}, 30, 0)`)
+          (copyright_notice_id, retention_days, erased_object_count, legal_clock_at)
+        VALUES (${noticeId}, 30, 0, fn_project_copyright_minimal_record_legal_clock(${noticeId}, ${getCopyrightRetentionWindows().complaintMonths}))`)
       await holder.commit()
       return lateWrite
     },

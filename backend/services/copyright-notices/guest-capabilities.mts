@@ -1,3 +1,4 @@
+import { lockCopyrightNoticeLifetime } from './notice-lifetime.mts'
 import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -32,6 +33,10 @@ export async function issueCopyrightGuestCapability(input: {
   const id = uuidv7({ msecs: issuedAtMs })
   const token = randomBytes(32).toString('base64url')
   await using transaction = await beginTransaction()
+  await lockCopyrightNoticeLifetime(transaction, input.noticeId)
+  const { rows: notices } = await transaction(sql`/* lockCopyrightGuestCapabilityNotice */
+    SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`)
+  assert(notices[0], 404, 'Copyright notice was not found')
   const { rows: identities } = await transaction<{
     id: string
   }>(sql`/* reserveCopyrightGuestCapabilityIdentity */
@@ -72,6 +77,10 @@ export async function revokeCopyrightGuestCapability(input: {
     'Only copyright staff can revoke guest capabilities',
   )
   await using transaction = await beginTransaction()
+  await lockCopyrightNoticeLifetime(transaction, input.noticeId)
+  const { rows: notices } = await transaction(sql`/* lockCopyrightGuestCapabilityNotice */
+    SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`)
+  assert(notices[0], 404, 'Copyright notice was not found')
   const { rows } = await transaction<{ id: string }>(sql`/* revokeCopyrightGuestCapability */
     UPDATE copyright_notice_guest_capabilities
     SET revoked_at = ${input.revokedAt}

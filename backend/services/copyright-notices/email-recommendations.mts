@@ -1,5 +1,10 @@
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import {
+  prepareCopyrightIntakeEncryptionKey,
+  attachCopyrightEncryptionKey,
+  openCopyrightSecrets,
+  type PreparedCopyrightEncryptionKey,
+} from './encryption-keys.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -20,9 +25,10 @@ export async function appendCopyrightEmailIntakeRecommendation(
   assert(input.inputSha256.length === 32, 422, 'Recommendation input SHA-256 must be 32 bytes')
   // The link is immutable after creation. If it appears while taking the intake lock,
   // retry with its notice locked first, matching the erasure notice-to-child order.
-  const first = await appendWithCurrentLink(input)
+  await using preparedKey = await prepareCopyrightIntakeEncryptionKey(input.intakeId)
+  const first = await appendWithCurrentLink(input, preparedKey)
   if (first !== 'link-changed') return first
-  const second = await appendWithCurrentLink(input)
+  const second = await appendWithCurrentLink(input, preparedKey)
   if (second === 'link-changed')
     throw new Error('Copyright email intake link changed more than once')
   return second
@@ -30,12 +36,13 @@ export async function appendCopyrightEmailIntakeRecommendation(
 
 async function appendWithCurrentLink(
   input: CopyrightEmailRecommendationInput,
+  preparedKey: PreparedCopyrightEncryptionKey | null,
 ): Promise<boolean | 'link-changed'> {
   await using transaction = await beginTransaction()
   const { rows: links } = await transaction<{ copyright_notice_id: string }>(sql`
       /* appendCopyrightEmailIntakeRecommendation:link */
       SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+      WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`)
   const noticeId = links[0]?.copyright_notice_id ?? null
   if (noticeId)
     await transaction(sql`/* appendCopyrightEmailIntakeRecommendation:lockNotice */
@@ -61,7 +68,7 @@ async function appendWithCurrentLink(
   const { rows: currentLinks } = await transaction<{ copyright_notice_id: string }>(sql`
       /* appendCopyrightEmailIntakeRecommendation:recheckLink */
       SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+      WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`)
   if ((currentLinks[0]?.copyright_notice_id ?? null) !== noticeId) return 'link-changed'
   if (noticeId) {
     const { rows: erased } =
@@ -70,8 +77,19 @@ async function appendWithCurrentLink(
       WHERE copyright_notice_id = ${noticeId} LIMIT 1`)
     if (erased[0]) return false
   }
+  if (preparedKey)
+    await attachCopyrightEncryptionKey(
+      preparedKey,
+      { kind: 'intake', id: input.intakeId },
+      transaction,
+    )
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'intake', id: input.intakeId },
+    transaction,
+    'write',
+  )
   const recommendationId = uuidv7()
-  const outputCiphertext = encryptSecret(
+  const outputCiphertext = secrets.encryptSecret(
     JSON.stringify(input.structuredOutput),
     copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
   )
@@ -83,6 +101,18 @@ async function appendWithCurrentLink(
     ON CONFLICT (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
     DO NOTHING RETURNING id`)
   if (insertedIdentity.length === 0) return false
+  await recordCopyrightEmailRecommendation(transaction, input, recommendationId, outputCiphertext)
+  await transaction.commit()
+  return true
+}
+
+/** One admission persists the finite recommendation and its current intake projection. */
+async function recordCopyrightEmailRecommendation(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  input: CopyrightEmailRecommendationInput,
+  recommendationId: string,
+  outputCiphertext: string,
+): Promise<void> {
   await transaction(sql`/* appendCopyrightEmailIntakeRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations (
       id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
@@ -96,6 +126,4 @@ async function appendWithCurrentLink(
       current_recommendation_identity_id = ${recommendationId},
       current_recommendation_output_ciphertext = ${outputCiphertext}
     WHERE id = ${input.intakeId}`)
-  await transaction.commit()
-  return true
 }

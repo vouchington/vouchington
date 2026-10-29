@@ -65,15 +65,15 @@ async function sweepPage(
   // selected on the next tick; the phase and edge key are persisted with the case cursor.
   const { rows: links } = await transaction<{
     id: string
-    copyright_notice_email_intake_id: string
+    copyright_notice_email_intake_receipt_id: string
     matched_token_id: string | null
     matched_lookup_digest: string | null
   }>(sql`/* scanCopyrightThreadCaseLink */
     WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
-    SELECT link.id, link.copyright_notice_email_intake_id, link.matched_token_id,
+    SELECT link.id, link.copyright_notice_email_intake_receipt_id, link.matched_token_id,
       token.lookup_digest AS matched_lookup_digest
     FROM owner CROSS JOIN LATERAL (
-      SELECT id, copyright_notice_email_intake_id, matched_token_id
+      SELECT id, copyright_notice_email_intake_receipt_id, matched_token_id
       FROM copyright_notice_email_intake_notice_links link
       WHERE link.copyright_notice_id = owner.notice_id
         AND link.id > COALESCE(${cursor.cursor_child_id}::uuid,
@@ -94,7 +94,7 @@ async function sweepPage(
       ? await transaction<{ id: string; lookup_digest: string | null }>(sql`
         /* scanCopyrightThreadIntakeReferences */
         WITH owner AS MATERIALIZED (
-          SELECT ${link.copyright_notice_email_intake_id}::uuid AS intake_id
+          SELECT ${link.copyright_notice_email_intake_receipt_id}::uuid AS intake_id
         ), page AS MATERIALIZED (
           SELECT id, token_id FROM copyright_notice_email_thread_references
           WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
@@ -153,7 +153,7 @@ async function sweepPage(
   const result = await deleteCaseThreadPage(
     transaction,
     noticeId,
-    link.copyright_notice_email_intake_id,
+    link.copyright_notice_email_intake_receipt_id,
     phase,
     cursor.cursor_edge_id,
     batchSize,

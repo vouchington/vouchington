@@ -2,7 +2,11 @@ import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Delivery transitions stay centralized around one durable-intent invariant. */
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
+import {
+  openCopyrightDeliverySecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import assert from 'http-assert'
 import {
   createCopyrightDeliveryIntents,
@@ -33,8 +37,11 @@ export type ClaimedCopyrightDeliveryIntent = CopyrightDeliveryIntentRecord & {
 export async function createCopyrightDeliveryIntent(
   input: CopyrightDeliveryIntentInput,
   transaction?: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightDeliveryIntentRecord> {
-  if (transaction) return (await createCopyrightDeliveryIntents([input], transaction))[0]!
+  if (transaction)
+    return (await createCopyrightDeliveryIntents([input], transaction, ownerScopes))[0]!
+  if (ownerScopes) throw new Error('Copyright delivery scope requires its owning transaction')
   await using owned = await beginTransaction()
   const intent = (await createCopyrightDeliveryIntents([input], owned))[0]!
   await owned.commit()
@@ -121,17 +128,29 @@ export async function markCopyrightDeliveryIntentFailed(input: {
   error: string
 }): Promise<boolean> {
   const boundedError = input.error.slice(0, 10_000)
-  const { rows } = await write(sql`/* markCopyrightDeliveryIntentFailed */
+  await using transaction = await beginTransaction()
+  const { rows: claim } = await transaction(sql`/* readCopyrightDeliveryFailureOwner */
+    SELECT id FROM copyright_notice_delivery_work_items WHERE id = ${input.intentId}
+      AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()`)
+  if (!claim[0]) return false
+  // ast-grep-ignore: no-three-sequential-awaits -- Resolve and lock the delivery owner before encrypting its failure and committing the terminal work state.
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'delivery', id: input.intentId },
+    transaction,
+    'write',
+  )
+  const { rows } = await transaction(sql`/* markCopyrightDeliveryIntentFailed */
     UPDATE copyright_notice_delivery_work_items
     SET
       leased_at = NULL,
       failed_at = CASE WHEN attempt_count >= 5 THEN CURRENT_TIMESTAMP ELSE NULL END,
       available_at = CASE WHEN attempt_count >= 5 THEN clock_timestamp()
         ELSE clock_timestamp() + make_interval(mins => (2 ^ (attempt_count - 1))::integer) END,
-      failure_ciphertext = ${encryptSecret(boundedError, `copyright-delivery:${input.intentId}`)}
+      failure_ciphertext = ${secrets.encryptSecret(boundedError, `copyright-delivery:${input.intentId}`)}
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
+  await transaction.commit()
   return rows.length === 1
 }
 
@@ -139,28 +158,37 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
   sesMessageId: string
   recipientEmails: string[]
 }): Promise<number> {
-  const { rows } = await write<CopyrightDeliveryRecipientRecord & { intent_id: string }>(
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<CopyrightDeliveryRecipientRecord & { intent_id: string }>(
     sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:recipients */
       SELECT intent.id AS intent_id, recipient.copyright_notice_delivery_work_item_id, recipient.email_ciphertext
       FROM copyright_notice_delivery_work_items intent
       JOIN copyright_notice_delivery_recipients recipient
         ON recipient.copyright_notice_delivery_work_item_id = intent.id
-      WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
+      WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent' AND recipient.email_ciphertext <> 'erased'`,
+  )
+  await using secrets = await openCopyrightDeliverySecretBatch(
+    rows.map(row => row.intent_id),
+    transaction,
   )
   const bouncedRecipients = new Set(input.recipientEmails.map(normalizeEmailAddress))
   const intentIds = rows.flatMap(row => {
-    const recipient = decryptSecret(
-      row.email_ciphertext,
-      `copyright-delivery-recipient:${row.copyright_notice_delivery_work_item_id}`,
-    )
+    const recipient = secrets
+      .get(row.intent_id)
+      .decryptSecret(
+        row.email_ciphertext,
+        `copyright-delivery-recipient:${row.copyright_notice_delivery_work_item_id}`,
+      )
     return bouncedRecipients.has(normalizeEmailAddress(recipient)) ? [row.intent_id] : []
   })
   if (intentIds.length === 0) return 0
-  const { rowCount } = await write(sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:update */
+  const { rowCount } =
+    await transaction(sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:update */
     UPDATE copyright_notice_delivery_work_items
     SET bounced_at = CURRENT_TIMESTAMP
     WHERE id = ANY(${intentIds}::uuid[]) AND state = 'sent'
   `)
+  await transaction.commit()
   return rowCount ?? 0
 }
 
@@ -168,9 +196,10 @@ export async function insertCopyrightDeliveryRecipient(
   recipientEmail: string | undefined,
   intentId: string,
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<void> {
   if (!recipientEmail) return
-  await insertCopyrightDeliveryRecipients([{ recipientEmail, intentId }], transaction)
+  await insertCopyrightDeliveryRecipients([{ recipientEmail, intentId }], transaction, ownerScopes)
 }
 
 export async function getCopyrightDeliveryRecipient(

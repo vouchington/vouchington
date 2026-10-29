@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecretsForCiphertexts } from './encryption-keys.mts'
+import { decryptCopyrightText } from './erased-ciphertext.mts'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
@@ -93,6 +94,11 @@ export async function getEuParticipantNoticeDetail(
       `)
     : { rows: [] }
   const own = requests[0]
+  await using secrets = await openCopyrightSecretsForCiphertexts(
+    { kind: 'notice', id: noticeId },
+    [own?.explanation_ciphertext ?? null, own?.rationale_ciphertext ?? null],
+    transaction,
+  )
   const labels = territorialLabels('eu_dsa')
   const complaint = {
     can_submit:
@@ -106,9 +112,10 @@ export async function getEuParticipantNoticeDetail(
           id: own.id,
           received_at: own.received_at,
           filed_by: own.filed_by,
-          explanation: decryptSecret(
+          explanation: decryptCopyrightText(
             own.explanation_ciphertext,
             `${labels.redressPurpose}:${own.idempotency_key}`,
+            secrets,
           ),
         }
       : null,
@@ -116,9 +123,10 @@ export async function getEuParticipantNoticeDetail(
       own?.staff_disposition && own.rationale_ciphertext && own.redress_decided_at
         ? {
             staff_disposition: own.staff_disposition,
-            rationale: decryptSecret(
+            rationale: decryptCopyrightText(
               own.rationale_ciphertext,
               `${labels.redressDecisionPurpose}:${own.id}`,
+              secrets,
             ),
             decided_at: own.redress_decided_at,
           }

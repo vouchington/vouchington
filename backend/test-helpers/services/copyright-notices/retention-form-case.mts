@@ -66,7 +66,7 @@ export async function createRetentionFormCase(): Promise<RetentionCase> {
     submissionId,
     correspondenceKind: 'receipt',
     compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${randomUUID()}`,
+    bodyText: `receipt-${randomUUID()}`,
     draftedById: null,
   })
   await createCopyrightDeliveryIntent({

@@ -1,4 +1,14 @@
+import { COPYRIGHT_RETENTION_BOUNDED_TABLES } from './copyright-schema-growth.mts'
 export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
+  ...COPYRIGHT_RETENTION_BOUNDED_TABLES,
+  [
+    'copyright_notice_operational_retention_cursors',
+    'The finite copyright operational-retention family enum permits one durable keyset cursor per family.',
+  ],
+  [
+    'copyright_notice_retention_generations',
+    'The checked singleton records one global legal-preservation change generation.',
+  ],
   [
     'copyright_notice_operational_retention_cursors',
     'The finite copyright operational-retention family enum permits one durable keyset cursor per family.',

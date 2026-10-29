@@ -99,6 +99,7 @@ describe('initialize secrets and S3 helpers', () => {
       join(cwd, '.env'),
       `export VOUCHA_OTP_TOKEN_HASH_SECRET='this is an existing fake OTP HMAC secret'
   export VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='existing-fake-key:raw32:this fake test key is not secret'
+  export VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='existing-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
   `,
     )
 
@@ -107,14 +108,61 @@ describe('initialize secrets and S3 helpers', () => {
       script: `
       unset VOUCHA_OTP_TOKEN_HASH_SECRET
       unset VOUCHA_STORED_SECRET_ENCRYPTION_KEYS
+      unset VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS
       configure_token_storage_secrets >/dev/null
-      printf '%s' "$VOUCHA_OTP_TOKEN_HASH_SECRET|$VOUCHA_STORED_SECRET_ENCRYPTION_KEYS"
+      printf '%s' "$VOUCHA_OTP_TOKEN_HASH_SECRET|$VOUCHA_STORED_SECRET_ENCRYPTION_KEYS|$VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS"
       `,
     })
 
     expect(output).toBe(
-      'this is an existing fake OTP HMAC secret|existing-fake-key:raw32:this fake test key is not secret',
+      'this is an existing fake OTP HMAC secret|existing-fake-key:raw32:this fake test key is not secret|existing-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     )
+  })
+
+  it('uses the shared replay HMAC ring ahead of local and development values', async () => {
+    const cwd = await makeWorktreeDir('feature-replay-hmac-shared')
+    await writeFile(
+      join(cwd, '.env'),
+      "export VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='local-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='\n",
+    )
+    await writeFile(
+      join(cwd, '.env.example'),
+      "export VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='example-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='\n",
+    )
+
+    const output = await runHelper({
+      cwd,
+      script: `
+      VOUCHA_OTP_TOKEN_HASH_SECRET='fake-test-otp-secret'
+      VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='fake-test-key:raw32:fake-test-encryption-key'
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='shared-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+      configure_token_storage_secrets >/dev/null
+      printf '%s' "$VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS"
+      `,
+    })
+
+    expect(output).toBe('shared-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
+  })
+
+  it('uses the development replay HMAC ring when shared and local values are absent', async () => {
+    const cwd = await makeWorktreeDir('feature-replay-hmac-development')
+    await writeFile(
+      join(cwd, '.env.example'),
+      "export VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS='example-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='\n",
+    )
+
+    const output = await runHelper({
+      cwd,
+      script: `
+      VOUCHA_OTP_TOKEN_HASH_SECRET='fake-test-otp-secret'
+      VOUCHA_STORED_SECRET_ENCRYPTION_KEYS='fake-test-key:raw32:fake-test-encryption-key'
+      unset VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS
+      configure_token_storage_secrets >/dev/null
+      printf '%s' "$VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS"
+      `,
+    })
+
+    expect(output).toBe('example-fake-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
   })
 
   it('reuses existing local web push keys when shared env keys are absent', async () => {

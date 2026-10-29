@@ -50,7 +50,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
 
   it('skips local analytics retention when analytics backend is not local', async () => {
     const localDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'data-retention-analytics-'))
-    process.env.ANALYTICS_BACKEND = 'firehose'
+    // The cleanup checks only for 'local'; 'disabled' exercises the non-local branch
+    // without leaving provider work buffered for another file in this shared test pool.
+    process.env.ANALYTICS_BACKEND = 'disabled'
     process.env.ANALYTICS_LOCAL_DIR = localDir
     await writeJsonl(localDir, 'queue_jobs', '2026-01-01', [{ event: 'completed' }])
 
@@ -94,6 +96,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
         voteBallotIdsByTable: {},
         userAgentStringIds: [],
         voteIntegrityFlagIds: [],
+        legalRecords: { recordIds: [] },
+        paymentLedgers: { recordIds: [] },
+        copyrightMinimalRecords: { noticeIds: [] },
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],

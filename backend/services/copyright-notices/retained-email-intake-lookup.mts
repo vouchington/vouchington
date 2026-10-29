@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret, hashToken } from '@modules/token-secrets'
+import { hashToken } from '@modules/token-secrets'
 import {
   decodeScopedPreciseTimestampCursor,
   encodeScopedPreciseTimestampCursor,
@@ -12,6 +12,7 @@ import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 
 /** One bounded scan page, independent of staff decisions and delivery states. */
 export async function lookupRetainedCopyrightEmailIntakes(
@@ -49,7 +50,7 @@ export async function lookupRetainedCopyrightEmailIntakes(
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = intake.id
+      ON link.copyright_notice_email_intake_receipt_id = intake.id
     WHERE true`
   if (options.intakeIds) query.append(sql` AND intake.id = ANY(${[...options.intakeIds]}::uuid[])`)
   if (after)
@@ -66,8 +67,14 @@ export async function lookupRetainedCopyrightEmailIntakes(
     linked_notice_id: string | null
     cursor_received_at: string
   }>(query)
-  await transaction.commit()
   const page = rows.slice(0, options.limit)
+  await using secrets = await openCopyrightOwnerSecretBatch(
+    page
+      .filter(intake => liveCopyrightCiphertext(intake.sender_email_ciphertext) !== null)
+      .map(intake => ({ kind: 'intake' as const, id: intake.id })),
+    transaction,
+    'read',
+  )
   const matches: Array<{ id: string; linked_notice_id: string | null }> = []
   const rawReviewCandidates: Array<{ id: string; linked_notice_id: string | null }> = []
   for (const intake of page) {
@@ -78,12 +85,12 @@ export async function lookupRetainedCopyrightEmailIntakes(
       if (intake.raw_storage_object_id) rawReviewCandidates.push(reference)
       continue
     }
-    const sender = decryptSecret(
-      ciphertext,
-      copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
-    )
+    const sender = secrets
+      .get({ kind: 'intake', id: intake.id })
+      .decryptSecret(ciphertext, copyrightEmailIntakePurpose(intake.amazon_ses_message_id))
     if (sender.trim().toLowerCase() === senderAddress) matches.push(reference)
   }
+  await transaction.commit()
   const last = page.at(-1)
   return {
     matches,

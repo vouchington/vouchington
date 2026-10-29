@@ -1,3 +1,4 @@
+import { destroyCopyrightOwnerEncryptionKey } from './encryption-key-destruction.mts'
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
@@ -34,8 +35,8 @@ export async function eraseIntakePage(
   if (
     !state ||
     state.is_linked ||
-    state.has_promoted_review ||
     state.has_pending_delivery ||
+    state.has_preservation_hold ||
     (state.erased_at === null && state.last_activity_at > cutoff)
   ) {
     return { complete: true, erased: false }
@@ -113,6 +114,7 @@ export async function eraseIntakePage(
     'copyright_notice_email_thread_references',
   )
   if (remaining === 0) return { complete: false, erased: true }
+  await destroyCopyrightOwnerEncryptionKey({ kind: 'intake', id: intakeId }, transaction)
   // Child deletes are committed in bounded pages. The final parent delete is guarded by all FKs,
   // including a late link or legal record that appeared after the eligibility check.
   await transaction(sql`/* deleteUnlinkedCopyrightEmailIntake */

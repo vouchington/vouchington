@@ -13,6 +13,15 @@ import {
 // must stay above setup()'s dynamic imports so valkyries reads it before constructing any client.
 process.env.VALKEY_REQUEST_TIMEOUT_MS ??= '5000'
 
+// Hosted jobs have no local initializer shell; give the external key fixture an explicit CI scope.
+if (!process.env.WORKTREE_DIR && process.env.GITHUB_ACTIONS === 'true') {
+  const run = process.env.GITHUB_RUN_ID
+  const job = process.env.GITHUB_JOB
+  if (!run || !/^\d+$/.test(run) || !job || !/^[a-zA-Z0-9_-]+$/.test(job))
+    throw new Error('Copyright CI key fixture requires GitHub run and job metadata')
+  process.env.WORKTREE_DIR = `ci-${run}-${job}`
+}
+
 const setupCheck = evaluateDbBackedTestSetup(collectDbBackedTestSetupInput())
 
 if (!setupCheck.ok) {
@@ -30,6 +39,10 @@ configureTestPostgresSessions()
 // Required for API key HMAC checksum generation in tests
 process.env.API_KEY_CHECKSUM_SECRET ??= 'this is a fake test API key checksum secret'
 process.env.VOUCHA_OTP_TOKEN_HASH_SECRET ??= 'this is a fake test OTP HMAC secret'
+// Uniform fixture-only ring across DB-backed forks; rotation tests change active order only.
+process.env.VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS =
+  'codex-test-replay-a:MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE=,codex-test-replay-b:R0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0c='
+process.env.S3_BUCKET_COPYRIGHT_EVIDENCE = 'test-copyright-evidence'
 process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS ??=
   'fake-test-key:raw32:this fake test key is not secret'
 
@@ -85,6 +98,11 @@ async function settleSetupOperations<const T extends readonly unknown[]>(operati
 
 export async function setup() {
   const setupStart = performance.now()
+  // Global seed runs before worker setup files. Share the same external key authority with them.
+  await timedSetupPhase(
+    'copyright-key-provider',
+    () => import('../backend/test-helpers/copyright-key-object-cli.mts'),
+  )
   const [
     { Logger },
     { warmUpEmbeddingBloomFilter },

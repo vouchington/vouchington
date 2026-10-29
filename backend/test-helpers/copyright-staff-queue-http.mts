@@ -59,6 +59,8 @@ export async function withCopyrightStaffQueueHttp<Result>(
       await transaction(
         '/* withCopyrightStaffQueueHttp */ SET TRANSACTION ISOLATION LEVEL REPEATABLE READ',
       )
+      // Native queue diagnostics are bounded to the owned fixture window.
+      await transaction("/* withCopyrightStaffQueueHttp:t */ SET LOCAL statement_timeout = '30s'")
       if (policy) {
         await transaction(sql`/* withCopyrightStaffQueueHttp:reservePolicy */
         INSERT INTO copyright_jurisdiction_policy_withdrawals (

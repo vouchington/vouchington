@@ -59,10 +59,10 @@ export async function createCopyrightReplayFixture() {
     receivedAt: new Date('2026-07-01T11:00:00.000Z'),
     claimantUserId: claimant.id,
     claimantDisplayName: 'Test claimant',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'notice' },
+    initialSubmission: { kind: 'notice', sourceKind: 'staff', body: 'notice' },
     targets: [
       {
         placementId: placement.placement_id,

@@ -1,6 +1,13 @@
+import { shiftUtcCalendarMonths } from '../modules/utils/calendar-months.mts'
+import { getCopyrightRetentionWindows } from '../services/copyright-notices/config.mts'
 import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { v7 as uuidv7 } from 'uuid'
+import {
+  prepareCopyrightEncryptionKey,
+  attachCopyrightEncryptionKey,
+  openCopyrightSecrets,
+} from '../services/copyright-notices/encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { lockCopyrightJurisdictionPolicy } from './copyright-jurisdiction-policy-lock.mts'
@@ -26,20 +33,18 @@ export async function createTestHistoricalEuDecisionWindow(
     : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 8, 15, 12))
   const receivedAt = new Date(decidedAt.getTime() - 86_400_000)
   const sentAt = new Date(decidedAt.getTime() + 3_600_000)
-  const windowEndsAt = new Date(
-    Date.UTC(
-      sentAt.getUTCFullYear(),
-      sentAt.getUTCMonth() + 6,
-      sentAt.getUTCDate(),
-      sentAt.getUTCHours(),
-      sentAt.getUTCMinutes(),
-      sentAt.getUTCSeconds(),
-    ),
+  const windowEndsAt = shiftUtcCalendarMonths(
+    sentAt,
+    getCopyrightRetentionWindows().complaintMonths,
   )
   const key = crypto.randomUUID()
   const notifierEmail = `historical-${key}@example.test`
   const labels = territorialLabels('eu_dsa')
+  const noticeId = uuidv7({ msecs: receivedAt.getTime() })
+  const owner = { kind: 'notice' as const, id: noticeId }
+  await using prepared = await prepareCopyrightEncryptionKey('notice')
   await using transaction = await beginTransaction()
+  await attachCopyrightEncryptionKey(prepared, owner, transaction)
   await lockCopyrightJurisdictionPolicy('eu_dsa', transaction)
   const { rows: actors } = await transaction<{ id: string }>(sql`
     /* createTestHistoricalEuDecisionWindow:actor */
@@ -55,20 +60,21 @@ export async function createTestHistoricalEuDecisionWindow(
   const { rows: notices } = await transaction<{ id: string }>(sql`
     /* createTestHistoricalEuDecisionWindow:notice */
     INSERT INTO copyright_notices (
-      jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
+      id, jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
       claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      'eu_dsa', 'copyright', ${receivedAt}, ${options.requesterUserId ?? null}, 'Historical notifier',
-      ${encryptSecret(notifierEmail, `${labels.noticePurpose}:${key}:contact`)},
+      ${noticeId}, 'eu_dsa', 'copyright', ${receivedAt}, ${options.requesterUserId ?? null}, 'Historical notifier',
+      ${prepared.encrypt(notifierEmail, `${labels.noticePurpose}:${key}:contact`, owner)},
       'Photographic work', ${`eu-${key.slice(0, 12)}`}
     ) RETURNING id
   `)
-  const noticeId = notices[0]?.id
-  if (!noticeId) throw new Error('Historical EU notice was not inserted')
+  if (!notices[0]?.id) throw new Error('Historical EU notice was not inserted')
+  await using secrets = await openCopyrightSecrets(owner, transaction, 'write')
+  const { encryptSecret } = secrets
   await transaction(sql`/* createTestHistoricalEuDecisionWindow:receipt */
     INSERT INTO copyright_territorial_notice_receipts (
       copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
-      requester_user_id, requester_identity_sha256, idempotency_key, request_sha256, hosted_use_url,
+      requester_user_id, requester_identity_hmac, idempotency_key, request_sha256, hosted_use_url,
       grounds_ciphertext, notifier_email_ciphertext, has_good_faith_statement, received_at
     ) VALUES (
       ${noticeId}, 'eu_dsa', ${approvalId}, ${options.requesterUserId ?? null}, ${randomBytes(32)}, ${key}, ${randomBytes(32)},

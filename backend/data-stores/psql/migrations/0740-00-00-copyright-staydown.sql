@@ -91,7 +91,7 @@ BEGIN
   ELSIF source_table = 'copyright_notice_email_intake_reviews' THEN
     SELECT link.copyright_notice_id INTO case_id
     FROM copyright_notice_email_intake_notice_links link
-    WHERE link.copyright_notice_email_intake_id =
+    WHERE link.copyright_notice_email_intake_receipt_id =
       (source_row ->> 'copyright_notice_email_intake_receipt_id')::uuid;
   ELSIF source_table = 'copyright_notice_delivery_recipients' THEN
     SELECT work_item.copyright_notice_id INTO case_id

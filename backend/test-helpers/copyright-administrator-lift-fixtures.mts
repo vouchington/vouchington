@@ -11,6 +11,7 @@ import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright
 import { createCopyrightStatementDeliveriesInTransaction } from '../services/copyright-notices/statement-delivery.mts'
 import { copyrightActionDeliveryFacts } from '../services/copyright-notices/action-delivery-facts.mts'
 import { applyCopyrightConfirmationConsequencesInTransaction } from '../services/copyright-notices/staydown-registration.mts'
+import { CopyrightNoticeAccountLocks } from '../services/copyright-notices/repeat-infringer-locks.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from '../services/copyright-notices/restoration-reversal.mts'
 import {
   anyReversalSourceSql,
@@ -35,13 +36,13 @@ export async function createTestLiftNotice(
     receivedAt: new Date(),
     claimantUserId: options.claimantUserId ?? null,
     claimantDisplayName: 'Test claimant',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `Test work ${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'staff',
-      bodyCiphertext: `body-${crypto.randomUUID()}`,
+      body: `body-${crypto.randomUUID()}`,
     },
     targets,
   })
@@ -181,7 +182,8 @@ export async function readTestLiftSourceFlags(restrictionId: string) {
 
 export async function replayTestLiftConfirmationConsequences(noticeId: string): Promise<void> {
   await using transaction = await beginTransaction()
-  await applyCopyrightConfirmationConsequencesInTransaction(noticeId, transaction)
+  const accountLocks = await CopyrightNoticeAccountLocks.acquire(noticeId, transaction)
+  await applyCopyrightConfirmationConsequencesInTransaction(noticeId, transaction, accountLocks)
   await transaction.commit()
 }
 

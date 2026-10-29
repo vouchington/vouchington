@@ -12,16 +12,34 @@ function sweepDeps(result: Awaited<ReturnType<Deps['sweep']>>) {
 
 describe('processSweepCopyrightEvidenceRetention', () => {
   it('reports a quiet run and still hands the empty result to the failure recorder', async () => {
-    const deps = sweepDeps({ erased: 0, ineligible: 0, failed: [] })
+    const deps = sweepDeps({
+      erased: 0,
+      orphanKeysDestroyed: 0,
+      orphanKeysFailed: 0,
+      erasedObjectRegistriesDeleted: 0,
+      ineligible: 0,
+      progressed: 0,
+      hasMore: false,
+      failed: [],
+    })
 
     await expect(processSweepCopyrightEvidenceRetention(deps)).resolves.toEqual({
       erased: 0,
+      orphanKeysDestroyed: 0,
+      orphanKeysFailed: 0,
+      erasedObjectRegistriesDeleted: 0,
       ineligible: 0,
+      progressed: 0,
+      hasMore: false,
       failed: 0,
     })
 
     expect(deps.sweep).toHaveBeenCalledOnce()
-    expect(deps.recordFailure).toHaveBeenCalledExactlyOnceWith({ erased: 0, failed: [] })
+    expect(deps.recordFailure).toHaveBeenCalledExactlyOnceWith({
+      erased: 0,
+      orphanKeysFailed: 0,
+      failed: [],
+    })
   })
 
   it('completes with the counts and reports every left-over case instead of failing the job', async () => {
@@ -29,19 +47,46 @@ describe('processSweepCopyrightEvidenceRetention', () => {
       { noticeId: 'notice-a', reason: 'Error' },
       { noticeId: 'notice-b', reason: 'DatabaseError:57014' },
     ]
-    const deps = sweepDeps({ erased: 3, ineligible: 1, failed })
+    const deps = sweepDeps({
+      erased: 3,
+      orphanKeysDestroyed: 2,
+      orphanKeysFailed: 0,
+      erasedObjectRegistriesDeleted: 4,
+      ineligible: 1,
+      progressed: 2,
+      hasMore: true,
+      failed,
+    })
 
     await expect(processSweepCopyrightEvidenceRetention(deps)).resolves.toEqual({
       erased: 3,
+      orphanKeysDestroyed: 2,
+      orphanKeysFailed: 0,
+      erasedObjectRegistriesDeleted: 4,
       ineligible: 1,
+      progressed: 2,
+      hasMore: true,
       failed: 2,
     })
 
-    expect(deps.recordFailure).toHaveBeenCalledExactlyOnceWith({ erased: 3, failed })
+    expect(deps.recordFailure).toHaveBeenCalledExactlyOnceWith({
+      erased: 3,
+      orphanKeysFailed: 0,
+      failed,
+    })
   })
 
   it('lets a sweep that throws fail the job so the queue retries it', async () => {
-    const deps = sweepDeps({ erased: 0, ineligible: 0, failed: [] })
+    const deps = sweepDeps({
+      erased: 0,
+      orphanKeysDestroyed: 0,
+      orphanKeysFailed: 0,
+      erasedObjectRegistriesDeleted: 0,
+      ineligible: 0,
+      progressed: 0,
+      hasMore: false,
+      failed: [],
+    })
     deps.sweep.mockRejectedValueOnce(new Error('config read failed'))
 
     await expect(processSweepCopyrightEvidenceRetention(deps)).rejects.toThrow('config read failed')

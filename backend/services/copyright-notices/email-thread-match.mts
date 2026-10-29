@@ -92,20 +92,20 @@ async function findInboundCopyrightEmailThreadMatch(
         SELECT count(DISTINCT link.copyright_notice_id)::int
         FROM ancestors
         JOIN copyright_notice_email_intake_notice_links link
-          ON link.copyright_notice_email_intake_id = ancestors.intake_id
+          ON link.copyright_notice_email_intake_receipt_id = ancestors.intake_id
       ) AS "noticeCount",
       (
         SELECT count(*)::int FROM ancestors
         WHERE NOT EXISTS (
           SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = ancestors.intake_id
+          WHERE link.copyright_notice_email_intake_receipt_id = ancestors.intake_id
         )
       ) AS "unlinkedCount",
       (
         SELECT min(link.copyright_notice_id::text)::uuid
         FROM ancestors
         JOIN copyright_notice_email_intake_notice_links link
-          ON link.copyright_notice_email_intake_id = ancestors.intake_id
+          ON link.copyright_notice_email_intake_receipt_id = ancestors.intake_id
       ) AS "noticeId",
       (
         SELECT min(direct_edge.ancestor_message_intake_receipt_id::text)::uuid

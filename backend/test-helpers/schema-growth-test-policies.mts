@@ -41,6 +41,8 @@ const RETAINED_ID_POLICIES = [
   ['retained_post_identities', sharedParentUuidv7('posts')],
   ['retained_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],
   ['retained_image_identities', sharedParentUuidv7('images')],
+  ['copyright_notice_retained_identities', sharedParentUuidv7('copyright_notices')],
+  ['membership_operation_retained_identities', sharedParentUuidv7('membership_operations')],
   ...entityRelationMetadatum.flatMap(metadata =>
     metadata.election
       ? ([[`retained_${metadata.table_name}`, sharedParentUuidv7(metadata.table_name)]] as const)

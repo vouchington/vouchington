@@ -1,3 +1,4 @@
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
@@ -16,6 +17,11 @@ export async function createCopyrightFormReceiptInTransaction(
   },
   transaction: TransactionQuery,
 ): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- The notice key precedes receipt encryption, and the correspondence must exist before delivery references it.
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: input.noticeId }],
+    transaction,
+  )
   const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId: input.noticeId,
@@ -24,6 +30,7 @@ export async function createCopyrightFormReceiptInTransaction(
       bodyText: copyrightReceiptText(input.noticeId),
     },
     transaction,
+    ownerScopes,
   )
   await createCopyrightDeliveryIntents(
     [
@@ -54,5 +61,6 @@ export async function createCopyrightFormReceiptInTransaction(
         : []),
     ],
     transaction,
+    ownerScopes,
   )
 }

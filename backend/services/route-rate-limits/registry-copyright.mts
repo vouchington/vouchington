@@ -2,6 +2,16 @@ import type { RouteRateLimitEntry } from './types.mts'
 
 /** Copyright intake and staff decisions share the sensitive route tier. */
 export const COPYRIGHT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
+  'POST:/api/v1/copyright-notices/:id/escalations/:escalationId/closures': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-notices/:id/supervised-complaints/:complaintId/resolutions': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-notices/:id/preservation-holds': { category: 'sensitive' },
+  'POST:/api/v1/copyright-notices/:id/preservation-holds/:holdId/releases': {
+    category: 'sensitive',
+  },
   // Copyright intake — sensitive and scarce; US and EU claimant submissions fail closed when the limiter is down
   'POST:/api/v1/copyright-notices': { category: 'sensitive', ttlSeconds: 3600, failClosed: true },
   'POST:/api/v1/copyright-eu-notices': {
@@ -58,6 +68,10 @@ export const COPYRIGHT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-email-intakes/:id/notice-associations': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/rejections': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/legal-process': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/preservation-holds': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/preservation-holds/:holdToken/releases': {
+    category: 'sensitive',
+  },
   'POST:/api/v1/copyright-email-intakes/:id/correspondence': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections': {
     category: 'sensitive',

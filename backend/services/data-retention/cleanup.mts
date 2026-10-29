@@ -1,4 +1,6 @@
+import { sweepCopyrightReceiptExplanations } from '@services/copyright-notices/retention-receipt-explanations'
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
+import { cleanupCopyrightReplayIdentities } from '@services/copyright-notices/replay-identity-cleanup'
 /* oxlint-disable max-lines, react-doctor/async-parallel -- central retention orchestration preserves dependent cleanup order. */
 // Data retention necessarily accesses tables owned by other services. This cross-service SQL is intentional:
 // the retention job must hard-delete orphaned OAuth rows that have no owning service
@@ -87,6 +89,10 @@ import {
 } from './cleanup-options.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
+import { cleanupLegalRecords } from './cleanup-legal-records.mts'
+import { cleanupPaymentLedgers } from './cleanup-payment-ledgers.mts'
+import { cleanupCopyrightSubmissionKeys } from './cleanup-copyright-submission-keys.mts'
+import { cleanupCopyrightMinimalRecords } from './cleanup-copyright-minimal-records.mts'
 import {
   cleanupHistories,
   type HistoryCleanupOptions,
@@ -182,6 +188,10 @@ type OperationalCleanupOptions = Parameters<typeof cleanupOperationalTombstones>
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
+  copyrightSubmissionKeys?: { now?: Date; requestIds?: readonly string[] }
+  copyrightMinimalRecords?: { now?: Date; noticeIds?: readonly string[] }
+  legalRecords?: { now?: Date; recordIds?: readonly string[] }
+  paymentLedgers?: { recordIds?: readonly string[] }
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
   includeAgentModerations?: boolean
@@ -266,6 +276,12 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
+  copyrightReplayIdentities: Awaited<ReturnType<typeof cleanupCopyrightReplayIdentities>>
+  copyrightSubmissionKeys: Awaited<ReturnType<typeof cleanupCopyrightSubmissionKeys>>
+  copyrightReceiptExplanations?: Awaited<ReturnType<typeof sweepCopyrightReceiptExplanations>>
+  copyrightMinimalRecords: Awaited<ReturnType<typeof cleanupCopyrightMinimalRecords>>
+  legalRecords: Awaited<ReturnType<typeof cleanupLegalRecords>>
+  paymentLedgers: Awaited<ReturnType<typeof cleanupPaymentLedgers>>
   copyrightFormScreeningAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightActionAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightDeliveryAttempts?: { scanned: number; deleted: number; hasMore: boolean }
@@ -368,6 +384,7 @@ export type CopyrightRetentionFamily =
   | 'copyrightUnlinkedEmailIntakes'
   | 'copyrightCaseThreads'
   | 'copyrightOrphanEmailThreadTokens'
+  | 'copyrightReceiptExplanations'
 
 type CopyrightRetentionCleanupResult = Partial<
   Pick<DataRetentionCleanupResult, CopyrightRetentionFamily>
@@ -433,6 +450,10 @@ export async function runCopyrightOperationalRetentionCleanup(
         retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
       },
     )
+  if (active('copyrightReceiptExplanations'))
+    result.copyrightReceiptExplanations = await sweepCopyrightReceiptExplanations({
+      maxBatches: Math.min(limits.maxBatches, 128),
+    })
   return result
 }
 
@@ -548,6 +569,22 @@ export async function runDataRetentionCleanup(
       ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
       : cleanupObsoleteAgentModerations(withLimits(options.agentModerations)),
   ])
+  const legalRecords = await cleanupLegalRecords(
+    limits,
+    options.legalRecords?.now,
+    options.legalRecords?.recordIds,
+  )
+  const copyrightReplayIdentities = await cleanupCopyrightReplayIdentities()
+  const copyrightSubmissionKeys = await cleanupCopyrightSubmissionKeys(
+    limits,
+    options.copyrightSubmissionKeys?.now,
+    options.copyrightSubmissionKeys?.requestIds,
+  )
+  const copyrightMinimalRecords = await cleanupCopyrightMinimalRecords(
+    limits,
+    options.copyrightMinimalRecords,
+  )
+  const paymentLedgers = await cleanupPaymentLedgers(limits, options.paymentLedgers?.recordIds)
   // Embedding-cache and import-batch cleanups touch separate tables and feed nothing else.
   const [
     textEmbeddingCache,
@@ -654,6 +691,11 @@ export async function runDataRetentionCleanup(
   await cleanupAnalyticsLocalFiles()
 
   return {
+    copyrightReplayIdentities,
+    copyrightSubmissionKeys,
+    copyrightMinimalRecords,
+    legalRecords,
+    paymentLedgers,
     ...copyright,
     retainedRelationIdentities,
     retainedMediaBindings,

@@ -1,3 +1,4 @@
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -12,7 +13,6 @@ import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
-import { encryptSecret } from '@modules/token-secrets'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 
 export async function appendCopyrightLegalHoldAssessment(input: {
@@ -63,6 +63,12 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     422,
     'Submission is not a court or CCB hold',
   )
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: identities[0].copyright_notice_id },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   const { rows } = await transaction(sql`/* appendCopyrightLegalHoldAssessment */
     INSERT INTO copyright_notice_legal_hold_assessments (
       copyright_notice_submission_id, assessed_at, assessed_by_id, is_from_original_claimant,
@@ -112,6 +118,7 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       input.dependencies,
     )
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- Persist the hold outcome before selecting and replaying restore intents whose eligibility depends on that outcome.
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_legal_hold_assessment_id)

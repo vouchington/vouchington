@@ -35,58 +35,61 @@ describe('copyright staff queue pagination', () => {
   it('continues actionable cases without repeats and rejects malformed or cross-scope cursors', async () => {
     const fixture = await createCopyrightFormFixture()
     const target = fixture.form.targets[0]!
-    const created = await Promise.all(
-      Array.from({ length: 102 }, async () => {
-        const { intake } = await createCopyrightFormIntake({
-          currentUser: null,
-          requesterIdentity: `guest:${crypto.randomUUID()}`,
-          idempotencyKey: crypto.randomUUID(),
-          request: {
-            jurisdiction: 'us_dmca',
-            claimantDisplayName: 'Guest claimant',
-            claimantContact: `claimant-${crypto.randomUUID()}@example.test`,
-            claimantEmail: `claimant-${crypto.randomUUID()}@example.test`,
-            workDescription: 'A photograph owned by the guest claimant.',
-            goodFaithBelief: true,
-            accuracyAuthorityUnderPenaltyOfPerjury: true,
-            electronicSignature: 'Guest claimant',
-            claimantTargets: [
-              {
-                surfaceKind: 'post-image' as const,
-                postId: target.post_id,
-                imageId: target.image_id,
-                hostedUseUrl: target.target_url,
-              },
-            ],
-          },
-        })
-        return intake.copyright_notice_id
-      }),
-    )
+    // Two pages of the smallest request limit cross the continuation boundary; scale belongs to explain-analyze.
+    const pageLimit = 2
+    const created: string[] = []
+    for (let index = 0; index < pageLimit * 2 + 1; index += 1) {
+      const { intake } = await createCopyrightFormIntake({
+        currentUser: null,
+        requesterIdentity: `guest:${crypto.randomUUID()}`,
+        idempotencyKey: crypto.randomUUID(),
+        request: {
+          jurisdiction: 'us_dmca',
+          claimantDisplayName: 'Guest claimant',
+          claimantContact: `claimant-${crypto.randomUUID()}@example.test`,
+          claimantEmail: `claimant-${crypto.randomUUID()}@example.test`,
+          workDescription: 'A photograph owned by the guest claimant.',
+          goodFaithBelief: true,
+          accuracyAuthorityUnderPenaltyOfPerjury: true,
+          electronicSignature: 'Guest claimant',
+          claimantTargets: [
+            {
+              surfaceKind: 'post-image' as const,
+              postId: target.post_id,
+              imageId: target.image_id,
+              hostedUseUrl: target.target_url,
+            },
+          ],
+        },
+      })
+      created.push(intake.copyright_notice_id)
+    }
     const firstCursor = await readCopyrightStaffQueueCursorBefore(created)
     const request = createRequest()
     await request.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
 
     let page = await request
       .get(
-        `/api/v1/copyright-notices/review-queue?limit=100&after=${encodeURIComponent(firstCursor)}`,
+        `/api/v1/copyright-notices/review-queue?limit=${pageLimit}&after=${encodeURIComponent(firstCursor)}`,
       )
       .expect(200)
     expect(page.body.copyright_notices.length).toBeGreaterThan(0)
-    expect(page.body.copyright_notices.length).toBeLessThanOrEqual(100)
+    expect(page.body.copyright_notices.length).toBeLessThanOrEqual(pageLimit)
     expect(page.body.page_info).toMatchObject({
       has_next_page: true,
       start_cursor: expect.any(String),
       end_cursor: expect.any(String),
     })
     const pagedIds: string[] = []
-    for (let pageCount = 0; pageCount < 10; pageCount += 1) {
+    for (let pageCount = 0; pageCount < 40; pageCount += 1) {
       pagedIds.push(...page.body.copyright_notices.map((notice: { id: string }) => notice.id))
       if (created.every(id => pagedIds.includes(id))) break
       const after = page.body.page_info.end_cursor as string | null
       if (!page.body.page_info.has_next_page || !after) break
       page = await request
-        .get(`/api/v1/copyright-notices/review-queue?limit=100&after=${encodeURIComponent(after)}`)
+        .get(
+          `/api/v1/copyright-notices/review-queue?limit=${pageLimit}&after=${encodeURIComponent(after)}`,
+        )
         .expect(200)
     }
     expect(new Set(pagedIds).size).toBe(pagedIds.length)

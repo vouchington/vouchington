@@ -1,3 +1,7 @@
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import { claimantDecisionIsOwed } from './claimant-decision-flags.mts'
@@ -31,9 +35,15 @@ export async function createCopyrightRestrictionDecisionNoticesInTransaction(
   input: CopyrightRestrictionDecisionNoticeInput,
   transaction: TransactionQuery,
 ): Promise<void> {
-  await createCopyrightStatementDeliveriesInTransaction(
-    await buildCopyrightRestrictionDecisionDeliveries([input], transaction),
+  await using scopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: input.noticeId }],
     transaction,
+  )
+  await createCopyrightStatementDeliveriesInTransaction(
+    await buildCopyrightRestrictionDecisionDeliveries([input], transaction, scopes),
+    transaction,
+    [],
+    scopes,
   )
 }
 
@@ -45,6 +55,7 @@ export async function createCopyrightRestrictionDecisionNoticesInTransaction(
 export async function buildCopyrightRestrictionDecisionDeliveries(
   inputs: readonly CopyrightRestrictionDecisionNoticeInput[],
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightStatementDeliveryInput[]> {
   const first = inputs[0]
   if (!first) return []
@@ -70,7 +81,7 @@ export async function buildCopyrightRestrictionDecisionDeliveries(
   const flags = claimantDecisionFlags!
   // The claimant's address is decrypted once, and only when a claimant is told.
   const claimantAddress = inputs.some(input => claimantDecisionIsOwed(flags, input.event))
-    ? decryptCopyrightClaimantEmail(claimantEmail)
+    ? await decryptCopyrightClaimantEmail(claimantEmail, transaction, ownerScopes)
     : null
   const told = new Set<CopyrightClaimantDecisionEvent>()
   const deliveries: CopyrightStatementDeliveryInput[] = []

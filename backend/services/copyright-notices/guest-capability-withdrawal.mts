@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 /**
  * A withdrawn notice leaves nothing for the claimant to add, so receiving a withdrawal
  * revokes every live guest capability on the case in the same transaction.
+ * Both callers already hold the shared case lifetime and notice parent before child writes.
  */
 export async function revokeCopyrightGuestCapabilitiesForWithdrawal(
   transaction: OwnedTransaction,

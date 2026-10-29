@@ -5,7 +5,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capability_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT copyright_guest_capability_identity_notice_key UNIQUE (id, copyright_notice_id)
 );
@@ -15,7 +15,7 @@ CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capabilities (
   id uuid PRIMARY KEY,
-  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   token_hash text NOT NULL UNIQUE CHECK (char_length(token_hash) BETWEEN 1 AND 256),
   issued_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   expires_at timestamptz NOT NULL,
@@ -86,7 +86,7 @@ ALTER TABLE copyright_notice_lifecycle_changes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_urgent_filings (
   copyright_notice_submission_id uuid PRIMARY KEY
-    CONSTRAINT fk_copyright_notice_urgent_filings__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_copyright_notice_urgent_filings__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
   classified_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(copyright_notice_submission_id)) VIRTUAL);
 

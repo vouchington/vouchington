@@ -1,5 +1,6 @@
+import { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { getImagePlacementKey } from '@services/images/placements'
 import type { PrivateUser } from '@services/users/types'
@@ -22,6 +23,7 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   assert(currentUserCanLiftCopyrightRestriction(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
+  const accountLocks = await CopyrightNoticeAccountLocks.acquire(input.noticeId, transaction)
   const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
     /* liftCopyrightRestrictionWithoutSetter:findPlacement */
     SELECT target.placement_id FROM copyright_restrictions restriction
@@ -61,7 +63,12 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
     .append(sql` party WHERE target.id = ${restriction.target_id}) AS has_responder`)
   const { rows: responders } = await transaction<{ has_responder: boolean }>(respondersSql)
   assert(!responders[0]?.has_responder, 409, 'A live account can respond to this restriction')
-  const rationaleCiphertext = encryptSecret(
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: input.noticeId },
+    transaction,
+    'write',
+  )
+  const rationaleCiphertext = secrets.encryptSecret(
     input.rationale,
     `copyright-restriction-lift:${input.restrictionId}`,
   )
@@ -100,7 +107,11 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
     { noticeId: input.noticeId, event: 'reversed' },
     transaction,
   )
-  await applyCopyrightConfirmationConsequencesInTransaction(input.noticeId, transaction)
+  await applyCopyrightConfirmationConsequencesInTransaction(
+    input.noticeId,
+    transaction,
+    accountLocks,
+  )
   await transaction.commit()
   void enqueueApplyCopyrightAction(intent.id)
   return lift

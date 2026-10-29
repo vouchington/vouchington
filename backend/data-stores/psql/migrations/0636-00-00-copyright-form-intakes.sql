@@ -6,10 +6,13 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intakes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intakes__submission_id UNIQUE CONSTRAINT fk_copyright_notice_form_intakes__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL UNIQUE,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intakes__submission_id UNIQUE,
+  CONSTRAINT fk_copyright_notice_form_intakes__submission
+    FOREIGN KEY(copyright_notice_submission_id, copyright_notice_id)
+    REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE CASCADE,
   requester_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
+  requester_identity_hmac bytea NOT NULL CHECK (octet_length(requester_identity_hmac) = 32),
   idempotency_key uuid NOT NULL,
   request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
   has_good_faith_belief boolean NOT NULL,
@@ -17,13 +20,19 @@ CREATE TABLE copyright_notice_form_intakes (
   electronic_signature_ciphertext text NOT NULL CONSTRAINT chk_copyri_notice_form_intakes__electronic_signature_ciphertext CHECK (char_length(electronic_signature_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_cop_not_for_inta__requester_identity_sha256__idempotency_key UNIQUE (requester_identity_sha256, idempotency_key)
+  CONSTRAINT uq_copyright_form_intakes__screening_scope UNIQUE(id, copyright_notice_submission_id, copyright_notice_id),
+  CONSTRAINT uq_cop_not_for_inta__requester_identity_hmac__idempotency_key UNIQUE (requester_identity_hmac, idempotency_key)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screenings (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screenings__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL,
+  copyright_notice_submission_id uuid NOT NULL,
+  copyright_notice_form_intake_id uuid NOT NULL,
+  CONSTRAINT fk_copyright_notice_form_screenings__intake
+    FOREIGN KEY(copyright_notice_form_intake_id, copyright_notice_submission_id, copyright_notice_id)
+    REFERENCES copyright_notice_form_intakes(id, copyright_notice_submission_id, copyright_notice_id) ON DELETE CASCADE,
   input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
@@ -32,14 +41,41 @@ CREATE TABLE copyright_notice_form_screenings (
   guidance_ciphertext text NOT NULL CHECK (char_length(guidance_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
+  CONSTRAINT uq_copyright_form_screenings__submission_id UNIQUE(copyright_notice_submission_id, id),
   CONSTRAINT uq_copyright_notice_form_screenings__intake_id__id UNIQUE (copyright_notice_form_intake_id, id)
 );
+
+CREATE FUNCTION fn_update_copyright_form_screening_scope()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE owner_notice_id uuid; owner_submission_id uuid;
+BEGIN
+  SELECT copyright_notice_id, copyright_notice_submission_id INTO STRICT owner_notice_id, owner_submission_id
+    FROM copyright_notice_form_intakes WHERE id = NEW.copyright_notice_form_intake_id;
+  IF (NEW.copyright_notice_id IS NOT NULL AND NEW.copyright_notice_id <> owner_notice_id)
+    OR (NEW.copyright_notice_submission_id IS NOT NULL AND NEW.copyright_notice_submission_id <> owner_submission_id) THEN
+    RAISE EXCEPTION 'copyright screening scope does not match its form intake' USING ERRCODE = 'check_violation';
+  END IF;
+  NEW.copyright_notice_id := owner_notice_id;
+  NEW.copyright_notice_submission_id := owner_submission_id;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_update_copyright_form_screening_scope
+  BEFORE INSERT ON copyright_notice_form_screenings FOR EACH ROW
+  EXECUTE FUNCTION fn_update_copyright_form_screening_scope();
+CREATE INDEX idx_copyright_notice_form_screenings__owner_scope
+  ON copyright_notice_form_screenings(copyright_notice_form_intake_id, copyright_notice_submission_id, copyright_notice_id);
+CREATE INDEX idx_copyright_notice_form_screenings__notice_id
+  ON copyright_notice_form_screenings(copyright_notice_id, id);
+COMMENT ON COLUMN copyright_notice_form_screenings.copyright_notice_id IS 'Concrete case scope derived from its intake, preserved for atomic owner purge authorization.';
+COMMENT ON COLUMN copyright_notice_form_screenings.copyright_notice_submission_id IS 'Concrete submission scope derived from its intake, preventing cross-submission current screening references.';
+COMMENT ON FUNCTION fn_update_copyright_form_screening_scope() IS 'Derives the current screening owner scope from its immutable intake and rejects contradictory supplied scope.';
 
 CREATE TYPE copyright_notice_form_screening_attempt_states AS ENUM ('pending', 'failed', 'completed');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screening_attempts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screening_attempts__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screening_attempts__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE,
   attempt_number integer NOT NULL CHECK (attempt_number > 0),
   copyright_notice_form_screening_id uuid,
   started_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -55,7 +91,7 @@ CREATE TABLE copyright_notice_form_screening_attempts (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT uq_copyri_notice_form_screen_attempt__intake_id__attempt_number UNIQUE (copyright_notice_form_intake_id, attempt_number),
   CONSTRAINT fk_copyright_notice_form_screening_attempts__intake__screening FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id)
-    REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE CASCADE,
   UNIQUE (copyright_notice_form_intake_id, id),
   CHECK ((completed_at IS NULL) = (copyright_notice_form_screening_id IS NULL)),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
@@ -71,7 +107,7 @@ CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON copyright_n
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_screening_attempt_rewind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on' THEN
+  IF TG_OP = 'DELETE' AND fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) OR (TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on') THEN
     RETURN OLD;
   END IF;
   IF TG_OP = 'DELETE' OR OLD.completed_at IS NOT NULL OR OLD.failed_at IS NOT NULL
@@ -136,7 +172,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_project_copyright_form_screening_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intake_reviews__intake_id UNIQUE CONSTRAINT fk_copyright_notice_form_intake_reviews__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intake_reviews__intake_id UNIQUE CONSTRAINT fk_copyright_notice_form_intake_reviews__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   is_accepted boolean NOT NULL,
@@ -144,6 +180,8 @@ CREATE TABLE copyright_notice_form_intake_reviews (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_intakes__requester_notice
+  ON copyright_notice_form_intakes(requester_user_id, copyright_notice_id) WHERE requester_user_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_form_intakes__requester ON copyright_notice_form_intakes(requester_user_id, id DESC) WHERE requester_user_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_form_intake_reviews__reviewer ON copyright_notice_form_intake_reviews(reviewed_by_id) WHERE reviewed_by_id IS NOT NULL;
@@ -168,7 +206,7 @@ COMMENT ON COLUMN copyright_notice_form_intake_reviews.rationale_ciphertext IS '
 COMMENT ON COLUMN copyright_notice_form_intakes.copyright_notice_id IS 'Legal case created atomically for the structured form.';
 COMMENT ON COLUMN copyright_notice_form_intakes.copyright_notice_submission_id IS 'Initial immutable notice submission created for the form.';
 COMMENT ON COLUMN copyright_notice_form_intakes.requester_user_id IS 'Signed-in claimant, or null for a guest form.';
-COMMENT ON COLUMN copyright_notice_form_intakes.requester_identity_sha256 IS 'Digest of a user ID or purpose-separated HMAC of a guest IP; the raw guest IP is not retained.';
+COMMENT ON COLUMN copyright_notice_form_intakes.requester_identity_hmac IS 'Dedicated keyed requester fingerprint; raw requester identity is not retained here.';
 COMMENT ON COLUMN copyright_notice_form_intakes.idempotency_key IS 'Caller-generated UUID preventing duplicate case admission.';
 COMMENT ON COLUMN copyright_notice_form_intakes.request_sha256 IS 'Digest used to reject conflicting reuse of an idempotency key.';
 COMMENT ON COLUMN copyright_notice_form_intakes.has_good_faith_belief IS 'Claimant affirmation of a good-faith belief that the use is unauthorized.';

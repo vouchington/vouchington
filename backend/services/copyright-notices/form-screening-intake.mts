@@ -1,4 +1,6 @@
 import { write } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 import sql from 'sql-template-strings'
 
 /** Structured form fields the screening agent may see. Contact, email, and signature values never enter it. */
@@ -92,4 +94,29 @@ export async function getCopyrightFormIntakeForScreening(
     goodFaithBelief: row.has_good_faith_belief,
     accuracyAuthorityUnderPenaltyOfPerjury: row.has_accuracy_authority_under_penalty_of_perjury,
   }
+}
+
+/** Recheck the live owner after the caller holds the notice lifetime lock, before key access. */
+export async function isCopyrightFormIntakeLiveForScreening(
+  intakeId: string,
+  query: TransactionQuery,
+): Promise<boolean> {
+  const { rows: liveIntakes } = await query<{ id: string }>(sql`
+    /* completeCopyrightFormScreening:liveOwner */
+    SELECT intake.id FROM copyright_notice_form_intakes intake
+    JOIN copyright_notice_submissions submission
+      ON submission.id = intake.copyright_notice_submission_id
+    WHERE intake.id = ${intakeId}
+      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_retention_erasures erased
+        WHERE erased.copyright_notice_id = intake.copyright_notice_id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+        WHERE work.copyright_notice_identity_id = intake.copyright_notice_id
+          AND work.erasure_started_at IS NOT NULL
+      )
+  `)
+  return liveIntakes.length > 0
 }

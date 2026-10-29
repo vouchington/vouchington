@@ -72,7 +72,7 @@ export function copyrightEmailAncestorNoticeConflictSql(maxRows: number): SQLSta
       SELECT count(DISTINCT link.copyright_notice_id) > 1
       FROM bounded
       JOIN copyright_notice_email_intake_notice_links link
-        ON link.copyright_notice_email_intake_id = bounded.ancestor_id
+        ON link.copyright_notice_email_intake_receipt_id = bounded.ancestor_id
     ) END
   )`
 }
@@ -141,7 +141,7 @@ export async function assertCopyrightEmailUnresolvedReply(
     WHERE intake.id = ${intakeId}
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
+        WHERE link.copyright_notice_email_intake_receipt_id = intake.id AND link.link_kind = 'thread'
       )
       AND `
   query.append(copyrightEmailReplyReferenceSql())

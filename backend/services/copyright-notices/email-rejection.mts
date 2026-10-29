@@ -1,14 +1,21 @@
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
+import {
+  prepareCopyrightIntakeEncryptionKey,
+  prepareCopyrightReceiptEncryptionKey,
+  attachCopyrightEncryptionKey,
+  openCopyrightSecrets,
+} from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import type { PrivateUser } from '@services/users/types'
-import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { createCopyrightEmailIntakeResponseInTransaction } from './email-intake-reply.mts'
 import { assertCopyrightEmailUnresolvedReply } from './email-thread-review-path.mts'
+import {
+  validateCopyrightEmailRejection,
+  type CopyrightEmailRejectionInput,
+} from './email-rejection-validation.mts'
 
 /**
  * Records a staff rejection or needs-information decision and queues the sender's reply.
@@ -22,45 +29,29 @@ import { assertCopyrightEmailUnresolvedReply } from './email-thread-review-path.
  * `responseId` is set only when this call created the reply, so the caller enqueues its delivery
  * once. `replyQueued` also reports an earlier identical decision's reply on an exact replay.
  */
-export async function rejectCopyrightEmailIntake(input: {
-  currentUser: PrivateUser
-  intakeId: string
-  recommendationId: string | null
-  manualFallbackReason: string | null
-  rationale: string
-  replyEmail?: string | null
-  responseKind?: 'rejected' | 'needs_information'
-  responseMessage?: string | null
-}): Promise<{ responseId: string | null; replyQueued: boolean }> {
-  assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
-  assert(input.rationale.trim(), 422, 'Email intake review rationale is required')
-  assert(
-    input.responseKind !== 'needs_information' || Boolean(input.responseMessage?.trim()),
-    422,
-    'Needs-information responses require a response message',
-  )
-  assert(
-    !input.responseMessage || input.responseMessage.length <= 10_000,
-    422,
-    'Invalid response message',
-  )
-  const replyEmail = input.replyEmail ?? null
-  assert(
-    replyEmail === null || (replyEmail.length <= 254 && isEmailAddress(replyEmail)),
-    422,
-    'reply email must be a valid email address',
-  )
-  assert(
-    (input.recommendationId === null) !== (input.manualFallbackReason === null),
-    422,
-    'Provide either recommendation_id or manual_fallback_reason',
-  )
-  if (input.manualFallbackReason !== null)
-    assert(
-      input.manualFallbackReason.trim() && input.manualFallbackReason.length <= 10_000,
-      422,
-      'Invalid manual fallback reason',
-    )
+export async function rejectCopyrightEmailIntake(
+  input: CopyrightEmailRejectionInput,
+): Promise<{ responseId: string | null; replyQueued: boolean }> {
+  const replyEmail = validateCopyrightEmailRejection(input)
+  await using preparedIntakeKey = await prepareCopyrightIntakeEncryptionKey(input.intakeId)
+  return await rejectWithPreparedIntakeKey(input, replyEmail, preparedIntakeKey)
+}
+
+async function rejectWithPreparedIntakeKey(
+  input: Parameters<typeof rejectCopyrightEmailIntake>[0],
+  replyEmail: string | null,
+  preparedIntakeKey: Awaited<ReturnType<typeof prepareCopyrightIntakeEncryptionKey>>,
+): Promise<{ responseId: string | null; replyQueued: boolean }> {
+  await using preparedReceiptKey = await prepareCopyrightReceiptEncryptionKey(input.intakeId)
+  return await rejectWithPreparedKeys(input, replyEmail, preparedIntakeKey, preparedReceiptKey)
+}
+
+async function rejectWithPreparedKeys(
+  input: Parameters<typeof rejectCopyrightEmailIntake>[0],
+  replyEmail: string | null,
+  preparedIntakeKey: Awaited<ReturnType<typeof prepareCopyrightIntakeEncryptionKey>>,
+  preparedReceiptKey: Awaited<ReturnType<typeof prepareCopyrightReceiptEncryptionKey>>,
+): Promise<{ responseId: string | null; replyQueued: boolean }> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
     amazon_ses_message_id: string
@@ -68,12 +59,12 @@ export async function rejectCopyrightEmailIntake(input: {
   }>(sql`/* rejectCopyrightEmailIntake:lock */
     SELECT intake.amazon_ses_message_id, parse.sender_email_ciphertext AS parsed_sender_ciphertext
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
     WHERE intake.id = ${input.intakeId} AND intake.raw_storage_object_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-        WHERE receipt.id = intake.id AND receipt.erased_at IS NULL)
-    FOR UPDATE OF intake
+      AND receipt.erased_at IS NULL
+    FOR UPDATE OF intake, receipt
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright email intake not found')
@@ -95,6 +86,28 @@ export async function rejectCopyrightEmailIntake(input: {
     await transaction.commit()
     return { responseId: null, replyQueued: decision.response_id !== null }
   }
+  if (preparedIntakeKey)
+    await attachCopyrightEncryptionKey(
+      preparedIntakeKey,
+      { kind: 'intake', id: input.intakeId },
+      transaction,
+    )
+  if (preparedReceiptKey)
+    await attachCopyrightEncryptionKey(
+      preparedReceiptKey,
+      { kind: 'receipt', id: input.intakeId },
+      transaction,
+    )
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'intake', id: input.intakeId }],
+    transaction,
+  )
+  const { decryptSecret } = ownerScopes.get({ kind: 'intake', id: input.intakeId })
+  await using receiptSecrets = await openCopyrightSecrets(
+    { kind: 'receipt', id: input.intakeId },
+    transaction,
+    'write',
+  )
   const parsedSender = intake.parsed_sender_ciphertext
     ? decryptSecret(
         intake.parsed_sender_ciphertext,
@@ -106,7 +119,7 @@ export async function rejectCopyrightEmailIntake(input: {
     422,
     'reply_email is only accepted while the intake has no parsed sender',
   )
-  const rationaleCiphertext = encryptSecret(
+  const rationaleCiphertext = receiptSecrets.encryptSecret(
     JSON.stringify({
       rationale: input.rationale,
       manual_fallback_reason: input.manualFallbackReason,
@@ -138,6 +151,7 @@ export async function rejectCopyrightEmailIntake(input: {
           responseMessage: input.responseMessage ?? null,
         },
         transaction,
+        ownerScopes,
       )
     : null
   await transaction.commit()
@@ -159,12 +173,12 @@ async function assertNoThreadCorrespondenceDecision(
   const { rows } = await transaction(sql`/* rejectCopyrightEmailIntake:threadReview */
     SELECT 1
     FROM copyright_notice_email_intake_notice_links link
-    WHERE link.copyright_notice_email_intake_id = ${intakeId}
+    WHERE link.copyright_notice_email_intake_receipt_id = ${intakeId}
       AND link.link_kind = 'thread'
     UNION ALL
     SELECT 1
     FROM copyright_notice_email_intake_notice_links decided_link
-    WHERE decided_link.copyright_notice_email_intake_id = ${intakeId}
+    WHERE decided_link.copyright_notice_email_intake_receipt_id = ${intakeId}
       AND decided_link.correspondence_action IN ('admitted', 'rejected')
     LIMIT 1
   `)

@@ -2,6 +2,7 @@ import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
 import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 import {
   lockAuthorPublicationLifecycle,
   processAuthorDeletionPublicationBatch,
@@ -10,8 +11,6 @@ import {
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
 import onError from '@modules/on-error'
-
-export const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
 
 export async function cleanupSoftDeletedUser(
   targetId: string,
@@ -74,6 +73,10 @@ async function deletePurgedUser(query: TransactionQuery, targetId: string): Prom
         AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM user_lists WHERE owner_user_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM memberships WHERE user_id = ${targetId})`)
+  if (rowCount)
+    await query(sql`/* recordFinalUserPurgeTime */
+    UPDATE retained_user_identities SET purged_at = CURRENT_TIMESTAMP
+    WHERE id = ${targetId} AND purged_at IS NULL`)
   return rowCount ?? 0
 }
 

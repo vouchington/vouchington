@@ -1,3 +1,4 @@
+import type { CopyrightSecretBatch } from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
@@ -15,7 +16,9 @@ import { selectEuStaffSettlementPages } from './read-models-eu-settlements.mts'
 export async function selectStaffTerritorialCases(
   noticeIds: readonly string[],
   query: TransactionQuery,
+  secretsBatch: CopyrightSecretBatch,
 ): Promise<Map<string, CopyrightStaffTerritorialCase>> {
+  secretsBatch.assertTransaction(query)
   if (noticeIds.length === 0) return new Map()
   const { rows } = await query<{
     notice_id: string
@@ -84,14 +87,21 @@ export async function selectStaffTerritorialCases(
       ),
       query,
     ),
-    selectTerritorialStaffComplaintPages(cases, query),
+    selectTerritorialStaffComplaintPages(cases, query, undefined, secretsBatch),
     selectEuStaffSettlementPages(
       cases.map(item => item.noticeId),
       query,
     ),
   ])
+
   return new Map(
     [...receipts.values()].map((row): [string, CopyrightStaffTerritorialCase] => {
+      const secrets = secretsBatch.forCiphertexts({ kind: 'notice', id: row.notice_id }, [
+        row.grounds_ciphertext,
+        row.notifier_email_ciphertext,
+        row.rationale_ciphertext,
+        row.public_explanation_ciphertext,
+      ])
       const noticeId = row.notice_id
       const labels = territorialLabels(row.jurisdiction)
       const complaintPage = complaints.get(noticeId)!
@@ -103,6 +113,7 @@ export async function selectStaffTerritorialCases(
           grounds: decryptCopyrightText(
             row.grounds_ciphertext,
             `${labels.noticePurpose}:${row.idempotency_key}:grounds`,
+            secrets,
           ),
           notifier: {
             name: row.notifier_name,
@@ -110,6 +121,7 @@ export async function selectStaffTerritorialCases(
               ? decryptCopyrightText(
                   row.notifier_email_ciphertext,
                   `${labels.noticePurpose}:${row.idempotency_key}:notifier_email`,
+                  secrets,
                 )
               : null,
           },
@@ -139,10 +151,12 @@ export async function selectStaffTerritorialCases(
                   rationale: decryptCopyrightText(
                     row.rationale_ciphertext,
                     `${labels.decisionPurpose}:${noticeId}`,
+                    secrets,
                   ),
                   public_explanation: decryptCopyrightText(
                     row.public_explanation_ciphertext,
                     `${labels.publicExplanationPurpose}:${noticeId}`,
+                    secrets,
                   ),
                 }
               : null,

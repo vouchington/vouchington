@@ -10,7 +10,8 @@ import { tryLockCopyrightActionClaim } from './action-delivery-locking.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
+  lockCopyrightActionOwners,
+  assertCopyrightActionOwner,
   hasCopyrightActionBlocker,
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,

@@ -64,6 +64,9 @@ jobs:
       contents: read
     env:
       NODE_ENV: test
+      WORKTREE_DIR: ci-playwright-${{ github.run_id }}
+      S3_BUCKET_COPYRIGHT_EVIDENCE: test-copyright-evidence
+      VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS: codex-test-replay-a:MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE=,codex-test-replay-b:R0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0c=
       PLAYWRIGHT_MAX_WORKERS: '3'
       API_KEY_CHECKSUM_SECRET: this is a fake Playwright CI API key checksum secret
       VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake Playwright CI OTP HMAC secret

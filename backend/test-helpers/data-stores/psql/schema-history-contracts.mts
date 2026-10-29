@@ -16,7 +16,7 @@ export async function getHistoryTablesWithoutMutationGuards() {
                 AND function_row.proname = 'fn_reject_copyright_notice_immutable_evidence')
               OR (table_row.relname = 'media_delivery_registry_changes'
                 AND function_row.proname = 'fn_reject_media_delivery_registry_change_retention'))
-            AND (trigger_row.tgtype::integer & 26) = 26
+            AND (trigger_row.tgtype::integer & 27) = 27
         ) ORDER BY table_row.relname
     `,
   )

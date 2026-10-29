@@ -37,10 +37,10 @@ async function createTwoTargetFixture() {
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
     claimantUserId: claimant.id,
     claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
+    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', body: 'notice' },
     targets: await Promise.all(
       imageIds.map(async imageId => {
         const placement = await getTestPostImagePlacement(postId, imageId)
@@ -68,7 +68,7 @@ async function createTwoTargetFixture() {
     submissionId: aggregate.submissions[0].id,
     correspondenceKind: 'receipt',
     compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    bodyText: `receipt-${crypto.randomUUID()}`,
     draftedById: null,
   })
   await createCopyrightDeliveryIntent({

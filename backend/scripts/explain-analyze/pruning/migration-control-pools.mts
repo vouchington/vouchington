@@ -39,6 +39,9 @@ export function observeMigrationPools(platform: Psql) {
     for (const result of primed) if (result.status === 'rejected') errors.push(result.reason)
     for (const pool of pools)
       assert.equal(pool.waitingCount, 0, 'Checkout did not settle before pool close')
+    // allowExitOnIdle releases socket references. Keep the real clients alive until their
+    // observed end events certify physical closure; pool.end alone only removes pool entries.
+    for (const client of clients.keys()) process.ref(client)
     const results = await Promise.allSettled(
       pools.map(pool => Promise.resolve().then(() => pool.end())),
     )

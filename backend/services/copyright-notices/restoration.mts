@@ -1,3 +1,4 @@
+import { lockCopyrightNoticeLifetime } from './notice-lifetime.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -16,6 +17,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   now: Date
 }): Promise<CopyrightActionIntentRecord> {
   await using transaction = await beginTransaction()
+  await lockCopyrightNoticeLifetime(transaction, input.noticeId)
   const { rows: targetKeys } = await transaction<{ placement_id: string }>(
     sql`/* createEligibleCopyrightRestoreIntent:findPlacement */
     SELECT placement_id

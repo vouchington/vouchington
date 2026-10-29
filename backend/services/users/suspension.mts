@@ -1,3 +1,4 @@
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { createCodedError } from '@vouchington/sentry'
@@ -100,6 +101,10 @@ export async function unsuspendUser(
   if (!user.suspended_at) throw createCodedError(409, 'User is not suspended', CONFLICT)
 
   await using query = await beginTransaction(transactionOptions)
+  // ast-grep-ignore: no-three-sequential-awaits -- Final-purge lifetime precedes author locks and the fresh account-state read; parallel acquisition would invert retention lock order.
+  await query(
+    sql`/* lockUnsuspensionRetentionLifetime */ SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`,
+  )
   await lockAuthorPublicationLifecycle(query, userId)
 
   const { rows: check } = await query(sql`/* unsuspendUser:checkLocked */
@@ -132,6 +137,9 @@ export async function unsuspendUser(
         AND lifted_at IS NULL
     `)
   if (!rowCount) throw createCodedError(409, 'User is not suspended', CONFLICT)
+  // ast-grep-ignore: no-three-sequential-awaits -- Reliance release and publication/payment work are serialized writes on the same transaction before commit.
+  await query(sql`/* releaseCopyrightSuspensionReliance */ UPDATE copyright_account_suspension_reliances
+    SET released_at = clock_timestamp() WHERE account_user_id = ${userId} AND released_at IS NULL`)
   await recordPostPublicationChange(query, {
     scope: { type: 'author', authorUserId: userId },
     reason: 'author_suspension_changed',

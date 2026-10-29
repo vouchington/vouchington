@@ -139,7 +139,7 @@ export async function recordMcpCallAudit(
              ON target.kind = 'repeat_incident' AND target.target_id = incident.id
          UNION ALL SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link JOIN target
              ON target.kind = 'email_intake'
-               AND target.target_id = link.copyright_notice_email_intake_id
+               AND target.target_id = link.copyright_notice_email_intake_receipt_id
        )
        ORDER BY notice.id FOR KEY SHARE OF notice`,
       [rationales.map(row => row.kind), rationales.map(row => row.targetId)],
@@ -184,7 +184,7 @@ export async function recordMcpCallAudit(
          AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
            JOIN copyright_notice_retention_erasures erased
              ON erased.copyright_notice_id = link.copyright_notice_id
-           WHERE link.copyright_notice_email_intake_id = email_intake.id)`,
+           WHERE link.copyright_notice_email_intake_receipt_id = email_intake.id)`,
       [
         context.actorUserId,
         rationales.map(row => row.id),

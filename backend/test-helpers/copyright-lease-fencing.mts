@@ -1,10 +1,10 @@
 import { createTestUser } from './index.mts'
 import { createParsedCopyrightEmailIntake } from './copyright-email-intake-fixtures.mts'
 import { rejectCopyrightEmailIntake } from '../services/copyright-notices/email-rejection.mts'
-import { beginTransaction, read, write } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import { openCopyrightSecrets } from '../services/copyright-notices/encryption-keys.mts'
 import { completeCopyrightActionIntentInTransaction } from '../services/copyright-notices/action-delivery-locking.mts'
 
 export async function completeTestCopyrightActionClaim(
@@ -43,7 +43,13 @@ export async function createTestRejectedCopyrightResponse(): Promise<string> {
 export async function createTestUnreadableCopyrightResponse(): Promise<string> {
   const intake = await createParsedCopyrightEmailIntake()
   const id = uuidv7()
-  await write(sql`/* createTestUnreadableCopyrightResponse */
+  await using transaction = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'intake', id: intake.id },
+    transaction,
+    'write',
+  )
+  await transaction(sql`/* createTestUnreadableCopyrightResponse */
     INSERT INTO copyright_notice_delivery_work_items (
       id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
@@ -52,18 +58,20 @@ export async function createTestUnreadableCopyrightResponse(): Promise<string> {
       ${`copyright-email-intake-response:${intake.id}`}, ${'invalid-encrypted-response'}
     )
   `)
-  await write(sql`/* createTestUnreadableCopyrightResponse:recipient */
+  await transaction(sql`/* createTestUnreadableCopyrightResponse:recipient */
     INSERT INTO copyright_notice_delivery_recipients (
       copyright_notice_delivery_work_item_id, email_ciphertext
     ) VALUES (
-      ${id}, ${encryptSecret('claimant@example.test', `copyright-delivery-recipient:${id}`)}
+      ${id}, ${secrets.encryptSecret('claimant@example.test', `copyright-delivery-recipient:${id}`)}
     )
   `)
+  await transaction.commit()
   return id
 }
 
 export async function readTestCopyrightResponseFailure(responseId: string) {
-  const { rows } = await read<{
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{
     state: string
     lease_token: string | null
     leased_at: Date | null
@@ -74,15 +82,22 @@ export async function readTestCopyrightResponseFailure(responseId: string) {
     SELECT state, lease_token, leased_at, attempt_count, available_at, failure_ciphertext
     FROM copyright_notice_delivery_work_items WHERE id = ${responseId}
   `)
-  const row = rows[0]!
-  return {
+  const row = rows[0]
+  if (!row) throw new Error('Copyright response failure fixture missing')
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'delivery', id: responseId },
+    transaction,
+  )
+  const result = {
     state: row.state,
     leaseToken: row.lease_token,
     claimedAt: row.leased_at,
     attempts: row.attempt_count,
     nextAttemptAt: row.available_at,
-    failure: decryptSecret(row.failure_ciphertext, `copyright-delivery:${responseId}`),
+    failure: secrets.decryptSecret(row.failure_ciphertext, `copyright-delivery:${responseId}`),
   }
+  await transaction.commit()
+  return result
 }
 
 export async function readTestCopyrightDeliveryIntentState(intentId: string): Promise<string> {

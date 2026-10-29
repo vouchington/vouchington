@@ -1,8 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
 import { territorialLabels } from './territorial-labels.mts'
 
@@ -12,8 +11,7 @@ export async function createGuestTerritorialComplaintFromEmail(
     noticeId: string
     submissionId: string
     receivedAt: Date
-    sesMessageId: string
-    bodyCiphertext: string
+    bodyText: string
   },
   transaction: TransactionQuery,
 ): Promise<void> {
@@ -53,7 +51,13 @@ export async function createGuestTerritorialComplaintFromEmail(
     422,
     'The complaint period for this decision has ended',
   )
-  const body = decryptSecret(input.bodyCiphertext, copyrightEmailIntakePurpose(input.sesMessageId))
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: input.noticeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
+  const body = input.bodyText
   assert(body.trim().length > 0 && body.length <= 50_000, 422, 'explanation is required')
   await transaction(sql`/* createGuestTerritorialComplaintFromEmail:request */
     INSERT INTO copyright_territorial_redress_requests (

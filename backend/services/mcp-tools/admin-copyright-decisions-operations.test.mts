@@ -87,7 +87,7 @@ describe('registered copyright operations write tools', () => {
       submissionId,
       correspondenceKind: 'receipt',
       compositionKind: 'deterministic_template',
-      bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+      bodyText: `receipt-${crypto.randomUUID()}`,
       draftedById: null,
     })
     const delivery = await createCopyrightDeliveryIntent({

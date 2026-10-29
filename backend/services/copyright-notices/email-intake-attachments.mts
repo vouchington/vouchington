@@ -1,6 +1,6 @@
 import type { beginTransaction } from '@data-stores/psql'
 import { upsertMediaTypeIds } from '@services/urls/media-types'
-import { encryptSecret } from '@modules/token-secrets'
+import type { ScopedCopyrightSecrets } from './encryption-keys.mts'
 import sql from 'sql-template-strings'
 import type { CopyrightEmailAttachmentInput } from './email-intakes.mts'
 
@@ -9,7 +9,9 @@ export async function insertCopyrightEmailAttachments(
   intakeId: string,
   attachments: CopyrightEmailAttachmentInput[],
   purpose: string,
+  secrets: ScopedCopyrightSecrets,
 ): Promise<void> {
+  const { encryptSecret } = secrets
   const mediaTypeIds = await upsertMediaTypeIds(
     attachments.map(attachment => attachment.mimeType),
     { query: transaction },

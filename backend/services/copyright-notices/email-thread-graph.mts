@@ -40,8 +40,8 @@ export async function readCopyrightEmailGraphTokens(
     SELECT token.lookup_digest
     FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notice_email_thread_tokens token ON token.id = link.matched_token_id
-    WHERE link.copyright_notice_email_intake_id = ANY(${[...intakeIds]}::uuid[])
-    ORDER BY link.copyright_notice_email_intake_id
+    WHERE link.copyright_notice_email_intake_receipt_id = ANY(${[...intakeIds]}::uuid[])
+    ORDER BY link.copyright_notice_email_intake_receipt_id
     LIMIT ${maxRows + 1}
   `)
   const digests = [...new Set([...references, ...matches].map(row => row.lookup_digest))].toSorted()

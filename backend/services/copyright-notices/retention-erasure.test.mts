@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { createSettledCopyrightEuReportCase } from '@voucha/test-helpers/copyright-report-retention'
 import { randomUUID } from 'node:crypto'
 import {
   readCopyrightThreadTokenById,
@@ -18,14 +21,16 @@ import { recordThreadedCopyrightEmail } from '@voucha/test-helpers/services/copy
 import { addTestCopyrightSubmissionGuidanceForRetentionCase } from '@voucha/test-helpers/copyright-submission-guidance-retention'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
-import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { readTestCopyrightStaffScreening } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import {
-  getCopyrightStaffEmailIntake,
-  loadCopyrightEmailRawEvidence,
-  sweepCopyrightEvidenceRetention,
-} from './index.mts'
+  advanceCopyrightRetentionWorkPages,
+  useCopyrightRetentionWorkClock,
+} from '@voucha/test-helpers/copyright-retention-work'
+import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import {
+  readTestCopyrightScreeningCiphertexts,
+  readTestCopyrightStaffScreening,
+} from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
+import { getCopyrightStaffEmailIntake, loadCopyrightEmailRawEvidence } from './index.mts'
 import {
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
@@ -33,21 +38,24 @@ import {
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 
-const DAY_MS = 24 * 60 * 60 * 1000
-const afterRetention = () => new Date(Date.now() + 400 * DAY_MS)
-
-describe('copyright evidence retention sweep', () => {
+describe('copyright evidence retention erasure', () => {
   useAutomaticProvisionalWithholding()
+  useDsaTransparencyReports()
+  useCopyrightIntakeEnvironment()
   const bucket = useFakeCopyrightEvidenceBucket()
-  const configure = useCopyrightRetentionConfig()
+  const setClock = useCopyrightRetentionWorkClock()
 
-  it('overwrites the personal data of an eligible case and deletes every object version', async () => {
-    await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
+  it('overwrites an eligible case and deletes every object version', async () => {
     const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
     await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
     const noticeIds = cases.map(entry => entry.noticeId)
     const administratorLift = await createRetentionAdministratorLiftCase()
-    const coverageNoticeIds = [...noticeIds, administratorLift.noticeId]
+    const periodStart = new Date(Date.now() - 86_400_000)
+    const periodEnd = new Date(Date.now() + 86_400_000)
+    const territorial = await createSettledCopyrightEuReportCase(periodStart, periodEnd)
+    const coverageNoticeIds = [...noticeIds, administratorLift.noticeId, territorial.noticeId]
+    const retentionNow = new Date('2035-01-01T00:00:00.000Z')
+    await setClock(retentionNow)
     for (const key of cases.flatMap(entry => entry.evidenceKeys)) {
       bucket.put(key, { versions: 3, deleteMarker: true })
     }
@@ -67,12 +75,10 @@ describe('copyright evidence retention sweep', () => {
       formCase!.noticeId,
     ])
 
-    const result = await sweepCopyrightEvidenceRetention({
-      now: afterRetention(),
-      noticeIds: coverageNoticeIds,
-    })
-
-    expect(result).toEqual({ erased: 3, ineligible: 0, failed: [] })
+    const outcomes = await Promise.all(
+      coverageNoticeIds.map(noticeId => advanceCopyrightRetentionWorkPages(noticeId)),
+    )
+    for (const pages of outcomes) expect(pages).toContain('erased')
     await expect(readCopyrightStaffQueueCursorRows(noticeIds)).resolves.toEqual([])
     for (const [index, entry] of cases.entries()) {
       for (const key of entry.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)
@@ -86,11 +92,11 @@ describe('copyright evidence retention sweep', () => {
         openReviewIds[index],
       )
       await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toEqual({
-        retention_days: 30,
+        retention_days: 2191,
         erased_object_count: entry.evidenceKeys.length,
       })
     }
-    // Every table the sweep covers held a row in one of the fixtures, and each erasable
+    // Every table covered by erasure held a row in one of the fixtures, and each erasable
     // column of each row now differs from what it held, or is still null where it was null.
     const after = await Promise.all(
       coverageNoticeIds.map((id, index) => readCopyrightRetentionColumns(id, columns[index])),
@@ -103,18 +109,16 @@ describe('copyright evidence retention sweep', () => {
   })
 
   it('leaves the staff readers working on an erased case', async () => {
-    await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const [emailCase, formCase] = await Promise.all([
       createRetentionEmailCase(),
       createRetentionFormCase(),
     ])
     const cases = [emailCase, formCase]
+    await setClock(new Date('2035-01-01T00:00:00.000Z'))
     for (const key of cases.flatMap(entry => entry.evidenceKeys)) bucket.put(key)
 
-    await sweepCopyrightEvidenceRetention({
-      now: afterRetention(),
-      noticeIds: cases.map(entry => entry.noticeId),
-    })
+    for (const entry of cases)
+      expect(await advanceCopyrightRetentionWorkPages(entry.noticeId)).toContain('erased')
 
     await expect(
       getCopyrightStaffEmailIntake(emailCase.intakeId, emailCase.moderator),
@@ -122,19 +126,20 @@ describe('copyright evidence retention sweep', () => {
     await expect(
       loadCopyrightEmailRawEvidence(emailCase.intakeId, emailCase.moderator),
     ).resolves.toBeNull()
-    await expect(readTestCopyrightStaffScreening(formCase.noticeId)).resolves.toMatchObject({
-      rationale: '[erased]',
-      guidance: null,
+    await expect(readTestCopyrightStaffScreening(formCase.noticeId)).resolves.toBeUndefined()
+    await expect(readTestCopyrightScreeningCiphertexts(formCase.noticeId)).resolves.toEqual({
+      rationale_ciphertext: 'erased',
+      guidance_ciphertext: 'erased',
     })
   })
 
   it('keeps a shared token live for another case while severing the erased case', async () => {
-    await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const sharedMessageId = `<${randomUUID()}@example.test>`
     const [erasedCase, liveCase] = await Promise.all([
       createRetentionEmailCase(),
       createRetentionEmailCase({ messageId: sharedMessageId }),
     ])
+    await setClock(new Date('2035-01-01T00:00:00.000Z'))
     const matchedIntake = await createRetentionParsedEmail('shared-retention', { reply: true })
     await linkCopyrightEmailIntakeToNotice({
       intakeId: matchedIntake.id,
@@ -158,9 +163,9 @@ describe('copyright evidence retention sweep', () => {
     expect(sharedA).toEqual(sharedB)
     expect(exclusiveA).not.toBeNull()
 
-    await expect(
-      sweepCopyrightEvidenceRetention({ now: afterRetention(), noticeIds: [erasedCase.noticeId] }),
-    ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
+    // The newly linked and reviewed correspondence starts the same six-year case clock.
+    await setClock(new Date('2042-01-01T00:00:00.000Z'))
+    expect(await advanceCopyrightRetentionWorkPages(erasedCase.noticeId)).toContain('erased')
     await expect(readCopyrightThreadTokenForIntake(matchedIntake.id, 'matched')).resolves.toBeNull()
     await expect(
       readCopyrightThreadTokenForIntake(erasedCase.intakeId, 'message_id'),

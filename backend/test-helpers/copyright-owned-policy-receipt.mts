@@ -1,8 +1,10 @@
 import { beginTransaction, writePool, type PoolClient } from '@data-stores/psql'
+import { v7 as uuidv7 } from 'uuid'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '../services/users/types.mts'
 import { copyrightJurisdictionPolicyLockKey } from './copyright-jurisdiction-policy-lock.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from '../services/copyright-notices/territorial-notice-receipt.mts'
+import { prepareCopyrightEncryptionKey } from '../services/copyright-notices/encryption-keys.mts'
 import { onTestFinished } from 'vitest'
 import { TEST_STATEMENT_TIMEOUT_MS } from './statement-timeout-constant.mts'
 import { insertJurisdictionPolicyApproval } from './data-stores/psql/copyright-eu-uk-contracts.mts'
@@ -26,6 +28,8 @@ export async function createTestEuNoticeWithOwnedApproval(
   return preparation
 
   async function prepare(): Promise<{ approvalId: string; noticeId: string }> {
+    await using encryptionKey = await prepareCopyrightEncryptionKey('notice')
+    const noticeId = uuidv7()
     let client: PoolClient | undefined
     let locked = false
     let failed = false
@@ -33,7 +37,7 @@ export async function createTestEuNoticeWithOwnedApproval(
     let priorTimeout: string | undefined
     let result: { approvalId: string; noticeId: string } | undefined
     const cleanupErrors: unknown[] = []
-    const key = copyrightJurisdictionPolicyLockKey('eu_dsa')
+    const lockKey = copyrightJurisdictionPolicyLockKey('eu_dsa')
     try {
       assertOpen()
       client = await writePool.connect()
@@ -49,7 +53,7 @@ export async function createTestEuNoticeWithOwnedApproval(
       assertOpen()
       await client.query(
         '/* ownedEuReceiptFence */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
-        [key],
+        [lockKey],
       )
       locked = true
       assertOpen()
@@ -83,10 +87,11 @@ export async function createTestEuNoticeWithOwnedApproval(
           goodFaithStatement: true,
         },
         query,
+        { noticeId, key: encryptionKey },
       )
       assertOpen()
       await transaction.commit()
-      result = { approvalId, noticeId: receipt.notice_id }
+      result = { approvalId, noticeId: receipt!.notice_id }
     } catch (err) {
       failed = true
       primary = err
@@ -96,7 +101,7 @@ export async function createTestEuNoticeWithOwnedApproval(
           try {
             const { rows } = await client.query<{ unlocked: boolean }>(
               '/* ownedEuReceiptUnfence */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
-              [key],
+              [lockKey],
             )
             if (!rows[0]?.unlocked)
               cleanupErrors.push(new Error('Owned EU receipt session fence was not held'))

@@ -1,5 +1,8 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
+import { createCopyrightGuestIdentity } from './form-intakes.mts'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   insertTestImage,
@@ -20,6 +23,57 @@ import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyrig
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright form intakes', () => {
+  it('replays the same guest receipt across an unrelated OTP secret rotation', async () => {
+    const send = vi.spyOn(S3Client.prototype, 'send')
+    const { postId, imageId } = await createHostedImagePost('public')
+    const ip = '203.0.113.17'
+    const input = {
+      currentUser: null,
+      requesterIdentity: createCopyrightGuestIdentity(ip),
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca' as const,
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
+        workDescription: 'My photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
+      },
+    }
+    const first = await createCopyrightFormIntake(input)
+    const keyWrites = send.mock.calls.filter(
+      ([command]) =>
+        command instanceof PutObjectCommand && command.input.Key?.startsWith('retention-keys/'),
+    ).length
+    try {
+      vi.stubEnv('VOUCHA_OTP_TOKEN_HASH_SECRET', 'this is an unrelated rotated fake OTP secret')
+      const replay = await createCopyrightFormIntake({
+        ...input,
+        requesterIdentity: createCopyrightGuestIdentity(ip),
+      })
+      expect(replay).toEqual({ intake: first.intake, isDuplicate: true })
+      expect(
+        send.mock.calls.filter(
+          ([command]) =>
+            command instanceof PutObjectCommand && command.input.Key?.startsWith('retention-keys/'),
+        ).length,
+      ).toBe(keyWrites)
+    } finally {
+      vi.unstubAllEnvs()
+      send.mockRestore()
+    }
+  })
+
   it('atomically replays an unchanged idempotency key without another legal case', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
@@ -177,7 +231,7 @@ describe('copyright form intakes', () => {
 })
 
 describe('createCopyrightGuestIdentity', () => {
-  it('hashes the request IP into a stable guest identity', async () => {
+  it('scopes a stable transient guest input for dedicated HMAC persistence', async () => {
     const { createCopyrightGuestIdentity } = await import('./form-intakes.mts')
     const first = createCopyrightGuestIdentity('203.0.113.10')
     expect(first).toMatch(/^guest:/)

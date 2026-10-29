@@ -64,13 +64,13 @@ export async function createRetentionMinimalCase(
     receivedAt: new Date(),
     claimantUserId: claimant?.id ?? null,
     claimantDisplayName: 'Claimant Name',
-    claimantContactCiphertext: `ciphertext-${randomUUID()}`,
+    claimantContact: `ciphertext-${randomUUID()}`,
     workDescription: `Original photograph ${randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'signed_in_form',
-      bodyCiphertext: `notice-${randomUUID()}`,
+      body: `notice-${randomUUID()}`,
     },
     targets: [
       {

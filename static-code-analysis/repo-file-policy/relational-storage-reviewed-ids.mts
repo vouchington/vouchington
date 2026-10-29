@@ -1,26 +1,32 @@
-import {
-  entityRelationMetadatum,
-  getEntityRelationVoteTableName,
-} from '../../backend/types/entities/entity-relations-metadata.mts'
+import { electedVoteTables, reviewed } from './relational-storage-reviewed-id-groups.mts'
 import { REVIEWED_RETENTION_CURSOR_IDS } from './relational-storage-retention-cursors.mts'
-
-const electedVoteTables = entityRelationMetadatum.flatMap(metadata =>
-  metadata.election ? [getEntityRelationVoteTableName(metadata)] : [],
-)
 
 // Reviewed non-relationship ids. Each key is an exact table.column from the committed PostgreSQL
 // schema snapshot with a one-line reason. The two categories are defined in
 // docs/development/postgres-schema-rules.md#prelaunch-relational-storage. A key that gains a
 // foreign key, or leaves the schema, is stale and must be removed.
 
-type ReviewedIds = [string, string][]
-
-function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
-  return keys.map(key => [key, reason])
-}
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
   ...REVIEWED_RETENTION_CURSOR_IDS,
+  [
+    'copyright_notice_email_intake_receipts.current_preservation_hold_token',
+    'Opaque current receipt preservation transition token; never joined or used as entity authority.',
+  ],
+  ...reviewed(
+    'Deletion-stable retention keyset coordinate or frozen sweep bound; the swept source row may no longer exist.',
+    [
+      'copyright_notice_minimal_purge_cursors.cursor_notice_id',
+      'copyright_notice_minimal_purge_continuations.cursor_purge_record_id',
+      'copyright_key_orphan_cleanup_cursors.cursor_key_id',
+      'copyright_key_orphan_cleanup_cursors.cursor_storage_object_id',
+      'copyright_replay_cleanup_cursors.cursor_record_id',
+      'copyright_submission_key_retention_cursors.cursor_record_id',
+      'legal_record_retention_cursors.cursor_record_id',
+      'legal_record_retention_cursors.cursor_sweep_upper_id',
+      'payment_ledger_retention_cursors.cursor_record_id',
+    ],
+  ),
   ...reviewed(
     'Persisted retention keyset bound; the referenced row can be deleted before the next page and must not be a foreign key.',
     [
@@ -126,62 +132,4 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'rss_feed_item_category_snapshot_reconciliations.change_id',
     'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.',
   ],
-])
-
-// Ids recorded at write time and never joined for authorization. They outlive their source row.
-export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
-  [
-    'oauth_native_session_token_mints.client_id',
-    'Native client id at mint time; the append-only audit record survives client deletion.',
-  ],
-  [
-    'oauth_native_session_token_mints.grant_id',
-    'Session grant id at mint time; the append-only audit record survives grant deletion.',
-  ],
-  [
-    'oauth_native_session_token_mints.session_id',
-    'Authenticating session id at mint time; the append-only audit record survives session deletion.',
-  ],
-  [
-    'oauth_native_session_token_mints.access_token_id',
-    'Issued access token id at mint time; the append-only audit record survives token deletion.',
-  ],
-  [
-    'oauth_authorization_server_events.client_id',
-    'Client id at event time; the audit record survives client deletion.',
-  ],
-  [
-    'oauth_authorization_server_events.authorization_request_id',
-    'Short-lived consent request id; the audit record outlives the request.',
-  ],
-  [
-    'oauth_authorization_server_events.access_token_id',
-    'Short-lived access token id; the audit record outlives the token.',
-  ],
-  [
-    'oauth_authorization_server_events.refresh_token_family_id',
-    'Short-lived refresh family id; the audit record outlives the family.',
-  ],
-  ...reviewed('Community scope stamped at write time; aggregate history survives the community.', [
-    'agent_moderations.moderation_transparency_community_id',
-    'moderation_appeals.moderation_transparency_community_id',
-    'moderation_reports.moderation_transparency_community_id',
-    'moderator_actions.moderation_transparency_community_id',
-    'post_clearance_changes.moderation_transparency_community_id',
-    'moderation_transparency_daily_rollups.community_id',
-    'moderation_transparency_released_daily_rollups.community_id',
-  ]),
-  [
-    'topic_alias_category_mapping_reconciliations.topic_alias_id',
-    'Alias id at transition time; the pending work is keyed by it and outlives the alias.',
-  ],
-  ...reviewed('Session id recorded at vote time; sessions live outside PostgreSQL.', [
-    'agent_moderation_votes.session_id',
-    ...electedVoteTables.map(table => `${table}.session_id`),
-    'hostname_votes.session_id',
-    'post_votes.session_id',
-    'rss_feed_item_votes.session_id',
-    'topic_votes.session_id',
-    'user_vouch_votes.session_id',
-  ]),
 ])
