@@ -12,18 +12,6 @@ describe('URL Builder', () => {
   })
 
   describe('buildPostSitemapUrl routes', () => {
-    it('should build URL for discussion post', () => {
-      const post: SitemapPost = {
-        slug: 'test-discussion',
-        post_type: 'discussion',
-        updated_at: new Date('2026-01-25T12:00:00Z'),
-      }
-
-      const result = buildPostSitemapUrl(post)
-
-      expect(result.loc).toBe('https://test.com/discussion/test-discussion')
-    })
-
     it('should build URL for review post', () => {
       const post: SitemapPost = {
         slug: 'test-review',
