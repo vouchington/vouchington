@@ -37,6 +37,7 @@ async function cleanupDeferredPostVotePage(
 ): Promise<DeferredPostVotePage> {
   const { rows: due } = await query<{ post_id: string; id: string }>(
     `/* listDeferredPostVoteSources */
+     -- no-mistakes-disable-next-line postgres-required-predicates: this global due-source page spans every post partition; partial ID indexes and LIMIT cap raw reads before supersession checks
      SELECT post_id, id FROM post_votes
      WHERE ballot_retention_deferred_at IS NOT NULL
        AND ${cutoffId === null ? 'outbound_activitypub_distributed_at IS NOT NULL' : 'id < $1::uuid'}
