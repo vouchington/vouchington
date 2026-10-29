@@ -1,4 +1,7 @@
+import type { EventEmitter } from 'node:events'
 import type { PoolClient } from '@data-stores/psql'
+
+type LockNoticeClient = Pick<PoolClient, 'query'> & Pick<EventEmitter, 'on' | 'off'>
 
 type Settings = {
   log_lock_waits: string
@@ -10,7 +13,7 @@ type Settings = {
 
 /** Observe one real reserved connection; PostgreSQL emits this LOG while its lock is still blocked. */
 export function observeTestAdvisoryLockNotice(
-  client: PoolClient,
+  client: LockNoticeClient,
   lockTag: string,
   eligible: () => boolean = () => true,
 ) {
@@ -18,7 +21,7 @@ export function observeTestAdvisoryLockNotice(
 }
 
 export function observeTestTransactionLockNotice(
-  client: PoolClient,
+  client: LockNoticeClient,
   transactionId: string,
   eligible: () => boolean = () => true,
 ) {
@@ -31,7 +34,7 @@ export function observeTestTransactionLockNotice(
 }
 
 function observeTestPostgresLockNotice(
-  client: PoolClient,
+  client: LockNoticeClient,
   lockTag: string,
   mode: string,
   eligible: () => boolean = () => true,
@@ -57,6 +60,8 @@ function observeTestPostgresLockNotice(
       Settings & {
         process_id: number
         version: number
+        role_name: string
+        database_name: string
         locale: string
         timeout_ms: number
         can_log: boolean
@@ -65,6 +70,8 @@ function observeTestPostgresLockNotice(
     >(`/* observeTestAdvisoryLockNotice.settings */
       SELECT pg_backend_pid()::integer AS process_id,
         current_setting('server_version_num')::integer AS version,
+        current_user AS role_name,
+        current_database() AS database_name,
         current_setting('lc_messages') AS locale,
         current_setting('log_lock_waits') AS log_lock_waits,
         current_setting('deadlock_timeout') AS deadlock_timeout,
@@ -77,11 +84,14 @@ function observeTestPostgresLockNotice(
     `)
     const row = rows[0]
     if (!row) throw new Error('Owned contender did not report its session settings')
-    original = row
     processId = row.process_id
     if (row.version < 180000 || row.version >= 190000 || !row.can_log || !row.can_set_deadlock)
       throw new Error(
-        'Owned lock-wait observation requires PostgreSQL18 and session SET privileges',
+        `Owned lock-wait observation requires PostgreSQL18 and session SET privileges: ` +
+          `server_version_num=${row.version}, current_user=${row.role_name}, ` +
+          `current_database()=${row.database_name}, can_log=${row.can_log}, ` +
+          `can_set_deadlock=${row.can_set_deadlock}. ` +
+          `Run ./dev/initialize backend and verify DATABASE_URL points to this worktree's own disposable database.`,
       )
     if (!/^(C|POSIX|en_)/.test(row.locale))
       throw new Error('Owned lock-wait observation requires the normal English PostgreSQL notices')
@@ -89,6 +99,7 @@ function observeTestPostgresLockNotice(
       throw new Error(
         `Owned contender has insufficient statement-timeout headroom: ${row.timeout_ms}`,
       )
+    original = row
     await client.query(
       `/* observeTestAdvisoryLockNotice.configure */
       SELECT set_config('log_lock_waits', 'on', false),
