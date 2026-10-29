@@ -21,44 +21,6 @@ describe('ratings.generated', () => {
   afterEach(async () => {})
 
   describe('updateTopicRatingStats', () => {
-    it('calculates correct stats for topic with multiple reviews (one per user, DISTINCT ON latest)', async () => {
-      const uuid1 = randomUUID()
-      const uuid2 = randomUUID()
-      const uuid3 = randomUUID()
-      const user1 = await createTestUser({ username: `test-user-${uuid1}` })
-      const user2 = await createTestUser({ username: `test-user-${uuid2}` })
-      const topicId = await insertTestTopic({
-        name: `Test Topic ${uuid3}`,
-        slug: `test-topic-${uuid3}`,
-        createdById: user1!.id,
-      })
-
-      // Each user creates one review each; DISTINCT ON picks latest per user
-      await insertTestReview({
-        userId: user1!.id,
-        topicRatings: [{ topicId, rating: 4 }],
-      })
-      await insertTestReview({
-        userId: user2!.id,
-        topicRatings: [{ topicId, rating: 1 }],
-      })
-
-      await updateTopicRatingStats(topicId)
-
-      const stats = await getTopicRatingStats(topicId)
-      expect(stats).toBeTruthy()
-      expect(stats!.ratings__count__4).toBe(1)
-      expect(stats!.ratings__count__1).toBe(1)
-      expect(stats!.ratings__count__5).toBe(0)
-      expect(stats!.ratings__count__3).toBe(0)
-      expect(stats!.ratings__count__2).toBe(0)
-
-      // Check scores (vote_weight defaults to 1 for test users)
-      expect(stats!.ratings__score__4).toBe(1)
-      expect(stats!.ratings__score__1).toBe(1)
-      expect(stats!.ratings__score__5).toBe(0)
-    })
-
     it('DISTINCT ON uses latest review when user reviews same topic multiple times', async () => {
       const uuid1 = randomUUID()
       const uuid2 = randomUUID()
@@ -86,6 +48,13 @@ describe('ratings.generated', () => {
       expect(stats!.ratings__count__5).toBe(0)
       expect(stats!.ratings__count__4).toBe(1)
       expect(stats!.ratings__count__1).toBe(1)
+      expect(stats!.ratings__count__3).toBe(0)
+      expect(stats!.ratings__count__2).toBe(0)
+
+      // Check scores (vote_weight defaults to 1 for test users)
+      expect(stats!.ratings__score__4).toBe(1)
+      expect(stats!.ratings__score__1).toBe(1)
+      expect(stats!.ratings__score__5).toBe(0)
     })
 
     it('returns zero stats for topic with no reviews', async () => {
@@ -175,11 +144,15 @@ describe('ratings.generated', () => {
       await insertTestReview({ userId: user1!.id, topicRatings: [{ topicId, rating: 5 }] })
       await updateTopicRatingStats(topicId)
 
+      // First-time insert: topic_metrics was not pre-populated and the write stamps a timestamp.
+      expect(await getTopicRatingsUpdatedAt(topicId)).toBeTruthy()
+
       const sentinel = new Date('2000-01-01T00:00:00.000Z')
       await setTestTopicRatingsUpdatedAt(topicId, sentinel)
       const firstStats = await getTopicRatingStats(topicId)
       expect(firstStats).toBeTruthy()
       expect(firstStats!.ratings__count__5).toBe(1)
+      expect(firstStats!.ratings__score__5).toBe(1)
 
       // New user adds a different review
       await insertTestReview({ userId: user2!.id, topicRatings: [{ topicId, rating: 4 }] })
@@ -194,29 +167,6 @@ describe('ratings.generated', () => {
       expect(secondStats).toBeTruthy()
       expect(secondStats!.ratings__count__5).toBe(1)
       expect(secondStats!.ratings__count__4).toBe(1)
-    })
-
-    it('works correctly for first-time insert', async () => {
-      const uuid1 = randomUUID()
-      const uuid2 = randomUUID()
-      const user = await createTestUser({ username: `test-user-${uuid1}` })
-      const topicId = await insertTestTopic({
-        name: `Test Topic ${uuid2}`,
-        slug: `test-topic-${uuid2}`,
-        createdById: user!.id,
-      })
-
-      // Don't pre-populate topic_metrics, let the function handle it
-      await insertTestReview({ userId: user!.id, topicRatings: [{ topicId, rating: 3 }] })
-      await updateTopicRatingStats(topicId)
-
-      const stats = await getTopicRatingStats(topicId)
-      expect(stats).toBeTruthy()
-      expect(stats!.ratings__count__3).toBe(1)
-      expect(stats!.ratings__score__3).toBe(1)
-
-      const timestamp = await getTopicRatingsUpdatedAt(topicId)
-      expect(timestamp).toBeTruthy()
     })
 
     it('adds vote-only users to score buckets without changing review counts', async () => {

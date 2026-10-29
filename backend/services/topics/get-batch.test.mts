@@ -41,36 +41,6 @@ describe('get-batch', () => {
     expect(results[2]?.id).toBe(topic3.id)
   })
 
-  it('getTopicsByAnyBatch fetches multiple topics by slugs in correct order', async () => {
-    const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const slug1 = `test-topic-slug1-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
-    const slug2 = `test-topic-slug2-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
-    const slug3 = `test-topic-slug3-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
-
-    const topic1 = await createTopic(user, WEB_PROVENANCE, {
-      slug: slug1,
-      topic_type: 'card',
-      name: createUniqueTopicName('Test Topic Slug 1'),
-    })
-    const topic2 = await createTopic(user, WEB_PROVENANCE, {
-      slug: slug2,
-      topic_type: 'card',
-      name: createUniqueTopicName('Test Topic Slug 2'),
-    })
-    const topic3 = await createTopic(user, WEB_PROVENANCE, {
-      slug: slug3,
-      topic_type: 'card',
-      name: createUniqueTopicName('Test Topic Slug 3'),
-    })
-    // Fetch in specific order using slugs
-    const results = await getTopicsByAnyBatch([slug2, slug1, slug3])
-
-    expect(results).toHaveLength(3)
-    expect(results[0]?.id).toBe(topic2.id)
-    expect(results[1]?.id).toBe(topic1.id)
-    expect(results[2]?.id).toBe(topic3.id)
-  })
-
   it('getTopicsByAnyBatch handles mixed IDs and slugs', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
     const slug1 = `test-topic-mixed1-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
@@ -127,22 +97,6 @@ describe('get-batch', () => {
     expect(results).toHaveLength(2)
     expect(results[0]?.id).toBe(topic.id)
     expect(results[1]?.id).toBe(topic.id)
-  })
-
-  it('getTopicsByAnyBatch handles duplicates correctly', async () => {
-    const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const topic = await createTopic(user, WEB_PROVENANCE, {
-      slug: `test-topic-dup-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-      topic_type: 'card',
-      name: createUniqueTopicName('Test Topic Dup'),
-    })
-    // Request same ID multiple times
-    const results = await getTopicsByAnyBatch([topic.id, topic.id, topic.id])
-
-    expect(results).toHaveLength(3)
-    expect(results[0]?.id).toBe(topic.id)
-    expect(results[1]?.id).toBe(topic.id)
-    expect(results[2]?.id).toBe(topic.id)
   })
 
   it('getTopicsByAnyBatch throws error for invalid identifiers', async () => {
