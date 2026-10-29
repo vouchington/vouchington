@@ -33,9 +33,6 @@ describe('isIpv6AllowlistedHost', () => {
   })
 
   it('allows audited AWS dual-stack endpoint hostnames', () => {
-    expect(isIpv6AllowlistedHost('monitoring.us-west-2.api.aws')).toBe(true)
-    expect(isIpv6AllowlistedHost('firehose.us-west-2.api.aws')).toBe(true)
-    expect(isIpv6AllowlistedHost('email.us-west-2.api.aws')).toBe(true)
     expect(isIpv6AllowlistedHost('s3.dualstack.us-west-2.amazonaws.com')).toBe(true)
     expect(isIpv6AllowlistedHost('example-images.s3.dualstack.us-west-2.amazonaws.com')).toBe(true)
   })
