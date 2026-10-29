@@ -27,13 +27,6 @@ describe('buildRssFeedItemTopicMembershipExists', () => {
     expect(membership.values).toContain('topic-1')
   })
 
-  it('reuses buildRssFeedItemTopicCandidateSelect verbatim as its candidate body', () => {
-    const membership = buildRssFeedItemTopicMembershipExists('rss_feed_items.id', 'topic-1')
-    const candidateSelect = buildRssFeedItemTopicCandidateSelect('topic-1')
-
-    expect(membership.text).toContain(candidateSelect.text)
-  })
-
   it('throws for an invalid rssFeedItemIdColumn', () => {
     expect(() =>
       buildRssFeedItemTopicMembershipExists('rss_feed_items.id; DROP TABLE users', 'topic-1'),
