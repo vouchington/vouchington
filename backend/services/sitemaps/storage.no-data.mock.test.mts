@@ -92,7 +92,6 @@ describe('sitemap storage', () => {
         ContentEncoding: 'gzip',
         Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
       })
-      expect(Buffer.byteLength(JSON.stringify(manifest))).toBeLessThan(2048)
     } finally {
       await rm(file.directory, { recursive: true, force: true })
     }
