@@ -25,7 +25,8 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo",
-    "typeRoots": ["node_modules/@types"]
+    "typeRoots": ["node_modules/@types"],
+    "types": ["node"]
   },
   "include": ["**/*.ts", "**/*.mts", "**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

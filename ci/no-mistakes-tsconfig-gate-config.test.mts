@@ -14,7 +14,7 @@ type Config = {
 }
 
 describe('TypeScript compiler gate configuration', () => {
-  it('declares every compiler project as an always-on static generic command', () => {
+  it('declares required compiler projects as always-on commands and explicit exemptions', () => {
     const config = parseYaml(readFileSync(`${repoRoot}/.no-mistakes.yml`, 'utf8')) as Config
     const commands = config.checks?.commands ?? []
     const projects: Array<[string, string[]]> = [
@@ -123,6 +123,8 @@ describe('TypeScript compiler gate configuration', () => {
       name: 'TypeScript compiler gate coverage',
       options: {
         allowProjects: {
+          'backend/tsconfig.bun.json':
+            'Informational Bun compatibility program; production Node typechecks remain required while Bun differences are resolved.',
           'web/tsconfig.dependency-cruiser.json':
             'Used only by dependency-cruiser, not as a compiler program.',
         },

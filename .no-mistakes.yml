@@ -2010,6 +2010,7 @@ rules:
     scope: repository
     options:
       allowProjects:
+        backend/tsconfig.bun.json: Informational Bun compatibility program; production Node typechecks remain required while Bun differences are resolved.
         web/tsconfig.dependency-cruiser.json: Used only by dependency-cruiser, not as a compiler program.
 
   - name: web unique exports
@@ -4413,6 +4414,7 @@ rules:
             test-backend-unit,
             test-explain-analyze,
             test-postgres-schema,
+            typecheck-bun,
             validate-backend-images,
           ]
         .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]

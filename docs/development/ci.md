@@ -99,6 +99,10 @@ selects it from shared path filters, and the job named after the area is the req
 passes when the area is skipped. Credentialed suites skip on untrusted pull requests, and
 Storybook skips on them unless a dependency bot opened the PR.
 
+Backend Bun compatibility runs as a separate informational check so Node declarations continue
+to define production type safety while Bun declaration differences remain visible. It does not
+feed the required backend gate.
+
 Native Node coverage and Vitest coverage use the same AST statement representation before their
 LCOV artifacts are merged. Physical-line coverage can otherwise count braces, signatures, and
 multiline expressions as uncovered even when the owning behavior ran. The published coverage

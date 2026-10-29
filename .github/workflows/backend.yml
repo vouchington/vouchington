@@ -39,6 +39,25 @@ jobs:
       actions: read
       contents: read
 
+  # Report Bun compatibility separately while Node remains the production runtime.
+  typecheck-bun:
+    needs: [changes, static-backend]
+    if: needs.changes.outputs.area-backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+        timeout-minutes: 1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        timeout-minutes: 5
+      - name: Typecheck backend with Bun declarations
+        run: pnpm --dir backend run typecheck:bun
+        timeout-minutes: 5
+
   prepare-postgres:
     needs: [static-backend]
     uses: ./.github/workflows/prepare-postgres.yml
