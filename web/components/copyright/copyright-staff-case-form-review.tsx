@@ -44,7 +44,7 @@ export function CopyrightStaffFormReview({
           <h3 className='font-medium'>Form review recorded</h3>
           <p className='text-sm'>
             {review.is_accepted ? 'Approved' : 'Rejected'} by{' '}
-            {review.reviewed_by_id ?? 'a deleted moderator account'} on{' '}
+            {review.reviewed_by_id ? 'a moderator' : 'a deleted moderator account'} on{' '}
             <time dateTime={review.reviewed_at}>
               {new Date(review.reviewed_at).toLocaleString()}
             </time>

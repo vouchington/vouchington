@@ -52,7 +52,7 @@ rule:
         - regex: ' (ID|UUID)\s*`\s*\}\s*</FormLabel>$'
     - all:
         - kind: jsx_attribute
-        - regex: '^(value|defaultValue)\s*=\s*\{\s*[\w$.?!]*(Id|_id)\s*\}$'
+        - regex: '^(value|defaultValue)\s*=\s*\{\s*[\w$.?!]*(\.id|Id|_id)\s*\}$'
         - inside:
             stopBy: neighbor
             any:
@@ -175,4 +175,7 @@ examples:
     file: 'web/app/page.tsx'
   - code: 'const el = <Input value={clientId} readOnly />'
     isValid: true
+    file: 'web/app/page.tsx'
+  - code: 'const el = <Input value={user.id} onChange={onChange} />'
+    isValid: false
     file: 'web/app/page.tsx'

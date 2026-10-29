@@ -40,8 +40,17 @@ rule:
             inside:
               kind: jsx_attribute
               stopBy: neighbor
-        - regex: '^\{\s*[\w$.?!]+\.(id|\w+Id|\w+_id)\s*\}$'
+        - regex: '^\{\s*[\w$.?!]+\.(id|\w+Id|\w+_id)\s*(\}$|(\?\?|\|\|)(?:[^?]|\?\.)*\}$)'
 examples:
+  - code: 'export function Row({ row }) { return <p>{row.reportEntityId || row.trailing ? <b /> : null}</p> }'
+    isValid: true
+    file: 'web/components/row.tsx'
+  - code: 'export function Row({ row, name }) { return <span>{row.id ?? name}</span> }'
+    isValid: false
+    file: 'web/components/row.tsx'
+  - code: 'export function Row({ row, name }) { return <span>{row.topic_id || name}</span> }'
+    isValid: false
+    file: 'web/components/row.tsx'
   - code: 'export function Row({ user }) { return <span>{user.id}</span> }'
     isValid: false
     file: 'web/components/row.tsx'

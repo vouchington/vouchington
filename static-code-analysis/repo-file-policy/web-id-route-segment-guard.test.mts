@@ -18,6 +18,8 @@ describe('web id route segment guard', () => {
           'web/app/api/thing/[thing_id]/route.ts',
           'web/app/user/[idOrUsername]/page.tsx',
           'web/app/communities/[slug]/page.tsx',
+          'web/app/widget/[[...widgetId]]/page.tsx',
+          'web/app/orphan/[orphanId]/layout.tsx',
           'web/lib/not-a-route/[id]/page.tsx',
         ]),
       ].toSorted(),
@@ -26,6 +28,7 @@ describe('web id route segment guard', () => {
       '/article/[id]',
       '/article/[id]/comment/[commentId]',
       '/list/[id]',
+      '/widget/[[...widgetId]]',
     ])
   })
 
@@ -53,6 +56,13 @@ describe('web id route segment guard', () => {
 
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('stale web id route allowlist entry /gone/[id]')
+  })
+
+  it('rejects an allowlist entry without a reason', () => {
+    const errors = check(['web/app/(lists)/list/[id]/page.tsx'], [['/list/[id]', '  ']])
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('needs a one-line "no natural key" reason')
   })
 
   it('does nothing when the repository has no web app', () => {

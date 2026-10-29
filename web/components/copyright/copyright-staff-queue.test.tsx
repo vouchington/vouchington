@@ -229,7 +229,7 @@ describe('CopyrightStaffQueue', () => {
     },
   )
   it.each([
-    { accepted: true, reviewedById: 'moderator-123', decision: 'Approved by moderator-123' },
+    { accepted: true, reviewedById: 'moderator-123', decision: 'Approved by a moderator' },
     { accepted: false, reviewedById: null, decision: 'Rejected by a deleted moderator account' },
   ])(
     'keeps the screening and AI guidance beside a recorded review ($decision) without offering the decision',
