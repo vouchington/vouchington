@@ -5,8 +5,6 @@ import {
   POST_CLASSIFIER_ACTION_POLICY_REVISION,
   POST_CLASSIFIER_LABELS,
   POST_CLASSIFIER_LOCAL_POLICY_REVISION,
-  POST_CLASSIFIER_MODEL_NAME,
-  POST_CLASSIFIER_MODEL_PROVIDER,
   POST_CLASSIFIER_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
 } from '@voucha/types/entities/post-classifier'
@@ -29,11 +27,7 @@ function checkedRemoteRows(
     throw new Error('post classifier candidate or threshold is missing or duplicated')
   }
   const first = rows[0]!
-  if (
-    first.prompt !== POST_CLASSIFIER_PROMPT ||
-    first.model_name !== POST_CLASSIFIER_MODEL_NAME ||
-    first.model_provider !== POST_CLASSIFIER_MODEL_PROVIDER
-  ) {
+  if (first.prompt !== POST_CLASSIFIER_PROMPT) {
     throw new Error('post classifier active prompt does not match the fixed catalog')
   }
   if (

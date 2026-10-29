@@ -30,8 +30,8 @@ client makes exactly one attempt per call and never
 retries; optional `beforeAttempt`/`onBilledResponse` hooks let a caller
 record billed usage and enforce a spend cap without this module ever importing a billing service
 itself. `@agents/_shared/structured-decision-billing-hooks.mts` owns that reusable composition for
-agent callers; `@agents/post-classifier` uses its catalog's fixed provider and model in the
-post-classifier worker for remote candidate sets. Local-only post-classifier work makes no provider
+agent callers; `@agents/post-classifier` uses the provider and model of the active classifier prompt
+version row in the post-classifier worker for remote candidate sets. Local-only post-classifier work makes no provider
 wired into a queue dispatch. Every returned answer must
 match one requested ID and primitive, use valid probabilities, and completely cover the request.
 Partial, malformed, duplicate, unknown, and non-normalized results reject as a whole.

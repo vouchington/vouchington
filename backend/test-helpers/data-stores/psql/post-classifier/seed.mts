@@ -98,6 +98,7 @@ export async function replacePostClassifierThreshold(
 export async function rotatePostClassifierPrompt(
   nextPrompt: string,
   modelName: string = POST_CLASSIFIER_MODEL_NAME,
+  modelProvider: 'openai' | 'openrouter' = POST_CLASSIFIER_MODEL_PROVIDER,
 ): Promise<void> {
   await write(sql`/* deactivatePostClassifierPromptForTest */
     UPDATE classifier_prompt_versions SET deactivated_at = CURRENT_TIMESTAMP
@@ -109,7 +110,7 @@ export async function rotatePostClassifierPrompt(
       classifier_id, prompt, model_name, model_provider,
       default_lower_threshold, default_upper_threshold, activated_at
     )
-    SELECT classifier.id, ${nextPrompt}, ${modelName}, ${POST_CLASSIFIER_MODEL_PROVIDER}::classifier_model_providers,
+    SELECT classifier.id, ${nextPrompt}, ${modelName}, ${modelProvider}::classifier_model_providers,
       0.2500, 0.7500, CURRENT_TIMESTAMP
     FROM classifiers classifier WHERE classifier.slug = 'post-classifier'
   `)

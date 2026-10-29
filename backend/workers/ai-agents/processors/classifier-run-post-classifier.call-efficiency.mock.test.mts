@@ -1,6 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import {
+  POST_CLASSIFIER_PROMPT,
+  POST_CLASSIFIER_SLUG,
+} from '@voucha/types/entities/post-classifier'
 import { installEfficiencyProvider } from '@voucha/test-helpers/classifier-call-efficiency-provider'
 import { postClassifierEfficiencyDriver } from '@voucha/test-helpers/classifier-call-efficiency-driver-post-classifier'
 import {
@@ -17,10 +20,12 @@ import {
 import {
   createApprovedClassifierPost,
   initializePostClassifierExecutionTests,
+  reseedPostClassifierForTest,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
 import { withCurrentClassifierUsage } from '@voucha/test-helpers/classifier-current-usage'
 import * as vurst from '@jongleberry/vurst-ai'
+import { rotatePostClassifierPrompt } from '@voucha/test-helpers/data-stores/psql/post-classifier/seed'
 import { getCurrentPostClassifierActorId } from '@services/post-classifier/configuration-data'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
 import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
@@ -198,5 +203,25 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
         costMicrounits: '4000',
       })
     })
+  })
+
+  it('sends the remote half to the transport and model of the active prompt version row', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter-key')
+    installEfficiencyProvider()
+    const { post, inputSha256 } = await createApprovedClassifierPost(true, false)
+    const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
+    try {
+      await rotatePostClassifierPrompt(POST_CLASSIFIER_PROMPT, 'typesafe/jev-1.13', 'openrouter')
+      await withCurrentClassifierUsage(async trackRunId => {
+        const run = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+        trackRunId(run.runId)
+        expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('completed')
+        const [[url, init]] = vi.mocked(fetchStructuredDecisionProvider).mock.calls
+        expect(url).toContain('openrouter.ai')
+        expect(JSON.stringify(init?.body)).toContain('typesafe/jev-1.13')
+      })
+    } finally {
+      await reseedPostClassifierForTest()
+    }
   })
 })
