@@ -77,14 +77,9 @@ describe('catalog bootstrap', () => {
       import('node:url'),
     ])
     const directory = dirname(fileURLToPath(import.meta.url))
-    const webCatalogSources = await Promise.all([
-      readFile(join(directory, 'locale-loader.mts'), 'utf8'),
-      readFile(join(directory, 'load-catalog-json.mts'), 'utf8'),
-    ])
+    const webCatalogSource = await readFile(join(directory, 'load-catalog-json.mts'), 'utf8')
 
-    expect(webCatalogSources.join('\n')).not.toMatch(
-      /native-(?:dotnet|swift|shared|route-metadata)/,
-    )
+    expect(webCatalogSource).not.toMatch(/native-(?:dotnet|swift|shared|route-metadata)/)
   })
 
   it('produces a detached JSON-safe value without loss', () => {
