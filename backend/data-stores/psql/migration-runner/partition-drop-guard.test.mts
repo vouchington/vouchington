@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
+import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
 import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
@@ -62,7 +62,7 @@ describe('partition drop guard', () => {
   })
 
   it('agrees between the live batch preview and direct legal-hold recheck', async () => {
-    const monthly = (await listMonthlyDropCandidates(write)).candidates.find(
+    const monthly = (await listTestMonthlyDropCandidates(write)).find(
       entry => entry.table === 'rss_feed_crawls',
     )
     expect(monthly).toBeDefined()

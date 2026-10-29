@@ -4,7 +4,11 @@ import {
   createPartitionRetirementFailureFixture,
 } from '@voucha/test-helpers/partition-retirement-failure'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
-import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
+import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
+import {
+  listMonthlyDropCandidates,
+  type PartitionCleanupCursor,
+} from './monthly-partition-candidates.mts'
 import { write } from '../setup.mts'
 import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
@@ -13,6 +17,7 @@ import {
   createMonthlyPartitions,
   retireMonthlyPartitionCandidate,
   retirePartitionsSequentially,
+  type PartitionDropOutcome,
 } from './monthly-partitions.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
@@ -69,14 +74,28 @@ describe('monthly partition retirement', () => {
 
   it('discovers bootstrapped copyright monthly children and preserves all ten inside six years', async () => {
     const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
-    const { candidates } = await listMonthlyDropCandidates(write, 50)
+    const candidates = await listTestMonthlyDropCandidates(write)
     const copyright = candidates.filter(candidate => tables.includes(candidate.table))
     expect(new Set(copyright.map(candidate => candidate.table))).toEqual(new Set(tables))
     expect(copyright.every(candidate => candidate.upperBound instanceof Date)).toBe(true)
 
-    const { outcomes } = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'), {
-      limit: 50,
-    })
+    const outcomes: PartitionDropOutcome[] = []
+    let after: PartitionCleanupCursor | undefined
+    let finished = false
+    for (let pageNumber = 0; pageNumber < 10; pageNumber++) {
+      const page = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'), {
+        limit: 50,
+        after,
+      })
+      outcomes.push(...page.outcomes)
+      if (!page.hasMore) {
+        finished = true
+        break
+      }
+      after = page.nextCursor
+      if (!after) throw new Error('Monthly cleanup page has no continuation cursor')
+    }
+    expect(finished).toBe(true)
     const copyrightOutcomes = outcomes.filter(outcome => tables.includes(outcome.table))
     expect(copyrightOutcomes).toHaveLength(copyright.length)
     expect(copyrightOutcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
@@ -86,14 +105,12 @@ describe('monthly partition retirement', () => {
     const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
     const before = createCopyrightPartitionRetirementRecorder(tables)
     const beforeCandidates = await listMonthlyDropCandidates(before.query)
-    const refusals = await retirePartitionsSequentially(
-      beforeCandidates.candidates,
-      candidate =>
-        retireMonthlyPartitionCandidate(
-          candidate,
-          new Date('2026-02-28T23:59:59.999Z'),
-          before.begin,
-        ),
+    const refusals = await retirePartitionsSequentially(beforeCandidates.candidates, candidate =>
+      retireMonthlyPartitionCandidate(
+        candidate,
+        new Date('2026-02-28T23:59:59.999Z'),
+        before.begin,
+      ),
     )
     expect(refusals).toHaveLength(tables.length)
     expect(refusals.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
@@ -103,14 +120,12 @@ describe('monthly partition retirement', () => {
 
     const boundary = createCopyrightPartitionRetirementRecorder(tables)
     const boundaryCandidates = await listMonthlyDropCandidates(boundary.query)
-    const routed = await retirePartitionsSequentially(
-      boundaryCandidates.candidates,
-      candidate =>
-        retireMonthlyPartitionCandidate(
-          candidate,
-          new Date('2026-03-01T00:00:00.000Z'),
-          boundary.begin,
-        ),
+    const routed = await retirePartitionsSequentially(boundaryCandidates.candidates, candidate =>
+      retireMonthlyPartitionCandidate(
+        candidate,
+        new Date('2026-03-01T00:00:00.000Z'),
+        boundary.begin,
+      ),
     )
     expect(routed).toHaveLength(tables.length)
     expect(routed.every(outcome => outcome.outcome === 'dropped')).toBe(true)

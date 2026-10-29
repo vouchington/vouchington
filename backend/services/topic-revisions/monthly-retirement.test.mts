@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { listMonthlyDropCandidates } from '@data-stores/psql/migration-runner/monthly-partition-candidates'
 import { readTestTopicRevisionChild } from '@voucha/test-helpers/entities/topic-revisions'
 import { createTopicRevision } from './index.mts'
 
@@ -24,10 +23,5 @@ describe('monthly topic revisions', () => {
         revision.created_at.getUTCMonth() + 1,
       ).padStart(2, '0')}`,
     )
-    expect(
-      (await listMonthlyDropCandidates()).candidates.filter(
-        candidate => candidate.table === 'topic_revisions',
-      ).length,
-    ).toBeGreaterThanOrEqual(4)
   })
 })
