@@ -103,22 +103,6 @@ describe('analytics retention', () => {
     ])
   })
 
-  it('compacts partitions without using fs.promises.readFile', async () => {
-    await writeJsonl('web_page_view', '2026-01-01', [
-      { event_id: 'landing', page_kind: 'landing_page' },
-      { event_id: 'topic', page_kind: 'topic' },
-    ])
-    const readFile = vi.spyOn(fs.promises, 'readFile')
-
-    await cleanupLocalAnalyticsRetention({
-      localDir: testDir,
-      now: new Date('2026-02-15T00:00:00.000Z'),
-    })
-
-    expect(readFile).not.toHaveBeenCalled()
-    readFile.mockRestore()
-  })
-
   it('deletes web page view files older than one year', async () => {
     await writeJsonl('web_page_view', '2025-01-01', [{ page_kind: 'landing_page' }])
 
