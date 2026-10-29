@@ -5,8 +5,10 @@ import { decodeScopedUuidCursor, encodeCursor, encodeScopedUuidCursor } from '@m
 import {
   createTestUser,
   insertTestPost,
+  insertTestTopic,
   insertTestUrlHostname,
   insertTestVoteIntegrityFlag,
+  mergeTopicForTest,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getVoteIntegrityFlagByIdFromPrimary, getVoteIntegrityFlags } from './get-flags.mts'
@@ -68,6 +70,30 @@ describe('getVoteIntegrityFlags pagination compatibility', () => {
     await expect(getVoteIntegrityFlagByIdFromPrimary(flagId)).resolves.toMatchObject({
       hostname_id: hostnameId,
       hostname,
+    })
+  })
+
+  it('labels a retained source-topic flag with the active merge destination', async () => {
+    const suffix = randomSuffix()
+    const sourceId = await insertTestTopic({
+      name: `Flag source ${suffix}`,
+      slug: `flag-source-${suffix}`,
+      createdById: user.id,
+    })
+    const destinationName = `Flag destination ${suffix}`
+    const destinationId = await insertTestTopic({
+      name: destinationName,
+      slug: `flag-destination-${suffix}`,
+      createdById: user.id,
+    })
+    const flagId = await insertTestVoteIntegrityFlag({ topicId: sourceId })
+    await mergeTopicForTest(sourceId, destinationId, user.id)
+
+    const flags = await getVoteIntegrityFlags({ ids: [flagId] })
+    expect(flags.results[0]).toMatchObject({ topic_id: sourceId, entity_label: destinationName })
+    await expect(getVoteIntegrityFlagByIdFromPrimary(flagId)).resolves.toMatchObject({
+      topic_id: sourceId,
+      entity_label: destinationName,
     })
   })
 

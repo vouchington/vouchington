@@ -36,10 +36,36 @@ describe('fetchBanEvasionReports', () => {
     expect(report).toMatchObject({
       target_available: false,
       target_label: 'user',
-      target_path: `/user/${suspect.id}`,
-      admin_action_path: `/user/${suspect.id}/admin`,
+      target_path: null,
+      admin_action_path: null,
     })
     expect(JSON.stringify(report)).not.toContain(suspect.username)
+  })
+
+  it('omits routes for an extant ban-evasion suspect without a username', async () => {
+    const owner = await createTestUser()
+    const suspect = await createTestUser({ noUsername: true })
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: suspect.id })
+    await setTestBanEvasionFlag({
+      communityId: community.id,
+      userId: suspect.id,
+      sourceUserId: owner.id,
+    })
+    const reportId = await insertTestSystemModerationReport(
+      'user',
+      suspect.id,
+      undefined,
+      undefined,
+      community.id,
+    )
+
+    const rows = await fetchBanEvasionReports(community.id, 5)
+    expect(rows.find(row => row.id === reportId)).toMatchObject({
+      target_available: true,
+      target_path: null,
+      admin_action_path: null,
+    })
   })
 
   it('rejects an unknown runtime sort with and without a cursor', async () => {

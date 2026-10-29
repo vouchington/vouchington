@@ -1,5 +1,6 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { CANONICAL_TOPIC_LABEL_SQL, canonicalTopicLabelJoins } from '@modules/topic-labels'
 import { attachIntegrityLabelRows } from './attach-label-rows.mts'
 
 type FlagIdentity = { id: string; flag_type: string }
@@ -71,16 +72,16 @@ function flagLabelQuery(domain: FlagDomain, ids: string[]): SQLStatement {
       return prefix
         .append(sql`NULL::text AS reported_username,`)
         .append(postCase)
-        .append(sql`WHEN f.topic_id IS NOT NULL THEN COALESCE(t.name, t.slug, 'topic')`)
+        .append(`WHEN f.topic_id IS NOT NULL THEN ${CANONICAL_TOPIC_LABEL_SQL}`)
         .append(commonCases)
         .append(
           sql`WHEN f.agent_moderation_id IS NOT NULL THEN COALESCE(agent.slug, 'agent_moderation')`,
         )
         .append(caseEnd)
         .append(sql`FROM vote_integrity_flags f`)
-        .append(commonJoins).append(sql`LEFT JOIN topics t ON t.id = f.topic_id
-            AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
-          LEFT JOIN agent_moderations am ON am.post_id = f.agent_moderation_post_id
+        .append(commonJoins)
+        .append(canonicalTopicLabelJoins('flag'))
+        .append(sql`LEFT JOIN agent_moderations am ON am.post_id = f.agent_moderation_post_id
             AND am.id = f.agent_moderation_id AND am.deleted_at IS NULL
           LEFT JOIN moderator_agents agent ON agent.agent_id = am.agent_id
           WHERE f.id = ANY(${ids}::uuid[])`)

@@ -24,6 +24,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/token-secrets": "workspace:^",
+    "@modules/topic-labels": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/pagination": "workspace:^",

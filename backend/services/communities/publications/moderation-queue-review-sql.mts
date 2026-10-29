@@ -51,7 +51,7 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
         WHEN 'blog_post' THEN 'blog-post'
         WHEN 'data_point' THEN 'data-point'
         ELSE 'discussion'
-      END || '/' || COALESCE(ps.slug, rp.id::text)`
+      END || '/' || ps.slug`
   const query = sql``
   query.append(`/* searchCommunityModerationQueue:${comment} */
     SELECT

@@ -10,6 +10,7 @@ import {
   setPostDeclaredLanguage,
   reviewPendingTestModerationReportsByPostSlugPrefixes,
   softDeleteUser,
+  deletePostSlugForTest,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { listRedactedModerationReports } from '../redaction.mts'
@@ -32,6 +33,65 @@ describe('moderation-reports/target-metadata — communityPostNotApprovedSql', (
   afterAll(() => releaseLock())
 
   describe('reportTargetIsRestrictedSql via listRedactedModerationReports', () => {
+    it('omits user routes when an extant reported user has no username', async () => {
+      const target = await createTestUser({ noUsername: true })
+      const reportId = await insertTestModerationReport({
+        reporterUserId: reporter.id,
+        entityType: 'user',
+        entityId: target.id,
+      })
+
+      const { reports } = await listModerationReports({ limit: 1000, sort: 'created_at_desc' })
+      expect(reports.find(report => report.id === reportId)).toMatchObject({
+        target_available: true,
+        target_path: null,
+        admin_action_path: null,
+      })
+    })
+
+    it('omits post and comment routes when their required slugs are missing', async () => {
+      const suffix = crypto.randomUUID().slice(0, 8)
+      const slug = `report-slugless-${suffix}`
+      const rootId = await insertTestPost({
+        createdById: author.id,
+        slug,
+        title: 'Reported root without slug',
+        markdown: 'root',
+      })
+      const commentId = await insertTestPost({
+        createdById: author.id,
+        slug: `report-comment-${suffix}`,
+        title: 'Reported comment',
+        markdown: 'comment',
+        postType: 'comment',
+        rootId,
+        parentId: rootId,
+      })
+      const postReportId = await insertTestModerationReport({
+        reporterUserId: reporter.id,
+        entityType: 'post',
+        entityId: rootId,
+      })
+      const commentReportId = await insertTestModerationReport({
+        reporterUserId: reporter.id,
+        entityType: 'comment',
+        entityId: commentId,
+      })
+      const before = await listModerationReports({ limit: 1000, sort: 'created_at_desc' })
+      expect(before.reports.find(report => report.id === commentReportId)?.target_path).toBe(
+        `/discussion/${slug}/comment/${commentId}`,
+      )
+      await deletePostSlugForTest(rootId, slug)
+
+      const { reports } = await listModerationReports({ limit: 1000, sort: 'created_at_desc' })
+      for (const reportId of [postReportId, commentReportId]) {
+        expect(reports.find(report => report.id === reportId)).toMatchObject({
+          target_path: null,
+          admin_action_path: null,
+        })
+      }
+    })
+
     it('does not retain a deleted user name in staff target metadata', async () => {
       const target = await createTestUser()
       const reportId = await insertTestModerationReport({

@@ -139,15 +139,16 @@ export async function setTestVoteWeightPenaltyReviewDueAt(
 
 export async function insertTestVoteIntegrityFlag(params: {
   postId?: string
+  topicId?: string
   hostnameId?: string
   flagType?: 'velocity_spike' | 'ip_correlation'
   id?: string
   details?: Record<string, unknown>
 }): Promise<string> {
   const { rows } = await write(sql`/* insertTestVoteIntegrityFlag */
-    INSERT INTO vote_integrity_flags (id, post_id, hostname_id, flag_type, details)
+    INSERT INTO vote_integrity_flags (id, post_id, topic_id, hostname_id, flag_type, details)
     VALUES (COALESCE(${params.id}::uuid, uuidv7()), ${params.postId ?? null}::uuid,
-      ${params.hostnameId ?? null}::uuid, ${params.flagType ?? 'velocity_spike'},
+      ${params.topicId ?? null}::uuid, ${params.hostnameId ?? null}::uuid, ${params.flagType ?? 'velocity_spike'},
       ${JSON.stringify(params.details ?? {})}::jsonb)
     RETURNING id
   `)

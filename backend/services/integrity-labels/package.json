@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@modules/topic-labels": "workspace:^",
     "sql-template-strings": "^2.2.2"
   }
 }

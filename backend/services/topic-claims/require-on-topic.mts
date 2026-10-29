@@ -4,7 +4,7 @@ import { buildTopicByAnyCandidates } from '@services/topics/get'
 import { isModerationStaff } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import type { TopicClaim } from './config.mts'
-import { TOPIC_CLAIM_LABEL_JOINS, TOPIC_CLAIM_LABEL_SQL } from './topic-label-sql.mts'
+import { CANONICAL_TOPIC_LABEL_SQL, canonicalTopicLabelJoins } from '@modules/topic-labels'
 
 export type TopicClaimWriteContext = {
   claim: TopicClaim
@@ -49,8 +49,8 @@ export async function requireTopicClaimOnTopic(
       tc.revoked_at, tc.revoked_by_id, tc.revocation_reason,
       tc.verification_hostname_id, tc.verification_token_issued_at,
       tc.domain_verified_at, tc.created_at, tc.updated_at,
-      ${TOPIC_CLAIM_LABEL_SQL} AS topic_name,
-      claim_label_topic.id AS claim_label_topic_id,
+      ${CANONICAL_TOPIC_LABEL_SQL} AS topic_name,
+      topic_label_destination.id AS claim_label_topic_id,
       claimant_profile.username AS claimant_username,
       claimant_profile.verified_display_name AS claimant_display_name,
       tc.verification_token_hash,
@@ -60,7 +60,7 @@ export async function requireTopicClaimOnTopic(
     FROM matched_topic
     LEFT JOIN url_hostnames current_hostname ON current_hostname.id = matched_topic.hostname_id
     LEFT JOIN topic_claims tc ON tc.id = $2
-    ${TOPIC_CLAIM_LABEL_JOINS}
+    ${canonicalTopicLabelJoins('claim')}
     LEFT JOIN view_users_public claimant_profile ON claimant_profile.id = tc.claimant_user_id
     LEFT JOIN url_hostnames verification_hostname
       ON verification_hostname.id = tc.verification_hostname_id`,
