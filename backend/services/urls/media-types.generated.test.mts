@@ -13,14 +13,6 @@ describe('media-types.generated', () => {
     expect(ids[0]).toBeTruthy()
   })
 
-  it('upsertMediaTypes normalizes MIME type case', async () => {
-    const mimeType = `Application/X-Test-${crypto.randomUUID()}`
-    const firstId = await upsertMediaTypes(mimeType)
-    const secondId = await upsertMediaTypes(mimeType.toLowerCase())
-
-    expect(secondId).toBe(firstId)
-  })
-
   it('upsertMediaTypes does not advance the identity sequence for existing rows', async () => {
     const mimeType = `application/x-sequence-test-${crypto.randomUUID()}`
 

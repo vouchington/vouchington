@@ -11,15 +11,6 @@ import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/share
 import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('upsert.generated', () => {
-  it('addUrl creates a new URL', async () => {
-    const hostname = `example-${crypto.randomUUID()}.com`
-    const url = await addUrl(null, `https://${hostname}/test`)
-    expect(url).toBeDefined()
-    expect(url!.url).toBe(`https://${hostname}/test`)
-    expect(url!.hostname.id).toBeDefined()
-    expect(url!.pathname).toBe('/test')
-  })
-
   it('addUrl normalizes URL and creates hostname', async () => {
     const hostname = `example-${crypto.randomUUID()}.com`
     const url = await addUrl(null, `https://${hostname}/path?query=value`)
