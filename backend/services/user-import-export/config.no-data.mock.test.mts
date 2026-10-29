@@ -18,8 +18,15 @@ const clearFields = () =>
     Object.keys(userImportExportConfig.fieldTypes),
   )
 
-clearFields()
-const DEFAULTS = getUserImportExportConfig()
+const DEFAULTS = {
+  sync_export_max_items: 1_000,
+  import_max_body_bytes: 2 * 1024 * 1024,
+  import_dispatch_page_size: 100,
+  import_insert_chunk_size: 1_000,
+  import_recovery_batch_size: 100,
+  import_status_page_size: 100,
+  rss_feed_import_budget_ms: 15_000,
+}
 
 describe('getUserImportExportConfig', () => {
   beforeEach(() => {
