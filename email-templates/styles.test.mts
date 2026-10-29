@@ -122,47 +122,18 @@ const templateDefs = [
   },
 ]
 
-// Cache rendered HTML so each template is rendered at most once across all assertions.
-const htmlCache = new Map<string, string>()
-
-async function getHtml(name: string, render: () => Promise<{ html: string }>): Promise<string> {
-  const cached = htmlCache.get(name)
-  if (cached !== undefined) return cached
-  const { html } = await render()
-  htmlCache.set(name, html)
-  return html
-}
-
 describe('email template brand consistency', () => {
-  it.each(templateDefs)(
-    '$name contains brand gold and not legacy blue',
-    async ({ name, render }) => {
-      const html = await getHtml(name, render)
-      expect(html).toContain(colors.primary)
-      expect(html).not.toContain('#0066cc')
-      // Use regex to catch both `background-color:#000000` and `background-color: #000000`
-      expect(html).not.toMatch(/background-color\s*:\s*#000000/i)
-    },
-  )
-
-  it.each(templateDefs)('$name contains Voucha header', async ({ name, render }) => {
-    const html = await getHtml(name, render)
-    // VouchaHeader renders "Voucha" with letter-spacing:0.5px — unique to the header wordmark
+  it.each(templateDefs)('$name uses the current brand styles', async ({ render }) => {
+    const { html } = await render()
+    expect(html).toContain(colors.primary)
+    expect(html).not.toContain('#0066cc')
+    // Catch both compact and spaced CSS declarations.
+    expect(html).not.toMatch(/background-color\s*:\s*#000000/i)
+    // VouchaHeader's wordmark uses this letter spacing.
     expect(html).toContain('Voucha')
     expect(html).toContain('letter-spacing:0.5px')
-  })
-
-  it.each(templateDefs)('$name contains current copyright year', async ({ name, render }) => {
-    const html = await getHtml(name, render)
     expect(html).toContain(COPYRIGHT_YEAR)
+    expect(html).not.toContain('padding:40px')
+    expect(html).not.toContain('padding: 40px')
   })
-
-  it.each(templateDefs)(
-    '$name does not have legacy 40px section padding',
-    async ({ name, render }) => {
-      const html = await getHtml(name, render)
-      expect(html).not.toContain('padding:40px')
-      expect(html).not.toContain('padding: 40px')
-    },
-  )
 })
