@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { cleanupPartitions } from '@data-stores/psql/migration-runner/monthly-partitions'
+import { cleanupPartitions } from '@data-stores/psql/migrate'
 import { enqueueCleanupPartitionsContinuation } from '@queues/psql/enqueues'
 import { getPartitionCleanupLimit, partitionCleanupConfig } from '@queues/psql/config'
 import type { PsqlPartitionJobData } from '@queues/psql/types'
