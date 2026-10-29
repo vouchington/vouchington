@@ -658,9 +658,6 @@ importers:
       '@services/stories':
         specifier: workspace:^
         version: link:../../services/stories
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
     devDependencies:
       '@services/ai-usage':
         specifier: workspace:^
