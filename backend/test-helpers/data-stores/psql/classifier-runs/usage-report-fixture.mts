@@ -1,13 +1,15 @@
 import { write } from '@data-stores/psql'
+import { onTestFinished } from 'vitest'
 import sql from 'sql-template-strings'
 import { recordAiUsage } from '../../../../services/ai-usage/index.mts'
+import { readClassifierUsageReport } from '../../../../services/classifier-runs/usage-report.mts'
 import {
   type ClassifierUsageWindow,
   completeClassifierRun,
   persistClassifierRunOutcomes,
   startClassifierProviderAttempt,
 } from '../../../../services/classifier-runs/index.mts'
-import { createTestFutureUtcDay } from '../../../data.mts'
+import { acquireTestAiUsageDateReservation } from '../../../entities/ai-usage-date-reservation.mts'
 import type { PostClassifierExecutionFixture } from '../post-classifier/execution.mts'
 import { localOutcomeFor, remoteDecisionFor } from '../post-classifier/outcomes.mts'
 
@@ -15,6 +17,13 @@ import { localOutcomeFor, remoteDecisionFor } from '../post-classifier/outcomes.
 export function windowAroundNow(): ClassifierUsageWindow {
   const now = Date.now()
   return { from: new Date(now - 120_000), to: new Date(now + 60_000) }
+}
+
+export async function usageOf(setup: PostClassifierExecutionFixture) {
+  const report = await readClassifierUsageReport(windowAroundNow())
+  const run = report.runs.find(candidate => candidate.runId === setup.run.runId)
+  if (!run) throw new Error('The run is missing from the report')
+  return run
 }
 
 /** Takes a classifier out of the active catalog, as retiring one does. */
@@ -53,12 +62,15 @@ type BilledCall = {
 
 /**
  * One billed provider response attributed to the run, written the way the classifier clients write
- * it. The row lands on a reserved future day to isolate the report fixture.
+ * it. The row lands on a reserved prepared day to isolate the report fixture.
  */
-export function recordBilledCall(
+export async function recordBilledCall(
   setup: PostClassifierExecutionFixture,
   { latencyMs, cost = 0.002, unpriced = false }: BilledCall,
 ) {
+  const reservation = await acquireTestAiUsageDateReservation({ notBefore: new Date() })
+  onTestFinished(() => reservation.release())
+  const createdAt = new Date(`${reservation.day}T12:00:00.000Z`)
   return recordAiUsage({
     agentSlug: 'post-classifier',
     provider: 'typesafe',
@@ -76,7 +88,7 @@ export function recordBilledCall(
     },
     classifierRunId: setup.run.runId,
     latencyMs,
-    createdAt: new Date(`${createTestFutureUtcDay()}T12:00:00.000Z`),
+    createdAt,
   })
 }
 

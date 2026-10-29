@@ -33,6 +33,8 @@ const generators: Record<string, () => Promise<SqlGeneratorModule>> = {
     import('../config-driven/0100-00-02-rss-feed-crawls-partitions.mts'),
   '0100-00-03-ledger-partitions.mts': () =>
     import('../config-driven/0100-00-03-ledger-partitions.mts'),
+  '0100-00-04-ai-usage-monthly-partitions.mts': () =>
+    import('../config-driven/0100-00-04-ai-usage-monthly-partitions.mts'),
   '0140-00-01-seed-communities.mts': () =>
     import('../config-driven/0140-00-01-seed-communities.mts'),
   '0190-00-00-hostname-elections-indexes.mts': () =>

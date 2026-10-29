@@ -33,10 +33,14 @@ let dailyAiCostTotalRefresh: Pick<DailyAiCostTotalCacheEntry, 'day' | 'promise'>
  * `ai_usage_records.id` is UUIDv7 with no index on `created_at` (a `GENERATED ... STORED` column)
  * -- the window below is an id-range against the primary key via `getUtcDayUuidv7Bounds`, per
  * backend/data-stores/psql/AGENTS.md's "query by id, not created_at" rule. The table sits in
- * `DEFERRED_LEDGER_PARTITION_TABLES` with a single DEFAULT partition, so partition pruning cannot
+ * monthly UUIDv7 range children, so partition pruning can
  * help here -- the in-process cache below keeps the aggregation off the per-job hot path.
  *
- * Reads via `write()` (primary) so the best-effort cap can see recent recorded calls.
+ * Reads via `write()` (primary), not `read()`: this backs a spend-ceiling breach check, which must
+ * observe just-written rows rather than risk `READ_DATABASE_URL` replica lag under-reporting spend
+ * (`.agents/skills/postgres-node-performance-tuning/SKILL.md`, lag-sensitive reads).
+ * Only the current UTC day is queried. Raw usage is retained for at least 180 days, so a monthly
+ * rollup must never be substituted into this spend-ceiling check or obscure unpriced calls.
  * Unpriced rows have NULL cost and do not contribute to the known spend total.
  */
 export function getDailyAiCostTotalMicrounits(day = getCurrentUtcDay()): Promise<DailyAiCostTotal> {

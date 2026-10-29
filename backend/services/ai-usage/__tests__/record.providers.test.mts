@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import {
-  createTestFutureUtcDay,
+  acquireTestAiUsageDateReservation,
   createTestPost,
   createTestUser,
   findAiUsageRecordForPost,
@@ -101,6 +101,8 @@ describe('recordAiUsage across providers and transports', () => {
   })
 
   it('records an unpriced served model with its tokens and no cost', async () => {
+    const reservation = await acquireTestAiUsageDateReservation()
+    onTestFinished(() => reservation.release())
     const row = await record('test-unpriced-served-model', {
       provider: 'anthropic',
       transport: 'direct',
@@ -108,7 +110,7 @@ describe('recordAiUsage across providers and transports', () => {
       serviceTier: 'standard',
       usage: usage({ inputTokens: 12, outputTokens: 3 }),
       // Keep the unpriced row outside the current spend window for fixture isolation.
-      createdAt: new Date(`${createTestFutureUtcDay()}T12:00:00.000Z`),
+      createdAt: new Date(`${reservation.day}T12:00:00.000Z`),
     })
 
     expect(row).toMatchObject({

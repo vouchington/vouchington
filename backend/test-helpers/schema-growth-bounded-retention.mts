@@ -8,6 +8,10 @@ export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
     'The checked singleton records one global legal-preservation change generation.',
   ],
   [
+    'ai_usage_provider_response_keys',
+    'A key younger than the response replay window protects its raw usage row; bounded raw folding later deletes that row and cascades the key.',
+  ],
+  [
     'stripe_event_processing_work_items',
     'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
   ],

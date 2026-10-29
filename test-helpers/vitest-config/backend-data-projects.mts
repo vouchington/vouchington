@@ -111,6 +111,21 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     extends: true,
     test: {
       ...backendDataStoreTestDefaults,
+      name: 'backend-ai-usage-monthly-ddl',
+      sequence: { groupOrder: 1 },
+      isolate: true,
+      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
+      include: [
+        'backend/services/ai-usage/__tests__/record-monthly-partition.test.mts',
+        'backend/services/data-retention/cleanup-ai-usage*.test.mts',
+      ],
+      exclude: ['**/node_modules/**', '**/.git/**'],
+    },
+  },
+  {
+    extends: true,
+    test: {
+      ...backendDataStoreTestDefaults,
       name: 'backend-platform-stats-cache',
       testTimeout: 5_000,
       hookTimeout: 5_000,

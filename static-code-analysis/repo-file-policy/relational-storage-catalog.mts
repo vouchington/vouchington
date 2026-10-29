@@ -55,6 +55,9 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'copyright_notice_operational_retention_cursors.cursor_blocker_child_id',
   // Deletion-stable post hash-change keyset position, not a source-row reference.
   'agent_moderation_retention_post_work_items.cursor_moderation_record_id',
+  // AI usage keyset positions survive deletion of their source rows; the upper bound is a UUIDv7 time fence.
+  'ai_usage_retention_cursors.cursor_id',
+  'ai_usage_retention_cursors.sweep_upper_bound_id',
   // Cleanup positions survive deletion of the scanned auth or subscription row.
   'auth_session_retention_cleanup_cursors.cursor_id',
   // History checkpoints may outlive deletion of their raw candidate rows.

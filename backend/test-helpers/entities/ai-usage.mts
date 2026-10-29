@@ -19,7 +19,8 @@ type InsertTestAiUsageRecordOptions = {
   cacheWrite5mInputTokens?: number
   cacheWrite1hInputTokens?: number
   outputTokens?: number
-  costMicrounits?: number | string
+  costMicrounits?: number | string | null
+  currencyCode?: 'usd' | 'eur' | null
   // 'unpriced' forces cost_microunits to NULL regardless of costMicrounits, matching the real
   // recordAiUsage convention (calcCostMicrounits found no pricing-table entry for the
   // model/service-tier) -- see backend/services/ai-usage/__tests__/daily-total.test.mts.
@@ -49,13 +50,14 @@ export async function insertTestAiUsageRecord(
     cacheWrite1hInputTokens = 0,
     outputTokens = 50,
     costMicrounits = 25,
+    currencyCode = 'usd',
     pricingStatus = 'priced',
     id,
   } = options
   // ai_usage_records_check requires cost_microunits AND currency_code to be NULL together when
   // unpriced -- both or neither, per the real recordAiUsage convention.
   const resolvedCostMicrounits = pricingStatus === 'unpriced' ? null : costMicrounits
-  const resolvedCurrencyCode = pricingStatus === 'unpriced' ? null : 'usd'
+  const resolvedCurrencyCode = pricingStatus === 'unpriced' ? null : currencyCode
   const { rows } = await write<{ id: string }>(sql`/* insertTestAiUsageRecord */
     WITH registered_tier AS (
       INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})

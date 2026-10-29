@@ -17,6 +17,7 @@ import {
   retireClassifier,
   startProviderAttempts,
   windowAroundNow,
+  usageOf,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/usage-report-fixture'
 import {
   createPostClassifierExecutionFixture,
@@ -24,28 +25,27 @@ import {
   type PostClassifierExecutionFixture,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { localOutcomeFor } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
+import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startClassifierProviderAttempt } from './run-attempt.mts'
 import { supersedeStaleClassifierRun } from './run-supersession.mts'
 import { readClassifierRunUsage } from './usage-report-runs.mts'
 import { readClassifierUsageReport } from './usage-report.mts'
 
-async function usageOf(setup: PostClassifierExecutionFixture) {
-  const report = await readClassifierUsageReport(windowAroundNow())
-  const run = report.runs.find(candidate => candidate.runId === setup.run.runId)
-  if (!run) throw new Error('The run is missing from the report')
-  return run
-}
-
 const questionCount = (setup: PostClassifierExecutionFixture) =>
   setup.lease.resolved.configuration.remote!.questions.length
-
 describe('classifier usage report: remote runs (real PG)', () => {
+  let releaseAiMonthlyDdlPhase: (() => Promise<void>) | undefined
   let release: (() => Promise<void>) | undefined
+  // no-mistakes-timeout-reason: real retention sweep reservation serializes DDL files across forks.
   beforeAll(async () => {
+    releaseAiMonthlyDdlPhase = await reserveTestAiUsageRetentionSweep()
     release = await initializePostClassifierExecutionTests()
+  }, 30_000)
+  afterAll(async () => {
+    await release?.()
+    await releaseAiMonthlyDdlPhase?.()
   })
-  afterAll(async () => release?.())
 
   it('reports one billed call that decided every candidate, with the local detector at zero cost', async () => {
     const setup = await createPostClassifierExecutionFixture(
@@ -225,6 +225,12 @@ describe('classifier usage report: remote runs (real PG)', () => {
 })
 
 describe('classifier usage report: one classifier over many runs (real PG)', () => {
+  let releaseAiMonthlyDdlPhase: (() => Promise<void>) | undefined
+  // no-mistakes-timeout-reason: keep this fixture's reference writes outside other DDL sweeps.
+  beforeAll(async () => {
+    releaseAiMonthlyDdlPhase = await reserveTestAiUsageRetentionSweep()
+  }, 30_000)
+  afterAll(async () => releaseAiMonthlyDdlPhase?.())
   it('sums the runs of a classifier and counts its durable requests', async () => {
     const setup = await createSyntheticFixture()
     await requestSyntheticRun(setup)
@@ -287,7 +293,6 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
       superseded: 1,
       incomplete: 1,
     })
-    // Synthetic runs are local-only (no batch), so neither of them can reach the provider.
     expect(report.efficiency.find(row => row.classifier === setup.slug)).toMatchObject({
       unfinishedRuns: 0,
     })

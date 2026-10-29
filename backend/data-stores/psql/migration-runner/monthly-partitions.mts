@@ -1,5 +1,9 @@
 import onError from '@modules/on-error'
-import { createMonthlyPartitions as createPlatformMonthlyPartitions } from '@vouchington/postgres/partitions'
+import {
+  assertSafeSqlIdentifier,
+  buildMonthlyPartitionName,
+  createMonthlyPartitions as createPlatformMonthlyPartitions,
+} from '@vouchington/postgres/partitions'
 import { ALL_MONTHLY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
 import { beginTransaction, write } from '../setup.mts'
@@ -41,8 +45,23 @@ export async function cleanupPartitions(
     limit?: number
     after?: PartitionCleanupCursor
     query?: QueryExecutor
+    /** A fold knows its completed month, so its continuation checks only that attached child. */
+    target?: { table: string; monthStart: Date }
   },
 ): Promise<PartitionCleanupPage> {
+  if (options.target) {
+    const candidates = await listAttachedMonthlyDropCandidate(
+      options.target.table,
+      options.target.monthStart,
+      options.query ?? write,
+    )
+    const outcomes = await retireMonthlyDropCandidates(
+      candidates,
+      referenceDate,
+      options.feedbackBatchSize,
+    )
+    return { outcomes, hasMore: false }
+  }
   const page = await listMonthlyDropCandidates(
     options.query ?? write,
     options.limit ?? DEFAULT_PARTITION_CLEANUP_LIMIT,
@@ -55,6 +74,44 @@ export async function cleanupPartitions(
   )
   for (const outcome of outcomes) console.info('Partition cleanup:', outcome)
   return { outcomes, hasMore: page.hasMore, nextCursor: page.nextCursor }
+}
+
+async function listAttachedMonthlyDropCandidate(
+  table: string,
+  monthStart: Date,
+  query: QueryExecutor,
+): Promise<PartitionDropCandidate[]> {
+  if (!ALL_MONTHLY_PARTITION_TABLES.some(config => config.table === table)) {
+    throw new Error(`Not a managed monthly partition parent: ${table}`)
+  }
+  const safeTable = assertSafeSqlIdentifier(table)
+  const partition = assertSafeSqlIdentifier(
+    buildMonthlyPartitionName(table, monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1),
+  )
+  const { rows } = await query<{ attached: boolean }>(
+    `/* listAttachedMonthlyDropCandidate */
+      SELECT EXISTS (
+        SELECT 1 FROM pg_inherits AS inheritance
+        JOIN pg_class AS parent ON parent.oid = inheritance.inhparent
+        JOIN pg_namespace AS namespace ON namespace.oid = parent.relnamespace
+        WHERE inheritance.inhparent = to_regclass($1)
+          AND inheritance.inhrelid = to_regclass($2)
+          AND namespace.nspname = current_schema()
+        LIMIT 1
+      ) AS attached`,
+    [safeTable, partition],
+  )
+  return rows[0]?.attached
+    ? [
+        {
+          table,
+          partition,
+          upperBound: new Date(
+            Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1),
+          ),
+        },
+      ]
+    : []
 }
 
 /** One clearance partition per page bounds the feedback references cleared across candidates. */

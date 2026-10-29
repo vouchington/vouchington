@@ -30,6 +30,7 @@ const emptyCleanupResult = {
   supersededVoteBallots: [],
   orphanedUserAgentStrings: { hasMore: false },
   voteIntegrityDetails: { hasMore: false },
+  aiUsageRecords: { hasMore: false },
 } as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
 const dataRetentionCleanup =
   vi.fn<(limits: DataRetentionLimits) => ReturnType<typeof runDataRetentionCleanup>>()
