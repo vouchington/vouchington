@@ -7,7 +7,7 @@ import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import type { BasicUser } from '@services/users/types'
 import { requirePrivateToolUser } from './private-user.mts'
 
-export type ReadableThread = {
+type ReadableThread = {
   /** The requested post. */
   post: Post
   /** Its live parent chain, root first and without `post`. */

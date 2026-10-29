@@ -18,7 +18,7 @@ type UserForToolAuthorization = {
   suspended?: boolean
 }
 
-export type McpToolAuthorization =
+type McpToolAuthorization =
   | { status: 'not_found' }
   | { status: 'suspended' }
   | { status: 'role_denied' }

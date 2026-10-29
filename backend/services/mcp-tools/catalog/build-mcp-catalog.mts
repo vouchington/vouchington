@@ -8,7 +8,7 @@ import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/to
 import { ALL_MCP_SERVER_CONFIGS } from '../config.mts'
 import type { OAuthResourceAudience } from '@services/oauth-authorization-server/resources'
 
-export type McpCatalogTool = {
+type McpCatalogTool = {
   // Exactly what the server's `tools/list` returns for a caller who passes every gate.
   tool: McpToolShape
   // Minimum membership plan; present only where plan gating applies.
@@ -18,7 +18,7 @@ export type McpCatalogTool = {
   api: readonly ToolApiEndpoint[] | null
 }
 
-export type McpCatalogServer = {
+type McpCatalogServer = {
   name: string
   path: string
   audience: OAuthResourceAudience
