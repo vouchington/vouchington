@@ -7,7 +7,8 @@ import {
 } from '@modules/utils/http'
 import { buildSignatureHeaders, withSignatureHeaders } from '@modules/http-signatures'
 import createHttpError from 'http-errors'
-import undici, { type Response } from 'undici'
+import undici from 'undici'
+import type { Response } from 'undici'
 import type { OutboundActivityJson } from './types.mts'
 
 const DELIVERY_TIMEOUT_MS = 10000
