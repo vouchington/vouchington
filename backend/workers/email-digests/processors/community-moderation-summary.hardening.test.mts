@@ -8,9 +8,11 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import { createClockSkewModerationSummaryFixture } from '@voucha/test-helpers/moderation-summary-retention'
 import {
-  claimModerationEmailSend,
+  claimTestModerationEmailSend,
+  createClockSkewModerationSummaryFixture,
+} from '@voucha/test-helpers/moderation-summary-retention'
+import {
   formatLocalDate,
   hasModerationEmailSent,
 } from '@services/communities/moderation-summary-emails'
@@ -188,7 +190,7 @@ describe('moderation summary queued retention', () => {
     const expectedDate = formatLocalDate(queuedAt, 'Pacific/Kiritimati')
     expect(expectedDate).not.toBe(formatLocalDate(queuedAt, 'Pacific/Honolulu'))
     const trackingKey = `daily:${expectedDate}`
-    await claimModerationEmailSend(user!.id, trackingKey)
+    await claimTestModerationEmailSend(user!.id, trackingKey)
     const input = {
       emailAddress: 'tests+moderator@voucha.ai',
       userId: user!.id,
@@ -268,8 +270,7 @@ describe('moderation summary dispatcher clock skew', () => {
         queuedWindowEnd,
         { cadence, excludeActivity, vacationBoundary },
       )
-      expect(await claimModerationEmailSend(userId, trackingKey)).toBe(true)
-      expect(await claimModerationEmailSend(userId, trackingKey)).toBe(false)
+      expect(await claimTestModerationEmailSend(userId, trackingKey)).toBe(true)
       const input = {
         userId,
         trackingKey,

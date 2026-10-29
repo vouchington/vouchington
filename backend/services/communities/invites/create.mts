@@ -6,6 +6,7 @@ import type { LoadedCommunity } from '../load-with-viewer.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { getPublicUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { enqueueSendCommunityInviteEmail } from '@queues/emails/enqueues'
 import onError from '@modules/on-error'
 import type { CommunityInvite, CreatedCommunityInvite } from '../types.mts'
@@ -23,23 +24,10 @@ export type CreateInviteInput = {
 
 export async function createInvite(
   currentUserId: string,
-  loaded: Pick<LoadedCommunity, 'community' | 'membership'>,
-  input: CreateInviteInput,
-  inviter?: Pick<PrivateUser, 'username'>,
-): Promise<CreatedCommunityInvite> {
-  const { invite } = await createInviteWithEmailEnqueue(currentUserId, loaded, input, inviter)
-  return invite
-}
-
-export async function createInviteWithEmailEnqueue(
-  currentUserId: string,
   { community, membership }: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
   loadedInviter?: Pick<PrivateUser, 'username'>,
-): Promise<{
-  invite: CreatedCommunityInvite
-  emailEnqueue: ReturnType<typeof enqueueSendCommunityInviteEmail> | null
-}> {
+): Promise<CreatedCommunityInvite> {
   assert(input.username || input.email, 422, 'Either username or email is required')
   assert(!(input.username && input.email), 422, 'Provide either username or email, not both')
 
@@ -105,17 +93,14 @@ export async function createInviteWithEmailEnqueue(
   const invite = { ...(rows[0] as CommunityInvite), code }
   await transaction.commit()
 
-  const emailEnqueue = invitedEmail
-    ? enqueueInviteEmail(
-        invitedEmail,
-        await getCommunityInviteRecipientUiLocale(invitedEmail),
-        community.name,
-        inviterName,
-        code,
-      )
-    : null
+  if (invitedEmail) {
+    const uiLocale = await getCommunityInviteRecipientUiLocale(invitedEmail)
+    await awaitReportedEnqueueAdmission(async () =>
+      enqueueInviteEmail(invitedEmail, uiLocale, community.name, inviterName, code),
+    )
+  }
 
-  return { invite, emailEnqueue }
+  return invite
 }
 
 function enqueueInviteEmail(
@@ -131,14 +116,9 @@ function enqueueInviteEmail(
   )
 }
 
-type CommunityInviteRecipientUiLocaleLookup = (emailAddress: string) => Promise<string | null>
-
-export async function getCommunityInviteRecipientUiLocale(
-  emailAddress: string,
-  lookup: CommunityInviteRecipientUiLocaleLookup = readCommunityInviteRecipientUiLocale,
-): Promise<string | null> {
+async function getCommunityInviteRecipientUiLocale(emailAddress: string): Promise<string | null> {
   try {
-    return await lookup(emailAddress)
+    return await readCommunityInviteRecipientUiLocale(emailAddress)
   } catch (err) {
     const reportableError = err instanceof Error ? err : new Error(String(err))
     reportableError.message = `Failed to look up community invite recipient locale: ${reportableError.message}`
