@@ -12,6 +12,14 @@ import { describe, expect, it } from 'vitest'
 import { readSitemapFamilyPage } from './family-queries.mts'
 
 describe('sitemap family pages', () => {
+  it('bounds the initial page without a high-water cursor', async () => {
+    await createTestUser()
+    await createTestUser()
+
+    const page = await readSitemapFamilyPage('users', { limit: 1 })
+    expect(page).toHaveLength(1)
+  })
+
   it('resumes within one topic after its first path', async () => {
     const user = await createTestUser()
     const slug = `sitemap-topic-${randomUUID()}`
@@ -43,7 +51,13 @@ describe('sitemap family pages', () => {
     expect(page).toContainEqual(
       expect.objectContaining({ id: newer.id, path: `/user/${newer.username}` }),
     )
-    expect(page.some(row => row.id === deleted.id || row.id === suspended.id)).toBe(false)
+    for (const excludedId of [deleted.id, suspended.id]) {
+      const excludedPage = await readSitemapFamilyPage('users', {
+        highWaterId: excludedId,
+        limit: 1,
+      })
+      expect(excludedPage.some(row => row.id === excludedId)).toBe(false)
+    }
     const resumed = await readSitemapFamilyPage('users', {
       highWaterId: newer.id,
       afterId: newer.id,
@@ -85,7 +99,7 @@ describe('sitemap family pages', () => {
       createdById: user.id,
     })
 
-    const page = await readSitemapFamilyPage('topics', { highWaterId: visible, limit: 25 })
+    const page = await readSitemapFamilyPage('topics', { highWaterId: visible, limit: 5 })
     const paths = page.filter(row => row.id === visible).map(row => row.path)
     expect(paths).toHaveLength(5)
     expect(paths).toEqual(
@@ -95,9 +109,21 @@ describe('sitemap family pages', () => {
         ),
       ),
     )
-    expect(page.some(row => row.id === hidden)).toBe(false)
-    expect(page.some(row => row.id === withoutReviews && row.path.endsWith('/reviews'))).toBe(false)
-    expect(page.some(row => row.id === referral && row.path.endsWith('/referral-links'))).toBe(true)
+    const hiddenPage = await readSitemapFamilyPage('topics', { highWaterId: hidden, limit: 1 })
+    expect(hiddenPage.some(row => row.id === hidden)).toBe(false)
+    const withoutReviewsPage = await readSitemapFamilyPage('topics', {
+      highWaterId: withoutReviews,
+      limit: 5,
+    })
+    const withoutReviewsPaths = withoutReviewsPage
+      .filter(row => row.id === withoutReviews)
+      .map(row => row.path)
+    expect(withoutReviewsPaths).toHaveLength(4)
+    expect(withoutReviewsPaths.some(path => path.endsWith('/reviews'))).toBe(false)
+    const referralPage = await readSitemapFamilyPage('topics', { highWaterId: referral, limit: 6 })
+    expect(
+      referralPage.some(row => row.id === referral && row.path.endsWith('/referral-links')),
+    ).toBe(true)
   })
 
   it('includes only public, live owned communities', async () => {
@@ -112,7 +138,7 @@ describe('sitemap family pages', () => {
 
     const page = await readSitemapFamilyPage('communities', {
       highWaterId: publicCommunity.id,
-      limit: 25,
+      limit: 1,
     })
     expect(page).toContainEqual(
       expect.objectContaining({
@@ -120,9 +146,13 @@ describe('sitemap family pages', () => {
         path: `/communities/${publicCommunity.slug}`,
       }),
     )
-    expect(page.some(row => row.id === privateCommunity.id || row.id === deletedCommunity.id)).toBe(
-      false,
-    )
+    for (const excludedId of [privateCommunity.id, deletedCommunity.id]) {
+      const excludedPage = await readSitemapFamilyPage('communities', {
+        highWaterId: excludedId,
+        limit: 1,
+      })
+      expect(excludedPage.some(row => row.id === excludedId)).toBe(false)
+    }
   })
 
   it('includes only introduced, voted, unblocked owned domains', async () => {
@@ -136,10 +166,16 @@ describe('sitemap family pages', () => {
     const publicId = await insertTestUrlHostname({ hostname })
     await setUrlHostnameVotes(publicId, 1, 0)
 
-    const page = await readSitemapFamilyPage('domains', { highWaterId: publicId, limit: 25 })
+    const page = await readSitemapFamilyPage('domains', { highWaterId: publicId, limit: 1 })
     expect(page).toContainEqual(
       expect.objectContaining({ id: publicId, path: `/domain/${hostname}` }),
     )
-    expect(page.some(row => row.id === unvoted || row.id === blocked)).toBe(false)
+    for (const excludedId of [unvoted, blocked]) {
+      const excludedPage = await readSitemapFamilyPage('domains', {
+        highWaterId: excludedId,
+        limit: 1,
+      })
+      expect(excludedPage.some(row => row.id === excludedId)).toBe(false)
+    }
   })
 })
