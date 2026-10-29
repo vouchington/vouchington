@@ -100,7 +100,10 @@ function hasConditionalValidators(cache: SourceCacheHeaders | null): boolean {
 }
 
 /* no-mistakes: integration=http */
-async function fetchBlacklist(url: string, cache: SourceCacheHeaders | null): Promise<UndiciResponse> {
+async function fetchBlacklist(
+  url: string,
+  cache: SourceCacheHeaders | null,
+): Promise<UndiciResponse> {
   return undici.fetch(url, {
     dispatcher: getExternalRequestDispatcher(),
     headers: createBlacklistFetchHeaders(cache),

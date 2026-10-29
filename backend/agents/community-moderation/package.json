@@ -36,6 +36,7 @@
     "p-map": "^7.1.1"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.12.3"
   }
 }

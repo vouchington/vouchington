@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Response } from 'undici'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,

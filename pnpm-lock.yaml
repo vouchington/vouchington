@@ -399,6 +399,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/agents/conversation-title:
     dependencies:
