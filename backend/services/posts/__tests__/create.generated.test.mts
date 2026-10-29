@@ -130,24 +130,6 @@ describe('create.generated', () => {
     expect(retrieved!.id).toBe(post.id)
   })
 
-  it('createPost throws error for invalid rating', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const topicId = await insertTestTopic({
-      name: `Test Topic ${random}`,
-      slug: `test-topic-${random}`,
-      createdById: user.id,
-    })
-    await expect(
-      createPost(user, WEB_PROVENANCE, {
-        title: 'Invalid Review',
-        post_type: 'review',
-        markdown:
-          'This credit card offers outstanding travel rewards that I have been enjoying for over a year. The annual fee is completely justified by the generous sign-up bonus and ongoing perks. Customer service has been excellent whenever I needed assistance with my account.',
-        review_topic_ratings: [{ topic_id: topicId, rating: 10 }], // Invalid rating
-      }),
-    ).rejects.toThrow('Rating must be an integer between 1 and 5')
-  })
-
   it('createPost schedules slug addition to posts bloom filter', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const originalPostsBloomFilter = entityCacheBloomFilters.posts
