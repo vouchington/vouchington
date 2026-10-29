@@ -40,8 +40,3 @@ export async function resolveRssFeeds(
     references.length,
   )
 }
-
-export async function resolveRssFeed(reference: string): Promise<RssFeedReference | null> {
-  const [feed] = await resolveRssFeeds([reference])
-  return feed ?? null
-}

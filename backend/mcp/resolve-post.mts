@@ -26,8 +26,3 @@ export async function resolvePosts(references: readonly string[]): Promise<Array
   })
   return results
 }
-
-export async function resolvePost(reference: string): Promise<Post | null> {
-  const [post] = await resolvePosts([reference])
-  return post ?? null
-}

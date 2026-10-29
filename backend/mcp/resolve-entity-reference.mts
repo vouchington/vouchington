@@ -11,7 +11,7 @@ type ResolvedReference = { id: string; slug: string | null }
  * Resolves one entity type's references. Types other than topic, post, RSS feed, community
  * and user stay id-only: a UUID passes through and anything else is missing.
  */
-export async function resolveTypedReferences(
+async function resolveTypedReferences(
   entityType: string,
   references: readonly string[],
 ): Promise<Array<ResolvedReference | null>> {
@@ -36,14 +36,6 @@ export async function resolveTypedReferences(
     const trimmed = reference.trim()
     return isUUID(trimmed) ? { id: trimmed, slug: null } : null
   })
-}
-
-export async function resolveTypedReference(
-  entityType: string,
-  reference: string,
-): Promise<ResolvedReference | null> {
-  const [resolved] = await resolveTypedReferences(entityType, [reference])
-  return resolved ?? null
 }
 
 /** One id per reference, in order. An unknown UUID is unchanged. Anything else unknown is null. */

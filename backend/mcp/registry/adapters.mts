@@ -33,7 +33,7 @@ export type McpToolShape = {
 }
 
 // A read never changes state, so repeating it is always safe.
-export function toMcpToolAnnotations(annotations: ToolAnnotations): McpToolAnnotations {
+function toMcpToolAnnotations(annotations: ToolAnnotations): McpToolAnnotations {
   return annotations.readOnlyHint ? { ...annotations, idempotentHint: true } : annotations
 }
 

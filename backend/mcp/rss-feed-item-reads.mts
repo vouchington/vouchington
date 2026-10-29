@@ -179,5 +179,3 @@ export const getRssFeedItemTool: MergedToolSource<DetailArgs, DetailResult> = {
       return { success: true, rss_feed_item: await toMcpRssFeedItem(item) }
     },
 }
-
-export const rssFeedItemReadTools = [listRssFeedItemsTool, getRssFeedItemTool]

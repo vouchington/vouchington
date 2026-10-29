@@ -17,7 +17,7 @@ export type PolicyArgs = {
   conversation_id: string
   participant_add_policy: 'owner_only' | 'all_members'
 }
-export const uuid = { type: 'string', format: 'uuid' }
+const uuid = { type: 'string', format: 'uuid' }
 export const pageProperties = {
   limit: {
     type: 'integer',

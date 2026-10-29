@@ -145,5 +145,3 @@ export const getRssFeedItemVotesTool: MergedToolSource<VotesArgs, VotesResult> =
       }
     },
 }
-
-export const rssFeedItemSocialReadTools = [getRssFeedItemFollowContextTool, getRssFeedItemVotesTool]
