@@ -18,6 +18,13 @@ export const nextReviewDueAt = '2027-10-23T12:00:00.000Z'
 export const reportActivePenalty = {
   id: reportPenaltyId,
   user_id: userId,
+  user_username: 'penalty-recipient',
+  user_display_name: null,
+  creator_username: 'moderator',
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: 'mass_report_suspected',
   reason: 'mass_report_campaign',
   source_flag_id: reportFlagId,
   created_by_id: adminId,
@@ -35,11 +42,19 @@ export const reportRevokedPenalty = {
   created_by_id: null,
   revoked_at: revokedAt,
   revoked_by_id: adminId,
+  revoker_username: 'moderator',
   updated_at: revokedAt,
 }
 export const voteActivePenalty = {
   id: votePenaltyId,
   user_id: userId,
+  user_username: 'penalty-recipient',
+  user_display_name: null,
+  creator_username: 'moderator',
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: 'voting_ring',
   penalty_multiplier: 0.2,
   reason: 'voting_ring',
   source_flag_id: voteFlagId,
@@ -56,11 +71,13 @@ export const voteRevokedPenalty = {
   id: voteSecondPenaltyId,
   revoked_at: revokedAt,
   revoked_by_id: adminId,
+  revoker_username: 'moderator',
 }
 export const voteRetainedPenalty = {
   ...voteActivePenalty,
   id: voteRetainedPenaltyId,
   source_flag_id: null,
+  source_flag_type: null,
 }
 
 export function penaltyCursor(

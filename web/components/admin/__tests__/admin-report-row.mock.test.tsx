@@ -60,6 +60,7 @@ const report: AdminModerationReport = {
   created_at: '2026-05-31T00:00:00.000Z',
   reviewed_at: null,
   reporter_username: 'reporter',
+  reporter_display_name: null,
   reporter_user_id: 'reporter-id',
   entity_type: 'post',
   entity_id: 'post-1',
@@ -75,6 +76,8 @@ const report: AdminModerationReport = {
   status: 'pending',
   report_count: 1,
   resolved_by_id: null,
+  resolver_username: null,
+  resolver_display_name: null,
   is_system_generated: false,
   automatic_judgement_enabled: true,
   judgement: {

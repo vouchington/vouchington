@@ -45,13 +45,14 @@ export async function fetchBanEvasionReports(
       to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_created_at,
       r.reviewed_at,
       r.reporter_user_id,
-      NULL::text AS reporter_username,
+      reporter_profile.username AS reporter_username,
+      reporter_profile.verified_display_name AS reporter_display_name,
       'user'::moderation_report_entity_types AS entity_type,
       r.reported_user_id AS entity_id,
-      COALESCE('@' || tu.username, 'User ' || r.reported_user_id::text) AS target_label,
+      COALESCE(NULLIF(BTRIM(tu_profile.verified_display_name), ''), tu_profile.username, 'user') AS target_label,
       NULL::jsonb AS target_content,
-      '/user/' || COALESCE(tu.username, r.reported_user_id::text) AS target_path,
-      '/user/' || COALESCE(tu.username, r.reported_user_id::text) || '/admin' AS admin_action_path,
+      '/user/' || tu_profile.username AS target_path,
+      '/user/' || tu_profile.username || '/admin' AS admin_action_path,
       r.reported_user_id::text AS target_user_id,
       (tu.id IS NOT NULL AND tu.deleted_at IS NULL) AS target_available,
       r.reason,
@@ -59,6 +60,8 @@ export async function fetchBanEvasionReports(
       -- Pending by construction: the WHERE clause below requires r.reviewed_at IS NULL.
       'pending'::text AS status,
       r.resolved_by_id,
+      NULL::text AS resolver_username,
+      NULL::text AS resolver_display_name,
       NULL::timestamptz AS escalated_at,
       NULL::uuid AS escalated_by_id,
       true AS is_system_generated,
@@ -71,6 +74,7 @@ export async function fetchBanEvasionReports(
       false AS target_pending_community_review
     FROM moderation_reports r
     JOIN users ban_sys ON ban_sys.id = r.reporter_user_id AND ban_sys.username = ${BAN_EVASION_SYSTEM_USERNAME}
+    LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     JOIN community_members cm
       ON cm.user_id = r.reported_user_id
       AND cm.community_id = ${communityId}
@@ -78,6 +82,7 @@ export async function fetchBanEvasionReports(
       AND cm.suspected_ban_evader_dismissed_at IS NULL
       AND cm.removed_at IS NULL
     LEFT JOIN users tu ON tu.id = r.reported_user_id
+    LEFT JOIN view_users_public tu_profile ON tu_profile.id = r.reported_user_id
     WHERE r.reviewed_at IS NULL
       AND r.reported_user_id IS NOT NULL
       AND r.community_id = ${communityId}

@@ -67,7 +67,12 @@ export default function AdminModerationButton({
                   className={`rounded border p-3 text-sm ${m.is_flagged ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}
                 >
                   <div className='flex items-center justify-between gap-2 mb-1'>
-                    <span className='font-medium'>{m.moderator_slug ?? m.agent_id}</span>
+                    <span className='font-medium'>
+                      {m.moderator_slug ??
+                        t(
+                          'extracted.moderationAnalytics.moderationTransparencyPanel.automatedModeration_0b1d4f1f',
+                        )}
+                    </span>
                     <span
                       className={`text-xs font-semibold ${m.is_flagged ? 'text-destructive' : 'text-green-600'}`}
                     >

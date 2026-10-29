@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
+import { mergeMessages } from '@/lib/i18n/use-translations'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { DisputeContext } from './dispute-context'
 import { makeDispute } from '@/test-helpers/disputes-client-fixtures'
 
@@ -47,7 +50,7 @@ describe('DisputeContext', () => {
 
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute(
       'href',
-      '/review/post-1',
+      '/review/a-disputed-review',
     )
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute('lang', 'ar')
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute('dir', 'rtl')
@@ -58,7 +61,21 @@ describe('DisputeContext', () => {
     expect(screen.getByText('The published terms are inaccurate.')).toBeInTheDocument()
   })
 
-  it('falls back to target and disputant identifiers when optional context is absent', () => {
+  it('renders review content without a link when staff context has no slug', () => {
+    const dispute = makeDispute({
+      post_content: {
+        text: 'A review without a slug',
+        declared_language: null,
+        lingua_rs_detected_language: null,
+      },
+    })
+    render(<DisputeContext dispute={dispute} />)
+
+    expect(screen.getByText('A review without a slug')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'A review without a slug' })).toBeNull()
+  })
+
+  it('shows factual review label and deleted-user text when optional context is absent', () => {
     render(
       <DisputeContext
         dispute={makeDispute({
@@ -89,7 +106,27 @@ describe('DisputeContext', () => {
       />,
     )
 
-    expect(screen.getByText('post-1')).toBeInTheDocument()
-    expect(screen.getByText('claimant-fallback')).toBeInTheDocument()
+    expect(screen.getByText('A review')).toBeInTheDocument()
+    expect(screen.getByText('Deleted user')).toBeInTheDocument()
+    expect(screen.queryByText('post-1')).not.toBeInTheDocument()
+    expect(screen.queryByText('claimant-fallback')).not.toBeInTheDocument()
+  })
+
+  it('translates the redacted review fallback and keeps its id out of view', async () => {
+    mergeMessages('es', esMessages)
+    render(
+      <UiLocaleProvider uiLocale='es'>
+        <DisputeContext
+          dispute={makeDispute({
+            post_id: 'post-private',
+            post_label: 'review',
+            post_content: null,
+          })}
+        />
+      </UiLocaleProvider>,
+    )
+    expect(await screen.findByText('Revisión')).toBeInTheDocument()
+    expect(screen.queryByText('review')).not.toBeInTheDocument()
+    expect(screen.queryByText('post-private')).not.toBeInTheDocument()
   })
 })

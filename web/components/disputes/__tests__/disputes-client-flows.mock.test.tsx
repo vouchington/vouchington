@@ -193,6 +193,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     const memberDispute: ReviewDispute = {
       id: 'dispute-m1',
       post_id: 'post-m1',
+      post_label: 'A review',
       topic_id: 'topic-m1',
       reason: 'privacy_violation',
       status: 'pending',

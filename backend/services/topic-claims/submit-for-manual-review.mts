@@ -4,6 +4,7 @@ import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
 import { assertTopicClaimEvidenceWithinLimit } from './parse.mts'
 import type { TopicClaimWriteContext } from './require-on-topic.mts'
+import { getTopicClaimById } from './get.mts'
 
 export async function submitTopicClaimForManualReview(
   currentUserId: string,
@@ -23,15 +24,9 @@ export async function submitTopicClaimForManualReview(
       AND claimant_user_id = ${currentUserId}
       AND verified_at IS NULL
       AND rejected_at IS NULL
-    RETURNING
-      id, topic_id, claimant_user_id, verification_method,
-      claimed_role, evidence, submitted_at,
-      verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
-      revoked_at, revoked_by_id, revocation_reason,
-      verification_hostname_id, verification_token_issued_at,
-      domain_verified_at, created_at, updated_at
+    RETURNING id
   `)
-  const updated = rows[0] as TopicClaim | undefined
+  const updated = rows[0] && (await getTopicClaimById(claim.id, write))
   assert(updated, 404, 'Claim not found or already resolved')
   return updated
 }

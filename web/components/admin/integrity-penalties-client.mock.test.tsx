@@ -115,6 +115,13 @@ type MockIntegrityPenaltiesState = IntegrityPenaltiesState<Penalty> & {
 const penalty: Penalty = {
   id: 'penalty-1',
   user_id: 'user-1',
+  user_username: 'recipient',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   reason: 'voting_ring',
   source_flag_id: 'flag-1',
   created_by_id: 'admin-1',

@@ -7,6 +7,7 @@ function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
   return {
     id: 'dispute-1',
     post_id: 'post-1',
+    post_label: 'A review',
     topic_id: 'topic-1',
     reason: 'factually_inaccurate',
     status: 'pending',
@@ -42,7 +43,8 @@ describe('DisputeRow', () => {
         </tbody>
       </table>,
     )
-    expect(screen.getByRole('link', { name: 'A Review' })).toBeInTheDocument()
+    expect(screen.getByText('A Review')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'A Review' })).toBeNull()
     expect(screen.getByText('factually inaccurate')).toBeInTheDocument()
     expect(screen.getByText('pending')).toBeInTheDocument()
   })

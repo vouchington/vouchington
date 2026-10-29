@@ -88,9 +88,8 @@ describe('AdminReviewQueueClient', () => {
     )
     expect(screen.getByText('Flagged post')).toHaveAttribute('lang', 'ar')
     expect(screen.getByText('Flagged post')).toHaveAttribute('dir', 'rtl')
-    expect(screen.getByRole('link', { name: 'Flagged comment' }).getAttribute('href')).toBe(
-      '/discussion/root-post/comment/comment-1',
-    )
+    expect(screen.queryByRole('link', { name: 'Flagged comment' })).toBeNull()
+    expect(screen.getByText('Flagged comment')).toBeDefined()
     expect(screen.getByRole('link', { name: 'Flagged topic' }).getAttribute('href')).toBe(
       '/topic-recommendations?q=Flagged%20topic',
     )
@@ -212,6 +211,7 @@ function makeResponse(): AdminReviewQueueResponse {
       {
         id: 'post-1',
         title: 'Flagged post',
+        post_label: 'Flagged post',
         declared_language: 'ar',
         lingua_rs_detected_language: null,
         slug: 'flagged-post',
@@ -245,6 +245,7 @@ function makeResponse(): AdminReviewQueueResponse {
       {
         id: 'comment-1',
         title: 'Flagged comment',
+        post_label: 'Flagged comment',
         declared_language: null,
         lingua_rs_detected_language: null,
         slug: null,
@@ -254,7 +255,7 @@ function makeResponse(): AdminReviewQueueResponse {
         created_at: new Date().toISOString(),
         root_post_id: 'root-1',
         root_post_type: 'discussion',
-        root_slug: 'root-post',
+        root_slug: null,
         clearance_status: 'in_review',
         clearance_updated_at: new Date().toISOString(),
         moderation_summary: {
@@ -267,6 +268,7 @@ function makeResponse(): AdminReviewQueueResponse {
       {
         id: 'topic-recommendation-1',
         title: 'Flagged topic',
+        post_label: 'Flagged topic',
         declared_language: null,
         lingua_rs_detected_language: null,
         slug: null,

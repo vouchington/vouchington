@@ -6,7 +6,9 @@
   },
   "results": [
     {
+      "claimant_display_name": null,
       "claimant_user_id": "00000000-0000-7000-8000-000000000001",
+      "claimant_username": "claimant",
       "claimed_role": "Issuer",
       "created_at": "2026-07-01T00:00:00Z",
       "domain_verified_at": null,
@@ -21,6 +23,7 @@
       "state": "pending",
       "submitted_at": null,
       "topic_id": "00000000-0000-7000-8000-000000000301",
+      "topic_name": "Example topic",
       "updated_at": "2026-07-01T00:00:00Z",
       "verification_hostname_id": null,
       "verification_method": null,

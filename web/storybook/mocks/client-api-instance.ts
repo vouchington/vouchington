@@ -48,15 +48,12 @@ const clientRequestGet = ClientRequest.prototype.get
 export function setNotificationSettingsFixture(preferences: EmailPreferences): void {
   notificationSettingsFixture = preferences
 }
-
 export function clearNotificationSettingsFixture(): void {
   notificationSettingsFixture = undefined
 }
-
 export function setInboxFixture(): void {
   inboxFixture = enableInboxMutations()
 }
-
 export function clearInboxFixture(): void {
   disableInboxMutations()
   inboxFixture = undefined
@@ -138,7 +135,10 @@ export function setModerationContextFixture(): void {
         created_at: '2026-05-01T00:00:00.000Z',
         target_user_id: publicUsers[0]!.id,
         author_user_id: publicUsers[0]!.id,
+        author_username: publicUsers[0]!.username ?? null,
+        author_display_name: publicUsers[0]!.verified_display_name ?? null,
         community_id: creditCards.id,
+        community_name: creditCards.name,
         body: 'Asked for a product-change screenshot before the next review.',
         deleted_at: null,
       },

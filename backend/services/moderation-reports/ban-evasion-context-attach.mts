@@ -21,10 +21,13 @@ export async function attachBanEvasionContext(
       cm.community_id,
       c.slug AS community_slug,
       cm.suspected_ban_evader_source_user_id,
+      source_profile.username AS source_username,
+      source_profile.verified_display_name AS source_display_name,
       cm.suspected_ban_evader_score,
       cm.suspected_ban_evader_at
     FROM community_members cm
     JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+    LEFT JOIN view_users_public source_profile ON source_profile.id = cm.suspected_ban_evader_source_user_id
     WHERE cm.user_id = ANY(${userIds}::uuid[])
       AND cm.suspected_ban_evader_at IS NOT NULL
       AND cm.suspected_ban_evader_dismissed_at IS NULL
@@ -38,6 +41,8 @@ export async function attachBanEvasionContext(
     community_id: string
     community_slug: string
     suspected_ban_evader_source_user_id: string | null
+    source_username: string | null
+    source_display_name: string | null
     suspected_ban_evader_score: number | null
     suspected_ban_evader_at: Date
   }>(query)
@@ -50,7 +55,8 @@ export async function attachBanEvasionContext(
         community_id: row.community_id,
         community_slug: row.community_slug,
         source_user_id: row.suspected_ban_evader_source_user_id ?? '',
-        source_username: null,
+        source_username: row.source_username,
+        source_display_name: row.source_display_name,
         score: row.suspected_ban_evader_score ?? 0,
         flagged_at: row.suspected_ban_evader_at.toISOString(),
       })

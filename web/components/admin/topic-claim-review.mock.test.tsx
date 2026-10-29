@@ -34,7 +34,10 @@ function makeClaim(overrides: Partial<TopicClaim> = {}): TopicClaim {
   return {
     id: 'claim-1234',
     topic_id: 'topic-abcd',
+    topic_name: 'Example topic',
     claimant_user_id: 'user-1',
+    claimant_username: 'claimant',
+    claimant_display_name: null,
     verification_method: null,
     claimed_role: 'Card issuer',
     evidence: 'See official website.',
@@ -61,6 +64,13 @@ describe('TopicClaimReview', () => {
     vi.clearAllMocks()
   })
 
+  it('translates the missing-topic fallback without exposing its id', () => {
+    render(<TopicClaimReview claim={makeClaim({ topic_name: 'topic' })} />)
+    expect(screen.getByText('Topic')).toBeInTheDocument()
+    expect(screen.queryByText('topic')).not.toBeInTheDocument()
+    expect(screen.queryByText('topic-abcd')).not.toBeInTheDocument()
+  })
+
   it('renders pending claim with verify and reject controls', () => {
     render(<TopicClaimReview claim={makeClaim()} />)
     expect(screen.getByText(/card issuer/i)).toBeInTheDocument()
@@ -72,6 +82,9 @@ describe('TopicClaimReview', () => {
   it('renders evidence text when present', () => {
     render(<TopicClaimReview claim={makeClaim()} />)
     expect(screen.getByText('See official website.')).toBeInTheDocument()
+    expect(screen.getByText('Example topic')).toBeInTheDocument()
+    expect(screen.getByText(/claimant/)).toBeInTheDocument()
+    expect(screen.queryByText(/claim-1234|topic-abcd/)).not.toBeInTheDocument()
   })
 
   it('renders verified claim with revoke control', () => {

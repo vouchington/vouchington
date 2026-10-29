@@ -9,6 +9,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import { FLAG_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
+import { attachReportFlagEntityLabels } from './flag-entity-labels.mts'
 
 export type GetReportIntegrityFlagsOptions = {
   status?: IntegrityFlagStatus
@@ -18,13 +19,21 @@ export type GetReportIntegrityFlagsOptions = {
 }
 
 export type GetReportIntegrityFlagsResult = {
-  results: Array<ReportIntegrityFlag & { hostname: string | null }>
+  results: Array<
+    ReportIntegrityFlag & {
+      hostname: string | null
+      entity_label: string
+      reported_username: string | null
+      resolver_username: string | null
+      resolver_display_name: string | null
+    }
+  >
   page_info: PageInfo
 }
 
 export async function getReportIntegrityFlagByIdFromPrimary(
   id: string,
-): Promise<(ReportIntegrityFlag & { hostname: string | null }) | null> {
+): Promise<GetReportIntegrityFlagsResult['results'][number] | null> {
   const query = sql`/* getReportIntegrityFlagByIdFromPrimary */
     SELECT`
   query.append(FLAG_COLUMNS_WITH_HOSTNAME)
@@ -33,7 +42,11 @@ export async function getReportIntegrityFlagByIdFromPrimary(
     WHERE id = ${id}
   `)
   const { rows } = await write(query)
-  return (rows[0] as ReportIntegrityFlag & { hostname: string | null }) ?? null
+  const flags = await attachReportFlagEntityLabels(
+    rows as Array<ReportIntegrityFlag & { hostname: string | null }>,
+    write,
+  )
+  return flags[0] ?? null
 }
 
 export async function getReportIntegrityFlags(
@@ -71,7 +84,9 @@ export async function getReportIntegrityFlags(
   const { rows } = await read(query)
   const flags = rows as Array<ReportIntegrityFlag & { hostname: string | null }>
   const hasNextPage = flags.length > clampedLimit
-  const results = hasNextPage ? flags.slice(0, clampedLimit) : flags
+  const results = await attachReportFlagEntityLabels(
+    hasNextPage ? flags.slice(0, clampedLimit) : flags,
+  )
   return {
     results,
     page_info: buildPageInfo(results, {

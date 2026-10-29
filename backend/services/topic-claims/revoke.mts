@@ -3,6 +3,7 @@ import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
+import { getTopicClaimById } from './get.mts'
 
 export async function revokeTopicClaim(
   staffUserId: string,
@@ -35,6 +36,8 @@ export async function revokeTopicClaim(
       { actionType: 'topic_claim_revoke', topicClaimId: claimId, reason: revocationReason.trim() },
       { query: transaction },
     )
-    return updated
+    const labelledClaim = await getTopicClaimById(updated.id, transaction)
+    assert(labelledClaim, 500, 'Claim disappeared after revocation')
+    return labelledClaim
   })
 }

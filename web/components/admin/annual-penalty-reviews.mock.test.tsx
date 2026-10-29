@@ -15,6 +15,12 @@ type VoteIntegrityPenaltyReviewDue = VoteIntegrityPenaltyReviewsDueResponse['res
 const duePenalty: ReportIntegrityPenaltyReviewDue = {
   id: '018f6763-0a71-752d-b657-a06cf00dd401',
   user_id: '018f6763-0a71-752d-b657-a06cf00dd402',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   user_username: 'penalty-recipient',
   reason: 'mass_report_campaign',
   source_flag_id: null,
@@ -79,9 +85,7 @@ describe('AnnualPenaltyReviews', () => {
         reconcile={reconcile}
       />,
     )
-    expect(
-      screen.getByText('extracted.communities.communityMemberRow.unknownUser_0bca6947'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('shared.user.deletedUser')).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
     expect(getDue).not.toHaveBeenCalled()

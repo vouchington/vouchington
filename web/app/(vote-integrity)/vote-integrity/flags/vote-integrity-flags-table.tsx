@@ -4,10 +4,11 @@ import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import type { VoteIntegrityFlag } from '@/types/vote-integrity'
 import { VoteIntegrityFlagStatus } from './vote-integrity-flag-status'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getEntityLabel } from './vote-integrity-entity-label'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { VoteIntegrityFlagActions } from './vote-integrity-flag-row-actions'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
+import { IntegrityFlagEvidence } from '@/components/admin/integrity-flag-evidence'
 
 import type { VoteIntegrityFlagsTableProps } from './vote-integrity-flags-table-props'
 export type { VoteIntegrityFlagsTableProps } from './vote-integrity-flags-table-props'
@@ -89,11 +90,11 @@ function VoteIntegrityFlagRow({
 }) {
   const t = useTranslations()
   const uiLocale = useUiLocale()
+  const targetLabel = useModerationTargetLabel()
   const reason =
     flag.flag_type === 'velocity_spike'
       ? t('extracted.flags.integrityActions.velocitySpike_5be6d539')
       : t('extracted.flags.integrityActions.ipCorrelation_a7083d7c')
-  const evidence = JSON.stringify(flag.details)
   return (
     <tr
       className='hover:bg-muted/50'
@@ -102,9 +103,15 @@ function VoteIntegrityFlagRow({
       <td className='px-4 py-4 text-sm text-foreground'>
         <span>{reason}</span>
       </td>
-      <td className='max-w-72 px-4 py-4 text-xs text-muted-foreground'>{evidence}</td>
+      <td className='max-w-72 px-4 py-4 text-xs text-muted-foreground'>
+        <IntegrityFlagEvidence
+          domain='vote'
+          flagType={flag.flag_type}
+          details={flag.details}
+        />
+      </td>
       <td className='px-4 py-4 font-mono text-sm text-muted-foreground'>
-        {getEntityLabel(flag, t)}
+        {targetLabel(flag.entity_label)}
       </td>
       <td
         className='whitespace-nowrap px-4 py-4 text-sm text-muted-foreground'

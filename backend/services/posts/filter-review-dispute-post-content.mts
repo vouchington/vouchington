@@ -7,16 +7,15 @@ export async function filterReviewDisputePostContentForViewer(
   currentUser: PrivateUser,
   disputes: ReviewDisputeResponse[],
 ): Promise<ReviewDisputeResponse[]> {
-  const disputesWithContent = disputes.filter(dispute => dispute.post_content !== null)
-  if (disputesWithContent.length === 0) return disputes
+  if (disputes.length === 0) return disputes
 
   const visibility = await canViewPostsBatch(
     currentUser,
-    disputesWithContent.map(dispute => ({ id: dispute.post_id })),
+    disputes.map(dispute => ({ id: dispute.post_id })),
   )
   return disputes.map(dispute =>
-    dispute.post_content !== null && !visibility.get(dispute.post_id)
-      ? { ...dispute, post_content: null }
+    !visibility.get(dispute.post_id)
+      ? { ...dispute, post_content: null, post_label: 'review' }
       : dispute,
   )
 }

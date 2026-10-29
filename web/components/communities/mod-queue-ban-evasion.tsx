@@ -12,6 +12,7 @@ import { createUserPathname } from '@/lib/links/entity-href'
 import onError from '@/lib/on-error'
 import type { CommunityBanEvasionContext } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface ModQueueBanEvasionProps {
   banEvasion: CommunityBanEvasionContext
@@ -31,6 +32,13 @@ function hasConfirmableBanEvasionEvidence(banEvasion: CommunityBanEvasionContext
 
 export function ModQueueBanEvasionInfo({ banEvasion }: { banEvasion: CommunityBanEvasionContext }) {
   const t = useTranslations()
+  const sourceLabel = getUserLabel(
+    {
+      username: banEvasion.source_username,
+      display_account: { name: banEvasion.source_display_name },
+    },
+    t('shared.user.deletedUser'),
+  )
   return (
     <div className='flex flex-col gap-0.5 text-xs text-muted-foreground'>
       <Badge
@@ -50,12 +58,10 @@ export function ModQueueBanEvasionInfo({ banEvasion }: { banEvasion: CommunityBa
               className='underline'
               prefetch={false}
             >
-              {t('extracted.communities.modQueueBanEvasion.username_6da31ba5', {
-                username: banEvasion.source_username,
-              })}
+              {sourceLabel}
             </Link>
           ) : (
-            <span className='font-mono'>{banEvasion.source_user_id}</span>
+            <span>{sourceLabel}</span>
           )}
         </span>
       ) : null}

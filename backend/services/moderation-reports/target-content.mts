@@ -9,12 +9,12 @@ export type ModerationReportTargetContent = {
 
 export function reportTargetLabelSql() {
   return sql`CASE
-    WHEN r.reported_user_id IS NOT NULL THEN COALESCE('@' || target_user.username, 'User ' || target_user.id::text)
-    WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN COALESCE('Comment on ' || NULLIF(BTRIM(root_post.title), ''), 'Comment ' || target_post.id::text)
-    WHEN r.post_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_post.title), ''), 'Post ' || target_post.id::text)
-    WHEN r.hostname_id IS NOT NULL THEN target_hostname.hostname
-    WHEN r.rss_feed_item_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_rss_item.data->>'title'), ''), 'RSS item ' || target_rss_item.id::text)
-    ELSE NULL
+    WHEN r.reported_user_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_user_profile.verified_display_name), ''), target_user_profile.username, r.entity_type::text)
+    WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN COALESCE(NULLIF(BTRIM(root_post.title), ''), NULLIF(BTRIM(LEFT(target_post.markdown, 80)), ''), r.entity_type::text)
+    WHEN r.post_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_post.title), ''), target_post_slug.slug, NULLIF(BTRIM(LEFT(target_post.markdown, 80)), ''), r.entity_type::text)
+    WHEN r.hostname_id IS NOT NULL THEN COALESCE(target_hostname.hostname, r.entity_type::text)
+    WHEN r.rss_feed_item_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_rss_item.data->>'title'), ''), NULLIF(BTRIM(target_rss_item.data->>'url'), ''), r.entity_type::text)
+    ELSE r.entity_type::text
   END`
 }
 

@@ -13,6 +13,7 @@ import { ReportDetail } from './report-cluster-detail'
 import { IndicatorBadges } from './report-cluster-indicators'
 import { formatReasonBreakdown } from './reports-clustered-format'
 import { ReportTargetContent } from '@/components/moderation/report-target-content'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import { selectOrdinaryPendingReports } from './reports-clustered-actions'
 import type { AdminModerationReport, AdminModerationReportCluster } from './reports-client-types'
 
@@ -50,7 +51,8 @@ export function ReportClusterCard({
   uiLocale: string
 }) {
   const t = useTranslations()
-  const targetLabel = cluster.target_label ?? cluster.entity_id
+  const targetLabelFor = useModerationTargetLabel()
+  const targetLabel = targetLabelFor(cluster.target_label)
   const hasPendingReports = selectOrdinaryPendingReports(cluster).length > 0
   const isPartialReportSet = cluster.reports.length < cluster.report_count
   const canRemoveTarget =
@@ -90,7 +92,7 @@ export function ReportClusterCard({
                     variant='outline'
                     asChild
                   >
-                    <span>{cluster.entity_type}</span>
+                    <span>{targetLabelFor(cluster.entity_type)}</span>
                   </Badge>
                   <span className='font-medium'>
                     <ReportTargetContent

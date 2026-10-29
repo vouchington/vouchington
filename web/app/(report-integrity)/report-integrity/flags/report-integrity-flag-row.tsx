@@ -14,6 +14,7 @@ import {
   ResolveReportIntegrityFlagButton,
 } from './report-integrity-flag-actions'
 import { ReportIntegrityFlagStatus } from './report-integrity-flag-status'
+import { IntegrityFlagEvidence } from '@/components/admin/integrity-flag-evidence'
 import type { ReportIntegrityFlagsTableProps } from './report-integrity-flags-table-props'
 
 type FlagRowProps = {
@@ -33,7 +34,11 @@ export function ReportIntegrityFlagRow({ flag, state }: FlagRowProps) {
         {t('extracted.flags.integrityActions.massReportSuspected_cc227ce2')}
       </td>
       <td className='max-w-72 px-4 py-4 text-xs text-muted-foreground'>
-        {JSON.stringify(flag.details)}
+        <IntegrityFlagEvidence
+          domain='report'
+          flagType={flag.flag_type}
+          details={flag.details}
+        />
       </td>
       <td className='px-4 py-4 font-mono text-sm text-muted-foreground'>
         <EntityLink flag={flag} />
@@ -69,6 +74,8 @@ function ReportIntegrityFlagActions({ flag, state }: FlagRowProps) {
       <IntegrityFlagResolvedActor
         resolvedAt={flag.resolved_at}
         resolvedById={flag.resolved_by_id}
+        resolverUsername={flag.resolver_username}
+        resolverDisplayName={flag.resolver_display_name}
       />
     )
   }

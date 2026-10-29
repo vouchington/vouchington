@@ -25,6 +25,7 @@ import {
   ReportCountBadge,
 } from '@/components/moderation/moderation-queue-badges'
 import { ReportTargetContent } from '@/components/moderation/report-target-content'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import type { CommunityModerationReport } from '@/types/api-responses'
 import { ModQueueWarnButton } from './mod-queue-warn-button'
 import { ModQueueBanEvasionActions, ModQueueBanEvasionInfo } from './mod-queue-ban-evasion'
@@ -70,6 +71,7 @@ export function ModQueueReports({
   selectedIds,
 }: ModQueueReportsProps) {
   const t = useTranslations()
+  const targetLabelFor = useModerationTargetLabel()
   const router = useRouter()
   const [sendingModmail, setSendingModmail] = useState<string | null>(null)
   const [claimingId, setClaimingId] = useState<string | null>(null)
@@ -189,6 +191,7 @@ export function ModQueueReports({
   return (
     <div className='space-y-3'>
       {reports.map(report => {
+        const targetLabel = targetLabelFor(report.target_label)
         const queueKey = `report:${report.id}`
         const active = activeKey === queueKey
         const targetUserId = report.target_user_id ?? null
@@ -216,7 +219,7 @@ export function ModQueueReports({
                 aria-label={t(
                   'extracted.communities.modQueueReports.selectReportForLabel_a4d72044',
                   {
-                    label: report.target_label ?? report.entity_id,
+                    label: targetLabel,
                   },
                 )}
                 checked={selectedIds.has(report.id)}
@@ -224,7 +227,9 @@ export function ModQueueReports({
                 onCheckedChange={() => onSelectionToggle(report.id)}
               />
               <div className='flex flex-col gap-1'>
-                <p className='text-xs uppercase text-muted-foreground'>{report.entity_type}</p>
+                <p className='text-xs uppercase text-muted-foreground'>
+                  {targetLabelFor(report.entity_type)}
+                </p>
                 {report.target_path ? (
                   <Link
                     href={report.target_path}
@@ -232,14 +237,14 @@ export function ModQueueReports({
                     prefetch={false}
                   >
                     <ReportTargetContent
-                      fallback={report.target_label ?? report.entity_id}
+                      fallback={targetLabel}
                       targetContent={report.target_content}
                     />
                   </Link>
                 ) : (
                   <p className='font-semibold'>
                     <ReportTargetContent
-                      fallback={report.target_label ?? report.entity_id}
+                      fallback={targetLabel}
                       targetContent={report.target_content}
                     />
                   </p>

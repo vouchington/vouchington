@@ -787,11 +787,11 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40236,
+          "list": 40480,
           "core": 6505
         },
         "max": {
-          "list": 41000,
+          "list": 42000,
           "core": 7000
         }
       },
@@ -807,7 +807,7 @@
       },
       "update_community_moderation": {
         "measured": {
-          "list": 14598,
+          "list": 14776,
           "core": 6484
         },
         "max": {
@@ -829,17 +829,17 @@
     "brand": {
       "manage_topic_claim": {
         "measured": {
-          "list": 4753,
+          "list": 4977,
           "core": 2065
         },
         "max": {
-          "list": 5000,
+          "list": 6000,
           "core": 3000
         }
       },
       "read_my_topic_claims": {
         "measured": {
-          "list": 3614,
+          "list": 3838,
           "core": 1253
         },
         "max": {
@@ -981,17 +981,17 @@
       },
       "list_moderation_reports": {
         "measured": {
-          "list": 20746,
+          "list": 21726,
           "core": 529
         },
         "max": {
-          "list": 22000,
+          "list": 23000,
           "core": 1000
         }
       },
       "resolve_moderation_report": {
         "measured": {
-          "list": 1513,
+          "list": 1738,
           "core": 335
         },
         "max": {
@@ -1011,7 +1011,7 @@
       },
       "list_post_review_queue": {
         "measured": {
-          "list": 2785,
+          "list": 2829,
           "core": 259
         },
         "max": {
@@ -1041,27 +1041,27 @@
       },
       "list_pending_topic_claims": {
         "measured": {
-          "list": 1855,
+          "list": 2031,
           "core": 200
         },
         "max": {
-          "list": 2000,
+          "list": 3000,
           "core": 1000
         }
       },
       "verify_topic_claim": {
         "measured": {
-          "list": 1875,
+          "list": 2051,
           "core": 208
         },
         "max": {
-          "list": 2000,
+          "list": 3000,
           "core": 1000
         }
       },
       "reject_topic_claim": {
         "measured": {
-          "list": 1973,
+          "list": 2149,
           "core": 309
         },
         "max": {
@@ -1071,7 +1071,7 @@
       },
       "revoke_topic_claim": {
         "measured": {
-          "list": 1976,
+          "list": 2152,
           "core": 312
         },
         "max": {
@@ -1191,7 +1191,7 @@
       },
       "read_user_moderation": {
         "measured": {
-          "list": 4527,
+          "list": 4779,
           "core": 1231
         },
         "max": {
@@ -1231,7 +1231,7 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 4416,
+          "list": 4816,
           "core": 1162
         },
         "max": {
@@ -1241,7 +1241,7 @@
       },
       "review_integrity_flag": {
         "measured": {
-          "list": 2963,
+          "list": 3385,
           "core": 696
         },
         "max": {
@@ -1251,7 +1251,7 @@
       },
       "apply_integrity_penalty": {
         "measured": {
-          "list": 3302,
+          "list": 3724,
           "core": 713
         },
         "max": {
@@ -1261,21 +1261,21 @@
       },
       "lift_integrity_penalty": {
         "measured": {
-          "list": 3267,
+          "list": 4495,
           "core": 868
         },
         "max": {
-          "list": 4000,
+          "list": 5000,
           "core": 1000
         }
       },
       "read_vote_integrity": {
         "measured": {
-          "list": 4691,
+          "list": 5685,
           "core": 1203
         },
         "max": {
-          "list": 5000,
+          "list": 6000,
           "core": 2000
         }
       },
@@ -1301,7 +1301,7 @@
       },
       "read_review_dispute": {
         "measured": {
-          "list": 7371,
+          "list": 7459,
           "core": 814
         },
         "max": {
@@ -1311,7 +1311,7 @@
       },
       "draft_review_response": {
         "measured": {
-          "list": 8595,
+          "list": 8639,
           "core": 741
         },
         "max": {
@@ -1321,7 +1321,7 @@
       },
       "approve_review_response": {
         "measured": {
-          "list": 8472,
+          "list": 8516,
           "core": 614
         },
         "max": {
@@ -1331,7 +1331,7 @@
       },
       "deliver_review_response": {
         "measured": {
-          "list": 8471,
+          "list": 8515,
           "core": 614
         },
         "max": {
@@ -1351,7 +1351,7 @@
       },
       "resolve_review_case": {
         "measured": {
-          "list": 8873,
+          "list": 8917,
           "core": 1021
         },
         "max": {

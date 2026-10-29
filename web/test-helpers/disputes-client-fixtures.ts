@@ -4,6 +4,7 @@ export function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispu
   return {
     id: 'dispute-1',
     post_id: 'post-1',
+    post_label: 'A review',
     topic_id: 'topic-1',
     reason: 'factually_inaccurate',
     status: 'pending',

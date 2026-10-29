@@ -2665,6 +2665,8 @@ importers:
         specifier: ^0.10.2
         version: 0.10.2
 
+  backend/modules/topic-labels: {}
+
   backend/modules/utils:
     dependencies:
       '@data-stores/graceful-shutdown':
@@ -7574,6 +7576,18 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/integrity-labels:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/topic-labels':
+        specifier: workspace:^
+        version: link:../../modules/topic-labels
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+
   backend/services/jwt-session:
     dependencies:
       '@data-stores/analytics':
@@ -10295,6 +10309,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/integrity-labels':
+        specifier: workspace:^
+        version: link:../integrity-labels
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -11189,6 +11206,9 @@ importers:
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
+      '@modules/topic-labels':
+        specifier: workspace:^
+        version: link:../../modules/topic-labels
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -12355,6 +12375,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/integrity-labels':
+        specifier: workspace:^
+        version: link:../integrity-labels
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions

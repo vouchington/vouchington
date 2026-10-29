@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { UserModNotesControl } from '@/components/moderation/user-mod-notes-cell'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { ReportRowWarnButton } from './report-row-warn-button'
 import { judgementLabel, judgementVariant } from './report-judgement-format'
 import type { AdminModerationReport } from './reports-client-types'
@@ -30,6 +31,13 @@ export function ReportDetail({
   onBanEvasionAction?: (reportId: string) => void
 }) {
   const t = useTranslations()
+  const reporterLabel = getUserLabel(
+    {
+      username: report.reporter_username,
+      display_account: { name: report.reporter_display_name },
+    },
+    t('shared.user.deletedUser'),
+  )
   return (
     <div className='grid gap-2 rounded-md border bg-background p-3 text-sm md:grid-cols-[1fr_auto]'>
       <div className='space-y-1'>
@@ -44,10 +52,10 @@ export function ReportDetail({
               className='underline'
               prefetch={false}
             >
-              {report.reporter_username}
+              {reporterLabel}
             </Link>
           ) : report.reporter_user_id ? (
-            <span className='font-mono text-xs'>{report.reporter_user_id}</span>
+            <span className='text-xs'>{reporterLabel}</span>
           ) : null}
         </div>
         {report.note ? <p className='whitespace-pre-wrap break-words'>{report.note}</p> : null}

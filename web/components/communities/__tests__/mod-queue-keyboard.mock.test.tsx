@@ -96,6 +96,7 @@ describe('ModQueue keyboard shortcuts', () => {
         community_slug: 'credit-cards',
         source_user_id: 'source-user',
         source_username: 'source-user',
+        source_display_name: null,
         score: 0.8,
         flagged_at: '2026-07-11T00:00:00.000Z',
       },

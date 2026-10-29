@@ -273,7 +273,7 @@ export interface CommunityModerationQueueEntry {
   target_available: boolean | null
   target_is_anonymous?: boolean
   target_is_restricted?: boolean
-  target_label: string | null
+  target_label: string
   target_content: import('@/lib/api/client/reports-contracts').ModerationReportTargetContent | null
   target_path: string | null
   target_user_id: string | null

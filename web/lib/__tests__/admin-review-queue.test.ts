@@ -6,6 +6,7 @@ function makePost(overrides: Partial<AdminReviewQueuePost> = {}): AdminReviewQue
   return {
     id: 'post-1',
     title: 'Review queue post',
+    post_label: 'Review queue post',
     declared_language: null,
     lingua_rs_detected_language: null,
     slug: null,
@@ -29,6 +30,13 @@ function makePost(overrides: Partial<AdminReviewQueuePost> = {}): AdminReviewQue
 }
 
 describe('getAdminReviewQueuePostHref', () => {
+  it('uses the natural slug for a post and omits a route when it is absent', () => {
+    expect(getAdminReviewQueuePostHref(makePost({ slug: 'review-queue-post' }))).toBe(
+      '/discussion/review-queue-post',
+    )
+    expect(getAdminReviewQueuePostHref(makePost())).toBeNull()
+  })
+
   it('links comments to routable post comment paths', () => {
     expect(
       getAdminReviewQueuePostHref(
@@ -49,11 +57,20 @@ describe('getAdminReviewQueuePostHref', () => {
         makePost({
           id: 'comment-1',
           title: 'Recommended topic',
+          post_label: 'Recommended topic',
           post_type: 'comment',
           root_post_id: 'root-1',
           root_post_type: 'topic_recommendation',
         }),
       ),
     ).toBe('/topic-recommendations?q=Recommended%20topic')
+  })
+
+  it('omits a comment route when its root has no natural slug', () => {
+    expect(
+      getAdminReviewQueuePostHref(
+        makePost({ post_type: 'comment', root_post_id: 'root-1', root_post_type: 'review' }),
+      ),
+    ).toBeNull()
   })
 })

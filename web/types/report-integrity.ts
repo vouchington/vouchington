@@ -15,6 +15,10 @@ export interface ReportIntegrityFlag {
   reported_user_id: string | null
   hostname_id: string | null
   hostname: string | null
+  entity_label: string
+  reported_username: string | null
+  resolver_username: string | null
+  resolver_display_name: string | null
   rss_feed_item_id: string | null
   flag_type: ReportIntegrityFlagType
   reporter_count: number
@@ -40,6 +44,13 @@ export type IntegrityPenaltyStatusFilter = 'active' | 'revoked' | 'all'
 export interface ReportIntegrityPenalty {
   id: string
   user_id: string
+  user_username: string | null
+  user_display_name: string | null
+  creator_username: string | null
+  creator_display_name: string | null
+  revoker_username: string | null
+  revoker_display_name: string | null
+  source_flag_type: string | null
   reason: string
   source_flag_id: string | null
   created_by_id: string | null

@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pagination-lock'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import {
   createTestUser,
+  deleteTestPost,
   insertTestPost,
   insertTestModerationReport,
   insertTestCommunity,
@@ -10,6 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { listRedactedModerationReports } from '../redaction.mts'
+import { listModerationReports } from '../get.mts'
 import { insertReportJudgement } from '../judgements.mts'
 import crypto from 'node:crypto'
 
@@ -127,6 +130,44 @@ describe('moderation-reports/redaction', () => {
       expect(found!.target_content).toBeNull()
       expect(found).not.toHaveProperty('judgement')
       expect(found!.post_moderation_context).toBeNull()
+    })
+
+    it('masks deleted target facts and links in the real list path for staff and members', async () => {
+      const createdAt = new Date(Date.now() + 60_000)
+      const title = `Deleted Report Target ${crypto.randomUUID().slice(0, 8)}`
+      const postId = await insertTestPost({
+        createdById: author.id,
+        slug: `deleted-report-target-${crypto.randomUUID().slice(0, 8)}`,
+        title,
+        markdown: 'Deleted report target body',
+      })
+      await insertTestModerationReport({
+        reporterUserId: reporter.id,
+        entityType: 'post',
+        entityId: postId,
+        reason: 'spam',
+        createdAt,
+      })
+      await deleteTestPost(postId)
+
+      const options = {
+        limit: 1000,
+        sort: 'created_at_desc' as const,
+        beforeCursor: { id: timestampToUuidv7LowerBound(createdAt.getTime() + 1) },
+      }
+      const staff = await listModerationReports(options)
+      const member = await listRedactedModerationReports(options)
+      for (const reports of [staff.reports, member.reports]) {
+        const report = reports.find(row => row.entity_id === postId)
+        expect(report).toBeDefined()
+        expect(report).toMatchObject({
+          target_available: false,
+          target_label: '[deleted content]',
+          target_content: null,
+          target_path: null,
+        })
+        expect(JSON.stringify(report)).not.toContain(title)
+      }
     })
 
     it('supports sort asc', async () => {

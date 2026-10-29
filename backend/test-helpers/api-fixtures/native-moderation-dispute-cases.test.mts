@@ -67,6 +67,7 @@ describe('native moderation dispute fixtures', () => {
     const dispute = memberList.disputes[0]!
 
     expect(dispute.id).toBe('00000000-0000-7000-8000-000000000201')
+    expect(dispute.post_label).toBe('A disputed review')
     expect(dispute).toEqual(
       redactReviewDispute(
         staffList.disputes[0]! as unknown as Parameters<typeof redactReviewDispute>[0],
@@ -95,7 +96,13 @@ describe('native moderation dispute fixtures', () => {
 
     for (const key of ['GET:/api/v1/disputes#member', 'GET:/api/v1/disputes/:id#member']) {
       const contract = backendResponseContracts[key]!
-      expect(contract.schema.definitions.RedactedReviewDispute).toBeDefined()
+      const redactedSchema = contract.schema.definitions.RedactedReviewDispute
+      expect(redactedSchema?.type).toBe('object')
+      if (redactedSchema?.type !== 'object') throw new Error(`Invalid redacted schema for ${key}`)
+      expect(redactedSchema.properties.post_label).toEqual({
+        required: true,
+        schema: { type: 'string' },
+      })
       expect(contract.schema.root).toEqual(expect.any(Object))
       expect(JSON.stringify(contract.schema)).not.toContain('staff_context')
       expect(JSON.stringify(contract.schema)).not.toContain('disputant_user_id')

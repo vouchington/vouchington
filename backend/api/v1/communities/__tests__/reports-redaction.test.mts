@@ -7,6 +7,8 @@ import {
   insertTestModerationReport,
   insertTestPost,
   insertTestSystemModerationReport,
+  markTestPostDeletedBy,
+  softDeleteUser,
   setTestBanEvasionFlag,
 } from '@voucha/test-helpers'
 import type { Community } from '@services/communities/types'
@@ -105,5 +107,71 @@ describe('community moderation report redaction', () => {
 
     expect(report?.target_user_id).toBeNull()
     expect(report?.target_is_anonymous).toBeUndefined()
+  })
+
+  it('omits a deleted post report from community pending responses', async () => {
+    const title = `Deleted community report ${crypto.randomUUID()}`
+    const postId = await insertTestPost({
+      createdById: moderator.id,
+      slug: `deleted-community-report-${crypto.randomUUID()}`,
+      title,
+      markdown: 'Deleted private body',
+      communityId: community.id,
+    })
+    const reportId = await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: postId,
+    })
+    await markTestPostDeletedBy(postId, moderator.id)
+
+    for (const viewer of [moderator, siteModerator]) {
+      const request = createRequest()
+      await request.authenticateAs(viewer)
+      const response = await request
+        .get(`/api/v1/communities/${community.slug}/reports/pending`)
+        .expect(200)
+      const report = (response.body.reports as Array<Record<string, unknown>>).find(
+        entry => entry.id === reportId,
+      )
+      expect(report).toBeUndefined()
+    }
+  })
+
+  it('masks a deleted ban-evasion suspect before community responses', async () => {
+    const suspect = await createTestUser()
+    await insertTestCommunityMember({ communityId: community.id, userId: suspect.id })
+    await setTestBanEvasionFlag({
+      communityId: community.id,
+      userId: suspect.id,
+      sourceUserId: moderator.id,
+    })
+    const reportId = await insertTestSystemModerationReport(
+      'user',
+      suspect.id,
+      undefined,
+      undefined,
+      community.id,
+    )
+    await softDeleteUser(suspect.id)
+
+    for (const viewer of [moderator, siteModerator]) {
+      const request = createRequest()
+      await request.authenticateAs(viewer)
+      const response = await request
+        .get(`/api/v1/communities/${community.slug}/reports/pending`)
+        .expect(200)
+      const report = (response.body.reports as Array<Record<string, unknown>>).find(
+        entry => entry.id === reportId,
+      )
+      expect(report).toMatchObject({
+        target_available: false,
+        target_label: '[deleted content]',
+        target_content: null,
+        target_path: null,
+        admin_action_path: null,
+      })
+      expect(JSON.stringify(report)).not.toContain(suspect.username)
+    }
   })
 })

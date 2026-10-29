@@ -4,6 +4,7 @@ import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
 import type { CreateTopicClaimInput } from './parse.mts'
 import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
+import { getTopicClaimById } from './get.mts'
 
 export async function createTopicClaim(
   currentUserId: string,
@@ -89,7 +90,9 @@ export async function createTopicClaim(
   const result = rows[0] as (TopicClaim & { inserted: boolean }) | undefined
   assert(result, 500, 'Failed to create topic claim')
   const { inserted, ...claim } = result
-  return { claim: claim as TopicClaim, isDuplicate: !inserted }
+  const labelledClaim = await getTopicClaimById(claim.id, write)
+  assert(labelledClaim, 500, 'Claim disappeared after creation')
+  return { claim: labelledClaim, isDuplicate: !inserted }
 }
 
 interface ClaimTopic {

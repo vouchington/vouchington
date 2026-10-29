@@ -21789,6 +21789,9 @@
                                   "score": {
                                     "type": "number"
                                   },
+                                  "source_display_name": {
+                                    "$ref": "#/$defs/S2"
+                                  },
                                   "source_user_id": {
                                     "type": "string"
                                   },
@@ -21801,6 +21804,7 @@
                                   "community_slug",
                                   "flagged_at",
                                   "score",
+                                  "source_display_name",
                                   "source_user_id",
                                   "source_username"
                                 ],
@@ -21890,6 +21894,9 @@
                           "report_count": {
                             "type": "number"
                           },
+                          "reporter_display_name": {
+                            "$ref": "#/$defs/S2"
+                          },
                           "reporter_user_id": {
                             "type": "string"
                           },
@@ -21897,6 +21904,12 @@
                             "$ref": "#/$defs/S3"
                           },
                           "resolved_by_id": {
+                            "$ref": "#/$defs/S2"
+                          },
+                          "resolver_display_name": {
+                            "$ref": "#/$defs/S2"
+                          },
+                          "resolver_username": {
                             "$ref": "#/$defs/S2"
                           },
                           "reviewed_at": {
@@ -21983,6 +21996,8 @@
                           "reason",
                           "report_count",
                           "resolved_by_id",
+                          "resolver_display_name",
+                          "resolver_username",
                           "reviewed_at",
                           "status",
                           "target_available",
@@ -24509,6 +24524,9 @@
                         "reason": {
                           "$ref": "#/$defs/S3"
                         },
+                        "reporter_display_name": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "reporter_user_id": {
                           "type": "string"
                         },
@@ -24516,6 +24534,12 @@
                           "$ref": "#/$defs/S3"
                         },
                         "resolved_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolver_display_name": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolver_username": {
                           "$ref": "#/$defs/S1"
                         },
                         "reviewed_at": {
@@ -24533,6 +24557,8 @@
                         "id",
                         "reason",
                         "resolved_by_id",
+                        "resolver_display_name",
+                        "resolver_username",
                         "reviewed_at",
                         "status"
                       ],
@@ -25505,8 +25531,28 @@
                 "S1": {
                   "additionalProperties": false,
                   "properties": {
+                    "claimant_display_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "claimant_user_id": {
                       "type": "string"
+                    },
+                    "claimant_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     },
                     "claimed_role": {
                       "type": "string"
@@ -25590,6 +25636,10 @@
                         }
                       ]
                     },
+                    "state": {
+                      "enum": ["pending", "rejected", "revoked", "verified"],
+                      "type": "string"
+                    },
                     "submitted_at": {
                       "anyOf": [
                         {
@@ -25600,11 +25650,10 @@
                         }
                       ]
                     },
-                    "state": {
-                      "enum": ["pending", "rejected", "revoked", "verified"],
+                    "topic_id": {
                       "type": "string"
                     },
-                    "topic_id": {
+                    "topic_name": {
                       "type": "string"
                     },
                     "updated_at": {
@@ -25668,7 +25717,9 @@
                     }
                   },
                   "required": [
+                    "claimant_display_name",
                     "claimant_user_id",
+                    "claimant_username",
                     "claimed_role",
                     "created_at",
                     "domain_verified_at",
@@ -25680,9 +25731,10 @@
                     "revocation_reason",
                     "revoked_at",
                     "revoked_by_id",
-                    "submitted_at",
                     "state",
+                    "submitted_at",
                     "topic_id",
+                    "topic_name",
                     "updated_at",
                     "verification_hostname_id",
                     "verification_method",
@@ -25902,8 +25954,28 @@
                 "S1": {
                   "additionalProperties": false,
                   "properties": {
+                    "claimant_display_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "claimant_user_id": {
                       "type": "string"
+                    },
+                    "claimant_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     },
                     "claimed_role": {
                       "type": "string"
@@ -25987,6 +26059,10 @@
                         }
                       ]
                     },
+                    "state": {
+                      "enum": ["pending", "rejected", "revoked", "verified"],
+                      "type": "string"
+                    },
                     "submitted_at": {
                       "anyOf": [
                         {
@@ -25997,11 +26073,10 @@
                         }
                       ]
                     },
-                    "state": {
-                      "enum": ["pending", "rejected", "revoked", "verified"],
+                    "topic_id": {
                       "type": "string"
                     },
-                    "topic_id": {
+                    "topic_name": {
                       "type": "string"
                     },
                     "updated_at": {
@@ -26065,7 +26140,9 @@
                     }
                   },
                   "required": [
+                    "claimant_display_name",
                     "claimant_user_id",
+                    "claimant_username",
                     "claimed_role",
                     "created_at",
                     "domain_verified_at",
@@ -26077,9 +26154,10 @@
                     "revocation_reason",
                     "revoked_at",
                     "revoked_by_id",
-                    "submitted_at",
                     "state",
+                    "submitted_at",
                     "topic_id",
+                    "topic_name",
                     "updated_at",
                     "verification_hostname_id",
                     "verification_method",
@@ -28564,6 +28642,16 @@
                                                   "score": {
                                                     "type": "number"
                                                   },
+                                                  "source_display_name": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "null"
+                                                      },
+                                                      {
+                                                        "type": "string"
+                                                      }
+                                                    ]
+                                                  },
                                                   "source_user_id": {
                                                     "type": "string"
                                                   },
@@ -28583,6 +28671,7 @@
                                                   "community_slug",
                                                   "flagged_at",
                                                   "score",
+                                                  "source_display_name",
                                                   "source_user_id",
                                                   "source_username"
                                                 ],
@@ -28777,6 +28866,16 @@
                                           "report_count": {
                                             "type": "number"
                                           },
+                                          "reporter_display_name": {
+                                            "anyOf": [
+                                              {
+                                                "type": "null"
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
                                           "reporter_user_id": {
                                             "type": "string"
                                           },
@@ -28791,6 +28890,26 @@
                                             ]
                                           },
                                           "resolved_by_id": {
+                                            "anyOf": [
+                                              {
+                                                "type": "null"
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "resolver_display_name": {
+                                            "anyOf": [
+                                              {
+                                                "type": "null"
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "resolver_username": {
                                             "anyOf": [
                                               {
                                                 "type": "null"
@@ -28892,14 +29011,7 @@
                                             "type": "boolean"
                                           },
                                           "target_label": {
-                                            "anyOf": [
-                                              {
-                                                "type": "null"
-                                              },
-                                              {
-                                                "type": "string"
-                                              }
-                                            ]
+                                            "type": "string"
                                           },
                                           "target_path": {
                                             "anyOf": [
@@ -28927,6 +29039,7 @@
                                         },
                                         "required": [
                                           "admin_action_path",
+                                          "automatic_judgement_enabled",
                                           "case_id",
                                           "created_at",
                                           "entity_id",
@@ -28938,8 +29051,11 @@
                                           "post_moderation_context",
                                           "reason",
                                           "report_count",
+                                          "reporter_display_name",
                                           "reporter_user_id",
                                           "resolved_by_id",
+                                          "resolver_display_name",
+                                          "resolver_username",
                                           "reviewed_at",
                                           "status",
                                           "target_available",
@@ -28947,8 +29063,7 @@
                                           "target_is_restricted",
                                           "target_label",
                                           "target_path",
-                                          "target_user_id",
-                                          "automatic_judgement_enabled"
+                                          "target_user_id"
                                         ],
                                         "type": "object"
                                       },
@@ -29294,6 +29409,16 @@
                                             "score": {
                                               "type": "number"
                                             },
+                                            "source_display_name": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "null"
+                                                },
+                                                {
+                                                  "type": "string"
+                                                }
+                                              ]
+                                            },
                                             "source_user_id": {
                                               "type": "string"
                                             },
@@ -29313,6 +29438,7 @@
                                             "community_slug",
                                             "flagged_at",
                                             "score",
+                                            "source_display_name",
                                             "source_user_id",
                                             "source_username"
                                           ],
@@ -29502,6 +29628,16 @@
                                     "report_count": {
                                       "type": "number"
                                     },
+                                    "reporter_display_name": {
+                                      "anyOf": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
                                     "reporter_user_id": {
                                       "type": "string"
                                     },
@@ -29516,6 +29652,26 @@
                                       ]
                                     },
                                     "resolved_by_id": {
+                                      "anyOf": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "resolver_display_name": {
+                                      "anyOf": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "resolver_username": {
                                       "anyOf": [
                                         {
                                           "type": "null"
@@ -29612,14 +29768,7 @@
                                       "type": "boolean"
                                     },
                                     "target_label": {
-                                      "anyOf": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
+                                      "type": "string"
                                     },
                                     "target_path": {
                                       "anyOf": [
@@ -29647,6 +29796,7 @@
                                   },
                                   "required": [
                                     "admin_action_path",
+                                    "automatic_judgement_enabled",
                                     "case_id",
                                     "created_at",
                                     "entity_id",
@@ -29658,8 +29808,11 @@
                                     "post_moderation_context",
                                     "reason",
                                     "report_count",
+                                    "reporter_display_name",
                                     "reporter_user_id",
                                     "resolved_by_id",
+                                    "resolver_display_name",
+                                    "resolver_username",
                                     "reviewed_at",
                                     "status",
                                     "target_available",
@@ -29667,8 +29820,7 @@
                                     "target_is_restricted",
                                     "target_label",
                                     "target_path",
-                                    "target_user_id",
-                                    "automatic_judgement_enabled"
+                                    "target_user_id"
                                   ],
                                   "type": "object"
                                 },
@@ -30041,14 +30193,7 @@
                                 "type": "boolean"
                               },
                               "target_label": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string"
-                                  }
-                                ]
+                                "type": "string"
                               },
                               "target_path": {
                                 "anyOf": [
@@ -30166,6 +30311,16 @@
                                       "score": {
                                         "type": "number"
                                       },
+                                      "source_display_name": {
+                                        "anyOf": [
+                                          {
+                                            "type": "null"
+                                          },
+                                          {
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
                                       "source_user_id": {
                                         "type": "string"
                                       },
@@ -30185,6 +30340,7 @@
                                       "community_slug",
                                       "flagged_at",
                                       "score",
+                                      "source_display_name",
                                       "source_user_id",
                                       "source_username"
                                     ],
@@ -30374,6 +30530,16 @@
                               "report_count": {
                                 "type": "number"
                               },
+                              "reporter_display_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
                               "reporter_user_id": {
                                 "type": "string"
                               },
@@ -30388,6 +30554,26 @@
                                 ]
                               },
                               "resolved_by_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "resolver_display_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "resolver_username": {
                                 "anyOf": [
                                   {
                                     "type": "null"
@@ -30484,14 +30670,7 @@
                                 "type": "boolean"
                               },
                               "target_label": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string"
-                                  }
-                                ]
+                                "type": "string"
                               },
                               "target_path": {
                                 "anyOf": [
@@ -30519,6 +30698,7 @@
                             },
                             "required": [
                               "admin_action_path",
+                              "automatic_judgement_enabled",
                               "case_id",
                               "created_at",
                               "entity_id",
@@ -30530,8 +30710,11 @@
                               "post_moderation_context",
                               "reason",
                               "report_count",
+                              "reporter_display_name",
                               "reporter_user_id",
                               "resolved_by_id",
+                              "resolver_display_name",
+                              "resolver_username",
                               "reviewed_at",
                               "status",
                               "target_available",
@@ -30539,8 +30722,7 @@
                               "target_is_restricted",
                               "target_label",
                               "target_path",
-                              "target_user_id",
-                              "automatic_judgement_enabled"
+                              "target_user_id"
                             ],
                             "type": "object"
                           },
@@ -30618,36 +30800,31 @@
                       "type": "boolean"
                     },
                     "note": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "reason": {
+                      "$ref": "#/$defs/S2"
+                    },
+                    "reporter_display_name": {
                       "$ref": "#/$defs/S1"
                     },
                     "reporter_user_id": {
                       "type": "string"
                     },
                     "reporter_username": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     },
                     "resolved_by_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
+                    },
+                    "resolver_display_name": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "resolver_username": {
+                      "$ref": "#/$defs/S1"
                     },
                     "reviewed_at": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
                     },
                     "status": {
                       "enum": ["actioned", "dismissed", "pending", "reviewed"],
@@ -30662,8 +30839,12 @@
                     "id",
                     "note",
                     "reason",
+                    "reporter_display_name",
                     "reporter_user_id",
+                    "reporter_username",
                     "resolved_by_id",
+                    "resolver_display_name",
+                    "resolver_username",
                     "reviewed_at",
                     "status"
                   ],
@@ -30674,6 +30855,16 @@
               "type": "object",
               "$defs": {
                 "S1": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "S2": {
                   "anyOf": [
                     {
                       "type": "string"
@@ -30906,6 +31097,9 @@
                         "required": ["disposition", "evidence_summary", "reason_codes"],
                         "type": "object"
                       },
+                      "post_label": {
+                        "type": "string"
+                      },
                       "post_type": {
                         "type": "string"
                       },
@@ -30936,6 +31130,7 @@
                       "markdown_preview",
                       "media_reveal",
                       "moderation_summary",
+                      "post_label",
                       "post_type",
                       "root_post_id",
                       "root_post_type",
@@ -31122,8 +31317,14 @@
                   "items": {
                     "additionalProperties": false,
                     "properties": {
+                      "claimant_display_name": {
+                        "$ref": "#/$defs/S1"
+                      },
                       "claimant_user_id": {
                         "type": "string"
+                      },
+                      "claimant_username": {
+                        "$ref": "#/$defs/S1"
                       },
                       "claimed_role": {
                         "$ref": "#/$defs/S2"
@@ -31164,6 +31365,9 @@
                       "topic_id": {
                         "type": "string"
                       },
+                      "topic_name": {
+                        "type": "string"
+                      },
                       "updated_at": {
                         "type": "string"
                       },
@@ -31197,7 +31401,9 @@
                       }
                     },
                     "required": [
+                      "claimant_display_name",
                       "claimant_user_id",
+                      "claimant_username",
                       "claimed_role",
                       "created_at",
                       "domain_verified_at",
@@ -31211,6 +31417,7 @@
                       "revoked_by_id",
                       "submitted_at",
                       "topic_id",
+                      "topic_name",
                       "updated_at",
                       "verification_hostname_id",
                       "verification_method",
@@ -31287,8 +31494,14 @@
                 "claim": {
                   "additionalProperties": false,
                   "properties": {
+                    "claimant_display_name": {
+                      "$ref": "#/$defs/S1"
+                    },
                     "claimant_user_id": {
                       "type": "string"
+                    },
+                    "claimant_username": {
+                      "$ref": "#/$defs/S1"
                     },
                     "claimed_role": {
                       "$ref": "#/$defs/S2"
@@ -31329,6 +31542,9 @@
                     "topic_id": {
                       "type": "string"
                     },
+                    "topic_name": {
+                      "type": "string"
+                    },
                     "updated_at": {
                       "type": "string"
                     },
@@ -31362,7 +31578,9 @@
                     }
                   },
                   "required": [
+                    "claimant_display_name",
                     "claimant_user_id",
+                    "claimant_username",
                     "claimed_role",
                     "created_at",
                     "domain_verified_at",
@@ -31376,6 +31594,7 @@
                     "revoked_by_id",
                     "submitted_at",
                     "topic_id",
+                    "topic_name",
                     "updated_at",
                     "verification_hostname_id",
                     "verification_method",
@@ -31456,8 +31675,14 @@
                 "claim": {
                   "additionalProperties": false,
                   "properties": {
+                    "claimant_display_name": {
+                      "$ref": "#/$defs/S1"
+                    },
                     "claimant_user_id": {
                       "type": "string"
+                    },
+                    "claimant_username": {
+                      "$ref": "#/$defs/S1"
                     },
                     "claimed_role": {
                       "$ref": "#/$defs/S2"
@@ -31498,6 +31723,9 @@
                     "topic_id": {
                       "type": "string"
                     },
+                    "topic_name": {
+                      "type": "string"
+                    },
                     "updated_at": {
                       "type": "string"
                     },
@@ -31531,7 +31759,9 @@
                     }
                   },
                   "required": [
+                    "claimant_display_name",
                     "claimant_user_id",
+                    "claimant_username",
                     "claimed_role",
                     "created_at",
                     "domain_verified_at",
@@ -31545,6 +31775,7 @@
                     "revoked_by_id",
                     "submitted_at",
                     "topic_id",
+                    "topic_name",
                     "updated_at",
                     "verification_hostname_id",
                     "verification_method",
@@ -31625,8 +31856,14 @@
                 "claim": {
                   "additionalProperties": false,
                   "properties": {
+                    "claimant_display_name": {
+                      "$ref": "#/$defs/S1"
+                    },
                     "claimant_user_id": {
                       "type": "string"
+                    },
+                    "claimant_username": {
+                      "$ref": "#/$defs/S1"
                     },
                     "claimed_role": {
                       "$ref": "#/$defs/S2"
@@ -31667,6 +31904,9 @@
                     "topic_id": {
                       "type": "string"
                     },
+                    "topic_name": {
+                      "type": "string"
+                    },
                     "updated_at": {
                       "type": "string"
                     },
@@ -31700,7 +31940,9 @@
                     }
                   },
                   "required": [
+                    "claimant_display_name",
                     "claimant_user_id",
+                    "claimant_username",
                     "claimed_role",
                     "created_at",
                     "domain_verified_at",
@@ -31714,6 +31956,7 @@
                     "revoked_by_id",
                     "submitted_at",
                     "topic_id",
+                    "topic_name",
                     "updated_at",
                     "verification_hostname_id",
                     "verification_method",
@@ -34023,8 +34266,28 @@
                   "items": {
                     "additionalProperties": false,
                     "properties": {
+                      "author_display_name": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
                       "author_user_id": {
                         "type": "string"
+                      },
+                      "author_username": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
                       },
                       "body": {
                         "anyOf": [
@@ -34037,6 +34300,16 @@
                         ]
                       },
                       "community_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "community_name": {
                         "anyOf": [
                           {
                             "type": "null"
@@ -34067,9 +34340,12 @@
                       }
                     },
                     "required": [
+                      "author_display_name",
                       "author_user_id",
+                      "author_username",
                       "body",
                       "community_id",
+                      "community_name",
                       "created_at",
                       "deleted_at",
                       "id",
@@ -35033,7 +35309,20 @@
                   "additionalProperties": false,
                   "properties": {
                     "page_info": {
-                      "$ref": "#/$defs/S2"
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "$ref": "#/$defs/S2"
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
                     },
                     "results": {
                       "items": {
@@ -35043,16 +35332,26 @@
                             "type": "string"
                           },
                           "details": {
-                            "$ref": "#/$defs/S3"
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "entity_label": {
+                            "type": "string"
                           },
                           "flag_type": {
                             "const": "mass_report_suspected"
                           },
                           "hostname": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           },
                           "hostname_id": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           },
                           "id": {
                             "type": "string"
@@ -35061,10 +35360,13 @@
                             "type": "number"
                           },
                           "post_id": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           },
                           "reported_user_id": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
+                          },
+                          "reported_username": {
+                            "$ref": "#/$defs/S2"
                           },
                           "reporter_count": {
                             "type": "number"
@@ -35083,18 +35385,25 @@
                             ]
                           },
                           "resolved_at": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           },
                           "resolved_by_id": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
+                          },
+                          "resolver_display_name": {
+                            "$ref": "#/$defs/S2"
+                          },
+                          "resolver_username": {
+                            "$ref": "#/$defs/S2"
                           },
                           "rss_feed_item_id": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           }
                         },
                         "required": [
                           "created_at",
                           "details",
+                          "entity_label",
                           "flag_type",
                           "hostname",
                           "hostname_id",
@@ -35102,10 +35411,13 @@
                           "new_account_reporter_percent",
                           "post_id",
                           "reported_user_id",
+                          "reported_username",
                           "reporter_count",
                           "resolution",
                           "resolved_at",
                           "resolved_by_id",
+                          "resolver_display_name",
+                          "resolver_username",
                           "rss_feed_item_id"
                         ],
                         "type": "object"
@@ -35120,184 +35432,244 @@
                   "type": "object",
                   "anyOf": [
                     {
-                      "additionalProperties": false,
-                      "properties": {
-                        "page_info": {
-                          "$ref": "#/$defs/S2"
-                        },
-                        "results": {
-                          "items": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "created_at": {
-                                "type": "string"
-                              },
-                              "created_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "id": {
-                                "type": "string"
-                              },
-                              "reason": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "review_due_at": {
-                                "type": "string"
-                              },
-                              "reviewed_at": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "reviewed_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "revoked_at": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "revoked_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "source_flag_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              },
-                              "user_id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "created_at",
-                              "created_by_id",
-                              "id",
-                              "reason",
-                              "review_due_at",
-                              "reviewed_at",
-                              "reviewed_by_id",
-                              "revoked_at",
-                              "revoked_by_id",
-                              "source_flag_id",
-                              "updated_at",
-                              "user_id"
-                            ],
-                            "type": "object"
-                          },
-                          "type": "array"
-                        }
-                      },
-                      "required": ["page_info", "results"],
-                      "type": "object"
+                      "$ref": "#/$defs/S1"
                     },
                     {
-                      "additionalProperties": false,
-                      "properties": {
-                        "results": {
-                          "items": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "created_at": {
-                                "type": "string"
-                              },
-                              "created_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "id": {
-                                "type": "string"
-                              },
-                              "reason": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "review_due_at": {
-                                "type": "string"
-                              },
-                              "reviewed_at": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "reviewed_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "revoked_at": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "revoked_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "source_flag_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              },
-                              "user_id": {
-                                "type": "string"
-                              },
-                              "user_username": {
-                                "$ref": "#/$defs/S1"
-                              }
-                            },
-                            "required": [
-                              "created_at",
-                              "created_by_id",
-                              "id",
-                              "reason",
-                              "review_due_at",
-                              "reviewed_at",
-                              "reviewed_by_id",
-                              "revoked_at",
-                              "revoked_by_id",
-                              "source_flag_id",
-                              "updated_at",
-                              "user_id",
-                              "user_username"
-                            ],
-                            "type": "object"
-                          },
-                          "type": "array"
-                        },
-                        "page_info": {
-                          "$ref": "#/$defs/S2"
-                        }
-                      },
-                      "required": ["page_info", "results"],
-                      "type": "object"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 }
               ],
               "$defs": {
                 "S1": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "S2": {
                   "additionalProperties": false,
                   "properties": {
-                    "end_cursor": {
-                      "$ref": "#/$defs/S1"
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
                     },
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "$ref": "#/$defs/S1"
+                    "results": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "created_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "creator_display_name": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "creator_username": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "review_due_at": {
+                            "type": "string"
+                          },
+                          "reviewed_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "reviewed_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "revoked_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "revoked_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "revoker_display_name": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "revoker_username": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "source_flag_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "source_flag_type": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          },
+                          "user_display_name": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "user_id": {
+                            "type": "string"
+                          },
+                          "user_username": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "created_at",
+                          "created_by_id",
+                          "creator_display_name",
+                          "creator_username",
+                          "id",
+                          "reason",
+                          "review_due_at",
+                          "reviewed_at",
+                          "reviewed_by_id",
+                          "revoked_at",
+                          "revoked_by_id",
+                          "revoker_display_name",
+                          "revoker_username",
+                          "source_flag_id",
+                          "source_flag_type",
+                          "updated_at",
+                          "user_display_name",
+                          "user_id",
+                          "user_username"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
                     }
                   },
-                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "required": ["page_info", "results"],
                   "type": "object"
                 },
-                "S3": {
+                "S2": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "null"
                     },
                     {
-                      "type": "null"
+                      "type": "string"
                     }
                   ]
                 }
@@ -35403,6 +35775,9 @@
                             }
                           ]
                         },
+                        "entity_label": {
+                          "type": "string"
+                        },
                         "flag_type": {
                           "const": "mass_report_suspected"
                         },
@@ -35422,6 +35797,9 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reported_user_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "reported_username": {
                           "$ref": "#/$defs/S1"
                         },
                         "reporter_count": {
@@ -35446,6 +35824,12 @@
                         "resolved_by_id": {
                           "$ref": "#/$defs/S1"
                         },
+                        "resolver_display_name": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolver_username": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "rss_feed_item_id": {
                           "$ref": "#/$defs/S1"
                         }
@@ -35453,6 +35837,7 @@
                       "required": [
                         "created_at",
                         "details",
+                        "entity_label",
                         "flag_type",
                         "hostname",
                         "hostname_id",
@@ -35460,10 +35845,13 @@
                         "new_account_reporter_percent",
                         "post_id",
                         "reported_user_id",
+                        "reported_username",
                         "reporter_count",
                         "resolution",
                         "resolved_at",
                         "resolved_by_id",
+                        "resolver_display_name",
+                        "resolver_username",
                         "rss_feed_item_id"
                       ],
                       "type": "object"
@@ -35493,6 +35881,9 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "entity_label": {
+                          "type": "string"
                         },
                         "entity_relation_id": {
                           "$ref": "#/$defs/S1"
@@ -35535,6 +35926,12 @@
                         "resolved_by_id": {
                           "$ref": "#/$defs/S1"
                         },
+                        "resolver_display_name": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolver_username": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "rss_feed_item_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35546,6 +35943,7 @@
                         "agent_moderation_id",
                         "created_at",
                         "details",
+                        "entity_label",
                         "entity_relation_id",
                         "flag_type",
                         "hostname",
@@ -35555,6 +35953,8 @@
                         "resolution",
                         "resolved_at",
                         "resolved_by_id",
+                        "resolver_display_name",
+                        "resolver_username",
                         "rss_feed_item_id",
                         "topic_id"
                       ],
@@ -35671,6 +36071,9 @@
                             }
                           ]
                         },
+                        "entity_label": {
+                          "type": "string"
+                        },
                         "flag_type": {
                           "const": "mass_report_suspected"
                         },
@@ -35690,6 +36093,9 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reported_user_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "reported_username": {
                           "$ref": "#/$defs/S1"
                         },
                         "reporter_count": {
@@ -35714,6 +36120,12 @@
                         "resolved_by_id": {
                           "$ref": "#/$defs/S1"
                         },
+                        "resolver_display_name": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolver_username": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "rss_feed_item_id": {
                           "$ref": "#/$defs/S1"
                         }
@@ -35721,6 +36133,7 @@
                       "required": [
                         "created_at",
                         "details",
+                        "entity_label",
                         "flag_type",
                         "hostname",
                         "hostname_id",
@@ -35728,10 +36141,13 @@
                         "new_account_reporter_percent",
                         "post_id",
                         "reported_user_id",
+                        "reported_username",
                         "reporter_count",
                         "resolution",
                         "resolved_at",
                         "resolved_by_id",
+                        "resolver_display_name",
+                        "resolver_username",
                         "rss_feed_item_id"
                       ],
                       "type": "object"
@@ -35781,6 +36197,9 @@
                             }
                           ]
                         },
+                        "entity_label": {
+                          "type": "string"
+                        },
                         "entity_relation_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35822,6 +36241,12 @@
                         "resolved_by_id": {
                           "$ref": "#/$defs/S1"
                         },
+                        "resolver_display_name": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolver_username": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "rss_feed_item_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35833,6 +36258,7 @@
                         "agent_moderation_id",
                         "created_at",
                         "details",
+                        "entity_label",
                         "entity_relation_id",
                         "flag_type",
                         "hostname",
@@ -35842,6 +36268,8 @@
                         "resolution",
                         "resolved_at",
                         "resolved_by_id",
+                        "resolver_display_name",
+                        "resolver_username",
                         "rss_feed_item_id",
                         "topic_id"
                       ],
@@ -35999,7 +36427,34 @@
                           "type": "string"
                         },
                         "created_by_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "creator_display_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "creator_username": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "id": {
                           "type": "string"
@@ -36060,7 +36515,47 @@
                             }
                           ]
                         },
+                        "revoker_display_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "revoker_username": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
                         "source_flag_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "source_flag_type": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "user_display_name": {
                           "anyOf": [
                             {
                               "type": "null"
@@ -36072,11 +36567,23 @@
                         },
                         "user_id": {
                           "type": "string"
+                        },
+                        "user_username": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
                       },
                       "required": [
                         "created_at",
                         "created_by_id",
+                        "creator_display_name",
+                        "creator_username",
                         "id",
                         "penalty_multiplier",
                         "reason",
@@ -36085,8 +36592,13 @@
                         "reviewed_by_id",
                         "revoked_at",
                         "revoked_by_id",
+                        "revoker_display_name",
+                        "revoker_username",
                         "source_flag_id",
-                        "user_id"
+                        "source_flag_type",
+                        "user_display_name",
+                        "user_id",
+                        "user_username"
                       ],
                       "type": "object"
                     }
@@ -36101,6 +36613,26 @@
                       "type": "string"
                     },
                     "created_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "creator_display_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "creator_username": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -36166,7 +36698,37 @@
                         }
                       ]
                     },
+                    "revoker_display_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revoker_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "source_flag_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "source_flag_type": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -36179,13 +36741,35 @@
                     "updated_at": {
                       "type": "string"
                     },
+                    "user_display_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "user_id": {
                       "type": "string"
+                    },
+                    "user_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "created_at",
                     "created_by_id",
+                    "creator_display_name",
+                    "creator_username",
                     "id",
                     "reason",
                     "review_due_at",
@@ -36193,9 +36777,14 @@
                     "reviewed_by_id",
                     "revoked_at",
                     "revoked_by_id",
+                    "revoker_display_name",
+                    "revoker_username",
                     "source_flag_id",
+                    "source_flag_type",
                     "updated_at",
-                    "user_id"
+                    "user_display_name",
+                    "user_id",
+                    "user_username"
                   ],
                   "type": "object"
                 }
@@ -36337,6 +36926,9 @@
                           "details": {
                             "$ref": "#/$defs/S3"
                           },
+                          "entity_label": {
+                            "type": "string"
+                          },
                           "entity_relation_id": {
                             "$ref": "#/$defs/S1"
                           },
@@ -36378,6 +36970,12 @@
                           "resolved_by_id": {
                             "$ref": "#/$defs/S1"
                           },
+                          "resolver_display_name": {
+                            "$ref": "#/$defs/S1"
+                          },
+                          "resolver_username": {
+                            "$ref": "#/$defs/S1"
+                          },
                           "rss_feed_item_id": {
                             "$ref": "#/$defs/S1"
                           },
@@ -36389,6 +36987,7 @@
                           "agent_moderation_id",
                           "created_at",
                           "details",
+                          "entity_label",
                           "entity_relation_id",
                           "flag_type",
                           "hostname",
@@ -36398,6 +36997,8 @@
                           "resolution",
                           "resolved_at",
                           "resolved_by_id",
+                          "resolver_display_name",
+                          "resolver_username",
                           "rss_feed_item_id",
                           "topic_id"
                         ],
@@ -36439,7 +37040,13 @@
                                 "type": "string"
                               },
                               "created_by_id": {
-                                "type": "string"
+                                "$ref": "#/$defs/S1"
+                              },
+                              "creator_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "creator_username": {
+                                "$ref": "#/$defs/S1"
                               },
                               "id": {
                                 "type": "string"
@@ -36465,16 +37072,33 @@
                               "revoked_by_id": {
                                 "$ref": "#/$defs/S1"
                               },
+                              "revoker_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoker_username": {
+                                "$ref": "#/$defs/S1"
+                              },
                               "source_flag_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "source_flag_type": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "user_display_name": {
                                 "$ref": "#/$defs/S1"
                               },
                               "user_id": {
                                 "type": "string"
+                              },
+                              "user_username": {
+                                "$ref": "#/$defs/S1"
                               }
                             },
                             "required": [
                               "created_at",
                               "created_by_id",
+                              "creator_display_name",
+                              "creator_username",
                               "id",
                               "penalty_multiplier",
                               "reason",
@@ -36483,8 +37107,13 @@
                               "reviewed_by_id",
                               "revoked_at",
                               "revoked_by_id",
+                              "revoker_display_name",
+                              "revoker_username",
                               "source_flag_id",
-                              "user_id"
+                              "source_flag_type",
+                              "user_display_name",
+                              "user_id",
+                              "user_username"
                             ],
                             "type": "object"
                           },
@@ -36507,6 +37136,12 @@
                               "created_by_id": {
                                 "type": "string"
                               },
+                              "creator_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "creator_username": {
+                                "$ref": "#/$defs/S1"
+                              },
                               "id": {
                                 "type": "string"
                               },
@@ -36531,7 +37166,19 @@
                               "revoked_by_id": {
                                 "$ref": "#/$defs/S1"
                               },
+                              "revoker_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoker_username": {
+                                "$ref": "#/$defs/S1"
+                              },
                               "source_flag_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "source_flag_type": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "user_display_name": {
                                 "$ref": "#/$defs/S1"
                               },
                               "user_id": {
@@ -36544,6 +37191,8 @@
                             "required": [
                               "created_at",
                               "created_by_id",
+                              "creator_display_name",
+                              "creator_username",
                               "id",
                               "penalty_multiplier",
                               "reason",
@@ -36552,7 +37201,11 @@
                               "reviewed_by_id",
                               "revoked_at",
                               "revoked_by_id",
+                              "revoker_display_name",
+                              "revoker_username",
                               "source_flag_id",
+                              "source_flag_type",
+                              "user_display_name",
                               "user_id",
                               "user_username"
                             ],
@@ -38300,6 +38953,9 @@
                     "post_id": {
                       "type": "string"
                     },
+                    "post_label": {
+                      "type": "string"
+                    },
                     "public_response": {
                       "anyOf": [
                         {
@@ -38577,6 +39233,7 @@
                     }
                   },
                   "required": [
+                    "ai_draft_requested_run_id",
                     "ai_draft_run_id",
                     "ai_drafted_at",
                     "ai_internal_response",
@@ -38595,6 +39252,7 @@
                     "model",
                     "post_content",
                     "post_id",
+                    "post_label",
                     "public_response",
                     "reason",
                     "recommended_action",
@@ -38604,8 +39262,7 @@
                     "sent_at",
                     "status",
                     "topic_id",
-                    "updated_at",
-                    "ai_draft_requested_run_id"
+                    "updated_at"
                   ],
                   "type": "object"
                 },
@@ -38676,6 +39333,9 @@
                       ]
                     },
                     "post_id": {
+                      "type": "string"
+                    },
+                    "post_label": {
                       "type": "string"
                     },
                     "public_response": {
@@ -38754,6 +39414,7 @@
                     "id",
                     "post_content",
                     "post_id",
+                    "post_label",
                     "public_response",
                     "reason",
                     "resolution_action",
@@ -39287,6 +39948,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -39424,6 +40088,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",
@@ -40027,6 +40692,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -40164,6 +40832,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",
@@ -40767,6 +41436,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -40904,6 +41576,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",
@@ -41611,6 +42284,9 @@
                         "post_id": {
                           "type": "string"
                         },
+                        "post_label": {
+                          "type": "string"
+                        },
                         "public_response": {
                           "$ref": "#/$defs/S2"
                         },
@@ -41748,6 +42424,7 @@
                         "model",
                         "post_content",
                         "post_id",
+                        "post_label",
                         "public_response",
                         "reason",
                         "recommended_action",

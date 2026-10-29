@@ -27,6 +27,31 @@ interface Props {
   revealDisabled: boolean
 }
 
+function ReviewQueuePostTitle({
+  post,
+  fallback,
+}: {
+  post: AdminReviewQueuePost
+  fallback: string
+}) {
+  const href = getAdminReviewQueuePostHref(post)
+  const content = {
+    text: post.post_label,
+    declared_language: post.declared_language,
+    lingua_rs_detected_language: post.lingua_rs_detected_language,
+  }
+  return (
+    <PostContentText
+      as={href ? Link : 'span'}
+      {...(href ? { href, prefetch: false } : {})}
+      content={content}
+      fallback={fallback}
+      className={`font-medium text-foreground${href ? ' hover:underline' : ''}`}
+      data-pw='review-queue-post-title'
+    />
+  )
+}
+
 export function ReviewQueueTable({
   posts,
   actionPostId,
@@ -62,18 +87,9 @@ export function ReviewQueueTable({
             posts.map(post => (
               <TableRow key={post.id}>
                 <TableCell className='max-w-xl'>
-                  <PostContentText
-                    as={Link}
-                    content={{
-                      text: post.title,
-                      declared_language: post.declared_language,
-                      lingua_rs_detected_language: post.lingua_rs_detected_language,
-                    }}
+                  <ReviewQueuePostTitle
+                    post={post}
                     fallback={t('extracted.reviewQueue.reviewQueueTable.untitledPost_4d5e6f71')}
-                    href={getAdminReviewQueuePostHref(post)}
-                    className='font-medium text-foreground hover:underline'
-                    prefetch={false}
-                    data-pw='review-queue-post-title'
                   />
                   <PostContentText
                     as='div'
@@ -96,7 +112,6 @@ export function ReviewQueueTable({
                   <div className='mt-2 flex items-center gap-2'>
                     <PostTypeBadge postType={post.post_type} />
                     <ModerationSlaBadge createdAt={post.created_at} />
-                    <span className='text-xs text-muted-foreground'>{post.id}</span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -114,7 +129,7 @@ export function ReviewQueueTable({
                       aria-label={t(
                         'extracted.reviewQueue.reviewQueueTable.approvePostlabel_98391264',
                         {
-                          postLabel: post.title || post.id,
+                          postLabel: post.post_label,
                         },
                       )}
                       data-pw='review-queue-approve'
@@ -130,7 +145,7 @@ export function ReviewQueueTable({
                       aria-label={t(
                         'extracted.reviewQueue.reviewQueueTable.rejectPostlabel_2a193ad2',
                         {
-                          postLabel: post.title || post.id,
+                          postLabel: post.post_label,
                         },
                       )}
                       data-pw='review-queue-reject'
@@ -145,7 +160,7 @@ export function ReviewQueueTable({
                       size='icon'
                       aria-label={t(
                         'extracted.reviewQueue.reviewQueueTable.markForReReviewPostlabel_55c7a8c3',
-                        { postLabel: post.title || post.id },
+                        { postLabel: post.post_label },
                       )}
                       data-pw='mark-for-review'
                       disabled={actionPostId === post.id || post.clearance_status === 'in_review'}

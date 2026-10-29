@@ -11,32 +11,43 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { userHref } from '@/lib/links/entity-href'
+import { createUserPathname } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 type IntegrityFlagActionDomain = 'report' | 'vote'
 
 export function IntegrityFlagResolvedActor({
   resolvedAt,
   resolvedById,
+  resolverUsername,
+  resolverDisplayName,
 }: {
   resolvedAt: string
   resolvedById: string | null
+  resolverUsername: string | null
+  resolverDisplayName: string | null
 }) {
   const t = useTranslations()
+  const actorLabel = getUserLabel(
+    { username: resolverUsername, display_account: { name: resolverDisplayName } },
+    t('shared.user.deletedUser'),
+  )
   return (
     <div className='text-xs text-muted-foreground'>
       <time dateTime={resolvedAt}>{formatUtcDate(resolvedAt)}</time>
-      {resolvedById ? (
+      {resolvedById && resolverUsername ? (
         <Link
-          href={userHref({ id: resolvedById })}
+          href={createUserPathname(resolverUsername)}
           prefetch={false}
           className='block font-mono text-link hover:underline'
         >
           {t('extracted.flags.integrityPenalties.byActor_3cba3612', {
-            actor: resolvedById,
+            actor: actorLabel,
           })}
         </Link>
+      ) : resolvedById ? (
+        <span>{actorLabel}</span>
       ) : null}
     </div>
   )

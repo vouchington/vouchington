@@ -48,7 +48,12 @@ const report = () => {
     ...schema,
     properties: { ...properties },
     required: (schema['required'] as string[]).filter(
-      key => key !== 'reporter_user_id' && key !== 'note' && key !== 'case_id',
+      key =>
+        key !== 'reporter_user_id' &&
+        key !== 'reporter_username' &&
+        key !== 'reporter_display_name' &&
+        key !== 'note' &&
+        key !== 'case_id',
     ),
   }
 }

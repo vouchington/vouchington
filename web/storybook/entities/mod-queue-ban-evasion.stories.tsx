@@ -20,6 +20,7 @@ const banEvasion: CommunityBanEvasionContext = {
   community_slug: 'credit-cards',
   source_user_id: 'user-source-1',
   source_username: 'original-user',
+  source_display_name: null,
   score: 0.87,
   flagged_at: '2026-05-25T12:00:00.000Z',
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityBanEvasionContext } from '@/types/api-responses'
 
@@ -19,13 +19,14 @@ vi.mock(import('@/lib/on-error'), () => ({
   default: mockOnError,
 }))
 
-import { ModQueueBanEvasionActions } from '../mod-queue-ban-evasion'
+import { ModQueueBanEvasionActions, ModQueueBanEvasionInfo } from '../mod-queue-ban-evasion'
 
 const banEvasion: CommunityBanEvasionContext = {
   community_id: 'community-1',
   community_slug: 'test-community',
   source_user_id: 'source-user-1',
   source_username: 'banned-user',
+  source_display_name: null,
   score: 0.82,
   flagged_at: '2026-05-31T06:30:00.000Z',
 }
@@ -48,6 +49,7 @@ function renderRedactedActions() {
       banEvasion={{
         community_id: 'community-1',
         community_slug: 'test-community',
+        source_display_name: null,
         flagged_at: '2026-05-31T06:30:00.000Z',
       }}
       entityId='user-suspect'
@@ -133,6 +135,27 @@ describe('ModQueueBanEvasionActions', () => {
       expect(mockOnError).toHaveBeenCalledWith(err, {
         fallback: 'Failed to dismiss ban-evasion flag',
       }),
+    )
+  })
+})
+
+describe('ModQueueBanEvasionInfo', () => {
+  it('shows a display name without a username prefix and keeps the username link', () => {
+    const { rerender } = render(
+      <ModQueueBanEvasionInfo
+        banEvasion={{ ...banEvasion, source_display_name: 'Banned Member' }}
+      />,
+    )
+    expect(screen.getByRole('link', { name: 'Banned Member' })).toHaveAttribute(
+      'href',
+      '/user/banned-user',
+    )
+    expect(screen.queryByText('@Banned Member')).not.toBeInTheDocument()
+
+    rerender(<ModQueueBanEvasionInfo banEvasion={banEvasion} />)
+    expect(screen.getByRole('link', { name: 'banned-user' })).toHaveAttribute(
+      'href',
+      '/user/banned-user',
     )
   })
 })

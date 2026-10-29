@@ -10,6 +10,7 @@ import {
   type TopicClaimVerificationMethod,
 } from './config.mts'
 import type { TopicClaimWriteContext } from './require-on-topic.mts'
+import { getTopicClaimById } from './get.mts'
 
 type VerifyTopicClaimDomainDeps = {
   resolveTxtRecords: typeof resolveTxtRecords
@@ -76,15 +77,9 @@ export async function verifyTopicClaimDomain(
       AND verified_at IS NULL
       AND rejected_at IS NULL
       AND revoked_at IS NULL
-    RETURNING
-      id, topic_id, claimant_user_id, verification_method,
-      claimed_role, evidence, submitted_at,
-      verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
-      revoked_at, revoked_by_id, revocation_reason,
-      verification_hostname_id, verification_token_issued_at,
-      domain_verified_at, created_at, updated_at
+    RETURNING id
   `)
-  const updated = updatedRows[0] as TopicClaim | undefined
+  const updated = updatedRows[0] && (await getTopicClaimById(claim.id, write))
   assert(updated, 409, 'Claim is no longer pending')
   return updated
 }

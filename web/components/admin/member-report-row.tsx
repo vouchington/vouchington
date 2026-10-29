@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { ReportTargetContent } from '@/components/moderation/report-target-content'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import {
   ModerationSlaBadge,
   ReportCountBadge,
@@ -14,6 +15,8 @@ interface MemberReportRowProps {
 }
 
 export function MemberReportRow({ report }: MemberReportRowProps) {
+  const targetLabelFor = useModerationTargetLabel()
+  const targetLabel = targetLabelFor(report.target_label)
   return (
     <tr data-pw='member-report-row'>
       <td className='whitespace-nowrap px-6 py-4 text-sm tabular-nums'>
@@ -24,7 +27,9 @@ export function MemberReportRow({ report }: MemberReportRowProps) {
       </td>
       <td className='px-6 py-4 text-sm'>
         <div className='flex flex-col gap-1'>
-          <span className='text-xs uppercase text-muted-foreground'>{report.entity_type}</span>
+          <span className='text-xs uppercase text-muted-foreground'>
+            {targetLabelFor(report.entity_type)}
+          </span>
           {report.target_path ? (
             <Link
               href={report.target_path}
@@ -32,14 +37,14 @@ export function MemberReportRow({ report }: MemberReportRowProps) {
               prefetch={false}
             >
               <ReportTargetContent
-                fallback={report.target_label ?? report.entity_id}
+                fallback={targetLabel}
                 targetContent={report.target_content}
               />
             </Link>
           ) : (
             <span>
               <ReportTargetContent
-                fallback={report.target_label ?? report.entity_id}
+                fallback={targetLabel}
                 targetContent={report.target_content}
               />
             </span>

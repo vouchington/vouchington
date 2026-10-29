@@ -71,8 +71,11 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
           ({
             reporter_user_id: _r,
             reporter_username: _u,
+            reporter_display_name: _dn,
             note: _n,
             resolved_by_id: _rid,
+            resolver_username: _ru,
+            resolver_display_name: _rd,
             cursor_created_at: _c,
             cursor_report_count: _crc,
             cursor_severity_rank: _csr,
@@ -115,6 +118,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
               const {
                 reporter_user_id: _rid,
                 reporter_username: _run,
+                reporter_display_name: _rdn,
                 note: _note,
                 judgement: _judgement,
                 automatic_judgement_enabled: _aje,

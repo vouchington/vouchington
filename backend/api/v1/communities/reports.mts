@@ -12,7 +12,6 @@ import {
   resolveModerationReport,
   getReporterForCommunityReport,
   MODERATION_REPORT_RESOLUTION_STATUSES,
-  type ModerationReportResolutionStatus,
   buildReportPageInfo,
 } from '@services/moderation-reports'
 import { listCommunityPendingModerationReports } from '@services/moderation-claims'
@@ -102,6 +101,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
         cursor_severity_rank: ___,
         reporter_user_id,
         reporter_username,
+        reporter_display_name,
         note,
         judgement,
         community_ban_evasion,
@@ -117,6 +117,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
           ? {
               reporter_user_id,
               reporter_username,
+              reporter_display_name,
               note,
               judgement,
               community_ban_evasion,
@@ -182,11 +183,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId').patch(async (ctx: C
     path: ctx.params,
     body,
   })
-  const status =
-    typeof body.status === 'string' &&
-    MODERATION_REPORT_RESOLUTION_STATUSES.includes(body.status as ModerationReportResolutionStatus)
-      ? (body.status as ModerationReportResolutionStatus)
-      : null
+  const status = MODERATION_REPORT_RESOLUTION_STATUSES.find(value => value === body.status)
   ctx.assert(status, 422, 'Invalid status')
 
   const report = await resolveModerationReport(reportId, {

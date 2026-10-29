@@ -9,7 +9,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { ReportTargetContent } from '@/components/moderation/report-target-content'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import { cn } from '@/lib/utils'
+import { getUserLabel } from '@/lib/users/user-helpers'
 import { judgementLabel, judgementVariant } from './report-judgement-format'
 import { UserModNotesCell } from '@/components/moderation/user-mod-notes-cell'
 import {
@@ -52,7 +54,8 @@ export function AdminReportRow({
   selected,
 }: AdminReportRowProps) {
   const t = useTranslations()
-  const targetLabel = report.target_label ?? report.entity_id
+  const targetLabelFor = useModerationTargetLabel()
+  const targetLabel = targetLabelFor(report.target_label)
   const judgementAction = report.judgement
     ? judgementLabel(report.judgement.recommended_action)
     : null
@@ -70,6 +73,23 @@ export function AdminReportRow({
         )
   const rerunLabel = t('extracted.admin.adminReportRow.reRunJudgement_8b575390')
   const ordinaryPending = isOrdinaryPendingReport(report)
+  const deletedUserLabel = t('shared.user.deletedUser')
+  const reporterLabel = getUserLabel(
+    {
+      username: report.reporter_username,
+      display_account: { name: report.reporter_display_name },
+    },
+    deletedUserLabel,
+  )
+  const sourceLabel = report.community_ban_evasion
+    ? getUserLabel(
+        {
+          username: report.community_ban_evasion.source_username,
+          display_account: { name: report.community_ban_evasion.source_display_name },
+        },
+        deletedUserLabel,
+      )
+    : null
 
   return (
     <tr
@@ -111,10 +131,10 @@ export function AdminReportRow({
             className='underline'
             prefetch={false}
           >
-            {report.reporter_username}
+            {reporterLabel}
           </Link>
         ) : report.reporter_user_id ? (
-          <span className='font-mono text-xs'>{report.reporter_user_id}</span>
+          <span className='text-xs'>{reporterLabel}</span>
         ) : (
           <span className='text-xs text-muted-foreground'>
             {t('extracted.admin.adminReportRow.text_bda05058')}
@@ -123,7 +143,9 @@ export function AdminReportRow({
       </td>
       <td className='px-6 py-4 text-sm'>
         <div className='flex flex-col gap-1'>
-          <span className='text-xs uppercase text-muted-foreground'>{report.entity_type}</span>
+          <span className='text-xs uppercase text-muted-foreground'>
+            {targetLabelFor(report.entity_type)}
+          </span>
           {report.target_path ? (
             <Link
               href={report.target_path}
@@ -196,14 +218,16 @@ export function AdminReportRow({
                       className='underline'
                       prefetch={false}
                     >
-                      {report.community_ban_evasion.source_username}
+                      {sourceLabel}
                     </Link>
                   ) : report.community_ban_evasion.source_user_id ? (
-                    <span className='font-mono text-xs'>
-                      {report.community_ban_evasion.source_user_id}
-                    </span>
+                    <span className='text-xs'>{sourceLabel}</span>
                   ) : (
-                    <span className='text-muted-foreground'>Hidden</span>
+                    <span className='text-muted-foreground'>
+                      {t(
+                        'extracted.identityVerification.verifiedDisplayPreferencesCard.hidden_7e6fefff',
+                      )}
+                    </span>
                   )}
                 </p>
                 {typeof report.community_ban_evasion.score === 'number' ? (
@@ -282,7 +306,17 @@ export function AdminReportRow({
       <td className='max-w-sm whitespace-pre-wrap break-words px-6 py-4 text-sm'>
         {report.note ?? '-'}
       </td>
-      <td className='px-6 py-4 text-sm font-mono text-xs'>{report.resolved_by_id ?? '-'}</td>
+      <td className='px-6 py-4 text-sm text-xs'>
+        {report.resolved_by_id
+          ? getUserLabel(
+              {
+                username: report.resolver_username,
+                display_account: { name: report.resolver_display_name },
+              },
+              deletedUserLabel,
+            )
+          : '-'}
+      </td>
       <UserModNotesCell targetUserId={report.entity_type === 'user' ? report.entity_id : null} />
       <td className='px-6 py-4'>
         <div className='flex flex-wrap gap-2'>

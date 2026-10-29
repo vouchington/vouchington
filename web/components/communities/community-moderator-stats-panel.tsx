@@ -12,9 +12,9 @@ import type {
 } from '@/types/api-responses'
 import type { PublicUser } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 type DisplayedActionType = 'remove' | 'approve' | 'ban' | 'resolve_report'
-
 const DISPLAYED_ACTION_TYPES: Array<{
   key: DisplayedActionType
 }> = [{ key: 'remove' }, { key: 'approve' }, { key: 'ban' }, { key: 'resolve_report' }]
@@ -160,7 +160,11 @@ interface RowProps {
 }
 
 function ModeratorStatsRow({ stat, user }: RowProps) {
-  const username = user?.username ?? stat.actor_user_id.slice(0, 8)
+  const t = useTranslations()
+  const username = getUserLabel(
+    { username: user?.username, display_account: { name: user?.verified_display_name } },
+    t('shared.user.deletedUser'),
+  )
   const displayedSum = DISPLAYED_ACTION_TYPES.reduce(
     (sum, { key }) => sum + (stat.counts[key] ?? 0),
     0,

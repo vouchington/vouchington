@@ -58,6 +58,9 @@ describe('community moderation MCP implicit decisions — real PostgreSQL and Va
     )
     expect(result.report).toMatchObject({ id: reportId, status: 'dismissed' })
     expect(result.report).not.toHaveProperty('case_id')
+    expect(result.report).not.toHaveProperty('reporter_user_id')
+    expect(result.report).not.toHaveProperty('reporter_username')
+    expect(result.report).not.toHaveProperty('reporter_display_name')
     expect(JSON.stringify(result)).not.toContain(caseId)
     expect(await readStaffActionTarget('report', reportId)).toMatchObject({
       resolution_action: 'dismissed',

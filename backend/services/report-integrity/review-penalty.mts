@@ -9,8 +9,12 @@ import {
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { ReportAbusePenalty } from './get-penalties.mts'
+import {
+  attachReportIntegrityPenaltyLabels,
+  type IntegrityPenaltyLabels,
+} from './penalty-labels.mts'
 
-type ReportAbusePenaltyReviewDue = ReportAbusePenalty & { user_username: string | null }
+type ReportAbusePenaltyReviewDue = ReportAbusePenalty & IntegrityPenaltyLabels
 
 /** One bounded, independently navigable page of due active penalties. */
 export async function getReportAbusePenaltyReviewsDue(
@@ -44,7 +48,10 @@ export async function getReportAbusePenaltyReviewsDue(
     encodeScopedPreciseTimestampCursor(row.cursor_timestamp, row.id, scope)
   const last = page.at(-1)
   return {
-    results: page.map(({ cursor_timestamp: _, ...penalty }) => penalty),
+    results: await attachReportIntegrityPenaltyLabels(
+      page.map(({ cursor_timestamp: _, ...penalty }) => penalty),
+      write,
+    ),
     page_info: {
       has_next_page: rows.length > limit,
       start_cursor: page[0] ? cursorFor(page[0]) : null,
@@ -58,7 +65,7 @@ export async function reviewReportAbusePenalty(
   penaltyId: string,
   reviewedById: string,
   options: { query?: TransactionQuery } = {},
-): Promise<ReportAbusePenalty> {
+): Promise<ReportAbusePenalty & IntegrityPenaltyLabels> {
   return runWithTransaction(options.query, async query => {
     const { rows: dueRows } = await query<{ user_id: string; review_due_at: Date }>(sql`
       /* reviewReportAbusePenalty_lockDue */
@@ -93,6 +100,7 @@ export async function reviewReportAbusePenalty(
       },
       { query },
     )
-    return penalty
+    const [labelledPenalty] = await attachReportIntegrityPenaltyLabels([penalty], query)
+    return labelledPenalty!
   })
 }

@@ -3,6 +3,7 @@ import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
+import { getTopicClaimById } from './get.mts'
 
 const CLAIM_RETURNING = sql`
   id, topic_id, claimant_user_id, verification_method,
@@ -38,7 +39,9 @@ export async function adminVerifyTopicClaim(
       { actionType: 'topic_claim_verify', topicClaimId: claimId },
       { query: transaction },
     )
-    return updated
+    const labelledClaim = await getTopicClaimById(updated.id, transaction)
+    assert(labelledClaim, 500, 'Claim disappeared after verification')
+    return labelledClaim
   })
 }
 
@@ -68,6 +71,8 @@ export async function rejectTopicClaim(
       { actionType: 'topic_claim_reject', topicClaimId: claimId, reason: rejectionReason.trim() },
       { query: transaction },
     )
-    return updated
+    const labelledClaim = await getTopicClaimById(updated.id, transaction)
+    assert(labelledClaim, 500, 'Claim disappeared after rejection')
+    return labelledClaim
   })
 }

@@ -21,6 +21,7 @@ async function makeDisputeSetup(options?: {
   clearanceStatus?: 'approved' | 'rejected'
   privacy?: 'public' | 'private'
   unpublished?: boolean
+  untitled?: boolean
 }) {
   const staff = await createTestUser({ administrator: true })
   const creator = await createTestUser()
@@ -46,7 +47,7 @@ async function makeDisputeSetup(options?: {
       })
     : null
   const postId = await insertTestPost({
-    title: `List API Post ${crypto.randomUUID().slice(0, 8)}`,
+    title: options?.untitled ? '' : `List API Post ${crypto.randomUUID().slice(0, 8)}`,
     slug: `list-api-post-${crypto.randomUUID().slice(0, 8)}`,
     createdById: reviewer.id,
     markdown: 'Bad review content for list test.',
@@ -165,7 +166,7 @@ describe('GET /api/v1/disputes', () => {
     const rawMemberJson = JSON.stringify(memberResponse.body)
     expect(rawMemberJson).not.toContain('"staff_context"')
     expect(rawMemberJson).not.toContain('"disputant"')
-    expect(rawMemberJson).not.toContain('"review"')
+    expect(memberDispute).not.toHaveProperty('review')
   })
 
   it.each([
@@ -183,6 +184,13 @@ describe('GET /api/v1/disputes', () => {
     },
     { name: 'rejected', clearanceStatus: 'rejected' as const, ownerCanView: true },
     { name: 'unpublished', unpublished: true, ownerCanView: false },
+    {
+      name: 'untitled private review',
+      privacy: 'private' as const,
+      broadcast: 'followers' as const,
+      untitled: true,
+      ownerCanView: true,
+    },
   ])(
     'hides $name disputed-review content from an unauthorized member while preserving staff and owner access',
     async options => {
@@ -195,20 +203,34 @@ describe('GET /api/v1/disputes', () => {
         (candidate: { id: string }) => candidate.id === dispute.id,
       )
       expect(memberListDispute?.post_content).toBeNull()
+      expect(memberListDispute?.post_label).toBe('review')
       const memberDetail = await memberRequest.get(`/api/v1/disputes/${dispute.id}`).expect(200)
       expect(memberDetail.body.dispute.post_content).toBeNull()
+      expect(memberDetail.body.dispute.post_label).toBe('review')
 
       const ownerRequest = createRequest()
       await ownerRequest.authenticateAs(reviewer)
       const ownerDetail = await ownerRequest.get(`/api/v1/disputes/${dispute.id}`).expect(200)
       const ownerPostContent = ownerDetail.body.dispute.post_content
-      expect(ownerPostContent === null).toBe(!options.ownerCanView)
-      expect(typeof ownerPostContent?.text).toBe(options.ownerCanView ? 'string' : 'undefined')
+      expect(ownerPostContent === null).toBe(!options.ownerCanView || !!options.untitled)
+      expect(typeof ownerPostContent?.text).toBe(
+        options.ownerCanView && !options.untitled ? 'string' : 'undefined',
+      )
 
       const staffRequest = createRequest()
       await staffRequest.authenticateAs(staff)
       const staffDetail = await staffRequest.get(`/api/v1/disputes/${dispute.id}`).expect(200)
-      expect(staffDetail.body.dispute.post_content).toMatchObject({ text: expect.any(String) })
+      expect(staffDetail.body.dispute.post_content === null).toBe(!!options.untitled)
+      expect(typeof staffDetail.body.dispute.post_content?.text).toBe(
+        options.untitled ? 'undefined' : 'string',
+      )
+      expect(staffDetail.body.dispute.post_label).toEqual(expect.any(String))
+      expect(staffDetail.body.dispute.post_label.startsWith('list-api-post-')).toBe(
+        !!options.untitled,
+      )
+      expect(ownerDetail.body.dispute.post_label).toBe(
+        options.ownerCanView ? staffDetail.body.dispute.post_label : 'review',
+      )
     },
   )
 

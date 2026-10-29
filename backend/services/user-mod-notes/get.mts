@@ -24,24 +24,29 @@ export async function listUserModNotes(
   const beforeId = options?.beforeId ?? null
 
   const query = sql`/* listUserModNotes */
-    SELECT id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
-    FROM user_moderator_notes
-    WHERE target_user_id = ${targetUserId}
-      AND deleted_at IS NULL
+    SELECT n.id, n.created_at, n.target_user_id, n.author_user_id,
+      author_profile.username AS author_username,
+      author_profile.verified_display_name AS author_display_name,
+      n.community_id, community.name AS community_name, n.body, n.deleted_at
+    FROM user_moderator_notes n
+    LEFT JOIN view_users_public author_profile ON author_profile.id = n.author_user_id
+    LEFT JOIN communities community ON community.id = n.community_id
+    WHERE n.target_user_id = ${targetUserId}
+      AND n.deleted_at IS NULL
   `
 
   if (!isModerationStaff(currentUser)) {
     const moderatedIds =
       options?.moderatedCommunityIds ?? (await getModeratedCommunityIds(currentUser))
     assert(moderatedIds.length > 0, 403, 'Forbidden')
-    query.append(sql` AND community_id = ANY(${moderatedIds}::uuid[])`)
+    query.append(sql` AND n.community_id = ANY(${moderatedIds}::uuid[])`)
   }
 
   if (beforeId) {
-    query.append(sql` AND id < ${beforeId}::uuid`)
+    query.append(sql` AND n.id < ${beforeId}::uuid`)
   }
 
-  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY n.id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query, options)
   const hasNextPage = rows.length > limit

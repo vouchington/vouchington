@@ -69,6 +69,18 @@ the web page's navigable identity while analytics responses retain IDs as data f
 use the same pair. Swift and .NET route adoption and fixture evidence are tracked in
 [vouchington-clients#525](https://github.com/vouchington/vouchington-clients/issues/525).
 
+## Moderation identity in presentation
+
+Staff and member moderation screens display factual labels for reports, integrity flags,
+penalties, topic claims, disputes, moderator notes, and review queue entries. IDs remain
+in REST and MCP responses for exact references and actions, while titles, slugs, names,
+and user identity facts provide the visible label. List producers hydrate these facts
+for a page together. Native presentation and its executable evidence are tracked by
+[vouchington-clients#526](https://github.com/vouchington/vouchington-clients/issues/526);
+this producer change makes no native UI parity claim.
+
+> > > > > > > f81c6dd8e8 (fix(moderation): replace visible UUIDs with entity labels)
+
 ## Moderation history retention
 
 The producer applies the approved moderation history access window to member appeal reads and

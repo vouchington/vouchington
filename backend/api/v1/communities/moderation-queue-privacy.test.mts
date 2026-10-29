@@ -29,6 +29,7 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue — member-tier pri
     })
     const memberUser = await createTestUser()
     const communityMod = await createTestUser()
+    const staff = await createTestUser({ administrator: true })
     await Promise.all([
       insertTestCommunityMember({ communityId: community.id, userId: memberUser.id }),
       insertTestCommunityMember({
@@ -94,6 +95,11 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue — member-tier pri
     expect(publicEntry!.target_label).not.toBe('[Private content]')
     expect(publicEntry!.target_path).not.toBeNull()
     expect(publicEntry).not.toHaveProperty('admin_action_path')
+    expect(publicEntry).not.toHaveProperty('reporter_user_id')
+    expect(publicEntry).not.toHaveProperty('reporter_username')
+    expect(publicEntry).not.toHaveProperty('reporter_display_name')
+    expect(publicEntry).not.toHaveProperty('resolver_username')
+    expect(publicEntry).not.toHaveProperty('resolver_display_name')
 
     // --- Moderator view ---
     const modRequest = createRequest()
@@ -111,6 +117,21 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue — member-tier pri
     expect(modRestrictedEntry!.target_label).not.toBe('[Private content]')
     expect(modRestrictedEntry!.target_path).not.toBeNull()
     expect(modRestrictedEntry).toHaveProperty('admin_action_path')
+    expect(modRestrictedEntry).not.toHaveProperty('reporter_user_id')
+    expect(modRestrictedEntry).not.toHaveProperty('reporter_username')
+    expect(modRestrictedEntry).not.toHaveProperty('reporter_display_name')
+
+    const staffRequest = createRequest()
+    await staffRequest.authenticateAs(staff)
+    const staffResponse = await staffRequest
+      .get(`/api/v1/communities/${community.slug}/moderation-queue`)
+      .expect(200)
+    const staffEntry = (staffResponse.body.entries as Array<Record<string, unknown>>).find(
+      e => e.entity_id === publicPostId,
+    )
+    expect(staffEntry?.reporter_user_id).toBe(reporter.id)
+    expect(staffEntry?.reporter_username).toBe(reporter.username)
+    expect(staffEntry).toHaveProperty('reporter_display_name')
   })
 
   it('member tier masks target_label/target_path for pending-review posts (no approved community_post_reviews row)', async () => {

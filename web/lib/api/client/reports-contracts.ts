@@ -21,7 +21,7 @@ interface ModerationReportListItem {
   reviewed_at: string | null
   entity_type: ReportableEntityType
   entity_id: string
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   target_available: boolean | null
@@ -40,8 +40,11 @@ export interface StaffModerationReport extends ModerationReportListItem {
   target_is_restricted: boolean
   reporter_user_id: string
   reporter_username: string | null
+  reporter_display_name: string | null
   note: string | null
   resolved_by_id: string | null
+  resolver_username: string | null
+  resolver_display_name: string | null
   is_system_generated: boolean
   automatic_judgement_enabled: boolean
   community_ban_evasion?: CommunityBanEvasionContext | null
@@ -89,7 +92,7 @@ export interface StaffModerationReportCluster {
   reason_breakdown: Array<{ reason: ReportReason; count: number }>
   first_reported_at: string
   last_reported_at: string
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   admin_action_path: string | null

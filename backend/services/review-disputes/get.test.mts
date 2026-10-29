@@ -86,6 +86,7 @@ describe('getReviewDisputeById', () => {
     const { dispute } = await makeDisputeFixture(staff.id)
     const found = await getReviewDisputeById(dispute.id)
     expect(found).not.toBeNull()
+    expect(found?.post_label).toBe(found?.staff_context?.review.post.title)
     expect(found!.id).toBe(dispute.id)
     expect(found!.status).toBe('pending')
   })

@@ -29,6 +29,7 @@ export type CommunityBanEvasionContext = {
   community_slug: string
   source_user_id: string
   source_username: string | null
+  source_display_name: string | null
   score: number
   flagged_at: string
 }
@@ -61,12 +62,15 @@ export interface ModerationReport {
   /** System-generated reports use the 'ban-evasion' system user. */
   reporter_user_id: string
   reporter_username?: string | null
+  reporter_display_name?: string | null
   entity_type: ModerationReportEntityType
   entity_id: string
   reason: ModerationReportReason
   note: string | null
   status: ModerationReportStatus
   resolved_by_id: string | null
+  resolver_username?: string | null
+  resolver_display_name?: string | null
   /** True when this report was created by the system rather than a user. */
   is_system_generated?: boolean
   /**

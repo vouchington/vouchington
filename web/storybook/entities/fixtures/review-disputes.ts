@@ -4,6 +4,7 @@ import type { TopicClaim } from '@/types/topic-claims'
 export const pendingDispute: ReviewDispute = {
   id: 'dispute-1',
   post_id: 'post-1',
+  post_label: 'A review',
   topic_id: 'topic-1',
   reason: 'factually_inaccurate',
   status: 'pending',
@@ -53,6 +54,7 @@ export const pendingDispute: ReviewDispute = {
 export const resolvedDispute: ReviewDispute = {
   id: 'dispute-2',
   post_id: 'post-2',
+  post_label: 'A review',
   topic_id: 'topic-2',
   reason: 'defamatory',
   status: 'resolved',
@@ -78,6 +80,7 @@ export const memberData = {
     {
       id: 'dispute-3',
       post_id: 'post-3',
+      post_label: 'A review',
       topic_id: 'topic-3',
       reason: 'privacy_violation',
       status: 'pending',
@@ -95,7 +98,10 @@ export const memberData = {
 export const verifiedClaim: TopicClaim = {
   id: 'claim-1',
   topic_id: 'topic-1',
+  topic_name: 'Example topic',
   claimant_user_id: 'claimant-1',
+  claimant_username: 'claimant',
+  claimant_display_name: null,
   verification_method: 'manual_admin',
   claimed_role: 'Card issuer',
   evidence: 'We operate acme.example and issue the Acme Card.',

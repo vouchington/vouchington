@@ -11,6 +11,7 @@ import {
 import { attachJudgements } from '@services/moderation-reports/judgement-attach'
 import { attachPostModerationContext } from '@services/moderation-reports/post-moderation-context-attach'
 import { attachBanEvasionContext } from '@services/moderation-reports/ban-evasion-context-attach'
+import { applyDeletedTargetLabel } from '@services/moderation-reports/deleted-target-label'
 import type { PendingModerationReport } from '@services/moderation-reports/get'
 import {
   appendModerationReportCursorPredicate,
@@ -59,7 +60,7 @@ export async function listCommunityPendingModerationReports(options: {
   ])
   const mergedRows = sortMergedReports([...postCommentRows, ...banEvasionRows], sort)
   const hasNextPage = mergedRows.length > limit
-  const pageRows = mergedRows.slice(0, limit)
+  const pageRows = mergedRows.slice(0, limit).map(applyDeletedTargetLabel)
   const reports = (await attachJudgements(pageRows)
     .then(rows => attachPostModerationContext(rows, 'staff'))
     .then(rows => attachBanEvasionContext(rows, { communityId: options.communityId }))
@@ -84,7 +85,8 @@ async function fetchPostCommentReports(
       ) AS cursor_created_at,
       r.reviewed_at,
       r.reporter_user_id,
-      NULL::text AS reporter_username,
+      reporter_profile.username AS reporter_username,
+      reporter_profile.verified_display_name AS reporter_display_name,
       r.entity_type,
       r.entity_id,
   `
@@ -94,6 +96,8 @@ async function fetchPostCommentReports(
       r.note,
       r.status,
       r.resolved_by_id,
+      NULL::text AS resolver_username,
+      NULL::text AS resolver_display_name,
       r.escalated_at,
       r.escalated_by_id,
       false AS is_system_generated,
@@ -124,6 +128,7 @@ async function fetchPostCommentReports(
   `)
   query.append(reportTargetJoinsSql())
   query.append(sql`
+    LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::integer AS report_count
       FROM moderation_reports rc

@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/client/topic-claims'
 import { getTopicClaimState, type TopicClaim } from '@/types/topic-claims'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface TopicClaimReviewProps {
   claim: TopicClaim
@@ -98,14 +99,18 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
       <div className='flex items-start justify-between'>
         <div>
           <p className='text-sm font-medium'>
-            {t('extracted.admin.topicClaimReview.claimClaimid_c2bbbef2', {
-              claimId: claim.id.slice(0, 8),
-            })}
+            {claim.topic_name === 'topic'
+              ? t('extracted.landingPagesManager.itemPickerFields.topic_7e61847d')
+              : claim.topic_name}
           </p>
           <p className='text-xs text-muted-foreground'>
-            {t('extracted.admin.topicClaimReview.topicTopicid_0b0c4258', {
-              topicId: claim.topic_id.slice(0, 8),
-            })}{' '}
+            {getUserLabel(
+              {
+                username: claim.claimant_username,
+                display_account: { name: claim.claimant_display_name },
+              },
+              t('shared.user.deletedUser'),
+            )}{' '}
             <TimeAgo date={claim.created_at} />
           </p>
           <p className='mt-1 text-xs'>

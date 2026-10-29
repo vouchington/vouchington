@@ -4519,6 +4519,9 @@
                   "post_id": {
                     "type": "string"
                   },
+                  "post_label": {
+                    "type": "string"
+                  },
                   "public_response": {
                     "anyOf": [
                       {
@@ -4595,6 +4598,7 @@
                   "id",
                   "post_content",
                   "post_id",
+                  "post_label",
                   "public_response",
                   "reason",
                   "resolution_action",
@@ -4798,6 +4802,9 @@
                     ]
                   },
                   "post_id": {
+                    "type": "string"
+                  },
+                  "post_label": {
                     "type": "string"
                   },
                   "public_response": {
@@ -5014,6 +5021,7 @@
                   }
                 },
                 "required": [
+                  "ai_draft_requested_run_id",
                   "ai_draft_run_id",
                   "ai_drafted_at",
                   "ai_internal_response",
@@ -5032,6 +5040,7 @@
                   "model",
                   "post_content",
                   "post_id",
+                  "post_label",
                   "public_response",
                   "reason",
                   "recommended_action",
@@ -5041,8 +5050,7 @@
                   "sent_at",
                   "status",
                   "topic_id",
-                  "updated_at",
-                  "ai_draft_requested_run_id"
+                  "updated_at"
                 ],
                 "type": "object"
               },
@@ -5124,6 +5132,9 @@
                 "post_id": {
                   "type": "string"
                 },
+                "post_label": {
+                  "type": "string"
+                },
                 "public_response": {
                   "anyOf": [
                     {
@@ -5200,6 +5211,7 @@
                 "id",
                 "post_content",
                 "post_id",
+                "post_label",
                 "public_response",
                 "reason",
                 "resolution_action",
@@ -5370,6 +5382,9 @@
                   ]
                 },
                 "post_id": {
+                  "type": "string"
+                },
+                "post_label": {
                   "type": "string"
                 },
                 "public_response": {
@@ -5586,6 +5601,7 @@
                 }
               },
               "required": [
+                "ai_draft_requested_run_id",
                 "ai_draft_run_id",
                 "ai_drafted_at",
                 "ai_internal_response",
@@ -5604,6 +5620,7 @@
                 "model",
                 "post_content",
                 "post_id",
+                "post_label",
                 "public_response",
                 "reason",
                 "recommended_action",
@@ -5613,8 +5630,7 @@
                 "sent_at",
                 "status",
                 "topic_id",
-                "updated_at",
-                "ai_draft_requested_run_id"
+                "updated_at"
               ],
               "type": "object"
             }
@@ -6264,6 +6280,19 @@
           "$ref": "#/components/schemas/FlatPage_PendingModerationReport"
         }
       ]
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "additionalProperties": false,
+      "properties": {
+        "completed": {
+          "type": "boolean"
+        },
+        "judgement_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["completed", "judgement_id"],
+      "type": "object"
     },
     "GET:/api/v1/rss-feed-categories": {
       "additionalProperties": false,
@@ -7226,6 +7255,9 @@
             "post_id": {
               "type": "string"
             },
+            "post_label": {
+              "type": "string"
+            },
             "public_response": {
               "anyOf": [
                 {
@@ -7459,6 +7491,7 @@
             "model",
             "post_content",
             "post_id",
+            "post_label",
             "public_response",
             "reason",
             "recommended_action",
@@ -9827,6 +9860,9 @@
             "post_id": {
               "type": "string"
             },
+            "post_label": {
+              "type": "string"
+            },
             "public_response": {
               "anyOf": [
                 {
@@ -10060,6 +10096,7 @@
             "model",
             "post_content",
             "post_id",
+            "post_label",
             "public_response",
             "reason",
             "recommended_action",
@@ -10234,6 +10271,9 @@
             "post_id": {
               "type": "string"
             },
+            "post_label": {
+              "type": "string"
+            },
             "public_response": {
               "anyOf": [
                 {
@@ -10467,6 +10507,7 @@
             "model",
             "post_content",
             "post_id",
+            "post_label",
             "public_response",
             "reason",
             "recommended_action",
@@ -10641,6 +10682,9 @@
             "post_id": {
               "type": "string"
             },
+            "post_label": {
+              "type": "string"
+            },
             "public_response": {
               "anyOf": [
                 {
@@ -10874,6 +10918,7 @@
             "model",
             "post_content",
             "post_id",
+            "post_label",
             "public_response",
             "reason",
             "recommended_action",
@@ -11035,19 +11080,6 @@
     },
     "POST:/api/v1/report-integrity/flags/:id/penalties": {
       "$ref": "#/components/schemas/ApplyReportAbusePenaltyResult"
-    },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "additionalProperties": false,
-      "properties": {
-        "completed": {
-          "type": "boolean"
-        },
-        "judgement_id": {
-          "type": ["string", "null"]
-        }
-      },
-      "required": ["completed", "judgement_id"],
-      "type": "object"
     },
     "POST:/api/v1/reports/:id/judgements": {
       "additionalProperties": false,
@@ -12962,56 +12994,6 @@
       "required": ["blocked_hostname_count", "penalized_user_count", "soft_deleted_relation_count"],
       "type": "object"
     },
-    "CreateHostnameBlockResult": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "hostname": {
-              "type": "string"
-            },
-            "id": {
-              "type": "string"
-            },
-            "operation_id": {
-              "type": "string"
-            },
-            "status": {
-              "const": "pending",
-              "type": "string"
-            },
-            "totals": {
-              "type": "null"
-            }
-          },
-          "required": ["hostname", "id", "operation_id", "status", "totals"],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "hostname": {
-              "type": "string"
-            },
-            "id": {
-              "type": "string"
-            },
-            "operation_id": {
-              "type": "string"
-            },
-            "status": {
-              "const": "completed",
-              "type": "string"
-            },
-            "totals": {
-              "$ref": "#/components/schemas/BlockHostnameTotals"
-            }
-          },
-          "required": ["hostname", "id", "operation_id", "status", "totals"],
-          "type": "object"
-        }
-      ]
-    },
     "BloomFilterRebuildRequest": {
       "additionalProperties": false,
       "properties": {
@@ -13382,10 +13364,6 @@
       ],
       "type": "object"
     },
-    "ClearanceStatus": {
-      "enum": ["approved", "in_review", "pending", "rejected"],
-      "type": "string"
-    },
     "ClearCacheRequest": {
       "additionalProperties": false,
       "properties": {
@@ -13395,6 +13373,10 @@
       },
       "required": ["group"],
       "type": "object"
+    },
+    "ClearanceStatus": {
+      "enum": ["approved", "in_review", "pending", "rejected"],
+      "type": "string"
     },
     "Community": {
       "additionalProperties": false,
@@ -14088,10 +14070,6 @@
       ],
       "type": "object"
     },
-    "CommunityAutomodAction": {
-      "enum": ["record_only", "review_queue", "unpublish"],
-      "type": "string"
-    },
     "CommunityAutoTaggerAgent": {
       "additionalProperties": false,
       "properties": {
@@ -14166,6 +14144,10 @@
       ],
       "type": "object"
     },
+    "CommunityAutomodAction": {
+      "enum": ["record_only", "review_queue", "unpublish"],
+      "type": "string"
+    },
     "CommunityBanEvasionContext": {
       "additionalProperties": false,
       "properties": {
@@ -14180,6 +14162,16 @@
         },
         "score": {
           "type": "number"
+        },
+        "source_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "source_user_id": {
           "type": "string"
@@ -14200,6 +14192,7 @@
         "community_slug",
         "flagged_at",
         "score",
+        "source_display_name",
         "source_user_id",
         "source_username"
       ],
@@ -18006,104 +17999,6 @@
       "required": ["aside_type", "entity_id"],
       "type": "object"
     },
-    "CreatedCommunityInvite": {
-      "additionalProperties": false,
-      "properties": {
-        "__entity_type": {
-          "const": "community_invite"
-        },
-        "accepted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "accepted_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "code": {
-          "type": "string"
-        },
-        "community_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "declined_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "invited_by_id": {
-          "type": "string"
-        },
-        "invited_email": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "invited_user_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "__entity_type",
-        "accepted_at",
-        "accepted_by_id",
-        "code",
-        "community_id",
-        "created_at",
-        "declined_at",
-        "id",
-        "invited_by_id",
-        "invited_email",
-        "invited_user_id",
-        "revoked_at"
-      ],
-      "type": "object"
-    },
     "CreateFediverseInstanceRequest": {
       "additionalProperties": false,
       "properties": {
@@ -18113,6 +18008,56 @@
       },
       "required": ["hostname"],
       "type": "object"
+    },
+    "CreateHostnameBlockResult": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hostname": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "operation_id": {
+              "type": "string"
+            },
+            "status": {
+              "const": "pending",
+              "type": "string"
+            },
+            "totals": {
+              "type": "null"
+            }
+          },
+          "required": ["hostname", "id", "operation_id", "status", "totals"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hostname": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "operation_id": {
+              "type": "string"
+            },
+            "status": {
+              "const": "completed",
+              "type": "string"
+            },
+            "totals": {
+              "$ref": "#/components/schemas/BlockHostnameTotals"
+            }
+          },
+          "required": ["hostname", "id", "operation_id", "status", "totals"],
+          "type": "object"
+        }
+      ]
     },
     "CreateHouseholdBody": {
       "additionalProperties": false,
@@ -19002,6 +18947,104 @@
       "required": ["auth", "endpoint", "p256dh"],
       "type": "object"
     },
+    "CreatedCommunityInvite": {
+      "additionalProperties": false,
+      "properties": {
+        "__entity_type": {
+          "const": "community_invite"
+        },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "accepted_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "declined_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "invited_by_id": {
+          "type": "string"
+        },
+        "invited_email": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "invited_user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "__entity_type",
+        "accepted_at",
+        "accepted_by_id",
+        "code",
+        "community_id",
+        "created_at",
+        "declined_at",
+        "id",
+        "invited_by_id",
+        "invited_email",
+        "invited_user_id",
+        "revoked_at"
+      ],
+      "type": "object"
+    },
     "CuratedAsideItem": {
       "additionalProperties": false,
       "properties": {
@@ -19745,13 +19788,6 @@
       "required": ["default_value", "description", "name", "type", "value"],
       "type": "object"
     },
-    "DynamicConfigFields": {
-      "additionalProperties": {
-        "$ref": "#/components/schemas/DynamicConfigFieldValue"
-      },
-      "properties": {},
-      "type": "object"
-    },
     "DynamicConfigFieldType": {
       "enum": ["boolean", "number", "string"],
       "type": "string"
@@ -19771,6 +19807,13 @@
           "type": "string"
         }
       ]
+    },
+    "DynamicConfigFields": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/DynamicConfigFieldValue"
+      },
+      "properties": {},
+      "type": "object"
     },
     "DynamicConfigHistoryEntry": {
       "additionalProperties": false,
@@ -19879,14 +19922,86 @@
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
       "type": "object"
     },
-    "ElectionVote__sentiment_____recommendation_": {
+    "ElectionVoteChoiceForPolicy_ElectionVotePolicy": {
+      "enum": [
+        "accurate",
+        "confirm",
+        "disavow",
+        "dislike",
+        "dispute",
+        "inaccurate",
+        "like",
+        "neutral",
+        "oppose",
+        "support",
+        "vouch"
+      ],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy__sentiment_____recommendation_": {
+      "enum": ["disavow", "dislike", "like", "neutral", "oppose", "support", "vouch"],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_moderation": {
+      "enum": ["accurate", "inaccurate"],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_relation": {
+      "enum": ["confirm", "dispute"],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_sentiment": {
+      "enum": ["disavow", "dislike", "like", "neutral", "vouch"],
+      "type": "string"
+    },
+    "ElectionVoteRequest__sentiment_____recommendation_": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVoteRequest_moderation": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_moderation"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVoteRequest_relation": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_relation"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVoteRequest_sentiment": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_sentiment"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVote_ElectionVotePolicy": {
       "additionalProperties": false,
       "properties": {
         "__entity_type": {
           "const": "election_vote"
         },
         "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_ElectionVotePolicy"
         },
         "created_at": {
           "type": "string"
@@ -19901,14 +20016,14 @@
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
       "type": "object"
     },
-    "ElectionVote_ElectionVotePolicy": {
+    "ElectionVote__sentiment_____recommendation_": {
       "additionalProperties": false,
       "properties": {
         "__entity_type": {
           "const": "election_vote"
         },
         "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_ElectionVotePolicy"
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
         },
         "created_at": {
           "type": "string"
@@ -19987,78 +20102,6 @@
         }
       },
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
-      "type": "object"
-    },
-    "ElectionVoteChoiceForPolicy__sentiment_____recommendation_": {
-      "enum": ["disavow", "dislike", "like", "neutral", "oppose", "support", "vouch"],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_ElectionVotePolicy": {
-      "enum": [
-        "accurate",
-        "confirm",
-        "disavow",
-        "dislike",
-        "dispute",
-        "inaccurate",
-        "like",
-        "neutral",
-        "oppose",
-        "support",
-        "vouch"
-      ],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_moderation": {
-      "enum": ["accurate", "inaccurate"],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_relation": {
-      "enum": ["confirm", "dispute"],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_sentiment": {
-      "enum": ["disavow", "dislike", "like", "neutral", "vouch"],
-      "type": "string"
-    },
-    "ElectionVoteRequest__sentiment_____recommendation_": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVoteRequest_moderation": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_moderation"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVoteRequest_relation": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_relation"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVoteRequest_sentiment": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_sentiment"
-        }
-      },
-      "required": ["choice"],
       "type": "object"
     },
     "EmailAddressLoginBody": {
@@ -22486,26 +22529,6 @@
       "required": ["ai_token_usage", "cache_hit_rate", "crawler_success_rate", "queue_throughput"],
       "type": "object"
     },
-    "IssuedOAuthApp": {
-      "additionalProperties": false,
-      "properties": {
-        "client_secret": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "oauth_app": {
-          "$ref": "#/components/schemas/OAuthAppView"
-        }
-      },
-      "required": ["client_secret", "oauth_app"],
-      "type": "object"
-    },
     "IssueUserWarningRequest": {
       "additionalProperties": false,
       "properties": {
@@ -22553,6 +22576,26 @@
         }
       },
       "required": ["reason", "userId"],
+      "type": "object"
+    },
+    "IssuedOAuthApp": {
+      "additionalProperties": false,
+      "properties": {
+        "client_secret": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "oauth_app": {
+          "$ref": "#/components/schemas/OAuthAppView"
+        }
+      },
+      "required": ["client_secret", "oauth_app"],
       "type": "object"
     },
     "JSONRPCResponse": {
@@ -23048,49 +23091,6 @@
         }
       ]
     },
-    "LandingPagesPage": {
-      "additionalProperties": false,
-      "properties": {
-        "page_info": {
-          "additionalProperties": false,
-          "properties": {
-            "end_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            },
-            "has_next_page": {
-              "type": "boolean"
-            },
-            "start_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "required": ["end_cursor", "has_next_page", "start_cursor"],
-          "type": "object"
-        },
-        "results": {
-          "items": {
-            "$ref": "#/components/schemas/LandingPage"
-          },
-          "type": "array"
-        }
-      },
-      "required": ["page_info", "results"],
-      "type": "object"
-    },
     "LandingPageTopic": {
       "additionalProperties": false,
       "properties": {
@@ -23197,6 +23197,49 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "LandingPagesPage": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "additionalProperties": false,
+          "properties": {
+            "end_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "has_next_page": {
+              "type": "boolean"
+            },
+            "start_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["end_cursor", "has_next_page", "start_cursor"],
+          "type": "object"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/LandingPage"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
       "type": "object"
     },
     "LinkReferralProgramValidationBody": {
@@ -23444,6 +23487,70 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "MemberUserWarningListItem": {
+      "additionalProperties": false,
+      "properties": {
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "community_slug": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "public_message": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "community_id",
+        "community_slug",
+        "created_at",
+        "id",
+        "public_message",
+        "revoked_at",
+        "user_id"
+      ],
       "type": "object"
     },
     "MembershipBenefit": {
@@ -24063,13 +24170,6 @@
       "required": ["idempotency_key", "invoice_id", "reason", "user_id"],
       "type": "object"
     },
-    "MembershipsByTier": {
-      "additionalProperties": {
-        "type": "number"
-      },
-      "properties": {},
-      "type": "object"
-    },
     "MembershipStatus": {
       "enum": ["active", "cancelled", "expired", "past_due", "paused"],
       "type": "string"
@@ -24166,68 +24266,11 @@
       "enum": ["conflict", "pending", "rejected", "verified"],
       "type": "string"
     },
-    "MemberUserWarningListItem": {
-      "additionalProperties": false,
-      "properties": {
-        "community_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "community_slug": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "public_message": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "user_id": {
-          "type": "string"
-        }
+    "MembershipsByTier": {
+      "additionalProperties": {
+        "type": "number"
       },
-      "required": [
-        "community_id",
-        "community_slug",
-        "created_at",
-        "id",
-        "public_message",
-        "revoked_at",
-        "user_id"
-      ],
+      "properties": {},
       "type": "object"
     },
     "MergeTopicBody": {
@@ -24439,6 +24482,93 @@
       },
       "required": ["applied", "pending", "total"],
       "type": "object"
+    },
+    "ModInternalThread": {
+      "additionalProperties": false,
+      "properties": {
+        "channel_type": {
+          "const": "mod_internal"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "moderation_report_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolved_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "channel_type",
+        "community_id",
+        "created_at",
+        "created_by_id",
+        "id",
+        "moderation_report_id",
+        "post_id",
+        "resolved_at",
+        "resolved_by_id",
+        "updated_at"
+      ],
+      "type": "object"
+    },
+    "ModMediaRevealSurface": {
+      "enum": ["mod_queue", "post_page", "reports", "review_queue"],
+      "type": "string"
     },
     "ModerationActorSummary": {
       "additionalProperties": false,
@@ -24979,6 +25109,16 @@
           ],
           "type": "string"
         },
+        "reporter_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "reporter_user_id": {
           "type": "string"
         },
@@ -24993,6 +25133,26 @@
           ]
         },
         "resolved_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_username": {
           "anyOf": [
             {
               "type": "null"
@@ -25025,8 +25185,12 @@
         "id",
         "note",
         "reason",
+        "reporter_display_name",
         "reporter_user_id",
+        "reporter_username",
         "resolved_by_id",
+        "resolver_display_name",
+        "resolver_username",
         "reviewed_at",
         "status"
       ],
@@ -25430,89 +25594,6 @@
       "required": ["moderators", "users"],
       "type": "object"
     },
-    "ModInternalThread": {
-      "additionalProperties": false,
-      "properties": {
-        "channel_type": {
-          "const": "mod_internal"
-        },
-        "community_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "moderation_report_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "post_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "resolved_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "resolved_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "channel_type",
-        "community_id",
-        "created_at",
-        "created_by_id",
-        "id",
-        "moderation_report_id",
-        "post_id",
-        "resolved_at",
-        "resolved_by_id",
-        "updated_at"
-      ],
-      "type": "object"
-    },
     "ModmailThread": {
       "additionalProperties": false,
       "properties": {
@@ -25603,10 +25684,6 @@
         "updated_at"
       ],
       "type": "object"
-    },
-    "ModMediaRevealSurface": {
-      "enum": ["mod_queue", "post_page", "reports", "review_queue"],
-      "type": "string"
     },
     "Money": {
       "additionalProperties": false,
@@ -26177,6 +26254,67 @@
       "enum": ["apple", "facebook", "github", "google", "linkedin", "microsoft", "x"],
       "type": "string"
     },
+    "OAuthProviderConnectRequest": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "nonce": {
+              "type": "string"
+            },
+            "token": {
+              "type": "string"
+            },
+            "userData": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "re_auth_token": {
+              "type": "string"
+            }
+          },
+          "required": ["token"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "credential": {
+              "type": "string"
+            },
+            "re_auth_token": {
+              "type": "string"
+            }
+          },
+          "required": ["credential"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "codeVerifier": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "re_auth_token": {
+              "type": "string"
+            }
+          },
+          "required": ["code", "redirectUri"],
+          "type": "object"
+        }
+      ]
+    },
     "OAuthProviderRequest": {
       "oneOf": [
         {
@@ -26325,30 +26463,6 @@
         "url_id",
         "user_id"
       ],
-      "type": "object"
-    },
-    "Omit___jsonrpc___2.0___error____code__number__message__string__data___unknown_____id___string___number___undefined____id": {
-      "additionalProperties": false,
-      "properties": {
-        "error": {
-          "additionalProperties": false,
-          "properties": {
-            "code": {
-              "type": "number"
-            },
-            "data": {},
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": ["code", "message"],
-          "type": "object"
-        },
-        "jsonrpc": {
-          "const": "2.0"
-        }
-      },
-      "required": ["error", "jsonrpc"],
       "type": "object"
     },
     "Omit_BasicUser_individual_id": {
@@ -27149,6 +27263,64 @@
       ],
       "type": "object"
     },
+    "Omit_ModerationReportDuplicateCluster_clusters": {
+      "additionalProperties": false,
+      "properties": {
+        "first_reported_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_reported_at": {
+          "type": "string"
+        },
+        "post_count": {
+          "type": "number"
+        },
+        "reason_breakdown": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "type": "number"
+              },
+              "reason": {
+                "enum": [
+                  "harassment",
+                  "illegal_content",
+                  "misinformation",
+                  "other",
+                  "spam",
+                  "vote_manipulation"
+                ],
+                "type": "string"
+              }
+            },
+            "required": ["count", "reason"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "report_count": {
+          "type": "number"
+        },
+        "signal": {
+          "enum": ["content_hash_duplicate", "embeddings_similarity"],
+          "type": "string"
+        }
+      },
+      "required": [
+        "first_reported_at",
+        "id",
+        "last_reported_at",
+        "post_count",
+        "reason_breakdown",
+        "report_count",
+        "signal"
+      ],
+      "type": "object"
+    },
     "Omit_ModerationReport__note_____reporter_user_id_": {
       "additionalProperties": false,
       "properties": {
@@ -27227,64 +27399,6 @@
         "resolved_by_id",
         "reviewed_at",
         "status"
-      ],
-      "type": "object"
-    },
-    "Omit_ModerationReportDuplicateCluster_clusters": {
-      "additionalProperties": false,
-      "properties": {
-        "first_reported_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "last_reported_at": {
-          "type": "string"
-        },
-        "post_count": {
-          "type": "number"
-        },
-        "reason_breakdown": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "count": {
-                "type": "number"
-              },
-              "reason": {
-                "enum": [
-                  "harassment",
-                  "illegal_content",
-                  "misinformation",
-                  "other",
-                  "spam",
-                  "vote_manipulation"
-                ],
-                "type": "string"
-              }
-            },
-            "required": ["count", "reason"],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "report_count": {
-          "type": "number"
-        },
-        "signal": {
-          "enum": ["content_hash_duplicate", "embeddings_similarity"],
-          "type": "string"
-        }
-      },
-      "required": [
-        "first_reported_at",
-        "id",
-        "last_reported_at",
-        "post_count",
-        "reason_breakdown",
-        "report_count",
-        "signal"
       ],
       "type": "object"
     },
@@ -27377,6 +27491,16 @@
         "report_count": {
           "type": "number"
         },
+        "reporter_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "reporter_user_id": {
           "type": "string"
         },
@@ -27391,6 +27515,26 @@
           ]
         },
         "resolved_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_username": {
           "anyOf": [
             {
               "type": "null"
@@ -27444,14 +27588,7 @@
           "type": "boolean"
         },
         "target_label": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
+          "type": "string"
         },
         "target_path": {
           "anyOf": [
@@ -27479,6 +27616,7 @@
       },
       "required": [
         "admin_action_path",
+        "automatic_judgement_enabled",
         "case_id",
         "created_at",
         "entity_id",
@@ -27490,8 +27628,11 @@
         "post_moderation_context",
         "reason",
         "report_count",
+        "reporter_display_name",
         "reporter_user_id",
         "resolved_by_id",
+        "resolver_display_name",
+        "resolver_username",
         "reviewed_at",
         "status",
         "target_available",
@@ -27499,8 +27640,7 @@
         "target_is_restricted",
         "target_label",
         "target_path",
-        "target_user_id",
-        "automatic_judgement_enabled"
+        "target_user_id"
       ],
       "type": "object"
     },
@@ -27588,14 +27728,7 @@
           "type": "boolean"
         },
         "target_label": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
+          "type": "string"
         },
         "target_path": {
           "anyOf": [
@@ -27662,6 +27795,9 @@
           ]
         },
         "post_id": {
+          "type": "string"
+        },
+        "post_label": {
           "type": "string"
         },
         "public_response": {
@@ -27740,6 +27876,7 @@
         "id",
         "post_content",
         "post_id",
+        "post_label",
         "public_response",
         "reason",
         "resolution_action",
@@ -27749,6 +27886,30 @@
         "topic_id",
         "updated_at"
       ],
+      "type": "object"
+    },
+    "Omit___jsonrpc___2.0___error____code__number__message__string__data___unknown_____id___string___number___undefined____id": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "data": {},
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": ["code", "message"],
+          "type": "object"
+        },
+        "jsonrpc": {
+          "const": "2.0"
+        }
+      },
+      "required": ["error", "jsonrpc"],
       "type": "object"
     },
     "OmnisearchCommunity": {
@@ -31239,6 +31400,83 @@
       "enum": ["approved", "pending", "rejected"],
       "type": "string"
     },
+    "RecordModerationRevealRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "postId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "surface": {
+          "$ref": "#/components/schemas/ModMediaRevealSurface"
+        }
+      },
+      "required": ["surface"],
+      "type": "object"
+    },
+    "Record_ClassifierHumanOutcome_number": {
+      "additionalProperties": false,
+      "properties": {
+        "down": {
+          "type": "number"
+        },
+        "neutral": {
+          "type": "number"
+        },
+        "up": {
+          "type": "number"
+        }
+      },
+      "required": ["down", "neutral", "up"],
+      "type": "object"
+    },
+    "Record_MembershipBenefitPlan_MembershipBenefitValue": {
+      "additionalProperties": false,
+      "properties": {
+        "free": {
+          "$ref": "#/components/schemas/MembershipBenefitValue"
+        },
+        "plus": {
+          "$ref": "#/components/schemas/MembershipBenefitValue"
+        },
+        "pro": {
+          "$ref": "#/components/schemas/MembershipBenefitValue"
+        }
+      },
+      "required": ["free", "plus", "pro"],
+      "type": "object"
+    },
+    "Record_MembershipPlanSlug_number": {
+      "additionalProperties": false,
+      "properties": {
+        "plus": {
+          "type": "number"
+        },
+        "pro": {
+          "type": "number"
+        }
+      },
+      "required": ["plus", "pro"],
+      "type": "object"
+    },
     "Record__facebook_____x_____github_____linkedin____version__1__modes__Record__web_____native___boolean__purposes__readonly___authenticate_____connect_______": {
       "additionalProperties": false,
       "properties": {
@@ -31339,80 +31577,12 @@
       "required": ["native", "web"],
       "type": "object"
     },
-    "Record_ClassifierHumanOutcome_number": {
-      "additionalProperties": false,
-      "properties": {
-        "down": {
-          "type": "number"
-        },
-        "neutral": {
-          "type": "number"
-        },
-        "up": {
-          "type": "number"
-        }
-      },
-      "required": ["down", "neutral", "up"],
-      "type": "object"
-    },
-    "Record_MembershipBenefitPlan_MembershipBenefitValue": {
-      "additionalProperties": false,
-      "properties": {
-        "free": {
-          "$ref": "#/components/schemas/MembershipBenefitValue"
-        },
-        "plus": {
-          "$ref": "#/components/schemas/MembershipBenefitValue"
-        },
-        "pro": {
-          "$ref": "#/components/schemas/MembershipBenefitValue"
-        }
-      },
-      "required": ["free", "plus", "pro"],
-      "type": "object"
-    },
-    "Record_MembershipPlanSlug_number": {
-      "additionalProperties": false,
-      "properties": {
-        "plus": {
-          "type": "number"
-        },
-        "pro": {
-          "type": "number"
-        }
-      },
-      "required": ["plus", "pro"],
-      "type": "object"
-    },
-    "Record_string___id__string__name__string__slug__string___": {
+    "Record_string_Array_AgentModerationResult": {
       "additionalProperties": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          }
+        "items": {
+          "$ref": "#/components/schemas/AgentModerationResult"
         },
-        "required": ["id", "name", "slug"],
-        "type": "object"
-      },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string___previous__unknown__next__unknown___": {
-      "additionalProperties": {
-        "additionalProperties": false,
-        "properties": {
-          "next": {},
-          "previous": {}
-        },
-        "required": ["next", "previous"],
-        "type": "object"
+        "type": "array"
       },
       "properties": {},
       "type": "object"
@@ -31440,16 +31610,6 @@
       "properties": {},
       "type": "object"
     },
-    "Record_string_Array_AgentModerationResult": {
-      "additionalProperties": {
-        "items": {
-          "$ref": "#/components/schemas/AgentModerationResult"
-        },
-        "type": "array"
-      },
-      "properties": {},
-      "type": "object"
-    },
     "Record_string_Array_string": {
       "additionalProperties": {
         "items": {
@@ -31460,22 +31620,10 @@
       "properties": {},
       "type": "object"
     },
-    "Record_string_boolean": {
-      "additionalProperties": {
-        "type": "boolean"
-      },
-      "properties": {},
-      "type": "object"
-    },
     "Record_string_ElectionVote": {
       "additionalProperties": {
         "$ref": "#/components/schemas/ElectionVote"
       },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_never": {
-      "additionalProperties": false,
       "properties": {},
       "type": "object"
     },
@@ -31489,13 +31637,6 @@
     "Record_string_NotificationCommunity": {
       "additionalProperties": {
         "$ref": "#/components/schemas/NotificationCommunity"
-      },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_number": {
-      "additionalProperties": {
-        "type": "number"
       },
       "properties": {},
       "type": "object"
@@ -31740,13 +31881,6 @@
       "properties": {},
       "type": "object"
     },
-    "Record_string_string": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "properties": {},
-      "type": "object"
-    },
     "Record_string_Topic": {
       "additionalProperties": {
         "additionalProperties": false,
@@ -31966,11 +32100,6 @@
       "properties": {},
       "type": "object"
     },
-    "Record_string_unknown": {
-      "additionalProperties": {},
-      "properties": {},
-      "type": "object"
-    },
     "Record_string_UrlEmbed": {
       "additionalProperties": {
         "$ref": "#/components/schemas/UrlEmbed"
@@ -32013,36 +32142,68 @@
       "properties": {},
       "type": "object"
     },
-    "RecordModerationRevealRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "postId": {
-          "anyOf": [
-            {
-              "format": "uuid",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
+    "Record_string___id__string__name__string__slug__string___": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
         },
-        "reportId": {
-          "anyOf": [
-            {
-              "format": "uuid",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "surface": {
-          "$ref": "#/components/schemas/ModMediaRevealSurface"
-        }
+        "required": ["id", "name", "slug"],
+        "type": "object"
       },
-      "required": ["surface"],
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string___previous__unknown__next__unknown___": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {},
+          "previous": {}
+        },
+        "required": ["next", "previous"],
+        "type": "object"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_boolean": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_never": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_number": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_string": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_unknown": {
+      "additionalProperties": {},
+      "properties": {},
       "type": "object"
     },
     "ReferralClickLogEntry": {
@@ -32389,16 +32550,6 @@
       ],
       "type": "object"
     },
-    "RejectionBody": {
-      "additionalProperties": false,
-      "properties": {
-        "category_text": {
-          "type": "string"
-        }
-      },
-      "required": ["category_text"],
-      "type": "object"
-    },
     "RejectTopicClaimRequest": {
       "additionalProperties": false,
       "properties": {
@@ -32407,6 +32558,16 @@
         }
       },
       "required": ["rejection_reason"],
+      "type": "object"
+    },
+    "RejectionBody": {
+      "additionalProperties": false,
+      "properties": {
+        "category_text": {
+          "type": "string"
+        }
+      },
+      "required": ["category_text"],
       "type": "object"
     },
     "RemoveDisputeAnnotationRequest": {
@@ -32482,6 +32643,26 @@
             }
           ]
         },
+        "creator_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "id": {
           "type": "string"
         },
@@ -32531,7 +32712,37 @@
             }
           ]
         },
+        "revoker_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoker_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "source_flag_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_type": {
           "anyOf": [
             {
               "type": "null"
@@ -32544,13 +32755,35 @@
         "updated_at": {
           "type": "string"
         },
+        "user_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "user_id": {
           "type": "string"
+        },
+        "user_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "required": [
         "created_at",
         "created_by_id",
+        "creator_display_name",
+        "creator_username",
         "id",
         "reason",
         "review_due_at",
@@ -32558,9 +32791,189 @@
         "reviewed_by_id",
         "revoked_at",
         "revoked_by_id",
+        "revoker_display_name",
+        "revoker_username",
         "source_flag_id",
+        "source_flag_type",
         "updated_at",
-        "user_id"
+        "user_display_name",
+        "user_id",
+        "user_username"
+      ],
+      "type": "object"
+    },
+    "ReportAbusePenaltyReviewDue": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "review_due_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoker_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoker_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_type": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "user_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "user_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "created_at",
+        "created_by_id",
+        "creator_display_name",
+        "creator_username",
+        "id",
+        "reason",
+        "review_due_at",
+        "reviewed_at",
+        "reviewed_by_id",
+        "revoked_at",
+        "revoked_by_id",
+        "revoker_display_name",
+        "revoker_username",
+        "source_flag_id",
+        "source_flag_type",
+        "updated_at",
+        "user_display_name",
+        "user_id",
+        "user_username"
       ],
       "type": "object"
     },
@@ -32572,6 +32985,9 @@
         },
         "details": {
           "$ref": "#/components/schemas/Record_string_unknown"
+        },
+        "entity_label": {
+          "type": "string"
         },
         "flag_type": {
           "const": "mass_report_suspected"
@@ -32622,6 +33038,16 @@
             }
           ]
         },
+        "reported_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "reporter_count": {
           "type": "number"
         },
@@ -32658,6 +33084,26 @@
             }
           ]
         },
+        "resolver_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "rss_feed_item_id": {
           "anyOf": [
             {
@@ -32672,6 +33118,7 @@
       "required": [
         "created_at",
         "details",
+        "entity_label",
         "flag_type",
         "hostname",
         "hostname_id",
@@ -32679,10 +33126,13 @@
         "new_account_reporter_percent",
         "post_id",
         "reported_user_id",
+        "reported_username",
         "reporter_count",
         "resolution",
         "resolved_at",
         "resolved_by_id",
+        "resolver_display_name",
+        "resolver_username",
         "rss_feed_item_id"
       ],
       "type": "object"
@@ -32696,6 +33146,52 @@
         }
       },
       "required": ["action"],
+      "type": "object"
+    },
+    "ResolveDisputeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": ["annotate", "dismiss", "remove"],
+          "type": "string"
+        },
+        "body_text": {
+          "type": "string"
+        }
+      },
+      "required": ["action"],
+      "type": "object"
+    },
+    "ResolveModerationReportRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": ["dismissed", "reviewed"],
+          "type": "string"
+        }
+      },
+      "required": ["status"],
+      "type": "object"
+    },
+    "ResolveReportIntegrityFlagRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "const": "dismissed"
+        }
+      },
+      "required": ["resolution"],
+      "type": "object"
+    },
+    "ResolveVoteIntegrityFlagRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "enum": ["dismissed", "penalized", "suspended"],
+          "type": "string"
+        }
+      },
+      "required": ["resolution"],
       "type": "object"
     },
     "ResolvedEmbed": {
@@ -32783,52 +33279,6 @@
         "thumbnail",
         "title"
       ],
-      "type": "object"
-    },
-    "ResolveDisputeRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "action": {
-          "enum": ["annotate", "dismiss", "remove"],
-          "type": "string"
-        },
-        "body_text": {
-          "type": "string"
-        }
-      },
-      "required": ["action"],
-      "type": "object"
-    },
-    "ResolveModerationReportRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "status": {
-          "enum": ["dismissed", "reviewed"],
-          "type": "string"
-        }
-      },
-      "required": ["status"],
-      "type": "object"
-    },
-    "ResolveReportIntegrityFlagRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "resolution": {
-          "const": "dismissed"
-        }
-      },
-      "required": ["resolution"],
-      "type": "object"
-    },
-    "ResolveVoteIntegrityFlagRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "resolution": {
-          "enum": ["dismissed", "penalized", "suspended"],
-          "type": "string"
-        }
-      },
-      "required": ["resolution"],
       "type": "object"
     },
     "RetailerAttributes": {
@@ -33006,6 +33456,9 @@
         "post_id": {
           "type": "string"
         },
+        "post_label": {
+          "type": "string"
+        },
         "public_response": {
           "anyOf": [
             {
@@ -33122,6 +33575,7 @@
         "latest_lifecycle_change_id",
         "model",
         "post_id",
+        "post_label",
         "public_response",
         "reason",
         "recommended_action",
@@ -33346,6 +33800,9 @@
           "required": ["disposition", "evidence_summary", "reason_codes"],
           "type": "object"
         },
+        "post_label": {
+          "type": "string"
+        },
         "post_type": {
           "type": "string"
         },
@@ -33404,6 +33861,7 @@
         "markdown_preview",
         "media_reveal",
         "moderation_summary",
+        "post_label",
         "post_type",
         "root_post_id",
         "root_post_type",
@@ -33919,6 +34377,22 @@
       "enum": ["api-key", "oauth"],
       "type": "string"
     },
+    "SearchReviewQueueResult": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/ReviewQueuePost"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
+      "type": "object"
+    },
     "SearchedTopicAlias": {
       "additionalProperties": false,
       "properties": {
@@ -33949,22 +34423,6 @@
         }
       },
       "required": ["alias", "topic", "topic_id"],
-      "type": "object"
-    },
-    "SearchReviewQueueResult": {
-      "additionalProperties": false,
-      "properties": {
-        "page_info": {
-          "$ref": "#/components/schemas/PageInfo"
-        },
-        "results": {
-          "items": {
-            "$ref": "#/components/schemas/ReviewQueuePost"
-          },
-          "type": "array"
-        }
-      },
-      "required": ["page_info", "results"],
       "type": "object"
     },
     "SendFollowersRequestContract": {
@@ -35359,8 +35817,28 @@
     "TopicClaim": {
       "additionalProperties": false,
       "properties": {
+        "claimant_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "claimant_user_id": {
           "type": "string"
+        },
+        "claimant_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "claimed_role": {
           "type": "string"
@@ -35457,6 +35935,9 @@
         "topic_id": {
           "type": "string"
         },
+        "topic_name": {
+          "type": "string"
+        },
         "updated_at": {
           "type": "string"
         },
@@ -35518,7 +35999,9 @@
         }
       },
       "required": [
+        "claimant_display_name",
         "claimant_user_id",
+        "claimant_username",
         "claimed_role",
         "created_at",
         "domain_verified_at",
@@ -35532,6 +36015,7 @@
         "revoked_by_id",
         "submitted_at",
         "topic_id",
+        "topic_name",
         "updated_at",
         "verification_hostname_id",
         "verification_method",
@@ -35548,8 +36032,28 @@
     "TopicClaimWithState": {
       "additionalProperties": false,
       "properties": {
+        "claimant_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "claimant_user_id": {
           "type": "string"
+        },
+        "claimant_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "claimed_role": {
           "type": "string"
@@ -35633,6 +36137,9 @@
             }
           ]
         },
+        "state": {
+          "$ref": "#/components/schemas/TopicClaimState"
+        },
         "submitted_at": {
           "anyOf": [
             {
@@ -35643,10 +36150,10 @@
             }
           ]
         },
-        "state": {
-          "$ref": "#/components/schemas/TopicClaimState"
-        },
         "topic_id": {
+          "type": "string"
+        },
+        "topic_name": {
           "type": "string"
         },
         "updated_at": {
@@ -35710,7 +36217,9 @@
         }
       },
       "required": [
+        "claimant_display_name",
         "claimant_user_id",
+        "claimant_username",
         "claimed_role",
         "created_at",
         "domain_verified_at",
@@ -35722,9 +36231,10 @@
         "revocation_reason",
         "revoked_at",
         "revoked_by_id",
-        "submitted_at",
         "state",
+        "submitted_at",
         "topic_id",
+        "topic_name",
         "updated_at",
         "verification_hostname_id",
         "verification_method",
@@ -37813,6 +38323,89 @@
       ],
       "type": "object"
     },
+    "UserModNote": {
+      "additionalProperties": false,
+      "properties": {
+        "author_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "author_user_id": {
+          "type": "string"
+        },
+        "author_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "type": "string"
+        },
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "community_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "target_user_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "author_display_name",
+        "author_user_id",
+        "author_username",
+        "body",
+        "community_id",
+        "community_name",
+        "created_at",
+        "deleted_at",
+        "id",
+        "target_user_id"
+      ],
+      "type": "object"
+    },
     "UserModerationContext": {
       "additionalProperties": false,
       "properties": {
@@ -37869,56 +38462,6 @@
         "community_removal_count",
         "content_removal_count",
         "trust_tier"
-      ],
-      "type": "object"
-    },
-    "UserModNote": {
-      "additionalProperties": false,
-      "properties": {
-        "author_user_id": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        },
-        "community_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "target_user_id": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "author_user_id",
-        "body",
-        "community_id",
-        "created_at",
-        "deleted_at",
-        "id",
-        "target_user_id"
       ],
       "type": "object"
     },
@@ -39707,6 +40250,9 @@
         "details": {
           "$ref": "#/components/schemas/Record_string_unknown"
         },
+        "entity_label": {
+          "type": "string"
+        },
         "entity_relation_id": {
           "anyOf": [
             {
@@ -39790,6 +40336,26 @@
             }
           ]
         },
+        "resolver_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "rss_feed_item_id": {
           "anyOf": [
             {
@@ -39815,6 +40381,7 @@
         "agent_moderation_id",
         "created_at",
         "details",
+        "entity_label",
         "entity_relation_id",
         "flag_type",
         "hostname",
@@ -39824,6 +40391,8 @@
         "resolution",
         "resolved_at",
         "resolved_by_id",
+        "resolver_display_name",
+        "resolver_username",
         "rss_feed_item_id",
         "topic_id"
       ],
@@ -39836,7 +40405,34 @@
           "type": "string"
         },
         "created_by_id": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "id": {
           "type": "string"
@@ -39890,7 +40486,47 @@
             }
           ]
         },
+        "revoker_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoker_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "source_flag_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_type": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_display_name": {
           "anyOf": [
             {
               "type": "null"
@@ -39902,11 +40538,23 @@
         },
         "user_id": {
           "type": "string"
+        },
+        "user_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "required": [
         "created_at",
         "created_by_id",
+        "creator_display_name",
+        "creator_username",
         "id",
         "penalty_multiplier",
         "reason",
@@ -39915,8 +40563,181 @@
         "reviewed_by_id",
         "revoked_at",
         "revoked_by_id",
+        "revoker_display_name",
+        "revoker_username",
         "source_flag_id",
-        "user_id"
+        "source_flag_type",
+        "user_display_name",
+        "user_id",
+        "user_username"
+      ],
+      "type": "object"
+    },
+    "VoteWeightPenaltyReviewDue": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "type": "string"
+        },
+        "creator_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "penalty_multiplier": {
+          "type": "number"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "review_due_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoker_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoker_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_type": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "user_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "created_at",
+        "created_by_id",
+        "creator_display_name",
+        "creator_username",
+        "id",
+        "penalty_multiplier",
+        "reason",
+        "review_due_at",
+        "reviewed_at",
+        "reviewed_by_id",
+        "revoked_at",
+        "revoked_by_id",
+        "revoker_display_name",
+        "revoker_username",
+        "source_flag_id",
+        "source_flag_type",
+        "user_display_name",
+        "user_id",
+        "user_username"
       ],
       "type": "object"
     },
@@ -39994,278 +40815,6 @@
         "updated_at",
         "user_agent",
         "user_id"
-      ],
-      "type": "object"
-    },
-    "OAuthProviderConnectRequest": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "nonce": {
-              "type": "string"
-            },
-            "token": {
-              "type": "string"
-            },
-            "userData": {
-              "additionalProperties": false,
-              "properties": {
-                "name": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "re_auth_token": {
-              "type": "string"
-            }
-          },
-          "required": ["token"],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "credential": {
-              "type": "string"
-            },
-            "re_auth_token": {
-              "type": "string"
-            }
-          },
-          "required": ["credential"],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "codeVerifier": {
-              "type": "string"
-            },
-            "redirectUri": {
-              "type": "string"
-            },
-            "re_auth_token": {
-              "type": "string"
-            }
-          },
-          "required": ["code", "redirectUri"],
-          "type": "object"
-        }
-      ]
-    },
-    "ReportAbusePenaltyReviewDue": {
-      "additionalProperties": false,
-      "properties": {
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "reason": {
-          "type": "string"
-        },
-        "review_due_at": {
-          "type": "string"
-        },
-        "reviewed_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "reviewed_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "source_flag_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "user_id": {
-          "type": "string"
-        },
-        "user_username": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "created_at",
-        "created_by_id",
-        "id",
-        "reason",
-        "review_due_at",
-        "reviewed_at",
-        "reviewed_by_id",
-        "revoked_at",
-        "revoked_by_id",
-        "source_flag_id",
-        "updated_at",
-        "user_id",
-        "user_username"
-      ],
-      "type": "object"
-    },
-    "VoteWeightPenaltyReviewDue": {
-      "additionalProperties": false,
-      "properties": {
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "penalty_multiplier": {
-          "type": "number"
-        },
-        "reason": {
-          "type": "string"
-        },
-        "review_due_at": {
-          "type": "string"
-        },
-        "reviewed_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "reviewed_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "source_flag_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "user_id": {
-          "type": "string"
-        },
-        "user_username": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "created_at",
-        "created_by_id",
-        "id",
-        "penalty_multiplier",
-        "reason",
-        "review_due_at",
-        "reviewed_at",
-        "reviewed_by_id",
-        "revoked_at",
-        "revoked_by_id",
-        "source_flag_id",
-        "user_id",
-        "user_username"
       ],
       "type": "object"
     }

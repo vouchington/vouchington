@@ -1,6 +1,7 @@
 export interface AdminReviewQueuePost {
   id: string
   title: string
+  post_label: string
   declared_language: string | null
   lingua_rs_detected_language: string | null
   slug: string | null
