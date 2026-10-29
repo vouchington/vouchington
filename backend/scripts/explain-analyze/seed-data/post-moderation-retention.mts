@@ -93,7 +93,7 @@ export async function setSeedPostModerationPassEvidenceDormant(): Promise<void> 
     [versionIds],
   )
   await write(
-    '/* analyzeDormantPostModerationPassEvidence */ ANALYZE post_moderation_dispositions, post_moderation_versions',
+    '/* analyzeDormantPostModerationPassEvidence */ VACUUM (ANALYZE) post_moderation_dispositions, post_moderation_versions',
   )
 }
 

@@ -14,6 +14,7 @@ export async function cleanupPostModerationLedgerPage(
   batchSize: number,
   requestedUpperId: string,
   lowerId: string,
+  lowerBoundDate: Date | null,
 ): Promise<{ changed: number; hasMore: boolean }> {
   // Each phase commits before the next phase acquires a different post's lock.
   // This keeps every writer and worker on post→work→source or work→source order.
@@ -23,6 +24,7 @@ export async function cleanupPostModerationLedgerPage(
     batchSize,
     requestedUpperId,
     lowerId,
+    lowerBoundDate,
     dirty.processed,
   )
   const policy =
@@ -54,6 +56,7 @@ async function runPostModerationDuePage(
   batchSize: number,
   requestedUpperId: string,
   lowerId: string,
+  lowerBoundDate: Date | null,
   dirtyProcessed: boolean,
 ): Promise<{ changed: number; hasMore: boolean }> {
   await using query = await beginTransaction()
@@ -80,7 +83,7 @@ async function runPostModerationDuePage(
   if (!cursor) throw new Error(`Missing post moderation retention cursor: ${kind}`)
   const resume =
     cursor.cursor_lower_bound_record_id !== null &&
-    cursor.cursor_lower_bound_record_id <= lowerId &&
+    cursor.cursor_lower_bound_record_id === lowerId &&
     cursor.sweep_upper_bound_record_id !== null &&
     cursor.sweep_upper_bound_record_id > lowerId &&
     cursor.sweep_upper_bound_record_id <= requestedUpperId &&
@@ -88,8 +91,16 @@ async function runPostModerationDuePage(
     cursor.cursor_record_id !== null &&
     !dirtyProcessed
   const upperId = resume ? cursor.sweep_upper_bound_record_id! : requestedUpperId
-  const afterDueAt = resume ? cursor.cursor_due_at! : '-infinity'
-  const afterId = resume ? cursor.cursor_record_id! : ZERO_UUID
+  const afterDueAt = resume
+    ? cursor.cursor_due_at!
+    : kind === 'pass_evidence' && lowerBoundDate
+      ? lowerBoundDate
+      : '-infinity'
+  const afterId = resume
+    ? cursor.cursor_record_id!
+    : kind === 'pass_evidence' && lowerBoundDate
+      ? lowerId
+      : ZERO_UUID
   const { rows } =
     kind === 'superseded_versions'
       ? await query<PostModerationCandidate>(
@@ -109,11 +120,10 @@ async function runPostModerationDuePage(
            FROM post_moderation_dispositions
            WHERE retention_due_at IS NOT NULL
              AND retention_due_at < uuid_extract_timestamp($1::uuid)
-             AND id > $2::uuid AND id < $1::uuid
-             AND (retention_due_at, id) > ($3::timestamptz, $4::uuid)
+             AND (retention_due_at, id) > ($2::timestamptz, $3::uuid)
              AND disposition = 'pass' AND source <> 'staff' AND evidence <> '{}'::jsonb
-           ORDER BY retention_due_at, id LIMIT $5`,
-          [upperId, lowerId, afterDueAt, afterId, batchSize + 1],
+           ORDER BY retention_due_at, id LIMIT $4`,
+          [upperId, afterDueAt, afterId, batchSize + 1],
         )
   const page = rows.slice(0, batchSize)
   const outcome = await processPostModerationCandidatePage(query, kind, page, upperId)

@@ -49,8 +49,16 @@ export async function cleanupPostModerationLedger(
     if (options.kinds && !options.kinds.includes(kind)) continue
     let hasMore = false
     for (let batch = 0; batch < maxBatches; batch += 1) {
+      /* oxlint-disable no-await-in-loop -- each committed checkpoint determines the next page. */
       // no-mistakes-disable-next-line query-reached-per-item: two fixed streams process capped pages whose mutation and durable checkpoint must commit together.
-      const page = await cleanupPostModerationLedgerPage(kind, batchSize, cutoffId, lowerId) // oxlint-disable-line no-await-in-loop -- each committed checkpoint determines the next page.
+      const page = await cleanupPostModerationLedgerPage(
+        kind,
+        batchSize,
+        cutoffId,
+        lowerId,
+        options.lowerBoundDate ?? null,
+      )
+      /* oxlint-enable no-await-in-loop */
       if (kind === 'superseded_versions') deletedVersions += page.changed
       else clearedPassEvidence += page.changed
       hasMore = page.hasMore

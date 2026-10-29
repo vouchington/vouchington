@@ -5,7 +5,9 @@ import {
   acquirePostModerationLedgerRetentionTestLock,
   createTestExpiryWindow,
   createTestUser,
+  getTestPostModerationRetentionState,
   insertTestPost,
+  insertTestPostModerationDispositionAt,
   insertTestPostModerationVersionAt,
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
@@ -15,10 +17,67 @@ import {
 } from '@voucha/test-helpers/query-capture'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
+import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 
 const DAY_MS = 86_400_000
 
 describe('post moderation ledger progress', () => {
+  it('restarts pass evidence pagination when the lower bound rises', async () => {
+    const lock = await acquirePostModerationLedgerRetentionTestLock()
+    onTestFinished(() => lock.release())
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const user = await createTestUser()
+    const postId = await insertTestPost({
+      createdById: user.id,
+      slug: `mod-retention-bound-${randomUUID()}`,
+      title: 'Pass evidence lower bound',
+      markdown: 'body',
+      clearanceStatus: 'pending',
+    })
+    const digest = randomBytes(32)
+    await setPostLLMModerationContentSha256(postId, digest)
+    const versionId = uuidv7({ msecs: at(96).getTime() })
+    await insertTestPostModerationVersionAt({
+      id: versionId,
+      postId,
+      contentSha256: digest,
+      policyRevision: POST_MODERATION_POLICY_REVISION,
+    })
+    const dispositionIds = [95, 94, 93].map(days => uuidv7({ msecs: at(days).getTime() }))
+    for (const id of dispositionIds) {
+      await insertTestPostModerationDispositionAt({
+        id,
+        versionId,
+        source: 'openai_omni',
+        disposition: 'pass',
+        evidence: { retained: true },
+      })
+    }
+    const options = {
+      now,
+      lowerBoundDate,
+      retentionDays: 90,
+      batchSize: 1,
+      maxBatches: 1,
+      kinds: ['pass_evidence'] as const,
+    }
+    expect((await cleanupPostModerationLedger(options)).clearedPassEvidence).toBe(1)
+    await cleanupPostModerationLedger({
+      ...options,
+      lowerBoundDate: at(93),
+      batchSize: 3,
+    })
+    const state = await getTestPostModerationRetentionState({
+      versionIds: [versionId],
+      dispositionIds,
+    })
+    expect(state.dispositions.map(disposition => disposition.evidence)).toEqual([
+      {},
+      { retained: true },
+      {},
+    ])
+  })
+
   it('does not page or lock posts for unchanged current versions on repeated passes', async () => {
     const lock = await acquirePostModerationLedgerRetentionTestLock()
     onTestFinished(() => lock.release())

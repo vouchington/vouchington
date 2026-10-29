@@ -98,10 +98,11 @@ export async function runPostModerationRetentionScenarios(): Promise<void> {
   registerScenarioContract('post-moderation-pass-evidence-idle-keepers', {
     allowEmptyResult: true,
     expectations: [
+      // A generic plan may bitmap-scan the now-empty due index and sort zero rows.
+      // The fixture vacuums after moving its large keeper cohort out of that index.
       {
         kind: 'usesIndexes',
         indexes: ['idx_post_moderation_dispositions__retention_due'],
-        noSort: true,
       },
       { kind: 'maxProcessedRows', relation: 'post_moderation_dispositions', max: 1 },
     ],
