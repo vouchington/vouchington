@@ -333,8 +333,11 @@ state, not a second copy of queued request bodies. GlideMQ owns job locks, retri
 delays. Valkey loss can discard an accepted delivery, and remote senders are not expected to retry
 after `202`.
 
-Inbound admission checks the lane's unfinished work, including jobs parked by concurrency limits
-and delayed retries, to protect shared queue storage. Saturation produces a retryable response
-before acceptance. This depth check is conservative when jobs finish out of order; concurrent
-admissions can cross the threshold. Sensitive envelopes are removed after terminal failure as well
-as completion, so retry exhaustion can discard a delivery that was already acknowledged.
+After validating the bounded body, inbound admission atomically reserves shared queue capacity.
+Each accepted job holds its own reservation through retries and sender delays; terminal outcomes
+and explicit removal release it independently of earlier jobs. Saturation produces a retryable
+response before acceptance. Expired reservations are revalidated against their exact native jobs
+during the next admission: missing or terminal jobs free capacity, while live paused jobs retain
+their slots. This repairs lost release events without undercounting queued payloads. Sensitive
+envelopes are removed after terminal failure as well as completion, so retry exhaustion can
+discard a delivery that was already acknowledged.

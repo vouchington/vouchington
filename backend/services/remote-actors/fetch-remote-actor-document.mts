@@ -11,11 +11,11 @@ import {
 } from './fetch-availability-errors.mts'
 export { RemoteActorFetchAvailabilityError } from './fetch-availability-errors.mts'
 
-const FETCH_TIMEOUT_MS = 10000
+export const FETCH_TIMEOUT_MS = 10000
 // ssrf-guard@1.0.0's validateUrl short-circuits to no timeout when both `signal` and `timeoutMs`
 // are undefined (mirrors crawl-url/safety.mts:9-12's DEFAULT_DNS_TIMEOUT_MS), so this option is
 // mandatory, not a tuning knob.
-const DNS_TIMEOUT_MS = 5000
+export const DNS_TIMEOUT_MS = 5000
 // Actor documents are small JSON-LD objects; 1MB is generous headroom over any real-world one.
 const MAX_BODY_BYTES = 1_000_000
 const ACTIVITY_JSON_ACCEPT = 'application/activity+json, application/ld+json'

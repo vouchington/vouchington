@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
+import {
+  findActivityPubInboxJobsForRequestDigest,
+  removeActivityPubInboxJobForRequestDigest,
+} from '@voucha/test-helpers/activitypub-inbox-test-jobs'
 import {
   computeActivityPubInboxRequestDigest,
   processDurableActivityPubInboxDelivery,
@@ -89,14 +92,15 @@ async function deliverSignedActivity(
     contentTypeHeader: 'application/activity+json',
     rawBody: Buffer.from(body),
   })
-  const job = await backgroundQueue.getJob(`activitypub-inbox__${digest}`)
-  expect(job).toBeDefined()
+  const jobs = await findActivityPubInboxJobsForRequestDigest(digest)
+  expect(jobs).toHaveLength(1)
+  const job = jobs[0]
   try {
     await processDurableActivityPubInboxDelivery(job!.data as ActivityPubInboxDeliveryJob, data =>
       job!.updateData(data),
     )
   } finally {
-    await job?.remove()
+    await removeActivityPubInboxJobForRequestDigest(digest)
   }
 }
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-import { enqueueActivityPubInboxDelivery } from './inbox.mts'
+import { createActivityPubInboxDeliveryJobId, enqueueActivityPubInboxDelivery } from './inbox.mts'
 import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES } from '../../../services/ap-inbox-activities/durable-delivery-data-contract.mts'
 
@@ -21,9 +21,11 @@ const makeDelivery = () => ({
 describe('ActivityPub inbox enqueue', () => {
   it('keeps the exact envelope in a sensitive, deduplicated job', async () => {
     const data = makeDelivery()
-    const jobId = `activitypub-inbox__${data.requestDigest}`
-    await enqueueActivityPubInboxDelivery(data)
-    expect(await enqueueActivityPubInboxDelivery(data)).toBeNull()
+    const jobId = createActivityPubInboxDeliveryJobId(data.requestDigest)
+    const duplicateId = createActivityPubInboxDeliveryJobId(data.requestDigest)
+    await enqueueActivityPubInboxDelivery(data, jobId)
+    expect(await enqueueActivityPubInboxDelivery(data, duplicateId)).toBeNull()
+    expect(duplicateId).not.toBe(jobId)
     const jobs = await readAllQueueJobs(activitypub)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
@@ -49,8 +51,9 @@ describe('ActivityPub inbox enqueue', () => {
       contentTypeHeader: header,
       rawBodyBase64: Buffer.alloc(ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES, 0xff).toString('base64'),
     }
-    await enqueueActivityPubInboxDelivery(data)
-    const job = await activitypub.getJob(`activitypub-inbox__${data.requestDigest}`)
+    const jobId = createActivityPubInboxDeliveryJobId(data.requestDigest)
+    await enqueueActivityPubInboxDelivery(data, jobId)
+    const job = await activitypub.getJob(jobId)
     expect(job?.data).toMatchObject(data)
     await job?.remove()
   })

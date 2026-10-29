@@ -4,6 +4,7 @@ import {
   withPagedDispatcherStallBudget,
 } from '@data-stores/valkey-glide-mq/worker-stall-budget'
 import { createWorker } from '@data-stores/valkey-glide-mq'
+import { observeActivityPubInboxReservations } from '@data-stores/valkey-glide-mq/activitypub-inbox-reservations'
 import onError from '@modules/on-error'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { BACKGROUND_QUEUE_NAME, type BackgroundDomain } from '@queues/background/config'
@@ -30,6 +31,7 @@ export type BackgroundWorkerOptions = {
 export function createBackgroundWorker(options: BackgroundWorkerOptions) {
   const baseline = getBackgroundWorkerBaseline()
   const processor = createBackgroundProcessor(buildHandlerMap(options.handlers, options.domains))
+  const inboxEvents = observeActivityPubInboxReservations(BACKGROUND_QUEUE_NAME, options.prefix)
   const worker = createWorker(
     BACKGROUND_QUEUE_NAME,
     withPagedDispatcherStallBudget(BACKGROUND_QUEUE_NAME, processor, options.prefix),
@@ -43,6 +45,14 @@ export function createBackgroundWorker(options: BackgroundWorkerOptions) {
     },
   )
   closePauseWatcherWithWorker(worker)
+  const closeWorker = worker.close
+  worker.close = async function closeWorkerAndInboxEvents(force?: boolean): Promise<void> {
+    try {
+      await closeWorker.call(worker, force)
+    } finally {
+      await inboxEvents.close()
+    }
+  }
   return worker
 }
 

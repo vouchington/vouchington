@@ -15,7 +15,7 @@ const DELIVERY = {
   removeOnComplete: 100,
   removeOnFail: 100,
 } as const
-const INBOX = {
+export const ACTIVITYPUB_INBOX_JOB_POLICY = {
   attempts: 5,
   backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
   removeOnComplete: 100,
@@ -57,7 +57,7 @@ export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubI
     ordering: INBOUND_ORDERING,
     sensitive: true,
     // Sensitive envelope jobs are removed after completion or terminal failure.
-    ...INBOX,
+    ...ACTIVITYPUB_INBOX_JOB_POLICY,
   },
 )
 export const ACTIVITYPUB_JOBS = [

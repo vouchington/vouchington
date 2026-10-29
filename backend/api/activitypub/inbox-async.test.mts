@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
-import { registerActivityPubInboxJobCleanup } from '@voucha/test-helpers/activitypub-inbox-test-jobs'
+import {
+  findActivityPubInboxJobsForRequestDigest,
+  registerActivityPubInboxJobCleanup,
+} from '@voucha/test-helpers/activitypub-inbox-test-jobs'
 import { setTestRemoteActorFetchedAt } from '@voucha/test-helpers/entities/remote-actors'
 import { failNextOwnedActivityPubInboxEnqueue } from '@voucha/test-helpers/activitypub-inbox-enqueue-failure'
 import { postInbox, signInboxRequest } from '@voucha/test-helpers/activitypub-inbox-api-requests'
@@ -39,15 +41,14 @@ describe('POST /ap/inbox queue admission', () => {
       contentTypeHeader: 'application/activity+json',
       rawBody: Buffer.from(body),
     })
-    const jobId = `activitypub-inbox__${requestDigest}`
-    onTestFinished(async () => {
-      await (await backgroundQueue.getJob(jobId))?.remove()
-    })
+    registerActivityPubInboxJobCleanup(requestDigest)
 
     await postInbox(signed).send(body).expect(202)
     await postInbox(signed).send(body).expect(202)
 
-    const job = await backgroundQueue.getJob(jobId)
+    const jobs = await findActivityPubInboxJobsForRequestDigest(requestDigest)
+    expect(jobs).toHaveLength(1)
+    const job = jobs[0]
     expect(job?.data).toMatchObject({
       requestDigest,
       rawBodyBase64: Buffer.from(body).toString('base64'),
@@ -95,7 +96,9 @@ describe('POST /ap/inbox queue admission', () => {
 
     await postInbox(signed).send(body).expect(202)
 
-    const job = await backgroundQueue.getJob(`activitypub-inbox__${requestDigest}`)
+    const jobs = await findActivityPubInboxJobsForRequestDigest(requestDigest)
+    expect(jobs).toHaveLength(1)
+    const job = jobs[0]
     expect(job?.data).toMatchObject({
       requestDigest,
       rawBodyBase64: Buffer.from(body).toString('base64'),
@@ -122,6 +125,6 @@ describe('POST /ap/inbox queue admission', () => {
     registerActivityPubInboxJobCleanup(requestDigest)
 
     await postInbox(signed).send(body).expect(401)
-    expect(await backgroundQueue.getJob(`activitypub-inbox__${requestDigest}`)).toBeNull()
+    expect(await findActivityPubInboxJobsForRequestDigest(requestDigest)).toHaveLength(0)
   })
 })

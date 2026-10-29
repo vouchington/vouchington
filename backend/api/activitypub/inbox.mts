@@ -1,9 +1,20 @@
 import app from '../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getRemoteActorByKeyId, isRemoteActorFresh } from '@services/remote-actors'
-import { getRemoteActorsWorkLimit } from '@services/remote-actors/work-limits'
-import { getOrderingLanePendingCount } from '@data-stores/valkey-glide-mq/ordering-lane-pending-count'
+import {
+  getRemoteActorsWorkLimit,
+  remoteActorsWorkMaxValues,
+} from '@services/remote-actors/work-limits'
+import {
+  DNS_TIMEOUT_MS,
+  FETCH_TIMEOUT_MS,
+} from '@services/remote-actors/fetch-remote-actor-document'
+import {
+  releaseActivityPubInboxDelivery,
+  reserveActivityPubInboxDelivery,
+} from '@data-stores/valkey-glide-mq/activitypub-inbox-reservations'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { background } from '@queues/background/queues'
 import onError from '@modules/on-error'
 import { isFediverseInstanceApprovedByHostname } from '@services/fediverse-instances'
 import { extractSignatureKeyId, verifyDigest, verifySignature } from '@modules/http-signatures'
@@ -13,7 +24,12 @@ import {
   createActivityPubInboxDeliveryJob,
   parseInboundActivity,
 } from '@services/ap-inbox-activities'
-import { enqueueActivityPubInboxDelivery } from '@queues/activitypub/enqueues/inbox'
+import {
+  createActivityPubInboxDeliveryJobId,
+  enqueueActivityPubInboxDelivery,
+  getActivityPubInboxDeliveryTtlMs,
+} from '@queues/activitypub/enqueues/inbox'
+import { ACTIVITYPUB_INBOX_LIMITS } from '@services/route-rate-limits/config'
 import {
   getActivityPubInboxAttemptWindowSeconds,
   getActivityPubInboxWindowSeconds,
@@ -57,26 +73,6 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
 
   if (await isActivityPubInboxSenderRateLimited(senderHostname)) {
     rejectRateLimitedActivityPubDelivery(ctx, getActivityPubInboxWindowSeconds())
-    return
-  }
-
-  // The native ordering frontier includes jobs parked behind the inbound group as well as
-  // ready, active, and delayed work. Admission is a soft concurrent depth check; a read failure
-  // fails closed because this queue also carries other background domains.
-  let inboxBackedUp: boolean
-  try {
-    const pendingInbound = await getOrderingLanePendingCount(
-      BACKGROUND_QUEUE_NAME,
-      'activitypub:inbound',
-    )
-    inboxBackedUp = pendingInbound >= getRemoteActorsWorkLimit('inbound_backlog_cap')
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-    rejectBackedUpActivityPubDelivery(ctx)
-    return
-  }
-  if (inboxBackedUp) {
-    rejectBackedUpActivityPubDelivery(ctx)
     return
   }
 
@@ -136,7 +132,43 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
     new Date(),
     verifiedRemoteActorId !== undefined,
   )
-  await enqueueActivityPubInboxDelivery(delivery)
+  const jobId = createActivityPubInboxDeliveryJobId(delivery.requestDigest)
+  const ttlMs = getActivityPubInboxDeliveryTtlMs(
+    ACTIVITYPUB_INBOX_LIMITS.windowSeconds.max * 1000,
+    DNS_TIMEOUT_MS + FETCH_TIMEOUT_MS * 2,
+  )
+  let reserved: boolean
+  try {
+    reserved = await reserveActivityPubInboxDelivery(
+      BACKGROUND_QUEUE_NAME,
+      jobId,
+      getRemoteActorsWorkLimit('inbound_backlog_cap'),
+      ttlMs,
+      remoteActorsWorkMaxValues.inbound_backlog_cap,
+    )
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    rejectBackedUpActivityPubDelivery(ctx)
+    return
+  }
+  if (!reserved) {
+    rejectBackedUpActivityPubDelivery(ctx)
+    return
+  }
+  try {
+    const queued = await enqueueActivityPubInboxDelivery(delivery, jobId)
+    if (queued === null) await releaseActivityPubInboxDelivery(BACKGROUND_QUEUE_NAME, jobId)
+  } catch (err) {
+    // An ambiguous enqueue failure may have persisted the job. Keep its reservation until
+    // terminal release (or TTL) if the queue read also fails.
+    try {
+      if (!(await background.getJob(jobId)))
+        await releaseActivityPubInboxDelivery(BACKGROUND_QUEUE_NAME, jobId)
+    } catch (err_) {
+      onError(err_ instanceof Error ? err_ : new Error(String(err_)))
+    }
+    throw err
+  }
   ctx.setStatus(202)
   ctx.json({ received: true })
 })

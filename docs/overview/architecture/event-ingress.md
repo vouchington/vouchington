@@ -64,8 +64,10 @@ fetch on the request path:
   `202`. The handler never calls `getOrFetchRemoteActorByKeyId` on the worker-enabled request path.
   That outbound fetch and received-time verification run inside the worker after dequeue, where
   public egress is available.
-- Inbound lane backlog admission protects shared queue storage before accepting another envelope.
-  A saturated lane returns a retryable response without accepting or enqueueing the request.
+- After reading and validating the bounded body, atomic inbound capacity reservation protects shared
+  queue storage before enqueue. Saturation returns a retryable response without accepting the request.
+  Each job retains its reservation through retries and sender delays, releasing it at its terminal
+  outcome independently of other jobs.
 
 Model any new "external sender, auth needs a fetch" route on this file: self-contained checks gate
 enqueue; the network-dependent verification happens after the job leaves the request path.
