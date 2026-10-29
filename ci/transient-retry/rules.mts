@@ -12,7 +12,6 @@ import {
   lintLinksGithub5xxRule,
   lintLinksSetupLycheeDownloadFlakeRule,
 } from './lint-links-rules.mts'
-import { planCompletionSetupNodeToolCacheTimeoutRule } from './plan-completion-rules.mts'
 import { mainWebPlaywrightSetupAptLockRule } from './playwright-rules.mts'
 import { runnerShutdownLeafRerunRule } from './runner-shutdown-rules.mts'
 import {
@@ -34,7 +33,6 @@ export const rules: TransientRetryRule[] = [
   detectChangesPathsFilterGithub5xxRule,
   detectChangesPathsFilterGithubConnectTimeoutRule,
   gitleaksInstallReleasesDownloadFlakeRule,
-  planCompletionSetupNodeToolCacheTimeoutRule,
   backendImageAttestationEmptyPersistErrorRule,
   mainWebPlaywrightSetupAptLockRule,
   webIntegrationWranglerSocketClosedRule,
