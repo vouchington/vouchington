@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
     OR (source = 'openai_omni' AND reason_code = 'sexual_minors')),
   UNIQUE (attempt_id),
   FOREIGN KEY (attempt_id, version_id, source)
-    REFERENCES post_moderation_attempts (id, version_id, source) ON DELETE RESTRICT
+    REFERENCES post_moderation_attempts (id, version_id, source) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__version_source_id
@@ -70,9 +70,37 @@ CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__actor_user_id
 ON post_moderation_dispositions (actor_user_id)
 WHERE actor_user_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__pass_evidence_id
+ON post_moderation_dispositions (id)
+WHERE disposition = 'pass' AND source <> 'staff' AND evidence <> '{}'::jsonb;
+
+DO $$ BEGIN
+  CREATE TYPE post_moderation_retention_kinds AS ENUM ('superseded_versions', 'pass_evidence');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS post_moderation_retention_cursors (
+  kind post_moderation_retention_kinds PRIMARY KEY,
+  cursor_record_id UUID,
+  sweep_lower_bound_record_id UUID,
+  sweep_upper_bound_record_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trigger_post_moderation_retention_cursors_updated_at
+  BEFORE UPDATE ON post_moderation_retention_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE post_moderation_retention_cursors IS 'Durable UUIDv7 positions for bounded post moderation ledger retention.';
+COMMENT ON COLUMN post_moderation_retention_cursors.kind IS 'Ledger stream whose progress this row records.';
+COMMENT ON COLUMN post_moderation_retention_cursors.cursor_record_id IS 'Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.';
+COMMENT ON COLUMN post_moderation_retention_cursors.sweep_lower_bound_record_id IS 'Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.';
+COMMENT ON COLUMN post_moderation_retention_cursors.sweep_upper_bound_record_id IS 'Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.';
+COMMENT ON COLUMN post_moderation_retention_cursors.updated_at IS 'Time of the last committed progress update.';
+
 COMMENT ON TABLE post_moderation_versions IS 'Immutable moderation generations keyed by canonical post content and policy revision.';
 COMMENT ON TABLE post_moderation_attempts IS 'One open automated attempt per version and source. GlideMQ owns retries, leases, and provider backoff.';
-COMMENT ON TABLE post_moderation_dispositions IS 'Append-only typed moderation outcomes with bounded internal evidence.';
+COMMENT ON TABLE post_moderation_dispositions IS 'Typed moderation outcomes whose pass evidence is cleared after retention; decision columns remain immutable.';
 COMMENT ON COLUMN post_moderation_versions.post_id IS 'Post whose canonical content version this moderation generation evaluates.';
 COMMENT ON COLUMN post_moderation_versions.content_sha256 IS 'SHA-256 digest of the exact post content evaluated by this version.';
 COMMENT ON COLUMN post_moderation_versions.policy_revision IS 'Stable moderation-policy revision applied to this content version.';
@@ -86,6 +114,6 @@ COMMENT ON COLUMN post_moderation_dispositions.source IS 'Automated or staff sou
 COMMENT ON COLUMN post_moderation_dispositions.attempt_id IS 'Provider attempt that produced this automated outcome; absent for staff decisions.';
 COMMENT ON COLUMN post_moderation_dispositions.disposition IS 'Normalized moderation result: pass, review, reject, or incomplete.';
 COMMENT ON COLUMN post_moderation_dispositions.reason_code IS 'Stable provider-neutral policy or availability reason code.';
-COMMENT ON COLUMN post_moderation_dispositions.evidence IS 'Bounded private evidence for moderation staff; never part of public post contracts.';
+COMMENT ON COLUMN post_moderation_dispositions.evidence IS 'Bounded private staff evidence; aged current automated passes are cleared without changing their outcome.';
 COMMENT ON COLUMN post_moderation_dispositions.actor_user_id IS 'Immutable staff actor; references the retained user identity, which survives user deletion but never authorizes.';
 COMMENT ON COLUMN post_moderation_dispositions.decided_at IS 'UUIDv7-derived clock time at which this immutable disposition was created.';

@@ -112,6 +112,7 @@ export default async function processPsql(
             activeCopyrightFamilies: [],
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
+            postModerationLedger: { kinds: data.continuation.activePostModerationKinds },
             ...(data.continuation.userPurge
               ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
               : {}),
@@ -126,6 +127,7 @@ export default async function processPsql(
       const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
       const activeMembershipFamilies = unfinishedMembershipFamilies(result)
       const activeCopyrightFamilies = unfinishedCopyrightFamilies(result)
+      const activePostModerationKinds = result.postModerationLedger.remainingKinds
       const userPurge = result.softDeletedUsers.hasMore
         ? result.softDeletedUsers.userPurge
         : undefined
@@ -146,6 +148,7 @@ export default async function processPsql(
       if (
         activeClassifierSweeps.length > 0 ||
         activeMembershipFamilies.length > 0 ||
+        activePostModerationKinds.length > 0 ||
         result.softDeletedUsers.hasMore
       ) {
         if (!jobId) throw new Error('Data retention continuation needs the current job ID')
@@ -158,6 +161,7 @@ export default async function processPsql(
           step: (data?.continuation?.step ?? 0) + 1,
           activeClassifierSweeps,
           activeMembershipFamilies,
+          activePostModerationKinds,
           ...(userPurge ? { userPurge } : {}),
         })
       }

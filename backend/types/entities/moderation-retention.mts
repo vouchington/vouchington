@@ -18,3 +18,6 @@ export const MODERATION_CLEANUP_KINDS = [
 ] as const
 
 export type ModerationRecordCleanupKind = (typeof MODERATION_CLEANUP_KINDS)[number]
+
+export const POST_MODERATION_RETENTION_KINDS = ['superseded_versions', 'pass_evidence'] as const
+export type PostModerationRetentionKind = (typeof POST_MODERATION_RETENTION_KINDS)[number]

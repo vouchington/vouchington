@@ -30,6 +30,12 @@ sweep removes stale entries after their claim and exposure windows, while a rene
 reveal stays available. Moderation cases, reports, and appeals keep their separate durable lifecycle;
 copyright evidence follows [its own retention policy](./COPYRIGHT-NOTICES.md#evidence-retention).
 
+Retention leaves the decision for a post's current content intact, including when an edit restores
+an earlier digest. An older version expires only after another version of the same post has aged past the
+retention window. Current automated pass decisions remain available for clearance checks, while
+their private evidence is cleared after that window. Review, rejection, and staff decisions keep
+their evidence for their own decision lifecycle.
+
 ## Paid Transparency Projection
 
 The paid transparency API is an aggregate release, not a moderation queue or a community record
