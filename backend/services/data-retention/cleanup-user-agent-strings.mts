@@ -1,4 +1,8 @@
-import { assertWhitelistedSqlIdentifier, beginTransaction } from '@data-stores/psql'
+import {
+  assertWhitelistedSqlIdentifier,
+  beginTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import { VOTE_TABLE_IDENTIFIERS } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { voteTables } from './vote-ballot-tables.mts'
@@ -28,6 +32,7 @@ export async function cleanupOrphanedUserAgentStrings(
   batchSize: number,
   userAgentStringIds?: readonly string[],
   now = new Date(),
+  borrowedQuery?: TransactionQuery,
 ): Promise<UserAgentStringCleanupPage> {
   if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 5_000) {
     throw new RangeError('User-agent cleanup batch size must be between 1 and 5000')
@@ -36,13 +41,14 @@ export async function cleanupOrphanedUserAgentStrings(
     throw new RangeError('Scoped user-agent rows must fit one page')
   }
   const cutoffId = getMinUUIDv7ForDate(new Date(now.getTime() - DAY_MS))
-  await using query = await beginTransaction()
+  await using ownedQuery = borrowedQuery ? undefined : await beginTransaction()
+  const query = borrowedQuery ?? ownedQuery!
   const { rows: candidates } = await query<{ id: string }>(
     `/* listUserAgentStringCleanupCandidates */
      SELECT user_agent_string_id AS id FROM user_agent_string_cleanup_candidates
      WHERE user_agent_string_id < $1::uuid
        AND ($2::uuid[] IS NULL OR user_agent_string_id = ANY($2::uuid[]))
-     ORDER BY user_agent_string_id LIMIT $3 FOR UPDATE SKIP LOCKED`,
+     ORDER BY user_agent_string_id LIMIT $3`,
     [cutoffId, userAgentStringIds ?? null, batchSize + 1],
   )
   const page = candidates.slice(0, batchSize)
@@ -53,6 +59,16 @@ export async function cleanupOrphanedUserAgentStrings(
     [page.map(row => row.id)],
   )
   const lockedIds = locked.map(row => row.id)
+  // Consume only candidates whose parent rows we locked, before checking references. A release
+  // trigger that starts afterward waits for this DELETE and can requeue the still-referenced row.
+  const { rows: consumed } = await query<{ id: string }>(
+    `/* consumeUserAgentStringCleanupCandidates */
+     DELETE FROM user_agent_string_cleanup_candidates
+     WHERE user_agent_string_id = ANY($1::uuid[])
+     RETURNING user_agent_string_id AS id`,
+    [lockedIds],
+  )
+  const consumedIds = consumed.map(row => row.id)
   const { rowCount } = await query(
     `/* deleteOrphanedUserAgentStrings */
      DELETE FROM user_agent_strings ua
@@ -63,15 +79,9 @@ export async function cleanupOrphanedUserAgentStrings(
          WHERE session.user_agent_string_id = ua.id LIMIT 1
        )
        ${BALLOT_REFERENCE_PREDICATES}`,
-    [lockedIds],
+    [consumedIds],
   )
-  await query(
-    `/* consumeUserAgentStringCleanupCandidates */
-     DELETE FROM user_agent_string_cleanup_candidates
-     WHERE user_agent_string_id = ANY($1::uuid[])`,
-    [lockedIds],
-  )
-  const hasMore = candidates.length > batchSize && lockedIds.length > 0
-  await query.commit()
+  const hasMore = candidates.length > batchSize && consumedIds.length > 0
+  if (ownedQuery) await ownedQuery.commit()
   return { scanned: page.length, deleted: rowCount ?? 0, hasMore }
 }

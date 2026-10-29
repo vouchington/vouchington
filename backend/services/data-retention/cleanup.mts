@@ -421,11 +421,11 @@ export async function runDataRetentionCleanup(
       cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications)),
       cleanupModerationEmailSends(withLimits(options.moderationEmailSends)),
     ])
+  // ast-grep-ignore: no-three-sequential-awaits -- retention families run serially to cap concurrent database work
   const federationRetention = await cleanupFederationRetention({
     ...limits,
     ...options.federationRetention,
   })
-  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const supersededVoteBallots = await cleanupSupersededVoteBallots(
     limits.batchSize,
     new Date(),
@@ -448,6 +448,7 @@ export async function runDataRetentionCleanup(
     retainedPageSize,
     options.retainedMediaBindingIds,
   )
+  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedIdentityRoots = await cleanupRetainedIdentityRoots(
     retainedPageSize,
     options.retainedIdentityRootIds,

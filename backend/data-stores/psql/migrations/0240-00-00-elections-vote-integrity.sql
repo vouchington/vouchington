@@ -61,13 +61,18 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.user_agent_string_id IS NULL THEN
     RETURN NULL;
-  ELSIF TG_OP = 'DELETE' THEN
-    INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)
-    VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;
-  ELSIF OLD.user_agent_string_id IS DISTINCT FROM NEW.user_agent_string_id THEN
-    INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)
-    VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;
   END IF;
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.user_agent_string_id IS NOT DISTINCT FROM NEW.user_agent_string_id THEN
+      RETURN NULL;
+    END IF;
+  END IF;
+  -- Keep the parent locked through the releasing transaction even if the candidate already
+  -- exists. Cleanup must not consume that candidate while this release is uncommitted.
+  PERFORM 1 FROM user_agent_strings
+  WHERE id = OLD.user_agent_string_id FOR KEY SHARE;
+  INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)
+  VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;
   RETURN NULL;
 END $$;
 CREATE OR REPLACE TRIGGER trigger_user_agent_strings_queue_cleanup_candidate

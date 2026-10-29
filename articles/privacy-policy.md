@@ -198,7 +198,7 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Deleted account content** — posts are reassigned to a [deleted] tombstone; personal identifying information (email, phone, social logins, passkeys) is removed upon account deletion
 - **Recently viewed data** — 30-day rolling retention
 - **Referral clicks** — landing URLs and campaign tracking fields are removed after 90 days; the remaining attribution record is removed after 24 months
-- **Vote and activity data** — older votes are deleted after they have been superseded for 90 days, while your most recent vote is kept; pending federation activity may remain through its supported replay period. Daily anonymous totals remain for engagement and trust scoring after individual votes are removed.
+- **Vote and activity data** — older votes are deleted after they have been superseded for 90 days, while your most recent vote is kept; pending federation activity may remain through its supported replay period. Daily anonymous totals of removed post votes remain for engagement metrics.
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
 - **Identity verification** — after verification ends or an account is deleted, we retain only a keyed hash of the identity document and verification lifecycle dates indefinitely to prevent the same document from verifying another account. The retained record has no account, name, image, document details, or provider payload.
@@ -251,7 +251,7 @@ To delete your account, go to Settings and confirm by typing "delete my account.
 Your data export is a ZIP file of CSV files, grouped here by category:
 
 - **Profile and sign-in** — `profile.csv` (username, display preferences, bio, settings, created date), `emails.csv`, `phones.csv`, `oauth-accounts.csv` (connected sign-in providers), `passkeys.csv` (passkey details, never private keys), and `consents.csv` (your consent records)
-- **Content and activity** — `posts.csv` (all posts created by you), `votes.csv` (all votes you cast), `bookmarks.csv` (saves, follows, hides, mutes, blocks, subscriptions, and other bookmarks), `entity-relations.csv` (topics you tagged yourself with and posts that mention you), `followed-rss-feeds.csv`, `followed-topics.csv`, and `referral-attributions.csv`
+- **Content and activity** — `posts.csv` (all posts created by you), `votes.csv` (your current votes and superseded votes still retained during the 90-day window or federation replay period), `bookmarks.csv` (saves, follows, hides, mutes, blocks, subscriptions, and other bookmarks), `entity-relations.csv` (topics you tagged yourself with and posts that mention you), `followed-rss-feeds.csv`, `followed-topics.csv`, and `referral-attributions.csv`
 - **Copyright records** — `copyright-notices-filed.csv`, `copyright-appeals.csv`, and `copyright-counter-notices.csv` (what you submitted yourself), `copyright-cases.csv` (accepted cases you are part of, as members see them), and `copyright-repeat-infringer-incidents.csv` and `copyright-repeat-infringer-reviews.csv` (repeat-infringer records about your account). Text that the retention period has erased appears blank or marked as erased.
 
 Download links expire after 7 days. You can request a new export at any time.
