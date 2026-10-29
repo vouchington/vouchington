@@ -87341,6 +87341,16 @@
         }
       },
       "columns": {
+        "ballot_retention_deferred_at": {
+          "comment": "Marks a pending outbound ActivityPub source for deletion after the supported replay horizon.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -87349,7 +87359,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "device_id": {
           "comment": "Opaque client device token with no durable owner row.",
@@ -87359,7 +87369,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "id": {
           "comment": null,
@@ -87369,7 +87379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "ip_address": {
           "comment": "Audit IP address captured with the ballot event.",
@@ -87379,7 +87389,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "outbound_activitypub_distributed_at": {
           "comment": "Set when all follower-page delivery jobs for this ballot event have been admitted.",
@@ -87429,7 +87439,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "score_is_neutral": {
           "comment": "Explicit neutral ballot provenance.",
@@ -87439,7 +87449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "score_is_semantic": {
           "comment": "Explicit semantic ballot provenance.",
@@ -87449,7 +87459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "session_id": {
           "comment": "Opaque client session token with no durable owner row.",
@@ -87459,7 +87469,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "user_agent_string_id": {
           "comment": "Shared bounded user-agent string captured with the ballot event.",
@@ -87469,7 +87479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "user_id": {
           "comment": "User who cast this ballot event.",
@@ -87633,6 +87643,93 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__retention_deferred_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__retention_deferred_id ON ONLY public.post_votes USING btree (id) WHERE (ballot_retention_deferred_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ballot_retention_deferred_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__retention_delivered_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__retention_delivered_id ON ONLY public.post_votes USING btree (id) WHERE ((ballot_retention_deferred_at IS NOT NULL) AND (outbound_activitypub_distributed_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((ballot_retention_deferred_at IS NOT NULL) AND (outbound_activitypub_distributed_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__retention_ordinary_actor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__retention_ordinary_actor ON ONLY public.post_votes USING btree (post_id, user_id, id) WHERE (ballot_retention_deferred_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ballot_retention_deferred_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

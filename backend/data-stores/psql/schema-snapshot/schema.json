@@ -82888,6 +82888,17 @@
         "post_votes_score_check": "CHECK (((score IS NULL) OR ((score >= '-2'::integer) AND (score <= 2))))"
       },
       "columns": {
+        "ballot_retention_deferred_at": {
+          "collation": null,
+          "comment": "Marks a pending outbound ActivityPub source for deletion after the supported replay horizon.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -82896,7 +82907,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "device_id": {
@@ -82907,7 +82918,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "id": {
@@ -82918,7 +82929,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "ip_address": {
@@ -82929,7 +82940,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "inet"
         },
         "outbound_activitypub_distributed_at": {
@@ -82984,7 +82995,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "smallint"
         },
         "score_is_neutral": {
@@ -82995,7 +83006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "boolean"
         },
         "score_is_semantic": {
@@ -83006,7 +83017,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "session_id": {
@@ -83017,7 +83028,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "user_agent_string_id": {
@@ -83028,7 +83039,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "user_id": {
@@ -83178,6 +83189,80 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__retention_deferred_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__retention_deferred_id ON ONLY public.post_votes USING btree (id) WHERE (ballot_retention_deferred_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(ballot_retention_deferred_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__retention_delivered_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__retention_delivered_id ON ONLY public.post_votes USING btree (id) WHERE ((ballot_retention_deferred_at IS NOT NULL) AND (outbound_activitypub_distributed_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((ballot_retention_deferred_at IS NOT NULL) AND (outbound_activitypub_distributed_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__retention_ordinary_actor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__retention_ordinary_actor ON ONLY public.post_votes USING btree (post_id, user_id, id) WHERE (ballot_retention_deferred_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(ballot_retention_deferred_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
