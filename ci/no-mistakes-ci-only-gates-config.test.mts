@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { matchesGlob } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
@@ -68,5 +69,35 @@ describe('CI-only static gates are listed by impacted-checks', () => {
     expect(entry.command).toEqual(['pnpm', 'exec', 'oxlint', '--type-aware', '--deny-warnings'])
     expect([entry.always, entry.fileArgs]).toEqual([undefined, 'append'])
     expect(entry.include).toEqual(['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'])
+  })
+
+  it('lists the existing classifier import audit without appending changed paths', () => {
+    const entry = find('classifier-golden-imports')
+
+    expect(entry.command).toEqual(['node', 'ci/check-classifier-golden-imports.mts'])
+    expect([entry.always, entry.fileArgs]).toEqual([undefined, 'none'])
+  })
+
+  it.each([
+    ['ci/check-classifier-golden-imports.mts', true],
+    ['backend/data-stores/psql/index.mts', true],
+    ['backend/data-stores/psql/migrate.mts', true],
+    ['backend/data-stores/psql/migration-runner/migrations.mts', true],
+    ['backend/data-stores/psql/migration-runner/config-driven-generators.mts', true],
+    ['backend/data-stores/psql/migration-runner/nested/loader.mts', true],
+    ['backend/tsconfig.json', true],
+    ['backend/data-stores/psql/package.json', true],
+    ['backend/data-stores/psql/migrations/0001-example.sql', false],
+    ['backend/data-stores/psql/config-driven/example.mts', false],
+    ['backend/services/example.mts', false],
+    ['backend/test-helpers/example.mts', false],
+    ['web/tsconfig.json', false],
+    ['web/app/example.tsx', false],
+  ] as const)('selects the classifier import audit for %s: %s', (file, selected) => {
+    const entry = find('classifier-golden-imports')
+    const included = entry.include?.some(pattern => matchesGlob(file, pattern)) ?? false
+    const excluded = entry.exclude?.some(pattern => matchesGlob(file, pattern)) ?? false
+
+    expect(included && !excluded).toBe(selected)
   })
 })

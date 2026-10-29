@@ -468,6 +468,16 @@ checks:
       command: [pnpm, run, no-mistakes]
       fileArgs: none
       always: true
+    - name: classifier-golden-imports
+      command: [node, ci/check-classifier-golden-imports.mts]
+      fileArgs: none
+      include:
+        - ci/check-classifier-golden-imports.mts
+        - backend/data-stores/psql/index.mts
+        - backend/data-stores/psql/migrate.mts
+        - 'backend/data-stores/psql/migration-runner/**/*.mts'
+        - backend/tsconfig.json
+        - backend/data-stores/psql/package.json
     - name: lint-links-internal
       command: [./ci/lint-links.sh, --offline]
       fileArgs: none
