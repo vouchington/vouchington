@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
+import { seedMessages } from '@/lib/i18n/use-translations'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { DisputeContext } from './dispute-context'
 import { makeDispute } from '@/test-helpers/disputes-client-fixtures'
 
@@ -93,5 +96,23 @@ describe('DisputeContext', () => {
     expect(screen.getByText('Deleted user')).toBeInTheDocument()
     expect(screen.queryByText('post-1')).not.toBeInTheDocument()
     expect(screen.queryByText('claimant-fallback')).not.toBeInTheDocument()
+  })
+
+  it('translates the redacted review fallback and keeps its id out of view', async () => {
+    seedMessages('es', esMessages)
+    render(
+      <UiLocaleProvider uiLocale='es'>
+        <DisputeContext
+          dispute={makeDispute({
+            post_id: 'post-private',
+            post_label: 'review',
+            post_content: null,
+          })}
+        />
+      </UiLocaleProvider>,
+    )
+    expect(await screen.findByText('Revisión')).toBeInTheDocument()
+    expect(screen.queryByText('review')).not.toBeInTheDocument()
+    expect(screen.queryByText('post-private')).not.toBeInTheDocument()
   })
 })

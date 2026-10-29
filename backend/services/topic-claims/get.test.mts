@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUser, insertTestTopic, mergeTopicForTest } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim } from './admin-verify.mts'
@@ -8,7 +8,47 @@ import {
   listTopicClaimsForTopic,
   listTopicClaimsForUser,
   listPendingTopicClaims,
+  getTopicClaimById,
 } from './get.mts'
+import { requireTopicClaimOnTopic } from './require-on-topic.mts'
+
+describe('topic claim destination labels', () => {
+  it('uses the active merge destination across claim reads and path resolution', async () => {
+    const creator = await createTestUser()
+    const claimant = await createTestUser()
+    const sourceId = await insertTestTopic({
+      name: `Claim label source ${crypto.randomUUID()}`,
+      slug: `claim-label-source-${crypto.randomUUID()}`,
+      createdById: creator.id,
+    })
+    const destinationName = `Claim label destination ${crypto.randomUUID()}`
+    const destinationId = await insertTestTopic({
+      name: destinationName,
+      slug: `claim-label-destination-${crypto.randomUUID()}`,
+      createdById: creator.id,
+    })
+    const { claim } = await createTopicClaim(claimant.id, {
+      topicId: sourceId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    await mergeTopicForTest(sourceId, destinationId, creator.id)
+
+    await expect(getTopicClaimById(claim.id)).resolves.toMatchObject({
+      topic_id: sourceId,
+      topic_name: destinationName,
+    })
+    const page = await listTopicClaimsForUser(claimant.id, { topicIds: [sourceId] })
+    expect(page.results.find(result => result.id === claim.id)?.topic_name).toBe(destinationName)
+    const sourcePathClaim = await requireTopicClaimOnTopic(sourceId, claim.id)
+    expect(sourcePathClaim.claim).toMatchObject({
+      topic_id: sourceId,
+      topic_name: destinationName,
+    })
+    const destinationPathClaim = await requireTopicClaimOnTopic(destinationId, claim.id)
+    expect(destinationPathClaim.claim).toMatchObject(sourcePathClaim.claim)
+  })
+})
 
 describe('getVerifiedTopicClaim', () => {
   let staff: PrivateUser

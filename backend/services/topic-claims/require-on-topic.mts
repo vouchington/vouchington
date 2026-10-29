@@ -4,6 +4,7 @@ import { buildTopicByAnyCandidates } from '@services/topics/get'
 import { isModerationStaff } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import type { TopicClaim } from './config.mts'
+import { TOPIC_CLAIM_LABEL_JOINS, TOPIC_CLAIM_LABEL_SQL } from './topic-label-sql.mts'
 
 export type TopicClaimWriteContext = {
   claim: TopicClaim
@@ -26,6 +27,7 @@ export async function requireTopicClaimOnTopic(
       current_hostname_id: string | null
       current_hostname: string | null
       verification_hostname: string | null
+      claim_label_topic_id: string | null
     }
   >(
     `/* requireTopicClaimOnTopic */
@@ -36,7 +38,7 @@ export async function requireTopicClaimOnTopic(
       SELECT id FROM candidates ORDER BY priority, id DESC LIMIT 1
     ),
     matched_topic AS (
-      SELECT view_topics.id FROM view_topics
+      SELECT view_topics.id, view_topics.hostname_id FROM view_topics
       JOIN topic_data ON topic_data.id = view_topics.id
       LIMIT 1
     )
@@ -47,17 +49,18 @@ export async function requireTopicClaimOnTopic(
       tc.revoked_at, tc.revoked_by_id, tc.revocation_reason,
       tc.verification_hostname_id, tc.verification_token_issued_at,
       tc.domain_verified_at, tc.created_at, tc.updated_at,
-      COALESCE(topic_row.name, topic_row.slug, 'topic') AS topic_name,
+      ${TOPIC_CLAIM_LABEL_SQL} AS topic_name,
+      claim_label_topic.id AS claim_label_topic_id,
       claimant_profile.username AS claimant_username,
       claimant_profile.verified_display_name AS claimant_display_name,
       tc.verification_token_hash,
-      topic_row.hostname_id AS current_hostname_id,
+      matched_topic.hostname_id AS current_hostname_id,
       current_hostname.hostname AS current_hostname,
       verification_hostname.hostname AS verification_hostname
     FROM matched_topic
-    JOIN topics topic_row ON topic_row.id = matched_topic.id
-    LEFT JOIN url_hostnames current_hostname ON current_hostname.id = topic_row.hostname_id
-    LEFT JOIN topic_claims tc ON tc.id = $2 AND tc.topic_id = matched_topic.id
+    LEFT JOIN url_hostnames current_hostname ON current_hostname.id = matched_topic.hostname_id
+    LEFT JOIN topic_claims tc ON tc.id = $2
+    ${TOPIC_CLAIM_LABEL_JOINS}
     LEFT JOIN view_users_public claimant_profile ON claimant_profile.id = tc.claimant_user_id
     LEFT JOIN url_hostnames verification_hostname
       ON verification_hostname.id = tc.verification_hostname_id`,
@@ -67,14 +70,14 @@ export async function requireTopicClaimOnTopic(
   assert(row, 404, 'Topic not found')
   const {
     matched_topic_id: topicId,
+    claim_label_topic_id: claimTopicId,
     verification_token_hash: verificationTokenHash,
     current_hostname_id: currentHostnameId,
     current_hostname: currentHostname,
     verification_hostname: verificationHostname,
     ...claim
   } = row
-  void topicId
-  assert(claim.id, 404, 'Claim not found')
+  assert(claim.id && claimTopicId === topicId, 404, 'Claim not found')
   return { claim, verificationTokenHash, currentHostnameId, currentHostname, verificationHostname }
 }
 

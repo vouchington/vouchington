@@ -315,7 +315,11 @@ export default function ModerationAnalyticsDashboard({
                   return (
                     <tr key={moderator.actor_user_id}>
                       <td className='py-3 pr-4 font-medium'>
-                        {user?.verified_display_name || user?.username || 'Deleted user'}
+                        {user?.verified_display_name ||
+                          user?.username ||
+                          t(
+                            'extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa',
+                          )}
                       </td>
                       <td className='py-3 pr-4'>{formatNumber(moderator.total, uiLocale)}</td>
                       <td className='py-3 pr-4 text-muted-foreground'>

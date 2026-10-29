@@ -97,9 +97,15 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
     >
       <div className='flex items-start justify-between'>
         <div>
-          <p className='text-sm font-medium'>{claim.topic_name}</p>
+          <p className='text-sm font-medium'>
+            {claim.topic_name === 'topic'
+              ? t('extracted.landingPagesManager.itemPickerFields.topic_7e61847d')
+              : claim.topic_name}
+          </p>
           <p className='text-xs text-muted-foreground'>
-            {claim.claimant_display_name ?? claim.claimant_username ?? 'Deleted user'}{' '}
+            {claim.claimant_display_name ??
+              claim.claimant_username ??
+              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}{' '}
             <TimeAgo date={claim.created_at} />
           </p>
           <p className='mt-1 text-xs'>

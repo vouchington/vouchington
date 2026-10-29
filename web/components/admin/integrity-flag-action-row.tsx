@@ -42,7 +42,10 @@ export function IntegrityFlagResolvedActor({
           })}
         </Link>
       ) : resolvedById ? (
-        <span>{resolverDisplayName ?? 'Deleted user'}</span>
+        <span>
+          {resolverDisplayName ??
+            t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+        </span>
       ) : null}
     </div>
   )

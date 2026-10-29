@@ -50,6 +50,12 @@ describe('searchCommunityModerationQueue', () => {
     const entry = result.entries.find(e => e.entity_id === postId)
     expect(entry).toBeDefined()
     expect(entry!.queue_source).toBe('report')
+    expect(entry).toMatchObject({
+      reporter_username: reporter.username,
+      reporter_display_name: null,
+      resolver_username: null,
+      resolver_display_name: null,
+    })
     expect(entry!.target_content).toEqual({
       kind: 'post',
       text: expect.stringContaining('Mod Queue Post'),
@@ -86,6 +92,11 @@ describe('searchCommunityModerationQueue', () => {
       e => e.entity_id === postId && e.queue_source === 'community_review',
     )
     expect(reviewEntry).toBeDefined()
+    expect(reviewEntry).toMatchObject({
+      reporter_display_name: null,
+      resolver_username: null,
+      resolver_display_name: null,
+    })
     expect(reviewEntry!.target_content).toEqual({
       kind: 'post',
       text: expect.stringContaining('Mod Queue Review Post'),

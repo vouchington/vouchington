@@ -2,16 +2,19 @@
 
 import Link from 'next/link'
 import { createUserPathname, domainHref } from '@/lib/links/entity-href'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import type { ReportIntegrityFlag } from '@/types/report-integrity'
 
 export function EntityLink({ flag }: { flag: ReportIntegrityFlag }) {
+  const targetLabel = useModerationTargetLabel()
+  const label = targetLabel(flag.entity_label)
   if (flag.reported_user_id && flag.reported_username) {
     return (
       <Link
         href={createUserPathname(flag.reported_username, '/admin')}
         className='hover:underline'
       >
-        {flag.entity_label}
+        {label}
       </Link>
     )
   }
@@ -21,9 +24,9 @@ export function EntityLink({ flag }: { flag: ReportIntegrityFlag }) {
         href={domainHref(flag.hostname)}
         className='hover:underline'
       >
-        {flag.entity_label}
+        {label}
       </Link>
     )
   }
-  return <span>{flag.entity_label}</span>
+  return <span>{label}</span>
 }

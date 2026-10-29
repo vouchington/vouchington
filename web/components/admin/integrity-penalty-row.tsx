@@ -40,6 +40,14 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
       : penalty.reason === 'voting_ring'
         ? t('extracted.flags.integrityPenalties.votingRing_20963b95')
         : penalty.reason
+  const sourceFlagType =
+    penalty.source_flag_type === 'mass_report_suspected'
+      ? t('extracted.flags.integrityActions.massReportSuspected_cc227ce2')
+      : penalty.source_flag_type === 'velocity_spike'
+        ? t('extracted.flags.integrityActions.velocitySpike_5be6d539')
+        : penalty.source_flag_type === 'ip_correlation'
+          ? t('extracted.flags.integrityActions.ipCorrelation_a7083d7c')
+          : t('extracted.flags.integrityPenalties.notAvailable_89f46cc0')
   const isActive = penalty.revoked_at === null
   const isReconciling = !!state.reconciliationRequired[penalty.id]
   return (
@@ -57,16 +65,17 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
             {penalty.user_display_name ?? penalty.user_username}
           </Link>
         ) : (
-          <span>{penalty.user_display_name ?? 'Deleted user'}</span>
+          <span>
+            {penalty.user_display_name ??
+              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+          </span>
         )}
       </td>
       <td className='px-4 py-4 text-sm text-foreground'>{knownReason}</td>
       {domain === 'vote' ? (
         <td className='px-4 py-4 text-sm text-foreground'>{multiplier}</td>
       ) : null}
-      <td className='px-4 py-4 text-sm text-muted-foreground'>
-        {penalty.source_flag_type ?? t('extracted.flags.integrityPenalties.notAvailable_89f46cc0')}
-      </td>
+      <td className='px-4 py-4 text-sm text-muted-foreground'>{sourceFlagType}</td>
       <td className='px-4 py-4 text-sm text-muted-foreground'>
         <time dateTime={penalty.created_at}>{formatUtcDate(penalty.created_at, uiLocale)}</time>
         {penalty.created_by_id && penalty.creator_username ? (
@@ -82,7 +91,10 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
             </Link>
           </div>
         ) : penalty.created_by_id ? (
-          <div>{penalty.creator_display_name ?? 'Deleted user'}</div>
+          <div>
+            {penalty.creator_display_name ??
+              t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+          </div>
         ) : null}
       </td>
       <td className='px-4 py-4 text-sm'>
@@ -107,7 +119,10 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
                 </Link>
               </div>
             ) : penalty.revoked_by_id ? (
-              <div>{penalty.revoker_display_name ?? 'Deleted user'}</div>
+              <div>
+                {penalty.revoker_display_name ??
+                  t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+              </div>
             ) : null}
           </div>
         ) : null}

@@ -50,12 +50,16 @@ export function ModQueueBanEvasionInfo({ banEvasion }: { banEvasion: CommunityBa
               className='underline'
               prefetch={false}
             >
-              {t('extracted.communities.modQueueBanEvasion.username_6da31ba5', {
-                username: banEvasion.source_display_name ?? banEvasion.source_username,
-              })}
+              {banEvasion.source_display_name ??
+                t('extracted.communities.modQueueBanEvasion.username_6da31ba5', {
+                  username: banEvasion.source_username,
+                })}
             </Link>
           ) : (
-            <span>{banEvasion.source_display_name ?? 'Deleted user'}</span>
+            <span>
+              {banEvasion.source_display_name ??
+                t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+            </span>
           )}
         </span>
       ) : null}

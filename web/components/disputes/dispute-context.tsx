@@ -3,13 +3,15 @@
 import Link from 'next/link'
 import { PostContentText } from '@/components/posts/post-content-text'
 import { reviewHref } from '@/lib/links/entity-href'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ReviewDispute, ReviewDisputeActorSummary } from '@/types/review-disputes'
 
-function actorLabel(actor: ReviewDisputeActorSummary): string {
-  return actor.verified_display_name ?? actor.username ?? 'Deleted user'
+function actorLabel(actor: ReviewDisputeActorSummary, deletedUser: string): string {
+  return actor.verified_display_name ?? actor.username ?? deletedUser
 }
 
 export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
+  const t = useTranslations()
   const review = dispute.staff_context?.review
   const target = dispute.post_content ? (
     <PostContentText
@@ -20,7 +22,11 @@ export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
       content={dispute.post_content}
     />
   ) : (
-    <p className='font-medium'>{dispute.post_label}</p>
+    <p className='font-medium'>
+      {dispute.post_label === 'review'
+        ? t('extracted.disputes.disputesTable.review_aff0766a')
+        : dispute.post_label}
+    </p>
   )
 
   return (
@@ -44,7 +50,14 @@ export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
       {review?.rating !== null && review?.rating !== undefined ? (
         <p className='text-muted-foreground'>{review.rating}/5</p>
       ) : null}
-      {dispute.staff_context ? <p>{actorLabel(dispute.staff_context.disputant)}</p> : null}
+      {dispute.staff_context ? (
+        <p>
+          {actorLabel(
+            dispute.staff_context.disputant,
+            t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'),
+          )}
+        </p>
+      ) : null}
       {dispute.claim_text ? (
         <p className='line-clamp-3 text-muted-foreground'>{dispute.claim_text}</p>
       ) : null}

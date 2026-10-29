@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/client/community-ban-evasion'
 import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import onError from '@/lib/on-error'
 import type { AdminModerationReport } from './reports-client-types'
 
@@ -24,13 +25,14 @@ export function ReportBanEvasionActions({
   report: AdminModerationReport
 }) {
   const t = useTranslations()
+  const targetLabelFor = useModerationTargetLabel()
   const [pendingAction, setPendingAction] = useState<BanEvasionAction | null>(null)
   const banEvasion = report.community_ban_evasion
   if (report.status !== 'pending' || !report.is_system_generated || !banEvasion) {
     return null
   }
 
-  const targetLabel = report.target_label ?? report.entity_id
+  const targetLabel = targetLabelFor(report.target_label)
   const communityId = banEvasion.community_id
   const actionDisabled = disabled || pendingAction !== null
 

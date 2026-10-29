@@ -42,6 +42,7 @@
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/entity-relation-actions": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
+    "@services/integrity-labels": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/queue-monitoring": "workspace:^",

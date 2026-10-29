@@ -23,7 +23,8 @@ export function buildCommunityReportQueueQuery(
       ) AS cursor_created_at,
       r.reviewed_at,
       r.reporter_user_id,
-      NULL::text AS reporter_username,
+      reporter_profile.username AS reporter_username,
+      reporter_profile.verified_display_name AS reporter_display_name,
       r.entity_type,
       r.entity_id,
   `
@@ -33,6 +34,8 @@ export function buildCommunityReportQueueQuery(
       r.note,
       r.status,
       r.resolved_by_id,
+      resolver_profile.username AS resolver_username,
+      resolver_profile.verified_display_name AS resolver_display_name,
       report_counts.report_count,
       report_counts.report_count AS cursor_report_count,
       CASE latest_judgement.recommended_action
@@ -65,6 +68,8 @@ export function buildCommunityReportQueueQuery(
   `)
   reportQuery.append(reportTargetJoinsSql())
   reportQuery.append(sql`
+    LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
+    LEFT JOIN view_users_public resolver_profile ON resolver_profile.id = r.resolved_by_id
     LEFT JOIN LATERAL (
       SELECT COUNT(DISTINCT rc.reporter_user_id)::integer AS report_count
       FROM moderation_reports rc

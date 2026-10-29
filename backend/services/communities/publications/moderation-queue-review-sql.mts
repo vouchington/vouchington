@@ -64,9 +64,15 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
       NULL::timestamptz AS reviewed_at,
       NULL::uuid AS reporter_user_id,
       NULL::text AS reporter_username,
+      NULL::text AS reporter_display_name,
       'post'::moderation_report_entity_types AS entity_type,
       cpr.post_id AS entity_id,
-      COALESCE(NULLIF(BTRIM(rp.title), ''), 'Post ' || rp.id::text) AS target_label,
+      COALESCE(
+        NULLIF(BTRIM(rp.title), ''),
+        ps.slug,
+        NULLIF(BTRIM(LEFT(rp.markdown, 80)), ''),
+        'post'
+      ) AS target_label,
       CASE WHEN NULLIF(BTRIM(rp.title), '') IS NOT NULL THEN jsonb_build_object(
         'kind', 'post',
         'text', rp.title,
@@ -81,6 +87,8 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
       NULL::text AS note,
       'pending'::text AS status,
       NULL::uuid AS resolved_by_id,
+      NULL::text AS resolver_username,
+      NULL::text AS resolver_display_name,
       0::integer AS report_count,
       0::integer AS cursor_report_count,
       0::integer AS cursor_severity_rank,

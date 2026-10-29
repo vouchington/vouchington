@@ -24,6 +24,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/integrity-labels": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/pagination": "workspace:^",

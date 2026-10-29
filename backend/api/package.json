@@ -151,6 +151,7 @@
     "@services/identity-verification": "workspace:^",
     "@services/images": "workspace:^",
     "@services/individuals-households": "workspace:^",
+    "@services/integrity-labels": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/landing-page-analytics": "workspace:^",
     "@services/lists": "workspace:^",

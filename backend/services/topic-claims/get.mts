@@ -11,20 +11,20 @@ import { getPaginationLimits } from '@services/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { isUUID } from '@modules/utils'
 import type { TopicClaim } from './config.mts'
+import { TOPIC_CLAIM_LABEL_JOINS, TOPIC_CLAIM_LABEL_SQL } from './topic-label-sql.mts'
 
 const CLAIM_SELECT = sql`
   tc.id, tc.topic_id, tc.claimant_user_id, tc.verification_method, tc.claimed_role, tc.evidence, tc.submitted_at, tc.verified_at, tc.verified_by_id, tc.rejected_at, tc.rejected_by_id, tc.rejection_reason, tc.revoked_at, tc.revoked_by_id, tc.revocation_reason, tc.verification_hostname_id, tc.verification_token_issued_at, tc.domain_verified_at, tc.created_at, tc.updated_at,
-  COALESCE(t.name, t.slug, 'topic') AS topic_name,
+  `.append(TOPIC_CLAIM_LABEL_SQL).append(sql` AS topic_name,
   claimant_profile.username AS claimant_username,
   claimant_profile.verified_display_name AS claimant_display_name
-`
+`)
 
 const CLAIM_FROM = sql`
   FROM topic_claims tc
-  LEFT JOIN topics t ON t.id = tc.topic_id
-    AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+  `.append(TOPIC_CLAIM_LABEL_JOINS).append(sql`
   LEFT JOIN view_users_public claimant_profile ON claimant_profile.id = tc.claimant_user_id
-`
+`)
 
 export async function getTopicClaimById(
   id: string,

@@ -1023,6 +1023,9 @@ importers:
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
+      '@services/integrity-labels':
+        specifier: workspace:^
+        version: link:../services/integrity-labels
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../services/jwt-session
@@ -1648,6 +1651,9 @@ importers:
       '@services/fediverse-instances':
         specifier: workspace:^
         version: link:../../services/fediverse-instances
+      '@services/integrity-labels':
+        specifier: workspace:^
+        version: link:../../services/integrity-labels
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../../services/jwt-session
@@ -7577,6 +7583,15 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/integrity-labels:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+
   backend/services/jwt-session:
     dependencies:
       '@data-stores/analytics':
@@ -10298,6 +10313,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/integrity-labels':
+        specifier: workspace:^
+        version: link:../integrity-labels
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -12358,6 +12376,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/integrity-labels':
+        specifier: workspace:^
+        version: link:../integrity-labels
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions

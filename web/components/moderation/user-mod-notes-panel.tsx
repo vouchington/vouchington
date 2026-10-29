@@ -120,12 +120,14 @@ export function UserModNotesPanel({ targetUserId, communityId }: UserModNotesPan
                   <p className='whitespace-pre-wrap break-words'>{note.body}</p>
                   <div className='flex items-center justify-between text-muted-foreground'>
                     <span>
-                      {note.author_display_name ?? note.author_username ?? 'Deleted user'}
+                      {note.author_display_name ??
+                        note.author_username ??
+                        t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
                     </span>
                     <div className='flex items-center gap-2'>
                       <span>
                         {note.community_id
-                          ? (note.community_name ?? 'Deleted community')
+                          ? (note.community_name ?? t('shared.moderation.deletedCommunity'))
                           : t('extracted.moderation.userModNotesPanel.global_8001c274')}
                       </span>
                       <TimeAgo date={note.created_at} />

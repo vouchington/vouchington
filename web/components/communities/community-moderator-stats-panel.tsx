@@ -160,7 +160,11 @@ interface RowProps {
 }
 
 function ModeratorStatsRow({ stat, user }: RowProps) {
-  const username = user?.verified_display_name || user?.username || 'Deleted user'
+  const t = useTranslations()
+  const username =
+    user?.verified_display_name ||
+    user?.username ||
+    t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')
   const displayedSum = DISPLAYED_ACTION_TYPES.reduce(
     (sum, { key }) => sum + (stat.counts[key] ?? 0),
     0,

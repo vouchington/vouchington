@@ -64,6 +64,13 @@ describe('TopicClaimReview', () => {
     vi.clearAllMocks()
   })
 
+  it('translates the missing-topic fallback without exposing its id', () => {
+    render(<TopicClaimReview claim={makeClaim({ topic_name: 'topic' })} />)
+    expect(screen.getByText('Topic')).toBeInTheDocument()
+    expect(screen.queryByText('topic')).not.toBeInTheDocument()
+    expect(screen.queryByText('topic-abcd')).not.toBeInTheDocument()
+  })
+
   it('renders pending claim with verify and reject controls', () => {
     render(<TopicClaimReview claim={makeClaim()} />)
     expect(screen.getByText(/card issuer/i)).toBeInTheDocument()

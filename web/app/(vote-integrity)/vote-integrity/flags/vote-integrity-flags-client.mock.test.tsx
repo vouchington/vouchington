@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { VoteIntegrityFlagsClient } from './vote-integrity-flags-client'
+import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
+import { seedMessages } from '@/lib/i18n/use-translations'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const mockReplace = vi.fn<VitestLooseMock>()
 
@@ -100,6 +103,23 @@ describe('VoteIntegrityFlagsClient', () => {
     )
     expect(screen.getByText('votes.example.com')).toBeInTheDocument()
     expect(screen.queryByText(/hostname-uuid/)).not.toBeInTheDocument()
+  })
+
+  it('translates a type-code fallback instead of showing a raw flag type', async () => {
+    seedMessages('es', esMessages)
+    render(
+      <UiLocaleProvider uiLocale='es'>
+        <VoteIntegrityFlagsClient
+          initialData={{
+            ...initialData,
+            results: [{ ...initialData.results[0]!, entity_label: 'velocity_spike' }],
+          }}
+          initialStatus='pending'
+        />
+      </UiLocaleProvider>,
+    )
+    expect(screen.queryByText('velocity_spike')).not.toBeInTheDocument()
+    expect((await screen.findAllByText(/velocidad/i)).length).toBeGreaterThan(0)
   })
 
   it('updates the status selector immediately when changing filters', async () => {

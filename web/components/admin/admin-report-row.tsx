@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { ReportTargetContent } from '@/components/moderation/report-target-content'
+import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import { cn } from '@/lib/utils'
 import { judgementLabel, judgementVariant } from './report-judgement-format'
 import { UserModNotesCell } from '@/components/moderation/user-mod-notes-cell'
@@ -52,7 +53,8 @@ export function AdminReportRow({
   selected,
 }: AdminReportRowProps) {
   const t = useTranslations()
-  const targetLabel = report.target_label
+  const targetLabelFor = useModerationTargetLabel()
+  const targetLabel = targetLabelFor(report.target_label)
   const judgementAction = report.judgement
     ? judgementLabel(report.judgement.recommended_action)
     : null
@@ -123,7 +125,9 @@ export function AdminReportRow({
       </td>
       <td className='px-6 py-4 text-sm'>
         <div className='flex flex-col gap-1'>
-          <span className='text-xs uppercase text-muted-foreground'>{report.entity_type}</span>
+          <span className='text-xs uppercase text-muted-foreground'>
+            {targetLabelFor(report.entity_type)}
+          </span>
           {report.target_path ? (
             <Link
               href={report.target_path}
@@ -200,9 +204,15 @@ export function AdminReportRow({
                         report.community_ban_evasion.source_username}
                     </Link>
                   ) : report.community_ban_evasion.source_user_id ? (
-                    <span className='text-xs'>Deleted user</span>
+                    <span className='text-xs'>
+                      {t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa')}
+                    </span>
                   ) : (
-                    <span className='text-muted-foreground'>Hidden</span>
+                    <span className='text-muted-foreground'>
+                      {t(
+                        'extracted.identityVerification.verifiedDisplayPreferencesCard.hidden_7e6fefff',
+                      )}
+                    </span>
                   )}
                 </p>
                 {typeof report.community_ban_evasion.score === 'number' ? (
@@ -283,7 +293,9 @@ export function AdminReportRow({
       </td>
       <td className='px-6 py-4 text-sm text-xs'>
         {report.resolved_by_id
-          ? (report.resolver_display_name ?? report.resolver_username ?? 'Deleted user')
+          ? (report.resolver_display_name ??
+            report.resolver_username ??
+            t('extracted.communities.communityAgentPromptHistory.deletedUser_152bc3aa'))
           : '-'}
       </td>
       <UserModNotesCell targetUserId={report.entity_type === 'user' ? report.entity_id : null} />

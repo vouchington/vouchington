@@ -9,7 +9,7 @@ export type ModerationReportTargetContent = {
 
 export function reportTargetLabelSql() {
   return sql`CASE
-    WHEN r.reported_user_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_user_profile.verified_display_name), ''), target_user.username, r.entity_type::text)
+    WHEN r.reported_user_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_user_profile.verified_display_name), ''), target_user_profile.username, r.entity_type::text)
     WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN COALESCE(NULLIF(BTRIM(root_post.title), ''), NULLIF(BTRIM(LEFT(target_post.markdown, 80)), ''), r.entity_type::text)
     WHEN r.post_id IS NOT NULL THEN COALESCE(NULLIF(BTRIM(target_post.title), ''), target_post_slug.slug, NULLIF(BTRIM(LEFT(target_post.markdown, 80)), ''), r.entity_type::text)
     WHEN r.hostname_id IS NOT NULL THEN COALESCE(target_hostname.hostname, r.entity_type::text)

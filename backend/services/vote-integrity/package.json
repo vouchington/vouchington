@@ -25,6 +25,7 @@
     "@modules/utils": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/elections-votes": "workspace:^",
+    "@services/integrity-labels": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/users": "workspace:^",

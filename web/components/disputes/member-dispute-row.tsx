@@ -28,7 +28,11 @@ export function MemberDisputeRow({ dispute }: MemberDisputeRowProps) {
             content={dispute.post_content}
           />
         ) : (
-          <span>{dispute.post_label}</span>
+          <span>
+            {dispute.post_label === 'review'
+              ? t('extracted.disputes.disputesTable.review_aff0766a')
+              : dispute.post_label}
+          </span>
         )}
       </td>
       <td className='px-4 py-3 text-sm'>{dispute.reason.replace(/_/g, ' ')}</td>

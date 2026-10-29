@@ -7,6 +7,9 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { ReportIntegrityFlagsClient } from '../report-integrity-flags-client'
+import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
+import { seedMessages } from '@/lib/i18n/use-translations'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('ReportIntegrityFlagsClient — rendering', () => {
   beforeEach(() => {
@@ -147,5 +150,24 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
       />,
     )
     expect(screen.getByText('Unknown')).toBeInTheDocument()
+  })
+
+  it('translates a type-code fallback while retaining the target id only for actions', async () => {
+    seedMessages('es', esMessages)
+    render(
+      <UiLocaleProvider uiLocale='es'>
+        <ReportIntegrityFlagsClient
+          initialData={makeInitialData([
+            makeFlag({ post_id: 'post-uuid-1234', entity_label: 'mass_report_suspected' }),
+          ])}
+          initialStatus='pending'
+        />
+      </UiLocaleProvider>,
+    )
+    expect(
+      (await screen.findAllByText('Posible abuso de reportes masivos')).length,
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText('mass_report_suspected')).not.toBeInTheDocument()
+    expect(screen.queryByText('post-uuid-1234')).not.toBeInTheDocument()
   })
 })

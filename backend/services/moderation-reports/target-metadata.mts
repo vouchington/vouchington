@@ -138,7 +138,7 @@ export function reportTargetIsRestrictedSql() {
 function reportTargetPathSql() {
   const statement = sql`CASE
     WHEN r.reported_user_id IS NOT NULL THEN
-      '/user/' || COALESCE(target_user.username, target_user.id::text)
+      '/user/' || COALESCE(target_user_profile.username, target_user.id::text)
     WHEN r.hostname_id IS NOT NULL THEN
       '/domain/' || target_hostname.hostname
     WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN
@@ -162,7 +162,7 @@ function reportTargetPathSql() {
 function reportAdminActionPathSql() {
   const statement = sql`CASE
     WHEN r.reported_user_id IS NOT NULL THEN
-      '/user/' || COALESCE(target_user.username, target_user.id::text) || '/admin'
+      '/user/' || COALESCE(target_user_profile.username, target_user.id::text) || '/admin'
     WHEN r.hostname_id IS NOT NULL THEN
       '/domain/' || target_hostname.hostname
     WHEN r.post_id IS NOT NULL THEN

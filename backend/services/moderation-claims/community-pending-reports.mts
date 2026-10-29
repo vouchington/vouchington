@@ -11,6 +11,7 @@ import {
 import { attachJudgements } from '@services/moderation-reports/judgement-attach'
 import { attachPostModerationContext } from '@services/moderation-reports/post-moderation-context-attach'
 import { attachBanEvasionContext } from '@services/moderation-reports/ban-evasion-context-attach'
+import { applyDeletedTargetLabel } from '@services/moderation-reports/deleted-target-label'
 import type { PendingModerationReport } from '@services/moderation-reports/get'
 import {
   appendModerationReportCursorPredicate,
@@ -59,7 +60,7 @@ export async function listCommunityPendingModerationReports(options: {
   ])
   const mergedRows = sortMergedReports([...postCommentRows, ...banEvasionRows], sort)
   const hasNextPage = mergedRows.length > limit
-  const pageRows = mergedRows.slice(0, limit)
+  const pageRows = mergedRows.slice(0, limit).map(applyDeletedTargetLabel)
   const reports = (await attachJudgements(pageRows)
     .then(rows => attachPostModerationContext(rows, 'staff'))
     .then(rows => attachBanEvasionContext(rows, { communityId: options.communityId }))
