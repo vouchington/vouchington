@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getUrl, getUrlCrawl } from '@/lib/api/server/urls'
@@ -8,6 +8,7 @@ import { CrawlMetaTags } from '@/components/urls/crawl-meta-tags'
 import { domainHref, urlCrawlHref, urlHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { isUUID } from '@ts-shared/utils/validation-core'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,12 @@ export default async function CrawlDetailPage({
   if (!currentUser) redirect('/login')
 
   const { urlValue, crawlId } = await params
-  const urlInput = decodeURIComponent(urlValue)
+  let urlInput: string
+  try {
+    urlInput = decodeURIComponent(urlValue)
+  } catch {
+    notFound()
+  }
 
   // Check access via URL detail flags
   const urlData = await getUrl(urlInput)
@@ -32,6 +38,7 @@ export default async function CrawlDetailPage({
 
   const data = await getUrlCrawl(urlInput, crawlId)
   if (!data) notFound()
+  if (isUUID(urlInput)) permanentRedirect(urlCrawlHref(urlData.url, crawlId))
   const { crawl, og_image_sideload } = data
 
   const hasMetaData =

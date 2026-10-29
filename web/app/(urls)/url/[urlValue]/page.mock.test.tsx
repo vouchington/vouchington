@@ -4,19 +4,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { CrawlListResponseBody, UrlDetailResponseBody } from '@/types/api-responses'
 
-const { getCurrentUserMock, getUrlMock, getUrlCrawlsMock, redirectMock, notFoundMock } = vi.hoisted(
-  () => ({
-    getCurrentUserMock: vi.fn<VitestLooseMock>(),
-    getUrlMock: vi.fn<VitestLooseMock>(),
-    getUrlCrawlsMock: vi.fn<VitestLooseMock>(),
-    redirectMock: vi.fn<VitestLooseMock>(() => {
-      throw new Error('NEXT_REDIRECT')
-    }),
-    notFoundMock: vi.fn<VitestLooseMock>(() => {
-      throw new Error('NEXT_NOT_FOUND')
-    }),
+const {
+  getCurrentUserMock,
+  getUrlMock,
+  getUrlCrawlsMock,
+  redirectMock,
+  permanentRedirectMock,
+  notFoundMock,
+} = vi.hoisted(() => ({
+  getCurrentUserMock: vi.fn<VitestLooseMock>(),
+  getUrlMock: vi.fn<VitestLooseMock>(),
+  getUrlCrawlsMock: vi.fn<VitestLooseMock>(),
+  redirectMock: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_REDIRECT')
   }),
-)
+  permanentRedirectMock: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_PERMANENT_REDIRECT')
+  }),
+  notFoundMock: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_NOT_FOUND')
+  }),
+}))
 
 vi.mock(
   import('next/navigation'),
@@ -24,6 +32,7 @@ vi.mock(
     ({
       ...navMockModule,
       redirect: redirectMock,
+      permanentRedirect: permanentRedirectMock,
       notFound: notFoundMock,
     }) as unknown as typeof import('next/navigation'),
 )
@@ -123,5 +132,32 @@ describe('UrlDetailPage', () => {
     await expect(UrlDetailPage({ params })).rejects.toThrow('NEXT_REDIRECT')
     expect(redirectMock).toHaveBeenCalledWith('/login')
     expect(getUrlMock).not.toHaveBeenCalled()
+  })
+
+  it('returns not found for malformed URL escaping before lookup', async () => {
+    await expect(
+      UrlDetailPage({ params: Promise.resolve({ urlValue: 'bad%escape' }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(getUrlMock).not.toHaveBeenCalled()
+  })
+
+  it('redirects a visible URL UUID to its canonical URL path', async () => {
+    const urlId = '019e0000-0000-7000-8000-000000000003'
+    await expect(UrlDetailPage({ params: Promise.resolve({ urlValue: urlId }) })).rejects.toThrow(
+      'NEXT_PERMANENT_REDIRECT',
+    )
+    expect(getUrlMock).toHaveBeenCalledWith(urlId)
+    expect(permanentRedirectMock).toHaveBeenCalledWith(`/url/${encodeURIComponent(rawUrl)}`)
+    expect(getUrlCrawlsMock).not.toHaveBeenCalled()
+  })
+
+  it('does not redirect a URL UUID without crawl-history access', async () => {
+    getUrlMock.mockResolvedValue({ ...urlData, can_view_crawl_history: false })
+    await expect(
+      UrlDetailPage({
+        params: Promise.resolve({ urlValue: '019e0000-0000-7000-8000-000000000003' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(permanentRedirectMock).not.toHaveBeenCalled()
   })
 })

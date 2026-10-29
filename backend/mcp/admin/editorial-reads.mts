@@ -8,7 +8,11 @@ import {
   currentUserCanViewImportBatch,
 } from '@services/admin-imports'
 import { getAdminArticleSyncStatus } from '@services/admin-imports/article-sync-controls'
-import { getLandingPageByUsernameAndSlug, listLandingPagesForUserPage } from '@services/my'
+import {
+  getLandingPageByUsernameAndSlug,
+  getLandingPageCanonicalIdentityById,
+  listLandingPagesForUserPage,
+} from '@services/my'
 import { getLandingPageAnalyticsByPageId } from '@services/landing-page-analytics'
 import { getSignupCountByReferrerId } from '@services/attribution'
 import { createPaginationParser } from '@modules/pagination'
@@ -90,6 +94,20 @@ const pages = createAdminTool<{ user_id: string; after?: string; limit?: number 
     return listLandingPagesForUserPage(args.user_id, { limit: parsed.limit, after: parsed.after })
   },
 })
+const landingPageIdentityApi = {
+  method: 'GET',
+  path: '/api/v1/admin/landing-pages/{pageId}',
+} as const
+const landingPageIdentity = createAdminTool<{ page_id: string }>({
+  name: 'get_landing_page_identity',
+  description: 'Resolve a landing page ID to its active owner username and page slug.',
+  scope: 'editorial:read',
+  api: landingPageIdentityApi,
+  parameters: adminInput({ page_id: UUID_INPUT }, ['page_id']),
+  outputSchema: adminRouteOutputSchema(landingPageIdentityApi),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: (_, args) => getLandingPageCanonicalIdentityById(args.page_id),
+})
 const analyticsApi = {
   method: 'GET',
   path: '/api/v1/admin/users/{username}/landing-pages/{slug}/analytics',
@@ -125,4 +143,11 @@ const analytics = createAdminTool<{ username: string; slug: string }>({
     }
   },
 })
-export const adminEditorialReadTools = [categories, batch, sync, pages, analytics]
+export const adminEditorialReadTools = [
+  categories,
+  batch,
+  sync,
+  pages,
+  landingPageIdentity,
+  analytics,
+]

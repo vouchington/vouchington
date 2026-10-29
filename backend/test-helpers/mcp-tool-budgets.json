@@ -1398,6 +1398,16 @@
           "list": 4000,
           "core": 2000
         }
+      },
+      "get_landing_page_identity": {
+        "measured": {
+          "list": 668,
+          "core": 265
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
       }
     },
     "legal": {

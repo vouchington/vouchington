@@ -4,14 +4,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import type { TopicClaim } from '@/types/topic-claims'
 
-const { mockGetTopicClaims, mockGetCurrentUser, mockRedirect, mockHeaders } = vi.hoisted(() => ({
+const {
+  mockGetTopic,
+  mockGetTopicClaims,
+  mockGetCurrentUser,
+  mockRedirect,
+  mockPermanentRedirect,
+  mockNotFound,
+  mockHeaders,
+} = vi.hoisted(() => ({
+  mockGetTopic: vi.fn<VitestLooseMock>(),
   mockGetTopicClaims: vi.fn<VitestLooseMock>(),
   mockGetCurrentUser: vi.fn<VitestLooseMock>(),
   mockRedirect: vi.fn<VitestLooseMock>(),
+  mockPermanentRedirect: vi.fn<VitestLooseMock>(() => {
+    throw new Error('PERMANENT_REDIRECT')
+  }),
+  mockNotFound: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NOT_FOUND')
+  }),
   mockHeaders: vi.fn<VitestLooseMock>().mockResolvedValue({ get: () => null }),
 }))
 
 vi.mock(import('@/lib/api/server'), () => ({
+  getTopic: mockGetTopic,
   getTopicClaims: mockGetTopicClaims,
 }))
 
@@ -25,6 +41,8 @@ vi.mock(
     ({
       ...navMockModule,
       redirect: mockRedirect,
+      permanentRedirect: mockPermanentRedirect,
+      notFound: mockNotFound,
     }) as unknown as typeof import('next/navigation'),
 )
 
@@ -158,5 +176,17 @@ describe('ClaimTopicPage', () => {
 
     expect(container.querySelector('[data-pw="claim-topic-form"]')).not.toBeNull()
     expect(mockGetTopicClaims).toHaveBeenCalledWith('topic-abc', true, true)
+  })
+
+  it('redirects a signed-in UUID lookup to the topic claim slug', async () => {
+    const topicId = '019e0000-0000-7000-8000-000000000001'
+    mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
+    mockGetTopic.mockResolvedValueOnce({ topic: { id: topicId, slug: 'my-topic' } })
+
+    await expect(ClaimTopicPage({ params: Promise.resolve({ slug: topicId }) })).rejects.toThrow(
+      'PERMANENT_REDIRECT',
+    )
+    expect(mockPermanentRedirect).toHaveBeenCalledWith('/topic-claims/my-topic')
+    expect(mockGetTopicClaims).not.toHaveBeenCalled()
   })
 })

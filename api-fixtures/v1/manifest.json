@@ -1716,6 +1716,43 @@
       "source": "backend/api/v1/admin/classifiers/human-vote-comparison.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "bodyKind": "content",
+      "hash": "be2f40671c0c88dc1326e2ba31025694b73a9b6d1f85afcc48ac2233c176d970",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/admin/landing-pages/:pageId",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "owner_user_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "owner_username": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "page_slug": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/admin/landing-pages.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/admin/moderation-analytics": {
       "bodyKind": "content",
       "hash": "c8cce74cefbec230f97eb746c8490a0724d241dfffe31adfac1fd3cb8d710f3b",
@@ -101911,6 +101948,30 @@
           "username": "fixture-user"
         },
         "routeTemplate": "/api/v1/admin/users/:username/landing-pages/:slug/analytics"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-landing-page-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/admin/landing-pages/:pageId",
+      "bodyFile": "responses/web.admin-landing-page-identity.default.json",
+      "consumers": ["web"],
+      "id": "web.admin-landing-page-identity.default",
+      "method": "GET",
+      "migratedFrom": ["web/lib/api/server/admin-landing-pages.ts"],
+      "path": "/api/v1/admin/landing-pages/landing-page-1",
+      "responseSchema": {
+        "hash": "6eddf4352e1dcb296918b2a0de18fc823f3c049c153cc5889d7536154447fd7c",
+        "key": "web.admin-landing-page-identity.default"
+      },
+      "route": {
+        "pathParams": {
+          "pageId": "landing-page-1"
+        },
+        "routeTemplate": "/api/v1/admin/landing-pages/:pageId"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-landing-page-cases.mts"

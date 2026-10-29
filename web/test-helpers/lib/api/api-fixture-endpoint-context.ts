@@ -43,6 +43,7 @@ import * as clientValkey from '../../../lib/api/client/valkey'
 import * as clientUsers from '../../../lib/api/client/users'
 import * as clientWarnings from '../../../lib/api/client/warnings'
 import * as serverAdminOAuthClients from '../../../lib/api/server/admin-oauth-clients'
+import * as serverAdminLandingPages from '../../../lib/api/server/admin-landing-pages'
 import * as serverApiKeys from '../../../lib/api/server/api-keys'
 import * as serverCommunities from '../../../lib/api/server/communities'
 import * as serverCopyrightNotices from '../../../lib/api/server/copyright-notices'
@@ -122,6 +123,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     warnings: clientWarnings,
   },
   server: {
+    adminLandingPages: serverAdminLandingPages,
     adminOAuthClients: serverAdminOAuthClients,
     apiKeys: serverApiKeys,
     communities: serverCommunities,

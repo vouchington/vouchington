@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { getTopicClaims } from '@/lib/api/server'
+import { getTopic, getTopicClaims } from '@/lib/api/server'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { TopicClaimFlow } from '@/components/topic-claims/topic-claim-flow'
 import { topicClaimHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { isUUID } from '@ts-shared/utils/validation-core'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('Claim Topic')
@@ -21,6 +22,12 @@ export default async function ClaimTopicPage({ params }: Props) {
   const { slug } = await params
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect(`/login?next=${encodeURIComponent(topicClaimHref(slug))}`)
+
+  if (isUUID(slug)) {
+    const topicData = await getTopic(slug)
+    if (!topicData) notFound()
+    permanentRedirect(topicClaimHref(topicData.topic))
+  }
 
   const existingClaims = await getTopicClaims(slug, true, true).catch(() => ({ results: [] }))
   const existingClaim = existingClaims.results[0]

@@ -88,6 +88,10 @@
       "fixtureIds": ["engineering.admin.classifiers.human-vote-comparison"],
       "hash": "b550c18dcd0f2da22ed6015ab08dd3265a9bc3f15dace47b1703a61ce0a49572"
     },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "fixtureIds": ["web.admin-landing-page-identity.default"],
+      "hash": "be2f40671c0c88dc1326e2ba31025694b73a9b6d1f85afcc48ac2233c176d970"
+    },
     "GET:/api/v1/admin/moderation-analytics": {
       "fixtureIds": ["native.moderation.analytics.default"],
       "hash": "c8cce74cefbec230f97eb746c8490a0724d241dfffe31adfac1fd3cb8d710f3b"
@@ -2916,6 +2920,10 @@
     "swift.users.following.default": {
       "fixtureIds": ["swift.users.following.default"],
       "hash": "ed6c16b19ebd4daeba87b5a9c3be55377cece95b93079c55c65b5ec260e50120"
+    },
+    "web.admin-landing-page-identity.default": {
+      "fixtureIds": ["web.admin-landing-page-identity.default"],
+      "hash": "6eddf4352e1dcb296918b2a0de18fc823f3c049c153cc5889d7536154447fd7c"
     },
     "web.admin.article-syncs.status.active": {
       "fixtureIds": ["web.admin.article-syncs.status.active"],

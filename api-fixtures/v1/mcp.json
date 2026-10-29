@@ -27774,6 +27774,55 @@
         },
         {
           "tool": {
+            "name": "get_landing_page_identity",
+            "title": "Get landing page identity",
+            "description": "Resolve a landing page ID to its active owner username and page slug.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "page_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["page_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "owner_user_id": {
+                  "type": "string"
+                },
+                "owner_username": {
+                  "type": "string"
+                },
+                "page_slug": {
+                  "type": "string"
+                }
+              },
+              "required": ["owner_user_id", "owner_username", "page_slug"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["editorial:read"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/admin/landing-pages/{pageId}"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_landing_page_analytics",
             "title": "Get landing page analytics",
             "description": "Read landing-page analytics and the signup conversion funnel.",

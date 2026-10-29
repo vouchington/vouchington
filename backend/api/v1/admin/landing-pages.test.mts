@@ -164,4 +164,29 @@ describe('admin landing pages', () => {
         .expect(404)
     })
   })
+
+  describe('GET /api/v1/admin/landing-pages/:pageId', () => {
+    it('resolves an active page to its owner username and slug for admins', async () => {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      const response = await request.get(`/api/v1/admin/landing-pages/${landingPageId}`).expect(200)
+      expect(response.body).toEqual({
+        owner_user_id: regularUser.id,
+        owner_username: regularUser.username,
+        page_slug: landingPageSlug,
+      })
+    })
+
+    it('does not disclose page identity to a non-admin', async () => {
+      const request = createRequest()
+      await request.authenticateAs(regularUser)
+      await request.get(`/api/v1/admin/landing-pages/${landingPageId}`).expect(403)
+    })
+
+    it('returns 404 for an unknown page', async () => {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      await request.get(`/api/v1/admin/landing-pages/${v7()}`).expect(404)
+    })
+  })
 })

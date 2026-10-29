@@ -11769,6 +11769,22 @@
       },
       "required": ["user"],
       "type": "object"
+    },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_user_id": {
+          "type": "string"
+        },
+        "owner_username": {
+          "type": "string"
+        },
+        "page_slug": {
+          "type": "string"
+        }
+      },
+      "required": ["owner_user_id", "owner_username", "page_slug"],
+      "type": "object"
     }
   },
   "components": {
@@ -19330,8 +19346,12 @@
                 "additionalProperties": false,
                 "required": ["type", "path"],
                 "properties": {
-                  "type": { "const": "exclude" },
-                  "path": { "type": "string" }
+                  "type": {
+                    "const": "exclude"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -51135,6 +51155,17 @@
           }
         },
         "required": ["userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "path": {
+        "properties": {
+          "pageId": {
+            "type": "string"
+          }
+        },
+        "required": ["pageId"],
         "type": "object"
       }
     }

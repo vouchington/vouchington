@@ -4,7 +4,11 @@ import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
 import { getSignupCountByReferrerId } from '@services/attribution'
 import { getLandingPageAnalyticsByPageId } from '@services/landing-page-analytics'
-import { getLandingPageByUsernameAndSlug, listLandingPagesForUserPage } from '@services/my'
+import {
+  getLandingPageByUsernameAndSlug,
+  getLandingPageCanonicalIdentityById,
+  listLandingPagesForUserPage,
+} from '@services/my'
 import { isAdminUser } from '@services/users'
 import {
   requireAuthAndRateLimit,
@@ -31,6 +35,13 @@ app.route('/api/v1/admin/users/:userId/landing-pages').get(async (ctx: Context) 
       after: pagination.after,
     }),
   )
+})
+
+app.route('/api/v1/admin/landing-pages/:pageId').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/landing-pages/:pageId')
+  const pageId = validateUUIDParam(ctx, 'pageId')
+  validateRequestContract(ctx, 'GET:/api/v1/admin/landing-pages/:pageId', { path: ctx.params })
+  ctx.json(await getLandingPageCanonicalIdentityById(pageId))
 })
 
 app

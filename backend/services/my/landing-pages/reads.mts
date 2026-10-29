@@ -51,6 +51,22 @@ export async function getLandingPageRowByUsernameAndSlug(
   return rows[0] as LandingPage
 }
 
+export async function getLandingPageCanonicalIdentityById(
+  pageId: string,
+): Promise<{ owner_user_id: string; owner_username: string; page_slug: string }> {
+  validateUUID(pageId)
+  const { rows } = await read(sql`/* getLandingPageCanonicalIdentityById */
+    SELECT page.user_id AS owner_user_id, owner.username AS owner_username, page.slug AS page_slug
+    FROM user_landing_pages page
+    JOIN users owner ON owner.id = page.user_id
+      AND owner.deleted_at IS NULL AND owner.username IS NOT NULL
+    WHERE page.id = ${pageId}
+    LIMIT 1
+  `)
+  assert(rows[0], 404, 'Landing page not found')
+  return rows[0] as { owner_user_id: string; owner_username: string; page_slug: string }
+}
+
 export async function getLandingPageItemRows(pageId: string): Promise<LandingPageItemRow[]> {
   const { rows } = await read(sql`/* getLandingPageItemRows */
     SELECT item.id, item.item_type, item.profile_link_id, item.review_post_id, item.referral_link_id,

@@ -5,18 +5,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
-const { getCurrentUserMock, getTopicRecommendationMock, redirectMock, notFoundMock } = vi.hoisted(
-  () => ({
-    getCurrentUserMock: vi.fn<VitestLooseMock>(),
-    getTopicRecommendationMock: vi.fn<VitestLooseMock>(),
-    redirectMock: vi.fn<VitestLooseMock>(() => {
-      throw new Error('NEXT_REDIRECT')
-    }),
-    notFoundMock: vi.fn<VitestLooseMock>(() => {
-      throw new Error('NEXT_NOT_FOUND')
-    }),
+const {
+  getCurrentUserMock,
+  getTopicRecommendationMock,
+  redirectMock,
+  permanentRedirectMock,
+  notFoundMock,
+} = vi.hoisted(() => ({
+  getCurrentUserMock: vi.fn<VitestLooseMock>(),
+  getTopicRecommendationMock: vi.fn<VitestLooseMock>(),
+  redirectMock: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_REDIRECT')
   }),
-)
+  permanentRedirectMock: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_PERMANENT_REDIRECT')
+  }),
+  notFoundMock: vi.fn<VitestLooseMock>(() => {
+    throw new Error('NEXT_NOT_FOUND')
+  }),
+}))
 
 vi.mock(
   import('next/navigation'),
@@ -24,6 +31,7 @@ vi.mock(
     ({
       ...navMockModule,
       redirect: redirectMock,
+      permanentRedirect: permanentRedirectMock,
       notFound: notFoundMock,
     }) as unknown as typeof import('next/navigation'),
 )
@@ -103,5 +111,26 @@ describe('EditTopicRecommendationPage', () => {
     await expect(EditTopicRecommendationPage({ params })).rejects.toThrow('NEXT_REDIRECT')
     expect(redirectMock).toHaveBeenCalledWith('/login')
     expect(getTopicRecommendationMock).not.toHaveBeenCalled()
+  })
+
+  it('redirects an owned pending UUID lookup to the recommendation slug', async () => {
+    const postId = '019e0000-0000-7000-8000-000000000002'
+    getTopicRecommendationMock.mockResolvedValue({ post: { ...post, id: postId } })
+
+    await expect(
+      EditTopicRecommendationPage({ params: Promise.resolve({ slug: postId }) }),
+    ).rejects.toThrow('NEXT_PERMANENT_REDIRECT')
+    expect(permanentRedirectMock).toHaveBeenCalledWith(`/topic-recommendations/${slug}/edit`)
+  })
+
+  it('does not disclose a foreign UUID recommendation through its canonical slug', async () => {
+    const postId = '019e0000-0000-7000-8000-000000000002'
+    getCurrentUserMock.mockResolvedValue({ id: 'other-user', roles: [] })
+    getTopicRecommendationMock.mockResolvedValue({ post: { ...post, id: postId } })
+
+    await expect(
+      EditTopicRecommendationPage({ params: Promise.resolve({ slug: postId }) }),
+    ).rejects.toThrow('NEXT_REDIRECT')
+    expect(permanentRedirectMock).not.toHaveBeenCalled()
   })
 })

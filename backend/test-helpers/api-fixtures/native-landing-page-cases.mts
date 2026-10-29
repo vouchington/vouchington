@@ -103,6 +103,24 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: ['backend/api/v1/admin/landing-pages.mts'],
   },
   {
+    id: 'web.admin-landing-page-identity.default',
+    method: 'GET',
+    path: '/api/v1/admin/landing-pages/landing-page-1',
+    route: {
+      routeTemplate: '/api/v1/admin/landing-pages/:pageId',
+      pathParams: { pageId: 'landing-page-1' },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: {
+      owner_user_id: 'user-abc',
+      owner_username: 'fixture-user',
+      page_slug: 'links',
+    },
+    consumers: ['web'],
+    migratedFrom: ['web/lib/api/server/admin-landing-pages.ts'],
+  },
+  {
     id: 'native.landing-page-candidates.default',
     method: 'GET',
     path: '/api/v1/my/landing-pages/candidates',

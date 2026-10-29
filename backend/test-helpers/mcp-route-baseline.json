@@ -1511,7 +1511,8 @@
     "I199": [["after", "limit", "review_due", "source_flag_id", "status", "user_id"]],
     "I200": [["after", "limit", "review_due", "source", "source_flag_id", "status", "user_id"]],
     "I201": [["destination_id_or_slug", "source_id_or_slug"]],
-    "I202": [["operation_id", "source_id_or_slug"]]
+    "I202": [["operation_id", "source_id_or_slug"]],
+    "I203": [["page_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -6598,7 +6599,10 @@
         {
           "audience": "admin",
           "facts": "F04",
-          "operation": { "tool": "merge_topic", "option": null },
+          "operation": {
+            "tool": "merge_topic",
+            "option": null
+          },
           "decision": false,
           "inputFields": "I201",
           "requestBodyFields": ["destination_id_or_slug"]
@@ -6611,9 +6615,28 @@
         {
           "audience": "admin",
           "facts": "F08",
-          "operation": { "tool": "get_topic_merge", "option": null },
+          "operation": {
+            "tool": "get_topic_merge",
+            "option": null
+          },
           "decision": false,
           "inputFields": "I202",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/admin/landing-pages/:pageId": {
+      "pullRequest": 4373,
+      "contracts": [
+        {
+          "audience": "admin",
+          "facts": "F08",
+          "operation": {
+            "tool": "get_landing_page_identity",
+            "option": null
+          },
+          "decision": false,
+          "inputFields": "I203",
           "requestBodyFields": null
         }
       ]

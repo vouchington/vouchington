@@ -1,4 +1,8 @@
 export interface WebFixtureServerEndpointContext {
+  readonly adminLandingPages: Pick<
+    typeof import('@/lib/api/server/admin-landing-pages'),
+    'getAdminLandingPageCanonicalIdentity'
+  >
   readonly copyrightNotices: Pick<
     typeof import('@/lib/api/server/copyright-notices'),
     | 'getCopyrightEmailIntakeReviewQueue'

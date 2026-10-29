@@ -63,6 +63,18 @@ describe('TopicRecommendationsTable', () => {
     expect(screen.getByText('Recommendation rationale')).toBeDefined()
   })
 
+  it('rejects a recommendation without its canonical post slug', () => {
+    const post = data.posts['rec-1']!
+    const missingSlugData: PostsResponseBody = {
+      ...data,
+      posts: { ...data.posts, 'rec-1': { ...post, slug: null } },
+    }
+
+    expect(() => renderTable({ tableData: missingSlugData })).toThrow(
+      'Topic recommendation is missing its slug',
+    )
+  })
+
   it('lets admins approve from the modal', async () => {
     mockUpdate.mockResolvedValue(makeTopicRecommendationMutationResponse())
     mockApprove.mockResolvedValue({

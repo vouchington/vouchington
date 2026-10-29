@@ -54,6 +54,13 @@ describe('registered admin read projections', () => {
     const pages = await invoke('list_user_landing_pages', { user_id: user.id, limit: 1 })
     expect(pages.isError).not.toBe(true)
     expect(JSON.stringify(pages.structuredContent)).toContain(page.landingPageId)
+    const identity = await invoke('get_landing_page_identity', { page_id: page.landingPageId })
+    expect(identity.isError).not.toBe(true)
+    expect(identity.structuredContent).toEqual({
+      owner_user_id: user.id,
+      owner_username: user.username,
+      page_slug: page.slug,
+    })
     const analytics = await invoke('get_landing_page_analytics', {
       username: user.username,
       slug: page.slug,
