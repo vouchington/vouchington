@@ -151,7 +151,7 @@ function createTextDecoder(contentType: HeaderValue | undefined): TextDecoder {
       ? contentType.params.charset
       : 'utf8'
   try {
-    return new TextDecoder(charset)
+    return new TextDecoder(charset as ConstructorParameters<typeof TextDecoder>[0])
   } catch {
     return new TextDecoder()
   }

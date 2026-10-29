@@ -34,7 +34,10 @@ export function initializeWorkerRuntime(config: WorkerRuntimeConfig): Promise<Wo
       attachSqsConsumer: addSqsConsumerEventListeners,
       setup,
       onError,
-      env: process.env,
+      env: {
+        WORKER_QUEUE_CLASS: process.env.WORKER_QUEUE_CLASS,
+        QUEUES: process.env.QUEUES,
+      },
       resolveQueueSelection,
     },
   )
