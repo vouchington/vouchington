@@ -28,7 +28,7 @@ const fanIns = new Set(['coverage', 'codecov'])
 // (backend) and the credentialed browser checks against real cloud resources (web) fail a run
 // without failing the gate (docs/development/tests.md#live-provider-smoke-checks).
 const reportOnly: Record<string, string[]> = {
-  backend: ['test-backend-credentialed'],
+  backend: ['test-backend-credentialed', 'typecheck-bun'],
   web: ['test-playwright-credentialed'],
 }
 // Producer jobs that prepare shared test inputs before a database-backed suite starts.
@@ -131,7 +131,8 @@ describe('area workflows', () => {
         // The area static checks gate it; without them, it selects the area itself.
         gated:
           staticJobs.length > 0
-            ? staticJobs.every(job => needs.includes(job))
+            ? staticJobs.every(job => needs.includes(job)) ||
+              ((reportOnly[area] ?? []).includes(id) && (jobs[id]!.if?.includes(selected) ?? false))
             : (jobs[id]!.if?.includes(selected) ?? false),
       }
     }

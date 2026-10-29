@@ -46,6 +46,7 @@
     "test:smoke": "./scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh",
     "test:smoke:docker": "./scripts/tests/smoke-test-docker.sh",
     "typecheck": "pnpm run typecheck:src && pnpm run typecheck:email-templates",
+    "typecheck:bun": "tsc --noEmit --incremental --project tsconfig.bun.json",
     "typecheck:src": "tsc --noEmit --incremental",
     "typecheck:email-templates": "tsc --noEmit --incremental --project ../email-templates/tsconfig.json",
     "db:migrate": "node entrypoints/api/migrate.mts",
@@ -60,6 +61,7 @@
     "@voucha/api": "workspace:^"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.4",
     "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@voucha/test-helpers": "workspace:^"

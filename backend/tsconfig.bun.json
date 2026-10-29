@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"],
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo-bun"
+  },
+  "exclude": ["node_modules", "dist", "types/lib-dom-absent.mts"]
+}

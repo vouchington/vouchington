@@ -4403,6 +4403,7 @@ rules:
             test-backend-unit,
             test-explain-analyze,
             test-postgres-schema,
+            typecheck-bun,
             validate-backend-images,
           ]
         .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]
