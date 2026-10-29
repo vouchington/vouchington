@@ -31,7 +31,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
     )
   const [liftingUserId, setLiftingUserId] = useState<string | null>(null)
   const [liftError, setLiftError] = useState<string | null>(null)
-  const [liftedAtByUserId, setLiftedAtByUserId] = useState<Record<string, string>>({})
+  const [liftedAtByBanId, setLiftedAtByBanId] = useState<Record<string, string>>({})
   const users = Object.assign(
     {},
     ...pages.map(page => page.users),
@@ -44,7 +44,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
       }),
     ),
   ).map(ban => {
-    const liftedAt = liftedAtByUserId[ban.user_id]
+    const liftedAt = liftedAtByBanId[ban.id]
     return liftedAt ? { ...ban, lifted_at: ban.lifted_at ?? liftedAt } : ban
   })
 
@@ -53,7 +53,14 @@ export function CommunityBansPanel({ community, initialData }: Props) {
     setLiftError(null)
     try {
       await liftBan(community.slug, userId)
-      setLiftedAtByUserId(prev => ({ ...prev, [userId]: new Date().toISOString() }))
+      // The API lifts every active ban for the user; expired and already-lifted rows keep their status.
+      const liftedBanIds = bans.flatMap(ban =>
+        ban.user_id === userId && isBanActive(ban) ? [ban.id] : [],
+      )
+      setLiftedAtByBanId(prev => {
+        const liftedAt = new Date().toISOString()
+        return { ...prev, ...Object.fromEntries(liftedBanIds.map(id => [id, liftedAt])) }
+      })
       setLiftingUserId(null)
       router.refresh()
     } catch (err) {
