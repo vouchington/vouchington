@@ -166,10 +166,15 @@ describe('seed rows are never dated after the run', () => {
   })
 
   const minute = 60_000
-  const instants = Array.from(
-    { length: 24 * 4 },
-    (_, quarter) => new Date(Date.UTC(2026, 9, 31) + quarter * 15 * minute),
-  )
+  const instants = [
+    '2026-10-31T00:00:00.000Z',
+    '2026-10-31T12:14:59.999Z',
+    '2026-10-31T12:15:00.000Z',
+    '2026-10-31T12:15:00.001Z',
+    '2026-10-31T23:59:59.999Z',
+    '2026-11-01T00:00:00.000Z',
+    '2026-11-01T12:14:59.999Z',
+  ].map(iso => new Date(iso))
 
   it.each(instants.map(instant => [instant.toISOString(), instant]))(
     'keeps the anchor plus the forward margin at or before %s',
