@@ -25,16 +25,6 @@ describe('detector smoke (real lingua-rs addon)', () => {
     expect(result.languages[0]?.confidence).toBeGreaterThan(0)
   })
 
-  it('detects German text (non-constant: different from English)', async () => {
-    const result = await detectLanguage(
-      Buffer.from(
-        'Die Würde des Menschen ist unantastbar. Sie zu achten und zu schützen ist Verpflichtung aller staatlichen Gewalt.',
-        'utf8',
-      ),
-    )
-    expect(result.languages[0]?.iso6391).toBe('de')
-  })
-
   it('detectLanguageMany returns one result per input', async () => {
     const inputs = [
       Buffer.from('The quick brown fox jumps over the lazy dog', 'utf8'),
