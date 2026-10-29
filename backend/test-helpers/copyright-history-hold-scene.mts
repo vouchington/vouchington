@@ -4,7 +4,7 @@ import {
   getPartitionDropRefusal,
   getPartitionDropStatusRefusals,
 } from '@data-stores/psql/migration-runner/partition-drop-guard'
-import { listMonthlyDropCandidates } from '@data-stores/psql/migration-runner/monthly-partitions'
+import { buildMonthlyPartitionName } from '@vouchington/postgres/partitions'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -52,17 +52,21 @@ export async function withCopyrightHistoryHoldScene(
   }) => Promise<void>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  const candidates = await listMonthlyDropCandidates(query)
-  const lifecycle = candidates.find(row => row.table === 'copyright_notice_lifecycle_changes')
-  if (!lifecycle?.upperBound) throw new Error('Missing monthly copyright lifecycle child')
-  const repeat = candidates.find(
-    row =>
-      row.table === 'copyright_repeat_infringer_reviews' &&
-      row.upperBound?.getTime() === lifecycle.upperBound?.getTime(),
-  )
-  if (!repeat) throw new Error('Missing aligned monthly repeat review child')
-  const childUpper = lifecycle.upperBound
-  const at = new Date(Date.UTC(childUpper.getUTCFullYear(), childUpper.getUTCMonth() - 1, 15))
+  const now = new Date()
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth() + 1
+  const childUpper = new Date(Date.UTC(year, month, 1))
+  const lifecycle = {
+    table: 'copyright_notice_lifecycle_changes',
+    partition: buildMonthlyPartitionName('copyright_notice_lifecycle_changes', year, month),
+    upperBound: childUpper,
+  }
+  const repeat = {
+    table: 'copyright_repeat_infringer_reviews',
+    partition: buildMonthlyPartitionName('copyright_repeat_infringer_reviews', year, month),
+    upperBound: childUpper,
+  }
+  const at = new Date(Date.UTC(year, month - 1, 15))
   const referenceDate = new Date(
     Date.UTC(childUpper.getUTCFullYear() + 6, childUpper.getUTCMonth(), 1),
   )
@@ -143,7 +147,7 @@ export async function withCopyrightHistoryHoldScene(
   async function check(
     table: 'copyright_notice_lifecycle_changes' | 'copyright_repeat_infringer_reviews',
   ) {
-    const candidate = table === 'copyright_notice_lifecycle_changes' ? lifecycle! : repeat!
+    const candidate = table === 'copyright_notice_lifecycle_changes' ? lifecycle : repeat
     const policy = PARTITION_DROP_POLICIES[table]!
     const statuses = await getPartitionDropStatusRefusals(
       query,

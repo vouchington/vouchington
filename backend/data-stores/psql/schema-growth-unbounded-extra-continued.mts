@@ -35,7 +35,6 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'stories',
   'topic_claims',
   'topic_metrics',
-  'topic_revisions',
   'card_topics',
   'fediverse_instance_topics',
   'membership_pause_collection_work_items',

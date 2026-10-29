@@ -138240,42 +138240,10 @@
         }
       },
       "indexes": {
-        "idx_topic_revisions__admin_content_update": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_revisions__admin_content_update ON public.topic_revisions USING btree (topic_id, id DESC) WHERE ((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_topic_revisions__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_revisions__topic_id ON public.topic_revisions USING btree (topic_id)",
+          "definition": "CREATE INDEX idx_topic_revisions__topic_id ON ONLY public.topic_revisions USING btree (topic_id)",
           "immediate": true,
           "keys": [
             {
@@ -138298,7 +138266,7 @@
         "topic_revisions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX topic_revisions_pkey ON public.topic_revisions USING btree (id)",
+          "definition": "CREATE UNIQUE INDEX topic_revisions_pkey ON ONLY public.topic_revisions USING btree (id)",
           "immediate": true,
           "keys": [
             {
@@ -138319,11 +138287,13 @@
           "valid": true
         }
       },
-      "physicalPartition": null,
+      "physicalPartition": {
+        "key": "RANGE (id)"
+      },
       "primaryKey": {
         "columns": ["id"]
       },
-      "relationKind": "table",
+      "relationKind": "partitioned table",
       "triggers": {
         "trigger_topic_revisions_append_only": {
           "definition": "CREATE TRIGGER trigger_topic_revisions_append_only BEFORE DELETE OR UPDATE ON public.topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id')"
@@ -138702,6 +138672,10 @@
     },
     "topics": {
       "checkConstraints": {
+        "chk_topics_content_updated_by_has_time": {
+          "definition": "CHECK (((content_updated_by_id IS NULL) OR (content_updated_at IS NOT NULL)))",
+          "validated": true
+        },
         "chk_topics_merge_state_complete": {
           "definition": "CHECK ((((merged_into_topic_id IS NULL) AND (merged_at IS NULL) AND (merged_by_id IS NULL)) OR ((merged_into_topic_id IS NOT NULL) AND (merged_at IS NOT NULL) AND (merged_by_id IS NOT NULL))))",
           "validated": true
@@ -138806,7 +138780,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34
+          "ordinalPosition": 36
         },
         "bedrock_nova_multimodal_v1_embedding": {
           "comment": null,
@@ -138816,7 +138790,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 38
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
           "comment": null,
@@ -138826,7 +138800,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37
+          "ordinalPosition": 39
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
           "comment": null,
@@ -138836,7 +138810,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35
+          "ordinalPosition": 37
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
           "comment": null,
@@ -138846,7 +138820,27 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38
+          "ordinalPosition": 40
+        },
+        "content_updated_at": {
+          "comment": "Timestamp of the latest administrator-authored name or markdown revision, retained independently of revision history.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 25
+        },
+        "content_updated_by_id": {
+          "comment": "Administrator who authored the latest name or markdown revision; cleared when that user is deleted.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 26
         },
         "created_at": {
           "comment": null,
@@ -138896,7 +138890,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 27
         },
         "deleted_by_id": {
           "comment": null,
@@ -138906,7 +138900,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 28
         },
         "hero_image_id": {
           "comment": "Hero/banner image for the topic, displayed prominently on the topic page.",
@@ -138916,7 +138910,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 34
         },
         "homepage_url_id": {
           "comment": "The official homepage URL for this topic (used for retailers and brands).",
@@ -138926,7 +138920,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 35
         },
         "hostname_id": {
           "comment": "Primary hostname for this topic. For rss_feed topics, multiple topics may share the same hostname (e.g. a news feed and podcast from the same domain).",
@@ -138936,7 +138930,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 32
         },
         "id": {
           "comment": null,
@@ -138966,7 +138960,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43
+          "ordinalPosition": 45
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -138976,7 +138970,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46
+          "ordinalPosition": 48
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -138986,7 +138980,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42
+          "ordinalPosition": 44
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -138996,7 +138990,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44
+          "ordinalPosition": 46
         },
         "lingua_rs_results": {
           "comment": null,
@@ -139006,7 +139000,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45
+          "ordinalPosition": 47
         },
         "logo_image_id": {
           "comment": "Reference to the topic's logo image.",
@@ -139016,7 +139010,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 33
         },
         "markdown": {
           "comment": "Topic description in markdown format.",
@@ -139036,7 +139030,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 30
         },
         "merged_by_id": {
           "comment": "Administrator who merged this source topic into another topic.",
@@ -139046,7 +139040,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 31
         },
         "merged_into_topic_id": {
           "comment": "Destination topic after an admin alias/redirect merge.",
@@ -139056,7 +139050,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 29
         },
         "name": {
           "comment": "Canonical display name for this topic.",
@@ -139076,7 +139070,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41
+          "ordinalPosition": 43
         },
         "rewards_program_topic_id": {
           "comment": "The rewards program this topic is associated with. Any topic type can link to a rewards program.",
@@ -139086,7 +139080,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40
+          "ordinalPosition": 42
         },
         "search_vector": {
           "comment": null,
@@ -139096,7 +139090,7 @@
           "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39
+          "ordinalPosition": 41
         },
         "should_allow_reviews": {
           "comment": "When false, reviews cannot be created for this topic and review UI is hidden (e.g. private individuals). Replaced the former person topic type.",
@@ -139267,6 +139261,14 @@
           "referencedTable": "rewards_program_topics",
           "validated": true
         },
+        "topics_content_updated_by_id_fkey": {
+          "columns": ["content_updated_by_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "topics_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "onDelete": "CASCADE",
@@ -139421,6 +139423,29 @@
           ],
           "live": true,
           "predicate": "((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topics__content_updated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topics__content_updated_by_id ON public.topics USING btree (content_updated_by_id) WHERE (content_updated_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "content_updated_by_id",
+              "descending": false,
+              "expression": "content_updated_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(content_updated_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

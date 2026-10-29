@@ -43,6 +43,7 @@ import {
   PRIORITY_DEFAULT,
   PSQL_RETRY_OPTIONS,
   QUEUE_NAME,
+  getPartitionCleanupJobOptions,
 } from '../config.mts'
 import {
   enqueueDataRetentionCleanup,
@@ -65,11 +66,6 @@ const DATA_RETENTION_SCHEDULE_OPTS = () =>
     ordering: DATA_RETENTION_ORDERING,
     priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
   }) satisfies JobOptions
-
-const TOP_HASHTAGS_SCHEDULE_OPTS = {
-  ...SCHEDULE_OPTS,
-  ordering: { key: 'mv_refresh', concurrency: 1 },
-} satisfies JobOptions
 
 const MATERIALIZED_VIEW_SCHEDULE_OPTS = {
   ...SCHEDULE_OPTS,
@@ -123,7 +119,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: REFRESH_MATERIALIZED_VIEW_JOB_NAME,
       data: { viewName: TOP_HASHTAGS_VIEW },
-      opts: TOP_HASHTAGS_SCHEDULE_OPTS,
+      opts: MATERIALIZED_VIEW_SCHEDULE_OPTS,
     },
     operatorSurfaces: [
       {
@@ -138,7 +134,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: CLEANUP_PARTITIONS_SCHEDULER_ID,
     repeat: { pattern: CLEANUP_PARTITIONS_CRON },
-    template: { name: CLEANUP_PARTITIONS_JOB_NAME, data: {}, opts: SCHEDULE_OPTS },
+    template: { name: CLEANUP_PARTITIONS_JOB_NAME, data: {}, opts: getPartitionCleanupJobOptions },
     operatorSurfaces: [{ kind: 'psql', jobType: 'cleanupPartitions' }],
   },
   {

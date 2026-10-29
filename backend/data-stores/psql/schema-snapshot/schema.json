@@ -131407,37 +131407,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_topic_revisions__admin_content_update": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_revisions__admin_content_update ON public.topic_revisions USING btree (topic_id, id DESC) WHERE ((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_topic_revisions__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_revisions__topic_id ON public.topic_revisions USING btree (topic_id)",
+          "definition": "CREATE INDEX idx_topic_revisions__topic_id ON ONLY public.topic_revisions USING btree (topic_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -131457,7 +131430,7 @@
         "topic_revisions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX topic_revisions_pkey ON public.topic_revisions USING btree (id)",
+          "definition": "CREATE UNIQUE INDEX topic_revisions_pkey ON ONLY public.topic_revisions USING btree (id)",
           "includedColumns": [],
           "keys": [
             {
@@ -131475,13 +131448,22 @@
           "valid": true
         }
       },
-      "partition": null,
-      "physicalPartition": null,
+      "partition": {
+        "accessClass": "retention-window",
+        "children": "monthly",
+        "key": "id",
+        "retentionOwner": "cleanupPartitions",
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
       "primaryKey": {
         "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
-      "relationKind": "table",
+      "relationKind": "partitioned table",
       "triggers": {
         "trigger_topic_revisions_append_only": "CREATE TRIGGER trigger_topic_revisions_append_only BEFORE DELETE OR UPDATE ON public.topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id')"
       },
@@ -131836,6 +131818,7 @@
     },
     "topics": {
       "checkConstraints": {
+        "chk_topics_content_updated_by_has_time": "CHECK (((content_updated_by_id IS NULL) OR (content_updated_at IS NOT NULL)))",
         "chk_topics_merge_state_complete": "CHECK ((((merged_into_topic_id IS NULL) AND (merged_at IS NULL) AND (merged_by_id IS NULL)) OR ((merged_into_topic_id IS NOT NULL) AND (merged_at IS NOT NULL) AND (merged_by_id IS NOT NULL))))",
         "chk_topics_merged_into_not_self": "CHECK (((merged_into_topic_id IS NULL) OR (merged_into_topic_id <> id)))",
         "chk_topics_votes_count_down": "CHECK ((votes_count_down >= 0))",
@@ -131878,7 +131861,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34,
+          "ordinalPosition": 36,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -131889,7 +131872,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 38,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -131900,7 +131883,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -131911,7 +131894,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 37,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -131922,8 +131905,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 40,
           "type": "integer"
+        },
+        "content_updated_at": {
+          "collation": null,
+          "comment": "Timestamp of the latest administrator-authored name or markdown revision, retained independently of revision history.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 25,
+          "type": "timestamp with time zone"
+        },
+        "content_updated_by_id": {
+          "collation": null,
+          "comment": "Administrator who authored the latest name or markdown revision; cleared when that user is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 26,
+          "type": "uuid"
         },
         "created_at": {
           "collation": null,
@@ -131977,7 +131982,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -131988,7 +131993,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "hero_image_id": {
@@ -131999,7 +132004,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "homepage_url_id": {
@@ -132010,7 +132015,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "hostname_id": {
@@ -132021,7 +132026,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 32,
           "type": "uuid"
         },
         "id": {
@@ -132054,7 +132059,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 45,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -132065,7 +132070,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 48,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -132076,7 +132081,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 44,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -132087,7 +132092,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 46,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -132098,7 +132103,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 47,
           "type": "jsonb"
         },
         "logo_image_id": {
@@ -132109,7 +132114,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "markdown": {
@@ -132131,7 +132136,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "merged_by_id": {
@@ -132142,7 +132147,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "merged_into_topic_id": {
@@ -132153,7 +132158,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "uuid"
         },
         "name": {
@@ -132175,7 +132180,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 43,
           "type": "uuid"
         },
         "rewards_program_topic_id": {
@@ -132186,7 +132191,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 42,
           "type": "uuid"
         },
         "search_vector": {
@@ -132197,7 +132202,7 @@
           "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 41,
           "type": "tsvector"
         },
         "should_allow_reviews": {
@@ -132386,6 +132391,15 @@
           "referencedTable": "rewards_program_topics",
           "validated": true
         },
+        "topics_content_updated_by_id_fkey": {
+          "columns": ["content_updated_by_id"],
+          "definition": "FOREIGN KEY (content_updated_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "topics_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -132543,6 +132557,26 @@
             }
           ],
           "predicate": "((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topics__content_updated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topics__content_updated_by_id ON public.topics USING btree (content_updated_by_id) WHERE (content_updated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "content_updated_by_id",
+              "descending": false,
+              "expression": "content_updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(content_updated_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

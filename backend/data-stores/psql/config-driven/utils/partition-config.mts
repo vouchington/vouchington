@@ -1,13 +1,19 @@
 /** Shared bootstrap, maintenance, and retirement configuration for partitioned tables. */
 
 import type { MonthlyPartitionTableConfig } from '@vouchington/postgres/partitions'
+import {
+  COPYRIGHT_HISTORY_PARTITION_TABLES,
+  CRAWL_PARTITION_TABLES,
+  RSS_PARTITION_TABLES,
+  TOPIC_REVISION_PARTITION_TABLES,
+} from './partition-config-monthly.mts'
 
-function monthlyPartitionTable(
-  table: string,
-  overrides: Omit<MonthlyPartitionTableConfig, 'table'> = {},
-): MonthlyPartitionTableConfig {
-  return { table, ...overrides }
-}
+export {
+  COPYRIGHT_HISTORY_PARTITION_TABLES,
+  CRAWL_PARTITION_TABLES,
+  RSS_PARTITION_TABLES,
+  TOPIC_REVISION_PARTITION_TABLES,
+} from './partition-config-monthly.mts'
 
 /** UUIDv7 post tables start with a default child and split on demand. */
 export const POST_PARTITION_TABLES: string[] = [
@@ -36,30 +42,6 @@ export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'community_prompt_classifier_results',
   'classifier_decision_batch_candidates',
 ]
-
-/**
- * RSS feed crawl history - partitioned by UUIDv7 timestamp
- * Monthly partitions for 30-day retention via partition drop
- */
-export const RSS_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  monthlyPartitionTable('rss_feed_crawls', { retentionDays: 30, futureMonths: 2 }),
-]
-
-/** Detailed copyright transitions and staff decisions expire by whole calendar month. */
-export const COPYRIGHT_HISTORY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  'copyright_notice_lifecycle_changes',
-  'copyright_territorial_decisions',
-  'copyright_territorial_redress_decisions',
-  'copyright_notice_submission_assessments',
-  'copyright_notice_email_intake_recommendations',
-  'copyright_notice_email_intake_reviews',
-  'copyright_notice_email_correspondence_reviews',
-  'copyright_restriction_administrator_lifts',
-  'copyright_repeat_infringer_dispositions',
-  'copyright_repeat_infringer_reviews',
-].map(table =>
-  monthlyPartitionTable(table, { pastMonths: 12, futureMonths: 2, retentionDays: 2192 }),
-)
 
 /**
  * Session tables - partitioned by UUIDv7 JWT sid/id
@@ -100,29 +82,13 @@ export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
 ]
 
 /**
- * Crawl tables - partitioned by UUIDv7 timestamp
- * Monthly partitions for 30-day retention via partition drop
- * Drop order: crawl_chunks first (FK dependency), then crawls
- *
- * `retentionDays: 30` is not an exact per-row cutoff: `cleanupPartitions` only drops a whole
- * monthly partition once its exclusive upper bound (the start of the *next* month) passes
- * `now - retentionDays`. That makes the effective retention window roughly 30-61 days depending on where
- * in the month a row falls, and the current month's partition is never droppable before the last day of the
- * following month. `crawl_chunks` also has `ON DELETE CASCADE` on `crawl_id`, so even a direct
- * row-delete of `crawls` (outside this partition-drop path) cannot orphan `crawl_chunks` rows.
- */
-export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  monthlyPartitionTable('crawl_chunks', { retentionDays: 30, dropPriority: 0, futureMonths: 2 }),
-  monthlyPartitionTable('crawls', { retentionDays: 30, dropPriority: 1, futureMonths: 2 }),
-]
-
-/**
  * All tables that require monthly RANGE partitions (crawl and RSS history with retention)
  */
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
   ...COPYRIGHT_HISTORY_PARTITION_TABLES,
+  ...TOPIC_REVISION_PARTITION_TABLES,
 ]
 
 export type PartitionDropPolicy = {
@@ -135,6 +101,8 @@ export type PartitionDropPolicy = {
   legalHoldAccountColumn?: string
   /** History row is preserved by a legal hold on a copyright case party or review account. */
   copyrightHistory?: true
+  /** Referenced tables whose FK teardown locks precede the history parent lock. */
+  retirementReferenceTables?: readonly string[]
   /** Each predicate must have a matching partial index on the partition parent. */
   inFlightPredicates?: readonly string[]
 }
@@ -188,6 +156,13 @@ PARTITION_DROP_POLICIES.user_data_requests = {
 PARTITION_DROP_POLICIES.user_data_request_attempts = {
   minimumRetentionDays: 30,
   legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
+}
+
+PARTITION_DROP_POLICIES.topic_revisions = {
+  minimumRetentionDays: null,
+  minimumRetentionMonths: 12,
+  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+  retirementReferenceTables: ['topics', 'users'],
 }
 
 // Security call audits may be retired only after the privacy-policy window. The legal

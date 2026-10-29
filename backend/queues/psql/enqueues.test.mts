@@ -1,9 +1,39 @@
-import { randomInt } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { enqueueCleanupPartitions, enqueueCreatePartitions } from './enqueues.mts'
+import {
+  enqueueCleanupPartitions,
+  enqueueCleanupPartitionsContinuation,
+  enqueueCreatePartitions,
+} from './enqueues.mts'
 import { psql } from './queues.mts'
 
 describe('classifier partition admissions', () => {
+  it('serializes scheduled and continued monthly cleanup in the same lane', async () => {
+    const scheduledAdmission = await enqueueCleanupPartitions()
+    const scheduledId = (scheduledAdmission as { id?: string } | null)?.id
+    if (!scheduledId) throw new Error('Expected a scheduled partition cleanup job')
+    const continuation = {
+      rootJobId: randomUUID(),
+      step: 1,
+      referenceDate: '2026-10-28T00:00:00.000Z',
+      after: { priority: 2, partition: 'topic_revisions__p_2025_09' },
+    }
+    const continuedId = `psql__partition-cleanup__${continuation.rootJobId}__${continuation.step}`
+    await enqueueCleanupPartitionsContinuation(continuation)
+    const [scheduled, continued] = await Promise.all([
+      psql.getJob(scheduledId),
+      psql.getJob(continuedId),
+    ])
+    onTestFinished(async () => {
+      await Promise.all(
+        [scheduledId, continuedId].map(async id => (await psql.getJob(id))?.remove()),
+      )
+    })
+    expect(scheduled?.opts.ordering).toEqual({ key: 'psql:partition-cleanup', concurrency: 1 })
+    expect(continued?.opts.ordering).toEqual(scheduled?.opts.ordering)
+    expect(continued?.data).toEqual({ partitionContinuation: continuation })
+  })
+
   it('uses one ordered lane and stable, operation-specific range IDs', async () => {
     const from = new Date(Date.UTC(1000, 0, 1) + randomInt(0, 360_000) * 24 * 60 * 60 * 1000)
     const to = new Date(from.getTime() + 24 * 60 * 60 * 1000)

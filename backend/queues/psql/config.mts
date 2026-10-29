@@ -75,6 +75,36 @@ export const moderationRetentionQueueConfig = new DynamicConfig({
   defaultFields: { concurrency: 1 },
 })
 
+export const PARTITION_CLEANUP_MAX_PARTITIONS = 50
+export const partitionCleanupConfig = new DynamicConfig({
+  key: 'psql-partition-cleanup-config',
+  fieldTypes: { max_partitions_per_run: 'number', concurrency: 'number' },
+  defaultFields: { max_partitions_per_run: 5, concurrency: 1 },
+})
+
+export function getPartitionCleanupLimit(): number {
+  return getBoundedPositiveIntegerField(partitionCleanupConfig, 'max_partitions_per_run', {
+    defaultValue: 5,
+    maxValue: PARTITION_CLEANUP_MAX_PARTITIONS,
+  })
+}
+
+export function getPartitionCleanupJobOptions(): JobOptions {
+  return {
+    priority: PRIORITY_DEFAULT,
+    ...PSQL_RETRY_OPTIONS,
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    ordering: {
+      key: 'psql:partition-cleanup',
+      concurrency: getBoundedPositiveIntegerField(partitionCleanupConfig, 'concurrency', {
+        defaultValue: 1,
+        maxValue: 1,
+      }),
+    },
+  }
+}
+
 export function getModerationRetentionJobOptions(): JobOptions {
   return {
     priority: PRIORITY_DEFAULT,

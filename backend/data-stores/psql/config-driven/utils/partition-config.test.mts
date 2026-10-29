@@ -6,6 +6,7 @@ import {
   PARTITION_DROP_POLICIES,
   POST_PARTITION_TABLES,
   REVISION_PARTITION_TABLES,
+  TOPIC_REVISION_PARTITION_TABLES,
   USER_KEY_PARTITION_TABLES,
   USER_SESSION_PARTITION_TABLES,
   USER_DATA_REQUEST_PARTITION_TABLES,
@@ -28,7 +29,13 @@ describe('partition drop policy coverage', () => {
       expect(PARTITION_DROP_POLICIES[table]).toHaveProperty('minimumRetentionDays')
     }
     for (const config of ALL_MONTHLY_PARTITION_TABLES) {
-      expect(PARTITION_DROP_POLICIES[config.table]?.minimumRetentionDays).toBe(config.retentionDays)
+      expect(PARTITION_DROP_POLICIES[config.table]?.minimumRetentionDays).toBe(
+        config.table === 'topic_revisions' ? null : config.retentionDays,
+      )
     }
+    expect(TOPIC_REVISION_PARTITION_TABLES).toContainEqual(
+      expect.objectContaining({ table: 'topic_revisions', retentionDays: 0 }),
+    )
+    expect(PARTITION_DROP_POLICIES.topic_revisions?.minimumRetentionMonths).toBe(12)
   })
 })

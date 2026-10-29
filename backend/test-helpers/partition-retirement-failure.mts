@@ -6,7 +6,12 @@ import { createTestUser } from './entities/users.mts'
 import { rejectQuery } from './injected-failures.mts'
 
 /** Fail before taking a shared table lock, after an owned write that must roll back. */
-export async function createPartitionRetirementFailureFixture() {
+export async function createPartitionRetirementFailureFixture(
+  options: {
+    lockStatementPrefix?: string
+    failure?: Error
+  } = {},
+) {
   const user = await createTestUser()
   const statements: string[] = []
   const readMarkdown = async () => {
@@ -30,9 +35,11 @@ export async function createPartitionRetirementFailureFixture() {
         transaction,
         statement => {
           statements.push(statement)
-          return statement.startsWith('/* cleanupPartitions:lockParent */')
+          return statement.startsWith(
+            options.lockStatementPrefix ?? '/* cleanupPartitions:lockParent */',
+          )
         },
-        'partition retirement lock rejected for test',
+        options.failure ?? 'partition retirement lock rejected for test',
       )
     } catch (err) {
       await transaction[Symbol.asyncDispose]()

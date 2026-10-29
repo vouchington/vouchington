@@ -1,4 +1,8 @@
 import {
+  processMonthlyPartitionCleanup,
+  type PartitionCleanupDependencies,
+} from './processors/partition-cleanup.mts'
+import {
   runMigrations,
   runViews,
   runConfigDriven,
@@ -7,7 +11,6 @@ import {
   retireClassifierResultRange,
   createUserDataRequestRange,
   retireUserDataRequestRange,
-  cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
 import {
@@ -48,8 +51,7 @@ import {
   unfinishedCopyrightFamilies,
 } from './processors/copyright-retention.mts'
 
-type ProcessPsqlDependencies = {
-  cleanupPartitions: typeof cleanupPartitions
+type ProcessPsqlDependencies = PartitionCleanupDependencies & {
   createPartitions: typeof createMonthlyPartitions
   dataRetentionCleanup: typeof runDataRetentionCleanup
   copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
@@ -86,13 +88,14 @@ export default async function processPsql(
       if (data?.classifierRange) return createClassifierResultRange(data.classifierRange)
       if (data?.requestRange) return createUserDataRequestRange(data.requestRange)
       return (dependencies?.createPartitions ?? createMonthlyPartitions)()
-    case 'cleanupPartitions':
+    case 'cleanupPartitions': {
       if (data?.classifierRange) {
         await dataRetentionConfig.waitForInitialization()
         return retireClassifierResultRange(data.classifierRange, getClassifierRetentionDays())
       }
       if (data?.requestRange) return retireUserDataRequestRange(data.requestRange)
-      return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
+      return processMonthlyPartitionCleanup(data?.partitionContinuation, dependencies, jobId)
+    }
     case 'dataRetentionCleanup': {
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()

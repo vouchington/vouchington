@@ -14,3 +14,32 @@ export async function getTopicRevisionsForTest(topicId: string): Promise<TopicRe
   )
   return rows
 }
+
+export async function readTestTopicRevisionChild(revisionId: string): Promise<string> {
+  const { rows } = await read<{ partition: string }>(
+    `/* readTestTopicRevisionChild */
+      SELECT tableoid::regclass::text AS partition
+      FROM topic_revisions
+      WHERE id = $1`,
+    [revisionId],
+  )
+  if (!rows[0]) throw new Error('Expected a topic revision')
+  return rows[0].partition
+}
+
+export async function getTopicContentAttributionForTest(topicId: string): Promise<{
+  content_updated_at: Date | null
+  content_updated_by_id: string | null
+}> {
+  const { rows } = await read<{
+    content_updated_at: Date | null
+    content_updated_by_id: string | null
+  }>(
+    `/* getTopicContentAttributionForTest */
+      SELECT content_updated_at, content_updated_by_id
+      FROM topics
+      WHERE id = $1`,
+    [topicId],
+  )
+  return rows[0]
+}

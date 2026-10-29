@@ -69,6 +69,7 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['copyright_repeat_infringer_dispositions', monthlyRange('id')],
   ['copyright_repeat_infringer_reviews', monthlyRange('id')],
   ['post_revisions', defaultRange('id')],
+  ['topic_revisions', monthlyRange('id')],
   ['ai_usage_records', defaultRange('id')],
   ['post_clearance_changes', defaultRange('id')],
   ['mcp_call_audit_events', defaultRange('id')],

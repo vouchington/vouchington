@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
 import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
@@ -9,7 +10,6 @@ import {
 } from './partition-drop-guard.mts'
 import {
   guardAndRetireMonthlyPartition,
-  listMonthlyDropCandidates,
   retirePartitionsSequentially,
 } from './monthly-partitions.mts'
 
@@ -62,7 +62,7 @@ describe('partition drop guard', () => {
   })
 
   it('agrees between the live batch preview and direct legal-hold recheck', async () => {
-    const monthly = (await listMonthlyDropCandidates(write)).find(
+    const monthly = (await listTestMonthlyDropCandidates(write)).find(
       entry => entry.table === 'rss_feed_crawls',
     )
     expect(monthly).toBeDefined()
@@ -128,6 +128,30 @@ describe('partition drop guard', () => {
     expect(
       getPartitionDropAgeRefusal(december, policy, new Date('2026-01-01T00:00:00.000Z')),
     ).toBeNull()
+  })
+
+  it('retires topic revision children only after twelve complete calendar months', () => {
+    const policy = { minimumRetentionDays: null, minimumRetentionMonths: 12 }
+    const referenceDate = new Date('2026-10-28T23:59:59.000Z')
+    const previous = {
+      table: 'topic_revisions',
+      partition: 'topic_revisions__p_2025_09',
+      upperBound: new Date('2025-10-01T00:00:00.000Z'),
+    }
+    const current = {
+      ...previous,
+      partition: 'topic_revisions__p_2025_10',
+      upperBound: new Date('2025-11-01T00:00:00.000Z'),
+    }
+    expect(getPartitionDropAgeRefusal(previous, policy, referenceDate)).toBeNull()
+    expect(getPartitionDropAgeRefusal(current, policy, referenceDate)).toBe('inside-retention')
+    expect(
+      getPartitionDropAgeRefusal(
+        previous,
+        { minimumRetentionDays: null, minimumRetentionMonths: Number.MAX_SAFE_INTEGER },
+        referenceDate,
+      ),
+    ).toBe('no-declared-retention')
   })
 
   it('refuses a held account and unfinished work before detach', async () => {

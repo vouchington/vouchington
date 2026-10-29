@@ -42,6 +42,7 @@ export function getPartitionDropAgeRefusal(
       referenceDate.getUTCMonth() - minimumMonths,
       1,
     )
+    if (!Number.isFinite(cutoff)) return 'no-declared-retention'
     return candidate.upperBound.getTime() > cutoff ? 'inside-retention' : null
   }
   if (minimum == null || !Number.isFinite(minimum) || minimum < 0) return 'no-declared-retention'

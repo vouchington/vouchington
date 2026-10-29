@@ -68,6 +68,10 @@ CREATE TABLE IF NOT EXISTS topics (
   created_by_id UUID REFERENCES users ON DELETE CASCADE,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_by_id UUID REFERENCES users ON DELETE SET NULL, -- the last person who updated it, used for authorship
+  content_updated_at TIMESTAMPTZ, -- latest administrator-authored name or markdown revision
+  content_updated_by_id UUID REFERENCES users ON DELETE SET NULL,
+  CONSTRAINT chk_topics_content_updated_by_has_time
+    CHECK (content_updated_by_id IS NULL OR content_updated_at IS NOT NULL),
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
   merged_into_topic_id UUID REFERENCES topics ON DELETE RESTRICT,
@@ -319,6 +323,10 @@ CREATE INDEX IF NOT EXISTS idx_topics__updated_by_id
 ON topics (updated_by_id)
 WHERE updated_by_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_topics__content_updated_by_id
+ON topics (content_updated_by_id)
+WHERE content_updated_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__deleted_by_id
 ON topics (deleted_by_id)
@@ -409,6 +417,8 @@ COMMENT ON COLUMN topics.name IS 'Canonical display name for this topic.';
 COMMENT ON COLUMN topics.slug IS 'URL-safe lowercase slug. Unique.';
 COMMENT ON COLUMN topics.aliases IS 'Alternative names for search purposes. Projected by fn_project_topic_aliases from linked topic_aliases.';
 COMMENT ON COLUMN topics.markdown IS 'Topic description in markdown format.';
+COMMENT ON COLUMN topics.content_updated_at IS 'Timestamp of the latest administrator-authored name or markdown revision, retained independently of revision history.';
+COMMENT ON COLUMN topics.content_updated_by_id IS 'Administrator who authored the latest name or markdown revision; cleared when that user is deleted.';
 COMMENT ON COLUMN topics.votes_snapshot_xmax IS 'Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.';
 COMMENT ON COLUMN topics.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
 COMMENT ON COLUMN topics.merged_into_topic_id IS 'Destination topic after an admin alias/redirect merge.';
