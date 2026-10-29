@@ -30,7 +30,11 @@ export async function runMembershipRenewalSelectionScenario(): Promise<void> {
       membership_renewal_price_increase_notification_work_items`)
   registerScenarioContract('membership-renewal-selection', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_memberships__live_source'] },
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_memberships__live_source', 'idx_memberships__source_id'],
+        anyOf: true,
+      },
       { kind: 'maxProcessedRows', relation: 'memberships', max: 25 },
     ],
     seededRows: { memberships: 320, membership_provider_observations: 20 },

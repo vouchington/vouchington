@@ -20,6 +20,21 @@ export function applyTopicAliasUnlinkPageForTest(
   })
 }
 
+/** Reads the first owned unlink page without advancing its transaction. */
+export async function selectTopicAliasUnlinkInitialPageForTest(
+  aliasId: string,
+  aliasText: string,
+): Promise<TopicAliasUnlinkPage> {
+  await using lookup = await beginTransaction()
+  const page = await selectTopicAliasUnlinkNextPage(
+    lookup,
+    aliasId,
+    Boolean(normalizeHashtag(aliasText)),
+  )
+  await lookup.rollback()
+  return page
+}
+
 /** Completes the real unlink page state machine and its durable category generation. */
 export async function finishTopicAliasUnlinkForTest(aliasId: string): Promise<void> {
   const { rows: aliases } = await read<{ alias: string; unlink_requested_at: Date | null }>(
