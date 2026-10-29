@@ -14,8 +14,13 @@ STARTUP_TIMEOUT_SECONDS=30
 POLL_INTERVAL_SECONDS=0.5
 STARTUP_POLL_ATTEMPTS=$((STARTUP_TIMEOUT_SECONDS * 2))
 
-# Start worker in background
-NODE_ENV='test' node --import ./test-helpers/s3-test-environment.mts entrypoints/worker-io/serve.mts > "$WORKER_OUTPUT_LOG" 2>&1 &
+# Start worker in background. WORKER_IO_EXECUTABLE runs a Bun-compiled worker-io executable
+# instead of the TypeScript entrypoint; the caller then exports the S3 test bucket names.
+if [ -n "${WORKER_IO_EXECUTABLE:-}" ]; then
+  NODE_ENV='test' "$WORKER_IO_EXECUTABLE" serve.mts > "$WORKER_OUTPUT_LOG" 2>&1 &
+else
+  NODE_ENV='test' node --import ./test-helpers/s3-test-environment.mts entrypoints/worker-io/serve.mts > "$WORKER_OUTPUT_LOG" 2>&1 &
+fi
 WORKER_PID=$!
 
 # Small delay to ensure log file is created and initial output is written
@@ -91,8 +96,9 @@ for i in $(seq 1 $JOB_TIMEOUT); do
 done
 kill $ENQUEUE_PID 2>/dev/null || true
 
-# Send SIGINT for graceful shutdown
-kill -INT $WORKER_PID
+# Send SIGTERM, the signal ECS stops tasks with. A non-interactive shell starts background jobs
+# with SIGINT ignored, and Bun keeps that disposition (#4252).
+kill -TERM $WORKER_PID
 
 # Wait for process to exit with timeout
 SHUTDOWN_TIMEOUT=15

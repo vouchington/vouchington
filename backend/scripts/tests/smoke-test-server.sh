@@ -15,8 +15,13 @@ STARTUP_TIMEOUT_SECONDS=30
 POLL_INTERVAL_SECONDS=0.5
 STARTUP_POLL_ATTEMPTS=$((STARTUP_TIMEOUT_SECONDS * 2))
 
-# Start server in background
-NODE_ENV=test PORT="$PORT" node --import ./test-helpers/s3-test-environment.mts entrypoints/api/serve.mts > "$SERVER_OUTPUT_LOG" 2>&1 &
+# Start server in background. API_EXECUTABLE runs a Bun-compiled API executable instead of the
+# TypeScript entrypoint; the caller then exports the S3 test bucket names the preload would set.
+if [ -n "${API_EXECUTABLE:-}" ]; then
+  NODE_ENV=test PORT="$PORT" "$API_EXECUTABLE" serve.mts > "$SERVER_OUTPUT_LOG" 2>&1 &
+else
+  NODE_ENV=test PORT="$PORT" node --import ./test-helpers/s3-test-environment.mts entrypoints/api/serve.mts > "$SERVER_OUTPUT_LOG" 2>&1 &
+fi
 SERVER_PID=$!
 
 # Small delay to ensure log file is created and initial output is written
@@ -90,8 +95,9 @@ fi
 
 echo "✓ /infra/ping endpoint working correctly"
 
-# Send SIGINT for graceful shutdown
-kill -INT $SERVER_PID
+# Send SIGTERM, the signal ECS stops tasks with. A non-interactive shell starts background jobs
+# with SIGINT ignored, and Bun keeps that disposition (#4252).
+kill -TERM $SERVER_PID
 
 # Wait for process to exit with timeout
 SHUTDOWN_TIMEOUT=15
