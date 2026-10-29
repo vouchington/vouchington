@@ -52,7 +52,7 @@ async function loadGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
   }
 }
 
-export function getRangeStart(range: GrowthRange, now: Date): Date {
+function getRangeStart(range: GrowthRange, now: Date): Date {
   const d = new Date(now)
   switch (range) {
     case 'today': {
