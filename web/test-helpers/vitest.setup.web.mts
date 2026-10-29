@@ -4,16 +4,25 @@ import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { installJsdomStubs, installMemoryLocalStorage } from 'vouchington-tooling/jsdom-stubs'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { serializeCatalog } from '@ts-shared/ui-messages/catalog-bootstrap'
 import { flushPendingDynamicImports } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 
-// Pre-seeds the client-side translation cache before any mock test mounts a component, so
-// `useTranslations()` resolves synchronously instead of suspending on the first render. Without
-// this, any codemod-migrated component suspends on `loadJsonMessages('en')` — production closes
-// this window via a server-rendered bootstrap script (`seedFromWindowBootstrap`), which jsdom has
-// no equivalent for. 'en' is hardcoded (not `DEFAULT_UI_LOCALE`) to mirror the Storybook preview
-// seed: every mock test's default `UiLocaleProvider` context value renders English.
-seedMessages('en', await loadJsonMessages('en'))
+const englishCatalog = await loadJsonMessages('en')
+if (typeof window !== 'undefined') {
+  // Mirror layout's bootstrap before the client module evaluates. Do not add a
+  // fallback seed: broken browser bootstrap must reach the rejecting API fixture.
+  Reflect.set(window, '__UI_MESSAGES__', {
+    locale: 'en',
+    catalog: structuredClone(serializeCatalog(englishCatalog)),
+  })
+  await vi.importActual<typeof import('@/lib/i18n/use-translations')>('@/lib/i18n/use-translations')
+} else {
+  // Node-environment overrides have no browser bootstrap, like Node Storybook.
+  const { mergeMessages } = await vi.importActual<typeof import('@/lib/i18n/use-translations')>(
+    '@/lib/i18n/use-translations',
+  )
+  mergeMessages('en', englishCatalog)
+}
 
 // Next.js treats `server-only` as a compile/runtime boundary marker. Vitest imports server
 // components directly in jsdom, so mock the marker module while preserving production imports.

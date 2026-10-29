@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { seedMessages, useTranslations } from '@/lib/i18n/use-translations'
+import { mergeMessages, useTranslations } from '@/lib/i18n/use-translations'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 
 function SelectedCatalogMissConsumer() {
@@ -18,7 +18,7 @@ function SelectedCatalogMissConsumer() {
 
 describe('useTranslations unresolved keys', () => {
   it('degrades a selected-catalog miss instead of throwing', async () => {
-    seedMessages('pt', { nav: { home: 'Início' } })
+    mergeMessages('pt', { nav: { home: 'Início' } })
 
     await act(async () => {
       render(

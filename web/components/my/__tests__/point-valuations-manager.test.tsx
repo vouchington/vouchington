@@ -13,7 +13,7 @@ import {
 import { PointValuationsManager } from '../point-valuations-manager'
 
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('PointValuationsManager Integration Flow', () => {
@@ -31,7 +31,7 @@ describe('PointValuationsManager Integration Flow', () => {
   })
 
   it('formats and translates value-per-point summaries with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(
       <LocaleProvider locale='es'>
@@ -44,7 +44,7 @@ describe('PointValuationsManager Integration Flow', () => {
   })
 
   it('translates add and edit value-per-point labels with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(
       <LocaleProvider locale='es'>

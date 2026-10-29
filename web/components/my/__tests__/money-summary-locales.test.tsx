@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import type { IndividualCard, SpendingCategory } from '@/types/my'
 import { CardDisplayRow } from '../cards-manager/card-row'
 import { CategorySummary } from '../spending-categories-manager/category-summary'
@@ -11,7 +11,7 @@ const noOp = vi.fn<() => void>()
 
 describe('money summaries', () => {
   it('formats card credit limits with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     const card: IndividualCard = {
       id: 'card-1',
       card_topic_id: 'topic-1',
@@ -46,7 +46,7 @@ describe('money summaries', () => {
   })
 
   it('formats spending amounts with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     const category: SpendingCategory = {
       id: 'spending-1',
       spending_category_topic_id: 'category-1',

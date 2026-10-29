@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { CurrencySelect } from '../currency-select'
 import {
   enMessages,
@@ -22,7 +22,7 @@ describe('CurrencySelect localized labels', () => {
   ] as const)(
     'uses the active %s locale and preserves the trigger id',
     (locale, messages, label) => {
-      seedMessages(locale, messages)
+      mergeMessages(locale, messages)
       render(
         <LocaleProvider locale={locale}>
           <CurrencySelect
@@ -38,7 +38,7 @@ describe('CurrencySelect localized labels', () => {
   )
 
   it('preserves a caller-supplied label', () => {
-    seedMessages('en', enMessages)
+    mergeMessages('en', enMessages)
     render(
       <CurrencySelect
         id='custom-currency'

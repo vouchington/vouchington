@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const h = vi.hoisted(() => ({
@@ -30,7 +30,7 @@ vi.mock(import('@/lib/api/client/appeals'), () => ({
 vi.mock(import('@/lib/on-error/on-error'), () => ({ default: h.mockOnError }))
 
 import { AppealsClient } from './appeals-client'
-import { makeAppeal, makeAppealsData } from './fixtures/appeals-client-fixtures'
+import { makeAppeal, makeAppealsData } from '@/test-helpers/appeals-client-fixtures'
 
 function renderStaffClient(data = makeAppealsData(), uiLocale = 'en') {
   return render(
@@ -60,7 +60,7 @@ describe('AppealsClient — rendering and staff actions', () => {
   })
 
   it('renders the plural appeal count in the resolved UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     renderStaffClient(makeAppealsData([makeAppeal(), makeAppeal({ id: 'appeal-2' })]), 'es')
 
     expect(screen.getByText('2 apelaciones')).toBeInTheDocument()

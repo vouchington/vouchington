@@ -9,7 +9,7 @@ import {
   makeCommunityMetrics,
 } from '@/test-helpers/api-responses'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { projectTopCommunities } from '@/lib/view-models/homepage-view-models'
 
 configure({ testIdAttribute: 'data-pw' })
@@ -86,7 +86,7 @@ describe('TopCommunities', () => {
       },
     })
 
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(
       <UiLocaleProvider uiLocale='es'>

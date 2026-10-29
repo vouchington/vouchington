@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MembershipsAdminPage from '../memberships-admin-client'
 import { grantMembership, fetchPlans } from '@/lib/api/client/memberships'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(import('@/lib/api/client/memberships'), () => ({
@@ -136,7 +136,7 @@ describe('MembershipsAdminPage', () => {
   })
 
   it('formats SKU prices with the active UI locale', async () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <UiLocaleProvider uiLocale='es'>
         <MembershipsAdminPage />

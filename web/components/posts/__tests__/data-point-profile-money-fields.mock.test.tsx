@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { DataPointProfileFields } from '../data-point-profile-fields'
 import type { FinancialProfile } from '@/types/my'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
@@ -43,7 +43,7 @@ const usdFinancialProfile: FinancialProfile = {
 
 describe('DataPointProfileFields money inputs', () => {
   it('identifies income and total-credit-limit inputs with the selected currency', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <LocaleProvider locale='es'>
         <DataPointProfileFields
@@ -71,7 +71,7 @@ describe('DataPointProfileFields money inputs', () => {
   })
 
   it('does not display income from a profile whose currency differs from the post', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <LocaleProvider locale='es'>
         <DataPointProfileFields
@@ -94,7 +94,7 @@ describe('DataPointProfileFields money inputs', () => {
   })
 
   it('displays profile income when the profile and post currencies match', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     render(
       <LocaleProvider locale='es'>
         <DataPointProfileFields

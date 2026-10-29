@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { DisputeContext } from './dispute-context'
-import { makeDispute } from './fixtures/disputes-client-fixtures'
+import { makeDispute } from '@/test-helpers/disputes-client-fixtures'
 
 describe('DisputeContext', () => {
   it('renders the disputed review, topic, rating, disputant, and claim', () => {

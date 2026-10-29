@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CommentNodeHeader } from '@/components/comments/comment-node-header'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { commentPermalink, deletedCommentNode } from '@/storybook/comments/comment-story-data'
 
@@ -39,7 +39,7 @@ function hasPhrase(text: string, expected: string): boolean {
 describe('CommentNodeHeader collapsed reply count', () => {
   beforeAll(async () => {
     for (const locale of ['es', 'fr', 'pt'] as const) {
-      seedMessages(locale, await loadJsonMessages(locale))
+      mergeMessages(locale, await loadJsonMessages(locale))
     }
   })
 

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import type { MembershipPlanSku } from '@/types/api-responses'
 import { PaidPlanCard } from '../paid-plan-card'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
@@ -16,7 +16,7 @@ const yearlySku: MembershipPlanSku = {
 
 describe('PaidPlanCard', () => {
   it('formats the price and monthly equivalent with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(
       <UiLocaleProvider uiLocale='es'>

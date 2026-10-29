@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { AppealContext } from './appeal-context'
-import { makeAppeal } from './fixtures/appeals-client-fixtures'
+import { makeAppeal } from '@/test-helpers/appeals-client-fixtures'
 
 describe('AppealContext', () => {
   it('renders human-readable appellant, target, and original-decision context', () => {

@@ -4,7 +4,7 @@ import type { EnCatalog } from '@ts-shared/ui-messages'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { LocalizedRouteBoundary } from '../localized-route-boundary'
-import { getMessagesPromise, useTranslations } from '../use-translations'
+import { useTranslations } from '../use-translations'
 import { UiLocaleProvider } from '../ui-locale-provider'
 
 const { getRouteMessagesPromise, seedRouteMessages } = vi.hoisted(() => ({
@@ -131,10 +131,11 @@ describe('LocalizedRouteBoundary', () => {
     })
 
     expect(await screen.findByTestId('route-copy')).toHaveTextContent('Account')
-    await expect(getMessagesPromise('fr')).resolves.toEqual({
-      nav: { home: 'Home' },
-      extracted: { my: { settingsRoutes: { account_7e1b0d56: 'Account' } } },
+    // A second public consumer still sees the initial catalog after the destination merge.
+    await act(async () => {
+      rendered.rerender(<App id='nav.home' />)
     })
+    expect(screen.getByTestId('route-copy')).toHaveTextContent('Home')
     expect(getRouteMessagesPromise).toHaveBeenCalledWith('fr', '/')
     expect(getRouteMessagesPromise).toHaveBeenCalledWith('fr', '/my/notifications')
   })
