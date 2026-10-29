@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
+import { persistRecoveredCopyrightAssessment } from './form-reviews-recovered-assessment.mts'
 import {
   queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
@@ -95,45 +96,18 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     state.reviewed_by_id !== null &&
     (state.is_substantially_compliant !== false || state.assessed_by_id === null)
   ) {
-    const { rows: identityRows } = await transaction<{ id: string }>(sql`
-      /* recoverRejectedCopyrightFormReviewEffect:identity */
-      INSERT INTO copyright_notice_submission_assessment_identities (
-        copyright_notice_id, copyright_notice_submission_id
-      ) VALUES (${state.notice_id}, ${state.submission_id}) RETURNING id
-    `)
-    const { rows: recoveredAssessment } = await transaction<{
-      id: string
-    }>(sql`/* recoverRejectedCopyrightFormReviewEffect:assessment */
-      INSERT INTO copyright_notice_submission_assessments (
-        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
-        supersedes_assessment_id
-      ) VALUES (
-        ${identityRows[0]!.id}, ${state.submission_id}, ${state.reviewed_at}, ${state.reviewed_by_id}, false,
-        ${state.assessment_id}
-      ) RETURNING id
-    `)
-    await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:current */
-      UPDATE copyright_notice_submissions
-      SET current_assessment_identity_id = ${recoveredAssessment[0]!.id},
-        current_assessment_is_substantially_compliant = false,
-        current_assessed_at = ${state.reviewed_at},
-        current_assessed_by_id = ${state.reviewed_by_id},
-        current_assessment_form_screening_id = NULL
-      WHERE id = ${state.submission_id}
-    `)
-    await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:event */
-      INSERT INTO copyright_notice_lifecycle_changes (
-        copyright_notice_id, change_type, changed_by_id,
-        copyright_notice_submission_assessment_id, recovery_source
-      ) VALUES (
-        ${state.notice_id}, 'submission_assessed', ${state.reviewed_by_id},
-        ${recoveredAssessment[0]!.id}, 'durable_review'
-      )
-    `)
+    const recoveredAssessmentId = await persistRecoveredCopyrightAssessment(
+      transaction,
+      state.notice_id,
+      state.submission_id,
+      state.reviewed_at,
+      state.reviewed_by_id,
+      state.assessment_id,
+    )
     await recordClaimantMisuseEvent(transaction, {
       noticeId: state.notice_id,
       recordedAt: state.reviewed_at,
-      event: { outcome: 'notice_rejected', assessmentId: recoveredAssessment[0]!.id },
+      event: { outcome: 'notice_rejected', assessmentId: recoveredAssessmentId },
     })
   }
   await createCopyrightClaimantDecisionNoticeInTransaction(

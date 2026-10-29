@@ -74,14 +74,14 @@ CREATE TABLE IF NOT EXISTS copyright_decision_rationales (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id UUID REFERENCES copyright_notices (id) ON DELETE CASCADE,
   copyright_notice_email_intake_receipt_id UUID REFERENCES copyright_notice_email_intake_receipts (id) ON DELETE RESTRICT,
-  copyright_repeat_infringer_review_id UUID REFERENCES copyright_repeat_infringer_review_identities (id) ON DELETE RESTRICT,
+  copyright_repeat_infringer_review_identity_id UUID REFERENCES copyright_repeat_infringer_review_identities (id) ON DELETE RESTRICT,
   account_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   recorded_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   tool_name TEXT NOT NULL CHECK (tool_name ~ '^[a-z_]{1,64}$'),
   rationale_ciphertext TEXT NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at TIMESTAMPTZ NOT NULL GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (num_nonnulls(copyright_notice_id, copyright_notice_email_intake_receipt_id,
-    copyright_repeat_infringer_review_id, account_user_id) = 1)
+    copyright_repeat_infringer_review_identity_id, account_user_id) = 1)
 );
 
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__notice
@@ -91,8 +91,8 @@ CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__email_intake
 ON copyright_decision_rationales (copyright_notice_email_intake_receipt_id, id)
 WHERE copyright_notice_email_intake_receipt_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__repeat_review
-ON copyright_decision_rationales (copyright_repeat_infringer_review_id, id)
-WHERE copyright_repeat_infringer_review_id IS NOT NULL;
+ON copyright_decision_rationales (copyright_repeat_infringer_review_identity_id, id)
+WHERE copyright_repeat_infringer_review_identity_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__account_user
 ON copyright_decision_rationales (account_user_id, id)
 WHERE account_user_id IS NOT NULL;
@@ -111,7 +111,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 COMMENT ON TABLE copyright_decision_rationales IS 'Encrypted rationale for an admitted legal MCP decision attempt, retained with a concrete legal case, intake, review or account independently of the short security audit. A later tool failure does not turn this attempted decision into a completed one.';
 COMMENT ON COLUMN copyright_decision_rationales.copyright_notice_id IS 'Copyright case whose decision this rationale accompanies.';
 COMMENT ON COLUMN copyright_decision_rationales.copyright_notice_email_intake_receipt_id IS 'Email intake that had not yet been admitted to a copyright case.';
-COMMENT ON COLUMN copyright_decision_rationales.copyright_repeat_infringer_review_id IS 'Account-level repeat-infringer review when no single copyright case owns the decision.';
+COMMENT ON COLUMN copyright_decision_rationales.copyright_repeat_infringer_review_identity_id IS 'Account-level repeat-infringer review when no single copyright case owns the decision.';
 COMMENT ON COLUMN copyright_decision_rationales.account_user_id IS 'Retained account identity for a reinstatement decision when no single case owns it; this identity does not authorize the account.';
 COMMENT ON COLUMN copyright_decision_rationales.recorded_by_id IS 'Retained staff identity that supplied the validated legal rationale.';
 COMMENT ON COLUMN copyright_decision_rationales.tool_name IS 'Registered legal decision tool name, never arbitrary caller text.';

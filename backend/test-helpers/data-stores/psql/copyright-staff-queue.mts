@@ -56,7 +56,7 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
       RETURNING id, copyright_notice_submission_id
     ), deadline AS (
       INSERT INTO copyright_notice_deadlines (
-        copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
+        copyright_notice_id, qualifying_counter_notice_assessment_identity_id, earliest_restoration_at,
         escalation_at, restoration_deadline_at
       )
       SELECT ${input.noticeId}, id, COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '10 days',
@@ -67,7 +67,7 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
       FROM assessment RETURNING id
     ), review AS (
       INSERT INTO copyright_notice_counter_notice_reviews (
-        copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+        copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
         copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       )
       SELECT assessment.copyright_notice_submission_id, assessment.id, deadline.id,

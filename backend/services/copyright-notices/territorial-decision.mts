@@ -140,7 +140,7 @@ export async function recordTerritorialCopyrightDecision(
     /* recordTerritorialCopyrightDecision */
     INSERT INTO copyright_territorial_decisions (
       id, copyright_notice_id, jurisdiction, decided_by_id, outcome,
-      copyright_notice_submission_assessment_id, supersedes_decision_id,
+      copyright_notice_submission_assessment_identity_id, supersedes_decision_id,
       automation_disclosure, rationale_ciphertext, public_explanation_ciphertext
     ) VALUES (
       ${decisionId}, ${noticeId}, ${jurisdiction}, ${actor.id}, ${input.outcome}, ${assessmentId},

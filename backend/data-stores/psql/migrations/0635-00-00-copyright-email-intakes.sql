@@ -31,7 +31,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Fin
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
 
-CREATE FUNCTION fn_guard_copyright_email_receipt_current_review()
+CREATE FUNCTION fn_reject_copyright_email_receipt_current_review()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -54,7 +54,7 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_email_receipts_current_review
   BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_receipts
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_receipt_current_review();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_receipt_current_review();
 
 CREATE TABLE copyright_notice_email_intake_recommendation_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -193,7 +193,7 @@ CREATE INDEX idx_copyright_notice_email_intake_reviews__reviewer ON copyright_no
 CREATE INDEX idx_copyright_notice_email_intake_reviews__recommendation ON copyright_notice_email_intake_reviews(copyright_notice_email_intake_recommendation_id) WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE FUNCTION fn_guard_copyright_email_intake_current_recommendation()
+CREATE FUNCTION fn_reject_copyright_email_intake_current_recommendation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -222,7 +222,7 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE UPDATE OR DELETE
   ON copyright_notice_email_intakes FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_copyright_email_intake_current_recommendation();
+  EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -300,3 +300,7 @@ CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON cop
 
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.id IS 'Published UUIDv7 recommendation identity, not an authorization grant.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.created_at IS 'Identity creation time derived from its UUIDv7 id.';
+
+CREATE INDEX idx_copyright_notice_email_intake_receipts__reviewed_by
+  ON copyright_notice_email_intake_receipts (reviewed_by_id)
+  WHERE reviewed_by_id IS NOT NULL;

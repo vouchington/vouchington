@@ -43,7 +43,7 @@ async function sweepPage(
       cursor_child_id, cursor_edge_id, cursor_phase,
       cursor_legal_phase, cursor_legal_child_id, cursor_legal_hold_generation,
       cursor_case_party_generation, cursor_legal_latest_release_at,
-      cursor_blocker_phase, cursor_blocker_child_id, cursor_blocker_assessment_id,
+      cursor_blocker_phase, cursor_blocker_child_id, cursor_blocker_assessment_identity_id,
       cursor_blocker_generation
     FROM copyright_notice_operational_retention_cursors
     WHERE kind = 'email_thread_references' FOR UPDATE`)

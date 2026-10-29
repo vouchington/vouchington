@@ -113,7 +113,7 @@ export async function unsuspendUser(
     SELECT EXISTS (
       SELECT 1 FROM copyright_repeat_infringer_account_states account_state
       WHERE account_state.account_user_id = ${userId}
-        AND account_state.termination_in_effect
+        AND account_state.is_termination_in_effect
     ) AS blocked
   `)
   if (termination[0]?.blocked) {

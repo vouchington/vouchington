@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_decisions (
   decided_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   decided_by_id uuid,
   outcome copyright_territorial_decision_outcomes NOT NULL,
-  copyright_notice_submission_assessment_id uuid,
+  copyright_notice_submission_assessment_identity_id uuid,
   supersedes_decision_id uuid,
   automation_disclosure copyright_territorial_decision_automation_disclosures NOT NULL,
   rationale_ciphertext text NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_decisions (
   CONSTRAINT uq_copyright_territorial_decisions__notice_id UNIQUE (copyright_notice_id, id),
   CONSTRAINT chk_copyright_territorial_decisions__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
   CONSTRAINT chk_copyright_territorial_decisions__outcome CHECK (outcome IN ('restrict', 'no_action')),
-  CONSTRAINT chk_copyright_territorial_decisions__assessment CHECK ((outcome = 'restrict') = (copyright_notice_submission_assessment_id IS NOT NULL)),
+  CONSTRAINT chk_copyright_territorial_decisions__assessment CHECK ((outcome = 'restrict') = (copyright_notice_submission_assessment_identity_id IS NOT NULL)),
   CONSTRAINT chk_copyright_territorial_decisions__successor CHECK (supersedes_decision_id IS NULL OR outcome = 'restrict'),
   CONSTRAINT chk_copyright_territorial_decisions__human CHECK (automation_disclosure = 'human'),
   CONSTRAINT chk_copyright_territorial_decisions__rationale CHECK (
@@ -170,7 +170,7 @@ CREATE TABLE copyright_notice_operational_retention_cursors (
   cursor_legal_latest_release_at timestamptz,
   cursor_blocker_phase text,
   cursor_blocker_child_id uuid,
-  cursor_blocker_assessment_id uuid REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE SET NULL,
+  cursor_blocker_assessment_identity_id uuid REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE SET NULL,
   cursor_blocker_generation bigint,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -191,13 +191,13 @@ COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_case_par
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_latest_release_at IS 'Latest release timestamp found across completed bounded party pages.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_phase IS 'Current bounded staff and business blocker proof phase.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_child_id IS 'Last raw blocker-source row inspected; an opaque traversal value, not a relationship.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_assessment_id IS 'Concrete submission assessment whose nested blocker children are being paged.';
+COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_assessment_identity_id IS 'Concrete submission assessment whose nested blocker children are being paged.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_generation IS 'Observed case blocker generation for the current paged proof.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.updated_at IS 'Last time this sweep position changed.';
 
 CREATE INDEX idx_cpyrght_ntc_oprtnl_rtntn_crsrs__assessment
-  ON copyright_notice_operational_retention_cursors (cursor_blocker_assessment_id)
-  WHERE cursor_blocker_assessment_id IS NOT NULL;
+  ON copyright_notice_operational_retention_cursors (cursor_blocker_assessment_identity_id)
+  WHERE cursor_blocker_assessment_identity_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
@@ -502,7 +502,7 @@ COMMENT ON COLUMN copyright_territorial_decisions.automation_disclosure IS
   'How the decision was produced. Constrained to human.';
 COMMENT ON COLUMN copyright_territorial_decisions.outcome IS
   'Human decision: restrict the named targets or take no action.';
-COMMENT ON COLUMN copyright_territorial_decisions.copyright_notice_submission_assessment_id IS
+COMMENT ON COLUMN copyright_territorial_decisions.copyright_notice_submission_assessment_identity_id IS
   'Required compliant human assessment for a restrict decision; absent for no_action.';
 COMMENT ON COLUMN copyright_territorial_decisions.supersedes_decision_id IS
   'Prior no_action decision reopened by a complaint revoke on the same notice.';
@@ -667,7 +667,7 @@ ALTER TABLE copyright_territorial_decisions
   VALIDATE CONSTRAINT fk_copyright_territorial_decisions__decided_by;
 ALTER TABLE copyright_territorial_decisions
   ADD CONSTRAINT fk_copyright_territorial_decisions__assessment
-  FOREIGN KEY (copyright_notice_submission_assessment_id)
+  FOREIGN KEY (copyright_notice_submission_assessment_identity_id)
   REFERENCES copyright_notice_submission_assessment_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_territorial_decisions
   VALIDATE CONSTRAINT fk_copyright_territorial_decisions__assessment;
@@ -754,9 +754,9 @@ CREATE INDEX IF NOT EXISTS idx_copyright_territorial_notice_receipts__requester
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_decisions__decided_by
   ON copyright_territorial_decisions (decided_by_id) WHERE decided_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_territorial_decisions__assessment
-  ON copyright_territorial_decisions (copyright_notice_submission_assessment_id, id)
-  WHERE copyright_notice_submission_assessment_id IS NOT NULL;
-CREATE INDEX idx_copyright_redress_requests__assessment_id
+  ON copyright_territorial_decisions (copyright_notice_submission_assessment_identity_id, id)
+  WHERE copyright_notice_submission_assessment_identity_id IS NOT NULL;
+CREATE INDEX idx_cpyrght_trrtrl_rdrss_rqsts__assessment_identity_id
   ON copyright_territorial_redress_requests(authorizing_assessment_identity_id, id)
   WHERE authorizing_assessment_identity_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision
@@ -847,7 +847,7 @@ BEGIN
     SELECT 1 FROM copyright_notice_submission_assessment_identities assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
-    WHERE assessment.id = NEW.copyright_notice_submission_assessment_id
+    WHERE assessment.id = NEW.copyright_notice_submission_assessment_identity_id
       AND submission.copyright_notice_id = NEW.copyright_notice_id
       AND submission.kind = 'notice'
       AND submission.current_assessment_identity_id = assessment.id
@@ -930,7 +930,7 @@ CREATE TRIGGER trigger_copyright_territorial_decisions_immutable
 CREATE TRIGGER trigger_copyright_territorial_decisions_scope
   BEFORE INSERT ON copyright_territorial_decisions
   FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision();
-CREATE FUNCTION fn_guard_copyright_redress_request_result()
+CREATE FUNCTION fn_reject_copyright_redress_request_result()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -948,10 +948,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-COMMENT ON FUNCTION fn_guard_copyright_redress_request_result() IS 'Preserves immutable filing evidence while allowing its single final staff result to be recorded on the owning request.';
+COMMENT ON FUNCTION fn_reject_copyright_redress_request_result() IS 'Preserves immutable filing evidence while allowing its single final staff result to be recorded on the owning request.';
 CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_requests
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_redress_request_result();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_redress_request_result();
 CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_decisions
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
@@ -996,3 +996,7 @@ COMMENT ON COLUMN copyright_territorial_redress_requests.current_staff_decision_
 COMMENT ON COLUMN copyright_territorial_redress_requests.decided_at IS 'Time of the final staff redress decision.';
 COMMENT ON COLUMN copyright_territorial_redress_requests.decided_by_id IS 'Retained identity of the final staff redress decider.';
 COMMENT ON COLUMN copyright_territorial_redress_requests.rationale_ciphertext IS 'Encrypted final redress rationale retained with the legal request.';
+
+CREATE INDEX idx_copyright_territorial_redress_requests__decided_by
+  ON copyright_territorial_redress_requests (decided_by_id)
+  WHERE decided_by_id IS NOT NULL;

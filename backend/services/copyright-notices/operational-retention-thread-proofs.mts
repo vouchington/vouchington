@@ -23,7 +23,7 @@ export type ThreadProofCursor = {
   cursor_legal_latest_release_at: Date | null
   cursor_blocker_phase: BlockerPhase | null
   cursor_blocker_child_id: string | null
-  cursor_blocker_assessment_id: string | null
+  cursor_blocker_assessment_identity_id: string | null
   cursor_blocker_generation: string | null
 }
 
@@ -54,7 +54,7 @@ export async function checkCopyrightThreadProofPage(
   const blocker = await checkCopyrightThreadBlockerPage(transaction, noticeId, now, batchSize, {
     phase: cursor.cursor_blocker_phase,
     childId: cursor.cursor_blocker_child_id,
-    assessmentId: cursor.cursor_blocker_assessment_id,
+    assessmentId: cursor.cursor_blocker_assessment_identity_id,
     generation: cursor.cursor_blocker_generation,
   })
   if (blocker.blocked) {

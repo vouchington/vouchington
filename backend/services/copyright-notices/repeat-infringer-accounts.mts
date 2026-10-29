@@ -27,7 +27,7 @@ export async function listCopyrightRepeatInfringerAccountsForNotice(
       incident.id AS incident_id,
       incident.is_operative,
       open_review.id AS open_review_id,
-      COALESCE(account_state.termination_in_effect, false) AS termination_in_effect
+      COALESCE(account_state.is_termination_in_effect, false) AS termination_in_effect
     FROM copyright_repeat_infringer_incidents incident
     LEFT JOIN copyright_repeat_infringer_account_states account_state
       ON account_state.account_user_id = incident.account_user_id

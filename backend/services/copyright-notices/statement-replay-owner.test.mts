@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   readTestCopyrightStatementIntents,
+  readTestCopyrightStatementAuthorityFacts,
   replayTestCopyrightClaimantDecision,
+  replayTestCopyrightPosterRestriction,
 } from '@voucha/test-helpers/copyright-statement-notices'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { createCopyrightPosterNoticesInTransaction } from './restriction-poster-notices.mts'
-import { selectCopyrightStatementFacts } from './statement-of-reasons-facts.mts'
 
 describe('copyright statement replay from durable authority', () => {
   useAutomaticProvisionalWithholding()
@@ -44,26 +43,20 @@ describe('copyright statement replay from durable authority', () => {
       supersedesAssessmentId: originalAssessmentId,
     })
 
-    await using transaction = await beginTransaction()
-    const facts = await selectCopyrightStatementFacts(noticeId, transaction, {
+    const facts = await readTestCopyrightStatementAuthorityFacts(noticeId, {
       restrictionId: restriction.id,
       assessmentId: originalAssessmentId,
       targetId: restriction.copyright_notice_target_id,
     })
     expect(facts.automatedDecision).toBe(true)
     await expect(
-      selectCopyrightStatementFacts(noticeId, transaction, { assessmentId: originalAssessmentId }),
+      readTestCopyrightStatementAuthorityFacts(noticeId, { assessmentId: originalAssessmentId }),
     ).rejects.toMatchObject({ status: 409 })
-    await createCopyrightPosterNoticesInTransaction(
-      {
-        noticeId,
-        targetId: restriction.copyright_notice_target_id,
-        restrictionId: restriction.id,
-        event: 'restricted',
-      },
-      transaction,
-    )
-    await transaction.commit()
+    await replayTestCopyrightPosterRestriction({
+      noticeId,
+      targetId: restriction.copyright_notice_target_id,
+      restrictionId: restriction.id,
+    })
     await replayTestCopyrightClaimantDecision(noticeId, 'restricted')
     const replayed = await readTestCopyrightStatementIntents(noticeId)
     expect(

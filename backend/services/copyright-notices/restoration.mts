@@ -50,9 +50,9 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     JOIN copyright_restrictions r ON r.copyright_notice_target_id = t.id
     JOIN copyright_notice_deadlines d ON d.copyright_notice_id = n.id
     JOIN copyright_notice_submission_assessment_identities assessment
-      ON assessment.id = d.qualifying_counter_notice_assessment_id
+      ON assessment.id = d.qualifying_counter_notice_assessment_identity_id
     JOIN copyright_notice_counter_notice_assessment_targets assessment_target
-      ON assessment_target.copyright_notice_submission_assessment_id = assessment.id
+      ON assessment_target.copyright_notice_submission_assessment_identity_id = assessment.id
       AND assessment_target.copyright_notice_target_id = t.id
     JOIN copyright_notice_submissions counter_notice
       ON counter_notice.id = assessment.copyright_notice_submission_id

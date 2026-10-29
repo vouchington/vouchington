@@ -67,7 +67,7 @@ export async function lockCopyrightRationaleRetentionPage(
      SELECT DISTINCT COALESCE(rationale.account_user_id, review.account_user_id) AS account_user_id
      FROM copyright_decision_rationales rationale
      LEFT JOIN copyright_repeat_infringer_review_identities review
-       ON review.id = rationale.copyright_repeat_infringer_review_id
+       ON review.id = rationale.copyright_repeat_infringer_review_identity_id
      WHERE rationale.id = ANY($1::uuid[])
        AND COALESCE(rationale.account_user_id, review.account_user_id) IS NOT NULL
      ORDER BY account_user_id`,

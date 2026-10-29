@@ -58,7 +58,7 @@ CREATE TABLE copyright_notice_appeal_reviews (
 CREATE TABLE copyright_notice_counter_notice_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_counter_notice_reviews__submission_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_submission_assessment_id uuid NOT NULL CONSTRAINT uq_copyri_notice_counte_notice_review__submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_counter_notice_reviews__submission_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
+  copyright_notice_submission_assessment_identity_id uuid NOT NULL CONSTRAINT uq_copyri_notice_counte_notice_review__submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_counter_notice_reviews__submission_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
   copyright_notice_deadline_id uuid CONSTRAINT uq_copyright_notice_counter_notice_reviews__deadline_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__deadline REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -98,7 +98,7 @@ COMMENT ON COLUMN copyright_notice_appeal_reviews.rationale_ciphertext IS 'Encry
 COMMENT ON COLUMN copyright_notice_appeal_reviews.manual_fallback_reason_ciphertext IS 'Encrypted reason staff proceeded without an agent recommendation.';
 COMMENT ON TABLE copyright_notice_counter_notice_reviews IS 'Immutable moderator formal-compliance decisions for statutory US counter-notices.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.copyright_notice_submission_id IS 'Statutory counter-notice reviewed by staff.';
-COMMENT ON COLUMN copyright_notice_counter_notice_reviews.copyright_notice_submission_assessment_id IS 'Human compliance assessment created by the review.';
+COMMENT ON COLUMN copyright_notice_counter_notice_reviews.copyright_notice_submission_assessment_identity_id IS 'Human compliance assessment created by the review.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.copyright_notice_deadline_id IS 'Restoration clock created for an accepted counter-notice.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.reviewed_at IS 'Time the moderator completed formal review.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.reviewed_by_id IS 'Moderator who completed formal review.';

@@ -63,9 +63,9 @@ export async function readTestTerritorialDecisions(noticeId: string) {
   const { rows } = await read<{
     id: string
     outcome: 'restrict' | 'no_action'
-    copyright_notice_submission_assessment_id: string | null
+    copyright_notice_submission_assessment_identity_id: string | null
   }>(sql`/* readTestTerritorialDecisions */
-    SELECT id, outcome, copyright_notice_submission_assessment_id
+    SELECT id, outcome, copyright_notice_submission_assessment_identity_id
     FROM copyright_territorial_decisions
     WHERE copyright_notice_id = ${noticeId} ORDER BY id`)
   return rows

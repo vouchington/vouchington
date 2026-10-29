@@ -276,6 +276,9 @@ CREATE TABLE copyright_notice_submission_assessments (
   is_substantially_compliant boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
+  CONSTRAINT fk_copyright_assessments__notice_identity
+    FOREIGN KEY (copyright_notice_id, id)
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_assessments__identity
     FOREIGN KEY (copyright_notice_submission_id, id)
     REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT,
@@ -294,13 +297,13 @@ COMMENT ON COLUMN copyright_notice_submission_assessments.copyright_notice_id IS
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_counter_notice_assessment_targets (
   copyright_notice_id uuid NOT NULL,
-  copyright_notice_submission_assessment_id uuid NOT NULL,
+  copyright_notice_submission_assessment_identity_id uuid NOT NULL,
   copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id),
+  PRIMARY KEY (copyright_notice_submission_assessment_identity_id, copyright_notice_target_id),
   CONSTRAINT fk_copyright_counter_targets__parent_notice
-    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_identity_id)
     REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_counter_targets__target_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
@@ -309,7 +312,7 @@ CREATE TABLE copyright_notice_counter_notice_assessment_targets (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_counter_targets_scope
   BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW
-  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessment_identities', 'copyright_notice_submission_assessment_id');
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessment_identities', 'copyright_notice_submission_assessment_identity_id');
 COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -394,7 +397,7 @@ COMMENT ON COLUMN copyright_notice_legal_hold_resolutions.copyright_notice_id IS
 CREATE TABLE copyright_notice_deadlines (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  qualifying_counter_notice_assessment_id uuid NOT NULL CONSTRAINT uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
+  qualifying_counter_notice_assessment_identity_id uuid NOT NULL CONSTRAINT uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
   earliest_restoration_at timestamptz NOT NULL,
   escalation_at timestamptz NOT NULL,
   restoration_deadline_at timestamptz NOT NULL,
@@ -452,7 +455,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   change_type copyright_notice_lifecycle_change_types NOT NULL,
   changed_by_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   copyright_notice_submission_id uuid,
-  copyright_notice_submission_assessment_id uuid,
+  copyright_notice_submission_assessment_identity_id uuid,
   copyright_notice_evidence_artifact_id uuid,
   copyright_notice_correspondence_id uuid,
   copyright_notice_legal_hold_assessment_id uuid,
@@ -486,7 +489,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   ),
   CONSTRAINT copyright_lifecycle_event_source_shape CHECK (
     num_nonnulls(
-      copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+      copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
       copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id,
       copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id,
       copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id,
@@ -498,7 +501,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
       WHEN change_type IN ('supplement_received', 'appeal_received', 'counter_notice_received',
         'withdrawal_received', 'court_or_ccb_hold_received', 'appeal_reviewed', 'counter_notice_reviewed')
         THEN copyright_notice_submission_id IS NOT NULL
-      WHEN change_type = 'submission_assessed' THEN copyright_notice_submission_assessment_id IS NOT NULL
+      WHEN change_type = 'submission_assessed' THEN copyright_notice_submission_assessment_identity_id IS NOT NULL
       WHEN change_type = 'evidence_artifact_recorded' THEN copyright_notice_evidence_artifact_id IS NOT NULL
       WHEN change_type IN ('outbound_correspondence_created', 'agent_correspondence_approved',
         'email_correspondence_admitted') THEN copyright_notice_correspondence_id IS NOT NULL
@@ -530,7 +533,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
     FOREIGN KEY (copyright_notice_id, copyright_notice_deadline_id)
     REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_lifecycle_events__assessment_notice
-    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_identity_id)
     REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_lifecycle_events__artifact_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id)
@@ -762,7 +765,7 @@ CREATE INDEX idx_copyright_notice_submission_assessments__notice_id ON copyright
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_assessments__assessed_by ON copyright_notice_submission_assessments(assessed_by_id) WHERE assessed_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__target ON copyright_notice_counter_notice_assessment_targets(copyright_notice_target_id, copyright_notice_submission_assessment_id);
+CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__target ON copyright_notice_counter_notice_assessment_targets(copyright_notice_target_id, copyright_notice_submission_assessment_identity_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__notice ON copyright_notice_counter_notice_assessment_targets(copyright_notice_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -792,7 +795,7 @@ CREATE INDEX idx_copyright_notice_lifecycle_changes__notice ON copyright_notice_
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__submission ON copyright_notice_lifecycle_changes(copyright_notice_submission_id) WHERE copyright_notice_submission_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_lifecycle_changes__assessment ON copyright_notice_lifecycle_changes(copyright_notice_submission_assessment_id) WHERE copyright_notice_submission_assessment_id IS NOT NULL;
+CREATE INDEX idx_copyright_notice_lifecycle_changes__assessment ON copyright_notice_lifecycle_changes(copyright_notice_submission_assessment_identity_id) WHERE copyright_notice_submission_assessment_identity_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__artifact ON copyright_notice_lifecycle_changes(copyright_notice_evidence_artifact_id) WHERE copyright_notice_evidence_artifact_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -932,7 +935,7 @@ BEGIN
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
-    WHERE assessment.id = NEW.copyright_notice_submission_assessment_id
+    WHERE assessment.id = NEW.copyright_notice_submission_assessment_identity_id
       AND submission.kind = 'counter_notice'
   ) THEN
     RAISE EXCEPTION 'counter-notice assessments may cover only targets in the same case' USING ERRCODE = 'check_violation';
@@ -1167,13 +1170,13 @@ BEGIN
   END IF;
   IF ROW(
     OLD.copyright_notice_id,
-    OLD.qualifying_counter_notice_assessment_id,
+    OLD.qualifying_counter_notice_assessment_identity_id,
     OLD.earliest_restoration_at,
     OLD.escalation_at,
     OLD.restoration_deadline_at
   ) IS DISTINCT FROM ROW(
     NEW.copyright_notice_id,
-    NEW.qualifying_counter_notice_assessment_id,
+    NEW.qualifying_counter_notice_assessment_identity_id,
     NEW.earliest_restoration_at,
     NEW.escalation_at,
     NEW.restoration_deadline_at
@@ -1319,7 +1322,7 @@ COMMENT ON COLUMN copyright_notice_submission_assessments.assessed_by_id IS 'Sta
 COMMENT ON COLUMN copyright_notice_submission_assessments.is_substantially_compliant IS 'Whether this exact submission contains the required elements for its legal procedure.';
 
 COMMENT ON TABLE copyright_notice_counter_notice_assessment_targets IS 'Exact hosted targets covered by a substantially compliant statutory counter-notice assessment.';
-COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_submission_assessment_id IS 'Counter-notice compliance assessment whose scope is recorded.';
+COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_submission_assessment_identity_id IS 'Counter-notice compliance assessment whose scope is recorded.';
 COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_target_id IS 'Exact hosted target the counter-notice asks to restore.';
 
 COMMENT ON TABLE copyright_notice_legal_hold_assessments IS 'Append-only staff assessment of whether a received court or CCB filing qualifies to block restoration under 17 USC 512(g) or 1507(d).';
@@ -1346,7 +1349,7 @@ COMMENT ON COLUMN copyright_notice_legal_hold_resolutions.rationale_ciphertext I
 
 COMMENT ON TABLE copyright_notice_deadlines IS 'Durable US counter-notice restoration window derived from an immutable substantially compliant counter-notice receipt.';
 COMMENT ON COLUMN copyright_notice_deadlines.copyright_notice_id IS 'Legal case governed by this restoration deadline.';
-COMMENT ON COLUMN copyright_notice_deadlines.qualifying_counter_notice_assessment_id IS 'Compliance assessment whose referenced submission receipt starts the statutory clock.';
+COMMENT ON COLUMN copyright_notice_deadlines.qualifying_counter_notice_assessment_identity_id IS 'Compliance assessment whose referenced submission receipt starts the statutory clock.';
 COMMENT ON COLUMN copyright_notice_deadlines.earliest_restoration_at IS 'Start of US federal business day ten in America/New_York.';
 COMMENT ON COLUMN copyright_notice_deadlines.escalation_at IS 'Start of US federal business day fourteen, when unresolved restoration requires urgent escalation.';
 COMMENT ON COLUMN copyright_notice_deadlines.restoration_deadline_at IS 'Exclusive end of US federal business day fourteen in America/New_York.';
@@ -1378,7 +1381,7 @@ COMMENT ON COLUMN copyright_notice_lifecycle_changes.change_type IS 'Versioned l
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.changed_by_id IS 'Retained user or staff actor identity for the event; NULL only for events that do not require an actor.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_action_intent_id IS 'Concrete action intent source; its restriction is derived through the required restriction FK.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_id IS 'Submission whose receipt or review this event records.';
-COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_assessment_id IS 'Assessment that this event records.';
+COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_assessment_identity_id IS 'Assessment that this event records.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_evidence_artifact_id IS 'Evidence artifact recorded by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_correspondence_id IS 'Correspondence message this event records.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_legal_hold_assessment_id IS 'Legal-hold assessment recorded by this event.';
@@ -1413,7 +1416,7 @@ COMMENT ON COLUMN copyright_notice_action_work_items.lease_token IS 'Opaque work
 CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE INSERT ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_record_copyright_case_lifecycle_activity() RETURNS trigger
+CREATE OR REPLACE FUNCTION fn_update_copyright_case_lifecycle_activity() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.copyright_notice_id IS NOT NULL THEN
@@ -1426,7 +1429,7 @@ END;
 $$;
 CREATE TRIGGER trigger_record_copyright_case_lifecycle_activity
 AFTER INSERT ON copyright_notice_lifecycle_changes
-FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_case_lifecycle_activity();
+FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_case_lifecycle_activity();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);
@@ -1457,3 +1460,15 @@ COMMENT ON COLUMN copyright_restrictions.is_authorizing_assessment_automated IS 
 COMMENT ON COLUMN copyright_restrictions.administrator_lift_decided_at IS 'Time staff decided an administrator lift, independent of later restoration completion.';
 COMMENT ON COLUMN copyright_restrictions.administrator_lift_decided_by_id IS 'Retained staff identity that decided the administrator lift.';
 COMMENT ON COLUMN copyright_restrictions.administrator_lift_rationale_ciphertext IS 'Encrypted current administrator lift rationale, erasable after case retention.';
+
+CREATE INDEX idx_copyright_notices__territorial_decided_by
+  ON copyright_notices (territorial_decided_by_id)
+  WHERE territorial_decided_by_id IS NOT NULL;
+
+CREATE INDEX idx_copyright_restrictions__administrator_lift_decided_by
+  ON copyright_restrictions (administrator_lift_decided_by_id)
+  WHERE administrator_lift_decided_by_id IS NOT NULL;
+
+CREATE INDEX idx_copyright_notice_submissions__current_assessed_by
+  ON copyright_notice_submissions (current_assessed_by_id)
+  WHERE current_assessed_by_id IS NOT NULL;

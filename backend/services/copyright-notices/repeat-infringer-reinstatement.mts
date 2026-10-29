@@ -22,7 +22,7 @@ export async function recordCopyrightRepeatInfringerReinstatement(
   const { rows: blocked } = await transaction<{ id: string }>(sql`
     /* recordCopyrightRepeatInfringerReinstatement */
     SELECT account_user_id AS id FROM copyright_repeat_infringer_account_states
-    WHERE account_user_id = ${input.accountUserId} AND termination_in_effect
+    WHERE account_user_id = ${input.accountUserId} AND is_termination_in_effect
     FOR UPDATE
   `)
   assert(blocked[0], 409, 'Copyright termination is not in effect')
@@ -38,14 +38,14 @@ export async function recordCopyrightRepeatInfringerReinstatement(
   await transaction(sql`
     /* recordCopyrightRepeatInfringerReinstatement:current */
     UPDATE copyright_repeat_infringer_account_states
-    SET termination_in_effect = false, current_outcome = 'reinstatement',
+    SET is_termination_in_effect = false, current_outcome = 'reinstatement',
       current_outcome_at = ${input.recordedAt}, current_outcome_by_id = ${input.currentUser.id},
       current_outcome_rationale_ciphertext = ${rationaleCiphertext},
       current_decided_review_identity_id = ${identities[0]!.id},
       effective_termination_review_identity_id = NULL,
       effective_termination_decided_at = NULL,
       effective_termination_decided_by_id = NULL, effective_termination_rationale_ciphertext = NULL
-    WHERE account_user_id = ${input.accountUserId} AND termination_in_effect
+    WHERE account_user_id = ${input.accountUserId} AND is_termination_in_effect
   `)
   await transaction(sql`
     /* recordCopyrightRepeatInfringerReinstatement:insert */

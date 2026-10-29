@@ -110,7 +110,7 @@ export async function readTestRepeatInfringerOpenReviewIds(accountId: string): P
 
 export async function readTestRepeatInfringerAccountState(accountId: string) {
   const { rows } = await read<{
-    termination_in_effect: boolean
+    is_termination_in_effect: boolean
     current_outcome: string | null
     current_outcome_rationale_ciphertext: string | null
     effective_termination_rationale_ciphertext: string | null
@@ -118,7 +118,7 @@ export async function readTestRepeatInfringerAccountState(accountId: string) {
     effective_termination_decided_at: Date | null
     effective_termination_decided_by_id: string | null
   }>(sql`/* readTestRepeatInfringerAccountState */
-    SELECT termination_in_effect, current_outcome,
+    SELECT is_termination_in_effect, current_outcome,
       current_outcome_rationale_ciphertext, effective_termination_rationale_ciphertext,
       effective_termination_review_identity_id,
       effective_termination_decided_at, effective_termination_decided_by_id

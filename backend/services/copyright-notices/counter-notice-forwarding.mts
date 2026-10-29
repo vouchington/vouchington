@@ -24,7 +24,7 @@ export async function createCounterNoticeForwardingInTransaction(
       recipient.email_ciphertext
     FROM copyright_notice_submissions submission
     JOIN copyright_notice_deadlines deadline
-      ON deadline.qualifying_counter_notice_assessment_id = submission.current_assessment_identity_id
+      ON deadline.qualifying_counter_notice_assessment_identity_id = submission.current_assessment_identity_id
     JOIN copyright_notice_delivery_work_items receipt
       ON receipt.copyright_notice_id = submission.copyright_notice_id
       AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
@@ -56,7 +56,7 @@ export async function createCounterNoticeForwardingInTransaction(
       SELECT target.id, target.hosted_use_url
       FROM copyright_notice_counter_notice_assessment_targets scoped
       JOIN copyright_notice_targets target ON target.id = scoped.copyright_notice_target_id
-      WHERE scoped.copyright_notice_submission_assessment_id = ${input.assessmentId}
+      WHERE scoped.copyright_notice_submission_assessment_identity_id = ${input.assessmentId}
       ORDER BY target.id
     `,
   )

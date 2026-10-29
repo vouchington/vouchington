@@ -79,11 +79,11 @@ export async function insertOpenCopyrightDeadline(input: {
       RETURNING id, copyright_notice_submission_id
     ), assessment_target AS (
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
-        copyright_notice_submission_assessment_id, copyright_notice_target_id
+        copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
       ) SELECT id, ${input.targetId}::uuid FROM assessment WHERE ${input.targetId}::uuid IS NOT NULL
     ), deadline AS (
       INSERT INTO copyright_notice_deadlines (
-        copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
+        copyright_notice_id, qualifying_counter_notice_assessment_identity_id, earliest_restoration_at,
         escalation_at, restoration_deadline_at
       )
       SELECT ${input.noticeId}, id, ${earliestRestorationAt}, ${input.escalationAt},
@@ -91,7 +91,7 @@ export async function insertOpenCopyrightDeadline(input: {
       FROM assessment RETURNING id
     ), review AS (
       INSERT INTO copyright_notice_counter_notice_reviews (
-        copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+        copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
         copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       )
       SELECT assessment.copyright_notice_submission_id, assessment.id, deadline.id,
@@ -194,7 +194,7 @@ export async function attachCopyrightPagingDeadlineTarget(input: {
         CURRENT_TIMESTAMP, 'confirm', imposed_by_id
         FROM copyright_restrictions WHERE id = ${input.restrictionId}
     ) INSERT INTO copyright_notice_counter_notice_assessment_targets (
-      copyright_notice_submission_assessment_id, copyright_notice_target_id
-    ) SELECT qualifying_counter_notice_assessment_id, ${input.targetId}
+      copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
+    ) SELECT qualifying_counter_notice_assessment_identity_id, ${input.targetId}
       FROM copyright_notice_deadlines WHERE id = ${input.deadlineId}`)
 }

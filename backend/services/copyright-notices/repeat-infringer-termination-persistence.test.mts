@@ -48,7 +48,7 @@ describe('copyright repeat-infringer termination persistence', () => {
       current_outcome: 'warning',
       effective_termination_rationale_ciphertext:
         terminated?.effective_termination_rationale_ciphertext,
-      termination_in_effect: true,
+      is_termination_in_effect: true,
       effective_termination_review_identity_id: terminatedReviewId,
       effective_termination_decided_at: terminatedAt,
       effective_termination_decided_by_id: administrator.id,
@@ -62,7 +62,7 @@ describe('copyright repeat-infringer termination persistence', () => {
     })
     expect(await readTestRepeatInfringerAccountState(poster.id)).toMatchObject({
       current_outcome: 'reinstatement',
-      termination_in_effect: false,
+      is_termination_in_effect: false,
       effective_termination_review_identity_id: null,
       effective_termination_decided_at: null,
       effective_termination_decided_by_id: null,

@@ -75,7 +75,7 @@ export async function seedCopyrightDeadline(input: {
     `)
     await transaction(sql`/* seedCopyrightDeadline:deadline */
       INSERT INTO copyright_notice_deadlines (
-        id, copyright_notice_id, qualifying_counter_notice_assessment_id,
+        id, copyright_notice_id, qualifying_counter_notice_assessment_identity_id,
         earliest_restoration_at, escalation_at, restoration_deadline_at
       ) VALUES (
         ${deadlineId}, ${input.noticeId}, ${assessmentId},
@@ -85,7 +85,7 @@ export async function seedCopyrightDeadline(input: {
     `)
     await transaction(sql`/* seedCopyrightDeadline:counterNoticeReview */
       INSERT INTO copyright_notice_counter_notice_reviews (
-        copyright_notice_submission_id, copyright_notice_submission_assessment_id,
+        copyright_notice_submission_id, copyright_notice_submission_assessment_identity_id,
         copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       ) VALUES (
         ${submissionId}, ${assessmentId}, ${deadlineId}, ${now}::timestamptz - INTERVAL '19 days',

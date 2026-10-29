@@ -16,12 +16,14 @@ export async function deleteChildPage(
     // lets this page advance past that legal record without scanning the whole history.
     const { rowCount } = await transaction(sql`/* deleteUnlinkedCopyrightEmailRecommendations */
       WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id), candidates AS MATERIALIZED (
+        -- no-mistakes-disable-next-line postgres-required-predicates: one receipt-indexed raw candidate page is capped before review eligibility; UUID age does not define intake ownership
         SELECT id FROM copyright_notice_email_intake_recommendations
         WHERE copyright_notice_email_intake_receipt_id = (SELECT intake_id FROM owner)
         ORDER BY id LIMIT ${remaining + 1} FOR UPDATE
       ), deletable AS MATERIALIZED (
         SELECT candidate.id FROM candidates candidate
         WHERE NOT EXISTS (
+          -- no-mistakes-disable-next-line postgres-required-predicates: recommendation-indexed existence proof only for the capped candidate page; review UUID time is independent
           SELECT 1 FROM copyright_notice_email_intake_reviews review
           WHERE review.copyright_notice_email_intake_recommendation_id = candidate.id)
         ORDER BY candidate.id LIMIT ${remaining}
@@ -77,11 +79,7 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       WHERE link.copyright_notice_email_intake_id = intake.id)
       OR EXISTS (SELECT 1 FROM copyright_notice_correspondence_messages correspondence
         WHERE correspondence.copyright_notice_email_intake_id = intake.id)
-      OR EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = intake.id
-          AND link.correspondence_action IN ('admitted', 'rejected'))
-      OR EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes event
-        WHERE event.copyright_notice_email_intake_id = intake.id) AS is_linked,
+      AS is_linked,
     (receipt.review_decision = 'approved') AS has_promoted_review,
     EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
       WHERE delivery.copyright_notice_email_intake_receipt_id = intake.id

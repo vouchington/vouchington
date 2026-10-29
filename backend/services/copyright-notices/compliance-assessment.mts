@@ -156,7 +156,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     const { rows: scopedTargets } = await transaction<{ id: string }>(
       sql`/* appendCopyrightSubmissionAssessment:scopeCounterNoticeTargets */
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
-        copyright_notice_submission_assessment_id, copyright_notice_target_id
+        copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
       )
       SELECT ${assessment.id}, target.id
       FROM copyright_notice_targets target
@@ -175,7 +175,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     await transaction(sql`/* appendCopyrightSubmissionAssessment:cancelDeadline */
       UPDATE copyright_notice_deadlines
       SET cancelled_at = ${input.assessedAt}
-      WHERE qualifying_counter_notice_assessment_id IN (
+      WHERE qualifying_counter_notice_assessment_identity_id IN (
         SELECT id
         FROM copyright_notice_submission_assessment_identities
         WHERE copyright_notice_submission_id = ${input.submissionId}
@@ -185,7 +185,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
   }
   await transaction(sql`/* appendCopyrightSubmissionAssessment:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_assessment_id)
+      copyright_notice_submission_assessment_identity_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, ${assessment.id})
   `)
   return assessment

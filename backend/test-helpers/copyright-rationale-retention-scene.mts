@@ -27,7 +27,7 @@ export async function withCopyrightRationaleRetentionScene(
     const id = uuidv7({ msecs: oldAt.getTime() })
     await query(sql`/* rationaleRetentionAttempt */
       INSERT INTO copyright_decision_rationales
-        (id, copyright_notice_id, copyright_repeat_infringer_review_id,
+        (id, copyright_notice_id, copyright_repeat_infringer_review_identity_id,
          account_user_id, recorded_by_id, tool_name, rationale_ciphertext)
       VALUES (${id}, ${owner.noticeId ?? null}, ${owner.reviewId ?? null},
         ${owner.accountId ?? null}, ${actorId}, 'replay_copyright_intent',
@@ -90,7 +90,7 @@ export async function withCopyrightRationaleRetentionScene(
       VALUES (${reviewId}, ${accountId})`)
     await query(sql`/* rationaleRetentionTerminationOwner */
       INSERT INTO copyright_repeat_infringer_account_states
-        (account_user_id, termination_in_effect, effective_termination_review_identity_id,
+        (account_user_id, is_termination_in_effect, effective_termination_review_identity_id,
          effective_termination_decided_at, effective_termination_decided_by_id,
          effective_termination_rationale_ciphertext, current_decided_review_identity_id,
          current_outcome, current_outcome_at, current_outcome_by_id,

@@ -34,7 +34,7 @@ export async function insertGuestLifecycleCounterDeadline(input: {
       RETURNING id, copyright_notice_submission_id
     ), deadline AS (
       INSERT INTO copyright_notice_deadlines (
-      copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
+      copyright_notice_id, qualifying_counter_notice_assessment_identity_id, earliest_restoration_at,
       escalation_at, restoration_deadline_at
     ) SELECT ${input.noticeId}, id, ${input.earliestRestorationAt}, ${input.escalationAt},
       ${input.restorationDeadlineAt}

@@ -140,7 +140,7 @@ async function selectLifecycleChanges(
   const { rows } =
     await transaction<CopyrightLifecycleEventRecord>(sql`/* selectCopyrightLifecycleChanges */
     SELECT change.id, change.copyright_notice_id, change.change_type, change.changed_by_id,
-      change.copyright_notice_submission_id, change.copyright_notice_submission_assessment_id,
+      change.copyright_notice_submission_id, change.copyright_notice_submission_assessment_identity_id,
       change.copyright_notice_evidence_artifact_id, change.copyright_notice_correspondence_id,
       change.copyright_notice_legal_hold_assessment_id, change.copyright_notice_legal_hold_resolution_id,
       change.copyright_notice_deadline_id, change.copyright_restriction_id,

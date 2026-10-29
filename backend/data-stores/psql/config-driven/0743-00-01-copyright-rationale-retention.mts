@@ -57,9 +57,9 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
           WHERE delivery.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id
             AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= retention_bound.eligible_before_at)))
     ))
-    OR (rationale.copyright_repeat_infringer_review_id IS NOT NULL
+    OR (rationale.copyright_repeat_infringer_review_identity_id IS NOT NULL
       AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_review_identities review
-        WHERE review.id = rationale.copyright_repeat_infringer_review_id
+        WHERE review.id = rationale.copyright_repeat_infringer_review_identity_id
           AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds held
             WHERE held.account_user_id = review.account_user_id AND held.released_at IS NULL)))
     OR (rationale.account_user_id IS NOT NULL

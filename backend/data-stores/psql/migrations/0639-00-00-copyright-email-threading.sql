@@ -221,7 +221,7 @@ CREATE TRIGGER trigger_copyright_email_thread_tokens_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_thread_tokens
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE FUNCTION fn_guard_copyright_email_link_current_decision()
+CREATE FUNCTION fn_reject_copyright_email_link_current_decision()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -253,7 +253,7 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_email_thread_links_current_decision
   BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_link_current_decision();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_current_decision();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_correspondence_reviews
@@ -409,3 +409,19 @@ CREATE TRIGGER trigger_copyright_thread_activity_on_correspondence_review
 
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.correspondence_rationale_ciphertext IS 'Encrypted current staff correspondence rationale, erasable after case retention.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.correspondence_manual_fallback_reason_ciphertext IS 'Encrypted current reason staff proceeded without an agent recommendation, erasable after case retention.';
+
+CREATE INDEX idx_copyright_notice_email_intake_notice_links__reviewed_by
+  ON copyright_notice_email_intake_notice_links (correspondence_reviewed_by_id)
+  WHERE correspondence_reviewed_by_id IS NOT NULL;
+
+CREATE INDEX idx_copyright_notice_email_correspondence_reviews__intake
+  ON copyright_notice_email_correspondence_reviews (copyright_notice_email_intake_id)
+  WHERE copyright_notice_email_intake_id IS NOT NULL;
+
+CREATE INDEX idx_copyright_notice_email_correspondence_reviews__submission
+  ON copyright_notice_email_correspondence_reviews (copyright_notice_submission_id)
+  WHERE copyright_notice_submission_id IS NOT NULL;
+
+CREATE INDEX idx_copyright_notice_email_correspondence_reviews__message
+  ON copyright_notice_email_correspondence_reviews (copyright_notice_correspondence_message_id)
+  WHERE copyright_notice_correspondence_message_id IS NOT NULL;

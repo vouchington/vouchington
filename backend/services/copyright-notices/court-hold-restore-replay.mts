@@ -98,10 +98,10 @@ async function originalRestorationAuthorityIsValid(
     SELECT EXISTS (
       SELECT 1 FROM copyright_notice_deadlines deadline
       JOIN copyright_notice_submission_assessment_identities assessment
-        ON assessment.id = deadline.qualifying_counter_notice_assessment_id
+        ON assessment.id = deadline.qualifying_counter_notice_assessment_identity_id
       JOIN copyright_notice_submissions submission ON submission.id = assessment.copyright_notice_submission_id
       JOIN copyright_notice_counter_notice_assessment_targets scope
-        ON scope.copyright_notice_submission_assessment_id = assessment.id
+        ON scope.copyright_notice_submission_assessment_identity_id = assessment.id
       JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = scope.copyright_notice_target_id
       WHERE deadline.id = ${legal.copyright_notice_deadline_id}
         AND deadline.copyright_notice_id = ${legal.copyright_notice_id}

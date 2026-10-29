@@ -96,7 +96,7 @@ CREATE TABLE copyright_repeat_infringer_review_identities (
 );
 CREATE TABLE copyright_repeat_infringer_account_states (
   account_user_id uuid PRIMARY KEY REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
-  termination_in_effect boolean NOT NULL DEFAULT false,
+  is_termination_in_effect boolean NOT NULL DEFAULT false,
   effective_termination_review_identity_id uuid,
   effective_termination_decided_at timestamptz,
   effective_termination_decided_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
@@ -116,10 +116,10 @@ CREATE TABLE copyright_repeat_infringer_account_states (
       AND current_decided_review_identity_id IS NOT NULL AND current_outcome_rationale_ciphertext IS NOT NULL)
   ),
   CONSTRAINT chk_copyright_repeat_infringer_account_states__termination CHECK (
-    (termination_in_effect IS FALSE AND effective_termination_review_identity_id IS NULL
+    (is_termination_in_effect IS FALSE AND effective_termination_review_identity_id IS NULL
       AND effective_termination_decided_at IS NULL AND effective_termination_decided_by_id IS NULL
       AND effective_termination_rationale_ciphertext IS NULL)
-    OR (termination_in_effect IS TRUE AND effective_termination_review_identity_id IS NOT NULL
+    OR (is_termination_in_effect IS TRUE AND effective_termination_review_identity_id IS NOT NULL
       AND effective_termination_decided_at IS NOT NULL AND effective_termination_decided_by_id IS NOT NULL
       AND effective_termination_rationale_ciphertext IS NOT NULL)
   ),
@@ -244,7 +244,7 @@ COMMENT ON COLUMN copyright_repeat_infringer_review_identities.account_user_id I
 COMMENT ON COLUMN copyright_repeat_infringer_review_identities.created_at IS 'Review identity creation time derived from its UUIDv7 id.';
 COMMENT ON TABLE copyright_repeat_infringer_account_states IS 'One authoritative current repeat-infringer state per retained account identity, independent of review history.';
 COMMENT ON COLUMN copyright_repeat_infringer_account_states.account_user_id IS 'Retained account identity owning the current review and termination state.';
-COMMENT ON COLUMN copyright_repeat_infringer_account_states.termination_in_effect IS 'Current effective termination authority, surviving unrelated later review outcomes.';
+COMMENT ON COLUMN copyright_repeat_infringer_account_states.is_termination_in_effect IS 'Current effective termination authority, surviving unrelated later review outcomes.';
 COMMENT ON COLUMN copyright_repeat_infringer_account_states.effective_termination_review_identity_id IS 'Published identity of the review currently authorizing termination.';
 COMMENT ON COLUMN copyright_repeat_infringer_account_states.effective_termination_decided_at IS 'Time the effective termination was decided.';
 COMMENT ON COLUMN copyright_repeat_infringer_account_states.effective_termination_decided_by_id IS 'Retained staff identity that decided the effective termination.';
@@ -260,3 +260,15 @@ COMMENT ON COLUMN copyright_repeat_infringer_reviews.copyright_repeat_infringer_
 
 COMMENT ON COLUMN copyright_repeat_infringer_account_states.current_outcome_rationale_ciphertext IS 'Encrypted explanation of the current staff result, retained independently of finite detailed review history.';
 COMMENT ON COLUMN copyright_repeat_infringer_account_states.effective_termination_rationale_ciphertext IS 'Encrypted explanation of the effective termination; later warnings preserve it and only explicit reinstatement clears it.';
+
+CREATE INDEX idx_cpyrght_rpt_infrngr_incdnts__disposition_recorded_by
+  ON copyright_repeat_infringer_incidents (current_disposition_recorded_by_id)
+  WHERE current_disposition_recorded_by_id IS NOT NULL;
+
+CREATE INDEX idx_cpyrght_rpt_infrngr_accnt_stts__termination_decided_by
+  ON copyright_repeat_infringer_account_states (effective_termination_decided_by_id)
+  WHERE effective_termination_decided_by_id IS NOT NULL;
+
+CREATE INDEX idx_cpyrght_rpt_infrngr_accnt_stts__current_outcome_by
+  ON copyright_repeat_infringer_account_states (current_outcome_by_id)
+  WHERE current_outcome_by_id IS NOT NULL;

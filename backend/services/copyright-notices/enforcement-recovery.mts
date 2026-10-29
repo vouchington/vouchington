@@ -112,7 +112,7 @@ export async function recoverMissingDecisionAssessments(
     )
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_assessment_id, recovery_source
+      copyright_notice_submission_assessment_identity_id, recovery_source
     )
     SELECT current_results.copyright_notice_id, 'submission_assessed', current_results.assessed_by_id,
       current_results.id, 'durable_decision'

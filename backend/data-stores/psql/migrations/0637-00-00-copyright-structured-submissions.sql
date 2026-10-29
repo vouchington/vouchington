@@ -129,3 +129,7 @@ COMMENT ON COLUMN copyright_notice_submission_requests.copyright_notice_submissi
 COMMENT ON COLUMN copyright_notice_submission_requests.requester_user_id IS 'Authenticated affected poster making the request.';
 COMMENT ON COLUMN copyright_notice_submission_requests.idempotency_key IS 'Caller-generated UUID preventing duplicate response admission.';
 COMMENT ON COLUMN copyright_notice_submission_requests.request_sha256 IS 'Digest used to reject conflicting reuse of an idempotency key.';
+
+CREATE INDEX idx_copyright_notice_submissions__current_form_screening
+  ON copyright_notice_submissions (current_assessment_form_screening_id)
+  WHERE current_assessment_form_screening_id IS NOT NULL;

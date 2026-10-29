@@ -280,6 +280,7 @@ export async function getCopyrightPublicNoticeDetail(
       CopyrightPublicNoticeDetail['timeline'][number]
     >(sql`/* getCopyrightPublicNotice:timeline */
       SELECT id, change_type AS event_type, created_at
+      -- no-mistakes-disable-next-line postgres-required-predicates: full single-case timeline uses the notice/id index across finite 72-month history; an arbitrary UUID cutoff would omit retained events
       FROM copyright_notice_lifecycle_changes
       WHERE copyright_notice_id = ${noticeId}
         AND (${timelineEventTypes}::text[] IS NULL OR change_type = ANY(${timelineEventTypes}::copyright_notice_lifecycle_change_types[]))

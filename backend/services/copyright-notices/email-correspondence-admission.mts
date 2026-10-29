@@ -1,5 +1,5 @@
 /* oxlint-disable max-lines -- Matched-email decisions share one immutable human-review boundary. */
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -203,29 +203,14 @@ export async function admitCopyrightEmailCorrespondence(input: {
         copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
       )
     : null
-  await transaction(sql`/* admitCopyrightEmailCorrespondence:review */
-    INSERT INTO copyright_notice_email_correspondence_reviews (
-      copyright_notice_email_intake_id, copyright_notice_id, action, kind,
-      copyright_notice_email_intake_recommendation_id,
-      copyright_notice_submission_id, copyright_notice_correspondence_message_id,
-      reviewed_at, reviewed_by_id, rationale_ciphertext, manual_fallback_reason_ciphertext
-    ) VALUES (
-      ${input.intakeId}, ${pending.notice_id}, 'admitted', ${input.kind}::copyright_notice_email_correspondence_review_kinds, ${input.recommendationId}, ${submission.id},
-      ${correspondence.id}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      ${rationaleCiphertext},
-      ${manualFallbackCiphertext}
-    )
-  `)
-  await transaction(sql`/* admitCopyrightEmailCorrespondence:currentDecision */
-    UPDATE copyright_notice_email_intake_notice_links SET
-      correspondence_action = 'admitted', correspondence_kind = ${input.kind},
-      correspondence_submission_id = ${submission.id},
-      correspondence_message_id = ${correspondence.id},
-      correspondence_reviewed_at = CURRENT_TIMESTAMP,
-      correspondence_reviewed_by_id = ${input.currentUser.id},
-      correspondence_rationale_ciphertext = ${rationaleCiphertext},
-      correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+  await recordAdmittedCopyrightCorrespondenceReview(transaction, {
+    input,
+    noticeId: pending.notice_id,
+    submissionId: submission.id,
+    correspondenceId: correspondence.id,
+    rationaleCiphertext,
+    manualFallbackCiphertext,
+  })
   await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_correspondence_id)
@@ -318,24 +303,12 @@ export async function rejectCopyrightEmailCorrespondence(input: {
         copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
       )
     : null
-  await transaction(sql`/* rejectCopyrightEmailCorrespondence */
-    INSERT INTO copyright_notice_email_correspondence_reviews (
-      copyright_notice_email_intake_id, copyright_notice_id, action, kind,
-      copyright_notice_email_intake_recommendation_id, reviewed_at, reviewed_by_id,
-      rationale_ciphertext, manual_fallback_reason_ciphertext
-    ) VALUES (${input.intakeId}, ${pending.notice_id}, 'rejected', ${input.kind}::copyright_notice_email_correspondence_review_kinds,
-      ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      ${rationaleCiphertext},
-      ${manualFallbackCiphertext})
-  `)
-  await transaction(sql`/* rejectCopyrightEmailCorrespondence:currentDecision */
-    UPDATE copyright_notice_email_intake_notice_links SET
-      correspondence_action = 'rejected', correspondence_kind = ${input.kind},
-      correspondence_reviewed_at = CURRENT_TIMESTAMP,
-      correspondence_reviewed_by_id = ${input.currentUser.id},
-      correspondence_rationale_ciphertext = ${rationaleCiphertext},
-      correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+  await recordRejectedCopyrightCorrespondenceReview(transaction, {
+    input,
+    noticeId: pending.notice_id,
+    rationaleCiphertext,
+    manualFallbackCiphertext,
+  })
   await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_email_intake_id)
@@ -403,4 +376,80 @@ type PendingCorrespondence = {
 type AdmittedCorrespondence = {
   submission_id: string
   correspondence_id: string
+}
+
+/** Keep the finite review and the link's durable final result in one transaction step. */
+async function recordAdmittedCopyrightCorrespondenceReview(
+  transaction: TransactionQuery,
+  result: {
+    input: Parameters<typeof admitCopyrightEmailCorrespondence>[0]
+    noticeId: string
+    submissionId: string
+    correspondenceId: string
+    rationaleCiphertext: string
+    manualFallbackCiphertext: string | null
+  },
+): Promise<void> {
+  const {
+    input,
+    noticeId,
+    submissionId,
+    correspondenceId,
+    rationaleCiphertext,
+    manualFallbackCiphertext,
+  } = result
+  await transaction(sql`/* admitCopyrightEmailCorrespondence:review */
+    INSERT INTO copyright_notice_email_correspondence_reviews (
+      copyright_notice_email_intake_id, copyright_notice_id, action, kind,
+      copyright_notice_email_intake_recommendation_id,
+      copyright_notice_submission_id, copyright_notice_correspondence_message_id,
+      reviewed_at, reviewed_by_id, rationale_ciphertext, manual_fallback_reason_ciphertext
+    ) VALUES (
+      ${input.intakeId}, ${noticeId}, 'admitted', ${input.kind}::copyright_notice_email_correspondence_review_kinds, ${input.recommendationId}, ${submissionId},
+      ${correspondenceId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
+      ${rationaleCiphertext},
+      ${manualFallbackCiphertext}
+    )
+  `)
+  await transaction(sql`/* admitCopyrightEmailCorrespondence:currentDecision */
+    UPDATE copyright_notice_email_intake_notice_links SET
+      correspondence_action = 'admitted', correspondence_kind = ${input.kind},
+      correspondence_submission_id = ${submissionId},
+      correspondence_message_id = ${correspondenceId},
+      correspondence_reviewed_at = CURRENT_TIMESTAMP,
+      correspondence_reviewed_by_id = ${input.currentUser.id},
+      correspondence_rationale_ciphertext = ${rationaleCiphertext},
+      correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+}
+
+/** A rejected link also owns its final review result after finite review history expires. */
+async function recordRejectedCopyrightCorrespondenceReview(
+  transaction: TransactionQuery,
+  result: {
+    input: Parameters<typeof rejectCopyrightEmailCorrespondence>[0]
+    noticeId: string
+    rationaleCiphertext: string
+    manualFallbackCiphertext: string | null
+  },
+): Promise<void> {
+  const { input, noticeId, rationaleCiphertext, manualFallbackCiphertext } = result
+  await transaction(sql`/* rejectCopyrightEmailCorrespondence */
+    INSERT INTO copyright_notice_email_correspondence_reviews (
+      copyright_notice_email_intake_id, copyright_notice_id, action, kind,
+      copyright_notice_email_intake_recommendation_id, reviewed_at, reviewed_by_id,
+      rationale_ciphertext, manual_fallback_reason_ciphertext
+    ) VALUES (${input.intakeId}, ${noticeId}, 'rejected', ${input.kind}::copyright_notice_email_correspondence_review_kinds,
+      ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
+      ${rationaleCiphertext},
+      ${manualFallbackCiphertext})
+  `)
+  await transaction(sql`/* rejectCopyrightEmailCorrespondence:currentDecision */
+    UPDATE copyright_notice_email_intake_notice_links SET
+      correspondence_action = 'rejected', correspondence_kind = ${input.kind},
+      correspondence_reviewed_at = CURRENT_TIMESTAMP,
+      correspondence_reviewed_by_id = ${input.currentUser.id},
+      correspondence_rationale_ciphertext = ${rationaleCiphertext},
+      correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
 }

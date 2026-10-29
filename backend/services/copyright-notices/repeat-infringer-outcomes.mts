@@ -159,9 +159,9 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
         WHEN ${input.outcome} = 'terminate' THEN ${input.currentUser.id}::uuid
         ELSE effective_termination_decided_by_id
       END,
-      termination_in_effect = CASE
+      is_termination_in_effect = CASE
         WHEN ${input.outcome} = 'terminate' THEN true
-        ELSE termination_in_effect
+        ELSE is_termination_in_effect
       END
     WHERE account_user_id = ${review.account_user_id}
       AND current_open_review_identity_id = ${input.reviewId}

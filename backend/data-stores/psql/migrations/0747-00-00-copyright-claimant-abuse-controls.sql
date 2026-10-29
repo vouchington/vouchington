@@ -14,7 +14,7 @@ CREATE TABLE copyright_claimant_misuse_events (
     'restriction_reversed_by_appeal'
   )),
   copyright_notice_submission_id uuid CONSTRAINT uq_copyright_claimant_misuse_events__notice_submission_id UNIQUE CONSTRAINT fk_copyright_claimant_misuse_events__notice_submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_submission_assessment_id uuid CONSTRAINT uq_copyri_claima_misuse_events__notice_submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_claimant_misuse_events__notice_submission_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
+  copyright_notice_submission_assessment_identity_id uuid CONSTRAINT uq_copyri_claima_misuse_events__notice_submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_claimant_misuse_events__notice_submission_assessment REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT,
   copyright_restriction_id uuid UNIQUE REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   occurred_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -22,15 +22,15 @@ CREATE TABLE copyright_claimant_misuse_events (
   CONSTRAINT copyright_claimant_misuse_event_shape CHECK (
     (outcome = 'notice_withdrawn'
       AND copyright_notice_submission_id IS NOT NULL
-      AND copyright_notice_submission_assessment_id IS NULL
+      AND copyright_notice_submission_assessment_identity_id IS NULL
       AND copyright_restriction_id IS NULL)
     OR (outcome = 'notice_rejected'
       AND copyright_notice_submission_id IS NULL
-      AND copyright_notice_submission_assessment_id IS NOT NULL
+      AND copyright_notice_submission_assessment_identity_id IS NOT NULL
       AND copyright_restriction_id IS NULL)
     OR (outcome IN ('restriction_reversed_by_counter_notice', 'restriction_reversed_by_appeal')
       AND copyright_notice_submission_id IS NULL
-      AND copyright_notice_submission_assessment_id IS NULL
+      AND copyright_notice_submission_assessment_identity_id IS NULL
       AND copyright_restriction_id IS NOT NULL)
   )
 );
@@ -80,7 +80,7 @@ COMMENT ON TABLE copyright_claimant_misuse_events IS 'Append-only ledger of clai
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_id IS 'Notice this event is evidence about.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.outcome IS 'What happened to the notice or its restriction. Suspension lifts and moderator reversals of a suspended claimant''s withholding are not misuse and are never recorded.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_submission_id IS 'Withdrawal submission. Set only for notice_withdrawn, and at most one event per submission.';
-COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_submission_assessment_id IS 'Staff assessment that found the notice not substantially compliant. Set only for notice_rejected, and at most one event per assessment.';
+COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_submission_assessment_identity_id IS 'Staff assessment that found the notice not substantially compliant. Set only for notice_rejected, and at most one event per assessment.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_restriction_id IS 'Restriction a counter-notice restoration or appeal reversed. Set only for the two reversal outcomes, and at most one event per restriction.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.occurred_at IS 'Time the decision that created this evidence was made.';
 COMMENT ON TABLE copyright_automatic_withholding_refusals IS 'Sticky record that a signed-in notice failed an automatic-withholding gate, so only a moderator may withhold it. Written once per submission, never retried when a cap later clears, and never dropped: the notice stays in the staff queue.';
