@@ -1,3 +1,4 @@
+import { removeAdvertisedAgentInterfaceUrls } from '../../test-helpers/advertised-agent-interface-urls.mts'
 /**
  * Data-driven discovery leak verifier.
  *
@@ -9,7 +10,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   PRIVATE_DISCOVERY_EXACT_PATHS,
   PRIVATE_DISCOVERY_PREFIXES,
-  removeAdvertisedAgentInterfaceUrls,
   ROBOTS_DISALLOW_PREFIXES,
 } from '@ts-shared/route-classification'
 

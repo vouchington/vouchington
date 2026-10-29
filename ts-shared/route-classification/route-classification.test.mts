@@ -5,7 +5,6 @@ import {
   INDEXABLE_TOPIC_SUBPAGES,
   PRIVATE_DISCOVERY_EXACT_PATHS,
   PRIVATE_DISCOVERY_PREFIXES,
-  PRIVATE_USER_PROFILE_COLLECTION_ROUTE_SUFFIXES,
   PUBLIC_STATIC_SITE_NAV_PATHS,
   ROBOTS_DISALLOW_PREFIXES,
 } from './patterns.mts'
@@ -156,6 +155,7 @@ describe('isPrivateDiscoveryPath', () => {
     })
 
     it('returns true for every catalog-private user collection sub-page', () => {
+      expect(PRIVATE_USER_PROFILE_COLLECTIONS.length).toBeGreaterThan(0)
       const notPrivate = PRIVATE_USER_PROFILE_COLLECTIONS.filter(
         collection =>
           !isPrivateDiscoveryPath(`/user/jongle/${getProfileCollectionRouteSuffix(collection)}`),
@@ -254,11 +254,5 @@ describe('pattern exports', () => {
     for (const entry of ['create', 'invite']) {
       expect(segments).toContain(entry)
     }
-  })
-
-  it('private user profile collection suffixes derive from the shared catalog', () => {
-    expect(PRIVATE_USER_PROFILE_COLLECTION_ROUTE_SUFFIXES).toEqual(
-      PRIVATE_USER_PROFILE_COLLECTIONS.map(getProfileCollectionRouteSuffix),
-    )
   })
 })

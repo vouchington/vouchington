@@ -1,5 +1,3 @@
-import { toTurnstileAction } from './turnstile-action.mts'
-
 /** Trusted Cloudflare metadata. Public callers must never be able to supply this header. */
 export const VOUCHA_BOT_SCORE_HEADER = 'x-voucha-bot-score'
 
@@ -16,5 +14,4 @@ export const VOUCHA_BOT_CHALLENGE_APP_ATTEST_CHALLENGE_ID_HEADER =
   'x-voucha-bot-challenge-app-attest-challenge-id'
 
 export const BOT_CHALLENGE_ACTION_TAG = 'bot-challenge.mutation'
-export const BOT_CHALLENGE_ACTION = toTurnstileAction(BOT_CHALLENGE_ACTION_TAG)
 export const BOT_CHALLENGE_REQUIRED = 'BOT_CHALLENGE_REQUIRED'

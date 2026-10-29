@@ -46,10 +46,6 @@ export function isAiCategory(
   return e.isAiCategory
 }
 
-export function hasGuidance(e: PolicyLiteral): e is PolicyLiteral & { guidance: string } {
-  return 'guidance' in e
-}
-
 // ---------------------------------------------------------------------------
 // Derived types (narrowed literal unions — not string)
 // ---------------------------------------------------------------------------
