@@ -10,7 +10,8 @@ import type { BackgroundHandler } from '@queues/background/types'
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
 import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
-import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { insertTestRssFeedDirect } from '@voucha/test-helpers/entities/rss-feeds'
+import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processRssFeedsDispatcher } from '../../rss-feeds/processors.mts'
@@ -56,15 +57,14 @@ describe('rss-feeds background domain', () => {
 
   it('runs the dispatcher as one page bounded by the crawl capacity budget', async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 2 }))
-    const feeds = await Promise.all([
-      createTestRssFeed({}),
-      createTestRssFeed({}),
-      createTestRssFeed({}),
-    ])
-    feeds.sort((left, right) => left.id.localeCompare(right.id))
+    // Adjacent IDs reserve this cursor interval for only the three owned feeds.
+    const { firstId, secondId, thirdId } = createTestUuidWindow()
+    const feeds = await Promise.all(
+      [firstId, secondId, thirdId].map(id => insertTestRssFeedDirect({ id })),
+    )
 
     const result = await processRssFeedsDispatcher(undefined, {
-      cursor: { lane: 5, afterId: uuidBefore(feeds[0]!.id), throughId: feeds[2]!.id },
+      cursor: { lane: 5, afterId: uuidBefore(firstId), throughId: thirdId },
       asOf: new Date(),
       limit: 2,
       rawBudget: 2,
