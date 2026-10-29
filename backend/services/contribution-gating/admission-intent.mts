@@ -3,7 +3,7 @@ import { isUUID } from '@modules/utils'
 import { createCodedError } from '@vouchington/sentry'
 import { INVALID_INPUT } from '@modules/on-error/error-codes'
 
-export function canonicalizeAdmissionIntent(intent: unknown): string {
+function canonicalizeAdmissionIntent(intent: unknown): string {
   return JSON.stringify(canonicalize(intent))
 }
 
