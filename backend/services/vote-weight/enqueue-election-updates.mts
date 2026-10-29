@@ -26,7 +26,7 @@ type EntityRow = {
 
 type PageRow = EntityRow & { lane: number; sort_id: string }
 
-export type ElectionUpdatePage = {
+type ElectionUpdatePage = {
   /** Ids of the election jobs this page admitted. */
   jobIds: string[]
   /** Where the next page resumes, or null when this page reached the end of the user's votes. */

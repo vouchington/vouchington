@@ -15,9 +15,10 @@ import {
   enqueueElectionUpdatePageForUser,
   enqueueElectionUpdatesForUser,
   getBulkEnqueuedJobIds,
-  type ElectionUpdatePage,
 } from './enqueue-election-updates.mts'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
+
+type ElectionUpdatePage = Awaited<ReturnType<typeof enqueueElectionUpdatePageForUser>>
 
 const ELECTION_JOB_NAME = 'vote-aggregation.processUpdateElectionVoteStats'
 const randomHex = () => randomBytes(4).toString('hex')

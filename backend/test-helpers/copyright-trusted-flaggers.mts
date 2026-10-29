@@ -3,13 +3,14 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import {
   createCopyrightTrustedFlagger,
-  type CopyrightTrustedFlagger,
   type CreateCopyrightTrustedFlaggerInput,
 } from '../services/copyright-notices/trusted-flaggers.mts'
 import {
   inAreaTrustedFlaggerMatchSql,
   recordCopyrightTrustedFlaggerMatch,
 } from '../services/copyright-notices/trusted-flagger-match.mts'
+
+type CopyrightTrustedFlagger = Awaited<ReturnType<typeof createCopyrightTrustedFlagger>>
 
 /** A fresh entry with an award predating today's test receipt. */
 export async function createTestCopyrightTrustedFlagger(

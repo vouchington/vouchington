@@ -23,7 +23,7 @@ type HoldRow = {
 }
 
 /** A legal-process preservation hold. `reference` is sensitive: administrators only, never logged. */
-export type UserPreservationHold = {
+type UserPreservationHold = {
   id: string
   account_user_id: string
   reference: string

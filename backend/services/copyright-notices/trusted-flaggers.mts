@@ -14,7 +14,7 @@ export type { CreateCopyrightTrustedFlaggerInput } from './trusted-flagger-input
 
 type CopyrightTrustedFlaggerStatus = 'active' | 'suspended' | 'revoked'
 export type CopyrightTrustedFlaggerChangeType = 'suspended' | 'reinstated' | 'revoked'
-export type CopyrightTrustedFlagger = {
+type CopyrightTrustedFlagger = {
   id: string
   name: string
   user_id: string | null

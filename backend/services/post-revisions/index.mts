@@ -25,7 +25,7 @@ const POST_TRACKED_FIELDS = [
   'archived_at',
 ] as const
 
-export type PostRevision = {
+type PostRevision = {
   id: string
   post_id: string
   revision_type: RevisionType

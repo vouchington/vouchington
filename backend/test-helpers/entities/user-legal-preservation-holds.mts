@@ -1,7 +1,11 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { decryptSecret } from '@modules/token-secrets'
-import type { UserPreservationHold } from '../../services/users/preservation-holds.mts'
+import type { getUserPreservationHoldState } from '../../services/users/preservation-holds.mts'
+
+type UserPreservationHold = Awaited<
+  ReturnType<typeof getUserPreservationHoldState>
+>['holds'][number]
 
 async function runInTransaction(statement: SQLStatement): Promise<{ id?: string }[]> {
   await using query = await beginTransaction()

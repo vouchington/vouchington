@@ -9,7 +9,9 @@ import {
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
-import type { TopicClaimPage } from '@services/topic-claims/get'
+import type { listTopicClaimsForTopic } from '@services/topic-claims/get'
+
+type TopicClaimPage = Awaited<ReturnType<typeof listTopicClaimsForTopic>>
 
 const READ = ['topic-claims:read'] as const
 const WRITE = ['topic-claims:read', 'topic-claims:write'] as const

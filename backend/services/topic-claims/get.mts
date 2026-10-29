@@ -39,7 +39,7 @@ export async function getVerifiedTopicClaim(
   return (rows[0] as TopicClaim | undefined) ?? null
 }
 
-export type TopicClaimPage = { results: TopicClaim[]; page_info: PageInfo }
+type TopicClaimPage = { results: TopicClaim[]; page_info: PageInfo }
 export type TopicClaimPageOptions = { limit?: number; after?: string }
 
 export async function listTopicClaimsForTopic(

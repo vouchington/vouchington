@@ -28,7 +28,7 @@ const TOPIC_TRACKED_FIELDS = [
   'deleted_at',
 ] as const
 
-export type TopicRevision = {
+type TopicRevision = {
   id: string
   topic_id: string
   revision_type: RevisionType
