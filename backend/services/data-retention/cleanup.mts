@@ -11,8 +11,7 @@ import {
   sweepCopyrightCaseThreads,
 } from '@services/copyright-notices'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import { cleanupLocalAnalyticsRetention } from '@data-stores/analytics/retention'
-import { flush as flushLocalAnalytics } from '@data-stores/analytics/backend-local'
+import { cleanupAnalyticsLocalFiles } from './cleanup-analytics-local.mts'
 import {
   DEFAULT_BATCH_SIZE,
   cleanupSoftDeletedUserBatch,
@@ -137,12 +136,6 @@ export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
-
-export async function cleanupAnalyticsLocalFiles(): Promise<void> {
-  if (process.env.ANALYTICS_BACKEND !== 'local') return
-  await flushLocalAnalytics()
-  await cleanupLocalAnalyticsRetention()
-}
 
 type CleanupOptions = {
   retentionDays?: number
