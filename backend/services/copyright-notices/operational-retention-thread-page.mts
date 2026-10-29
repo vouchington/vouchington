@@ -35,8 +35,9 @@ export async function deleteCaseThreadPage(
     // Leave this phase in place so the next bounded transaction locks its digest first.
     const { rows: remaining } = await transaction<{ id: string }>(sql`
       /* recheckCopyrightThreadIntakeReferences */
+      WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id)
       SELECT id FROM copyright_notice_email_thread_references
-      WHERE copyright_notice_email_intake_id = ${intakeId}
+      WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
       ORDER BY id LIMIT 1`)
     if (remaining.length > 0) return { deleted: 0, phase, edgeCursor: null }
     if (matchedTokenId) {

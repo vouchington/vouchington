@@ -20,16 +20,16 @@ export async function eraseIntakePage(
   edgeCursor: EdgeCursor,
   queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor,
 ): Promise<{ complete: boolean; erased: boolean; failure?: unknown }> {
-  // Admission locks this retained receipt before it can copy evidence. Retention uses the same
-  // lock order, then locks the live row, so a replay cannot recreate a deleted object version.
-  await transaction(sql`/* lockUnlinkedCopyrightEmailReceipt */
-    SELECT id FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId} FOR UPDATE`)
+  // Live-source writers lock the intake before the receipt. Keep the same order while the
+  // receipt marker fences SES replay and every later source write.
   const { rows: liveRows } = await transaction<{ raw_storage_object_id: string | null }>(
     sql`/* lockUnlinkedCopyrightEmailIntake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
       WHERE id = ${intakeId} FOR UPDATE`,
   )
   if (liveRows.length === 0) return { complete: true, erased: false }
+  await transaction(sql`/* lockUnlinkedCopyrightEmailReceipt */
+    SELECT id FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId} FOR UPDATE`)
   const state = await lastActivityAndBlockers(transaction, intakeId)
   if (
     !state ||

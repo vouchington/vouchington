@@ -125,12 +125,15 @@ DECLARE intake_id uuid;
 BEGIN
   intake_id := (to_jsonb(NEW) ->> 'copyright_notice_email_intake_id')::uuid;
   IF intake_id IS NULL THEN RETURN NEW; END IF;
-  PERFORM 1
-  FROM copyright_notice_email_intake_receipts receipt
-  JOIN copyright_notice_email_intakes intake ON intake.id = receipt.id
-  WHERE receipt.id = intake_id AND receipt.erased_at IS NULL
-    AND intake.raw_storage_object_id IS NOT NULL
-  FOR SHARE OF receipt;
+  PERFORM 1 FROM copyright_notice_email_intakes intake
+  WHERE intake.id = intake_id AND intake.raw_storage_object_id IS NOT NULL
+  FOR KEY SHARE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'copyright email intake is under retention erasure'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  PERFORM 1 FROM copyright_notice_email_intake_receipts receipt
+  WHERE receipt.id = intake_id AND receipt.erased_at IS NULL FOR SHARE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'copyright email intake is under retention erasure'
       USING ERRCODE = 'check_violation';

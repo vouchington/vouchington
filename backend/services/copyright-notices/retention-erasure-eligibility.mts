@@ -9,7 +9,8 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
  *
  * `blocked` collects every case with: open staff work (the staff queue's own rule, so an
  * undecided intake, pending restriction review, open appeal, failed media action or pending
- * enforcement counts), an open counter-notice or restoration deadline, a restriction still in
+ * enforcement counts), an unresolved thread-linked email intake, an open counter-notice or
+ * restoration deadline, a restriction still in
  * force, an open qualifying court or CCB hold, an is_operative repeat-infringer incident, an open
  * legal-process preservation hold on any account that is a party to the case, an unfinished
  * delivery, or a guest capability that can still file. A case whose only queue item is a failed
@@ -19,7 +20,7 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
  *
  * `eligible` also needs the case's retention clock to have run out. The clock restarts at the
  * latest of the case's last lifecycle event and the last change to a delivery, incident, guest
- * capability or preservation hold, none of which write a lifecycle event, so a blocker that has
+ * capability, preservation hold or thread-linked email, not all of which write a lifecycle event, so a blocker that has
  * just cleared never makes a case instantly erasable. Cases already erased are never offered again. Only `us_dmca`
  * cases are covered until the owner decides the EU and UK records.
  */

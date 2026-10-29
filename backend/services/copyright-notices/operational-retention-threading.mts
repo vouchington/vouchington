@@ -71,14 +71,18 @@ async function sweepPage(
     matched_token_id: string | null
     matched_lookup_digest: string | null
   }>(sql`/* scanCopyrightThreadCaseLink */
+    WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
     SELECT link.id, link.copyright_notice_email_intake_id, link.matched_token_id,
       token.lookup_digest AS matched_lookup_digest
-    FROM copyright_notice_email_intake_notice_links link
-    LEFT JOIN copyright_notice_email_thread_tokens token ON token.id = link.matched_token_id
-    WHERE link.copyright_notice_id = ${noticeId}
-      AND link.id > COALESCE(${cursor.cursor_child_id}::uuid,
-        '00000000-0000-0000-0000-000000000000'::uuid)
-    ORDER BY link.id LIMIT 1`)
+    FROM owner CROSS JOIN LATERAL (
+      SELECT id, copyright_notice_email_intake_id, matched_token_id
+      FROM copyright_notice_email_intake_notice_links link
+      WHERE link.copyright_notice_id = owner.notice_id
+        AND link.id > COALESCE(${cursor.cursor_child_id}::uuid,
+          '00000000-0000-0000-0000-000000000000'::uuid)
+      ORDER BY link.id LIMIT 1
+    ) link
+    LEFT JOIN copyright_notice_email_thread_tokens token ON token.id = link.matched_token_id`)
   const link = links[0]
   if (!link) {
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
@@ -91,9 +95,11 @@ async function sweepPage(
     phase === 'references'
       ? await transaction<{ id: string; lookup_digest: string | null }>(sql`
         /* scanCopyrightThreadIntakeReferences */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (
+          SELECT ${link.copyright_notice_email_intake_id}::uuid AS intake_id
+        ), page AS MATERIALIZED (
           SELECT id, token_id FROM copyright_notice_email_thread_references
-          WHERE copyright_notice_email_intake_id = ${link.copyright_notice_email_intake_id}
+          WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, token.lookup_digest FROM page

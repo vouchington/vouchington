@@ -33,10 +33,11 @@ function staffPageSql(
   switch (phase) {
     case 'territorial_receipts':
       return sql`/* scanCopyrightThreadTerritorialReceiptBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, copyright_notice_id, jurisdiction
           FROM copyright_territorial_notice_receipts
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, NOT EXISTS (
@@ -46,10 +47,11 @@ function staffPageSql(
         ) AS blocked FROM page`
     case 'territorial_redress':
       return sql`/* scanCopyrightThreadTerritorialRedressBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, copyright_territorial_decision_id
           FROM copyright_territorial_redress_requests
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (
@@ -66,9 +68,10 @@ function staffPageSql(
           ON redress.copyright_territorial_redress_request_id = page.id`
     case 'restrictions':
       return sql`/* scanCopyrightThreadRestrictionBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, lifted_at, human_reviewed_at FROM copyright_restrictions
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (page.lifted_at IS NULL OR EXISTS (
@@ -80,9 +83,10 @@ function staffPageSql(
         )) AS blocked FROM page`
     case 'submissions':
       return sql`/* scanCopyrightThreadSubmissionBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, kind FROM copyright_notice_submissions
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, CASE
@@ -98,12 +102,13 @@ function staffPageSql(
           ELSE false END AS blocked FROM page`
     case 'legal_hold_assessments':
       return sql`/* scanCopyrightThreadHoldAssessmentBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, copyright_notice_submission_id, is_from_original_claimant,
             is_same_material, proceeding_kind,
             commenced_at, received_by_designated_agent_at
           FROM copyright_notice_legal_hold_assessments
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (submission.kind = 'court_or_ccb_hold'
@@ -117,9 +122,10 @@ function staffPageSql(
           ON submission.id = page.copyright_notice_submission_id`
     case 'action_work_items':
       return sql`/* scanCopyrightThreadActionBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, state FROM copyright_notice_action_work_items
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, state = 'failed' AS blocked FROM page`
     default:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
+import { writeCopyrightEmailDuringErasure } from '@voucha/test-helpers/copyright-email-retention-lock-order'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import {
@@ -25,6 +26,31 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 describe('copyright operational email intake retention', () => {
   useCopyrightOperationalCursorReservation()
   const bucket = useFakeCopyrightEvidenceBucket()
+  it('commits a concurrent source write before marking its intake erased', async () => {
+    const intake = await createRetentionParsedEmail('concurrent-retention-lock-order')
+    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const { erasure, recommendationId } = await writeCopyrightEmailDuringErasure(intake.id, () =>
+      sweepUnlinkedCopyrightEmailIntakes({
+        now: future(91),
+        retentionDays: 90,
+        childLimit: 2,
+        maxBatches: 1,
+      }),
+    )
+    expect(recommendationId).toBeTruthy()
+    expect(erasure).toMatchObject({ scanned: 1, erased: 1, hasMore: true })
+    await expect(
+      createCopyrightEmailIntake({
+        sesMessageId: intake.amazon_ses_message_id,
+        receivedAt: intake.received_at,
+        rawStorageKey: intake.raw_storage_key,
+        rawSha256: intake.raw_sha256,
+        rawMimeType: intake.raw_mime_type,
+        rawByteSize: intake.raw_byte_size,
+        sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+      }),
+    ).rejects.toBeInstanceOf(ErasedCopyrightEmailIntakeReplay)
+  })
   it('keeps the replay fence if a database child write fails after S3 deletion', async () => {
     const intake = await createRetentionParsedEmail('post-s3-database-failure')
     bucket.put(intake.raw_storage_key)

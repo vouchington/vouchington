@@ -31,19 +31,21 @@ function businessPageSql(
   switch (phase) {
     case 'deadlines':
       return sql`/* scanCopyrightThreadDeadlineBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, resolved_at, cancelled_at, escalation_at
           FROM copyright_notice_deadlines
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT id, (resolved_at IS NULL AND cancelled_at IS NULL) AS blocked FROM page`
     case 'email_links':
       return sql`/* scanCopyrightThreadEmailLinkBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, copyright_notice_email_intake_id, link_kind
           FROM copyright_notice_email_intake_notice_links
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (page.link_kind = 'thread' AND NOT EXISTS (
@@ -57,23 +59,26 @@ function businessPageSql(
         )) AS blocked FROM page`
     case 'incidents':
       return sql`/* scanCopyrightThreadIncidentBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, is_operative FROM copyright_repeat_infringer_incidents
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, is_operative AS blocked FROM page`
     case 'delivery_work_items':
       return sql`/* scanCopyrightThreadDeliveryBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, state FROM copyright_notice_delivery_work_items
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, state IN ('pending', 'claimed') AS blocked FROM page`
     case 'guest_capabilities':
       return sql`/* scanCopyrightThreadGuestCapabilityBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, revoked_at, expires_at FROM copyright_notice_guest_capabilities
-          WHERE copyright_notice_id = ${noticeId} AND id > ${after}::uuid
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, (revoked_at IS NULL AND expires_at > ${now}) AS blocked FROM page`
     default:

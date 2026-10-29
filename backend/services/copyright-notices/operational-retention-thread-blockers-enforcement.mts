@@ -18,10 +18,11 @@ export async function readCopyrightThreadEnforcementPage(
   if (cursor.phase === 'enforcement_assessments') {
     const statement = sql`
       /* scanCopyrightThreadEnforcementAssessment */
-      WITH page AS MATERIALIZED (
+      WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+      page AS MATERIALIZED (
         SELECT id, copyright_notice_submission_id, copyright_notice_form_screening_id,
           is_substantially_compliant FROM copyright_notice_submission_assessments
-        WHERE copyright_notice_id = ${noticeId}
+        WHERE copyright_notice_id = (SELECT notice_id FROM owner)
           AND id > COALESCE(${cursor.childId}::uuid,
             '00000000-0000-0000-0000-000000000000'::uuid)
         ORDER BY id LIMIT 1
@@ -84,8 +85,9 @@ export async function readCopyrightThreadEnforcementPage(
   if (cursor.phase === 'enforcement_reversal_decisions') {
     const { rows } = await transaction<{ id: string; outcome: string }>(sql`
       /* scanCopyrightThreadEnforcementReversalDecisions */
+      WITH owner AS MATERIALIZED (SELECT ${cursor.assessmentId}::uuid AS assessment_id)
       SELECT id, outcome FROM copyright_territorial_decisions
-      WHERE copyright_notice_submission_assessment_id = ${cursor.assessmentId}
+      WHERE copyright_notice_submission_assessment_id = (SELECT assessment_id FROM owner)
         AND id > COALESCE(${cursor.childId}::uuid,
           '00000000-0000-0000-0000-000000000000'::uuid)
       ORDER BY id LIMIT 1`)
@@ -121,9 +123,10 @@ export async function readCopyrightThreadEnforcementPage(
   if (cursor.phase === 'enforcement_reversal_requests') {
     const { rows } = await transaction<{ id: string; revoked: boolean }>(sql`
       /* scanCopyrightThreadEnforcementReversalRequests */
-      WITH page AS MATERIALIZED (
+      WITH owner AS MATERIALIZED (SELECT ${cursor.territorialDecisionId}::uuid AS decision_id),
+      page AS MATERIALIZED (
         SELECT id FROM copyright_territorial_redress_requests
-        WHERE copyright_territorial_decision_id = ${cursor.territorialDecisionId}
+        WHERE copyright_territorial_decision_id = (SELECT decision_id FROM owner)
           AND id > COALESCE(${cursor.childId}::uuid,
             '00000000-0000-0000-0000-000000000000'::uuid)
         ORDER BY id LIMIT ${batchSize}
@@ -150,9 +153,10 @@ export async function readCopyrightThreadEnforcementPage(
     return readCopyrightThreadEnforcementScreeningPage(transaction, noticeId, batchSize, cursor)
   }
   const { rows } = await transaction<Row>(sql`/* scanCopyrightThreadEnforcementTargets */
-    WITH page AS MATERIALIZED (
+    WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+    page AS MATERIALIZED (
       SELECT id FROM copyright_notice_targets
-      WHERE copyright_notice_id = ${noticeId}
+      WHERE copyright_notice_id = (SELECT notice_id FROM owner)
         AND id > COALESCE(${cursor.childId}::uuid,
           '00000000-0000-0000-0000-000000000000'::uuid)
       ORDER BY id LIMIT ${batchSize}

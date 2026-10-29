@@ -75,17 +75,17 @@ BEGIN
     SELECT unnest(ARRAY[NEW.reply_message_intake_id, NEW.ancestor_message_intake_id])
     ORDER BY 1
   LOOP
-    PERFORM 1 FROM copyright_notice_email_intake_receipts
-      WHERE id = intake_id AND erased_at IS NULL FOR SHARE;
-    IF NOT FOUND THEN
-      RAISE EXCEPTION 'copyright email ancestor source is under retention erasure'
-        USING ERRCODE = 'check_violation';
-    END IF;
     PERFORM 1 FROM copyright_notice_email_intakes
       WHERE id = intake_id AND raw_storage_object_id IS NOT NULL FOR KEY SHARE;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'copyright email ancestor source is no longer live'
         USING ERRCODE = 'foreign_key_violation';
+    END IF;
+    PERFORM 1 FROM copyright_notice_email_intake_receipts
+      WHERE id = intake_id AND erased_at IS NULL FOR SHARE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'copyright email ancestor source is under retention erasure'
+        USING ERRCODE = 'check_violation';
     END IF;
   END LOOP;
   RETURN NEW;

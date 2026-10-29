@@ -15,9 +15,9 @@ export async function deleteChildPage(
     // One review at most can retain a recommendation for this intake. The extra raw row
     // lets this page advance past that legal record without scanning the whole history.
     const { rowCount } = await transaction(sql`/* deleteUnlinkedCopyrightEmailRecommendations */
-      WITH candidates AS (
+      WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id), candidates AS (
         SELECT id FROM copyright_notice_email_intake_recommendations
-        WHERE copyright_notice_email_intake_id = ${intakeId}
+        WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
         ORDER BY id LIMIT ${remaining + 1} FOR UPDATE
       )
       DELETE FROM copyright_notice_email_intake_recommendations recommendation
@@ -29,14 +29,16 @@ export async function deleteChildPage(
     return rowCount ?? 0
   }
   const { rowCount } = await transaction(
-    sql`/* deleteUnlinkedCopyrightEmailIntakeChildPage */ DELETE FROM `
+    sql`/* deleteUnlinkedCopyrightEmailIntakeChildPage */
+      WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id)
+      DELETE FROM `
       .append(table)
       .append(sql` WHERE ctid IN (
         SELECT ctid FROM `)
       .append(table)
       .append(sql` WHERE `)
       .append(column)
-      .append(sql` = ${intakeId}`)
+      .append(sql` = (SELECT intake_id FROM owner)`)
       .append(sql` ORDER BY `)
       .append(orderBy)
       .append(sql` LIMIT ${remaining} FOR UPDATE)`),

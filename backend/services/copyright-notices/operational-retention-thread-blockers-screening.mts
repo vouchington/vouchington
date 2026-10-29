@@ -36,17 +36,24 @@ export async function readCopyrightThreadScreeningPage(
     case 'form_assessments': {
       const { rows } = await transaction<{ id: string; qualifies: boolean | null }>(sql`
         /* scanCopyrightThreadFormAssessmentBlockers */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        intake_source AS MATERIALIZED (
+          SELECT copyright_notice_submission_id FROM copyright_notice_form_intakes
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner)
+        ),
+        page AS MATERIALIZED (
           SELECT assessment.id, assessment.copyright_notice_submission_id,
             assessment.copyright_notice_form_screening_id,
             assessment.is_substantially_compliant
-          FROM copyright_notice_form_intakes intake
-          JOIN copyright_notice_submission_assessments assessment
-            ON assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-          WHERE intake.copyright_notice_id = ${noticeId}
-            AND assessment.id > COALESCE(${cursor.childId}::uuid,
-              '00000000-0000-0000-0000-000000000000'::uuid)
-          ORDER BY assessment.id LIMIT ${batchSize}
+          FROM intake_source CROSS JOIN LATERAL (
+            SELECT id, copyright_notice_submission_id, copyright_notice_form_screening_id,
+              is_substantially_compliant
+            FROM copyright_notice_submission_assessments assessment
+            WHERE assessment.copyright_notice_submission_id = intake_source.copyright_notice_submission_id
+              AND assessment.id > COALESCE(${cursor.childId}::uuid,
+                '00000000-0000-0000-0000-000000000000'::uuid)
+            ORDER BY assessment.id LIMIT ${batchSize}
+          ) assessment
         )
         SELECT page.id, (page.is_substantially_compliant
           AND execution.state = 'completed'
@@ -93,9 +100,10 @@ export async function readCopyrightThreadScreeningPage(
     case 'form_screening_targets': {
       const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
         /* scanCopyrightThreadScreeningTargetProof */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, hosted_use_url FROM copyright_notice_targets
-          WHERE copyright_notice_id = ${noticeId}
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner)
             AND id > COALESCE(${cursor.childId}::uuid,
               '00000000-0000-0000-0000-000000000000'::uuid)
           ORDER BY id LIMIT ${batchSize}
@@ -119,10 +127,11 @@ export async function readCopyrightThreadScreeningPage(
     case 'form_screening_receipts': {
       const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
         /* scanCopyrightThreadScreeningReceiptProof */
-        WITH page AS MATERIALIZED (
+        WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+        page AS MATERIALIZED (
           SELECT id, recipient_role, channel, delivery_kind
           FROM copyright_notice_delivery_work_items
-          WHERE copyright_notice_id = ${noticeId}
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner)
             AND id > COALESCE(${cursor.childId}::uuid,
               '00000000-0000-0000-0000-000000000000'::uuid)
           ORDER BY id LIMIT ${batchSize}

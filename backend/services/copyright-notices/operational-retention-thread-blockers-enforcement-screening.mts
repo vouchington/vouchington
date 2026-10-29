@@ -14,9 +14,10 @@ export async function readCopyrightThreadEnforcementScreeningPage(
   if (cursor.phase === 'enforcement_screening_targets') {
     const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
       /* scanCopyrightThreadEnforcementScreeningTargets */
-      WITH page AS MATERIALIZED (
+      WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+      page AS MATERIALIZED (
         SELECT id, hosted_use_url FROM copyright_notice_targets
-        WHERE copyright_notice_id = ${noticeId}
+        WHERE copyright_notice_id = (SELECT notice_id FROM owner)
           AND id > COALESCE(${cursor.childId}::uuid,
             '00000000-0000-0000-0000-000000000000'::uuid)
         ORDER BY id LIMIT ${batchSize}
@@ -40,10 +41,11 @@ export async function readCopyrightThreadEnforcementScreeningPage(
   if (cursor.phase === 'enforcement_screening_receipts') {
     const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
       /* scanCopyrightThreadEnforcementScreeningReceipts */
-      WITH page AS MATERIALIZED (
+      WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
+      page AS MATERIALIZED (
         SELECT id, recipient_role, channel, delivery_kind
         FROM copyright_notice_delivery_work_items
-        WHERE copyright_notice_id = ${noticeId}
+        WHERE copyright_notice_id = (SELECT notice_id FROM owner)
           AND id > COALESCE(${cursor.childId}::uuid,
             '00000000-0000-0000-0000-000000000000'::uuid)
         ORDER BY id LIMIT ${batchSize}

@@ -102,14 +102,16 @@ async function listCopyrightThreadPartyPage(
       phase === 'submissions'
         ? await transaction<{ id: string; user_id: string | null }>(sql`
           /* scanCopyrightThreadSubmissionParties */
+          WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
           SELECT id, submitted_by_id AS user_id FROM copyright_notice_submissions
-          WHERE copyright_notice_id = ${noticeId}
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner)
             AND id > COALESCE(${childId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
           ORDER BY id LIMIT ${batchSize}`)
         : await transaction<{ id: string; user_id: string | null }>(sql`
           /* scanCopyrightThreadIncidentParties */
+          WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
           SELECT id, account_user_id AS user_id FROM copyright_repeat_infringer_incidents
-          WHERE copyright_notice_id = ${noticeId}
+          WHERE copyright_notice_id = (SELECT notice_id FROM owner)
             AND id > COALESCE(${childId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
           ORDER BY id LIMIT ${batchSize}`)
     return {
@@ -119,8 +121,9 @@ async function listCopyrightThreadPartyPage(
   }
   const { rows: targets } = await transaction<{ id: string }>(sql`
     /* scanCopyrightThreadTargetParties */
+    WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
     SELECT id FROM copyright_notice_targets
-    WHERE copyright_notice_id = ${noticeId}
+    WHERE copyright_notice_id = (SELECT notice_id FROM owner)
       AND id > COALESCE(${childId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
     ORDER BY id LIMIT ${batchSize}`)
   const ids = targets.map(row => row.id)
