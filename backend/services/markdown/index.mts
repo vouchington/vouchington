@@ -1,7 +1,7 @@
 import { replaceEntityMentions } from '@services/entity-links'
 import { renderMarkdownToHtml, type MarkdownRenderOptions } from './render.mts'
 
-export { renderMarkdownToHtml, renderMarkdownToHtmlBatch } from './render.mts'
+export { renderMarkdownToHtmlBatch } from './render.mts'
 
 async function renderMarkdown(
   text: string | null | undefined,
