@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import crypto from 'node:crypto'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import {
   createTestUser,
   insertTestCommunity,
@@ -10,6 +8,7 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { searchCommunityModerationQueue } from './moderation-queue.mts'
+import { resolveModerationReport } from '@services/moderation-reports/resolve'
 
 describe('community review queue label', () => {
   it('uses the post slug for an untitled review', async () => {
@@ -44,7 +43,7 @@ describe('community review queue label', () => {
     const [author, reporter, resolver] = await Promise.all([
       createTestUser(),
       createTestUser(),
-      createTestUser(),
+      createTestUser({ extraRoles: ['staff'] }),
     ])
     const suffix = crypto.randomUUID().slice(0, 8)
     const community = await insertTestCommunity({
@@ -64,9 +63,11 @@ describe('community review queue label', () => {
       entityType: 'post',
       entityId: postId,
     })
-    await write(sql`/* resolveQueueLabelTestReport */ UPDATE moderation_reports SET reviewed_at = CURRENT_TIMESTAMP,
-      resolution_action = 'reviewed', resolved_by_id = ${resolver.id}
-      WHERE id = ${reportId}`)
+    await resolveModerationReport(reportId, {
+      trainingEvidence: 'staff_or_user',
+      resolvedById: resolver.id,
+      status: 'reviewed',
+    })
 
     const result = await searchCommunityModerationQueue(community.id, {
       status: 'reviewed',
