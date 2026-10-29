@@ -22,28 +22,6 @@ describe('useNow', () => {
     expect(html).toContain('server')
   })
 
-  it('returns current time on the client side', () => {
-    const mockTime = 1_000_000_000_000
-    vi.setSystemTime(mockTime)
-
-    const { result } = renderHook(() => useNow())
-    expect(result.current).toBe(mockTime)
-  })
-
-  it('updates time every 30 seconds', () => {
-    const mockTime = 1_000_000_000_000
-    vi.setSystemTime(mockTime)
-
-    const { result } = renderHook(() => useNow())
-    expect(result.current).toBe(mockTime)
-
-    act(() => {
-      vi.advanceTimersByTime(30_000)
-    })
-
-    expect(result.current).toBe(mockTime + 30_000)
-  })
-
   it('shares the same timer for multiple instances', () => {
     const mockTime = 1_000_000_000_000
     vi.setSystemTime(mockTime)
@@ -51,6 +29,7 @@ describe('useNow', () => {
     const hook1 = renderHook(() => useNow())
     const hook2 = renderHook(() => useNow())
 
+    expect(vi.getTimerCount()).toBe(1)
     expect(hook1.result.current).toBe(mockTime)
     expect(hook2.result.current).toBe(mockTime)
 

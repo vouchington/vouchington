@@ -93,17 +93,6 @@ describe('groupByProgram', () => {
     expect(groupByProgram([])).toEqual([])
   })
 
-  it('groups multiple links with the same program together', () => {
-    const links = [
-      makeLink({ id: 'link-1', referral_program_id: 'rp-1', referral_program_name: 'Alpha' }),
-      makeLink({ id: 'link-2', referral_program_id: 'rp-1', referral_program_name: 'Alpha' }),
-    ]
-    const groups = groupByProgram(links)
-    expect(groups).toHaveLength(1)
-    expect(groups[0]!.programId).toBe('rp-1')
-    expect(groups[0]!.links).toHaveLength(2)
-  })
-
   it('sorts groups alphabetically by programName', () => {
     const links = [
       makeLink({ id: 'link-1', referral_program_id: 'rp-z', referral_program_name: 'Zeta Bank' }),
@@ -121,9 +110,10 @@ describe('groupByProgram', () => {
       makeLink({ id: 'link-3', referral_program_id: 'rp-a', referral_program_name: 'Alpha' }),
     ]
     const groups = groupByProgram(links)
-    expect(groups).toHaveLength(2)
-    const alphaGroup = groups.find(g => g.programId === 'rp-a')
-    expect(alphaGroup?.links).toHaveLength(2)
+    expect(groups).toEqual([
+      { programId: 'rp-a', programName: 'Alpha', links: [links[0], links[2]] },
+      { programId: 'rp-b', programName: 'Beta', links: [links[1]] },
+    ])
   })
 })
 
