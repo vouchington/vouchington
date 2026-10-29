@@ -31,9 +31,12 @@ describe('copyright association search REST and MCP parity', () => {
     await expect(tool.function(administrator)({ q: 'work' })).rejects.toMatchObject({ status: 403 })
   })
 
-  it('preserves association facts while wrapping claimant and work text for MCP', async () => {
+  it('preserves REST association facts while redacting personal work details before MCP wrapping', async () => {
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
-    const workDescription = `searched-work-${randomUUID()}`
+    const workMarker = `searched-work-${randomUUID()}`
+    const email = 'claimant@example.test'
+    const phone = '+1 415-555-0138'
+    const workDescription = `${workMarker}. Contact ${email} or ${phone}. Case 24-cv-01234.`
     const claimantDisplayName = 'Claimant legal name'.padEnd(200, '!')
     const noticeId = await createCopyrightNoticeForManualAssociation(
       false,
@@ -46,7 +49,7 @@ describe('copyright association search REST and MCP parity', () => {
     await request.authenticateAs(administrator)
     const response = await request
       .get('/api/v1/copyright-notices/association-targets')
-      .query({ q: workDescription })
+      .query({ q: workMarker })
       .expect(200)
     const restNotice = response.body.copyright_notices.find(
       (notice: { id: string }) => notice.id === noticeId,
@@ -57,7 +60,7 @@ describe('copyright association search REST and MCP parity', () => {
       work_description: workDescription,
     })
     const tool = readTool<{ q: string; after?: string }>('search_copyright_notices_for_association')
-    const result = (await tool.function(administrator)({ q: workDescription })) as {
+    const result = (await tool.function(administrator)({ q: workMarker })) as {
       copyright_notices: Array<{
         id: string
         jurisdiction: string
@@ -76,7 +79,11 @@ describe('copyright association search REST and MCP parity', () => {
       work_description: expect.stringContaining('<external-content'),
     })
     expect(mcpNotice?.claimant_display_name).toContain(claimantDisplayName)
-    expect(mcpNotice?.work_description).toContain(workDescription)
+    expect(mcpNotice?.work_description).toContain(workMarker)
+    expect(mcpNotice?.work_description).toContain('Case 24-cv-01234')
+    expect(mcpNotice?.work_description).not.toContain(email)
+    expect(mcpNotice?.work_description).not.toContain(phone)
+    expect(result.page_info).toEqual(response.body.page_info)
     if (!tool.meta?.outputSchema) throw new Error('Association search output schema missing')
     expect(findSchemaViolation(tool.meta.outputSchema, result)).toBeNull()
   })

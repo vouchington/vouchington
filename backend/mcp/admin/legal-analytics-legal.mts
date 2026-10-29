@@ -10,6 +10,7 @@ import {
   listCopyrightStaffQueuePage,
 } from '@services/copyright-notices/staff-queue-page'
 import { searchCopyrightNoticeAssociationTargets } from '@services/copyright-notices/association-search'
+import { stripPersonalDetails } from '@services/copyright-notices/contact-redaction'
 import { adminInput, createAdminTool, PAGE_INPUT, UUID_INPUT } from './create-admin-tool.mts'
 import { redactCopyrightContactFields, redactCopyrightQueueCase } from './copyright-redaction.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
@@ -70,7 +71,14 @@ const associationSearch = createAdminTool<{ q: string; after?: string }>({
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (user, args) => {
     assertNotSuspended(user)
-    return searchCopyrightNoticeAssociationTargets(user, args.q, args.after)
+    const page = await searchCopyrightNoticeAssociationTargets(user, args.q, args.after)
+    return {
+      ...page,
+      copyright_notices: page.copyright_notices.map(notice => ({
+        ...notice,
+        work_description: stripPersonalDetails(notice.work_description),
+      })),
+    }
   },
 })
 const repeatApi = {
