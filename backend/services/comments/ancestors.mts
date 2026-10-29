@@ -26,7 +26,7 @@ export async function getCommentAncestorsByAny(
   return rows.map(row => mapCommentRow(row as CommentRow))
 }
 
-export function buildCommentAncestorsQuery(idSql: SQLStatement): SQLStatement {
+function buildCommentAncestorsQuery(idSql: SQLStatement): SQLStatement {
   const query = sql`ancestors AS (
       SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, 0 AS depth
       FROM posts WHERE posts.id = `

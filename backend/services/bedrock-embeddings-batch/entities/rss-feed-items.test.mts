@@ -2,7 +2,12 @@ import { randomBytes } from 'node:crypto'
 import { decodeUuidCursor, encodeScopedUuidCursor, isSimpleCursor } from '@modules/pagination'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { insertTestEmbeddings, makeRandomEmbedding, readAllQueueJobs } from '@voucha/test-helpers'
+import {
+  createTestBatch,
+  insertTestEmbeddings,
+  makeRandomEmbedding,
+  readAllQueueJobs,
+} from '@voucha/test-helpers'
 import {
   createStoryClusteringItem,
   STORY_CLUSTERING_CLASSIFIER_SLUG,
@@ -86,6 +91,22 @@ describe('RSS feed item embedding paths start story clustering', () => {
     })
 
     expect(page.updatedIds).toEqual([])
+    expect(await storyClusteringDispatched(item.itemId)).toBe(false)
+  })
+
+  it('does not copy a cached embedding while its RSS feed item is owned by a batch', async () => {
+    const item = await pendingItem()
+    await insertTestEmbeddings([
+      { content_sha256: item.inputSha256, embedding: makeRandomEmbedding() },
+    ])
+    await createTestBatch({ entityIds: [item.itemId], jobType: 'rss_feed_items' })
+
+    const page = await copyExistingRssFeedItemEmbeddings({
+      after: cursorBefore(item.itemId),
+      limit: 1,
+    })
+
+    expect(page).toMatchObject({ scannedCount: 1, updatedIds: [] })
     expect(await storyClusteringDispatched(item.itemId)).toBe(false)
   })
 })

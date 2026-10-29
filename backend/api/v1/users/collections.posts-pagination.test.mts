@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { encodeCursor } from '@modules/pagination'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -7,7 +6,6 @@ import {
   insertTestPost,
   updateTestEntityRelationCreatedAt,
 } from '@voucha/test-helpers'
-import { getUserPostCollectionCursorScope } from '@services/entity-fetch/profile-collections'
 
 describe('GET /api/v1/users/:idOrSlug/posts/:listType pagination', () => {
   it('continues an authenticated private post collection with after', async () => {
@@ -65,9 +63,22 @@ describe('GET /api/v1/users/:idOrSlug/posts/:listType pagination', () => {
     const owner = await createTestUser()
     const otherOwner = await createTestUser()
     if (!owner || !otherOwner) throw new Error('Failed to create owners')
+    const postId = await insertTestPost({
+      title: `Other owner's saved post ${otherOwner.id}`,
+      slug: `other-owner-cursor-${otherOwner.id}`,
+      markdown: 'Other owner cursor',
+      createdById: otherOwner.id,
+    })
+    await insertEntityRelation('relation__user__save__post', otherOwner.id, postId)
+    const sourceRequest = createRequest()
+    await sourceRequest.authenticateAs(otherOwner)
+    const source = await sourceRequest
+      .get(`/api/v1/users/${otherOwner.username}/posts/saved`)
+      .expect(200)
+    const cursor = source.body.page_info.start_cursor as string
+    expect(cursor).toEqual(expect.any(String))
     const request = createRequest()
     await request.authenticateAs(owner)
-    const cursor = collectionCursor(getUserPostCollectionCursorScope(otherOwner.id, 'saved'))
 
     await request
       .get(`/api/v1/users/${owner.username}/posts/saved?after=${encodeURIComponent(cursor)}`)
@@ -77,20 +88,21 @@ describe('GET /api/v1/users/:idOrSlug/posts/:listType pagination', () => {
   it('returns 400 for a cursor scoped to another list', async () => {
     const owner = await createTestUser()
     if (!owner) throw new Error('Failed to create owner')
+    const postId = await insertTestPost({
+      title: `Hidden cursor source ${owner.id}`,
+      slug: `hidden-cursor-source-${owner.id}`,
+      markdown: 'Hidden cursor source',
+      createdById: owner.id,
+    })
+    await insertEntityRelation('relation__user__hide__post', owner.id, postId)
     const request = createRequest()
     await request.authenticateAs(owner)
-    const cursor = collectionCursor(getUserPostCollectionCursorScope(owner.id, 'hidden'))
+    const source = await request.get(`/api/v1/users/${owner.username}/posts/hidden`).expect(200)
+    const cursor = source.body.page_info.start_cursor as string
+    expect(cursor).toEqual(expect.any(String))
 
     await request
       .get(`/api/v1/users/${owner.username}/posts/saved?after=${encodeURIComponent(cursor)}`)
       .expect(400)
   })
 })
-
-function collectionCursor(scope: string): string {
-  return encodeCursor({
-    timestamp: 1_700_000_000,
-    id: '019d0000-0000-7000-8000-000000000003',
-    scope,
-  })
-}

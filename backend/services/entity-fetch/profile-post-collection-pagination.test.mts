@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { decodeScopedTimestampUuidCursor, encodeCursor } from '@modules/pagination'
 import {
   createTestUser,
   insertEntityRelation,
@@ -10,7 +9,7 @@ import {
   insertTestPost,
   updateTestEntityRelationCreatedAt,
 } from '@voucha/test-helpers'
-import { getUserPostCollectionCursorScope, getUserPostsCollection } from './profile-collections.mts'
+import { getUserPostsCollection } from './profile-collections.mts'
 
 describe('private post collection pagination', () => {
   it('returns canonical page info for empty, partial, and exact-limit collections', async () => {
@@ -204,29 +203,25 @@ describe('private post collection pagination', () => {
     )
   })
 
-  it('rejects cursors from another owner or list', () => {
-    const ownerId = '019d0000-0000-7000-8000-000000000001'
-    const otherOwnerId = '019d0000-0000-7000-8000-000000000002'
-    const cursor = encodeCursor({
-      timestamp: 1_700_000_000,
-      id: '019d0000-0000-7000-8000-000000000003',
-      scope: getUserPostCollectionCursorScope(ownerId, 'saved'),
-    })
+  it('rejects public collection cursors from another owner or list', async () => {
+    const owner = await createTestUser()
+    const otherOwner = await createTestUser()
+    if (!owner || !otherOwner) throw new Error('Failed to create test owners')
+    const ownerPostId = await insertVisibleSavedPost(owner.id, 'owner-cursor', 0)
+    await insertVisibleSavedPost(otherOwner.id, 'other-cursor', 0)
+    await insertEntityRelation('relation__user__hide__post', owner.id, ownerPostId)
 
-    expect(() =>
-      decodeScopedTimestampUuidCursor(
-        cursor,
-        getUserPostCollectionCursorScope(otherOwnerId, 'saved'),
-        'Invalid private post collection cursor',
-      ),
-    ).toThrow('Invalid private post collection cursor')
-    expect(() =>
-      decodeScopedTimestampUuidCursor(
-        cursor,
-        getUserPostCollectionCursorScope(ownerId, 'hidden'),
-        'Invalid private post collection cursor',
-      ),
-    ).toThrow('Invalid private post collection cursor')
+    const otherOwnerPage = await getUserPostsCollection(otherOwner, otherOwner.id, 'saved')
+    const otherListPage = await getUserPostsCollection(owner, owner.id, 'hidden')
+    for (const cursor of [
+      otherOwnerPage.page_info.start_cursor,
+      otherListPage.page_info.start_cursor,
+    ]) {
+      if (!cursor) throw new Error('Expected a public collection cursor')
+      await expect(
+        getUserPostsCollection(owner, owner.id, 'saved', { after: cursor }),
+      ).rejects.toThrow('Invalid private post collection cursor')
+    }
   })
 
   it('uses the relation UUID to break tied timestamps deterministically', async () => {

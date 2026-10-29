@@ -4,10 +4,6 @@ export function createTestSqlStatement(): SQLStatement {
   return sql`SELECT 1 WHERE true`
 }
 
-export function createCommentAncestorInputSqlForTest(): SQLStatement {
-  return sql`'123e4567-e89b-12d3-a456-426614174000'::uuid`
-}
-
 export function createUniversalTopicFiltersBaseQueryForTest(): SQLStatement {
   return sql`SELECT 1 FROM posts p WHERE TRUE`
 }

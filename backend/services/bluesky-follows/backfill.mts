@@ -44,10 +44,7 @@ export async function listBlueskyFollowPropagationCandidatePage(
   }
 }
 
-export function candidatePageQuery(
-  after: BlueskyFollowPropagationCandidate | undefined,
-  limit: number,
-) {
+function candidatePageQuery(after: BlueskyFollowPropagationCandidate | undefined, limit: number) {
   const afterFollower = after?.followerUserId ?? START_OF_IDS
   const afterFollowee = after?.followeeUserId ?? START_OF_IDS
   return sql`/* listBlueskyFollowPropagationCandidatePage */

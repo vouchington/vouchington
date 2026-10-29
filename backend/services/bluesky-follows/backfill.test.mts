@@ -5,8 +5,12 @@ import {
   insertTestLocalFollow,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  insertTestBlueskyFollowReceipt,
+  requestTestBlueskyDisconnect,
+} from '@voucha/test-helpers/entities/bluesky-linked-accounts'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
-import { candidatePageQuery, listBlueskyFollowPropagationCandidatePage } from './backfill.mts'
+import { listBlueskyFollowPropagationCandidatePage } from './backfill.mts'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
 
 type BlueskyFollowPropagationCandidate = Awaited<
@@ -16,6 +20,28 @@ type BlueskyFollowPropagationCandidate = Awaited<
 const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 
 describe('listBlueskyFollowPropagationCandidatePage', () => {
+  it('bounds the initial candidate page without a cursor', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
+    )
+    const [follower, firstFollowee, secondFollowee] = await Promise.all(
+      [1, 2, 3].map(() => createTestUserDirect()),
+    )
+    await Promise.all(
+      [follower!, firstFollowee!, secondFollowee!].map(user =>
+        insertTestBlueskyLinkedAccount({ userId: user.id }),
+      ),
+    )
+    await Promise.all([
+      insertTestLocalFollow(follower!.id, firstFollowee!.id),
+      insertTestLocalFollow(follower!.id, secondFollowee!.id),
+    ])
+
+    const first = await listBlueskyFollowPropagationCandidatePage()
+    expect(first.candidates).toHaveLength(1)
+    expect(first.hasMore).toBe(true)
+  })
+
   it('pages candidate pairs by pair order, never over the page size, covering each once', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 2 }),
@@ -56,11 +82,36 @@ describe('listBlueskyFollowPropagationCandidatePage', () => {
     expect(page).toEqual({ candidates: [], hasMore: false })
   })
 
-  it('gates both relation and receipt candidates on active attached authorizations', () => {
-    const { text } = candidatePageQuery(undefined, 1)
-    expect(text.match(/status = 'attached'/g)).toHaveLength(4)
-    expect(text.match(/user_suspensions/g)).toHaveLength(2)
-    expect(text.match(/deleted_at IS NULL/g)).toHaveLength(5)
+  it('unions owned follow and receipt-only pairs, then excludes a disconnected account', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 2 }),
+    )
+    const [follower, receiptFollowee, relationFollowee] = await Promise.all(
+      [1, 2, 3].map(() => createTestUserDirect()),
+    )
+    const followerAccount = await insertTestBlueskyLinkedAccount({ userId: follower!.id })
+    await Promise.all([
+      insertTestBlueskyLinkedAccount({ userId: receiptFollowee!.id }),
+      insertTestBlueskyLinkedAccount({ userId: relationFollowee!.id }),
+    ])
+    await insertTestBlueskyFollowReceipt(follower!.id, receiptFollowee!.id)
+    await insertTestLocalFollow(follower!.id, relationFollowee!.id)
+    const after = {
+      followerUserId: uuidBefore(follower!.id),
+      followeeUserId: START_OF_IDS,
+    }
+
+    const first = await listBlueskyFollowPropagationCandidatePage(after)
+    expect(first.candidates.map(keyOf).toSorted()).toEqual(
+      [
+        pairKey(follower!.id, receiptFollowee!.id),
+        pairKey(follower!.id, relationFollowee!.id),
+      ].toSorted(),
+    )
+
+    await requestTestBlueskyDisconnect(followerAccount.bluesky_did)
+    const disconnected = await listBlueskyFollowPropagationCandidatePage(after)
+    expect(disconnected.candidates.some(pair => pair.followerUserId === follower!.id)).toBe(false)
   })
 })
 
