@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as sessionJwt from '@ts-shared/session-jwt'
-import { DEVICE_EXPIRATION_STRING, signDeviceJwt } from '@ts-shared/session-jwt'
+import {
+  DEVICE_EXPIRATION_STRING,
+  SESSION_EXPIRATION_STRING,
+  signDeviceJwt,
+  signSessionJwt,
+} from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { verifyBackendSessionTokens } from '../jwt.mts'
 import {
@@ -41,15 +46,49 @@ describe('jwt', () => {
       })
     })
 
-    it('returns both payloads when paired tokens are valid', async () => {
+    it('returns matching verified payloads and forwards optional cache claims', async () => {
       const did = mintUUIDv7()
       const uid = mintUUIDv7()
       const deviceToken = await createSignedDeviceJwt({ did })
-      const token = await createSignedSessionJwt({ did, uid, sid: mintUUIDv7() })
+      const token = await signSessionJwt(
+        { did, uid, sid: mintUUIDv7(), tt: 1, rol: ['admin'], mpl: 'pro', uil: 'en' },
+        { expiresIn: SESSION_EXPIRATION_STRING, mode: 'test' },
+      )
 
       const result = await verifyBackendSessionTokens(deviceToken, token, {})
       expect(result.devicePayload?.did).toBe(did)
       expect(result.sessionPayload?.uid).toBe(uid)
+      expect(result.sessionCachePayload).toEqual({
+        uid,
+        tt: 1,
+        rol: ['admin'],
+        mpl: 'pro',
+        uil: 'en',
+      })
+    })
+
+    it('keeps verified raw payloads but rejects cache claims for mismatched device IDs', async () => {
+      const deviceDid = mintUUIDv7()
+      const sessionDid = mintUUIDv7()
+      const uid = mintUUIDv7()
+      const deviceToken = await createSignedDeviceJwt({ did: deviceDid })
+      const token = await createSignedSessionJwt({ did: sessionDid, uid, sid: mintUUIDv7() })
+
+      const result = await verifyBackendSessionTokens(deviceToken, token, {})
+      expect(result.devicePayload?.did).toBe(deviceDid)
+      expect(result.sessionPayload?.did).toBe(sessionDid)
+      expect(result.sessionCachePayload).toBeNull()
+    })
+
+    it('keeps a verified anonymous pair without authenticated cache claims', async () => {
+      const did = mintUUIDv7()
+      const deviceToken = await createSignedDeviceJwt({ did })
+      const token = await createSignedSessionJwt({ did, uid: null, sid: mintUUIDv7() })
+
+      const result = await verifyBackendSessionTokens(deviceToken, token, {})
+      expect(result.devicePayload?.did).toBe(did)
+      expect(result.sessionPayload).toEqual(expect.objectContaining({ did, uid: null }))
+      expect(result.sessionCachePayload).toBeNull()
     })
 
     it('returns null payloads and does not verify anything when the session token is absent', async () => {
@@ -75,6 +114,7 @@ describe('jwt', () => {
       const result = await verifyBackendSessionTokens(deviceToken, 'malformed-session-token', {})
       expect(result.devicePayload?.did).toBe(did)
       expect(result.sessionPayload).toBeNull()
+      expect(result.sessionCachePayload).toBeNull()
     })
 
     it('returns a null device payload for a malformed device token', async () => {
@@ -83,6 +123,7 @@ describe('jwt', () => {
 
       const result = await verifyBackendSessionTokens('not-a-token', token, {})
       expect(result.devicePayload).toBeNull()
+      expect(result.sessionCachePayload).toBeNull()
     })
 
     it('verifies normally when the device token carries a known dc claim', async () => {
@@ -112,6 +153,7 @@ describe('jwt', () => {
 
       const result = await verifyBackendSessionTokens(deviceToken, token, {})
       expect(result.devicePayload).toBeNull()
+      expect(result.sessionCachePayload).toBeNull()
     })
 
     it('logs verification errors only once when JWT env config is invalid', async () => {
