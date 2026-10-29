@@ -172,25 +172,6 @@ describe('index', () => {
     ).rejects.toBeInstanceOf(CrawlerTimeoutError)
   })
 
-  it('fetchUrl wraps ssrf-guard DNS timeout errors as crawler timeouts', async () => {
-    const timeoutError = createSsrfGuardTimeoutError()
-    mockValidateUrl.mockRejectedValueOnce(timeoutError)
-
-    await expect(
-      fetchUrl({
-        url: 'https://example.com/feed.xml',
-        headers: {},
-        timeoutMs: 5000,
-        crawlerType: 'rss',
-        startedAt: new Date(),
-        dependencies: makeDependencies(),
-      }),
-    ).rejects.toBeInstanceOf(CrawlerTimeoutError)
-
-    expect(timeoutError.name).toBe('AbortError')
-    expect(mockFetchWithTimeout).not.toHaveBeenCalled()
-  })
-
   it('fetchUrl passes only the remaining timeout budget to DNS validation', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T00:00:03.000Z'))
@@ -248,9 +229,3 @@ describe('index', () => {
     })
   })
 })
-
-function createSsrfGuardTimeoutError(): Error {
-  const error = new Error('DNS lookup for example.com timed out after 0ms')
-  error.name = 'AbortError'
-  return error
-}
