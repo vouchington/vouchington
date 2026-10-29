@@ -73,7 +73,7 @@ const SETTING_FIELDS = [
   'should_import_hacker_news_discussions',
 ] as const satisfies readonly (keyof UpdateUserOptions)[]
 
-type SettingField = (typeof SETTING_FIELDS)[number]
+export type SettingField = (typeof SETTING_FIELDS)[number]
 export type SettingsToolArgs = Pick<UpdateUserOptions, SettingField>
 
 /** The settings the preferences tools expose, read from the account's own private user view. */
