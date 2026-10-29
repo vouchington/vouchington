@@ -1,5 +1,9 @@
 import { it, expect, describe } from 'vitest'
-import { createTestUser, createTestDirectConversation } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createTestDirectConversation,
+  getTestNotificationPushIntent,
+} from '@voucha/test-helpers'
 import { createDirectMessageNotifications } from './create-direct-message-notification.mts'
 
 describe('create-direct-message-notification', () => {
@@ -27,5 +31,11 @@ describe('create-direct-message-notification', () => {
     expect(second).toHaveLength(1)
     // The notification id is regenerated on upsert
     expect(second[0]!.user_id).toBe(user.id)
+    expect(second[0]!.id).not.toBe(first[0]!.id)
+    expect(await getTestNotificationPushIntent(user.id, first[0]!.id)).toBeUndefined()
+    expect(await getTestNotificationPushIntent(user.id, second[0]!.id)).toMatchObject({
+      status: 'pending',
+      conversation_id: conversation.id,
+    })
   })
 })

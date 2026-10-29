@@ -121,6 +121,12 @@ Terminal ActivityPub identity cleanup can yield the same retained family job whi
 so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
 later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial
 ordering lane, and every pass commits bounded SQL work before yielding.
+Deleted-conversation cleanup follows the same retained-job pattern when the daily pass finds more
+work. Its continuation runs only that family, so child notification pages do not make the daily
+schedule the throughput ceiling. The persisted conversation cursor and pending-push checks remain
+the source of progress and safety across jobs.
+When another transaction holds a child row, the retained job finishes its claim and the next
+scheduled cleanup retries from the persisted cursor after the lock clears.
 
 Hostname blocking records one durable cleanup operation before admitting background work. Its
 continuations page child hostnames, URLs, relations, creator penalties, and recalculation jobs with

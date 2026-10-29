@@ -122,6 +122,8 @@ import {
   cleanupVoteIntegrityDetails,
   type VoteIntegrityDetailCleanupPage,
 } from './cleanup-vote-integrity-details.mts'
+import { cleanupOperationalTombstones } from './cleanup-operational-tombstones.mts'
+import type { OperationalTombstoneCleanupResult } from './cleanup-operational-tombstone-types.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -154,6 +156,8 @@ type ExpiryCleanupOptions = Pick<
   CleanupOptions,
   'batchSize' | 'maxBatches' | 'lowerBoundDate' | 'now'
 >
+
+type OperationalCleanupOptions = Parameters<typeof cleanupOperationalTombstones>[1]
 
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
@@ -217,6 +221,12 @@ type DataRetentionCleanupOptions = {
     Parameters<typeof cleanupFederationRetention>[0],
     'batchSize' | 'maxBatches'
   >
+  undoneActivityPubLikes?: OptionalRetentionLimits<OperationalCleanupOptions>
+  staleRemoteActors?: OptionalRetentionLimits<OperationalCleanupOptions>
+  feedHostnameBlocks?: OptionalRetentionLimits<OperationalCleanupOptions>
+  otherHostnameBlocks?: OptionalRetentionLimits<OperationalCleanupOptions>
+  deletedConversations?: OptionalRetentionLimits<OperationalCleanupOptions>
+  appAttestationKeys?: OptionalRetentionLimits<OperationalCleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -271,6 +281,12 @@ type DataRetentionCleanupResult = {
   supersededVoteBallots: VoteBallotCleanupPage[]
   orphanedUserAgentStrings: UserAgentStringCleanupPage
   voteIntegrityDetails: VoteIntegrityDetailCleanupPage
+  undoneActivityPubLikes: OperationalTombstoneCleanupResult
+  staleRemoteActors: OperationalTombstoneCleanupResult
+  feedHostnameBlocks: OperationalTombstoneCleanupResult
+  otherHostnameBlocks: OperationalTombstoneCleanupResult
+  deletedConversations: OperationalTombstoneCleanupResult
+  appAttestationKeys: OperationalTombstoneCleanupResult
 }
 
 export type VoteRetentionSelection = {
@@ -537,6 +553,30 @@ export async function runDataRetentionCleanup(
     limits,
     activeFamilies: options.activeCopyrightFamilies,
   })
+  const undoneActivityPubLikes = await cleanupOperationalTombstones(
+    'activitypub_post_likes',
+    withLimits(options.undoneActivityPubLikes),
+  )
+  const staleRemoteActors = await cleanupOperationalTombstones(
+    'remote_actors',
+    withLimits(options.staleRemoteActors),
+  )
+  const feedHostnameBlocks = await cleanupOperationalTombstones(
+    'feed_hostname_blocks',
+    withLimits(options.feedHostnameBlocks),
+  )
+  const otherHostnameBlocks = await cleanupOperationalTombstones(
+    'other_hostname_blocks',
+    withLimits(options.otherHostnameBlocks),
+  )
+  const deletedConversations = await cleanupOperationalTombstones(
+    'deleted_conversations',
+    withLimits(options.deletedConversations),
+  )
+  const appAttestationKeys = await cleanupOperationalTombstones(
+    'app_attestation_keys',
+    withLimits(options.appAttestationKeys),
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -598,6 +638,12 @@ export async function runDataRetentionCleanup(
     supersededVoteBallots,
     orphanedUserAgentStrings,
     voteIntegrityDetails,
+    undoneActivityPubLikes,
+    staleRemoteActors,
+    feedHostnameBlocks,
+    otherHostnameBlocks,
+    deletedConversations,
+    appAttestationKeys,
   }
 }
 

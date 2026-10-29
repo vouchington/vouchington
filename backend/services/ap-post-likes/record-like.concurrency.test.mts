@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { createTestPost } from '@voucha/test-helpers'
-import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
+import { beginTransaction, createTestPost } from '@voucha/test-helpers'
+import {
+  getTestActiveApPostLikeActivityId,
+  getTestApPostLikesTally,
+} from '@voucha/test-helpers/entities/ap-post-likes'
 import { recordLike } from './record-like.mts'
-import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
+import { undoLike } from './undo-like.mts'
+import {
+  createRemoteActorFixture,
+  isActivityPubLikePairLockAvailableForTest,
+} from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 // Regression test for the TOCTOU race fn_project_activitypub_post_likes used to have (see the trigger's
 // comment in the activitypub_post_likes migration): the old trigger read
@@ -17,6 +24,50 @@ import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fix
 // its own pool connection, the same mechanism services/users/__tests__/create.concurrency.test.mts
 // relies on — rather than asserting against mocked timing.
 describe('recordLike concurrency', () => {
+  it('serializes replacement with Undo of the previous activity', async () => {
+    const post = await createTestPost()
+    const remoteActor = await createRemoteActorFixture()
+    const firstId = `https://remote.example/activities/${remoteActor.id}-first`
+    const replacementId = `https://remote.example/activities/${remoteActor.id}-replacement`
+    await recordLike(post.id, remoteActor.id, firstId)
+
+    await using undoTransaction = await beginTransaction()
+    const firstUndoQueryCompleted = Promise.withResolvers<void>()
+    const releaseUndo = Promise.withResolvers<void>()
+    const pausedUndoQuery = new Proxy(undoTransaction, {
+      async apply(target, thisArg, args: Parameters<typeof undoTransaction>) {
+        const result = await Reflect.apply(target, thisArg, args)
+        const statement = args[0]
+        const text = typeof statement === 'string' ? statement : statement.text
+        if (text.includes('/* lockActivityPubLikePairForUndo */')) {
+          firstUndoQueryCompleted.resolve()
+          await releaseUndo.promise
+        }
+        return result
+      },
+    })
+    const undo = undoLike(post.id, remoteActor, firstId, { query: pausedUndoQuery })
+    await firstUndoQueryCompleted.promise
+    let pairLockAvailable: boolean
+    let replacement: Promise<void>
+    try {
+      pairLockAvailable = await isActivityPubLikePairLockAvailableForTest(post.id, remoteActor.id)
+      replacement = recordLike(post.id, remoteActor.id, replacementId)
+    } finally {
+      releaseUndo.resolve()
+    }
+    await undo
+    await undoTransaction.commit()
+    await replacement
+
+    expect(pairLockAvailable).toBe(false)
+    expect(await getTestActiveApPostLikeActivityId(post.id, remoteActor.id)).toBe(replacementId)
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
+  })
+
   it('tallies every concurrent Like from a distinct remote actor exactly once', async () => {
     const post = await createTestPost()
     const remoteActors = await Promise.all(

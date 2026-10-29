@@ -8,16 +8,16 @@ const SOURCES = {
   Follow: {
     table: 'activitypub_remote_follow_activities',
     activity: 'activity_id',
-    actor: 'remote_actor_id',
+    actor: 'remote_actor_identity_id',
     target: 'target_user_id',
     terminal: 'undone_at',
   },
   Like: {
-    table: 'activitypub_post_likes',
-    activity: 'like_activitypub_id',
-    actor: 'remote_actor_id',
+    table: 'activitypub_post_like_activities',
+    activity: 'activity_id',
+    actor: 'remote_actor_identity_id',
     target: 'post_id',
-    terminal: 'deleted_at',
+    terminal: 'undone_at',
   },
 } as const
 
@@ -29,7 +29,7 @@ export type UndoActorIdentityFact = {
   terminalAt: string | null
 }
 
-/** Keep persistence assertions under the lower layer's actual current identity contract. */
+/** Read retained activity identities without treating them as live authorization. */
 export async function readUndoActorIdentityFactsForTest(
   query: TransactionQuery,
   kind: UndoActorActivityKind,
@@ -121,10 +121,22 @@ export async function deleteUndoActorRaceFactsForTest(
   await using query = await beginTransaction()
   if (kind === 'Like') {
     await query(
-      `/* terminalizeUndoActorRaceLikesForTest */
-       UPDATE activitypub_post_likes SET deleted_at = COALESCE(deleted_at, clock_timestamp())
-       WHERE like_activitypub_id = $1::text AND remote_actor_id = ANY($2::uuid[])
-         AND post_id = ANY($3::uuid[])`,
+      `/* terminalizeUndoActorRaceLikePayloadsForTest */
+       UPDATE activitypub_post_likes payload
+       SET deleted_at = COALESCE(payload.deleted_at, clock_timestamp())
+       FROM activitypub_post_like_activities activity
+       WHERE payload.id = activity.id AND activity.activity_id = $1::text
+         AND activity.remote_actor_identity_id = ANY($2::uuid[])
+         AND activity.post_id = ANY($3::uuid[])`,
+      [activityUri, actorIds, targetIds],
+    )
+    await query(
+      `/* deleteUndoActorRaceLikePayloadsForTest */
+       DELETE FROM activitypub_post_likes payload
+       USING activitypub_post_like_activities activity
+       WHERE payload.id = activity.id AND activity.activity_id = $1::text
+         AND activity.remote_actor_identity_id = ANY($2::uuid[])
+         AND activity.post_id = ANY($3::uuid[])`,
       [activityUri, actorIds, targetIds],
     )
   }
@@ -135,7 +147,7 @@ export async function deleteUndoActorRaceFactsForTest(
        WHERE relation.subject_id = ANY($2::uuid[]) AND relation.object_id = ANY($3::uuid[])
          AND relation.inbound_follow_activity_row_id IN (
            SELECT id FROM activitypub_remote_follow_activities
-           WHERE activity_id = $1::text AND remote_actor_id = ANY($2::uuid[])
+           WHERE activity_id = $1::text AND remote_actor_identity_id = ANY($2::uuid[])
              AND target_user_id = ANY($3::uuid[])
          )`,
       [activityUri, actorIds, targetIds],

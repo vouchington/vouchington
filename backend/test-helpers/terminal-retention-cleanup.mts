@@ -17,7 +17,7 @@ export async function deleteTerminalRetentionFixtureForTest(input: {
     await query(
       `/* deleteTerminalRetentionFixtureActivitiesForTest */
        DELETE FROM activitypub_remote_follow_activities
-       WHERE remote_actor_id = $1::uuid AND activity_id = ANY($2::text[])`,
+       WHERE remote_actor_identity_id = $1::uuid AND activity_id = ANY($2::text[])`,
       [input.actorId, input.activityIds],
     )
     await query(
@@ -32,8 +32,18 @@ export async function deleteTerminalRetentionFixtureForTest(input: {
       [input.actorId],
     )
     await query(
+      `/* deleteTerminalRetentionFixtureActorIdentityForTest */
+       DELETE FROM remote_actor_identities WHERE id = $1::uuid`,
+      [input.actorId],
+    )
+    await query(
       `/* deleteTerminalRetentionFixtureUserForTest */
        DELETE FROM users WHERE id = $1::uuid`,
+      [input.userId],
+    )
+    await query(
+      `/* deleteTerminalRetentionFixtureUserIdentityForTest */
+       DELETE FROM retained_user_identities WHERE id = $1::uuid`,
       [input.userId],
     )
   })

@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { normalizeHostname } from '@ts-shared/utils/urls'
@@ -44,11 +44,13 @@ function getCacheAgeMs(row: RemoteActorRow, now: () => number): number {
 
 export async function getRemoteActorByKeyId(keyId: string): Promise<RemoteActorRow | null> {
   const { rows } = await read(sql`/* getRemoteActorByKeyId */
-    SELECT id, actor_uri, key_id, public_key_pem, inbox_url, shared_inbox_url,
-           fetched_at, created_at, updated_at, hostname_id
-    FROM remote_actors
-    WHERE key_id = ${keyId}
-      AND deleted_at IS NULL
+    SELECT actor.id, identity.actor_uri, actor.key_id, actor.public_key_pem,
+           actor.inbox_url, actor.shared_inbox_url, actor.fetched_at, actor.created_at,
+           actor.updated_at, actor.hostname_id
+    FROM remote_actors actor
+    JOIN remote_actor_identities identity ON identity.id = actor.id
+    WHERE actor.key_id = ${keyId}
+      AND actor.deleted_at IS NULL
     LIMIT 1
   `)
   return (rows[0] as RemoteActorRow) ?? null
@@ -60,10 +62,12 @@ export async function getCheckpointedRemoteActorByIdFromPrimary(
   id: string,
 ): Promise<RemoteActorRow | null> {
   const { rows } = await write(sql`/* getCheckpointedRemoteActorByIdFromPrimary */
-    SELECT id, actor_uri, key_id, public_key_pem, inbox_url, shared_inbox_url,
-           fetched_at, created_at, updated_at, hostname_id
-    FROM remote_actors
-    WHERE id = ${id} AND deleted_at IS NULL
+    SELECT actor.id, identity.actor_uri, actor.key_id, actor.public_key_pem,
+           actor.inbox_url, actor.shared_inbox_url, actor.fetched_at, actor.created_at,
+           actor.updated_at, actor.hostname_id
+    FROM remote_actors actor
+    JOIN remote_actor_identities identity ON identity.id = actor.id
+    WHERE actor.id = ${id} AND actor.deleted_at IS NULL
     LIMIT 1
   `)
   return (rows[0] as RemoteActorRow) ?? null
@@ -134,21 +138,33 @@ function deriveActorUriFromKeyId(keyId: string): string {
 
 async function upsertRemoteActor(document: RemoteActorDocument): Promise<RemoteActorRow> {
   const hostnameId = await lookupHostnameId(document.actorUri)
-  const { rows } = await write(sql`/* upsertRemoteActor */
-    INSERT INTO remote_actors (actor_uri, key_id, public_key_pem, inbox_url, shared_inbox_url, fetched_at, hostname_id)
+  await using query = await beginTransaction()
+  await query(sql`/* reserveRemoteActorIdentity */
+    INSERT INTO remote_actor_identities (actor_uri) VALUES (${document.actorUri})
+    ON CONFLICT (actor_uri) DO NOTHING
+  `)
+  const { rows: identities } = await query<{ id: string }>(sql`/* readRemoteActorIdentity */
+    SELECT id FROM remote_actor_identities WHERE actor_uri = ${document.actorUri}
+  `)
+  const id = identities[0]!.id
+  const { rows } = await query(sql`/* upsertRemoteActor */
+    INSERT INTO remote_actors (id, key_id, public_key_pem, inbox_url, shared_inbox_url, fetched_at, hostname_id)
     VALUES (
-      ${document.actorUri}, ${document.keyId}, ${document.publicKeyPem},
+      ${id}, ${document.keyId}, ${document.publicKeyPem},
       ${document.inboxUrl}, ${document.sharedInboxUrl}, CURRENT_TIMESTAMP, ${hostnameId}
     )
-    ON CONFLICT (actor_uri) WHERE deleted_at IS NULL DO UPDATE
+    ON CONFLICT (id) DO UPDATE
       SET key_id = EXCLUDED.key_id,
           public_key_pem = EXCLUDED.public_key_pem,
           inbox_url = EXCLUDED.inbox_url,
           shared_inbox_url = EXCLUDED.shared_inbox_url,
           fetched_at = CURRENT_TIMESTAMP,
           hostname_id = EXCLUDED.hostname_id
-    RETURNING id, actor_uri, key_id, public_key_pem, inbox_url, shared_inbox_url,
+      WHERE remote_actors.deleted_at IS NULL
+    RETURNING id, key_id, public_key_pem, inbox_url, shared_inbox_url,
               fetched_at, created_at, updated_at, hostname_id
   `)
-  return rows[0] as RemoteActorRow
+  if (!rows[0]) throw createHttpError(403, 'Remote actor is no longer active')
+  await query.commit()
+  return { ...(rows[0] as Omit<RemoteActorRow, 'actor_uri'>), actor_uri: document.actorUri }
 }

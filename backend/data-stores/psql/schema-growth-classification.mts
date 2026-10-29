@@ -9,7 +9,6 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'images',
   'user_lists',
   'podcast_shows',
-  'remote_actors',
   'rss_category_identities',
   'rss_feeds',
   'topics',
@@ -137,6 +136,22 @@ export function buildUnboundedUnpartitionedTables(
         'oauth_client_grant_markers',
         'One insert-only usage marker per OAuth client persists with that client so never-used cleanup cannot erase a formerly granted registration.',
       ],
+      [
+        'remote_actor_identities',
+        'Exact external actor URI replay identities survive signing-key cache eviction; one identity per distinct remote actor URI.',
+      ],
+      [
+        'activitypub_post_like_activities',
+        'Active Like identity cycles retain exact replay scope; indexed terminal transitions expire only beyond every supported replay horizon, after child payload deletion.',
+      ],
+      [
+        'activitypub_post_likes',
+        'Active remote Likes grow with live posts; bounded retention deletes undone tally payloads after 30 days.',
+      ],
+      [
+        'remote_actors',
+        'Live signing-key caches remain while follow, Like, or inbox work references them; a capped sweep removes unreferenced cache rows after 90 days.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []
@@ -148,10 +163,6 @@ export function buildUnboundedUnpartitionedTables(
             ],
       ),
       ...RETAINED_RELATION_GROWTH_POLICIES,
-      [
-        'activitypub_post_likes',
-        'Active Like cycles track live domain edges; terminal rows expire in bounded indexed pages after a configurable window longer than every supported replay age.',
-      ],
       [
         'activitypub_remote_follow_activities',
         'Active Follow cycles track live domain edges; replaced and undone cycles expire in bounded indexed pages from their terminal timestamp beyond the supported replay age.',

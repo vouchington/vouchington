@@ -37,6 +37,7 @@ export const ROOT_FAMILIES = {
     table: 'retained_post_identities',
     references: [
       ['posts', 'id'],
+      ['activitypub_post_like_activities', 'post_id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
       ['image_deletion_post_updates', 'post_id'],

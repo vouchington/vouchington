@@ -76,5 +76,6 @@ export const RETAINED_USER_REFERENCES = [
   ['copyright_trusted_flaggers', 'created_by_id'],
   ['copyright_trusted_flagger_changes', 'changed_by_id'],
   ['copyright_dsa_statement_submission_attempts', 'replayed_by_id'],
+  ['activitypub_remote_follow_activities', 'target_user_id'],
   ...retainedRelationReferences('user'),
 ] as const

@@ -15,20 +15,29 @@ export async function undoLike(
   const remoteActorId = remoteActor.id
   await withTransactionOptions(options, async run => {
     const owner = await lockActivityPubLikeIdentity(run, likeApId)
-    if (owner && (owner.post_id !== postId || owner.remote_actor_id !== remoteActorId)) return
+    if (owner && (owner.post_id !== postId || owner.remote_actor_identity_id !== remoteActorId))
+      return
     await run(sql`/* lockActivityPubLikePairForUndo */
       SELECT pg_advisory_xact_lock(hashtextextended(
         'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
       ))
     `)
     await run(sql`/* undoLike */
-    INSERT INTO activitypub_post_likes
-      (post_id, remote_actor_id, like_activitypub_id, deleted_at, confirmed_at)
-    VALUES (${postId}, ${remoteActorId}, ${likeApId}, clock_timestamp(), NULL)
-    ON CONFLICT (remote_actor_id, like_activitypub_id) DO UPDATE
+    WITH cycle AS (
+      INSERT INTO activitypub_post_like_activities
+        (activity_id, post_id, remote_actor_identity_id, undone_at, confirmed_at)
+      VALUES (${likeApId}, ${postId}, ${remoteActorId}, clock_timestamp(), NULL)
+      ON CONFLICT (remote_actor_identity_id, activity_id) DO UPDATE
+        SET undone_at = COALESCE(activitypub_post_like_activities.undone_at, EXCLUDED.undone_at)
+        WHERE activitypub_post_like_activities.post_id = EXCLUDED.post_id
+          AND activitypub_post_like_activities.remote_actor_identity_id = EXCLUDED.remote_actor_identity_id
+      RETURNING id
+    )
+    INSERT INTO activitypub_post_likes (id, post_id, remote_actor_id, deleted_at)
+    SELECT id, ${postId}, ${remoteActorId}, clock_timestamp() FROM cycle
+    ORDER BY id ASC NULLS LAST
+    ON CONFLICT (id) DO UPDATE
       SET deleted_at = COALESCE(activitypub_post_likes.deleted_at, EXCLUDED.deleted_at)
-      WHERE activitypub_post_likes.post_id = EXCLUDED.post_id
-        AND activitypub_post_likes.remote_actor_id = EXCLUDED.remote_actor_id
   `)
   })
 }

@@ -28,39 +28,70 @@ COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_score IS 'COUN
 COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_count IS 'Same value as activitypub_likes_score, stored separately as a plain display count in case score gains per-actor weighting later.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS activitypub_post_likes (
+CREATE TABLE IF NOT EXISTS activitypub_post_like_activities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  activity_id TEXT NOT NULL CHECK (char_length(activity_id) BETWEEN 1 AND 2048),
+  post_id UUID NOT NULL,
+  remote_actor_identity_id UUID NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  undone_at TIMESTAMPTZ,
+  confirmed_at TIMESTAMPTZ DEFAULT clock_timestamp(),
+  CHECK (confirmed_at IS NOT NULL OR undone_at IS NOT NULL),
+  CONSTRAINT uq_ap_post_like_activities__actor_activity UNIQUE (remote_actor_identity_id, activity_id),
+  CONSTRAINT uq_ap_post_like_activities__scope_id UNIQUE (id, post_id, remote_actor_identity_id)
+);
+ALTER TABLE activitypub_post_like_activities
+  ADD CONSTRAINT fk_ap_post_like_activities__post_identity
+  FOREIGN KEY (post_id) REFERENCES retained_post_identities(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE activitypub_post_like_activities
+  VALIDATE CONSTRAINT fk_ap_post_like_activities__post_identity;
+ALTER TABLE activitypub_post_like_activities
+  ADD CONSTRAINT fk_ap_post_like_activities__remote_actor_identity
+  FOREIGN KEY (remote_actor_identity_id) REFERENCES remote_actor_identities(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE activitypub_post_like_activities
+  VALIDATE CONSTRAINT fk_ap_post_like_activities__remote_actor_identity;
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__post_id
+  ON activitypub_post_like_activities (post_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__confirmed_activity
+  ON activitypub_post_like_activities (activity_id) WHERE confirmed_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__undone_retention
+  ON activitypub_post_like_activities (undone_at, id) WHERE undone_at IS NOT NULL;
+COMMENT ON TABLE activitypub_post_like_activities IS 'Exact Like activity identity and Undo scope retained beyond every supported replay horizon after its terminal transition. Active cycles remain domain facts; retained identities never authorize an actor.';
+COMMENT ON COLUMN activitypub_post_like_activities.activity_id IS 'External Like URI. Undo-only assertions are actor scoped; receipt of the original Like establishes one global URI owner.';
+COMMENT ON COLUMN activitypub_post_like_activities.post_id IS 'Retained local post identity of the Like target.';
+COMMENT ON COLUMN activitypub_post_like_activities.remote_actor_identity_id IS 'Retained signing actor identity, checked against a live verified actor before any mutation.';
+COMMENT ON COLUMN activitypub_post_like_activities.confirmed_at IS 'When the original signed Like was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.';
+COMMENT ON COLUMN activitypub_post_like_activities.undone_at IS 'Immutable terminal transition time for Undo or replacement; starts the configured finite identity retention window. A retained undone activity never reactivates.';
+
+CREATE TABLE IF NOT EXISTS activitypub_post_likes (
+  id UUID PRIMARY KEY,
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
-  remote_actor_id UUID NOT NULL REFERENCES remote_actors ON DELETE CASCADE,
-  like_activitypub_id TEXT NOT NULL,
-  CHECK (char_length(like_activitypub_id) > 0 AND char_length(like_activitypub_id) <= 2048),
+  remote_actor_id UUID NOT NULL REFERENCES remote_actors ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   deleted_at TIMESTAMPTZ,
-  confirmed_at TIMESTAMPTZ DEFAULT clock_timestamp(),
-  CHECK (confirmed_at IS NOT NULL OR deleted_at IS NOT NULL)
+  CONSTRAINT fk_activitypub_post_likes__activity_scope
+    FOREIGN KEY (id, post_id, remote_actor_id)
+    REFERENCES activitypub_post_like_activities(id, post_id, remote_actor_identity_id) ON DELETE RESTRICT
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__actor_activity ON activitypub_post_likes (remote_actor_id, like_activitypub_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__confirmed_activity
-  ON activitypub_post_likes (like_activitypub_id) WHERE confirmed_at IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__undone_retention
-  ON activitypub_post_likes (deleted_at, id) WHERE deleted_at IS NOT NULL;
--- The actor/activity unique index covers the remote_actor_id FK across terminal rows too.
--- The partial active-pair index cannot cover post_id checks on terminal rows, so keep its
--- unpredicated leading index (see docs/development/postgres-schema-rules.md).
+-- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is
+-- predicated on deleted_at IS NULL, which the planner can't use for cascade/RESTRICT checks that
+-- must also touch soft-deleted rows (see docs/development/postgres-schema-rules.md).
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_id ON activitypub_post_likes (post_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__remote_actor_id ON activitypub_post_likes (remote_actor_id);
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__undone_retention
+  ON activitypub_post_likes (deleted_at, id) WHERE deleted_at IS NOT NULL;
 
-COMMENT ON TABLE activitypub_post_likes IS 'Current remote ActivityPub Like cycles and terminal tombstones retained beyond the supported replay horizon. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.';
+COMMENT ON TABLE activitypub_post_likes IS 'Live Like tally payload and recent Undo tombstones. Old tombstones expire while exact replay scope remains in activitypub_post_like_activities.';
 COMMENT ON COLUMN activitypub_post_likes.post_id IS 'The local post that was liked.';
 COMMENT ON COLUMN activitypub_post_likes.remote_actor_id IS 'The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.';
-COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'External Like URI. Undo-only assertions are actor scoped; receipt of the original Like establishes one global URI owner.';
-COMMENT ON COLUMN activitypub_post_likes.confirmed_at IS 'When the original signed Like was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.';
-COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; this immutable terminal timestamp starts bounded retention longer than the supported replay horizon.';
+COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including Undo before Like, or by a fresh replacement Like; tombstones expire after 30 days.';
 
 -- Keeps post_activitypub_like_tallies in sync with the count of active (deleted_at IS NULL) activitypub_post_likes rows for the
 -- affected post via an atomic delta-based upsert, not a read-then-write COUNT: two concurrent

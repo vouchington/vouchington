@@ -1,4 +1,8 @@
 import { cleanupActivityPubTerminalIdentities } from '@services/data-retention/cleanup-activitypub-tombstones'
+import { cleanupOperationalTombstones } from '@services/data-retention/cleanup-operational-tombstones'
+import { createDeletedConversationRetentionHandlers } from './processors/deleted-conversation-retention.mts'
+import { psql as psqlQueue } from '@queues/psql/queues'
+import { createPsqlRetentionDispatcher } from './processors/retention-dispatch.mts'
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import {
   admitPendingTerminalActivityRetention,
@@ -21,7 +25,6 @@ import type {
 } from '@queues/psql/types'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import processPsql from './processors.mts'
 import { processModerationRetentionCleanup } from './processors/moderation-retention.mts'
 import { createAIRetentionContinuationProcessor } from './processors/retention-continuation.mts'
@@ -31,6 +34,10 @@ const processTerminalActivityRetention = createTerminalActivityRetentionProcesso
   cleanupActivityPubTerminalIdentities,
 )
 const processAIRetentionContinuation = createAIRetentionContinuationProcessor()
+const deletedConversationRetention = createDeletedConversationRetentionHandlers(
+  psqlQueue,
+  cleanupOperationalTombstones,
+)
 
 async function processPsqlJob(job: Job): Promise<unknown> {
   if (job.name === TERMINAL_ACTIVITY_RETENTION_JOB_NAME) {
@@ -66,9 +73,11 @@ async function processPsqlJob(job: Job): Promise<unknown> {
 
 export const psql = createWorker(
   QUEUE_NAME,
-  (job: Job) => {
-    return deferPostgresConnectionTimeout(job, () => processPsqlJob(job))
-  },
+  createPsqlRetentionDispatcher({
+    processRetained: deletedConversationRetention.processRetained,
+    admitPending: deletedConversationRetention.admitPending,
+    processDefault: processPsqlJob,
+  }),
   {
     dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('psql', { baseline: 1, ignoreScale: true }),

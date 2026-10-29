@@ -64,6 +64,10 @@ export const expectedDirectiveInventory = [
   'backend/services/data-retention/cleanup-deferred-post-votes.mts:2',
   'backend/services/data-retention/cleanup-oauth-friend-edges.mts:2',
   'backend/services/data-retention/cleanup-vote-ballots.mts:1',
+  // Both retention readers lock a bounded (timestamp, id) keyset page with SKIP LOCKED.
+  // The directive covers only that ordered candidate read; deletes recheck eligibility.
+  'backend/services/data-retention/cleanup-deleted-conversation-cursor.mts:1',
+  'backend/services/data-retention/cleanup-operational-tombstone-candidates.mts:1',
   'backend/services/entity-cache/hostname-invalidation-drain.mts:2',
   'backend/services/identity-verification/attempts.mts:1',
   'backend/services/individuals-households/households/spending-categories.mts:1',

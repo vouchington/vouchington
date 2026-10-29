@@ -1,6 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
-  acquireModerationOperationRetentionTestLock,
   createTestExpiryWindow,
   createTestUser,
   deleteTestBlueskyLinkFixtures,
@@ -11,11 +10,9 @@ import {
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
-import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
-  runDataRetentionCleanup,
 } from '../cleanup.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000

@@ -93,6 +93,7 @@ describe('ensureNotificationPushIntents', () => {
       getTestNotificationPushIntent(recipient.id, notificationId),
     ).resolves.toMatchObject({
       status: 'pending',
+      conversation_id: null,
     })
 
     async function createMissingNotificationPushIntent(): Promise<number> {

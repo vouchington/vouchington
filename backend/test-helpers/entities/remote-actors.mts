@@ -8,6 +8,8 @@ export async function setTestRemoteActorFetchedAt(
   fetchedAt: Date,
 ): Promise<void> {
   await write(sql`/* setTestRemoteActorFetchedAt */
-    UPDATE remote_actors SET fetched_at = ${fetchedAt} WHERE actor_uri = ${actorUri}
+    UPDATE remote_actors actor SET fetched_at = ${fetchedAt}
+    FROM remote_actor_identities identity
+    WHERE actor.id = identity.id AND identity.actor_uri = ${actorUri}
   `)
 }

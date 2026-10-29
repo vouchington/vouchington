@@ -97,6 +97,10 @@ BEFORE UPDATE ON conversations
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE INDEX IF NOT EXISTS idx_conversations__deleted_chat_retention
+  ON conversations (deleted_at, id)
+  WHERE deleted_at IS NOT NULL AND channel_type IN ('chat', 'direct_message');
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__created_by_id__id_desc
 ON conversations (created_by_id, id DESC)

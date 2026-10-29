@@ -1,0 +1,30 @@
+import {
+  DATA_RETENTION_JOB_NAME,
+  DELETED_CONVERSATION_RETENTION_JOB_NAME,
+} from '@queues/psql/config'
+import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
+import type { Job } from 'glide-mq'
+import type { createDeletedConversationRetentionHandlers } from './deleted-conversation-retention.mts'
+
+type DailyCompletion = Parameters<
+  ReturnType<typeof createDeletedConversationRetentionHandlers>['admitPending']
+>[0]
+
+/** Registers retained routing and the daily completion gate around the actual maintenance port. */
+export function createPsqlRetentionDispatcher({
+  processRetained,
+  processDefault,
+  admitPending,
+}: {
+  processRetained: (job: Job) => Promise<unknown>
+  processDefault: (job: Job) => Promise<unknown>
+  admitPending: (result: DailyCompletion) => Promise<void>
+}) {
+  return (job: Job) =>
+    deferPostgresConnectionTimeout(job, async () => {
+      if (job.name === DELETED_CONVERSATION_RETENTION_JOB_NAME) return processRetained(job)
+      const result = await processDefault(job)
+      if (job.name === DATA_RETENTION_JOB_NAME) await admitPending(result as DailyCompletion)
+      return result
+    })
+}

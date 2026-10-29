@@ -36,6 +36,7 @@
     "@services/posts": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
+    "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/postgres": "^0.1.2",
     "http-errors": "^2.0.1",

@@ -2,30 +2,22 @@ import { beginTransaction, writePool } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '../services/users/types.mts'
 import sql from 'sql-template-strings'
-import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
-import { copyrightStaffQueueCursorScope } from '../services/copyright-notices/read-models-staff.mts'
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'
 import { copyrightJurisdictionPolicyLockKey } from '../services/copyright-notices/jurisdiction-policy.mts'
 import { withApiRequestQueryOptions } from './api/server.mts'
-import { createQueueSnapshotKeys, nativeKeyPage } from './copyright-staff-queue-keys.mts'
+import { readCopyrightStaffQueueWindow, type QueuePage } from './copyright-staff-queue-walk.mts'
 
-type QueueCase = {
-  id: string
-  reasons: string[]
-  waiting_since: string
-  next_deadline: { escalation_at: string; restoration_deadline_at: string } | null
-}
-type QueuePage = {
-  copyright_notices: QueueCase[]
-  page_info: { has_next_page: boolean; end_cursor: string | null }
-}
-/** Stable native queue snapshot, optional rolled-back policy reservation, real HTTP. The policy lock covers only snapshot + reservation. */
+/** One stable native queue snapshot, optional rolled-back policy reservation, and actual HTTP. */
 export async function withCopyrightStaffQueueHttp<Result>(
   moderator: PrivateUser,
   policy: { approvalId: string; actor: PrivateUser } | undefined,
   run: (context: {
     query: TransactionQuery
-    read: (ids: readonly string[], boost: boolean, limit: 1 | 100) => Promise<QueuePage>
+    read: (
+      ids: readonly string[],
+      boost: boolean,
+      limit: 1 | 100,
+    ) => Promise<QueuePage & { observedIds: string[]; rawObservedIds: string[] }>
     rejectPriorCursor: (cursor: string) => Promise<void>
     assertInterleaving: (
       first: string,
@@ -37,6 +29,7 @@ export async function withCopyrightStaffQueueHttp<Result>(
   now: Date,
 ): Promise<Result> {
   const client = await writePool.connect()
+  const requiredControls = new Set<string>()
   const lockKey = policy ? copyrightJurisdictionPolicyLockKey('eu_dsa') : undefined
   let locked = false
   const releaseLock = async () => {
@@ -82,67 +75,18 @@ export async function withCopyrightStaffQueueHttp<Result>(
       await releaseLock()
       result = await withApiRequestQueryOptions({ query: transaction, now }, async request => {
         await request.authenticateAs(moderator)
-        const snapshotKeys = createQueueSnapshotKeys(transaction, now)
         return run({
           query: transaction,
-          read: async (ids, boost, limit) => {
-            const { key, count } = await snapshotKeys(ids, boost)
-            let after = encodeScopedTierPreciseUuidCursor(
-              key.before,
-              key.tier,
-              key.id,
-              copyrightStaffQueueCursorScope,
-            )
-            const ownedIdCount = new Set(ids).size
-            const owned: QueueCase[] = []
-            const cursors = new Set<string>([after])
-            const seenOwned = new Set<string>()
-            // Include interleaving rows, then stop. Later shared-database rows are not part of the walk.
-            for (let remaining = count; remaining > 0; remaining -= limit) {
-              const nativePage = await nativeKeyPage(transaction, after, boost, limit, now)
-              const expectedHasNext = nativePage.length > limit
-              const last = expectedHasNext ? nativePage[limit - 1] : undefined
-              const expectedCursor = last
-                ? encodeScopedTierPreciseUuidCursor(
-                    last.timestamp,
-                    last.tier,
-                    last.id,
-                    copyrightStaffQueueCursorScope,
-                  )
-                : null
-              const response = await request
-                .get(
-                  `/api/v1/copyright-notices/review-queue?limit=${limit}&after=${encodeURIComponent(after)}`,
-                )
-                .expect(200)
-              const page = response.body as QueuePage
-              const endCursor = page.page_info.end_cursor
-              if (
-                page.page_info.has_next_page !== expectedHasNext ||
-                endCursor !== expectedCursor
-              ) {
-                throw new Error('HTTP page metadata differs from the real native key page')
-              }
-              for (const item of page.copyright_notices.filter(item => ids.includes(item.id))) {
-                if (seenOwned.has(item.id)) throw new Error('HTTP walk repeated an owned notice')
-                seenOwned.add(item.id)
-                owned.push(item)
-              }
-              if (seenOwned.size === ownedIdCount)
-                return { copyright_notices: owned, page_info: page.page_info }
-              if (!page.page_info.has_next_page) {
-                if (remaining > limit)
-                  throw new Error('HTTP queue ended before native snapshot suffix')
-                if (endCursor !== null) throw new Error('Terminal HTTP page retained an end cursor')
-                return { copyright_notices: owned, page_info: page.page_info }
-              }
-              const next = endCursor
-              if (!next || cursors.has(next)) throw new Error('HTTP queue cursor did not advance')
-              cursors.add(next)
-              after = next
-            }
-            throw new Error('HTTP queue exceeded its native snapshot suffix')
-          },
+          read: (ids, boost, limit) =>
+            readCopyrightStaffQueueWindow({
+              transaction,
+              request,
+              ids,
+              controls: [...requiredControls],
+              boost,
+              limit,
+              now,
+            }),
           assertInterleaving: async (first, control, last, boost) => {
             const { rows } = await transaction<{ id: string }>(
               sql`/* assertCopyrightQueueInterleaving */`.append(
@@ -154,6 +98,8 @@ export async function withCopyrightStaffQueueHttp<Result>(
             if (rows.map(row => row.id).join(',') !== [first, control, last].join(',')) {
               throw new Error('Eligible control does not interleave in the real native queue')
             }
+            // Every later walk must observe this explicit readable interleaving fixture.
+            requiredControls.add(control)
           },
           rejectPriorCursor: async cursor => {
             await request

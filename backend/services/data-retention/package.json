@@ -46,8 +46,10 @@
   },
   "devDependencies": {
     "@modules/activitypub-uris": "workspace:^",
+    "@services/ap-post-likes": "workspace:^",
     "@services/growth-metrics": "workspace:^",
     "@services/notifications": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

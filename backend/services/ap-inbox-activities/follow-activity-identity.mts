@@ -14,9 +14,9 @@ export async function lockRemoteFollowActivityIdentity(
       'activitypub-follow-identity:' || ${activityId}, 0
     ))
   `)
-  const { rows } = await query<{ remote_actor_id: string; target_user_id: string }>(
+  const { rows } = await query<{ remote_actor_identity_id: string; target_user_id: string }>(
     sql`/* findConfirmedRemoteFollowActivityOwner */
-      SELECT remote_actor_id, target_user_id
+      SELECT remote_actor_identity_id, target_user_id
       FROM activitypub_remote_follow_activities
       WHERE activity_id = ${activityId} AND confirmed_at IS NOT NULL
       LIMIT 1
@@ -24,6 +24,7 @@ export async function lockRemoteFollowActivityIdentity(
   )
   const owner = rows[0]
   return (
-    !owner || (owner.remote_actor_id === remoteActorId && owner.target_user_id === targetUserId)
+    !owner ||
+    (owner.remote_actor_identity_id === remoteActorId && owner.target_user_id === targetUserId)
   )
 }

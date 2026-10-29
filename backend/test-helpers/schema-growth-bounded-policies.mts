@@ -33,6 +33,14 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ...EXTRA_BOUNDED_TABLES,
   ...RETENTION_BOUNDED_TABLES,
   [
+    'app_attestation_keys',
+    'A capped indexed sweep deletes keys 180 days after their last successful coalesced use or UUIDv7 creation time.',
+  ],
+  [
+    'operational_tombstone_retention_cursors',
+    'A durable keyset position only for remote actors and deleted conversations skipped while protected.',
+  ],
+  [
     'oauth_authorizations',
     'Authorization rows expire after ten minutes and data retention deletes terminal or expired rows, bounding cardinality to recent OAuth traffic.',
   ],

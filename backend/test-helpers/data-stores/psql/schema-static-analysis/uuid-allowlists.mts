@@ -14,6 +14,7 @@ import { VOTE_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from '../../../schema-vote-r
 import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operational-cursor-uuid-allowlist.mts'
 import { RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS } from '../../../rss-category-snapshot-uuid-allowlist.mts'
 import { TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS } from '../../../topic-merge-schema-allowlists.mts'
+import { OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './operational-retention-uuid-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'user_data_requests.processing_attempt_id',
@@ -26,6 +27,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   ...RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS,
   ...TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS,
+  ...OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'copyright_notice_email_thread_retirements.retired_before_intake_bound',
     'Synthetic exclusive UUIDv7 intake-age boundary blocks replay of retired sources, not a relation.',
@@ -66,6 +68,22 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'security_retention_cleanup_cursors.cursor_id',
     'Deletion-stable keyset position; the scanned source row can be deleted before the next pass.',
+  ],
+  [
+    'retained_identity_cleanup_cursors.cursor_identity_id',
+    'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
+  ],
+  [
+    'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
+    'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
+  ],
+  [
+    'retained_relation_identity_cleanup_cursors.cursor_subject_id',
+    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
+  ],
+  [
+    'retained_relation_identity_cleanup_cursors.cursor_relation_id',
+    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
   ...NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,

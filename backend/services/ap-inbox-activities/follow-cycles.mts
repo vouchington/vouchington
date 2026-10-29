@@ -5,13 +5,14 @@ import {
   type QueryOptions,
   type QueryExecutor,
 } from '@data-stores/psql'
+import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import sql from 'sql-template-strings'
 import { lockRemoteFollowActivityIdentity } from './follow-activity-identity.mts'
 
 type FollowCycle = {
   id: string
   undone_at: Date | null
-  remote_actor_id: string
+  remote_actor_identity_id: string
   target_user_id: string
 }
 
@@ -24,6 +25,8 @@ export async function reserveRemoteFollowCycle(
   options: QueryOptions,
 ): Promise<{ id: string; isNew: boolean; isUndone: boolean }> {
   return withTransactionOptions(options, async run => {
+    // Final purge takes the user fence first; recheck liveness before URI, pair or row writes.
+    await lockActiveUserSubjectsForMutation(run, [targetUserId])
     if (!(await lockRemoteFollowActivityIdentity(run, activityId, remoteActorId, targetUserId))) {
       throw new Error('ActivityPub Follow id belongs to another actor or target')
     }
@@ -31,23 +34,26 @@ export async function reserveRemoteFollowCycle(
     const { rows: inserted } = await run<
       Pick<FollowCycle, 'id' | 'undone_at'>
     >(sql`/* reserveRemoteFollowCycle */
-    INSERT INTO activitypub_remote_follow_activities (activity_id, remote_actor_id, target_user_id)
-    VALUES (${activityId}, ${remoteActorId}, ${targetUserId})
-    ON CONFLICT (remote_actor_id, activity_id) DO NOTHING
+    INSERT INTO activitypub_remote_follow_activities (activity_id, remote_actor_identity_id, target_user_id)
+    SELECT ${activityId}, actor.id, target.id
+    FROM remote_actors actor
+    JOIN users target ON target.id = ${targetUserId} AND target.deleted_at IS NULL
+    WHERE actor.id = ${remoteActorId} AND actor.deleted_at IS NULL
+    ON CONFLICT (remote_actor_identity_id, activity_id) DO NOTHING
     RETURNING id, undone_at
   `)
     if (inserted[0]) return { id: inserted[0].id, isNew: true, isUndone: false }
     const { rows } = await run<FollowCycle>(sql`/* readRemoteFollowCycle */
-    SELECT id, undone_at, remote_actor_id, target_user_id
+    SELECT id, undone_at, remote_actor_identity_id, target_user_id
     FROM activitypub_remote_follow_activities
-    WHERE activity_id = ${activityId} AND remote_actor_id = ${remoteActorId}
+    WHERE activity_id = ${activityId} AND remote_actor_identity_id = ${remoteActorId}
     LIMIT 1
     FOR UPDATE
   `)
     const cycle = rows[0]
     if (
       !cycle ||
-      cycle.remote_actor_id !== remoteActorId ||
+      cycle.remote_actor_identity_id !== remoteActorId ||
       cycle.target_user_id !== targetUserId
     ) {
       throw new Error('ActivityPub Follow id belongs to another actor or target')
@@ -69,16 +75,21 @@ export async function markRemoteFollowUndone(
   assertRemoteActivityHost(activityId, remoteActor.actor_uri)
   const remoteActorId = remoteActor.id
   return withTransactionOptions(options, async run => {
+    // Final purge takes the user fence first; recheck liveness before URI, pair or row writes.
+    await lockActiveUserSubjectsForMutation(run, [targetUserId])
     if (!(await lockRemoteFollowActivityIdentity(run, activityId, remoteActorId, targetUserId)))
       return null
     await lockRemoteFollowPair(run, remoteActorId, targetUserId)
     const { rows } = await run<{ id: string }>(sql`/* markRemoteFollowUndone */
     INSERT INTO activitypub_remote_follow_activities
-      (activity_id, remote_actor_id, target_user_id, undone_at, confirmed_at)
-    VALUES (${activityId}, ${remoteActorId}, ${targetUserId}, clock_timestamp(), NULL)
-    ON CONFLICT (remote_actor_id, activity_id) DO UPDATE
+      (activity_id, remote_actor_identity_id, target_user_id, undone_at, confirmed_at)
+    SELECT ${activityId}, actor.id, target.id, clock_timestamp(), NULL
+    FROM remote_actors actor
+    JOIN users target ON target.id = ${targetUserId} AND target.deleted_at IS NULL
+    WHERE actor.id = ${remoteActorId} AND actor.deleted_at IS NULL
+    ON CONFLICT (remote_actor_identity_id, activity_id) DO UPDATE
       SET undone_at = COALESCE(activitypub_remote_follow_activities.undone_at, EXCLUDED.undone_at)
-      WHERE activitypub_remote_follow_activities.remote_actor_id = EXCLUDED.remote_actor_id
+      WHERE activitypub_remote_follow_activities.remote_actor_identity_id = EXCLUDED.remote_actor_identity_id
         AND activitypub_remote_follow_activities.target_user_id = EXCLUDED.target_user_id
     RETURNING id
   `)

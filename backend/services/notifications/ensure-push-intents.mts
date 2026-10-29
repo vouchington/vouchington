@@ -20,15 +20,17 @@ export async function ensureNotificationPushIntents(
         ${deduped.map(item => item.notificationId)}::uuid[]
       ) AS requested(user_id, notification_id)
     ), eligible AS MATERIALIZED (
-      SELECT notification.user_id, notification.id AS notification_id
+      SELECT notification.user_id, notification.id AS notification_id,
+        notification.conversation_id
       FROM notifications notification
       JOIN requested
         ON requested.user_id = notification.user_id
         AND requested.notification_id = notification.id
       WHERE notification.deleted_at IS NULL AND notification.pushed_at IS NULL
     ), inserted AS (
-      INSERT INTO notification_push_intents (user_id, notification_id)
-      SELECT user_id, notification_id FROM eligible ORDER BY user_id, notification_id
+      INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)
+      SELECT user_id, notification_id, conversation_id
+      FROM eligible ORDER BY user_id, notification_id
       ON CONFLICT (user_id, notification_id) DO NOTHING
     )
     SELECT COUNT(*)::integer AS eligible_count FROM eligible

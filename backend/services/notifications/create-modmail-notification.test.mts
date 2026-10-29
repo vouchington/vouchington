@@ -4,6 +4,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   createTestModmailThread,
+  getTestNotificationPushIntent,
 } from '@voucha/test-helpers'
 import { createModmailNotifications } from './create-modmail-notification.mts'
 
@@ -47,5 +48,11 @@ describe('create-modmail-notification', () => {
     const second = await createModmailNotifications([owner.id], thread.id, targetPath)
     expect(second).toHaveLength(1)
     expect(second[0]!.user_id).toBe(owner.id)
+    expect(second[0]!.id).not.toBe(first[0]!.id)
+    expect(await getTestNotificationPushIntent(owner.id, first[0]!.id)).toBeUndefined()
+    expect(await getTestNotificationPushIntent(owner.id, second[0]!.id)).toMatchObject({
+      status: 'pending',
+      conversation_id: thread.id,
+    })
   })
 })

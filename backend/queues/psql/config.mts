@@ -1,5 +1,6 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+import { psqlQueueConfig } from './enqueues/ordering-config.mts'
 import type { JobOptions } from 'glide-mq'
 
 export const QUEUE_NAME = 'psql'
@@ -59,6 +60,17 @@ export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
 
 export type TerminalActivityRetentionFamily = 'follow' | 'like'
 export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
+export const DELETED_CONVERSATION_RETENTION_JOB_NAME = 'cleanupDeletedConversations'
+export const deletedConversationRetentionJobId = 'psql__deleted_conversation_retention'
+export const DELETED_CONVERSATION_RETENTION_ORDERING_MAX = 1
+
+export function getDeletedConversationRetentionConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    psqlQueueConfig,
+    'deleted_conversation_retention_concurrency',
+    { defaultValue: 1, maxValue: DELETED_CONVERSATION_RETENTION_ORDERING_MAX },
+  )
+}
 
 /** Existing PSQL transient-failure policy, shared by schedules and retained continuations. */
 export const PSQL_RETRY_OPTIONS = {
@@ -88,6 +100,18 @@ export function getModerationRetentionJobOptions(): JobOptions {
         defaultValue: 1,
         maxValue: 1,
       }),
+    },
+  }
+}
+
+export function getDeletedConversationRetentionJobOptions(): JobOptions {
+  return {
+    ...PSQL_RETRY_OPTIONS,
+    jobId: deletedConversationRetentionJobId,
+    priority: PRIORITY_DEFAULT,
+    ordering: {
+      key: 'psql:deleted-conversation-retention',
+      concurrency: getDeletedConversationRetentionConcurrency(),
     },
   }
 }

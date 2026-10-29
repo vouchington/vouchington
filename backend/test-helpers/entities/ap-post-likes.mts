@@ -16,3 +16,17 @@ export async function getTestApPostLikesTally(
   `)
   return rows[0] ?? null
 }
+
+export async function getTestActiveApPostLikeActivityId(
+  postId: string,
+  remoteActorId: string,
+): Promise<string | null> {
+  const { rows } = await read<{ activity_id: string }>(sql`/* getTestActiveApPostLikeActivityId */
+    SELECT activity.activity_id
+    FROM activitypub_post_likes likes
+    JOIN activitypub_post_like_activities activity ON activity.id = likes.id
+    WHERE likes.post_id = ${postId} AND likes.remote_actor_id = ${remoteActorId}
+      AND likes.deleted_at IS NULL
+  `)
+  return rows[0]?.activity_id ?? null
+}

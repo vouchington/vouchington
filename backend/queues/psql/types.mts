@@ -12,6 +12,7 @@ export type PsqlJobs =
   | 'moderationRetentionCleanup'
   | 'aiRetentionContinuation'
   | 'continueVoteRetentionCleanup'
+  | 'cleanupDeletedConversations'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
