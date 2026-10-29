@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -13,7 +14,7 @@ import {
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import {
-  createTopicRecommendation,
+  prepareTopicRecommendation,
   rejectTopicRecommendation,
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
@@ -38,7 +39,7 @@ const asCaller = (user: TestUser, plan: 'plus' | null = null): McpContractCaller
 
 async function submit(author: McpContractCaller): Promise<TopicRecommendationPost> {
   const suffix = createRandomString(8).toLowerCase()
-  return createTopicRecommendation(author, WEB_PROVENANCE, {
+  return createTestTopicRecommendation(prepareTopicRecommendation, author, WEB_PROVENANCE, {
     markdown: `Why ${suffix}`,
     topic_title: `Listed topic ${suffix}`,
     topic_slug: `listed-topic-${suffix}`,

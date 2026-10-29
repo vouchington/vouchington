@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
@@ -6,7 +7,7 @@ import { getActiveLandingPageHostnameClaims } from '@voucha/test-helpers/hostnam
 import { lockPostPublication } from '@services/post-publication'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import {
-  createTopicRecommendation,
+  prepareTopicRecommendation,
   approveTopicRecommendation,
   updateTopicRecommendation,
 } from './index.mts'
@@ -18,12 +19,17 @@ describe('approval sees committed recommendation hostname edits', () => {
     const original = `original-${suffix}.example.com`
     const replacement = `replacement-${suffix}.example.com`
     const ids = await upsertUrlHostnames(admin.id, [original, replacement])
-    const recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'Concurrent edit',
-      topic_title: `Edit ${suffix}`,
-      topic_slug: `edit-${suffix}`,
-      topic_hostnames: [original],
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Concurrent edit',
+        topic_title: `Edit ${suffix}`,
+        topic_slug: `edit-${suffix}`,
+        topic_hostnames: [original],
+      },
+    )
     await using blocker = await beginTransaction()
     await lockPostPublication(blocker, recommendation.id)
     const pid = await getTestPostgresBackendProcessId(blocker)

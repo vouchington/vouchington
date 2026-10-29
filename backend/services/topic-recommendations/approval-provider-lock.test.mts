@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import undici, { Response as UndiciResponse } from 'undici'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -6,7 +7,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { webRiskConfig } from '@services/web-risk/config'
-import { createTopicRecommendation, approveTopicRecommendation } from './index.mts'
+import { prepareTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { getTopicByAny } from '@services/topics/get'
 
@@ -17,12 +18,17 @@ describe('approval provider assessment precedes ownership locks', () => {
     const ancestor = `provider-${suffix}.test`
     const hostname = `blog.${ancestor}`
     const slug = `provider-claim-${suffix}`
-    const recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'Provider-flagged ancestor',
-      topic_title: `Provider ${suffix}`,
-      topic_slug: slug,
-      topic_hostnames: [hostname],
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Provider-flagged ancestor',
+        topic_title: `Provider ${suffix}`,
+        topic_slug: slug,
+        topic_hostnames: [hostname],
+      },
+    )
     await webRiskConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: true })
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')

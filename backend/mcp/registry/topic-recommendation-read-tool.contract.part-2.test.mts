@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createRandomString, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -8,7 +9,7 @@ import {
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import {
   approveTopicRecommendation,
-  createTopicRecommendation,
+  prepareTopicRecommendation,
   updateTopicRecommendation,
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
@@ -30,7 +31,8 @@ async function submit(author: McpContractCaller): Promise<TopicRecommendationPos
   const suffix = createRandomString(8).toLowerCase()
   // No post-created event: its listener auto-upvotes the author, which moves the sort key while
   // the cursor tests page and can slip a row between two pages.
-  return createTopicRecommendation(
+  return createTestTopicRecommendation(
+    prepareTopicRecommendation,
     author,
     WEB_PROVENANCE,
     {

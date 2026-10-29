@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -9,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import { getPostByAny } from '@services/posts'
-import { createTopicRecommendation } from '@services/topic-recommendations'
+import { prepareTopicRecommendation } from '@services/topic-recommendations'
 
 type Call = (
   request: ReturnType<typeof createRequest>,
@@ -40,11 +41,16 @@ describe('topic recommendation suspension guards', () => {
     async (_method, call) => {
       const suffix = createRandomString(8).toLowerCase()
       const author = await createTestUser()
-      const recommendation = await createTopicRecommendation(author, WEB_PROVENANCE, {
-        markdown: `Why ${suffix}`,
-        topic_title: `Guarded topic ${suffix}`,
-        topic_slug: `guarded-topic-${suffix}`,
-      })
+      const recommendation = await createTestTopicRecommendation(
+        prepareTopicRecommendation,
+        author,
+        WEB_PROVENANCE,
+        {
+          markdown: `Why ${suffix}`,
+          topic_title: `Guarded topic ${suffix}`,
+          topic_slug: `guarded-topic-${suffix}`,
+        },
+      )
       await suspendTestUser(author.id)
       suspendedUserIds.push(author.id)
       const request = createRequest()
@@ -61,11 +67,16 @@ describe('topic recommendation suspension guards', () => {
   it('PATCH /api/v1/topic-recommendations/:id still lets an active author edit', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const author = await createTestUser()
-    const recommendation = await createTopicRecommendation(author, WEB_PROVENANCE, {
-      markdown: `Why ${suffix}`,
-      topic_title: `Editable topic ${suffix}`,
-      topic_slug: `editable-topic-${suffix}`,
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      author,
+      WEB_PROVENANCE,
+      {
+        markdown: `Why ${suffix}`,
+        topic_title: `Editable topic ${suffix}`,
+        topic_slug: `editable-topic-${suffix}`,
+      },
+    )
     const request = createRequest()
     await request.authenticateAs(author)
 

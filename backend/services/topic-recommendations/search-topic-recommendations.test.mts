@@ -1,8 +1,9 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { describe, expect, it } from 'vitest'
 import { createRandomString, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getPrivateUserByAny } from '../users/get.mts'
 import {
-  createTopicRecommendation,
+  prepareTopicRecommendation,
   rejectTopicRecommendation,
   searchTopicRecommendations,
 } from './index.mts'
@@ -13,7 +14,8 @@ const createAuthor = async () => ({ ...(await createTestUser()), membership_plan
 // that handled it between two pages would move a post past the cursor, so these posts skip it.
 async function submit(author: Awaited<ReturnType<typeof createAuthor>>) {
   const suffix = createRandomString(8).toLowerCase()
-  return createTopicRecommendation(
+  return createTestTopicRecommendation(
+    prepareTopicRecommendation,
     author,
     WEB_PROVENANCE,
     {

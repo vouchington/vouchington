@@ -1,3 +1,7 @@
+import {
+  createTestTopicRecommendation,
+  getTestTopicRecommendationRejectionReason,
+} from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -20,13 +24,15 @@ import { runWithOwnedPostElectionVoteStats } from '../../../test-helpers/electio
 
 import {
   approveTopicRecommendation,
-  createTopicRecommendation,
+  prepareTopicRecommendation,
   deletePendingRecommendation,
-  getWithdrawRejectionReason,
   rejectTopicRecommendation,
   searchTopicRecommendations,
   updateTopicRecommendation,
 } from '../index.mts'
+
+const createRecommendation = (...args: Parameters<typeof prepareTopicRecommendation>) =>
+  createTestTopicRecommendation(prepareTopicRecommendation, ...args)
 
 describe('index.generated', () => {
   let user: PrivateUser
@@ -44,14 +50,14 @@ describe('index.generated', () => {
   describe('topic recommendation services', () => {
     it('rejects create requests that omit required fields with 422s', async () => {
       await expect(
-        createTopicRecommendation(user, WEB_PROVENANCE, {
+        createRecommendation(user, WEB_PROVENANCE, {
           markdown: '',
           topic_title: 'Missing slug topic',
         } as CreateTopicRecommendationInput),
       ).rejects.toMatchObject({ status: 422 })
 
       await expect(
-        createTopicRecommendation(user, WEB_PROVENANCE, {
+        createRecommendation(user, WEB_PROVENANCE, {
           markdown: 'Valid rationale',
           topic_slug: `missing-title-${Date.now()}`,
         } as CreateTopicRecommendationInput),
@@ -60,7 +66,7 @@ describe('index.generated', () => {
 
     it('creates a topic recommendation with extension payload', async () => {
       const stamp = Date.now()
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         title: 'Request a topic',
         markdown: 'We need a dedicated topic for this program.',
         topic_title: `Service Test Topic ${stamp}`,
@@ -76,7 +82,7 @@ describe('index.generated', () => {
     })
 
     it('allows the creator to update a pending recommendation', async () => {
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: 'Original rationale',
         topic_title: 'Original Topic Title',
         topic_slug: `editable-topic-${Date.now()}`,
@@ -94,7 +100,7 @@ describe('index.generated', () => {
     })
 
     it('does not overwrite newer recommendation fields when a stale patch updates only payload fields', async () => {
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: 'Original rationale',
         topic_title: 'Original Topic Title',
         topic_slug: `stale-update-topic-${Date.now()}`,
@@ -116,7 +122,7 @@ describe('index.generated', () => {
     })
 
     it('does not revert the locked primary hostname during partial updates', async () => {
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: 'Original rationale',
         topic_title: 'Original Topic Title',
         topic_slug: `stale-hostname-topic-${Date.now()}`,
@@ -140,7 +146,7 @@ describe('index.generated', () => {
 
     it('lets the creator withdraw a pending recommendation', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Withdraw this recommendation ${random}`,
         topic_title: `Withdrawable Topic ${random}`,
         topic_slug: `withdrawable-topic-${Date.now()}-${random}`,
@@ -155,19 +161,27 @@ describe('index.generated', () => {
 
     it('uses the actual withdraw actor in the stored rejection reason', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const author = await createRecommendation(user, WEB_PROVENANCE, {
+        markdown: `Author withdraw this recommendation ${random}`,
+        topic_title: `Author Withdrawable Topic ${random}`,
+        topic_slug: `author-withdrawable-topic-${Date.now()}-${random}`,
+      })
+      const byAdmin = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Admin withdraw this recommendation ${random}`,
         topic_title: `Admin Withdrawable Topic ${random}`,
         topic_slug: `admin-withdrawable-topic-${Date.now()}-${random}`,
       })
 
-      expect(getWithdrawRejectionReason(user, recommendation)).toBe('Withdrawn by author')
-      expect(getWithdrawRejectionReason(admin, recommendation)).toBe('Withdrawn by admin')
+      await deletePendingRecommendation(user, author)
+      await deletePendingRecommendation(admin, byAdmin)
+
+      expect(await getTestTopicRecommendationRejectionReason(author.id)).toBe('Withdrawn by author')
+      expect(await getTestTopicRecommendationRejectionReason(byAdmin.id)).toBe('Withdrawn by admin')
     })
 
     it('rejects withdraw for other users and reviewed recommendations', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Not yours ${random}`,
         topic_title: `Not Yours Topic ${random}`,
         topic_slug: `not-yours-topic-${Date.now()}-${random}`,
@@ -189,12 +203,12 @@ describe('index.generated', () => {
     it('orders search results by best score', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       const evidence = await runWithOwnedPostElectionVoteStats(async () => {
-        const lowScore = await createTopicRecommendation(user, WEB_PROVENANCE, {
+        const lowScore = await createRecommendation(user, WEB_PROVENANCE, {
           markdown: `Lower score ${random}`,
           topic_title: `Low Score Topic ${random}`,
           topic_slug: `low-score-topic-${Date.now()}-${random}`,
         })
-        const highScore = await createTopicRecommendation(user, WEB_PROVENANCE, {
+        const highScore = await createRecommendation(user, WEB_PROVENANCE, {
           markdown: `Higher score ${random}`,
           topic_title: `High Score Topic ${random}`,
           topic_slug: `high-score-topic-${Date.now()}-${random}`,
@@ -244,7 +258,7 @@ describe('index.generated', () => {
 
     it('finds recommendations by id for admin review deep links', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Search by id fallback ${random}`,
         topic_title: `Deep Link Topic ${random}`,
         topic_slug: `deep-link-topic-${Date.now()}-${random}`,
@@ -256,12 +270,12 @@ describe('index.generated', () => {
     })
 
     it('treats wildcard characters in q as literals', async () => {
-      const literal = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const literal = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: 'Contains a literal 100% match and foo_bar token.',
         topic_title: 'Literal 100% Topic',
         topic_slug: `literal-100-percent-topic-${Date.now()}`,
       })
-      const wildcardOnly = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const wildcardOnly = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: 'Contains 1000 percent match and fooXbar token.',
         topic_title: 'Literal 1000 Topic',
         topic_slug: `literal-1000-topic-${Date.now()}`,

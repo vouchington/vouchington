@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -11,7 +12,7 @@ import {
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { getPostByAny } from '@services/posts'
 import {
-  createTopicRecommendation,
+  prepareTopicRecommendation,
   rejectTopicRecommendation,
   updateTopicRecommendation,
   type TopicRecommendationPost,
@@ -33,7 +34,7 @@ async function createCaller(plan: 'plus' | null = 'plus') {
 
 async function submit(author: Caller): Promise<TopicRecommendationPost> {
   const suffix = createRandomString(8).toLowerCase()
-  return createTopicRecommendation(author, WEB_PROVENANCE, {
+  return createTestTopicRecommendation(prepareTopicRecommendation, author, WEB_PROVENANCE, {
     markdown: `Why ${suffix}`,
     topic_title: `Tool topic ${suffix}`,
     topic_slug: `tool-topic-${suffix}`,

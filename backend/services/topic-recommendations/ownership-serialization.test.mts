@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -11,7 +12,7 @@ import { withApprovalHostnameWait } from '@voucha/test-helpers/topic-recommendat
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
-import { createTopicRecommendation } from './create-topic-recommendation.mts'
+import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
 import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
 import {
   addAdditionalHostname,
@@ -46,12 +47,17 @@ describe('hostname ownership serialization against approval', () => {
     admin = await createTestUser({ administrator: true })
     const suffix = crypto.randomUUID()
     hostname = `serialize-${suffix}.example.com`
-    recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'Hostname serialization',
-      topic_title: `Serialize ${suffix}`,
-      topic_slug: `serialize-${suffix}`,
-      topic_hostnames: [hostname],
-    })
+    recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Hostname serialization',
+        topic_title: `Serialize ${suffix}`,
+        topic_slug: `serialize-${suffix}`,
+        topic_hostnames: [hostname],
+      },
+    )
     hostnameId = (await getUrlHostnameByAny(hostname))!.id
     urlId = (await addUrl(admin.id, `https://${hostname}/`))!.id
     otherTopic = await createTestTopic({ user: admin })
