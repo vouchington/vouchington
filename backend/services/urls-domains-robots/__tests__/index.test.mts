@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isUrlCrawlable, fetchRobotsTxtCached, computeHostnameRateLimitMs } from '../index.mts'
-import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
-import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
+import { insertTestUrlHostname } from '@voucha/test-helpers'
 import { HttpResponseSizeError } from '@vouchington/sentry'
 
 const mockFetchWithTimeoutSimple = vi.fn<VitestLooseMock>()
