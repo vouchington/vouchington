@@ -30,6 +30,7 @@ CREATE TABLE copyright_notice_retention_generations (
 );
 INSERT INTO copyright_notice_retention_generations (is_global) VALUES (true);
 COMMENT ON TABLE copyright_notice_retention_generations IS 'Global legal-preservation change generation for bounded case-party proof; the gate serializes concurrent hold writes with retention.';
+COMMENT ON COLUMN copyright_notice_retention_generations.is_global IS 'True for the single global legal-preservation generation row.';
 COMMENT ON COLUMN copyright_notice_retention_generations.preservation_generation IS 'Monotonic generation invalidating paged case-party proof after a hold change.';
 
 CREATE FUNCTION fn_update_copyright_preservation_generation()
