@@ -43,6 +43,7 @@ export {
 // are part of the behavior under test. That helper stays outside the main helper barrel so
 // incidental fixture users do not load the real service path.
 export async function insertTestRssFeedDirect(options: {
+  id?: string
   topicId?: string
   topicHostname?: string
   title?: string
@@ -62,6 +63,7 @@ export async function insertTestRssFeedDirect(options: {
   }
 
   const { id, rssFeedUrlId } = await insertTestRssFeedWithUrlId({
+    id: options.id,
     topicId,
     title: options.title || `Test Feed ${random}`,
     rssFeedUrl: options.rssFeedUrl,
@@ -77,6 +79,7 @@ export async function insertTestRssFeedDirect(options: {
  * the feed's own URL row (e.g. to attach rss_feed_items to it) in addition to the feed id.
  */
 export async function insertTestRssFeedWithUrlId(data: {
+  id?: string
   topicId: string
   title: string
   rssFeedUrl?: string
@@ -105,6 +108,7 @@ export async function insertTestRssFeedWithUrlId(data: {
 
   const { rows } = await write(sql`/* insertTestRssFeedWithUrlId */
     INSERT INTO rss_feeds (
+      id,
       rss_feed_url_id,
       topic_id,
       title,
@@ -113,6 +117,7 @@ export async function insertTestRssFeedWithUrlId(data: {
       created_via_oauth_client_id
     )
     VALUES (
+      COALESCE(${data.id ?? null}::uuid, uuidv7()),
       ${rssFeedUrlObj!.id},
       ${data.topicId},
       ${data.title},
