@@ -14,6 +14,11 @@ run with the existing CI credential policy. Review the PR before placing it in t
 
 All configured release delays match: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
 
+`engines.node` is a floor, not the runtime pin. Dependabot's hosted updater runs the active Node LTS
+and cannot be configured, and `engineStrict` makes every pnpm call there fail when the floor is above
+that version, which stops all npm version and security updates. Keep the floor at or below
+Dependabot's Node major; `.nvmrc` and the runtime images select the Node version actually used.
+
 pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
 run whichever pnpm is installed. CI uses the released shared tooling action to resolve an aged stable pnpm release and
 download its native binary, avoiding a temporary npm project and its `npm ci` bootstrap. Jobs
