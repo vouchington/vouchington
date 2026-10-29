@@ -723,9 +723,6 @@ importers:
       '@jongleberry/api-server':
         specifier: ^3.1.0
         version: 3.1.0
-      '@modules/activitypub-inbox-storage-policy':
-        specifier: workspace:^
-        version: link:../modules/activitypub-inbox-storage-policy
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../modules/activitypub-uris
@@ -2232,8 +2229,6 @@ importers:
         specifier: workspace:^
         version: link:../test-helpers
 
-  backend/modules/activitypub-inbox-storage-policy: {}
-
   backend/modules/activitypub-uris:
     dependencies:
       '@modules/utils':
@@ -2763,12 +2758,6 @@ importers:
 
   backend/queues/activitypub:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/activitypub-inbox-storage-policy':
-        specifier: workspace:^
-        version: link:../../modules/activitypub-inbox-storage-policy
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -4252,9 +4241,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@modules/activitypub-inbox-storage-policy':
-        specifier: workspace:^
-        version: link:../../modules/activitypub-inbox-storage-policy
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
@@ -4291,9 +4277,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@vouchington/postgres':
-        specifier: ^0.1.2
-        version: 0.1.2
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12858,9 +12841,6 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@modules/activitypub-inbox-storage-policy':
-        specifier: workspace:^
-        version: link:../../modules/activitypub-inbox-storage-policy
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
@@ -13283,9 +13263,6 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
-      '@queues/activitypub':
-        specifier: workspace:^
-        version: link:../../queues/activitypub
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports

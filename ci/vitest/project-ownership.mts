@@ -85,7 +85,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     workflow: 'tests-postgres-schema.yml',
     jobLabel: 'postgres-schema-tests',
     invocation: 'literal',
-    projects: noCredential(['backend-postgres-schema', 'backend-activitypub-capacity']),
+    projects: noCredential(['backend-postgres-schema']),
   },
   {
     orchestratorJob: 'test-backend-credentialed',

@@ -131,31 +131,6 @@ describe('runVitestProjectGroup', () => {
     )
   })
 
-  it('process-wide serializes every group containing the destructive capacity project', async () => {
-    const child = new EventEmitter()
-    const spawn = vi.fn<(...args: never[]) => never>(() => child as never)
-    const resultPromise = runVitestProjectGroup('backend-postgres-schema', [], {
-      env: { VITEST_MAX_WORKERS: '4' },
-      spawn: spawn as never,
-    })
-    child.emit('close', 0, null)
-
-    await expect(resultPromise).resolves.toEqual({ code: 0, signal: null })
-    expect(spawn).toHaveBeenCalledWith(
-      './ci/with-node-test-options',
-      [
-        'vitest',
-        'run',
-        '--project',
-        'backend-postgres-schema',
-        '--project',
-        'backend-activitypub-capacity',
-        '--no-file-parallelism',
-      ],
-      { env: { VITEST_MAX_WORKERS: '1' }, stdio: 'inherit' },
-    )
-  })
-
   it('rejects child spawn errors and reports terminating signals', async () => {
     const erroredChild = new EventEmitter()
     const errorPromise = runVitestProjectGroup('web', [], {

@@ -14,7 +14,6 @@ import * as owner9 from '@services/remote-actors/work-limits'
 import * as owner10 from '@services/stories/work-limits'
 import * as owner11 from '@services/topics/work-limits'
 import * as owner12 from '@services/user-deletions/work-limits'
-import * as owner13 from '@services/ap-inbox-activities/work-limits'
 import * as owner14 from '@services/engagement-emails/work-limits'
 import * as owner15 from '@services/recommended-topics/work-limits'
 import * as owner16 from '@services/stripe/work-limits'
@@ -104,14 +103,6 @@ const owners = [
     maxima: owner12.userDeletionsWorkMaxValues,
     read: (field: string) =>
       owner12.getUserDeletionsWorkLimit(field as keyof typeof owner12.userDeletionsWorkMaxValues),
-  },
-  {
-    config: owner13.apInboxActivitiesWorkConfig,
-    maxima: owner13.apInboxActivitiesWorkMaxValues,
-    read: (field: string) =>
-      owner13.getApInboxActivitiesWorkLimit(
-        field as keyof typeof owner13.apInboxActivitiesWorkMaxValues,
-      ),
   },
   {
     config: owner14.engagementEmailsWorkConfig,

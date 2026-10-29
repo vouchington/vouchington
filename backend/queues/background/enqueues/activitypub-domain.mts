@@ -59,10 +59,22 @@ export type DeliverActivityData =
   | (DistributeActivityData & { inboxUrl: string })
   | DeliverAcceptActivityData
 
-export type ActivityPubInboxDeliveryJob = { deliveryId: string; requestDigest: string }
+export type ActivityPubInboxDeliveryJob = {
+  requestMethod: string
+  requestTarget: string
+  expectedHost: string
+  signatureHeader: string
+  digestHeader: string
+  dateHeader: string
+  contentTypeHeader?: string
+  rawBodyBase64: string
+  senderHostname: string
+  requestDigest: string
+  receivedAt: string
+  verifiedRemoteActorId?: string
+  senderAllowed?: true
+}
 export type EmptyActivityPubJobData = Record<string, never>
-/** One page of failed deliveries after `afterId`; the first page has no cursor. */
-export type RearmFailedDeliveriesData = { afterId?: string }
 export type RecoverOutboundDistributionData = {
   source: 'follows' | 'votes'
   cursor?: string

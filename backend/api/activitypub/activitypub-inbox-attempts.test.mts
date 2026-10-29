@@ -1,9 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-helpers'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   isActivityPubInboxSenderRateLimited,
   recordActivityPubInboxAttempt,
@@ -166,11 +164,6 @@ describe('POST /ap/inbox pre-verification attempt limit', () => {
 
   it('rejects a cached signer at the post-verify sender limit before durable persist', async () => {
     onTestFinished(
-      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
-        async_delivery_enabled: true,
-      }),
-    )
-    onTestFinished(
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         activitypub_inbox_max_requests: 1,
         activitypub_inbox_window_seconds: 60,
@@ -193,6 +186,5 @@ describe('POST /ap/inbox pre-verification attempt limit', () => {
       .expect(429)
 
     expect(response.headers['retry-after']).toBe('60')
-    expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(false)
   })
 })

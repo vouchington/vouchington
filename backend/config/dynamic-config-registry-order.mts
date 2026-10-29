@@ -37,7 +37,6 @@ export const REGISTRY_ORDER = [
   'stripe-work-config',
   'recommended-topics-work-config',
   'engagement-emails-work-config',
-  'ap-inbox-activities-work-config',
   'user-deletions-work-config',
   'topics-work-config',
   'topic-merge-work-config',

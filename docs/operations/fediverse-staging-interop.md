@@ -17,8 +17,8 @@ posts remotely.
   hostnames, versions, actor URIs, and credentials in a private operator worksheet; never commit them.
 - Create or resolve each remote hostname through the fediverse instances API and approve it with an
   integration change. Record its prior status: changes are append-only, so cleanup appends another change.
-- `dig AAAA` each remote host. The API process is IPv6-only, so with asynchronous inbox delivery
-  off an IPv4-only remote cannot complete the inline actor fetch.
+- `dig AAAA` each remote host. The API process does not fetch unknown actor keys; the IO worker
+  performs that fetch after the signed request has been admitted to the queue.
 
 ## Contract under test
 
@@ -32,14 +32,14 @@ object. Do not synthesize missing product workflows or add WebView fallbacks.
 
 Reversible staging steps; no production flag changes.
 
-1. With `api-egress-proxy.fediverse_search_enabled` and `activitypub-inbox.async_delivery_enabled` both
-   false, record baseline search, instance classification, and signed inbox status behavior.
+1. With `api-egress-proxy.fediverse_search_enabled` false, record baseline search, instance
+   classification, and signed inbox status behavior.
 2. Enable the egress proxy flag. Verify search and NodeInfo classification keep the same response
    shapes, and check proxy latency, timeout, and provider-error telemetry.
-3. Enable async delivery. Send one controlled signed activity and correlate the `202` with its
-   delivery work item and `activitypub` job through to deletion of the pending raw envelope.
-4. Confirm the five-minute dispatcher rediscovers eligible durable work; the manual failed-delivery
-   backfill only re-arms exhausted operational failures.
+3. Send one controlled signed activity and correlate the `202` with its `activitypub` job through
+   protocol verification and processing. Queue admission is the acceptance
+   boundary; if Valkey loses an accepted job, the sender is not expected to retry it.
+4. Confirm the delivery completes without a PostgreSQL inbox work record or recovery sweep.
 5. Continue only after each path is independently healthy.
 
 ## Execute
@@ -70,8 +70,7 @@ unexplained delivery failures. Attach the matrix to the PR Shepherd Journal and 
 
 ## Rollback and cleanup
 
-1. Disable async delivery, then the egress proxy flag, independently; verify the pre-rollout statuses
-   and direct paths return.
+1. Disable the egress proxy flag; verify the pre-rollout statuses and direct paths return.
 2. Send `Undo(Follow)` from every remote still following, then disable federation for the Voucha user.
 3. Restore each prior integration status by appending a change; never edit the projection column.
 4. Revoke temporary remote sessions and delete worksheets. Confirm no follow remains active, no

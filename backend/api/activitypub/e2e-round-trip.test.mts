@@ -1,4 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
+import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
+import {
+  computeActivityPubInboxRequestDigest,
+  processDurableActivityPubInboxDelivery,
+} from '@services/ap-inbox-activities'
+import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestPost,
@@ -56,7 +62,7 @@ async function createFederatedUser() {
 // in the same test, never hardcoded) through the real HTTP inbox route — mirrors inbox.test.mts's
 // signInboxRequest/postInbox pair, collapsed into one call since every activity in this file is
 // delivered to the same discovered inbox.
-function deliverSignedActivity(
+async function deliverSignedActivity(
   inboxUrl: string,
   body: string,
   keyId: string,
@@ -64,7 +70,7 @@ function deliverSignedActivity(
 ) {
   const signature = buildSignatureHeaders('POST', inboxUrl, body, keyId, privateKeyPem)
   const parsedInbox = new URL(inboxUrl)
-  return createRequest()
+  await createRequest()
     .post(parsedInbox.pathname)
     .set('Host', parsedInbox.host)
     .set('Signature', signature.signature)
@@ -72,6 +78,26 @@ function deliverSignedActivity(
     .set('Date', signature.date)
     .set('Content-Type', 'application/activity+json')
     .send(body)
+    .expect(202)
+  const digest = computeActivityPubInboxRequestDigest({
+    requestMethod: 'POST',
+    requestTarget: parsedInbox.pathname,
+    expectedHost: parsedInbox.host,
+    signatureHeader: signature.signature,
+    digestHeader: signature.digest,
+    dateHeader: signature.date,
+    contentTypeHeader: 'application/activity+json',
+    rawBody: Buffer.from(body),
+  })
+  const job = await backgroundQueue.getJob(`activitypub-inbox__${digest}`)
+  expect(job).toBeDefined()
+  try {
+    await processDurableActivityPubInboxDelivery(job!.data as ActivityPubInboxDeliveryJob, data =>
+      job!.updateData(data),
+    )
+  } finally {
+    await job?.remove()
+  }
 }
 
 // Phase C6: exercises the real inbound discovery + delivery chain end to end — NodeInfo ->
@@ -139,7 +165,7 @@ describe('ActivityPub inbound round trip (Phase C6)', () => {
       actor: remoteActorUri,
       object: actorUri,
     })
-    await deliverSignedActivity(inboxUrl, followBody, keyId, privateKeyPem).expect(202)
+    await deliverSignedActivity(inboxUrl, followBody, keyId, privateKeyPem)
 
     const relations = await getEntityRelations('remote_actor', remoteActor.id, 'follow', 'user', {
       viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
@@ -153,7 +179,7 @@ describe('ActivityPub inbound round trip (Phase C6)', () => {
       actor: remoteActorUri,
       object: getPostUri(post.id),
     })
-    await deliverSignedActivity(inboxUrl, likeBody, keyId, privateKeyPem).expect(202)
+    await deliverSignedActivity(inboxUrl, likeBody, keyId, privateKeyPem)
 
     expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,

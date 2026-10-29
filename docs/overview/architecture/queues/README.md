@@ -39,13 +39,13 @@ flowchart LR
   hostile inbound traffic cannot occupy outbound delivery slots. Outbound follower-page dispatch
   has a separate lane so a large audience cannot queue behind its own delivery tasks. Outbound
   recovery has its own lane so a pending-state sweep can run while fan-out pages occupy dispatch
-  slots. Domain rows retain the current ActivityPub publication state; indexed reconciliation can re-admit a missed
-  distribution after a database commit or a failed continuation. Recovery carries each retained
-  follower page's dispatch receipt into its replacement job, so a completed page resumes its
-  continuation without re-admitting that page's delivery jobs. Retention cleanup has its
-  own lane independent of delivery backlogs to keep inbox capacity reclaimable under sustained
-  traffic. Inbound recovery also has a separate lane so a flood of deliveries cannot delay repair. A domain that
-  needs both a domain-wide cap and per-entity ordering keeps its own queue.
+  slots. Domain rows retain the current ActivityPub publication state; indexed reconciliation can
+  re-admit a missed distribution after a database commit or a failed continuation. Recovery carries
+  each retained follower page's dispatch receipt into its replacement job, so a completed page
+  resumes its continuation without re-admitting that page's delivery jobs. Inbound signed requests
+  are carried by their queue jobs; successful admission returns `202`. Loss of an accepted Valkey
+  job is accepted because remote senders do not retry after acceptance. A domain that needs both a
+  domain-wide cap and per-entity ordering keeps its own queue.
 - Marking a large inbox read starts with one bounded request write. Notification continuation jobs
   use a separate globally capped ordering lane to finish older unread rows under the request's
   upper ID, leaving later notifications unread. Automatic continuation is best effort: if its
@@ -326,19 +326,9 @@ admission failures are reported without changing the committed settings result.
 
 ## ActivityPub inbox envelopes
 
-The inbox acknowledges an unknown signer before the worker fetches its key and verifies the
-signature. PostgreSQL retains the exact signed request because the accepted body and envelope can
-exceed GlideMQ's job-data limit. A digest of the signed request deduplicates intake and names the
-queue job; verification and sender-admission checkpoints avoid repeating completed checks.
-GlideMQ owns locks, retry attempts and sender delays. Final protocol outcomes delete the envelope
-atomically with the activity effect and replay marker. A terminal protocol rejection completes
-the queue job after that delete, and failed-job retention stays the shared bound, so a rejected
-request does not retain a failed record. Only a newly inserted envelope admits work
-from the HTTP route; exact duplicate requests await recovery. Recovery skips an envelope whose
-UUIDv7 id is still inside the short enqueue grace, so it does not spend a replacement while the
-HTTP handler is still admitting the job. Bounded recovery pages leave live
-jobs alone, checkpoint retained terminal failures, and cap replacement jobs on each envelope so
-queue-wide failed-record trimming cannot reset its failure budget. Failed deliveries require an
-explicit rearm, which starts a new recovery budget. A crash between a database reservation and
-its Valkey result can conservatively spend one slot; ordinary admission failure or deduplication
-refunds the reservation.
+The inbox places the bounded signed request envelope in a GlideMQ job and returns `202` only after
+queue admission. A digest of the request provides stable deduplication. The worker verifies the
+signer and applies the protocol activity; PostgreSQL retains activity replay identities and domain
+state, not a second copy of queued request bodies. GlideMQ owns job locks, retries and sender
+delays. Valkey loss can discard an accepted delivery, and remote senders are not expected to retry
+after `202`.

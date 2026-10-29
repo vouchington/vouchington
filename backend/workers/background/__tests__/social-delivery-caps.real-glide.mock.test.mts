@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
-  ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB,
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
 } from '@queues/background/enqueues/activitypub-jobs'
@@ -31,16 +30,15 @@ describe('social delivery domains enforce worker caps on the shared queue', () =
     await expect(measure([FOLLOWER_DISTRIBUTIONS_PROCESS_JOB], 5)).resolves.toBe(5)
   })
 
-  it('reserves independent outbound, inbound, and cleanup ActivityPub capacity', async () => {
+  it('reserves independent outbound and inbound ActivityPub capacity', async () => {
     await expect(
       measure(
         [
           ...Array.from({ length: 5 }, () => ACTIVITYPUB_DELIVER_ACTIVITY_JOB),
           ...Array.from({ length: 4 }, () => ACTIVITYPUB_PROCESS_DELIVERY_JOB),
-          ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB,
         ],
-        10,
+        9,
       ),
-    ).resolves.toBe(10)
+    ).resolves.toBe(9)
   })
 })
