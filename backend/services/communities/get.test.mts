@@ -33,6 +33,8 @@ describe('get', () => {
       const inserted = await insertTestCommunity({ createdById: owner.id })
       const community = await getCommunityOrThrow(inserted.id)
       expect(community.id).toBe(inserted.id)
+      expect(community.owner!.id).toBe(owner.id)
+      expect(community.owner!.username).toBe(owner.username)
     })
 
     it('returns the community when found by slug', async () => {
