@@ -17,7 +17,7 @@ export type StoryPostResult = {
   story: Story
   postStory: PostStory
 }
-export type PreparedStoryPost = {
+type PreparedStoryPost = {
   response: StoryPostResult
   created: CreatedStoryPost
   dependencies: StoryPostCreateDependencies

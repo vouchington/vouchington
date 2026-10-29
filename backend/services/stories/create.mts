@@ -3,7 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { Story } from './types.mts'
 
-export type CreateStoryOptions = {
+type CreateStoryOptions = {
   published_at?: Date
   title?: string
   cluster_reason?: string

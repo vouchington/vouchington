@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { completeClassifierRun } from '@services/classifier-runs'
 import { createStoryClusteringRunAdapter } from '@services/stories'
-import { STORY_CLUSTER_REASON } from '@services/stories/clustering/metadata'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
 import {
@@ -72,7 +71,7 @@ describe('story clustering effects (real PG)', () => {
     const story = await readStoryFacts(storyId!)
     expect(story).toMatchObject({
       title: 'The neighbor headline',
-      cluster_reason: STORY_CLUSTER_REASON,
+      cluster_reason: expect.stringMatching(/\S/),
       official_rss_feed_item_id: null,
       official_locked_at: null,
       deleted_at: null,

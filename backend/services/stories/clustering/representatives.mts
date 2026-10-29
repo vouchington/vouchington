@@ -3,7 +3,7 @@ import type { ClassifierRunSubject, StoryRunCandidate } from '@services/classifi
 import sql from 'sql-template-strings'
 
 /** One captured candidate and the RSS item whose content stands in for it in the prompt. */
-export type StoryClusteringRepresentative = {
+type StoryClusteringRepresentative = {
   candidate: StoryRunCandidate
   /** Null only for a story with no live member left, which the prompt describes structurally. */
   rssFeedItemId: string | null

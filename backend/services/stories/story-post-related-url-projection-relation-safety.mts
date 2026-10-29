@@ -69,7 +69,7 @@ export async function lockPostScopeAndCheckProjectionWork(
   return isStoryPostRelatedUrlProjectionWorkCurrent(work, query, true)
 }
 
-export async function lockAndFindBlockedProjectionUrlIds(
+async function lockAndFindBlockedProjectionUrlIds(
   query: TransactionQuery,
   urlIds: readonly string[],
 ): Promise<Set<string>> {

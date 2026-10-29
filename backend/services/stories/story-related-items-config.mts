@@ -1,7 +1,7 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import onError from '@modules/on-error'
 
-export const STORY_RELATED_ITEMS_CONFIG_KEY = 'story-related-items-config'
+const STORY_RELATED_ITEMS_CONFIG_KEY = 'story-related-items-config'
 const DEFAULT_STORY_RELATED_ITEMS_CONFIG = { preview_limit: 3 }
 export const storyRelatedItemsConfig = new DynamicConfig({
   key: STORY_RELATED_ITEMS_CONFIG_KEY,

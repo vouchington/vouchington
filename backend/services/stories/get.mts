@@ -55,7 +55,7 @@ export async function getStoriesByIdBatch(
   return ids.map(id => byId.get(id) ?? null)
 }
 
-export type StoryItemSummary = {
+type StoryItemSummary = {
   title: string
   summary: string
 }
