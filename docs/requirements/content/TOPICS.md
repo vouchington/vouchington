@@ -3,6 +3,17 @@
 Managing topics can only be done by an administrator. Topic types, creation rules, aliases and
 lifecycle are read from `backend/services/topics` and the topic schema.
 
+## Current content and revision history
+
+The topic owns its current content and the attribution for its latest administrator-authored content
+change. Revision history can expire without changing that content, who changed it, or when.
+Deleting the attributed account clears its identity rather than attributing the content to an older
+revision's author. The public attribution remains nullable.
+
+Revision history is finite, including a topic's newest revision. History and rollback surfaces can
+only use retained revisions and must allow a topic with none. Current topic reads do not depend on
+revision history.
+
 ## Type vs facet
 
 The taxonomy has two explicit axes:

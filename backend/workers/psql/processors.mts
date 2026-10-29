@@ -26,9 +26,11 @@ import {
 import { createHash } from 'node:crypto'
 import {
   enqueueAIRetentionContinuations,
+  enqueueCleanupPartitionsContinuation,
   enqueueDataRetentionCleanupContinuation,
   enqueueDataRetentionContinuation,
 } from '@queues/psql/enqueues'
+import { getPartitionCleanupLimit, partitionCleanupConfig } from '@queues/psql/config'
 import {
   dataRetentionConfig,
   getClassifierRetentionDays,
@@ -50,6 +52,7 @@ import {
 
 type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
+  enqueueCleanupPartitionsContinuation: typeof enqueueCleanupPartitionsContinuation
   createPartitions: typeof createMonthlyPartitions
   dataRetentionCleanup: typeof runDataRetentionCleanup
   copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
@@ -86,13 +89,41 @@ export default async function processPsql(
       if (data?.classifierRange) return createClassifierResultRange(data.classifierRange)
       if (data?.requestRange) return createUserDataRequestRange(data.requestRange)
       return (dependencies?.createPartitions ?? createMonthlyPartitions)()
-    case 'cleanupPartitions':
+    case 'cleanupPartitions': {
       if (data?.classifierRange) {
         await dataRetentionConfig.waitForInitialization()
         return retireClassifierResultRange(data.classifierRange, getClassifierRetentionDays())
       }
       if (data?.requestRange) return retireUserDataRequestRange(data.requestRange)
-      return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
+      await partitionCleanupConfig.waitForInitialization()
+      const partitionReferenceDate = data?.partitionContinuation
+        ? new Date(data.partitionContinuation.referenceDate)
+        : new Date()
+      if (!Number.isFinite(partitionReferenceDate.getTime()))
+        throw new Error('Invalid partition cleanup reference date')
+      const partitionResult = await (dependencies?.cleanupPartitions ?? cleanupPartitions)(
+        partitionReferenceDate,
+        {
+          limit: getPartitionCleanupLimit(),
+          after: data?.partitionContinuation?.after,
+        },
+      )
+      if (partitionResult.hasMore) {
+        if (!jobId || !partitionResult.nextCursor)
+          throw new Error('Partition cleanup continuation needs a job ID and cursor')
+        await (
+          dependencies?.enqueueCleanupPartitionsContinuation ?? enqueueCleanupPartitionsContinuation
+        )({
+          rootJobId:
+            data?.partitionContinuation?.rootJobId ??
+            createHash('sha256').update(jobId).digest('hex'),
+          step: (data?.partitionContinuation?.step ?? 0) + 1,
+          referenceDate: partitionReferenceDate.toISOString(),
+          after: partitionResult.nextCursor,
+        })
+      }
+      return partitionResult
+    }
     case 'dataRetentionCleanup': {
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()

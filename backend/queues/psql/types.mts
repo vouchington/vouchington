@@ -83,6 +83,12 @@ export type ClassifierPartitionRange = {
 export type PsqlPartitionJobData = {
   classifierRange?: ClassifierPartitionRange
   requestRange?: ClassifierPartitionRange
+  partitionContinuation?: {
+    rootJobId: string
+    step: number
+    referenceDate: string
+    after: { priority: number; partition: string }
+  }
 }
 
 export type PsqlRetentionJobData = {

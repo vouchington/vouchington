@@ -1,4 +1,8 @@
-import { moderationRetentionQueueConfig } from '@queues/psql/config'
+import {
+  moderationRetentionQueueConfig,
+  partitionCleanupConfig,
+  PARTITION_CLEANUP_MAX_PARTITIONS,
+} from '@queues/psql/config'
 import {
   copyrightNoticesAdditionalMaxValues,
   copyrightSweepConfig,
@@ -16,6 +20,27 @@ import {
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const workDynamicConfigRegistryEntries = [
+  defineDynamicConfigNamespace({
+    namespace: 'psql-partition-cleanup-config',
+    label: 'Partition cleanup',
+    description: 'Caps each monthly partition retirement pass and its cross-worker concurrency.',
+    config: partitionCleanupConfig,
+    access: { update_roles: ['developer'] },
+    fields: {
+      max_partitions_per_run: {
+        description: 'Maximum monthly partition candidates read per job.',
+        minValue: 1,
+        maxValue: PARTITION_CLEANUP_MAX_PARTITIONS,
+        integer: true,
+      },
+      concurrency: {
+        description: 'Maximum concurrent monthly partition cleanup jobs across workers.',
+        minValue: 1,
+        maxValue: 1,
+        integer: true,
+      },
+    },
+  }),
   defineDynamicConfigNamespace({
     namespace: 'psql-moderation-retention-config',
     label: 'Moderation retention queue',

@@ -15,9 +15,13 @@ import {
 import { psql } from './queues.mts'
 import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
 export { enqueueAIRetentionContinuations }
+export {
+  enqueueCreatePartitions,
+  enqueueCleanupPartitions,
+  enqueueCleanupPartitionsContinuation,
+} from './enqueues/partition-maintenance.mts'
 import type {
   PsqlJobs,
-  PsqlPartitionJobData,
   PsqlRetentionJobData,
   RefreshMaterializedViewData,
   VoteRetentionContinuationData,
@@ -78,47 +82,6 @@ export function enqueueDataRetentionCleanupContinuation(
     },
   })
 }
-
-function createPartitionEnqueue(jobName: 'createPartitions' | 'cleanupPartitions') {
-  const enqueue = createEnqueueFunction<PsqlPartitionJobData, PsqlJobs>({
-    queue: psql,
-    queueName: QUEUE_NAME,
-    jobName,
-  })
-  return async (rangeData?: PsqlPartitionJobData): EnqueueReturnType => {
-    if (!rangeData?.classifierRange && !rangeData?.requestRange)
-      return enqueue({}, { priority: PRIORITY_DEFAULT })
-    if (rangeData.classifierRange && rangeData.requestRange)
-      throw new Error('Only one partition range family may be requested')
-    const classifierRange = rangeData.classifierRange
-    const requestRange = rangeData.requestRange
-    const selectedRange = classifierRange ?? requestRange!
-    const family = classifierRange ? 'classifier' : 'request'
-    const operation = jobName === 'createPartitions' ? 'create' : 'retire'
-    const jobId = `${family}-range__${operation}__${selectedRange.fromDate}_${selectedRange.toDate}`
-    const jobs = await enqueueBulkReactivatingFinished({
-      queue: psql,
-      inputs: [selectedRange],
-      jobIdOf: () => jobId,
-      enqueueBulk: async inputs => {
-        const added = await Promise.all(
-          inputs.map(range =>
-            enqueue(classifierRange ? { classifierRange: range } : { requestRange: range }, {
-              priority: PRIORITY_DEFAULT,
-              jobId,
-              ordering: { key: 'operator_partitions', concurrency: 1 },
-            }),
-          ),
-        )
-        return added.filter(job => job !== null)
-      },
-    })
-    return jobs[0]
-  }
-}
-
-export const enqueueCreatePartitions = createPartitionEnqueue('createPartitions')
-export const enqueueCleanupPartitions = createPartitionEnqueue('cleanupPartitions')
 
 type RetentionContinuationInput = { parentJobId: string; data: VoteRetentionContinuationData }
 

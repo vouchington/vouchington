@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
+  getPartitionDropAgeRefusal,
   getMonthlyPartitionUpperBound,
   getPartitionDropAgeRefusal,
   getPartitionDropRefusal,
@@ -128,6 +129,44 @@ describe('partition drop guard', () => {
     expect(
       getPartitionDropAgeRefusal(december, policy, new Date('2026-01-01T00:00:00.000Z')),
     ).toBeNull()
+  })
+
+  it('retires topic revision children only after twelve complete calendar months', () => {
+    const policy = { minimumRetentionDays: null, minimumRetentionMonths: 12 }
+    const referenceDate = new Date('2026-10-28T23:59:59.000Z')
+    expect(
+      getPartitionDropAgeRefusal(
+        {
+          table: 'topic_revisions',
+          partition: 'topic_revisions__p_2025_09',
+          upperBound: new Date('2025-10-01T00:00:00.000Z'),
+        },
+        policy,
+        referenceDate,
+      ),
+    ).toBeNull()
+    expect(
+      getPartitionDropAgeRefusal(
+        {
+          table: 'topic_revisions',
+          partition: 'topic_revisions__p_2025_10',
+          upperBound: new Date('2025-11-01T00:00:00.000Z'),
+        },
+        policy,
+        referenceDate,
+      ),
+    ).toBe('inside-retention')
+    expect(
+      getPartitionDropAgeRefusal(
+        {
+          table: 'topic_revisions',
+          partition: 'topic_revisions__p_2025_09',
+          upperBound: new Date('2025-10-01T00:00:00.000Z'),
+        },
+        { minimumRetentionDays: null, minimumRetentionMonths: Number.MAX_SAFE_INTEGER },
+        referenceDate,
+      ),
+    ).toBe('no-declared-retention')
   })
 
   it('refuses a held account and unfinished work before detach', async () => {

@@ -27,7 +27,7 @@ COMMENT ON COLUMN post_revisions.revision_type IS 'Type of change: create, updat
 COMMENT ON COLUMN post_revisions.revised_by_id IS 'The user who performed this change.';
 COMMENT ON COLUMN post_revisions.changes IS 'JSONB object: { "field_name": { "before": <old>, "after": <new> } }';
 
--- Topic revisions: not partitioned (small table, all queries filter by topic_id)
+-- Topic revisions: monthly UUIDv7 ranges retire as whole partitions.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topic_revisions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS topic_revisions (
   CONSTRAINT topic_revisions_revised_by_id_fkey
     FOREIGN KEY (revised_by_id) REFERENCES users(id) ON DELETE SET NULL
     DEFERRABLE INITIALLY DEFERRED
-);
+) PARTITION BY RANGE (id);
 
 COMMENT ON TABLE topic_revisions IS 'Append-only revision log for topics. Stores per-field before/after diffs.';
 COMMENT ON COLUMN topic_revisions.topic_id IS 'The topic this revision is for.';
@@ -56,11 +56,5 @@ COMMENT ON COLUMN topic_revisions.changes IS 'Revision document containing per-f
 CREATE INDEX IF NOT EXISTS idx_post_revisions__post_id ON post_revisions (post_id);
 CREATE INDEX IF NOT EXISTS idx_topic_revisions__topic_id ON topic_revisions (topic_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_topic_revisions__admin_content_update
-  ON topic_revisions (topic_id, id DESC)
-  WHERE revision_type IN ('create', 'update')
-    AND (changes->'changes') ?| ARRAY['name', 'markdown']
-    AND (changes->'revised_by_roles') @> '["administrator"]'::JSONB;
-
 CREATE TRIGGER trigger_post_revisions_append_only BEFORE UPDATE OR DELETE ON post_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');
 CREATE TRIGGER trigger_topic_revisions_append_only BEFORE UPDATE OR DELETE ON topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');

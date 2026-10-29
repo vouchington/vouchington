@@ -54,6 +54,13 @@ shows the finished state. The web admin client ignores the response body. This s
 an MCP tool. Native clients have no topic-alias management surface in the parity matrix, so this
 response change does not claim native UI evidence.
 
+## Topic content attribution
+
+The topic-detail response keeps its existing nullable `topic_content_update` shape. Its current
+attribution comes from the topic and survives revision-history expiry; an erased actor makes the
+whole attribution null. Web, Swift, and .NET need no response-model change. This adds no history or
+rollback surface and makes no new native UI parity claim.
+
 ## Hostname identity in presentation
 
 On crawler and integrity screens, hostname links and labels use the hostname string. Their reads

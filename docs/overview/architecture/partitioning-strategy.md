@@ -17,6 +17,13 @@ unbounded-table policies, with their rationale and reconsideration triggers, liv
 - Monthly children are retired by `cleanupPartitions`. Explicit UUIDv7 ranges may also be
   retired when their table owner declares a minimum retention window and the drop guard proves
   that the whole range is old enough. A default child has no upper bound and cannot be dropped.
+- Retained topic revision history starts with monthly children at bootstrap. Current content and
+  attribution belong to the topic, so retirement can remove every revision in an expired child.
+  Scheduled cleanup traverses bounded catalog pages; ordered continuation jobs carry the last
+  partition position and keep one reference date for the sweep.
+  Topic history retirement takes its referenced-table and history locks without waiting, so an
+  active writer cannot form a lock cycle with foreign-key teardown. Contention leaves the child
+  intact for a later sweep.
 - Every drop is checked in the backend against its declared window, open legal holds and
   unfinished work. A refusal leaves other eligible partitions available for retirement. The
   admin status preview caps row probes and marks unchecked children `check-pending`; cleanup
@@ -27,7 +34,7 @@ unbounded-table policies, with their rationale and reconsideration triggers, liv
 ```mermaid
 flowchart LR
   A[Growth review] --> B{Retention?}
-  B -->|Yes| C{Scheduled crawl lifecycle?}
+  B -->|Yes| C{Scheduled monthly lifecycle?}
   C -->|Yes| G[Monthly UUIDv7 RANGE]
   C -->|No| E[UUIDv7 RANGE with DEFAULT]
   B -->|No| D{Large or measured pressure?}
@@ -64,7 +71,8 @@ range retirement is operator initiated and checks the configured retention windo
 under the partition locks. Its batch and run checks use indexed existence probes, so a sealed range
 can grow beyond the creation row budget and still retire. If a producer holds the batch or run
 table, the retirement transaction refuses the operation without waiting on a reverse lock order.
-The scheduled monthly job still owns only crawl and RSS history.
+The scheduled monthly job owns independently retained monthly histories; classifier ranges remain
+operator initiated.
 
 Classifier run identities are a deduplication cache, while requests and usage are durable records.
 Prompt-backed cache entries become expendable after a newer prompt version is active; promptless

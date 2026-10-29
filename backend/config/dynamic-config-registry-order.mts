@@ -23,6 +23,7 @@ export const REGISTRY_ORDER = [
   'user-import-export-config',
   'data-retention-config',
   'psql-moderation-retention-config',
+  'psql-partition-cleanup-config',
   'list-import-config',
   'articles-work-config',
   'pagination-config',

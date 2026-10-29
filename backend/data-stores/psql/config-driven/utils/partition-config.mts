@@ -87,6 +87,11 @@ export const USER_KEY_PARTITION_TABLES: string[] = [
  */
 export const REVISION_PARTITION_TABLES: string[] = ['post_revisions']
 
+/** Topic revision history expires by whole monthly child after twelve calendar months. */
+export const TOPIC_REVISION_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
+  monthlyPartitionTable('topic_revisions', { retentionDays: 0, futureMonths: 2 }),
+]
+
 /**
  * Growth ledger tables - partitioned by UUIDv7 id
  * Default partition, split by adding explicit range partitions when needed
@@ -123,6 +128,7 @@ export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
   ...COPYRIGHT_HISTORY_PARTITION_TABLES,
+  ...TOPIC_REVISION_PARTITION_TABLES,
 ]
 
 export type PartitionDropPolicy = {
@@ -135,6 +141,8 @@ export type PartitionDropPolicy = {
   legalHoldAccountColumn?: string
   /** History row is preserved by a legal hold on a copyright case party or review account. */
   copyrightHistory?: true
+  /** Referenced tables whose FK teardown locks precede the history parent lock. */
+  retirementReferenceTables?: readonly string[]
   /** Each predicate must have a matching partial index on the partition parent. */
   inFlightPredicates?: readonly string[]
 }
@@ -188,6 +196,13 @@ PARTITION_DROP_POLICIES.user_data_requests = {
 PARTITION_DROP_POLICIES.user_data_request_attempts = {
   minimumRetentionDays: 30,
   legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
+}
+
+PARTITION_DROP_POLICIES.topic_revisions = {
+  minimumRetentionDays: null,
+  minimumRetentionMonths: 12,
+  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+  retirementReferenceTables: ['topics', 'users'],
 }
 
 // Security call audits may be retired only after the privacy-policy window. The legal

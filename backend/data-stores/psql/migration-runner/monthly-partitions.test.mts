@@ -9,6 +9,7 @@ import type { QueryExecutor } from '../types.mts'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
+  listMonthlyDropCandidatePage,
   listMonthlyDropCandidates,
   retireMonthlyPartitionCandidate,
 } from './monthly-partitions.mts'
@@ -32,6 +33,16 @@ describe('createMonthlyPartitions', () => {
 })
 
 describe('monthly partition retirement', () => {
+  it('reads one catalog page at a time using its durable keyset position', async () => {
+    const first = await listMonthlyDropCandidatePage(write, 1)
+    expect(first.candidates).toHaveLength(1)
+    expect(first.hasMore).toBe(true)
+    expect(first.nextCursor).toBeDefined()
+    const second = await listMonthlyDropCandidatePage(write, 1, first.nextCursor)
+    expect(second.candidates).toHaveLength(1)
+    expect(second.candidates[0]?.partition).not.toBe(first.candidates[0]?.partition)
+  })
+
   it('discovers managed children in dependency order from the live catalog', async () => {
     const candidates = await listMonthlyDropCandidates(write)
     const chunkIndices = candidates.flatMap((candidate, index) =>
@@ -50,9 +61,9 @@ describe('monthly partition retirement', () => {
   it('refuses all managed children without detaching them when the window has not elapsed', async () => {
     const outcomes = await cleanupPartitions(new Date('1900-01-01T00:00:00.000Z'))
 
-    expect(outcomes.length).toBeGreaterThan(0)
-    expect(outcomes.every(outcome => outcome.outcome === 'refused')).toBe(true)
-    expect(outcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
+    expect(outcomes.outcomes.length).toBeGreaterThan(0)
+    expect(outcomes.outcomes.every(outcome => outcome.outcome === 'refused')).toBe(true)
+    expect(outcomes.outcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
   })
 
   it('discovers bootstrapped copyright monthly children and preserves all ten inside six years', async () => {

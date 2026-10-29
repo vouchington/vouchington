@@ -43,6 +43,7 @@ import {
   PRIORITY_DEFAULT,
   PSQL_RETRY_OPTIONS,
   QUEUE_NAME,
+  getPartitionCleanupJobOptions,
 } from '../config.mts'
 import {
   enqueueDataRetentionCleanup,
@@ -138,7 +139,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: CLEANUP_PARTITIONS_SCHEDULER_ID,
     repeat: { pattern: CLEANUP_PARTITIONS_CRON },
-    template: { name: CLEANUP_PARTITIONS_JOB_NAME, data: {}, opts: SCHEDULE_OPTS },
+    template: { name: CLEANUP_PARTITIONS_JOB_NAME, data: {}, opts: getPartitionCleanupJobOptions },
     operatorSurfaces: [{ kind: 'psql', jobType: 'cleanupPartitions' }],
   },
   {

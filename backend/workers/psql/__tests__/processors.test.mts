@@ -11,8 +11,7 @@ import { psql } from '@queues/psql/queues'
 import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
 import type { cleanupPartitions as cleanupPartitionsService } from '@data-stores/psql/migration-runner/monthly-partitions'
 
-type PartitionDropOutcome = Awaited<ReturnType<typeof cleanupPartitionsService>>[number]
-const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
+const cleanupPartitions = vi.fn<typeof cleanupPartitionsService>()
 const createPartitions = vi.fn<() => Promise<void>>()
 const noAIRetention = {
   softDeletedUsers: { deleted: 0, hasMore: false },
@@ -46,6 +45,8 @@ describe('processPsql', () => {
     processor.mockReset()
     if (jobName === 'dataRetentionCleanup')
       dataRetentionCleanup.mockResolvedValue(emptyCleanupResult)
+    if (jobName === 'cleanupPartitions')
+      cleanupPartitions.mockResolvedValue({ outcomes: [], hasMore: false })
 
     await processPsql(jobName, undefined, {
       cleanupPartitions,

@@ -8,6 +8,7 @@ import {
 import { addUserRole } from '@services/users/roles-permissions'
 import type { PrivateUser } from '@services/users/types'
 import { registerTopicRevisionChangeDetection } from '../../test-helpers/revision-change-detection-tests.mts'
+import { getTopicContentAttributionForTest } from '../../test-helpers/entities/topic-revisions.mts'
 import { createTopicRevision, computeTopicChanges, getLatestTopicContentUpdate } from './index.mts'
 
 describe('index', () => {
@@ -30,6 +31,17 @@ describe('index', () => {
   })
 
   describe('createTopicRevision', () => {
+    it('rejects a revision for a missing topic', async () => {
+      await expect(
+        createTopicRevision(
+          crypto.randomUUID(),
+          'update',
+          { markdown: { before: '', after: 'Missing topic' } },
+          user.id,
+        ),
+      ).rejects.toThrow('Topic revision requires an existing topic')
+    })
+
     it('creates a create revision with changes', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       const topicId = await insertTestTopic({
@@ -152,6 +164,10 @@ describe('index', () => {
       expect(update!.updated_by.id).toBe(user.id)
       expect(update!.updated_by.roles).toEqual([])
       expect(update!.updated_at).toBeInstanceOf(Date)
+      await expect(getTopicContentAttributionForTest(topicId)).resolves.toEqual({
+        content_updated_at: update!.updated_at,
+        content_updated_by_id: user.id,
+      })
     })
 
     it('returns the latest admin content revision and ignores later non-admin content revisions', async () => {

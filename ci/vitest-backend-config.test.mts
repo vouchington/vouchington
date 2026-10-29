@@ -21,6 +21,7 @@ interface BackendProject {
     name?: string
     pool?: string
     runner?: string
+    sequence?: { groupOrder?: number }
     setupFiles?: string[]
     testTimeout?: number
   }
@@ -43,6 +44,20 @@ function projectOwnsPath(project: BackendProject, path: string): boolean {
   )
 }
 describe('backend Vitest project config', () => {
+  it('runs topic partition retirement after ordinary database tests', () => {
+    const path = 'backend/services/topic-revisions/monthly-retirement.test.mts'
+    const owners = backendProjects().filter(project => projectOwnsPath(project, path))
+    expect(owners.map(project => project.test?.name)).toEqual(['backend-partition-retirement'])
+    expect(owners[0]?.test).toMatchObject({
+      sequence: { groupOrder: 1 },
+      globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
+    })
+    expect(backendProjectTest('backend-data-stores')?.sequence?.groupOrder ?? 0).toBe(0)
+    expect(owners[0]?.test).not.toHaveProperty('maxWorkers')
+    expect(owners[0]?.test).not.toHaveProperty('fileParallelism')
+  })
+
   it('runs the election waiter contract with the worker and data-store lifecycle', () => {
     const path = 'backend/test-helpers/election-vote-stats.test.mts'
     const owners = backendProjects().filter(project => projectOwnsPath(project, path))

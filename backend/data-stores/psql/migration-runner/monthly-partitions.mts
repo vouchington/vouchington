@@ -1,7 +1,6 @@
 import onError from '@modules/on-error'
 import {
   assertSafeSqlIdentifier,
-  listManagedMonthlyPartitions,
   parseMonthlyPartitionName,
   retireMonthlyPartition,
   createMonthlyPartitions as createPlatformMonthlyPartitions,
@@ -20,56 +19,49 @@ import {
   type PartitionDropCandidate,
   type PartitionDropRefusal,
 } from './partition-drop-guard.mts'
+import {
+  listMonthlyDropCandidatePage,
+  type PartitionCleanupCursor,
+} from './monthly-partition-candidates.mts'
 
-type PartitionDropOutcome = {
+export {
+  listMonthlyDropCandidates,
+  listMonthlyDropCandidatePage,
+} from './monthly-partition-candidates.mts'
+
+export type PartitionDropOutcome = {
   table: string
   partition: string
   outcome: 'dropped' | 'refused'
   reason?: PartitionDropRefusal | 'retirement-error'
 }
 
+export type PartitionCleanupPage = {
+  outcomes: PartitionDropOutcome[]
+  hasMore: boolean
+  nextCursor?: PartitionCleanupCursor
+}
+
+const DEFAULT_PARTITION_CLEANUP_LIMIT = 5
+
 export async function createMonthlyPartitions(writer: QueryExecutor = write): Promise<void> {
   await createPlatformMonthlyPartitions(writer, { tables: ALL_MONTHLY_PARTITION_TABLES })
 }
 
-export async function listMonthlyDropCandidates(
-  query: QueryExecutor = write,
-): Promise<PartitionDropCandidate[]> {
-  const existing = await listManagedMonthlyPartitions(query, ALL_MONTHLY_PARTITION_TABLES)
-  const priority = new Map(
-    ALL_MONTHLY_PARTITION_TABLES.map(config => [config.table, config.dropPriority ?? 2]),
-  )
-  return existing
-    .flatMap(row => {
-      const parsed = parseMonthlyPartitionName(row.partition_table)
-      if (!parsed || parsed.table !== row.parent_table) return []
-      return [
-        {
-          table: row.parent_table,
-          partition: row.partition_table,
-          upperBound: new Date(Date.UTC(parsed.year, parsed.month, 1)),
-        },
-      ]
-    })
-    .toSorted(
-      (left, right) =>
-        (priority.get(left.table) ?? 2) - (priority.get(right.table) ?? 2) ||
-        left.upperBound!.getTime() - right.upperBound!.getTime() ||
-        left.partition.localeCompare(right.partition),
-    )
-}
-
 export async function cleanupPartitions(
   referenceDate: Date = new Date(),
-  query: QueryExecutor = write,
-  begin: typeof beginTransaction = beginTransaction,
-): Promise<PartitionDropOutcome[]> {
-  const candidates = await listMonthlyDropCandidates(query)
-  const outcomes = await retirePartitionsSequentially(candidates, candidate =>
-    retireMonthlyPartitionCandidate(candidate, referenceDate, begin),
+  options: { limit?: number; after?: PartitionCleanupCursor; query?: QueryExecutor } = {},
+): Promise<PartitionCleanupPage> {
+  const page = await listMonthlyDropCandidatePage(
+    options.query ?? write,
+    options.limit ?? DEFAULT_PARTITION_CLEANUP_LIMIT,
+    options.after,
+  )
+  const outcomes = await retirePartitionsSequentially(page.candidates, candidate =>
+    retireMonthlyPartitionCandidate(candidate, referenceDate),
   )
   for (const outcome of outcomes) console.info('Partition cleanup:', outcome)
-  return outcomes
+  return { outcomes, hasMore: page.hasMore, nextCursor: page.nextCursor }
 }
 
 /** Retire one child transaction at a time; the next child starts only after the last settles. */
@@ -130,13 +122,27 @@ export async function guardAndRetireMonthlyPartition(
       '/* cleanupPartitions:lockCopyrightParties */ LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE',
     )
   }
+  // FK teardown during DETACH/DROP touches referenced tables. Acquire their final lock modes
+  // without waiting, before holding the history parent, so a topic writer cannot invert the order.
+  const retirementReferences = policy?.retirementReferenceTables ?? []
+  if (retirementReferences.length > 0) {
+    const referenceTables = retirementReferences
+      .map(referenceTable => assertSafeSqlIdentifier(referenceTable))
+      .join(', ')
+    await transaction(
+      `/* cleanupPartitions:lockReference */ LOCK TABLE ${referenceTables} IN ACCESS EXCLUSIVE MODE NOWAIT`,
+    )
+  }
+  // A raw history writer can take the parent before validating its referenced rows. Once we
+  // hold referenced-table locks, waiting for either history lock could deadlock with that writer.
+  const historyLockNowait = policy?.retirementReferenceTables?.length ? ' NOWAIT' : ''
   // Ordinary DETACH needs ACCESS EXCLUSIVE on the parent, so take that final mode before the child
   // to avoid a lock-upgrade deadlock with concurrent readers and writers.
   await transaction(
-    `/* cleanupPartitions:lockParent */ LOCK TABLE ${table} IN ACCESS EXCLUSIVE MODE`,
+    `/* cleanupPartitions:lockParent */ LOCK TABLE ${table} IN ACCESS EXCLUSIVE MODE${historyLockNowait}`,
   )
   await transaction(
-    `/* cleanupPartitions:lockCandidate */ LOCK TABLE ${partition} IN ACCESS EXCLUSIVE MODE`,
+    `/* cleanupPartitions:lockCandidate */ LOCK TABLE ${partition} IN ACCESS EXCLUSIVE MODE${historyLockNowait}`,
   )
   if (policy?.legalHoldAccountColumn || policy?.copyrightHistory) {
     await transaction(

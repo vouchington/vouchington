@@ -14,3 +14,20 @@ export async function getTopicRevisionsForTest(topicId: string): Promise<TopicRe
   )
   return rows
 }
+
+export async function getTopicContentAttributionForTest(topicId: string): Promise<{
+  content_updated_at: Date | null
+  content_updated_by_id: string | null
+}> {
+  const { rows } = await read<{
+    content_updated_at: Date | null
+    content_updated_by_id: string | null
+  }>(
+    `/* getTopicContentAttributionForTest */
+      SELECT content_updated_at, content_updated_by_id
+      FROM topics
+      WHERE id = $1`,
+    [topicId],
+  )
+  return rows[0]
+}
