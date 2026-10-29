@@ -5,10 +5,14 @@ import { psql } from '@queues/psql/queues'
 import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
 import processPsql from '../processors.mts'
 
+const settledVoteBallots: Awaited<
+  ReturnType<typeof runDataRetentionCleanup>
+>['supersededVoteBallots'] = []
+
 const noAIRetention = {
   softDeletedUsers: { deleted: 0, hasMore: false },
   ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
-  supersededVoteBallots: [],
+  supersededVoteBallots: settledVoteBallots,
   orphanedUserAgentStrings: { hasMore: false },
   voteIntegrityDetails: { hasMore: false },
 }
