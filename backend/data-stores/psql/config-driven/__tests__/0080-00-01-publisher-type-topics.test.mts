@@ -3,12 +3,6 @@ import generatePublisherTypeTopicsSQL from '../0080-00-01-publisher-type-topics.
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
 
 describe('0080-00-01-publisher-type-topics', () => {
-  it('generates valid SQL without errors', () => {
-    const sql = generatePublisherTypeTopicsSQL()
-    expect(typeof sql).toBe('string')
-    expect(sql.length).toBeGreaterThan(0)
-  })
-
   it('includes the parent publisher-types topic upsert', () => {
     const sql = generatePublisherTypeTopicsSQL()
     expect(sql).toContain("'publisher-types'")
@@ -22,13 +16,6 @@ describe('0080-00-01-publisher-type-topics', () => {
     expect(inserts).toHaveLength(PUBLISHER_TYPE_SLUGS.length + 1)
     for (const insert of inserts) {
       expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
-    }
-  })
-
-  it('includes all child topics', () => {
-    const sql = generatePublisherTypeTopicsSQL()
-    for (const slug of PUBLISHER_TYPE_SLUGS) {
-      expect(sql).toContain(`'${slug}'`)
     }
   })
 

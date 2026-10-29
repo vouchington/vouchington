@@ -2,12 +2,6 @@ import { describe, expect, it } from 'vitest'
 import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'
 
 describe('0010-00-02-seed-admin-user', () => {
-  it('generates valid SQL without errors', () => {
-    const sql = generateSeedAdminUserSQL()
-    expect(typeof sql).toBe('string')
-    expect(sql.length).toBeGreaterThan(0)
-  })
-
   it('creates the jong user', () => {
     const sql = generateSeedAdminUserSQL()
     expect(sql).toContain("'jong'")

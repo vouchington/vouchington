@@ -2,12 +2,6 @@ import { describe, expect, it } from 'vitest'
 import generateSeedCommunitiesSQL from '../0140-00-01-seed-communities.mts'
 
 describe('0140-00-01-seed-communities', () => {
-  it('generates valid SQL without errors', () => {
-    const sql = generateSeedCommunitiesSQL()
-    expect(typeof sql).toBe('string')
-    expect(sql.length).toBeGreaterThan(0)
-  })
-
   it('upserts both expected communities', () => {
     const sql = generateSeedCommunitiesSQL()
     expect(sql).toContain("'voucha-quality-filters'")
