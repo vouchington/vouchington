@@ -137,3 +137,8 @@ preferFrozenLockfile: true
 strictDepBuilds: true
 updateNotifier: false
 verifyDepsBeforeRun: error
+# CI install deadline: a registry request with no progress fails at 20s (host named in the error),
+# and the shortened backoff keeps all three attempts under 90s, below the smallest 3-minute setup
+# step. Retry count stays at pnpm's default of 2.
+fetchTimeout: 20000
+fetchRetryMaxtimeout: 20000
