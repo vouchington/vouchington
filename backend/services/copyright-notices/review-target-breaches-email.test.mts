@@ -8,7 +8,7 @@ import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
 } from '@voucha/test-helpers/copyright-email-intake-fixtures'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 const HOUR_MS = 60 * 60 * 1000
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR_MS)

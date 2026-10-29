@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import {
   copyrightJurisdictionPolicyLockKey,
   lockCopyrightJurisdictionPolicy,
-} from '../../../services/copyright-notices/jurisdiction-policy.mts'
+} from '../../copyright-jurisdiction-policy-lock.mts'
 
 export async function rejectUsJurisdictionPolicyApproval(): Promise<void> {
   await write(sql`/* rejectUsJurisdictionPolicyApproval */

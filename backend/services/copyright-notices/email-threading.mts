@@ -1,4 +1,4 @@
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   copyrightEmailMessageIdIsAmbiguous,
@@ -15,10 +15,7 @@ import {
   normalizedCopyrightEmailReplyValues,
 } from './email-thread-references.mts'
 import { lockCopyrightOperationalThreadCase } from './operational-retention-thread-lock.mts'
-import {
-  insertCopyrightEmailIntakeNoticeLink,
-  type CopyrightEmailIntakeNoticeLink,
-} from './email-thread-link.mts'
+import { insertCopyrightEmailIntakeNoticeLink } from './email-thread-link.mts'
 
 export type { CopyrightEmailThreadMatch } from './email-thread-match.mts'
 
@@ -89,15 +86,12 @@ export async function recordCopyrightEmailThreadReferences(input: {
     transaction,
   )
   if (match) {
-    const linked = await linkCopyrightEmailIntakeToNotice(
-      {
-        intakeId: input.intakeId,
-        noticeId: match.noticeId,
-        linkKind: 'thread',
-        matchedReference: match.matchedReference,
-      },
-      transaction,
-    )
+    const linked = await insertCopyrightEmailIntakeNoticeLink(transaction, {
+      intakeId: input.intakeId,
+      noticeId: match.noticeId,
+      linkKind: 'thread',
+      matchedReference: match.matchedReference,
+    })
     if (!linked) {
       await transaction.commit()
       return null
@@ -105,17 +99,4 @@ export async function recordCopyrightEmailThreadReferences(input: {
   }
   await transaction.commit()
   return match
-}
-
-export async function linkCopyrightEmailIntakeToNotice(
-  input: CopyrightEmailIntakeNoticeLink,
-  transaction?: TransactionQuery,
-): Promise<boolean> {
-  if (transaction) {
-    return insertCopyrightEmailIntakeNoticeLink(transaction, input)
-  }
-  await using owned = await beginTransaction()
-  const linked = await insertCopyrightEmailIntakeNoticeLink(owned, input)
-  await owned.commit()
-  return linked
 }

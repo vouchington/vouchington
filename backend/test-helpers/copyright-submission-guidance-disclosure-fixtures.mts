@@ -8,7 +8,7 @@ import {
   recordCopyrightEmailParse,
 } from '../services/copyright-notices/index.mts'
 import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-admission.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { createCopyrightPosterNoticesInTransaction } from '../services/copyright-notices/restriction-poster-notices.mts'
 import type { CopyrightRestorationCause } from '../services/copyright-notices/statement-of-reasons.mts'
 

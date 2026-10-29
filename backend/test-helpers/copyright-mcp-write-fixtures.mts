@@ -15,7 +15,7 @@ import {
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from '../services/copyright-notices/index.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { createParsedCopyrightEmailIntake } from './copyright-email-intake-fixtures.mts'
 import { appendCopyrightEmailIntakeRecommendation } from '../services/copyright-notices/email-recommendations.mts'
 import { copyrightConfig } from '../services/copyright-notices/config.mts'

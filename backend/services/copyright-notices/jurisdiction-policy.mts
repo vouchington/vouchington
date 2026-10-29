@@ -38,13 +38,13 @@ function currentCopyrightJurisdictionPolicySql(jurisdiction: TerritorialCopyrigh
 /** Read committed lets a policy insert land between two statements of a transaction that has
  * already concealed every approval it could see. Hold this lock from that concealment until the
  * transaction ends, and take it before every insert that commits. */
-export function copyrightJurisdictionPolicyLockKey(
+function copyrightJurisdictionPolicyLockKey(
   jurisdiction: TerritorialCopyrightJurisdiction,
 ): string {
   return `copyright-jurisdiction-policy:${jurisdiction}`
 }
 
-export async function lockCopyrightJurisdictionPolicy(
+async function lockCopyrightJurisdictionPolicy(
   jurisdiction: TerritorialCopyrightJurisdiction,
   query: TransactionQuery,
 ): Promise<void> {

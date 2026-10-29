@@ -17,7 +17,7 @@ import {
 } from './index.mts'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

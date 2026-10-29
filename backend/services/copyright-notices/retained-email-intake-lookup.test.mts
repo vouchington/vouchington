@@ -9,7 +9,7 @@ import { recordCopyrightEmailParse } from './email-intake-parses.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { eraseTestCopyrightEmailIntakeSender } from '@voucha/test-helpers/copyright-email-intake-retention'
 
 describe('retained copyright email intake lookup', () => {

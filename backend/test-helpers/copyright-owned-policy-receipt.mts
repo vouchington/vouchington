@@ -1,7 +1,7 @@
 import { beginTransaction, writePool, type PoolClient } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '../services/users/types.mts'
-import { copyrightJurisdictionPolicyLockKey } from '../services/copyright-notices/jurisdiction-policy.mts'
+import { copyrightJurisdictionPolicyLockKey } from './copyright-jurisdiction-policy-lock.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from '../services/copyright-notices/territorial-notice-receipt.mts'
 import { onTestFinished } from 'vitest'
 import { TEST_STATEMENT_TIMEOUT_MS } from './statement-timeout-constant.mts'

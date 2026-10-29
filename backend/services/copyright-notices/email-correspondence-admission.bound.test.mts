@@ -5,7 +5,7 @@ import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright
 import { admitCopyrightEmailWithConcurrentRecommendation } from '@voucha/test-helpers/copyright-email-admission-race'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 describe('copyright correspondence lock order', () => {
   it('commits manual-fallback admission alongside a recommendation holding the notice lock', async () => {

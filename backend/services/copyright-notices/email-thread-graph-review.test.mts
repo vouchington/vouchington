@@ -14,7 +14,7 @@ import {
   readCopyrightEmailGraphTokens,
   readCopyrightEmailThreadGraph,
 } from './email-thread-graph.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
 describe('copyright email graph review boundaries', () => {
