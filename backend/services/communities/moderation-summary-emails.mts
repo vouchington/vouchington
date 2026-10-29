@@ -140,7 +140,7 @@ export function getModerationActivityWindowStart(
   return new Date(now.getTime() - hours * 60 * 60 * 1000)
 }
 
-export async function claimModerationEmailSend(userId: string, sendKey: string): Promise<boolean> {
+async function claimModerationEmailSend(userId: string, sendKey: string): Promise<boolean> {
   const { rows } = await write(sql`/* claimModerationEmailSend */
     INSERT INTO user_moderation_email_sends (user_id, send_key)
     VALUES (${userId}, ${sendKey})
@@ -543,7 +543,7 @@ function hasModerationSummaryWork(
   )
 }
 
-export function isModerationEmailDue(recipient: ModerationRecipientRow, now: Date): boolean {
+function isModerationEmailDue(recipient: ModerationRecipientRow, now: Date): boolean {
   if (
     timeToMinutes(formatLocalTime(now, recipient.moderation_email_timezone)) <
     timeToMinutes(recipient.moderation_email_time_of_day)

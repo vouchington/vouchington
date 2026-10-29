@@ -1,4 +1,4 @@
-import { read } from '../data-stores/psql/index.mts'
+import { read, write } from '../data-stores/psql/index.mts'
 import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
 import { insertTestCommunity } from './entities/communities.mts'
@@ -10,10 +10,23 @@ import { insertTestPendingCommunityPostReview } from './entities/community-post-
 import { insertTestPost } from './entities/posts.mts'
 import { insertTestCommunityVacation } from './entities/community-member-vacations.mts'
 import {
-  claimModerationEmailSend,
   formatLocalDate,
   getIsoWeekKey,
 } from '../services/communities/moderation-summary-emails.mts'
+
+/** Inserts a moderation email claim row; false when the claim already exists. */
+export async function claimTestModerationEmailSend(
+  userId: string,
+  sendKey: string,
+): Promise<boolean> {
+  const { rows } = await write(sql`/* claimTestModerationEmailSend */
+    INSERT INTO user_moderation_email_sends (user_id, send_key)
+    VALUES (${userId}, ${sendKey})
+    ON CONFLICT DO NOTHING
+    RETURNING user_id
+  `)
+  return rows.length > 0
+}
 
 async function getTestModerationEmailTimezone(userId: string): Promise<string> {
   const { rows } = await read<{ moderation_email_timezone: string }>(
@@ -34,7 +47,7 @@ export async function claimCurrentModerationSummaryForTest(userId: string): Prom
   const now = new Date()
   const timeZone = await getTestModerationEmailTimezone(userId)
   const trackingKey = `daily:${formatLocalDate(now, timeZone)}`
-  await claimModerationEmailSend(userId, trackingKey)
+  await claimTestModerationEmailSend(userId, trackingKey)
   return { trackingKey, windowEnd: now.toISOString(), dispatchTimeZone: timeZone }
 }
 

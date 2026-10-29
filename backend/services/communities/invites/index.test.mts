@@ -1,20 +1,17 @@
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, beforeAll, describe, vi } from 'vitest'
+import * as psql from '@data-stores/psql'
+import * as onErrorModule from '@modules/on-error'
 import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityInvite,
-  readEnqueuedJob,
+  readAllQueueJobs,
   updateTestUserUiLocale,
   getTestCommunityInviteStorage,
 } from '@voucha/test-helpers'
 import { emails } from '@queues/emails/queues'
-import {
-  createInvite,
-  createInviteWithEmailEnqueue,
-  getCommunityInviteRecipientUiLocale,
-  type CreateInviteInput,
-} from './create.mts'
+import { createInvite, type CreateInviteInput } from './create.mts'
 import { redeemInviteCode } from './redeem.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { archiveCommunities } from '../archive.mts'
@@ -63,41 +60,44 @@ describe('index', () => {
 
     it('owner can invite by email', async () => {
       const email = `tests+invite-${crypto.randomUUID().replaceAll('-', '')}@voucha.ai`
-      const { invite, emailEnqueue } = await emailInviteAs(owner.id, community.id, {
-        email,
-      })
+      const invite = await inviteAs(owner.id, community.id, { email })
       expect(invite.invited_email).toBe(email)
-      expect(emailEnqueue).not.toBeNull()
-      const job = await readEnqueuedJob(emails, await emailEnqueue)
-      const data = job.data as { input?: { emailAddress?: string } }
-      expect(job.name).toBe('processSendCommunityInviteEmail')
-      expect(data.input?.emailAddress).toBe(email)
+      const job = await findQueuedInviteEmail(email)
+      expect(job?.name).toBe('processSendCommunityInviteEmail')
+      expect(job?.data).toMatchObject({ input: { emailAddress: email } })
     })
 
     it('includes invited registered user locale in queued email jobs', async () => {
       const invitee = await createTestUser()
       await updateTestUserUiLocale(invitee.id, 'fr')
-      const { emailEnqueue } = await emailInviteAs(owner.id, community.id, {
-        email: invitee.email_address!,
+      await inviteAs(owner.id, community.id, { email: invitee.email_address! })
+      const job = await findQueuedInviteEmail(invitee.email_address!)
+      expect(job?.name).toBe('processSendCommunityInviteEmail')
+      expect(job?.data).toMatchObject({
+        input: { emailAddress: invitee.email_address, uiLocale: 'fr' },
       })
-      expect(emailEnqueue).not.toBeNull()
-      const job = await readEnqueuedJob(emails, await emailEnqueue)
-      const data = job.data as { input?: { emailAddress?: string; uiLocale?: string | null } }
-      expect(
-        job.name === 'processSendCommunityInviteEmail' &&
-          data.input?.emailAddress === invitee.email_address &&
-          data.input?.uiLocale === 'fr',
-      ).toBe(true)
     })
 
-    it('falls back when recipient locale lookup fails', async () => {
-      for (const error of [new Error('lookup unavailable'), new Error('other lookup failure')]) {
-        await expect(
-          getCommunityInviteRecipientUiLocale('tests+lookup-failure@voucha.ai', () =>
-            Promise.reject(error),
-          ),
-        ).resolves.toBeNull()
+    it('still invites and reports the error when the recipient locale lookup fails', async () => {
+      const email = `tests+lookup-failure-${crypto.randomUUID().replaceAll('-', '')}@voucha.ai`
+      const lookupError = new Error('lookup unavailable')
+      const realRead = psql.read
+      const readSpy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
+        const text = typeof query === 'string' ? query : query.text
+        if (text.includes('getCommunityInviteRecipientUiLocale')) return Promise.reject(lookupError)
+        return realRead(query, ...rest)
+      })
+      const reportError = vi.spyOn(onErrorModule, 'default').mockReturnValue(undefined)
+      try {
+        const invite = await inviteAs(owner.id, community.id, { email })
+        expect(invite.invited_email).toBe(email)
+        expect(reportError).toHaveBeenCalledWith(lookupError)
+      } finally {
+        readSpy.mockRestore()
+        reportError.mockRestore()
       }
+      const job = await findQueuedInviteEmail(email)
+      expect(job?.data).toMatchObject({ input: { emailAddress: email, uiLocale: null } })
     })
 
     it('rejects invite when both username and email provided', async () => {
@@ -284,7 +284,12 @@ async function inviteAs(userId: string, communityId: string, input: CreateInvite
   return createInvite(userId, loaded, input)
 }
 
-async function emailInviteAs(userId: string, communityId: string, input: CreateInviteInput) {
-  const loaded = await loadCommunityWithViewer(communityId, userId)
-  return createInviteWithEmailEnqueue(userId, loaded, input)
+async function findQueuedInviteEmail(emailAddress: string) {
+  const jobs = await readAllQueueJobs(emails)
+  return jobs.find(job => {
+    const data = job.data as { input?: { emailAddress?: string } }
+    return (
+      job.name === 'processSendCommunityInviteEmail' && data.input?.emailAddress === emailAddress
+    )
+  })
 }
