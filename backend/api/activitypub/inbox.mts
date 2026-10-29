@@ -135,7 +135,8 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
   const jobId = createActivityPubInboxDeliveryJobId(delivery.requestDigest)
   const ttlMs = getActivityPubInboxDeliveryTtlMs(
     ACTIVITYPUB_INBOX_LIMITS.windowSeconds.max * 1000,
-    DNS_TIMEOUT_MS + FETCH_TIMEOUT_MS * 2,
+    DNS_TIMEOUT_MS,
+    FETCH_TIMEOUT_MS,
   )
   let reserved: boolean
   try {

@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-import { createActivityPubInboxDeliveryJobId, enqueueActivityPubInboxDelivery } from './inbox.mts'
+import {
+  createActivityPubInboxDeliveryJobId,
+  enqueueActivityPubInboxDelivery,
+  getActivityPubInboxDeliveryTtlMs,
+} from './inbox.mts'
+import { ACTIVITYPUB_INBOX_JOB_POLICY } from '@queues/background/enqueues/activitypub-jobs'
 import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES } from '../../../services/ap-inbox-activities/durable-delivery-data-contract.mts'
 
@@ -19,6 +24,17 @@ const makeDelivery = () => ({
 })
 
 describe('ActivityPub inbox enqueue', () => {
+  it('budgets both actor fetch phases across retries and the final attempt', () => {
+    const baseline = getActivityPubInboxDeliveryTtlMs(60_000, 5_000, 10_000)
+    const attemptsWithMargin = ACTIVITYPUB_INBOX_JOB_POLICY.attempts + 1
+    expect(getActivityPubInboxDeliveryTtlMs(60_000, 5_001, 10_000) - baseline).toBe(
+      attemptsWithMargin,
+    )
+    expect(getActivityPubInboxDeliveryTtlMs(60_000, 5_000, 10_001) - baseline).toBe(
+      attemptsWithMargin * 2,
+    )
+  })
+
   it('keeps the exact envelope in a sensitive, deduplicated job', async () => {
     const data = makeDelivery()
     const jobId = createActivityPubInboxDeliveryJobId(data.requestDigest)

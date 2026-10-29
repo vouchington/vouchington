@@ -338,6 +338,7 @@ Each accepted job holds its own reservation through retries and sender delays; t
 and explicit removal release it independently of earlier jobs. Saturation produces a retryable
 response before acceptance. Expired reservations are revalidated against their exact native jobs
 during the next admission: missing or terminal jobs free capacity, while live paused jobs retain
-their slots. This repairs lost release events without undercounting queued payloads. Sensitive
-envelopes are removed after terminal failure as well as completion, so retry exhaustion can
+their slots. The sweep also removes retained terminal inbound envelopes, so missed terminal events
+cannot retain sensitive bodies or consume capacity indefinitely. Sensitive envelopes are removed
+after terminal failure as well as completion, so retry exhaustion can
 discard a delivery that was already acknowledged.

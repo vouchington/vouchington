@@ -27,9 +27,11 @@ export function createActivityPubInboxDeliveryJobId(requestDigest: string): stri
 /** The reservation self-heal interval follows retries, sender delay, and actor-fetch deadlines. */
 export function getActivityPubInboxDeliveryTtlMs(
   maxSenderDelayMs: number,
-  actorFetchDeadlineMs: number,
+  dnsTimeoutMs: number,
+  fetchTimeoutMs: number,
 ): number {
   const { attempts, backoff } = ACTIVITYPUB_INBOX_JOB_POLICY
+  const actorFetchDeadlineMs = dnsTimeoutMs + fetchTimeoutMs * 2
   let retryBackoffMs = 0
   for (let attempt = 1; attempt < attempts; attempt += 1)
     retryBackoffMs += backoff.delay * 2 ** (attempt - 1) * (1 + backoff.jitter)

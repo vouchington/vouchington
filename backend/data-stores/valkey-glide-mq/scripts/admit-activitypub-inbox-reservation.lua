@@ -3,18 +3,29 @@ local jobId = ARGV[1]
 local cap = tonumber(ARGV[2])
 local ttl = tonumber(ARGV[3])
 local jobKeyPrefix = ARGV[4]
+local queuePrefix = string.sub(jobKeyPrefix, 1, #jobKeyPrefix - #'job:')
 local maxCap = tonumber(ARGV[5])
 local time = redis.call('TIME')
 local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
 
--- An expired reservation is only stale when its exact native job has disappeared.
--- A paused or delayed job can outlive the usual retry window, and native expiry
--- can leave a sensitive failed hash until the observer removes it.
+-- The dynamic job keys use the same {queue} hash slot as KEYS[1]. Only this
+-- bounded page of expired reservations is inspected; paused jobs stay charged.
 local expired = redis.call('ZRANGEBYSCORE', key, '-inf', now, 'LIMIT', 0, maxCap + 1)
 if #expired > maxCap then return -1 end
 redis.call('ZREMRANGEBYSCORE', key, '-inf', now)
 for _, expiredJobId in ipairs(expired) do
-  if redis.call('EXISTS', jobKeyPrefix .. expiredJobId) == 1 then
+  local jobKey = jobKeyPrefix .. expiredJobId
+  local state = redis.call('HGET', jobKey, 'state')
+  if state == 'failed' or state == 'completed' then
+    -- Native expiry/revocation can retain a terminal sensitive envelope when
+    -- no observer was running. Never delete a non-inbound job hash.
+    if string.sub(expiredJobId, 1, #'activitypub-inbox__') == 'activitypub-inbox__' and
+       redis.call('HGET', jobKey, 'name') == 'activitypub.processDelivery' then
+      redis.call('ZREM', queuePrefix .. 'completed', expiredJobId)
+      redis.call('ZREM', queuePrefix .. 'failed', expiredJobId)
+      redis.call('UNLINK', jobKey, queuePrefix .. 'log:' .. expiredJobId)
+    end
+  elseif redis.call('EXISTS', jobKey) == 1 then
     redis.call('ZADD', key, now + ttl, expiredJobId)
   end
 end

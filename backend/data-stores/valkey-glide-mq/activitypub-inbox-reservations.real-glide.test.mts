@@ -109,26 +109,6 @@ describe('ActivityPub inbox reservations', () => {
     }
   })
 
-  it('retains an expired reservation while a failed native job hash still exists', async () => {
-    const queueName = `activitypub_inbox_failed_hash_${randomUUID()}`
-    const prefix = `inbox_reservation_failed_hash_${randomUUID()}`
-    const key = activityPubInboxReservationKey(queueName, prefix)
-    const jobId = `activitypub-inbox__${randomUUID()}`
-    const jobKey = `${prefix}:{${queueName}}:job:${jobId}`
-    try {
-      await workerQueueCommandClient.hset(jobKey, { state: 'failed' })
-      await workerQueueCommandClient.zadd(key, { [jobId]: Date.now() - 60_000 })
-
-      expect(
-        await reserveActivityPubInboxDelivery(queueName, randomUUID(), 1, ttlMs, 1, prefix),
-      ).toBe(false)
-      expect(await workerQueueCommandClient.zcard(key)).toBe(1)
-      expect(await workerQueueCommandClient.zscore(key, jobId)).not.toBeNull()
-    } finally {
-      await workerQueueCommandClient.unlink([key, jobKey])
-    }
-  })
-
   it('removes a retained terminal failure and releases a later completion', async () => {
     const queueName = `activitypub_inbox_terminal_${randomUUID()}`
     const prefix = `inbox_reservation_terminal_${randomUUID()}`
