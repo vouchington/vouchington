@@ -82,6 +82,20 @@ it('catches immediate error', () => {
     )
   })
 
+  it('fails an unscoped afterAll call', async () => {
+    const result = await runFixture([
+      {
+        name: 'after-all.test.mts',
+        source: `import { afterAll, it } from 'vitest'
+import { observeSharedDbScope } from ${JSON.stringify(observerPath)}
+afterAll(() => { try { ${scopeCall('listCopyrightStaffQueue', `{ kind: 'global' }`)} } catch {} })
+it('runs', () => {})`,
+      },
+    ])
+    expect(result.exitCode).not.toBe(0)
+    expect(result.output).toContain('listCopyrightStaffQueue on copyright_notices')
+  })
+
   it('retains violations across resetModules', async () => {
     const result = await runFixture([
       {

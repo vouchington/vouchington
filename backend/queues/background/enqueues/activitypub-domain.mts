@@ -1,7 +1,7 @@
 import { defineBackgroundDomain } from './define-job.mts'
 
-// Reserve independent delivery and cleanup capacity so inbound traffic cannot occupy outbound
-// or retention slots. The worker baseline sizes only one process.
+// Reserve independent inbound and outbound delivery capacity so an inbound flood cannot occupy
+// outbound slots. The worker baseline sizes only one process.
 export const ACTIVITYPUB_DOMAIN = defineBackgroundDomain({
   domain: 'activitypub',
   workerConcurrency: 10,
