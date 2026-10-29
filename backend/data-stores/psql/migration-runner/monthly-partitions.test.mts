@@ -3,6 +3,7 @@ import {
   createCopyrightPartitionRetirementRecorder,
   createPartitionRetirementFailureFixture,
 } from '@voucha/test-helpers/partition-retirement-failure'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
 import { write } from '../setup.mts'
 import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
@@ -161,6 +162,37 @@ describe('monthly partition retirement', () => {
     expect(fixture.statements).toEqual([
       '/* cleanupPartitions:lockParent */ LOCK TABLE rss_feed_crawls IN ACCESS EXCLUSIVE MODE',
     ])
+    await expect(fixture.readMarkdown()).resolves.toBe(fixture.originalMarkdown)
+  })
+
+  it('treats a NOWAIT lock conflict as a normal refusal without reporting it', async () => {
+    const partition = 'topic_revisions__p_1999_12'
+    const fixture = await createPartitionRetirementFailureFixture({
+      lockStatementPrefix: '/* cleanupPartitions:lockReference */',
+      failure: Object.assign(new Error('lock unavailable'), { code: '55P03' }),
+    })
+    const captureOffset = sentryCaptureExceptionMock.mock.calls.length
+
+    await expect(
+      retireMonthlyPartitionCandidate(
+        {
+          table: 'topic_revisions',
+          partition,
+          upperBound: new Date('2000-01-01T00:00:00.000Z'),
+        },
+        new Date('2013-01-15T00:00:00.000Z'),
+        fixture.begin,
+      ),
+    ).resolves.toEqual({
+      table: 'topic_revisions',
+      partition,
+      outcome: 'refused',
+      reason: 'lock-contention',
+    })
+    expect(fixture.statements).toEqual([
+      '/* cleanupPartitions:lockReference */ LOCK TABLE topics, users IN ACCESS EXCLUSIVE MODE NOWAIT',
+    ])
+    expect(sentryCaptureExceptionMock.mock.calls).toHaveLength(captureOffset)
     await expect(fixture.readMarkdown()).resolves.toBe(fixture.originalMarkdown)
   })
 })

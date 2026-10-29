@@ -27,7 +27,6 @@ describe('runVitestProjectGroup', () => {
     expect(docker).toEqual([
       'backend/analytics-integration',
       'backend-data-stores',
-      'backend-partition-retirement',
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-real-glide-mq',
@@ -87,8 +86,6 @@ describe('runVitestProjectGroup', () => {
           'backend/analytics-integration',
           '--project',
           'backend-data-stores',
-          '--project',
-          'backend-partition-retirement',
           '--project',
           'backend-platform-stats-cache',
           '--project',

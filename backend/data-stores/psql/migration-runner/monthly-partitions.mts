@@ -28,7 +28,7 @@ export type PartitionDropOutcome = {
   table: string
   partition: string
   outcome: 'dropped' | 'refused'
-  reason?: PartitionDropRefusal | 'retirement-error'
+  reason?: PartitionDropRefusal | 'lock-contention' | 'retirement-error'
 }
 
 export type PartitionCleanupPage = {
@@ -96,6 +96,9 @@ export async function retireMonthlyPartitionCandidate(
     await transaction.commit()
     return { ...base, outcome: 'dropped' }
   } catch (err) {
+    if (err instanceof Error && 'code' in err && err.code === '55P03') {
+      return { ...base, outcome: 'refused', reason: 'lock-contention' }
+    }
     onError(new Error(`Failed to retire partition ${candidate.partition}`, { cause: err }))
     return { ...base, outcome: 'refused', reason: 'retirement-error' }
   }

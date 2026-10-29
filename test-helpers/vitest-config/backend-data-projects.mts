@@ -118,19 +118,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/api/v1/platform-stats/platform-stats.test.mts',
         'backend/api/activitypub/inbox-capacity.test.mts',
         'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
-        'backend/services/topic-revisions/monthly-retirement.test.mts',
       ],
-    },
-  },
-  {
-    extends: true,
-    test: {
-      ...backendDataStoreTestDefaults,
-      name: 'backend-partition-retirement',
-      sequence: { groupOrder: 1 },
-      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-      include: ['backend/services/topic-revisions/monthly-retirement.test.mts'],
-      exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
   {
