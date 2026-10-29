@@ -2,6 +2,7 @@ import { beginTransaction, write, type QueryOptions } from '@data-stores/psql'
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,
+  type PostModerationVersion,
   type RecordPostModerationDisposition,
 } from './moderation-ledger-types.mts'
 import {
@@ -9,14 +10,6 @@ import {
   selectCapturedPostVersions,
 } from './moderation-ledger-version-resolution.mts'
 import { runPostClearanceTransaction } from './status-transaction.mts'
-
-export type PostModerationVersion = {
-  id: string
-  post_id: string
-  content_sha256: Buffer
-  policy_revision: string
-  deadline_at: Date
-}
 
 export async function ensureCurrentPostModerationVersion(
   postId: string,
