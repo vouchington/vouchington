@@ -45,6 +45,22 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table
  STABLE
 ```
 
+## `fn_copyright_thread_blocker_case_id(source_table text, source_row jsonb)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_thread_blocker_case_id(source_table text, source_row jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+```
+
+## `fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_community_search_counts`
 
 ```sql
@@ -138,6 +154,22 @@ CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_copyright_email_ancestor_live_endpoints`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_copyright_email_ancestor_live_endpoints()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_copyright_email_source_active_receipt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_copyright_email_source_active_receipt()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -885,6 +917,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_submission()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_operational_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_operational_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_repeat_infringer_incident`
 
 ```sql
@@ -1395,6 +1435,70 @@ CREATE OR REPLACE FUNCTION public.fn_update_copyright_action_work()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_preservation_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_preservation_generation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_activity_on_correspondence_review`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_correspondence_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_activity_on_edge`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_edge()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_activity_on_intake_review`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_intake_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_activity_on_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_activity_on_reference`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_reference()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_blocker_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_blocker_generation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_copyright_thread_party_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_party_generation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

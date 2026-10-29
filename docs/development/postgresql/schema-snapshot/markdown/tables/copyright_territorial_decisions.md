@@ -49,7 +49,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_territorial_decisions_pkey`: `CREATE UNIQUE INDEX copyright_territorial_decisions_pkey ON public.copyright_territorial_decisions USING btree (id)`
 - `copyright_territorial_decisions_supersedes_decision_id_key`: `CREATE UNIQUE INDEX copyright_territorial_decisions_supersedes_decision_id_key ON public.copyright_territorial_decisions USING btree (supersedes_decision_id)`
-- `idx_copyright_territorial_decisions__assessment`: `CREATE INDEX idx_copyright_territorial_decisions__assessment ON public.copyright_territorial_decisions USING btree (copyright_notice_submission_assessment_id) WHERE (copyright_notice_submission_assessment_id IS NOT NULL)`
+- `idx_copyright_territorial_decisions__assessment`: `CREATE INDEX idx_copyright_territorial_decisions__assessment ON public.copyright_territorial_decisions USING btree (copyright_notice_submission_assessment_id, id) WHERE (copyright_notice_submission_assessment_id IS NOT NULL)`
 - `idx_copyright_territorial_decisions__decided_by`: `CREATE INDEX idx_copyright_territorial_decisions__decided_by ON public.copyright_territorial_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)`
 - `uq_copyright_territorial_decisions__notice_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_decisions__notice_id ON public.copyright_territorial_decisions USING btree (copyright_notice_id, id)`
 - `uq_copyright_territorial_decisions__original`: `CREATE UNIQUE INDEX uq_copyright_territorial_decisions__original ON public.copyright_territorial_decisions USING btree (copyright_notice_id, jurisdiction) WHERE (supersedes_decision_id IS NULL)`
@@ -58,3 +58,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_territorial_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_copyright_territorial_decisions_scope`: `CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision()`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`

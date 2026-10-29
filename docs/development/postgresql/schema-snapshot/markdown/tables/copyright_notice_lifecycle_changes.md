@@ -86,7 +86,7 @@ Not partitioned — growth: unbounded.
 - `copyright_lifecycle_event_action_intent_fk`: `FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id) REFERENCES copyright_notice_action_work_items(copyright_notice_id, id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_delivery_intent_fk`: `FOREIGN KEY (copyright_notice_delivery_work_item_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_email_intake_fk`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `copyright_lifecycle_event_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT`
+- `copyright_lifecycle_event_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capability_identities(id, copyright_notice_id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_media_registry_fk`: `FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT`
 - `copyright_notice_lifecycle_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_notice_lifecycle_changes_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`

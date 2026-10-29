@@ -45,4 +45,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_email_link_active_receipt`: `CREATE TRIGGER trigger_copyright_email_link_active_receipt BEFORE INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_email_thread_links_immutable`: `CREATE TRIGGER trigger_copyright_email_thread_links_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_copyright_thread_activity_on_link`: `CREATE TRIGGER trigger_copyright_thread_activity_on_link AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link()`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`

@@ -51,6 +51,7 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_restrictions__human_reviewer`: `CREATE INDEX idx_copyright_restrictions__human_reviewer ON public.copyright_restrictions USING btree (human_reviewed_by_id) WHERE (human_reviewed_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__imposed_by`: `CREATE INDEX idx_copyright_restrictions__imposed_by ON public.copyright_restrictions USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__lifted_by`: `CREATE INDEX idx_copyright_restrictions__lifted_by ON public.copyright_restrictions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
+- `idx_copyright_restrictions__notice_id`: `CREATE INDEX idx_copyright_restrictions__notice_id ON public.copyright_restrictions USING btree (copyright_notice_id, id)`
 - `idx_copyright_restrictions__one_active_per_target`: `CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON public.copyright_restrictions USING btree (copyright_notice_target_id) WHERE (lifted_at IS NULL)`
 - `idx_copyright_restrictions__target`: `CREATE INDEX idx_copyright_restrictions__target ON public.copyright_restrictions USING btree (copyright_notice_target_id)`
 
@@ -59,4 +60,5 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_restriction_assessment_scope`: `CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope()`
 - `trigger_copyright_restrictions_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_lifecycle()`
 - `trigger_copyright_restrictions_updated_at`: `CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
 - `trigger_update_copyright_restrictions_scope`: `CREATE TRIGGER trigger_update_copyright_restrictions_scope BEFORE INSERT ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_targets', 'copyright_notice_target_id')`

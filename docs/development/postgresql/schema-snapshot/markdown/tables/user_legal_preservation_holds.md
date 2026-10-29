@@ -34,6 +34,7 @@ _none_
 
 **Indexes:**
 
+- `idx_user_legal_preservation_holds__account_release`: `CREATE INDEX idx_user_legal_preservation_holds__account_release ON public.user_legal_preservation_holds USING btree (account_user_id, released_at DESC)`
 - `idx_user_legal_preservation_holds__account_user_id`: `CREATE INDEX idx_user_legal_preservation_holds__account_user_id ON public.user_legal_preservation_holds USING btree (account_user_id, id DESC)`
 - `idx_user_legal_preservation_holds__one_open`: `CREATE UNIQUE INDEX idx_user_legal_preservation_holds__one_open ON public.user_legal_preservation_holds USING btree (account_user_id) WHERE (released_at IS NULL)`
 - `idx_user_legal_preservation_holds__placed_by_id`: `CREATE INDEX idx_user_legal_preservation_holds__placed_by_id ON public.user_legal_preservation_holds USING btree (placed_by_id)`
@@ -42,4 +43,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_copyright_preservation_generation`: `CREATE TRIGGER trigger_copyright_preservation_generation BEFORE INSERT OR UPDATE OF released_at ON public.user_legal_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_preservation_generation()`
 - `trigger_user_legal_preservation_holds_reject_mutation`: `CREATE TRIGGER trigger_user_legal_preservation_holds_reject_mutation BEFORE DELETE OR UPDATE ON public.user_legal_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_reject_user_legal_preservation_hold_mutation()`

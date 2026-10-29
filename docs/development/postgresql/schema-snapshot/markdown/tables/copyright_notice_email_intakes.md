@@ -8,7 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                                                                           |
 | ----------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                                                                   |
+| `id`                    | `uuid`                     | no       |                              |          |           |           |                                                                                                                                                                                                                                   |
 | `amazon_ses_message_id` | `text`                     | no       |                              |          |           |           | Stable SES delivery identifier used for replay-safe admission.                                                                                                                                                                    |
 | `received_at`           | `timestamp with time zone` | no       |                              |          |           |           | Timestamp assigned by the inbound email delivery.                                                                                                                                                                                 |
 | `raw_storage_object_id` | `uuid`                     | yes      |                              |          |           |           | Registry identity of the immutable original RFC 5322 object; cleared only by retention erasure after the object is no longer shared.                                                                                              |
@@ -41,6 +41,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
+- `copyright_notice_email_intakes_id_fkey`: `FOREIGN KEY (id) REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intakes_raw_media_type_id_fkey`: `FOREIGN KEY (raw_media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intakes__raw_storage_object`: `FOREIGN KEY (raw_storage_object_id) REFERENCES copyright_notice_storage_objects(id) ON DELETE RESTRICT`
 

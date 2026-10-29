@@ -49,3 +49,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_deadlines_guard`: `CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_deadline()`
 - `trigger_copyright_deadlines_updated_at`: `CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
