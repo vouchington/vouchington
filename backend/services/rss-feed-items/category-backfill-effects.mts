@@ -9,8 +9,7 @@ export async function publishCategoryBackfillEffects(
   changedItemIds: string[],
 ): Promise<void> {
   await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
-  await invalidateRssFeedItemChunks(changedItemIds)
-  await enqueueRefreshTopHashtags()
+  await Promise.all([invalidateRssFeedItemChunks(changedItemIds), enqueueRefreshTopHashtags()])
 }
 
 async function invalidateRssFeedItemChunks(itemIds: string[]): Promise<void> {

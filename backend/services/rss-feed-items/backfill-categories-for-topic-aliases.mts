@@ -8,17 +8,14 @@ import {
 } from './category-topic-votes.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services/elections-votes/entity-relation/vote-stats-batch'
 import { markRssFeedItemCategorySnapshotsForReconciliation } from './category-snapshot-reconciliations.mts'
-import {
-  lockRssFeedItemsForStoryPublicationChanges,
-  recordStoryPublicationChangesForCategoryTopics,
-} from './story-publication-change.mts'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import { runCategoryTransaction } from './category-transaction.mts'
 import { publishCategoryBackfillEffects } from './category-backfill-effects.mts'
 import {
   stillOwnsCategoryBackfill,
   type CategoryBackfillMatch,
 } from './category-backfill-owner.mts'
+import { lockCategoryBackfillPage } from './category-backfill-locks.mts'
 
 export type CategoryBackfillRawPage = {
   rows: Array<{ rss_feed_item_id: string; category_identity_id: string }>
@@ -91,22 +88,7 @@ async function backfillCategoryBatch(
     const oldTopicIds = candidateItems.flatMap(row =>
       row.previous_topic_id ? [row.previous_topic_id] : [],
     )
-    await lockTopicRssFeedAttachmentLifecycles(query, [topicId, ...oldTopicIds])
-    await lockRssFeedItemsForStoryPublicationChanges(query, candidateItemIds)
-    await query(
-      `/* backfillCategoriesForTopicAliases lockRawCategories */
-       SELECT category.rss_feed_item_id
-       FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_item_id, category_identity_id)
-       JOIN rss_feed_item_categories category
-         ON category.rss_feed_item_id = raw.rss_feed_item_id
-         AND category.category_identity_id = raw.category_identity_id
-       ORDER BY category.rss_feed_item_id, category.category_identity_id
-       FOR UPDATE OF category`,
-      [
-        candidateItems.map(row => row.rss_feed_item_id),
-        candidateItems.map(row => row.category_identity_id),
-      ],
-    )
+    await lockCategoryBackfillPage(query, topicId, oldTopicIds, candidateItemIds, candidateItems)
     if (!(await stillOwnsCategoryBackfill(query, topicId, rawPage.match)))
       return { rows: [], changedItemIds: [], statTargets: [], hasMore }
     const { rows } = await query<{

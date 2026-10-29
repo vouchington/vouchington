@@ -80,7 +80,9 @@ export const processTopicAliasesUpdate = async ({
 
   // Alias transitions are drained from their durable per-alias generations.
   // The topic jobs page only the current name and slug identities.
-  await enqueueBackfillCategoriesForTopicAliases(topicId)
-  await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId)
-  await enqueueContinueTopicAliasCategoryMappingReconciliation()
+  await Promise.all([
+    enqueueBackfillCategoriesForTopicAliases(topicId),
+    enqueueBackfillRssFeedCategoriesForTopicAlias(topicId),
+    enqueueContinueTopicAliasCategoryMappingReconciliation(),
+  ])
 }
