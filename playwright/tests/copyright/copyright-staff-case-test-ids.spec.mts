@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser } from '../../helpers/auth.mts'
 import { createCopyrightCaseFixture } from '../../helpers/create-copyright-case-fixture.mts'
 import { revealOwnedQueueItem } from '../../helpers/copyright-queue.mts'
 import {
@@ -18,7 +18,7 @@ async function openCase(
   page: Page,
   fixture: Awaited<ReturnType<typeof createCopyrightCaseFixture>>,
 ) {
-  await loginAsUser(page, fixture.moderator.id)
+  await loginAsMfaUser(page, fixture.moderator.id)
   await navigateTo(page, '/copyright/review-queue')
   const item = page
     .getByRole('article')

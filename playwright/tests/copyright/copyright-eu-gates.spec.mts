@@ -1,7 +1,7 @@
-import { expect, test, type Page } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts, type Page } from '../../helpers/test.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
 import { revealOwnedQueueItem } from '../../helpers/copyright-queue.mts'
 import {
   approveJurisdictionPolicy,
@@ -63,16 +63,18 @@ test.describe('EU copyright controls with an approved policy', () => {
   let approvalId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     actors = await createTerritorialActors()
     approvalId = (await approveJurisdictionPolicy(actors.administrator, 'eu_dsa')).id
   })
 
   test.afterAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     await withdrawCopyrightJurisdictionPolicyApproval(actors.administrator, approvalId)
   })
 
   async function openStaffCase(page: Page, noticeId: string) {
-    await loginAsUser(page, actors.staff.id)
+    await loginAsMfaUser(page, actors.staff.id)
     await navigateTo(page, '/copyright/review-queue')
     const item = page
       .getByRole('article')

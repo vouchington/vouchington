@@ -14,7 +14,6 @@ import type {
   CopyrightTerritorialComplaintsPage,
 } from '@/lib/api/client/copyright-territorial-redress'
 import { ExternalLink } from '@/components/ui/external-link'
-
 export function CopyrightStaffTerritorial({
   item,
   pending,

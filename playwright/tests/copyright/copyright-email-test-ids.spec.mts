@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { expect, test, type Page } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser } from '../../helpers/auth.mts'
 import { revealOwnedQueueItem } from '../../helpers/copyright-queue.mts'
 import { createTestUser } from '../../../backend/test-helpers/entities/users.mts'
 import { createParsedCopyrightEmailIntake } from '../../../backend/test-helpers/copyright-email-intake-fixtures.mts'
@@ -18,7 +18,7 @@ const QUEUE_ENDPOINT = '/api/v1/copyright-email-intakes/review-queue'
 
 async function openQueueItem(page: Page, name: string) {
   const staff = await createTestUser({ administrator: true })
-  await loginAsUser(page, staff.id)
+  await loginAsMfaUser(page, staff.id)
   await navigateTo(page, '/copyright/email-review')
   const item = page.getByRole('button', { name, exact: true })
   await revealOwnedQueueItem(page, item, QUEUE_ENDPOINT)
