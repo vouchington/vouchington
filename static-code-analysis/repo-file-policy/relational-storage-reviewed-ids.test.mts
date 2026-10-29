@@ -171,6 +171,23 @@ describe('reviewed token and audit snapshot identifiers', () => {
       'cursor_upper_id',
       'token, cursor or protocol identifier',
     ],
+    ['topic_alias_category_mapping_reconciliations', 'cursor_item_id', 'nonrelationship UUID'],
+    [
+      'topic_alias_category_mapping_reconciliations',
+      'cursor_category_identity_id',
+      'nonrelationship UUID',
+    ],
+    ['topic_alias_category_mapping_reconciliations', 'cursor_feed_id', 'nonrelationship UUID'],
+    [
+      'topic_alias_category_mapping_reconciliations',
+      'sweep_upper_bound_item_id',
+      'nonrelationship UUID',
+    ],
+    [
+      'topic_alias_category_mapping_reconciliations',
+      'sweep_upper_bound_feed_id',
+      'nonrelationship UUID',
+    ],
     ['post_votes', 'device_id', 'token, cursor or protocol identifier'],
     ['oauth_authorization_server_events', 'client_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'client_id', 'audit snapshot identifier'],
