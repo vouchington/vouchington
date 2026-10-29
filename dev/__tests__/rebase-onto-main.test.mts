@@ -113,6 +113,15 @@ describe('rebase-onto-main', () => {
     expect(result.log).not.toContain('--onto')
   })
 
+  it('keeps gh stack rebase when run from a merged lower layer', async () => {
+    const result = await runRebase(['--stack', '--upstack'], {
+      FAKE_STACK_JSON: stackJson([true, false], 0),
+    })
+    expect(result.exitCode).toBe(0)
+    expect(result.log).toContain('gh stack rebase --upstack')
+    expect(result.log).not.toContain('git rebase')
+  })
+
   it('rebases a lone open layer onto origin/main', async () => {
     const result = await runRebase(['--stack'], { FAKE_STACK_JSON: stackJson([false]) })
     expect(result.exitCode).toBe(0)
@@ -121,9 +130,10 @@ describe('rebase-onto-main', () => {
   })
 })
 
-function stackJson(merged: boolean[]) {
+function stackJson(merged: boolean[], current = merged.length - 1) {
   return JSON.stringify({
     branches: merged.map((isMerged, index) => ({
+      isCurrent: index === current,
       isMerged,
       name: `layer-${index}`,
       pr: { number: 100 + index, state: isMerged ? 'MERGED' : 'OPEN' },

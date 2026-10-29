@@ -44,16 +44,18 @@ fi
 
 git -C "$REPO_ROOT" fetch origin main
 
-# Prints the open layer count, then the PR number of the highest merged layer (if any).
+# Prints "last" when the checked-out branch is the only open layer, then the PR number
+# of the highest merged layer (if any).
 stack_layers() {
   gh stack view --json 2>/dev/null | node -e '
     let input = ""
     process.stdin.on("data", chunk => (input += chunk))
     process.stdin.on("end", () => {
       const { branches } = JSON.parse(input)
+      const open = branches.filter(branch => !branch.isMerged)
       const merged = branches.filter(branch => branch.isMerged && branch.pr)
-      const open = branches.length - branches.filter(branch => branch.isMerged).length
-      console.log(open, merged.length > 0 ? merged[merged.length - 1].pr.number : "")
+      const last = open.length === 1 && open[0].isCurrent ? "last" : "stack"
+      console.log(last, merged.length > 0 ? merged[merged.length - 1].pr.number : "")
     })
   ' 2>/dev/null || echo unknown
 }
@@ -63,8 +65,8 @@ stack_layers() {
 # only the commits above that layer's merged PR head.
 ONTO_BASE=""
 if $STACK; then
-  read -r OPEN_LAYERS MERGED_PR <<<"$(stack_layers)"
-  if [ "$OPEN_LAYERS" = 1 ]; then
+  read -r LAYER MERGED_PR <<<"$(stack_layers)"
+  if [ "$LAYER" = last ]; then
     echo "Only one open stack layer remains; rebasing onto origin/main." >&2
     STACK=false
     if [ -n "${MERGED_PR:-}" ]; then
