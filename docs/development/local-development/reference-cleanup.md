@@ -6,11 +6,8 @@
 containers they leave behind, and prunable worktrees; `./dev/status` warns about them. Run cleanup
 explicitly as maintenance when finished worktrees accumulate. Git pulls and agent session startup
 do not run cleanup, so they do not wait for repository-wide scans or implicitly delete worktrees.
-A bounded scan prints a continuation command through `./dev/cleanup`; use that command to finish
-later pages while preserving the operation lock. `--max-worktrees`, `--timeout-ms`, and `--pr-limit`
-control the scan and shared PR history. Increase the timeout if one worktree repeatedly exhausts
-the budget, or increase the PR limit when an older finished PR is outside the recent history.
-`--after` resumes beyond the last completed path; keep the other options when continuing.
+Scans are bounded so one run stays short; an incomplete scan prints the `./dev/cleanup` command
+that continues it under the same operation lock (`./dev/cleanup --help` lists the scan options).
 
 Reclaim runs only through `./dev/cleanup`, inside the host-wide operation lock, so it never
 races another worktree's `./dev/initialize` and the sandbox exclusion covers it. Keep and deletion
