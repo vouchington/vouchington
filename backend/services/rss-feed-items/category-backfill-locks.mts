@@ -16,24 +16,30 @@ export async function lockCategoryBackfillPage(
   await lockCategoryItemsAndRows(query, candidateItemIds, categoryKeys)
 }
 
-async function lockCategoryItemsAndRows(
+export async function lockCategoryItemsAndRows(
   query: TransactionQuery,
   candidateItemIds: string[],
   categoryKeys: CategoryKey[],
+  purpose: 'backfill' | 'clear' = 'backfill',
 ): Promise<void> {
   await lockRssFeedItemsForStoryPublicationChanges(query, candidateItemIds)
-  await query(
-    `/* backfillCategoriesForTopicAliases lockRawCategories */
-     SELECT category.rss_feed_item_id
+  const statement = `SELECT category.rss_feed_item_id
      FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_item_id, category_identity_id)
      JOIN rss_feed_item_categories category
        ON category.rss_feed_item_id = raw.rss_feed_item_id
        AND category.category_identity_id = raw.category_identity_id
      ORDER BY category.rss_feed_item_id, category.category_identity_id
-     FOR UPDATE OF category`,
-    [
-      categoryKeys.map(row => row.rss_feed_item_id),
-      categoryKeys.map(row => row.category_identity_id),
-    ],
-  )
+     FOR UPDATE OF category`
+  const parameters = [
+    categoryKeys.map(row => row.rss_feed_item_id),
+    categoryKeys.map(row => row.category_identity_id),
+  ]
+  if (purpose === 'clear') {
+    await query(
+      `/* clearCategoriesForUnlinkedTopicAlias.lockRawCategories */ ${statement}`,
+      parameters,
+    )
+    return
+  }
+  await query(`/* backfillCategoriesForTopicAliases lockRawCategories */ ${statement}`, parameters)
 }

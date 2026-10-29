@@ -1,8 +1,8 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import type { ClearedCategoryTopicMapping } from './category-topic-votes.mts'
-import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import createHttpError from 'http-errors'
+import { lockCategoryItemsAndRows } from './category-backfill-locks.mts'
 
 export type ReResolvedCategoryTopicMapping = ClearedCategoryTopicMapping & {
   category_text: string
@@ -89,20 +89,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
       ),
     ),
   )
-  await query(
-    `/* clearCategoriesForUnlinkedTopicAlias.lockRawCategories */
-     SELECT category.rss_feed_item_id
-     FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_item_id, category_identity_id)
-     JOIN rss_feed_item_categories category
-       ON category.rss_feed_item_id = raw.rss_feed_item_id
-       AND category.category_identity_id = raw.category_identity_id
-     ORDER BY category.rss_feed_item_id, category.category_identity_id
-     FOR UPDATE OF category`,
-    [
-      candidateItems.map(row => row.rss_feed_item_id),
-      candidateItems.map(row => row.category_identity_id),
-    ],
-  )
+  await lockCategoryItemsAndRows(query, candidateItemIds, candidateItems, 'clear')
   if (rawPage.match === 'alias_text') {
     const { rows: linkedOwner } = await query<{ id: string }>(
       `/* clearCategoriesForUnlinkedTopicAlias.currentTextOwner */
@@ -135,7 +122,6 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
         'RSS item category replacement changed while acquiring attachment fences',
       )
   }
-  await lockRssFeedItemsForStoryPublicationChanges(query, candidateItemIds)
   const { rows } = await query<ReResolvedCategoryTopicMapping>(
     `/* clearCategoriesForUnlinkedTopicAlias */
       WITH input AS (
