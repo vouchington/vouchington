@@ -6,13 +6,20 @@ Coalesced cleanup/backfill work for linked topic aliases; delete tombstones have
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                         |
-| ---------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
-| `topic_alias_id` | `uuid`                     | no       |                     |          |           |           | Alias transition identity; the primary key coalesces pending work for the same alias.                           |
-| `alias`          | `text`                     | no       |                     |          |           |           | Canonical alias retained without a foreign key so delete tombstones can clear stale category mappings.          |
-| `generation`     | `bigint`                   | no       | `1`                 |          |           |           | Monotonic transition generation used to prevent stale workers from acknowledging newer alias ownership changes. |
-| `created_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
+| Column                       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                |
+| ---------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `topic_alias_id`             | `uuid`                     | no       |                     |          |           |           | Alias transition identity; the primary key coalesces pending work for the same alias.                                  |
+| `alias`                      | `text`                     | no       |                     |          |           |           | Canonical alias retained without a foreign key so delete tombstones can clear stale category mappings.                 |
+| `generation`                 | `bigint`                   | no       | `1`                 |          |           |           | Monotonic transition generation used to prevent stale workers from acknowledging newer alias ownership changes.        |
+| `unlink_requested_at`        | `timestamp with time zone` | yes      |                     |          |           |           | Copied alias unlink request timestamp while the dedicated unlink phase owns category cleanup; NULL is selectable work. |
+| `phase`                      | `smallint`                 | no       | `0`                 |          |           |           | Raw category stream for this alias generation: authored item, text item, text feed, or complete.                       |
+| `scan_upper_item_id`         | `uuid`                     | yes      |                     |          |           |           | Fixed highest item ID admitted by this generation; the nil UUID means there were no items.                             |
+| `scan_upper_feed_id`         | `uuid`                     | yes      |                     |          |           |           | Fixed highest feed ID admitted by this generation; the nil UUID means there were no feeds.                             |
+| `after_item_id`              | `uuid`                     | yes      |                     |          |           |           |                                                                                                                        |
+| `after_category_identity_id` | `uuid`                     | yes      |                     |          |           |           |                                                                                                                        |
+| `after_feed_id`              | `uuid`                     | yes      |                     |          |           |           |                                                                                                                        |
+| `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                        |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                        |
 
 **Primary key:** `PRIMARY KEY (topic_alias_id)`
 
@@ -22,13 +29,14 @@ _none_
 **Check constraints:**
 
 - `topic_alias_category_mapping_reconciliations_generation_check`: `CHECK ((generation > 0))`
+- `topic_alias_category_mapping_reconciliations_phase_check`: `CHECK (((phase >= 0) AND (phase <= 3)))`
 
 **Foreign keys:**
 _none_
 
 **Indexes:**
 
-- `idx_topic_alias_category_mapping_reconciliations__updated_at`: `CREATE INDEX idx_topic_alias_category_mapping_reconciliations__updated_at ON public.topic_alias_category_mapping_reconciliations USING btree (updated_at, topic_alias_id)`
+- `idx_topic_alias_category_mapping_reconciliations__updated_at`: `CREATE INDEX idx_topic_alias_category_mapping_reconciliations__updated_at ON public.topic_alias_category_mapping_reconciliations USING btree (updated_at, topic_alias_id) WHERE (unlink_requested_at IS NULL)`
 - `topic_alias_category_mapping_reconciliations_pkey`: `CREATE UNIQUE INDEX topic_alias_category_mapping_reconciliations_pkey ON public.topic_alias_category_mapping_reconciliations USING btree (topic_alias_id)`
 
 **Triggers:**
