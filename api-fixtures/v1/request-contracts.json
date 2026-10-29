@@ -3902,9 +3902,12 @@
                             },
                             "placement_revision": {
                               "type": "number"
+                            },
+                            "image_id": {
+                              "type": "string"
                             }
                           },
-                          "required": ["placement_id", "placement_revision"],
+                          "required": ["image_id", "placement_id", "placement_revision"],
                           "type": "object"
                         }
                       ]

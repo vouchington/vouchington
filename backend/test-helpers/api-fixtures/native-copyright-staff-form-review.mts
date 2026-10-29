@@ -54,6 +54,7 @@ export const reviewedStaffCase = {
       uploaded_by_id: '00000000-0000-7000-8000-000000000821',
       uploaded_by_username: 'photo-author',
       image_placement: {
+        image_id: '00000000-0000-7000-8000-000000000819',
         placement_id: '00000000-0000-7000-8000-000000000822',
         placement_revision: 1,
       },

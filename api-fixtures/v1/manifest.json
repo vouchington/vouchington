@@ -17557,7 +17557,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "37a83b7890df3857fd8a15e23ec57be21f88807ccef62e3459942b8096b86774",
+      "hash": "ecfe3169a16ae96151db062eb864938882011171aff5c6aecd1b3f26e603fb9a",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -19695,6 +19695,12 @@
                                   {
                                     "additionalProperties": false,
                                     "properties": {
+                                      "image_id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
                                       "placement_id": {
                                         "required": true,
                                         "schema": {
@@ -107723,7 +107729,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "529da3d85b43b95b9a039a66e0133b027ebccb5df703c6228282a3377016d821",
+        "hash": "fbe968434ac6f6fd0ee49517b7891934c0087f6675c6001bf5cdee10103049e3",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

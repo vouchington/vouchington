@@ -43,6 +43,7 @@ describe('native copyright fixtures', () => {
             expect.objectContaining({
               uploaded_by_username: 'photo-author',
               image_placement: {
+                image_id: '00000000-0000-7000-8000-000000000819',
                 placement_id: expect.any(String),
                 placement_revision: 1,
               },

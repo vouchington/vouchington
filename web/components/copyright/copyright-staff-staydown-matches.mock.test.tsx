@@ -114,7 +114,11 @@ function makeNotice(): CopyrightStaffQueueItem {
         registered_image_id: 'registered-1',
         uploaded_by_id: 'user-1',
         uploaded_by_username: 'photographer',
-        image_placement: { placement_id: 'placement-1', placement_revision: 2 },
+        image_placement: {
+          image_id: 'upload-1',
+          placement_id: 'placement-1',
+          placement_revision: 2,
+        },
         match_kind: 'exact',
         hamming_distance: 0,
         matched_at: '2026-01-02T00:00:00.000Z',

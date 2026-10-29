@@ -58,7 +58,7 @@ export function CopyrightStaffStaydownMatches({
                 href={getPlacementImageUrl(
                   match.image_placement.placement_id,
                   match.image_placement.placement_revision,
-                  match.image_id,
+                  match.image_placement.image_id,
                   { width: 1200 },
                 )}
                 target='_blank'

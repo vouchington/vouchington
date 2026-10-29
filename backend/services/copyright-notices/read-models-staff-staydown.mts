@@ -71,7 +71,11 @@ export async function selectStaffStaydownMatches(
           !placement.deleted &&
           !placement.withheld &&
           !placement.safetyBlocked
-            ? { placement_id: placement.placementId, placement_revision: placement.revision }
+            ? {
+                image_id: placement.imageId,
+                placement_id: placement.placementId,
+                placement_revision: placement.revision,
+              }
             : null,
       }
     }),

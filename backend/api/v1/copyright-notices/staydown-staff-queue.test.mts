@@ -38,7 +38,7 @@ type QueueCase = {
     registered_image_id: string
     uploaded_by_id: string
     uploaded_by_username: string | null
-    image_placement: { placement_id: string; placement_revision: number } | null
+    image_placement: { image_id: string; placement_id: string; placement_revision: number } | null
     match_kind: string
     hamming_distance: number
   }>
@@ -131,6 +131,7 @@ describe('copyright staydown staff review', () => {
     expect(queued?.staydown_matches.find(match => match.image_id === imageId)).toMatchObject({
       uploaded_by_username: matched.uploader.username,
       image_placement: {
+        image_id: imageId,
         placement_id: placement!.placement_id,
         placement_revision: placement!.placement_revision,
       },
