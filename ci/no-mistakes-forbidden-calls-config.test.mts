@@ -62,9 +62,7 @@ describe('no-mistakes forbidden-calls config', () => {
 
     expect(
       rules.filter(candidate => candidate.exclude !== undefined).map(candidate => candidate.name),
-    ).toEqual([
-      'Only canonical API routes may start an SSE response',
-    ])
+    ).toEqual(['Only canonical API routes may start an SSE response'])
     for (const candidate of rules) {
       if (candidate.exclude === undefined) continue
       expect(candidate.exclude).toEqual(expect.arrayContaining([expect.any(String)]))
