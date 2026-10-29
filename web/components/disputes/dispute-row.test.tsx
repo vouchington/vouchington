@@ -43,7 +43,8 @@ describe('DisputeRow', () => {
         </tbody>
       </table>,
     )
-    expect(screen.getByRole('link', { name: 'A Review' })).toBeInTheDocument()
+    expect(screen.getByText('A Review')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'A Review' })).toBeNull()
     expect(screen.getByText('factually inaccurate')).toBeInTheDocument()
     expect(screen.getByText('pending')).toBeInTheDocument()
   })

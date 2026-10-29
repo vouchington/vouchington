@@ -57,7 +57,8 @@ describe('DisputesTable', () => {
 
   it('renders dispute row for staff tier', () => {
     render(<DisputesTable {...makeProps()} />)
-    expect(screen.getByRole('link', { name: 'A Review' })).toBeInTheDocument()
+    expect(screen.getByText('A Review')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'A Review' })).toBeNull()
   })
 
   it('renders member dispute row for member tier', () => {
@@ -76,7 +77,8 @@ describe('DisputesTable', () => {
       created_at: '2026-01-01T00:00:00Z',
     }
     render(<DisputesTable {...makeProps({ viewerTier: 'member', disputes: [memberDispute] })} />)
-    expect(screen.getByRole('link', { name: 'Member Review' })).toBeInTheDocument()
+    expect(screen.getByText('Member Review')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Member Review' })).toBeNull()
   })
 
   it('passes draftEdits override to DisputeRow', () => {
