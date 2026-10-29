@@ -73,7 +73,7 @@ export function ReviewTopicsFieldset({
           <div className='flex min-w-0 flex-1 flex-col gap-2'>
             <TopicAutocomplete
               value={entry.topicId || null}
-              label={entry.topicName}
+              label={entry.topicName || (entry.topicId ? t('shared.topic.unavailable') : '')}
               onChange={(id, name) => onReviewTopicChange(index, id, name)}
               excludeIds={reviewTopics.flatMap((t, i) =>
                 i !== index && t.topicId ? [t.topicId] : [],
@@ -87,6 +87,7 @@ export function ReviewTopicsFieldset({
               onChange={r => onReviewRatingChange(index, r)}
               label={
                 entry.topicName ||
+                (entry.topicId ? t('shared.topic.unavailable') : '') ||
                 t('extracted.posts.postFormSections.topicIndex_f447ddc0', { index: index + 1 })
               }
             />

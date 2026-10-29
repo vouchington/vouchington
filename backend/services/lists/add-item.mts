@@ -24,7 +24,7 @@ export async function addListItem(
       -- Dynamic table and column come from the closed list-item storage catalog.
       /* no-mistakes: deadlock-safe */
       INSERT INTO ${table} (user_list_id, ${entityColumn})
-      SELECT $1::uuid, entity_id FROM entity_facts WHERE entity_label IS NOT NULL
+      SELECT $1::uuid, entity_id FROM entity_facts
       RETURNING id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
     )
     SELECT inserted.*, entity_facts.media_type, entity_facts.entity_label
@@ -44,7 +44,6 @@ export async function addListItem(
         WHERE li.user_list_id = $1::uuid
           AND li.${entityColumn} = $2::uuid
           AND li.removed_at IS NULL
-          AND entity_facts.entity_label IS NOT NULL
         LIMIT 1
         `,
         [listId, entityId],

@@ -13,6 +13,7 @@ import { approveApplication, rejectApplication } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { CommunityApplication, CommunityApplicationsResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface ApplicationReviewProps {
   data: CommunityApplicationsResponseBody
@@ -138,9 +139,7 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
                 <div className='flex items-start justify-between gap-3'>
                   <div>
                     <p className='font-medium'>
-                      {user?.display_account?.name ||
-                        user?.username ||
-                        t('shared.user.deletedUser')}
+                      {getUserLabel(user, t('shared.user.deletedUser'))}
                     </p>
                     <p
                       className='text-xs text-muted-foreground'

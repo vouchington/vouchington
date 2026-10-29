@@ -122,7 +122,7 @@ describe('items service', () => {
       expect(found[0]?.entity_label).toBe(commentText)
     })
 
-    it('keeps a non-null source label for a whitespace-only comment allowed by storage', async () => {
+    it('keeps a visible label through add, duplicate add, and search for an untitled no-slug comment', async () => {
       const commentId = await insertTestPost({
         title: '',
         slug: `whitespace-comment-${createRandomString(8)}`,
@@ -139,8 +139,11 @@ describe('items service', () => {
       const added = await addListItem(commentList.id, 'post', commentId)
       const found = (await searchListItems(commentList.id, { currentUserId: user.id })).results
 
-      expect(added.entity_label).toBe('   ')
-      expect(found[0]?.entity_label).toBe('   ')
+      const duplicate = await addListItem(commentList.id, 'post', commentId)
+      expect(duplicate.id).toBe(added.id)
+      expect(added.entity_label).toBe('Untitled post')
+      expect(duplicate.entity_label).toBe('Untitled post')
+      expect(found[0]?.entity_label).toBe('Untitled post')
     })
 
     it('hydrates labels for both entity types in the list query', async () => {

@@ -2,6 +2,10 @@ import { configure, fireEvent, render, screen, waitFor } from '@testing-library/
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityBan, CommunityBansResponseBody } from '@/types/api-responses'
 import { makeCommunity } from '@/test-helpers/api-responses/communities'
+import { publicUsers } from '@/storybook/entities/fixtures/users'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
+import { mergeMessages } from '@/lib/i18n/use-translations'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 
 // Components use data-pw (not data-testid) per project conventions.
 configure({ testIdAttribute: 'data-pw' })
@@ -54,7 +58,7 @@ function makeData(bans: CommunityBan[], hasNext = false): CommunityBansResponseB
       start_cursor: null,
     },
     community_bans: Object.fromEntries(bans.map(b => [b.id, b])),
-    users: { 'u-1': { id: 'u-1', username: 'spammer' } as never },
+    users: { 'u-1': { ...publicUsers[0]!, id: 'u-1', username: 'spammer', display_account: null } },
   }
 }
 
@@ -80,19 +84,36 @@ describe('CommunityBansPanel', () => {
         initialData={makeData([makeBan()])}
       />,
     )
-    expect(screen.getByText('@spammer')).toBeInTheDocument()
+    expect(screen.getByText('spammer')).toBeInTheDocument()
     expect(screen.getByText('Reason: spam')).toBeInTheDocument()
     expect(screen.getByTestId('community-ban-lift')).toBeInTheDocument()
   })
 
-  it('shows a deleted-user label when the banned profile is gone', () => {
+  it('prefers the banned user display name to the username', () => {
+    const data = makeData([makeBan()])
+    data.users['u-1'] = { ...data.users['u-1']!, display_account: { name: 'Display name' } }
+    render(
+      <CommunityBansPanel
+        community={makeCommunity()}
+        initialData={data}
+      />,
+    )
+    expect(screen.getByText('Display name')).toBeInTheDocument()
+    expect(screen.queryByText('spammer')).not.toBeInTheDocument()
+  })
+
+  it('shows a translated deleted-user label when the banned profile is gone', async () => {
+    mergeMessages('es', await loadJsonMessages('es'))
     render(
       <CommunityBansPanel
         community={makeCommunity()}
         initialData={{ ...makeData([makeBan()]), users: {} }}
       />,
+      {
+        wrapper: ({ children }) => <LocaleProvider locale='es'>{children}</LocaleProvider>,
+      },
     )
-    expect(screen.getByText('Deleted user')).toBeInTheDocument()
+    expect(screen.getByText('Usuario eliminado')).toBeInTheDocument()
     expect(screen.queryByText('u-1')).not.toBeInTheDocument()
   })
 

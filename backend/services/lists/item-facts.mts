@@ -13,13 +13,17 @@ export function itemFactsSql(itemType: ListItemType): string {
   }
   return `
     SELECT post.id AS entity_id, NULL::text AS media_type,
-      COALESCE(NULLIF(BTRIM(post.title), ''),
-        (SELECT MIN(slug) FROM post_slugs WHERE post_id = post.id),
-        LEFT(NULLIF(BTRIM(post.markdown), ''), 80),
-        LEFT(NULLIF(BTRIM(post.ai_summary_markdown), ''), 80),
-        LEFT(NULLIF(post.markdown, ''), 80),
-        LEFT(NULLIF(post.ai_summary_markdown, ''), 80)) AS entity_label
+      ${postItemLabelSql('post')} AS entity_label
     FROM posts post
     WHERE post.id = $2::uuid
   `
+}
+
+/** Aliases are closed service-owned SQL identifiers, never caller input. */
+export function postItemLabelSql(alias: 'post' | 'candidate_post'): string {
+  return `COALESCE(NULLIF(BTRIM(${alias}.title), ''),
+    (SELECT MIN(slug) FROM post_slugs WHERE post_id = ${alias}.id),
+    LEFT(NULLIF(BTRIM(${alias}.markdown), ''), 80),
+    LEFT(NULLIF(BTRIM(${alias}.ai_summary_markdown), ''), 80),
+    'Untitled post')`
 }

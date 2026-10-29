@@ -6212,6 +6212,7 @@
 {"id":"copy.shared.provenance.viaApp","value":"vía {app}"},
 {"id":"copy.shared.provenance.viaMcp","value":"vía MCP"},
 {"id":"copy.shared.timeAgo.relativeDuration","value":{"day":{"one":"hace {value} día","other":"hace {value} días"},"hour":{"one":"hace {value} hora","other":"hace {value} horas"},"minute":{"one":"hace {value} minuto","other":"hace {value} minutos"},"month":{"one":"hace {value} mes","other":"hace {value} meses"},"week":{"one":"hace {value} semana","other":"hace {value} semanas"},"year":{"one":"hace {value} año","other":"hace {value} años"}}},
+{"id":"copy.shared.topic.unavailable","value":"Tema no disponible"},
 {"id":"copy.shared.user.deletedUser","value":"Usuario eliminado"},
 {"id":"copy.topics.merge.checkStatus","value":"Consultar estado"},
 {"id":"copy.topics.merge.completed","value":"Fusión de temas completada."},

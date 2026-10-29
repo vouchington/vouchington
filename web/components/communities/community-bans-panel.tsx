@@ -11,6 +11,7 @@ import { liftBan, fetchCommunityBans } from '@/lib/api/client'
 import type { Community, CommunityBansResponseBody } from '@/types/api-responses'
 import { isBanActive } from './community-bans-panel-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface Props {
   community: Community
@@ -112,9 +113,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                 <div className='space-y-1'>
                   <div className='flex items-center gap-2'>
                     <span className='font-medium'>
-                      {user?.display_account?.name ||
-                        (user?.username ? `@${user.username}` : null) ||
-                        t('shared.user.deletedUser')}
+                      {getUserLabel(user, t('shared.user.deletedUser'))}
                     </span>
                     <Badge
                       variant={isActive ? 'destructive' : 'secondary'}

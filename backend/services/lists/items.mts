@@ -9,6 +9,7 @@ import { listPostDiscoveryFilter } from './listable.mts'
 import type { ListItem, ListItemType } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { rowToListItem } from './item-row.mts'
+import { postItemLabelSql } from './item-facts.mts'
 export { addListItem } from './add-item.mts'
 
 export async function removeListItem(
@@ -71,12 +72,9 @@ export async function searchListItems(
         'post'::user_list_item_types AS item_type,
         li.post_id AS entity_id, li.order_index, li.created_at,
         NULL::text AS media_type,
-        COALESCE(NULLIF(BTRIM(candidate_post.title), ''),
-          (SELECT MIN(slug) FROM post_slugs WHERE post_id = candidate_post.id),
-          LEFT(NULLIF(BTRIM(candidate_post.markdown), ''), 80),
-          LEFT(NULLIF(BTRIM(candidate_post.ai_summary_markdown), ''), 80),
-          LEFT(NULLIF(candidate_post.markdown, ''), 80),
-          LEFT(NULLIF(candidate_post.ai_summary_markdown, ''), 80)) AS entity_label
+        `
+  query.append(postItemLabelSql('candidate_post'))
+  query.append(sql` AS entity_label
       FROM user_list_posts li
       JOIN posts candidate_post
         ON candidate_post.id = li.post_id AND candidate_post.deleted_at IS NULL
@@ -84,7 +82,7 @@ export async function searchListItems(
         ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
        AND root_post.deleted_at IS NULL
       WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
-        AND `
+        AND `)
   query.append(listPostDiscoveryFilter(options.currentUserId, options.isAdministrator === true))
   query.append(sql`
     )

@@ -9346,5 +9346,6 @@
 {"alias":"shared.provenance.viaApp","consumer":"web","copyId":"copy.shared.provenance.viaApp"},
 {"alias":"shared.provenance.viaMcp","consumer":"web","copyId":"copy.shared.provenance.viaMcp"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"},
+{"alias":"shared.topic.unavailable","consumer":"web","copyId":"copy.shared.topic.unavailable"},
 {"alias":"shared.user.deletedUser","consumer":"web","copyId":"copy.shared.user.deletedUser"}
 ]
