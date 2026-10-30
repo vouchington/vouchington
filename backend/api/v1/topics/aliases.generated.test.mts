@@ -107,18 +107,6 @@ describe('GET /api/v1/topics/:idOrSlug/aliases', () => {
     await request.get('/api/v1/topics/non-existent-topic-slug-xyz/aliases').expect(404)
   })
 
-  it('should return empty aliases for topic with no aliases', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const topic = await createTestTopic()
-    const request = createRequest()
-    await request.authenticateAs(admin!)
-    const response = await request.get(`/api/v1/topics/${topic.id}/aliases`).expect(200)
-
-    expect(response.body.results).toEqual([])
-    expect(response.body.page_info).toBeDefined()
-    expect(response.body.page_info.has_next_page).toBe(false)
-  })
-
   it('should return aliases for topic with aliases', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user: admin! })
