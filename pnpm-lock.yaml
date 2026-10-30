@@ -12561,6 +12561,9 @@ importers:
       '@voucha/api-fixtures':
         specifier: workspace:^
         version: link:../../api-fixtures
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../config
       '@voucha/types':
         specifier: workspace:^
         version: link:../types

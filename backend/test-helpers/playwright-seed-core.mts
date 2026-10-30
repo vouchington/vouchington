@@ -1,9 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { seedPlaywrightCleanupAndUsers } from './core-cleanup-and-users.mts'
-import { seedPlaywrightMembershipsAndCommunities } from './core-memberships-and-communities.mts'
-import { seedPlaywrightCrawlersAndCrawls } from './core-crawlers-and-crawls.mts'
-import { seedPlaywrightCardTopics } from './core-card-topics.mts'
-import { seedPlaywrightDiscussionPosts } from './core-discussion-posts.mts'
+import { seedPlaywrightCleanupAndUsers } from './playwright-seed-cleanup-and-users.mts'
+import { seedPlaywrightMembershipsAndCommunities } from './playwright-seed-memberships-and-communities.mts'
+import { seedPlaywrightCrawlersAndCrawls } from './playwright-seed-crawlers-and-crawls.mts'
+import { seedPlaywrightCardTopics } from './playwright-seed-card-topics.mts'
+import { seedPlaywrightDiscussionPosts } from './playwright-seed-discussion-posts.mts'
 
 export async function seedPlaywrightCoreData(
   query: TransactionQuery,

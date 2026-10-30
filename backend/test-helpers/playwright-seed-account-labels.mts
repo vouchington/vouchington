@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { approveSeedPosts, sha256 } from './helpers.mts'
+import { approveSeedPosts, sha256 } from './playwright-seed-rows.mts'
 
 // Fixtures for playwright/tests/agents/account-label-displays.spec.mts: one discussion, one
 // comment and one share per account label. Comments and shares land on the member's discussion,

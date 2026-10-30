@@ -985,14 +985,6 @@ rules:
         - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
         - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
         - {
-            file: backend/scripts/seeds/playwright-seed-assertions.mts,
-            callee: 'seedAssertionExists',
-          }
-        - {
-            file: backend/scripts/seeds/playwright-test-data/post-account-labels.mts,
-            callee: 'query',
-          }
-        - {
             file: backend/services/account-data-requests/recovery.mts,
             callee: 'lockActiveDataRequestUser',
           }
@@ -2261,7 +2253,6 @@ rules:
       - '**/__tests__/**'
       - '**/__snapshots__/**'
       - backend/test-helpers/**
-      - backend/scripts/seeds/playwright-test-data/**
       - web/test-helpers/**
       - test-helpers/**
       - integration-tests/**

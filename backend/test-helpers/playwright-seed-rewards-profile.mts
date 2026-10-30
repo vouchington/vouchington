@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { approveSeedPosts } from './helpers.mts'
+import { approveSeedPosts } from './playwright-seed-rows.mts'
 
 async function seedPlaywrightRewardsProfile(query: TransactionQuery): Promise<void> {
   const {

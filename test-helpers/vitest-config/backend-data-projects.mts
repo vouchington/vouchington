@@ -78,6 +78,8 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/test-helpers/services/users/test-support.test.mts',
         'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
+        'backend/test-helpers/playwright-seed-assertions.test.mts',
+        'backend/test-helpers/playwright-seed-rows.test.mts',
       ],
       exclude: [
         '**/node_modules/**',

@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { approveSeedPosts, markSeedPostsMarkdownVisible } from './helpers.mts'
+import { approveSeedPosts, markSeedPostsMarkdownVisible } from './playwright-seed-rows.mts'
 
 async function seedPlaywrightDiscussionPosts(
   query: TransactionQuery,
