@@ -4,10 +4,8 @@ import {
   createPriorityBackfillTrigger,
 } from './backfills-trigger-helpers.mts'
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
-import { enqueueKagiSmallWebSync } from '@queues/kagi-smallweb/enqueues'
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { KAGI_SMALLWEB_SYNC_JOB } from '@queues/background/enqueues/kagi-smallweb-jobs'
 import {
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
   VOTE_AGGREGATION_AGE_MILESTONES_JOB,
@@ -154,13 +152,5 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
       'find-your-friends-dispatch',
       enqueueDispatchFindYourFriends,
     ),
-  },
-  {
-    id: 'kagi-smallweb-sync',
-    queue_name: BACKGROUND_QUEUE_NAME,
-    job_name: KAGI_SMALLWEB_SYNC_JOB.name,
-    description: 'Sync Kagi Small Web data',
-    source_table: 'external:kagi-smallweb',
-    trigger: createBackfillDispatcherTrigger('kagi-smallweb-sync', enqueueKagiSmallWebSync),
   },
 ]

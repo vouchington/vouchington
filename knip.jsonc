@@ -50,11 +50,11 @@
     "backend/api": {
       "entry": ["v1/**/*.mts"],
       "includeEntryExports": false,
-      // Required by the new-service runtime packaging rule. Reconciliation runs in the entity
+      // Required by the new-service runtime package rule. Reconciliation runs in the entity
       // listener worker, so the API package does not have a direct static import for knip to see.
       "ignoreDependencies": [
         "@services/entity-listener-reconciliation",
-        // Required packaging edges; classifier runs are consumed by the AI worker, not routes.
+        // Required package edges; classifier runs are consumed by the AI worker, not routes.
         "@services/classifier-runs",
         "@services/post-classifier",
       ],
@@ -71,7 +71,7 @@
     },
     "backend/entrypoints/api": {
       "entry": ["**/*.mts"],
-      // These packages are declared here for the API entrypoint's runtime packaging rule, but
+      // These packages are declared here for the API entrypoint's runtime package rule, but
       // are consumed by API routes or registered worker/service paths outside this workspace's
       // entry glob. The policy test requires each exact out-of-graph edge to have real evidence.
       "ignoreDependencies": [
@@ -81,7 +81,7 @@
         "@services/classifier-runs",
         "@services/entity-listener-reconciliation",
         "@services/entity-relation-actions",
-        // Required packaging edge; classifier execution is consumed by the AI worker, not routes.
+        // Required package edge; classifier execution is consumed by the AI worker, not routes.
         "@services/post-classifier",
       ],
     },

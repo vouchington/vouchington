@@ -19,7 +19,6 @@ import {
   FOLLOWER_DISTRIBUTIONS_JOBS,
 } from './follower-distributions-jobs.mts'
 import { IMPORTS_DOMAIN, IMPORTS_JOBS } from './imports-jobs.mts'
-import { KAGI_SMALLWEB_DOMAIN, KAGI_SMALLWEB_JOBS } from './kagi-smallweb-jobs.mts'
 import { MODERATION_SIGNALS_DOMAIN, MODERATION_SIGNALS_JOBS } from './moderation-signals-jobs.mts'
 import { HOSTNAME_BLOCKING_DOMAIN, HOSTNAME_BLOCKING_JOBS } from './hostname-blocking-jobs.mts'
 import { NOTIFICATIONS_DOMAIN } from './notifications-domain.mts'
@@ -72,7 +71,6 @@ const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[] = [
   URLS_DOMAINS_BLACKLIST_DOMAIN,
   SITEMAPS_DOMAIN,
   CACHE_PURGE_DOMAIN,
-  KAGI_SMALLWEB_DOMAIN,
   EMAIL_DIGESTS_DOMAIN,
   IMPORTS_DOMAIN,
   MODERATION_SIGNALS_DOMAIN,
@@ -102,7 +100,6 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...URLS_DOMAINS_BLACKLIST_JOBS,
   ...SITEMAPS_JOBS,
   ...CACHE_PURGE_JOBS,
-  ...KAGI_SMALLWEB_JOBS,
   ...EMAIL_DIGESTS_JOBS,
   ...IMPORTS_JOBS,
   ...MODERATION_SIGNALS_JOBS,

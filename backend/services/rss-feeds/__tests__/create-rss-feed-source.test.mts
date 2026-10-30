@@ -27,7 +27,7 @@ async function makeSourceArgs(hostname: string, feedUrl: string) {
 }
 
 describe('createRssFeedSource', () => {
-  it('creates topic, hostname link, and rss_feed with createdById=null (kagi path)', async () => {
+  it('creates topic, hostname link, and rss_feed with createdById=null (null creator)', async () => {
     const suffix = randomSuffix()
     const hostname = `rss-src-test-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`

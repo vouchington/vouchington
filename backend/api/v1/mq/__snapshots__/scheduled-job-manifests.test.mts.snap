@@ -1184,45 +1184,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Sync Kagi Small Web data",
-        "id": "kagi-smallweb-sync",
-        "kind": "scheduled-jobs",
-        "schedule": "0 5 * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "kagi-smallweb-sync",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "background",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 5 * * *",
-    },
-    "schedulerId": "kagi-smallweb-sync",
-    "template": {
-      "data": {},
-      "name": "kagi-smallweb.sync",
-      "opts": {
-        "attempts": 2147483647,
-        "backoff": {
-          "delay": 1000,
-          "type": "paged-dispatch-kagi",
-        },
-        "ordering": {
-          "key": "kagi-smallweb:dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Dispatch API key expiry reminders",
         "id": "email-digests-api-key-expiry",
         "kind": "scheduled-jobs",
@@ -3457,14 +3418,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "psql",
     "schedule": "0 6 * * *",
     "triggerName": "[anonymous]",
-  },
-  {
-    "description": "Sync Kagi Small Web data",
-    "id": "kagi-smallweb-sync",
-    "job_name": "kagi-smallweb.sync",
-    "queue_name": "background",
-    "schedule": "0 5 * * *",
-    "triggerName": "enqueueKagiSmallWebSync",
   },
   {
     "description": "Re-dispatch imports whose dispatcher failed",

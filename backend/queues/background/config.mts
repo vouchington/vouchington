@@ -39,7 +39,6 @@ export const BACKGROUND_DOMAINS = [
   'urls-domains-blacklist',
   'sitemaps',
   'cache-purge',
-  'kagi-smallweb',
   'email-digests',
   'imports',
   'moderation-signals',

@@ -60,7 +60,7 @@ examples:
   - code: |
       const childProcess = require("child_process")
     isValid: false
-    file: 'backend/services/kagi-smallweb/sync.mts'
+    file: 'backend/services/rss-feeds/create-source.mts'
   - code: |
       const loaded = await import('node:child_process')
     isValid: false

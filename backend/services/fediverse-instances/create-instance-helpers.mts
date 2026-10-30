@@ -55,9 +55,7 @@ export type CreateInstanceTransactionResult = { topicId: string; claimedAlias: T
  * Creates a topic (type=fediverse_instance) + its extension row in a transaction.
  * Returns null on unique violation (slug collision or a concurrent hostname race).
  *
- * createdById is always a real user — unlike RSS's admin/kagi-seeded null-creator path, every
- * fediverse instance topic created by this service is suggested by an authenticated user, so
- * the topic revision is created unconditionally.
+ * createdById is always a real user, so the topic revision is created unconditionally.
  */
 export async function createInstanceInTransaction(
   provenance: ContentProvenance,

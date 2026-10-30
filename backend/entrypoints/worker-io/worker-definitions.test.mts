@@ -54,7 +54,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       'urls-domains-blacklist',
       'sitemaps',
       'cache-purge',
-      'kagi-smallweb',
     ]) {
       expect(queueNames).not.toContain(moved)
     }

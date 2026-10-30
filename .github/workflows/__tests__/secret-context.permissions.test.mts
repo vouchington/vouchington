@@ -71,7 +71,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(vitestConfig).toContain("include: ['.github/{actions,workflows}/**/*.test.mts']")
   })
 
-  it('runs backend image builds when runtime packaging helpers change', () => {
+  it('runs backend image builds when runtime package helpers change', () => {
     const buildBackendFilter = pathFilterSection(
       read('.github/ci-path-filters.yml'),
       'build-backend',
