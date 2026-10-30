@@ -11,80 +11,92 @@ import { enqueueContinueInvalidatingPostsForTopicAliases } from './topic-aliases
 // The dedicated real-glide project isolates the key prefix, so this queue cannot reach the fleet.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
-// Reactivation waits out the worker's blocking read, and stays under this test's timeout.
-const CONTINUATION_DEADLINE_MS = 20_000
+// Both waits share one budget under this test's timeout. Reactivation measured about 10s,
+// and worker close still needs the reserve after the second wait.
+const TEST_TIMEOUT_MS = 30_000
+const CLEANUP_RESERVE_MS = 5_000
+
+function continuationDeadlineMs(deadlineAt: number): number {
+  const remaining = deadlineAt - Date.now()
+  return remaining > 0 ? remaining : 1
+}
 
 describe('topic alias post-invalidation continuation through real GlideMQ', () => {
   // no-mistakes-timeout-reason: real GlideMQ worker retry of a failed continuation and shutdown
-  it('re-activates a terminally failed continuation when the parent page retries', async () => {
-    const topicAliasIds = [randomUUID(), randomUUID()]
-    const changeId = randomUUID()
-    const afterPostId = randomUUID()
-    let outcome: 'fail' | 'complete' = 'fail'
-    let runs = 0
-    const settled = new Map<number, PromiseWithResolvers<void>>()
-    const settledRun = (run: number) => {
-      const existing = settled.get(run)
-      if (existing) return existing
-      const created = Promise.withResolvers<void>()
-      settled.set(run, created)
-      return created
-    }
-    const worker = new Worker<{ changeId: string }>(
-      QUEUE_NAME,
-      async (job: Job<{ changeId: string }>) => {
-        if (job.data.changeId !== changeId) return
-        runs += 1
-        if (outcome === 'fail') throw new UnrecoverableError('expected terminal job failure')
-      },
-      { connection: workerQueueConnection, prefix: workerQueuePrefix, blockTimeout: 1000 },
-    )
-    worker.on('error', () => undefined)
-    worker.on('completed', job => {
-      if (job.data.changeId === changeId) settledRun(runs).resolve()
-    })
-    worker.on('failed', job => {
-      if (job?.data.changeId === changeId) settledRun(runs).resolve()
-    })
-
-    try {
-      await worker.waitUntilReady()
-      const [first] = (await enqueueContinueInvalidatingPostsForTopicAliases(
-        topicAliasIds,
-        changeId,
-        afterPostId,
-      )) as Job[]
-      await waitForRealGlideEvent(
-        settledRun(1).promise,
-        'first continuation',
-        CONTINUATION_DEADLINE_MS,
+  it(
+    're-activates a terminally failed continuation when the parent page retries',
+    async () => {
+      const deadlineAt = Date.now() + TEST_TIMEOUT_MS - CLEANUP_RESERVE_MS
+      const topicAliasIds = [randomUUID(), randomUUID()]
+      const changeId = randomUUID()
+      const afterPostId = randomUUID()
+      let outcome: 'fail' | 'complete' = 'fail'
+      let runs = 0
+      const settled = new Map<number, PromiseWithResolvers<void>>()
+      const settledRun = (run: number) => {
+        const existing = settled.get(run)
+        if (existing) return existing
+        const created = Promise.withResolvers<void>()
+        settled.set(run, created)
+        return created
+      }
+      const worker = new Worker<{ changeId: string }>(
+        QUEUE_NAME,
+        async (job: Job<{ changeId: string }>) => {
+          if (job.data.changeId !== changeId) return
+          runs += 1
+          if (outcome === 'fail') throw new UnrecoverableError('expected terminal job failure')
+        },
+        { connection: workerQueueConnection, prefix: workerQueuePrefix, blockTimeout: 1000 },
       )
-      await expect(first?.getState()).resolves.toBe('failed')
+      worker.on('error', () => undefined)
+      worker.on('completed', job => {
+        if (job.data.changeId === changeId) settledRun(runs).resolve()
+      })
+      worker.on('failed', job => {
+        if (job?.data.changeId === changeId) settledRun(runs).resolve()
+      })
 
-      outcome = 'complete'
-      const retried = (await enqueueContinueInvalidatingPostsForTopicAliases(
-        [...topicAliasIds].toReversed(),
-        changeId,
-        afterPostId,
-      )) as Job[]
-      await waitForRealGlideEvent(
-        settledRun(2).promise,
-        'reactivated continuation',
-        CONTINUATION_DEADLINE_MS,
-      )
-
-      expect(retried.map(job => job.id)).toEqual([first?.id])
-      expect(runs).toBe(2)
-    } finally {
       try {
-        await worker.close()
+        await worker.waitUntilReady()
+        const [first] = (await enqueueContinueInvalidatingPostsForTopicAliases(
+          topicAliasIds,
+          changeId,
+          afterPostId,
+        )) as Job[]
+        await waitForRealGlideEvent(
+          settledRun(1).promise,
+          'first continuation',
+          continuationDeadlineMs(deadlineAt),
+        )
+        await expect(first?.getState()).resolves.toBe('failed')
+
+        outcome = 'complete'
+        const retried = (await enqueueContinueInvalidatingPostsForTopicAliases(
+          [...topicAliasIds].toReversed(),
+          changeId,
+          afterPostId,
+        )) as Job[]
+        await waitForRealGlideEvent(
+          settledRun(2).promise,
+          'reactivated continuation',
+          continuationDeadlineMs(deadlineAt),
+        )
+
+        expect(retried.map(job => job.id)).toEqual([first?.id])
+        expect(runs).toBe(2)
       } finally {
         try {
-          await rssFeedMaintenance.obliterate({ force: true })
+          await worker.close()
         } finally {
-          await closeAndUnregisterGlideMQInstance(rssFeedMaintenance)
+          try {
+            await rssFeedMaintenance.obliterate({ force: true })
+          } finally {
+            await closeAndUnregisterGlideMQInstance(rssFeedMaintenance)
+          }
         }
       }
-    }
-  }, 30_000)
+    },
+    TEST_TIMEOUT_MS,
+  )
 })
