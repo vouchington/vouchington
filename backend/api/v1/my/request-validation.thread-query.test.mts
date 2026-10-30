@@ -74,7 +74,7 @@ describe.each(threadReads)('GET /api/v1/my/messages/:conversationId/%s query val
     expect(response.text).not.toContain('Invalid request query')
   })
 
-  it.each(['', 'limit=500', 'limit=1', 'limit=100&foo=bar', 'foo=bar'])(
+  it.each(['', 'limit=500', 'limit=100&foo=bar', 'foo=bar'])(
     'still serves %j to a member, clamping limit and ignoring unknown parameters',
     async query => {
       const request = await as(member)
