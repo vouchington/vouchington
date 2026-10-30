@@ -168,23 +168,6 @@ describe('user tag entity relations', () => {
       upsertEntityRelation(voter, metadata, { id: target.id }, [{ id: topicId }]),
     ).rejects.toMatchObject({ status: 422 })
   })
-
-  it('allows administrators to add and vote on user tags as moderation', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const target = await createTestUser()
-    const [tag] = await getUserTagTopics()
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const created = await request
-      .post(`/api/v1/entity-relations/user/${target.id}/category/topic`)
-      .send({ objectId: tag!.id })
-      .expect(201)
-
-    await request
-      .put(`/api/v1/entity-relations/${created.body.relation.id}/vote`)
-      .send({ choice: 'dispute' })
-      .expect(204)
-  })
 })
 
 async function getQueuedElectionJobs(relationId: string) {

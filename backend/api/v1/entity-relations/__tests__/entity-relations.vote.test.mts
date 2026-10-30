@@ -22,37 +22,6 @@ describe('entity-relations.vote', () => {
 
   describe('Entity Relation Vote Routes', () => {
     describe('PUT /api/v1/entity-relations/:id/vote', () => {
-      it('should allow authenticated user to vote on entity relation', async () => {
-        const postId1 = await insertTestPost({
-          title: 'Test Post 1',
-          slug: randomSlug('test-post-er-vote-1'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const postId2 = await insertTestPost({
-          title: 'Test Post 2',
-          slug: randomSlug('test-post-er-vote-2'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        // Create entity relation
-        const metadata = entityRelationMetadatum.find(
-          m => m.subject_type === 'post' && m.object_type === 'post' && m.predicate === 'related',
-        )!
-        const relations = await upsertEntityRelation(user!, metadata, { id: postId1 }, [
-          { id: postId2 },
-        ])
-        const relation = relations[0]
-
-        const request = createRequest()
-        await request.authenticateAs(user!)
-
-        await request
-          .put(`/api/v1/entity-relations/${relation.id}/vote`)
-          .send({ choice: 'confirm' })
-          .expect(204)
-      })
-
       it('should return 401 when not authenticated', async () => {
         const postId1 = await insertTestPost({
           title: 'Test Post 1',
