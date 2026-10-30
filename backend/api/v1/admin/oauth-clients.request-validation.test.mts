@@ -35,6 +35,12 @@ describe('admin OAuth client verification request contract validation', () => {
     }
   })
 
+  it('returns 422 for an unknown filter', async () => {
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    await request.get('/api/v1/admin/oauth-clients?verification=pending').expect(422)
+  })
+
   it('keeps the list pagination answers next to the query contract', async () => {
     const outsider = createRequest()
     await outsider.authenticateAs(await createTestUser())
