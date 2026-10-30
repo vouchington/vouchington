@@ -53,9 +53,9 @@ describe('copyright evidence retention gates', () => {
     return {
       noticeId,
       evidenceKey,
-      async expectUntouched() {
+      async expectUntouched(expectedColumns = columns) {
         expect(bucket.countVersions(evidenceKey)).toBe(2)
-        await expect(readCopyrightRetentionColumns(noticeId)).resolves.toEqual(columns)
+        await expect(readCopyrightRetentionColumns(noticeId)).resolves.toEqual(expectedColumns)
         await expect(readCopyrightRetentionMarker(noticeId)).resolves.toBeNull()
       },
       async expectErased() {
@@ -181,7 +181,8 @@ describe('copyright evidence retention gates', () => {
 
       await blocked.release()
       const { projected_clock: releasedAt } = await readCopyrightDsaRetentionClock(blocked.noticeId)
-      await setClock(new Date(shiftUtcCalendarMonths(releasedAt, 1).getTime() + 86_400_000), {
+      // Keep the reverse-shifted cutoff beyond the SQL clock's microsecond precision.
+      await setClock(new Date(shiftUtcCalendarMonths(releasedAt, 1).getTime() + 2 * 86_400_000), {
         caseRetentionMonths: 1,
       })
       const released = await advanceCopyrightRetentionWorkPages(blocked.noticeId, WORK_PAGE_CAP)
@@ -194,24 +195,25 @@ describe('copyright evidence retention gates', () => {
     const fixtureTime = new Date()
     await setClock(fixtureTime, { caseRetentionMonths: 1 })
     const entry = await createRetentionMinimalCase({ artifacts: 1 })
-    const watched = await watch(entry.noticeId, entry.evidenceKeys[0]!)
     await setClock(new Date(fixtureTime.getTime() + 45 * 24 * 60 * 60 * 1000), {
       caseRetentionMonths: 1,
     })
     const release = await addLiveGuestCapabilityBlocker(entry)
+    const watched = await watch(entry.noticeId, entry.evidenceKeys[0]!)
 
     const held = await advanceCopyrightRetentionWorkPages(entry.noticeId, WORK_PAGE_CAP)
     expect(held).toContain('ineligible')
     await watched.expectUntouched()
 
-    const revokedAt = new Date()
+    const revokedAt = getCopyrightRetentionWorkDate()
     await release()
+    const revokedColumns = await readCopyrightRetentionColumns(entry.noticeId)
     const boundary = shiftUtcCalendarMonths(revokedAt, 1)
     await setClock(new Date(boundary.getTime() - 1), { caseRetentionMonths: 1 })
     expect(await advanceCopyrightRetentionWorkPages(entry.noticeId, WORK_PAGE_CAP)).toContain(
       'ineligible',
     )
-    await watched.expectUntouched()
+    await watched.expectUntouched(revokedColumns)
     // Revocation withdraws the planned later expiry; a blocked proof must not retain it as activity.
     await setClock(boundary, { caseRetentionMonths: 1 })
     const released = await advanceCopyrightRetentionWorkPages(entry.noticeId, WORK_PAGE_CAP)

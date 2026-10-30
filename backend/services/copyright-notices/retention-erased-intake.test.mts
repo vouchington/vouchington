@@ -64,6 +64,10 @@ describe('erased copyright intake write fence', () => {
         model: 'retention-erased-intake-test',
         structuredOutput: { privateRecommendation: crypto.randomUUID() },
       }),
-    ).rejects.toThrow('Copyright encryption owner key is unavailable')
+    ).resolves.toBe(false)
+    await expect(readCopyrightRetentionCaseRows(notice.noticeId)).resolves.toMatchObject({
+      notice_exists: false,
+      promoted_review_count: 0,
+    })
   })
 })

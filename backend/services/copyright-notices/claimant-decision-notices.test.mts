@@ -156,7 +156,7 @@ describe('claimant copyright decision notices', () => {
         holderProcessId,
         pool: 'write',
         lock: { kind: 'transaction' },
-        queryMarker: 'createCopyrightClaimantDecisionNoticeInTransaction:recipient',
+        queryMarker: 'lockCopyrightBatchNoticeLifetimes',
         releaseHolder: () => holder[Symbol.asyncDispose](),
       },
       async waitForLock => {

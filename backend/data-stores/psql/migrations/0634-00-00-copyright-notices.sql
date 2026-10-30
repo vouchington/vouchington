@@ -43,7 +43,7 @@ BEGIN
       'copyright_notice_form_screenings', 'copyright_notice_thread_party_generations',
       'copyright_notice_thread_blocker_generations', 'copyright_notice_thread_retention_activities', 'copyright_repeat_infringer_incident_targets',
       'copyright_repeat_infringer_incidents', 'copyright_restrictions', 'copyright_territorial_decisions',
-      'copyright_territorial_escalations', 'copyright_territorial_notice_receipts', 'copyright_territorial_redress_requests',
+      'copyright_territorial_escalations', 'copyright_territorial_notice_receipts', 'copyright_territorial_redress_decisions', 'copyright_territorial_redress_requests',
       'copyright_trusted_flagger_matches', 'notifications'
     ) THEN RETURN false; END IF;
     row_notice_id := old_row->>'copyright_notice_id';

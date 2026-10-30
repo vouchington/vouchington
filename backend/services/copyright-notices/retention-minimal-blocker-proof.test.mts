@@ -128,13 +128,17 @@ describe('bounded copyright minimal blocker proof', () => {
     expect(await advanceCopyrightRetentionWorkPages(fixture.noticeId, WORK_PAGE_CAP)).toContain(
       'erased',
     )
-    await expect(
-      purgeCopyrightMinimalRecord(fixture.noticeId, {
-        now: RETENTION_END,
-        cutoff: RETENTION_START,
-        maxBatches: WORK_PAGE_CAP,
-      }),
-    ).resolves.toBe('purged')
+    const purgeOptions = {
+      now: RETENTION_END,
+      cutoff: RETENTION_START,
+      maxBatches: WORK_PAGE_CAP,
+    }
+    let purgeOutcome = await purgeCopyrightMinimalRecord(fixture.noticeId, purgeOptions)
+    expect(purgeOutcome).toBe('more')
+    // The 205 seeded submissions need three bounded physical-row budgets before root deletion.
+    for (let run = 1; run < 4 && purgeOutcome === 'more'; run++)
+      purgeOutcome = await purgeCopyrightMinimalRecord(fixture.noticeId, purgeOptions)
+    expect(purgeOutcome).toBe('purged')
   })
 
   it('rejects a late appeal write after real case erasure has started', async () => {

@@ -42,9 +42,6 @@ export async function createCopyrightDeliveryActivityFixture(): Promise<Copyrigh
       'Historical claimant', ${key.encrypt(`contact-${noticeId}`, `delivery-activity:${noticeId}:contact`, owner)},
       'Historical work', 'retention-delivery-activity-test', ${HISTORICAL_AT}
     )`)
-  await transaction(sql`/* createCopyrightDeliveryActivityNoticeEvent */
-    INSERT INTO copyright_notice_lifecycle_changes (id, copyright_notice_id, change_type)
-    VALUES (${uuidv7({ msecs: HISTORICAL_AT.getTime() })}, ${noticeId}, 'notice_received')`)
   await transaction(sql`/* createCopyrightDeliveryActivityIntent */
     INSERT INTO copyright_notice_delivery_work_items (
       id, copyright_notice_id, recipient_user_id, recipient_role, delivery_kind,

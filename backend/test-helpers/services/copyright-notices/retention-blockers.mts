@@ -14,6 +14,7 @@ import {
 } from '../../data-stores/psql/copyright-review-target.mts'
 import { sendAllCopyrightDeliveries } from './retention-deliveries.mts'
 import { createRetentionMinimalCase, type MinimalRetentionCase } from './retention-minimal-case.mts'
+import { getCopyrightRetentionWorkDate } from '../../copyright-retention-work.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -108,18 +109,19 @@ export const createUnsentDeliveryCase = () =>
 export async function addLiveGuestCapabilityBlocker(
   entry: MinimalRetentionCase,
 ): Promise<() => Promise<void>> {
+  const issuedAt = getCopyrightRetentionWorkDate()
   const capability = await issueCopyrightGuestCapability({
-    issuedAt: new Date(),
+    issuedAt,
     currentUser: entry.moderator,
     noticeId: entry.noticeId,
-    expiresAt: new Date(Date.now() + 7 * DAY_MS),
+    expiresAt: new Date(issuedAt.getTime() + 7 * DAY_MS),
   })
   return () =>
     revokeCopyrightGuestCapability({
       currentUser: entry.moderator,
       noticeId: entry.noticeId,
       capabilityId: capability.id,
-      revokedAt: new Date(),
+      revokedAt: getCopyrightRetentionWorkDate(),
     })
 }
 

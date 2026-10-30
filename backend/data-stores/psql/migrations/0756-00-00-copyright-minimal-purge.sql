@@ -40,6 +40,8 @@ RETURNS timestamptz LANGUAGE sql STABLE AS $$
       WHERE restriction.copyright_notice_id = notice.id AND restriction.lifted_at IS NOT NULL ORDER BY restriction.lifted_at DESC LIMIT 1),
     identity.dsa_activity_at,
     identity.email_activity_at,
+    (SELECT activity.last_activity_at FROM copyright_notice_thread_retention_activities activity
+      WHERE activity.copyright_notice_id = notice.id),
     (SELECT link.correspondence_reviewed_at FROM copyright_notice_email_intake_notice_links link
       WHERE link.copyright_notice_id = notice.id AND link.correspondence_reviewed_at IS NOT NULL
       ORDER BY link.correspondence_reviewed_at DESC LIMIT 1)

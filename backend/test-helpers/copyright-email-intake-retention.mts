@@ -64,7 +64,7 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
   await setup.commit()
 
   const writer = await createWriter()
-  let eraser: Awaited<ReturnType<typeof beginTransaction>>
+  let eraser: Awaited<ReturnType<typeof beginTransaction>> | undefined
   let writerProcessId: number
   try {
     await writer(sql`/* insertConcurrentCopyrightEvidenceOwner */
@@ -72,13 +72,13 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
         (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
       VALUES (${second.submissionId}, ${objectId}, ${Buffer.alloc(32, 1)}, ${mediaTypeId}, 1)`)
     writerProcessId = await getTestPostgresBackendProcessId(writer)
-    eraser = await beginTransaction()
   } catch (err) {
     await writer[Symbol.asyncDispose]()
     throw err
   }
   const lockWait = Promise.withResolvers<void>()
   const writerReleased = Promise.withResolvers<void>()
+  const eraserReleased = Promise.withResolvers<void>()
   let erasure: Promise<void> | undefined
   const releaseWriter = async () => {
     try {
@@ -96,6 +96,7 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
       releaseHolder: releaseWriter,
     },
     async waitForLock => {
+      eraser = await beginTransaction()
       erasure = eraseCopyrightRawObjectPage(
         eraser,
         first.noticeId,
@@ -113,6 +114,7 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
       await waitForLock(erasure)
       lockWait.resolve()
       await writerReleased.promise
+      await eraserReleased.promise
     },
   )
   void observation.catch(lockWait.reject)
@@ -121,7 +123,7 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
   } catch (err) {
     await releaseWriter()
     await erasure?.catch(() => undefined)
-    await eraser[Symbol.asyncDispose]()
+    await eraser?.[Symbol.asyncDispose]()
     throw err
   }
   return {
@@ -134,7 +136,13 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
         writerReleased.resolve()
       }
     },
-    commitEraser: () => eraser.commit(),
+    commitEraser: async () => {
+      try {
+        await eraser!.commit()
+      } finally {
+        eraserReleased.resolve()
+      }
+    },
     readObjectState: async () => {
       const { rows } = await read<{ erased_at: Date | null; reference_count: number }>(sql`
         /* readCopyrightRawObjectAfterRetentionRace */
@@ -151,8 +159,9 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
     close: async () => {
       await releaseWriter()
       await erasure?.catch(() => undefined)
+      await eraser?.[Symbol.asyncDispose]()
+      eraserReleased.resolve()
       await observation.catch(() => undefined)
-      await eraser[Symbol.asyncDispose]()
     },
   }
 }

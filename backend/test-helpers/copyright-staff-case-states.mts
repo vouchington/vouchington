@@ -1,8 +1,8 @@
 // Test-only staff case states for browser specs: each helper adds one real piece of case state.
 import { randomBytes } from 'node:crypto'
-import { write } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '../services/users/types.mts'
 import { insertTestImage } from './entities/images-insert.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
@@ -16,6 +16,7 @@ import {
   copyrightSubmissionPurpose,
 } from '../services/copyright-notices/submissions.mts'
 import { issueCopyrightGuestCapability } from '../services/copyright-notices/guest-capabilities.mts'
+import { openCopyrightSecrets } from '../services/copyright-notices/encryption-keys.mts'
 
 type CaseFixture = {
   poster: PrivateUser
@@ -57,19 +58,23 @@ export async function addCopyrightCounterNotice(fixture: CaseFixture) {
 
 /** A staff-entered court filing that no moderator has assessed yet. */
 export async function addCopyrightLegalHold(noticeId: string) {
-  const { rows } = await write<{ id: string }>(sql`/* addCopyrightLegalHold:id */
-    SELECT uuidv7() AS id
-  `)
-  const { id } = required(rows[0], 'Copyright submission id missing')
-  const statement = encryptSecret(
+  const id = uuidv7()
+  await using transaction = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: noticeId },
+    transaction,
+    'write',
+  )
+  const statement = secrets.encryptSecret(
     JSON.stringify({ description: 'Complaint filed in federal court.' }),
     copyrightSubmissionPurpose(id),
   )
-  await write(sql`/* addCopyrightLegalHold */
+  await transaction(sql`/* addCopyrightLegalHold */
     INSERT INTO copyright_notice_submissions (
       id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext
     ) VALUES (${id}, ${noticeId}, 'court_or_ccb_hold', CURRENT_TIMESTAMP, 'staff', ${statement})
   `)
+  await transaction.commit()
 }
 
 /** Marks the case's queued media action and notice delivery failed so staff can retry them. */
