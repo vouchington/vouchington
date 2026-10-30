@@ -15,16 +15,13 @@ import {
 import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
 import { deleteCommunityAgentPrompt } from './delete.mts'
 import type { PrivateUser } from '@services/users/types'
-import type { Community } from '@services/communities/types'
 
 describe('get-active-prompts', () => {
   let user: PrivateUser
-  let community: Community
 
   beforeAll(async () => {
     user = await createTestUser()
     await createTestMembership({ user_id: user.id, plan: 'plus' })
-    community = await insertTestCommunity({ createdById: user.id })
   })
 
   describe('getActiveCommunityAgentPrompts', () => {
@@ -77,19 +74,6 @@ describe('get-active-prompts', () => {
 
       const resultsB = await getActiveCommunityAgentPrompts(communityB.id)
       expect(resultsB.map(r => r.id)).not.toContain(promptInA.id)
-    })
-
-    it('returns empty array when community has no active prompts', async () => {
-      const results = await getActiveCommunityAgentPrompts(community.id)
-      // Filtering to just this community — may have none
-      const ids = results.map(r => r.id)
-      // Verify shape if any returned
-      for (const r of results) {
-        expect(r.is_slot_allocated).toBe(true)
-        expect(r.activated_at).not.toBeNull()
-        expect(r.deactivated_at).toBeNull()
-      }
-      expect(ids).toBeDefined()
     })
 
     it('returned prompts include agent_id and prompt text', async () => {
