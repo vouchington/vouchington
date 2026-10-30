@@ -1,7 +1,24 @@
-import { describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import {
+  buildMonthlyPartitionName,
+  createMonthlyPartitions,
+} from '@vouchington/postgres/partitions'
+import {
+  acquireTestModerationTransparencyDateReservation,
+  createTestUser,
+  getTestModerationTransparencyRollupCount,
+  getTestReleasedModerationTransparencyRollupCount,
+  insertTestPostClearanceChange,
+  releaseTestModerationTransparencyRollup,
+} from '@voucha/test-helpers'
+import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
+import { write } from '../setup.mts'
+import { getMonthlyPartitionUpperBound } from './partition-drop-guard.mts'
+import { retireMonthlyPartitionCandidate } from './monthly-partitions.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
 const candidate = {
@@ -56,3 +73,91 @@ describe('AI usage partition retirement locking', () => {
     expect(locks.every(statement => statement.includes('NOWAIT'))).toBe(true)
   })
 })
+
+const TABLE = 'post_clearance_changes'
+const METRIC = 'automated_moderation'
+const CATEGORY = 'post_clearance_reject'
+/** Public release refuses a cohort below this count, so the fixture must cross it. */
+const PUBLIC_RELEASE_COUNT = 20
+
+describe('guardAndRetireMonthlyPartition', () => {
+  it('leaves moderation transparency rollup counts unchanged when a clearance month is dropped', async () => {
+    const reservation = await acquireTestModerationTransparencyDateReservation()
+    onTestFinished(() => reservation.release())
+    const occurredAt = reservation.now
+    const year = occurredAt.getUTCFullYear()
+    const month = occurredAt.getUTCMonth() + 1
+    const partition = buildMonthlyPartitionName(TABLE, year, month)
+    // One owned child. A catalog sweep at this reference date would also retire live months.
+    await createMonthlyPartitions(write, {
+      tables: [{ table: TABLE, pastMonths: 0, futureMonths: 0 }],
+      baseDate: occurredAt,
+    })
+
+    const author = await createTestUser()
+    const postId = await insertTestPost({
+      title: 'Clearance history retirement',
+      slug: `clearance-retirement-${randomUUID()}`,
+      markdown: 'Owned post for a dropped clearance month.',
+      createdById: author.id,
+      communityId: null,
+      clearanceStatus: 'pending',
+    })
+    await Promise.all(
+      Array.from({ length: PUBLIC_RELEASE_COUNT }, (_, sequence) =>
+        insertTestPostClearanceChange({
+          postId,
+          status: 'rejected',
+          moderationTransparencyCategories: [CATEGORY],
+          occurredAt,
+          occurredAtSequence: sequence,
+        }),
+      ),
+    )
+
+    await expect(rollupCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
+    await expect(releasedCount(occurredAt)).resolves.toBeUndefined()
+
+    const upperBound = getMonthlyPartitionUpperBound(TABLE, partition)
+    const minimumMonths = PARTITION_DROP_POLICIES[TABLE]?.minimumRetentionMonths
+    if (!upperBound || minimumMonths == null) {
+      throw new Error('Clearance history partition has no calendar retention bound')
+    }
+    const referenceDate = new Date(
+      Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
+    )
+    const outcome = await retireMonthlyPartitionCandidate(
+      { table: TABLE, partition, upperBound },
+      referenceDate,
+      1,
+    )
+    expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
+
+    await expect(rollupCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
+    await expect(releasedCount(occurredAt)).resolves.toBeUndefined()
+
+    await releaseTestModerationTransparencyRollup({
+      occurredAt,
+      metric: METRIC,
+      category: CATEGORY,
+    })
+    await expect(releasedCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
+    await expect(rollupCount(occurredAt)).resolves.toBeUndefined()
+  })
+})
+
+function rollupCount(occurredAt: Date): Promise<number | undefined> {
+  return getTestModerationTransparencyRollupCount({
+    occurredAt,
+    metric: METRIC,
+    category: CATEGORY,
+  })
+}
+
+function releasedCount(occurredAt: Date): Promise<number | undefined> {
+  return getTestReleasedModerationTransparencyRollupCount({
+    occurredAt,
+    metric: METRIC,
+    category: CATEGORY,
+  })
+}
