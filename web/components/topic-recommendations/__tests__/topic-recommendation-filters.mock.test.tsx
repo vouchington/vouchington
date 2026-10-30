@@ -21,6 +21,7 @@ describe('TopicRecommendationFilters', () => {
     const trigger = document.querySelector('[data-pw="topic-recommendation-status-filter"]')
     expect(trigger).not.toBeNull()
     expect(trigger).toHaveAccessibleName('Status')
+    expect(trigger?.tagName.toLowerCase()).toBe('button')
   })
 
   it('reads status=pending from search params', () => {
@@ -35,11 +36,5 @@ describe('TopicRecommendationFilters', () => {
     render(<TopicRecommendationFilters />)
     const trigger = document.querySelector('[data-pw="topic-recommendation-status-filter"]')
     expect(trigger).not.toBeNull()
-  })
-
-  it('renders with a status select trigger that is a button', () => {
-    render(<TopicRecommendationFilters />)
-    const trigger = document.querySelector('[data-pw="topic-recommendation-status-filter"]')
-    expect(trigger?.tagName.toLowerCase()).toBe('button')
   })
 })
