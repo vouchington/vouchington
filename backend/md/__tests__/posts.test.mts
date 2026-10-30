@@ -31,17 +31,14 @@ describe('posts', () => {
   })
 
   describe('GET /md/posts', () => {
-    it('should return text/markdown content type', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/posts').expect(200)
-      expect(response.headers['content-type']).toContain('text/markdown')
-    })
-
     it('should return markdown with frontmatter', async () => {
       const request = createRequest()
       const response = await request.get('/md/posts').expect(200)
+      expect(response.headers['content-type']).toContain('text/markdown')
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('has_next_page')
+      expect(response.headers['cache-control']).toBe('public, max-age=60')
+      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('should return markdown listing structure with posts', async () => {
@@ -79,18 +76,6 @@ describe('posts', () => {
       const response = await request.get('/md/posts?limit=2').expect(200)
       expect(response.text).toMatch(/^---/)
       expect(response.headers['content-type']).toContain('text/markdown')
-    })
-
-    it('should set Cache-Control header with max-age=60', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/posts').expect(200)
-      expect(response.headers['cache-control']).toBe('public, max-age=60')
-    })
-
-    it('returns ETag header', async () => {
-      const request = createRequest()
-      const response = await request.get('/md/posts').expect(200)
-      expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
     it('returns 304 for matching If-None-Match', async () => {
