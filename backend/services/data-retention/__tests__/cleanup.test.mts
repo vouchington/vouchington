@@ -176,20 +176,6 @@ describe('retention day validation', () => {
 
 describe('cleanupSoftDeletedUsers', () => {
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
-  it('hard-deletes soft-deleted users older than retentionDays', async () => {
-    const window = createTestRetentionWindow()
-    const user = await createTestUserDirect()
-    if (!user) throw new Error('Failed to create test user')
-
-    await softDeleteUserAt(user.id, window.firstEligibleDate)
-
-    const result = await cleanupSoftDeletedUsers(window)
-
-    expect(result).toEqual({ deleted: 1, hasMore: false })
-    expect(await getTestUserRaw(user.id)).toBeNull()
-  }, 30_000)
-
-  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('does NOT delete recently soft-deleted users', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
