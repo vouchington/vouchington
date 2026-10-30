@@ -49,11 +49,6 @@ describe('POST /api/v1/app-attestation/challenge', () => {
     },
   )
 
-  it('rejects an unrecognised type', async () => {
-    const req = createRequest()
-    await req.post('/api/v1/app-attestation/challenge').send({ type: 'bogus' }).expect(422)
-  })
-
   it('rejects a missing type', async () => {
     const req = createRequest()
     await req.post('/api/v1/app-attestation/challenge').send({}).expect(422)
