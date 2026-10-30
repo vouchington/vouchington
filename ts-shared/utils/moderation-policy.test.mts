@@ -17,7 +17,7 @@ describe('moderation policy registry', () => {
       expect(entry).toHaveProperty('key')
       expect(entry).toHaveProperty('label')
       expect(entry).toHaveProperty('severity')
-      expect(entry).toHaveProperty('appealEligible')
+      expect(entry.appealEligible).toBe(true)
       expect(entry).toHaveProperty('recommendedAction')
       expect(entry).toHaveProperty('description')
     }
@@ -38,10 +38,6 @@ describe('moderation policy registry', () => {
       'vote_manipulation',
       'other',
     ])
-  })
-
-  it('keeps the catch-all reason last', () => {
-    expect(MODERATION_REPORT_REASONS.at(-1)).toBe('other')
   })
 
   it('derives MODERATION_REPORT_REASON_OPTIONS matching reasons order and labels', () => {
