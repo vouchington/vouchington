@@ -80,7 +80,7 @@ export async function flush(): Promise<void> {
 
 async function flushBufferedRecords(): Promise<void> {
   try {
-    const records = buffer.splice(0, buffer.length)
+    const records = buffer.splice(0)
     bufferedBytes = 0
     const groups = groupRecords(records)
 

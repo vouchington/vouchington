@@ -156,7 +156,7 @@
     "unicorn/no-this-assignment": "error",
     "unicorn/no-typeof-undefined": "error",
     "unicorn/no-unnecessary-array-flat-depth": "error",
-    "unicorn/no-unnecessary-array-splice-count": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/no-unnecessary-array-splice-count": "error",
     "unicorn/no-unnecessary-slice-end": "error",
     "unicorn/no-unreadable-array-destructuring": "off", // Policy: positional destructuring is allowed for tuple contracts.
     "unicorn/no-unreadable-iife": "error",
