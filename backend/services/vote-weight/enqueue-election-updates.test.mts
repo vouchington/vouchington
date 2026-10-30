@@ -14,7 +14,6 @@ import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   enqueueElectionUpdatePageForUser,
   enqueueElectionUpdatesForUser,
-  getBulkEnqueuedJobIds,
 } from './enqueue-election-updates.mts'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 
@@ -33,23 +32,14 @@ async function createPost(createdById: string): Promise<string> {
   })
 }
 
-describe('enqueueElectionUpdatesForUser', () => {
-  it('extracts persisted bulk job ids and rejects unexpected enqueue result shapes', () => {
-    expect(getBulkEnqueuedJobIds([])).toEqual([])
-    expect(getBulkEnqueuedJobIds([{ id: 'job-1' }, { id: 'job-2' }])).toEqual(['job-1', 'job-2'])
-    expect(() => getBulkEnqueuedJobIds(undefined)).toThrow('Expected election bulk enqueue')
-    expect(() => getBulkEnqueuedJobIds({ id: 'job-1' })).toThrow('Expected election bulk enqueue')
-    expect(() => getBulkEnqueuedJobIds([null])).toThrow(
-      'Expected election bulk enqueue to return jobs with string ids',
-    )
-    expect(() => getBulkEnqueuedJobIds([1])).toThrow(
-      'Expected election bulk enqueue to return jobs with string ids',
-    )
-    expect(() => getBulkEnqueuedJobIds([{ id: 1 }])).toThrow(
-      'Expected election bulk enqueue to return jobs with string ids',
-    )
-  })
+function persistedBulkJobId(result: unknown): string {
+  const job = Array.isArray(result) ? result[0] : undefined
+  if (typeof job !== 'object' || job === null || typeof (job as { id?: unknown }).id !== 'string')
+    throw new Error('Unrelated election enqueue did not persist a job')
+  return (job as { id: string }).id
+}
 
+describe('enqueueElectionUpdatesForUser', () => {
   it('enqueues the whole short history in one page without a continuation', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const postId = await createPost(user!.id)
@@ -161,7 +151,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     ])
     expect(page).toEqual({ jobIds: [], nextCursor: null })
 
-    const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
+    const unrelatedJobId = persistedBulkJobId(unrelatedJobs)
     if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
     const unrelatedJob = await voteAggregation.getJob(unrelatedJobId)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
@@ -223,7 +213,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     ])
     expect(page.jobIds).toEqual([])
 
-    const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
+    const unrelatedJobId = persistedBulkJobId(unrelatedJobs)
     if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
     const unrelatedJob = await voteAggregation.getJob(unrelatedJobId)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
