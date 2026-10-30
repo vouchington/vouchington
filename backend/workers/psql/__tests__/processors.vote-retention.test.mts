@@ -15,6 +15,7 @@ const emptyCleanupResult = {
     hasMore: false,
     remainingKinds: [],
   },
+  agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
   textEmbeddingCache: { hasMore: false },
   terminalEmbeddingBatches: { hasMore: false },
   oldMediaDeliveryChanges: { hasMore: false },

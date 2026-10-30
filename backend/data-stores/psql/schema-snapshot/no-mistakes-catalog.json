@@ -24,6 +24,9 @@
         "openai/gpt-5.4-nano"
       ]
     },
+    "agent_moderation_retention_block_reasons": {
+      "values": ["hash", "reference", "newest"]
+    },
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
     },
@@ -1631,6 +1634,9 @@
     "fn_project_user_profile_link_image_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_register_agent_moderation_retention_post_hash()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_agent_moderation_retention_post_hash()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- A current-hash change can wake only rows already blocked on that hash.\n  -- The partial post-work index makes this existence probe stop at one row.\n  IF NOT EXISTS (\n    SELECT 1 FROM agent_moderations\n    WHERE post_id = NEW.id AND retention_blocked_reason = 'hash'\n    LIMIT 1\n  ) THEN RETURN NULL; END IF;\n  INSERT INTO agent_moderation_retention_post_work_items (post_id)\n  VALUES (NEW.id)\n  ON CONFLICT (post_id) DO UPDATE\n    SET cursor_moderation_record_id = '00000000-0000-0000-0000-000000000000',\n        changed_at = CURRENT_TIMESTAMP;\n  RETURN NULL;\nEND $function$\n"
+    },
     "fn_register_new_user_agent_string_cleanup_candidate()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_new_user_agent_string_cleanup_candidate()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)\n  VALUES (NEW.id) ON CONFLICT DO NOTHING;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -1940,6 +1946,12 @@
     "fn_text_to_timestamptz(text_value text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n"
     },
+    "fn_update_agent_moderation_retention()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE agent_moderations prior\n  SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',\n      retention_blocked_reason = NULL\n  WHERE prior.post_id = NEW.post_id\n    AND prior.id IN (\n      SELECT id FROM agent_moderations\n      WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id AND id < NEW.id\n      ORDER BY id DESC LIMIT 1\n    )\n    AND prior.retention_due_at IS NULL\n    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');\n  IF NEW.deleted_at IS NULL THEN\n    UPDATE agent_moderations prior\n    SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',\n        retention_blocked_reason = NULL\n    WHERE prior.post_id = NEW.post_id\n      AND prior.id IN (\n        SELECT id FROM agent_moderations\n        WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id\n          AND deleted_at IS NULL AND id < NEW.id\n        ORDER BY id DESC LIMIT 1\n      )\n      AND prior.retention_due_at IS NULL\n    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');\n  END IF;\n  IF EXISTS (\n    SELECT 1 FROM agent_moderations newer\n    WHERE newer.post_id = NEW.post_id AND newer.prompt_id = NEW.prompt_id\n      AND newer.id > NEW.id\n  ) AND (\n    NEW.deleted_at IS NOT NULL OR EXISTS (\n      SELECT 1 FROM agent_moderations newer_live\n      WHERE newer_live.post_id = NEW.post_id AND newer_live.prompt_id = NEW.prompt_id\n        AND newer_live.id > NEW.id AND newer_live.deleted_at IS NULL\n    )\n  ) THEN\n    UPDATE agent_moderations\n    SET retention_due_at = uuid_extract_timestamp(id) + INTERVAL '90 days',\n        retention_blocked_reason = NULL\n    WHERE post_id = NEW.post_id AND id = NEW.id\n      AND retention_due_at IS NULL\n      AND (retention_blocked_reason IS NULL OR retention_blocked_reason = 'newest');\n  END IF;\n  RETURN NULL;\nEND $function$\n"
+    },
+    "fn_update_agent_moderation_retention_reference()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention_reference()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  old_post_id UUID := (to_jsonb(OLD) ->> TG_ARGV[0])::UUID;\n  old_moderation_id UUID := (to_jsonb(OLD) ->> TG_ARGV[1])::UUID;\n  new_post_id UUID;\n  new_moderation_id UUID;\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    new_post_id := (to_jsonb(NEW) ->> TG_ARGV[0])::UUID;\n    new_moderation_id := (to_jsonb(NEW) ->> TG_ARGV[1])::UUID;\n    IF old_post_id IS NOT DISTINCT FROM new_post_id\n      AND old_moderation_id IS NOT DISTINCT FROM new_moderation_id THEN\n      RETURN NULL;\n    END IF;\n  END IF;\n  PERFORM fn_wake_agent_moderation_retention(old_post_id, old_moderation_id);\n  RETURN NULL;\nEND $function$\n"
+    },
     "fn_update_agent_moderation_transparency()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Lock the FK parents before taking the projection locks. A concurrent hard\n  -- delete already owns the parent row before its row trigger can take an\n  -- advisory lock; reversing this order would form a parent-row/advisory-lock\n  -- cycle with this INSERT.\n  PERFORM 1 FROM agents WHERE id = NEW.agent_id FOR KEY SHARE;\n  PERFORM 1 FROM agent_prompts WHERE id = NEW.prompt_id FOR KEY SHARE;\n  -- Do not lock the post here: community deletion owns the community before\n  -- cascading to posts, so a post-to-community lock would invert that order.\n  -- Snapshot and revalidate instead; an unstable post scope is withheld.\n  SELECT community_id INTO v_post_community_id FROM posts WHERE id = NEW.post_id;\n  SELECT community_id, deleted_at INTO v_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id;\n  IF v_community_id IS NOT NULL THEN\n    PERFORM 1 FROM communities WHERE id = v_community_id FOR KEY SHARE;\n    IF NOT FOUND THEN\n      v_community_id := NULL;\n      v_cap_deleted_at := NULL;\n    END IF;\n  END IF;\n  SELECT community_id, deleted_at INTO v_current_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id FOR SHARE;\n  IF v_current_community_id IS NULL THEN\n    v_community_id := NULL;\n    v_cap_deleted_at := NULL;\n  ELSIF v_current_community_id IS DISTINCT FROM v_community_id THEN\n    RAISE EXCEPTION 'community prompt changed during moderation projection' USING ERRCODE = '40001';\n  END IF;\n  IF (SELECT community_id FROM posts WHERE id = NEW.post_id)\n      IS DISTINCT FROM v_post_community_id THEN\n    NEW.moderation_transparency_category := NULL;\n    NEW.moderation_transparency_community_id := NULL;\n    RETURN NEW;\n  END IF;\n  -- Every caller then takes agent before prompt, which prevents an event from\n  -- observing a cap assignment half-way through its lifecycle transaction.\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', NEW.prompt_id);\n  SELECT agent.deleted_at, prompt.deleted_at\n    INTO v_agent_deleted_at, v_prompt_deleted_at\n  FROM agents agent JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n"
     },
@@ -2053,6 +2065,9 @@
     },
     "fn_user_deletion_has_remaining_owned_data(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n"
+    },
+    "fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF p_post_id IS NULL OR p_moderation_id IS NULL THEN RETURN; END IF;\n  UPDATE agent_moderations\n  SET retention_due_at = uuid_extract_timestamp(id) + INTERVAL '90 days',\n      retention_blocked_reason = NULL\n  WHERE post_id = p_post_id AND id = p_moderation_id\n    AND retention_blocked_reason = 'reference';\nEND $function$\n"
     },
     "fn_wilson_score_lower_bound(pos double precision, tot double precision)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_wilson_score_lower_bound(pos double precision, tot double precision)\n RETURNS double precision\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN tot IS NULL OR tot <= 0 THEN 0\n    ELSE\n      (\n        (pos/tot + (1.96*1.96)/(2*tot))\n        - 1.96 * sqrt(((pos/tot) * (1 - (pos/tot)) + (1.96*1.96)/(4*tot)) / tot)\n      )\n      / (1 + (1.96*1.96)/tot)\n  END\n$function$\n"
@@ -4623,6 +4638,130 @@
         }
       }
     },
+    "agent_moderation_retention_post_work_items": {
+      "checkConstraints": {},
+      "columns": {
+        "changed_at": {
+          "comment": "Time the latest hash transition reset this post work.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "cursor_moderation_record_id": {
+          "comment": "Last source key examined for this post; a cursor, not an entity reference.",
+          "dataType": "uuid",
+          "defaultExpression": "'00000000-0000-0000-0000-000000000000'::uuid",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "post_id": {
+          "comment": "Post whose hash transition requires reconsideration.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "Time this work item last changed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Per-post bounded work for revisiting hash-blocked agent moderation results.",
+      "foreignKeys": {
+        "agent_moderation_retention_post_work_items_post_id_fkey": {
+          "columns": ["post_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "agent_moderation_retention_post_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX agent_moderation_retention_post_work_items_pkey ON public.agent_moderation_retention_post_work_items USING btree (post_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_agent_moderation_retention_post_work_items__changed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderation_retention_post_work_items__changed ON public.agent_moderation_retention_post_work_items USING btree (changed_at, post_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "changed_at",
+              "descending": false,
+              "expression": "changed_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["post_id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_agent_moderation_retention_post_work_items_updated_at": {
+          "definition": "CREATE TRIGGER trigger_agent_moderation_retention_post_work_items_updated_at BEFORE UPDATE ON public.agent_moderation_retention_post_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "agent_moderation_votes": {
       "checkConstraints": {
         "agent_moderation_votes_score_check": {
@@ -4965,6 +5104,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_agent_moderation_votes__retention": {
+          "definition": "CREATE TRIGGER trigger_agent_moderation_votes__retention AFTER DELETE OR UPDATE OF post_id, agent_moderation_id ON public.agent_moderation_votes FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('post_id', 'agent_moderation_id')"
+        },
         "trigger_agent_moderation_votes__ua_release": {
           "definition": "CREATE TRIGGER trigger_agent_moderation_votes__ua_release AFTER DELETE ON public.agent_moderation_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
         }
@@ -4975,6 +5117,10 @@
       "checkConstraints": {
         "agent_moderations_input_sha256_check": {
           "definition": "CHECK ((octet_length(input_sha256) = 32))",
+          "validated": true
+        },
+        "chk_agent_moderations__retention_state": {
+          "definition": "CHECK (((retention_due_at IS NULL) OR (retention_blocked_reason IS NULL)))",
           "validated": true
         },
         "chk_agent_moderations__transparency_projection": {
@@ -5079,7 +5225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 13
         },
         "moderation_transparency_category": {
           "comment": "Immutable event-time aggregate category; NULL when the event was not eligible for paid transparency.",
@@ -5089,7 +5235,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 24
         },
         "moderation_transparency_community_id": {
           "comment": "Immutable event-time post or community-prompt scope snapshot; intentionally has no FK so delete cascades can decrement the prior aggregate.",
@@ -5099,7 +5245,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 25
         },
         "post_id": {
           "comment": "The post that was moderated.",
@@ -5129,6 +5275,26 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
+          "ordinalPosition": 12
+        },
+        "retention_blocked_reason": {
+          "comment": "Lifecycle event required to recheck a previously due result.",
+          "dataType": "agent_moderation_retention_block_reasons",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11
+        },
+        "retention_due_at": {
+          "comment": "Source-age deadline for a result with a successor; NULL for untouched or checked-and-blocked results.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 10
         },
         "updated_at": {
@@ -5149,7 +5315,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 21
         },
         "votes_count_none": {
           "comment": null,
@@ -5159,7 +5325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
+          "ordinalPosition": 20
         },
         "votes_count_up": {
           "comment": null,
@@ -5169,7 +5335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17
+          "ordinalPosition": 19
         },
         "votes_score_down": {
           "comment": null,
@@ -5179,7 +5345,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16
+          "ordinalPosition": 18
         },
         "votes_score_net": {
           "comment": null,
@@ -5189,7 +5355,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 23
         },
         "votes_score_none": {
           "comment": null,
@@ -5199,7 +5365,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
         },
         "votes_score_sort": {
           "comment": null,
@@ -5209,7 +5375,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 22
         },
         "votes_score_up": {
           "comment": null,
@@ -5219,7 +5385,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 16
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -5229,7 +5395,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 15
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -5239,7 +5405,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 14
         }
       },
       "comment": "LLM moderation results for posts. Keyed by (post, content hash, prompt). RANGE-partitioned by post_id.",
@@ -5520,6 +5686,88 @@
           "unique": true,
           "valid": true
         },
+        "idx_agent_moderations__post_prompt_live_newest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__post_prompt_live_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id DESC) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "prompt_id",
+              "descending": false,
+              "expression": "prompt_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_moderations__post_prompt_newest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__post_prompt_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "prompt_id",
+              "descending": false,
+              "expression": "prompt_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agent_moderations__prompt_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5538,6 +5786,79 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_moderations__retention_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__retention_due ON ONLY public.agent_moderations USING btree (retention_due_at, id, post_id) WHERE (retention_due_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "retention_due_at",
+              "descending": false,
+              "expression": "retention_due_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(retention_due_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_moderations__retention_post_work": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__retention_post_work ON ONLY public.agent_moderations USING btree (post_id, id) WHERE (retention_blocked_reason = 'hash'::agent_moderation_retention_block_reasons)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(retention_blocked_reason = 'hash'::agent_moderation_retention_block_reasons)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -5689,6 +6010,12 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_agent_moderations_retention_insert": {
+          "definition": "CREATE TRIGGER trigger_agent_moderations_retention_insert AFTER INSERT ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention()"
+        },
+        "trigger_agent_moderations_retention_live": {
+          "definition": "CREATE TRIGGER trigger_agent_moderations_retention_live AFTER UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW WHEN ((old.deleted_at IS DISTINCT FROM new.deleted_at)) EXECUTE FUNCTION fn_update_agent_moderation_retention()"
+        },
         "trigger_agent_moderations_updated_at": {
           "definition": "CREATE TRIGGER trigger_agent_moderations_updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
@@ -76317,6 +76644,9 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_moderation_training_feedbacks__agent_retention": {
+          "definition": "CREATE TRIGGER trigger_moderation_training_feedbacks__agent_retention AFTER DELETE OR UPDATE OF post_id, agent_moderation_id ON public.moderation_training_feedbacks FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('post_id', 'agent_moderation_id')"
+        },
         "trigger_moderation_training_feedbacks_updated_at": {
           "definition": "CREATE TRIGGER trigger_moderation_training_feedbacks_updated_at BEFORE UPDATE ON public.moderation_training_feedbacks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
@@ -77943,6 +78273,9 @@
         },
         "trigger_moderation_transparency_actions_type_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_actions_type_guard BEFORE UPDATE OF action_type ON public.moderator_actions FOR EACH ROW WHEN ((old.action_type IS DISTINCT FROM new.action_type)) EXECUTE FUNCTION fn_reject_mutation()"
+        },
+        "trigger_moderator_actions__agent_moderation_retention": {
+          "definition": "CREATE TRIGGER trigger_moderator_actions__agent_moderation_retention AFTER DELETE OR UPDATE OF agent_moderation_post_id, agent_moderation_id ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('agent_moderation_post_id', 'agent_moderation_id')"
         }
       },
       "uniqueConstraints": {}
@@ -94073,6 +94406,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_posts_agent_moderation_retention_hash": {
+          "definition": "CREATE TRIGGER trigger_posts_agent_moderation_retention_hash AFTER UPDATE OF llm_moderation_content_sha256 ON public.posts FOR EACH ROW WHEN ((old.llm_moderation_content_sha256 IS DISTINCT FROM new.llm_moderation_content_sha256)) EXECUTE FUNCTION fn_register_agent_moderation_retention_post_hash()"
+        },
         "trigger_posts_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
         },
@@ -159123,6 +159459,9 @@
         },
         "trigger_topic_merge_flag_f7a874a4f22140d1": {
           "definition": "CREATE TRIGGER trigger_topic_merge_flag_f7a874a4f22140d1 BEFORE INSERT OR DELETE OR UPDATE ON public.vote_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__faq__post', 'relation__topic__faq__post_subject_id', 'relation__topic__faq__post_id', 'subject_id')"
+        },
+        "trigger_vote_integrity_flags__agent_moderation_retention": {
+          "definition": "CREATE TRIGGER trigger_vote_integrity_flags__agent_moderation_retention AFTER DELETE OR UPDATE OF agent_moderation_post_id, agent_moderation_id ON public.vote_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('agent_moderation_post_id', 'agent_moderation_id')"
         },
         "trigger_vote_integrity_flags_updated_at": {
           "definition": "CREATE TRIGGER trigger_vote_integrity_flags_updated_at BEFORE UPDATE ON public.vote_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"

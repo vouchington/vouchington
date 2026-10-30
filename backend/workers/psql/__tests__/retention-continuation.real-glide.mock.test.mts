@@ -101,6 +101,7 @@ describe('AI retention continuation delivery', () => {
       ...familyResults,
       classifierRecords: {},
       softDeletedUsers: { deleted: 0, hasMore: false },
+      agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
       supersededVoteBallots: [],
       orphanedUserAgentStrings: { hasMore: false },
       voteIntegrityDetails: { hasMore: false },

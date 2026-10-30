@@ -150,6 +150,13 @@ COMMENT ON COLUMN moderator_actions.action_type IS 'Type of moderation action ta
 
 COMMENT ON COLUMN moderator_actions.post_id IS 'Target post or comment (ON DELETE SET NULL for audit persistence).';
 
+CREATE TRIGGER trigger_moderator_actions__agent_moderation_retention
+AFTER DELETE OR UPDATE OF agent_moderation_post_id, agent_moderation_id
+ON moderator_actions FOR EACH ROW
+EXECUTE FUNCTION fn_update_agent_moderation_retention_reference(
+  'agent_moderation_post_id', 'agent_moderation_id'
+);
+
 COMMENT ON COLUMN moderator_actions.target_user_id IS 'Target user identity for bans, suspensions, warnings, member actions and integrity penalty reviews; survives account deletion without granting authority.';
 
 COMMENT ON COLUMN moderator_actions.report_id IS 'Target moderation report for resolve/dismiss actions.';

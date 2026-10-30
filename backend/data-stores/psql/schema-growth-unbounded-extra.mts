@@ -3,6 +3,7 @@ import { EXTRA_UNBOUNDED_TABLES_CONTINUED } from './schema-growth-unbounded-extr
 // These unpartitioned tables currently have no fixed cardinality bound.
 // Keep this list explicit so a new logical table cannot silently inherit a growth policy.
 export const EXTRA_UNBOUNDED_TABLES = [
+  'agent_moderation_retention_post_work_items',
   'agent_prompts',
   'agents',
   'moderator_agents',

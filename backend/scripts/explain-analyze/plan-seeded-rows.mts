@@ -5,6 +5,10 @@ import {
   INGESTION_ACCOUNT_ROW_COUNT,
   INGESTION_BEDROCK_ROW_COUNT,
 } from './seed-data/ingestion-raw-pages.mts'
+import {
+  AGENT_MODERATION_RETENTION_RELEASED_NOISE,
+  AGENT_MODERATION_RETENTION_ROWS,
+} from './seed-data/agent-moderation-retention.mts'
 
 /** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
 // Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
@@ -23,6 +27,9 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   spending_entries: 20_000,
   individual_rewards_program_statuses: 10_000,
   posts: 102_021,
+  agent_moderations: AGENT_MODERATION_RETENTION_ROWS,
+  moderation_transparency_released_daily_rollups:
+    AGENT_MODERATION_RETENTION_RELEASED_NOISE + ANCILLARY_SEED_ROW_UPPER_BOUND,
   post_feed_shares: 4_064,
   user_topic_import_attempts: 25_001,
   url_hostnames: 4_017, // Existing 2000 hosts, 11 policy flags and 2006 crawl-sweep hosts.

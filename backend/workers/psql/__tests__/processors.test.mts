@@ -24,6 +24,7 @@ const noPostModerationRetention: Awaited<
 const noAIRetention = {
   softDeletedUsers: { deleted: 0, hasMore: false },
   postModerationLedger: noPostModerationRetention,
+  agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
   ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
 }
 const emptyCleanupResult = {
@@ -127,7 +128,7 @@ describe('processPsql', () => {
     })
     const hasMore = {
       ...emptyCleanupResult,
-      classifierRecords: { runs: { hasMore: true } },
+      classifierRecords: { runs: { scanned: 1, deleted: 0, hasMore: true } },
     } as Awaited<ReturnType<typeof runDataRetentionCleanup>>
     const cleanup = vi
       .fn<typeof runDataRetentionCleanup>()

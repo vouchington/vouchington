@@ -70,4 +70,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_moderation_training_feedbacks__agent_retention`: `CREATE TRIGGER trigger_moderation_training_feedbacks__agent_retention AFTER DELETE OR UPDATE OF post_id, agent_moderation_id ON public.moderation_training_feedbacks FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('post_id', 'agent_moderation_id')`
 - `trigger_moderation_training_feedbacks_updated_at`: `CREATE TRIGGER trigger_moderation_training_feedbacks_updated_at BEFORE UPDATE ON public.moderation_training_feedbacks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

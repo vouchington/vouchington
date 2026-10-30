@@ -11,6 +11,7 @@ import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
 import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
+import { write } from '@data-stores/psql'
 import {
   assertScenarioManifest,
   getCompletedScenarioIds,
@@ -53,11 +54,22 @@ import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mt
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { seedAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
+import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
+
+/** Defer the large retention corpus until its own plans, then refresh only its statistics. */
+async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
+  await seedAgentModerationRetention()
+  await write(`/* analyzeAgentModerationRetention */
+    ANALYZE posts, agent_moderations, agent_moderation_votes,
+      moderation_training_feedbacks, vote_integrity_flags, moderator_actions,
+      moderation_transparency_released_daily_rollups`)
+}
 
 // A failing step is recorded and the run continues, so one run reports every failure.
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
@@ -82,6 +94,8 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runTopicImportAttemptScenarios,
   runImportRequestRetentionScenarios,
   runPostModerationRetentionScenarios,
+  seedAndAnalyzeAgentModerationRetention,
+  runAgentModerationRetentionScenarios,
   runHotPathLoaderScenarios,
   runSharedLoaderScenarios,
   runMembershipRefundScenarios,

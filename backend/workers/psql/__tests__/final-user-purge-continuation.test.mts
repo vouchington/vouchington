@@ -56,6 +56,7 @@ const settled = {
     hasMore: false,
     remainingKinds: [],
   },
+  agentModerations: { ...scannedDone, continuation: null },
   textEmbeddingCache: done,
   terminalEmbeddingBatches: done,
   completedAdminImportBatches: continuationDone,

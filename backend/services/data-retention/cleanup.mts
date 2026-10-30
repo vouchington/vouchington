@@ -129,6 +129,11 @@ import {
   type PostModerationLedgerCleanupResult,
   type PostModerationRetentionKind,
 } from './cleanup-post-moderation-ledger.mts'
+import {
+  cleanupObsoleteAgentModerations,
+  type AgentModerationCleanupContinuation,
+  type AgentModerationCleanupResult,
+} from './cleanup-agent-moderations.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -136,6 +141,20 @@ export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
+export { cleanupObsoleteAgentModerations }
+
+export function runAgentModerationRetentionCleanupPage(
+  limits: DataRetentionLimits,
+  continuation: AgentModerationCleanupContinuation,
+): Promise<AgentModerationCleanupResult> {
+  return cleanupObsoleteAgentModerations(
+    applyRetentionLimits<{
+      batchSize?: number
+      maxBatches?: number
+      continuation: AgentModerationCleanupContinuation
+    }>(limits, { continuation }),
+  )
+}
 
 type CleanupOptions = {
   retentionDays?: number
@@ -163,6 +182,7 @@ type OperationalCleanupOptions = Parameters<typeof cleanupOperationalTombstones>
 type DataRetentionCleanupOptions = {
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
+  includeAgentModerations?: boolean
   voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
   userAgentStringIds?: readonly string[]
   voteIntegrityFlagIds?: readonly string[]
@@ -207,6 +227,14 @@ type DataRetentionCleanupOptions = {
     now?: Date
     kinds?: readonly PostModerationRetentionKind[]
   }
+  agentModerations?: OptionalRetentionLimits<{
+    batchSize?: number
+    maxBatches: number
+    now?: Date
+    lowerBoundDate?: Date
+    upperBoundDate?: Date
+    continuation?: AgentModerationCleanupContinuation
+  }>
   textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
   terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
   completedAdminImportBatches?: OptionalRetentionLimits<CleanupOptions>
@@ -270,6 +298,7 @@ type DataRetentionCleanupResult = {
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
   postModerationLedger: PostModerationLedgerCleanupResult
+  agentModerations: AgentModerationCleanupResult
   textEmbeddingCache: CleanupResult
   terminalEmbeddingBatches: CleanupResult
   completedAdminImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
@@ -506,6 +535,10 @@ export async function runDataRetentionCleanup(
     ...withLimits(options.postModerationLedger),
     retentionDays: getPostModerationRetentionDays(),
   })
+  const agentModerations =
+    options.includeAgentModerations === false
+      ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
+      : await cleanupObsoleteAgentModerations(withLimits(options.agentModerations))
   const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
   const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
     withLimits(options.terminalEmbeddingBatches),
@@ -632,6 +665,7 @@ export async function runDataRetentionCleanup(
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     postModerationLedger,
+    agentModerations,
     textEmbeddingCache,
     terminalEmbeddingBatches,
     completedAdminImportBatches,

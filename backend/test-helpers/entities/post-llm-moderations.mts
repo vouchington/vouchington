@@ -29,6 +29,7 @@ export async function insertTestAgentModeration(options: {
   inputSha256?: Buffer
   occurredAt?: Date
   occurredAtSequence?: number
+  moderationId?: string
   deletedAt?: Date | null
 }): Promise<string> {
   const results = options.results ?? { flagged: false }
@@ -38,9 +39,11 @@ export async function insertTestAgentModeration(options: {
     options.inputSha256 ??
     (flagged ? await getPostLLMModerationInputSha256(options.postId) : crypto.randomBytes(32))
 
-  const id = options.occurredAt
-    ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
-    : null
+  const id =
+    options.moderationId ??
+    (options.occurredAt
+      ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
+      : null)
   const { rows } = await write(
     sql`/* insertTestAgentModeration */
     INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)

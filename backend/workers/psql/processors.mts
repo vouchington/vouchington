@@ -27,8 +27,10 @@ import {
   requireVoteRetentionSelection,
 } from './processors/vote-retention.mts'
 import { createHash } from 'node:crypto'
+import { processAgentModerationRetentionContinuation } from './processors/agent-moderation-retention.mts'
 import {
   enqueueAIRetentionContinuations,
+  enqueueAgentModerationRetentionContinuation,
   enqueueDataRetentionCleanupContinuation,
   enqueueDataRetentionContinuation,
 } from '@queues/psql/enqueues'
@@ -41,6 +43,7 @@ import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
 import {
   AI_RETENTION_FAMILIES,
   type PsqlJobs,
+  type AgentModerationRetentionContinuationData,
   type PsqlPartitionJobData,
   type PsqlRetentionJobData,
   type RefreshMaterializedViewData,
@@ -57,6 +60,8 @@ type ProcessPsqlDependencies = PartitionCleanupDependencies & {
   dataRetentionCleanup: typeof runDataRetentionCleanup
   copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
   enqueueDataRetentionCleanupContinuation: typeof enqueueDataRetentionCleanupContinuation
+  agentModerationRetentionCleanupPage: typeof import('@services/data-retention').runAgentModerationRetentionCleanupPage
+  enqueueAgentModerationRetentionContinuation: typeof import('@queues/psql/enqueues').enqueueAgentModerationRetentionContinuation
   enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
   voteRetentionCleanupPage: typeof runVoteRetentionCleanupPage
   enqueueDataRetentionContinuation: typeof enqueueDataRetentionContinuation
@@ -73,6 +78,7 @@ export default async function processPsql(
     RefreshMaterializedViewData &
       PsqlPartitionJobData &
       PsqlRetentionJobData &
+      AgentModerationRetentionContinuationData &
       VoteRetentionContinuationData
   >,
   dependencies?: Partial<ProcessPsqlDependencies>,
@@ -114,6 +120,7 @@ export default async function processPsql(
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
             postModerationLedger: { kinds: data.continuation.activePostModerationKinds },
+            includeAgentModerations: false,
             ...(data.continuation.userPurge
               ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
               : {}),
@@ -154,6 +161,19 @@ export default async function processPsql(
           ...(userPurge ? { userPurge } : {}),
         })
       }
+      if (result.agentModerations.continuation) {
+        if (!jobId)
+          throw new Error('Agent moderation retention continuation needs the current job ID')
+        const runId = createHash('sha256').update(jobId).digest('hex')
+        await (
+          dependencies?.enqueueAgentModerationRetentionContinuation ??
+          enqueueAgentModerationRetentionContinuation
+        )({
+          runId,
+          step: 1,
+          agentModerationRetention: result.agentModerations.continuation,
+        })
+      }
       // Cleanup continuations rerun the same bounded families, so only the first run chains vote pages.
       if (!data?.continuation) {
         await enqueueVoteRetentionContinuationIfNeeded(
@@ -164,6 +184,8 @@ export default async function processPsql(
       }
       return result
     }
+    case 'continueAgentModerationRetentionCleanup':
+      return processAgentModerationRetentionContinuation(data, dependencies)
     case 'continueVoteRetentionCleanup': {
       const selection = requireVoteRetentionSelection(data)
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
