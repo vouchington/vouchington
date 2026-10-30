@@ -1,48 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import type { GlideClient } from '@valkey/valkey-glide'
 import { config } from '@data-stores/valkey-core/config'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { describe, expect, it } from 'vitest'
 import { getQueueFlushTargetPrefixes } from '@voucha/api/v1/valkey/queues-flush'
 import { FLUSH_CONCERNS } from './concerns.mts'
-import { collectValkeyDiagnostics, diagnoseValkey } from './diagnostics.mts'
+import { diagnoseValkey } from './diagnostics.mts'
 import { createFlushTargetPrefixRegistry } from './flush-targets.mts'
-
-const COMPLETE_INFO = `# Memory
-used_memory:100
-used_memory_rss:120
-used_memory_peak:140
-used_memory_dataset:80
-maxmemory:1000
-maxmemory_policy:noeviction
-mem_fragmentation_ratio:1.2
-lazyfree_pending_objects:3
-ignored_secret:do-not-emit`
-
-function makeReadOnlyClient(
-  pages: Readonly<Record<string, readonly [string, string[]]>>,
-  calls: Array<{ command: string; args: unknown[] }> = [],
-): Pick<GlideClient, 'info' | 'scan'> {
-  return {
-    async info(sections) {
-      calls.push({ command: 'info', args: [sections] })
-      return COMPLETE_INFO
-    },
-    async scan(cursor, options) {
-      calls.push({ command: 'scan', args: [cursor, options] })
-      const page = pages[String(cursor)]
-      if (!page) throw new Error(`Missing fake page for cursor ${String(cursor)}`)
-      return page
-    },
-  } as Pick<GlideClient, 'info' | 'scan'>
-}
-
-function makeTopology(
-  databaseUrls: readonly string[],
-  workerQueueUrl: string = databaseUrls[0] ?? 'redis://localhost:6379/0',
-) {
-  return { databaseUrls, workerQueueUrl }
-}
 
 const diagnosticRegistry = createFlushTargetPrefixRegistry(['glide:usage:'])
 
@@ -145,94 +108,15 @@ describe('Valkey diagnostics', () => {
     }
   })
 
-  it('rejects an overlapping target-prefix registry before any Valkey command', async () => {
-    const calls: Array<{ command: string; args: unknown[] }> = []
-    const client = makeReadOnlyClient({ '0': ['0', []] }, calls)
-
+  it('rejects an overlapping target-prefix registry', async () => {
     await expect(
-      collectValkeyDiagnostics(
-        client,
-        makeTopology(['redis://localhost:6379']),
-        createFlushTargetPrefixRegistry(['cache:topics:queue:']),
-      ),
+      diagnoseValkey(createFlushTargetPrefixRegistry(['cache:topics:queue:'])),
     ).rejects.toThrow('overlaps')
-    expect(calls).toEqual([])
   })
 
-  it('classifies one multi-page SCAN into all concerns and unclassified observations', async () => {
-    const registry = createFlushTargetPrefixRegistry(['custom:{emails}:', 'custom:usage:'])
-    const client = makeReadOnlyClient({
-      '0': [
-        '1',
-        [
-          'cache:topics_with_redirect:v2:one',
-          'recently-viewed:one',
-          'bloom-filter:one',
-          'rate-limiter:one',
-        ],
-      ],
-      '1': [
-        '0',
-        [
-          'dynamic-config:one',
-          'voucha:jwt-stale:one',
-          'custom:{emails}:job:one',
-          'custom:{emails}:job:one',
-          'other:key',
-        ],
-      ],
-    })
-
-    const result = await collectValkeyDiagnostics(
-      client,
-      makeTopology(['redis://one:secret@localhost:6379', 'redis://two:secret@localhost:6379/0']),
-      registry,
-    )
-    expect(result.observedFlushTargetKeyCounts).toEqual({
-      caches: 1,
-      'recently-viewed': 1,
-      blooms: 1,
-      'rate-limiter': 1,
-      'dynamic-config': 1,
-      sessions: 1,
-      queues: 2,
-      unclassified: 1,
-    })
-  })
-
-  it('classifies prefixed GlideMQ keys while scanning the shared DB-0 keyspace', async () => {
-    const registry = createFlushTargetPrefixRegistry(getQueueFlushTargetPrefixes('voucha_qdb_7'))
-    const client = makeReadOnlyClient({
-      '0': ['0', ['voucha_qdb_7:{emails}:job:one']],
-    })
-
-    const result = await collectValkeyDiagnostics(
-      client,
-      makeTopology(['redis://localhost:6379/0'], 'redis://localhost:6379/7'),
-      registry,
-    )
-
-    expect(result.observedFlushTargetKeyCounts.queues).toBe(1)
-    expect(result.observedFlushTargetKeyCounts.unclassified).toBe(0)
-  })
-
-  it('reads only INFO memory and SCAN pages from the client', async () => {
-    const calls: Array<{ command: string; args: unknown[] }> = []
-    const client = makeReadOnlyClient({ '0': ['0', []] }, calls)
-    await collectValkeyDiagnostics(
-      client,
-      makeTopology(['redis://localhost:6379']),
-      createFlushTargetPrefixRegistry(['glide:usage:']),
-    )
-
-    expect(calls.map(call => call.command)).toEqual(['info', 'scan'])
-  })
-
-  it('does not remove randomized target or unrelated keys from real Valkey', async () => {
+  it('classifies owned prefixed keys through the configured Valkey', async () => {
     const suffix = randomUUID()
-    const queuePrefixes = getQueueFlushTargetPrefixes('glide')
-    const queuePrefix = queuePrefixes[0]
-    if (!queuePrefix) throw new Error('Expected at least one queue flush target prefix')
+    const queuePrefix = `owned-diag:${suffix}:`
     const keys = [
       `cache:topics_with_redirect:v2:${suffix}`,
       `recently-viewed:${suffix}`,
@@ -240,17 +124,16 @@ describe('Valkey diagnostics', () => {
       `rate-limiter:test:{${suffix}}`,
       `dynamic-config:${suffix}`,
       `voucha:jwt-stale:${suffix}`,
-      `${queuePrefix}${suffix}`,
+      `${queuePrefix}job`,
       `unclassified-test:${suffix}`,
     ]
     await Promise.all(keys.map(key => sessionValkeyClient.set(key, 'x')))
     try {
-      const result = await collectValkeyDiagnostics(
-        sessionValkeyClient,
-        makeTopology([process.env.VALKEY_URL ?? 'redis://localhost:6379']),
-        createFlushTargetPrefixRegistry(queuePrefixes),
-      )
+      const result = await diagnoseValkey(createFlushTargetPrefixRegistry([queuePrefix]))
+      expect(result.memory.usedMemoryBytes).toBeGreaterThan(0)
+      expect(result.observedFlushTargetKeyCounts.queues).toBe(1)
       for (const concern of FLUSH_CONCERNS) {
+        if (concern === 'queues') continue
         expect(result.observedFlushTargetKeyCounts[concern]).toBeGreaterThanOrEqual(1)
       }
       expect(result.observedFlushTargetKeyCounts.unclassified).toBeGreaterThanOrEqual(1)

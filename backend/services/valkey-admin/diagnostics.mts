@@ -19,7 +19,7 @@ export type ValkeyDiagnosticResult = {
 
 type ReadOnlyDiagnosticClient = Pick<GlideClient, 'info' | 'scan'>
 
-export type ValkeyDiagnosticTopology = {
+type ValkeyDiagnosticTopology = {
   databaseUrls: readonly string[]
   workerQueueUrl: string
 }
@@ -37,7 +37,7 @@ function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): void {
   }
 }
 
-export async function collectValkeyDiagnostics(
+async function collectValkeyDiagnostics(
   client: ReadOnlyDiagnosticClient,
   topology: ValkeyDiagnosticTopology,
   registry: FlushTargetPrefixRegistry,
