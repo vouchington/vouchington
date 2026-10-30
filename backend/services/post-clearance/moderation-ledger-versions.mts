@@ -1,5 +1,5 @@
 import { write, type QueryOptions } from '@data-stores/psql'
-import { readCommittedCurrentPostModerationVersion } from './moderation-ledger-committed-version.mts'
+import { readCommittedCurrentPostModerationVersions } from './moderation-ledger-committed-version.mts'
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,
@@ -65,7 +65,8 @@ export async function ensureCurrentPostModerationVersion(
     [postId, POST_MODERATION_POLICY_REVISION, [...AUTOMATED_POST_MODERATION_SOURCES]],
     options,
   )
-  const version = rows[0] ?? (await readCommittedCurrentPostModerationVersion(postId, options))
+  const version =
+    rows[0] ?? (await readCommittedCurrentPostModerationVersions([postId], options))[0]
   if (!version) throw new Error(`Post moderation version source post not found: ${postId}`)
   return version
 }
@@ -122,7 +123,11 @@ export async function commitCurrentPostModerationVersions(
     FROM selected_version`,
     [postIds, POST_MODERATION_POLICY_REVISION, [...AUTOMATED_POST_MODERATION_SOURCES]],
   )
-  return rows
+  // Posts whose insert conflicted after a lock wait are missing from the statement's snapshot.
+  const found = new Set(rows.map(version => version.post_id))
+  const missing = postIds.filter(postId => !found.has(postId))
+  if (missing.length === 0) return rows
+  return [...rows, ...(await readCommittedCurrentPostModerationVersions(missing))]
 }
 
 export async function recordPostModerationDisposition(
