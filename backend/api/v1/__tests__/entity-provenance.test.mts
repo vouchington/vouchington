@@ -134,11 +134,6 @@ describe.each(ENTITIES)('$name provenance on read routes', entity => {
   })
 
   describe('the detail route', () => {
-    it('labels api and mcp rows for a signed-out reader', async () => {
-      expect((await read('mcp')).provenance).toEqual(verifiedLabel())
-      expect((await read('api')).provenance).toEqual({ via: 'api', app: null })
-    })
-
     it.each(['web', 'swift', 'dotnet', 'system'] as const)(
       'has no label on a %s row',
       async key => {
@@ -149,6 +144,7 @@ describe.each(ENTITIES)('$name provenance on read routes', entity => {
     )
 
     it('gives a signed-out, regular or creator viewer only the public facts', async () => {
+      expect((await read('api')).provenance).toEqual({ via: 'api', app: null })
       for (const viewer of [undefined, reader, author]) {
         const row = await read('mcp', viewer)
         expect(row).not.toHaveProperty('staff_provenance')
