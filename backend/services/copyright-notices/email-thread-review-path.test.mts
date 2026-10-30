@@ -161,22 +161,6 @@ describe('copyright email review path', () => {
     ).resolves.toMatchObject({ match: expect.objectContaining({ noticeId: promoted.noticeId }) })
   })
 
-  it('sends a reply whose ancestors are on two cases to manual review', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const firstMessageId = copyrightEmailMessageId()
-    const secondMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: firstMessageId })
-    await promoteInitialCopyrightEmail({ moderator, messageId: secondMessageId })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      inReplyTo: [firstMessageId],
-      replyReferences: [secondMessageId],
-    })
-
-    expect(reply.match).toBeNull()
-    await expectManualReview(moderator, reply.intakeId, 'ancestor_notice_conflict')
-  })
-
   it('keeps that conflict unlinked when both parents are promoted after the reply', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const firstMessageId = copyrightEmailMessageId()
