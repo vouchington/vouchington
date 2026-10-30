@@ -55,6 +55,9 @@ describe('Fix Dependabot source concurrency', () => {
     expect(pending.get(lockKey(backendFailure))).toEqual(rebasedBackendFailure)
     expect(active.get(lockKey(webSuccess))).toEqual(webSuccess)
     expect(lockKey(backendFailure)).not.toBe(lockKey(webSuccess))
+    expect(parsedDependabot.concurrency?.group).toBe(
+      'fix-dependabot-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.workflow_id }}',
+    )
     expect(parsedDependabot.concurrency?.['cancel-in-progress']).toBe(false)
     expect(parsedDependabot.concurrency).not.toHaveProperty('queue')
   })
