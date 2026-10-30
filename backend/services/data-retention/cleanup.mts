@@ -525,20 +525,23 @@ export async function runDataRetentionCleanup(
   const webPushSubscriptionTombstones = await cleanupWebPushSubscriptionTombstones(
     withLimits(options.webPushSubscriptionTombstones),
   )
-  const oldModerationQueueClaims = await cleanupOldModerationQueueClaims(
-    withLimits(options.oldModerationQueueClaims),
-  )
-  const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
-    withLimits(options.oldModerationMediaReveals),
-  )
-  const postModerationLedger = await cleanupPostModerationLedger({
-    ...withLimits(options.postModerationLedger),
-    retentionDays: getPostModerationRetentionDays(),
-  })
-  const agentModerations =
+  // These four cleanups touch different tables and share no data, so they run together.
+  const [
+    oldModerationQueueClaims,
+    oldModerationMediaReveals,
+    postModerationLedger,
+    agentModerations,
+  ] = await Promise.all([
+    cleanupOldModerationQueueClaims(withLimits(options.oldModerationQueueClaims)),
+    cleanupOldModerationMediaReveals(withLimits(options.oldModerationMediaReveals)),
+    cleanupPostModerationLedger({
+      ...withLimits(options.postModerationLedger),
+      retentionDays: getPostModerationRetentionDays(),
+    }),
     options.includeAgentModerations === false
       ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
-      : await cleanupObsoleteAgentModerations(withLimits(options.agentModerations))
+      : cleanupObsoleteAgentModerations(withLimits(options.agentModerations)),
+  ])
   const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
   const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
     withLimits(options.terminalEmbeddingBatches),
