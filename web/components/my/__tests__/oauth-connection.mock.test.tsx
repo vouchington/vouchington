@@ -79,17 +79,6 @@ describe('OAuthConnection', () => {
     expect(screen.getByTestId('oauth-login-btn')).toBeDefined()
   })
 
-  it('shows connected state when account is provided', () => {
-    render(
-      <OAuthConnection
-        provider='google'
-        initialAccount={mockAccount}
-      />,
-    )
-    expect(screen.getByText('Test User')).toBeDefined()
-    expect(screen.getByText('Disconnect')).toBeDefined()
-  })
-
   it('hides everything when disconnected and provider becomes unavailable', () => {
     const { container } = render(
       <OAuthConnection

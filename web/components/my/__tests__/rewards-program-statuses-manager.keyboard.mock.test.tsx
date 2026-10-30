@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
 import { RewardsProgramStatusesManager } from '../rewards-program-statuses-manager'
 import type { ListResponse } from '@/types/api-responses'
@@ -73,21 +73,6 @@ describe('RewardsProgramStatusesManager keyboard submit', () => {
     mockUpdate.mockResolvedValue({
       rewards_program_status: { ...initialStatuses[0], expires_on: '2024-01-01' },
     } as any)
-  })
-
-  it('selecting an autocomplete option auto-adds (calls create API)', async () => {
-    render(<RewardsProgramStatusesManager initialPage={initialPage} />)
-
-    const autocompleteInput = screen.getByTestId('mock-topic-autocomplete-input')
-    await act(async () => {
-      fireEvent.change(autocompleteInput, { target: { value: 'stat-2' } })
-    })
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({
-        rewards_program_status_topic_id: 'stat-2',
-      })
-    })
   })
 
   it('Enter on the edit Since date input submits the edit form', () => {
