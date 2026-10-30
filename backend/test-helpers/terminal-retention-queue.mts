@@ -1,38 +1,36 @@
-import { randomUUID } from 'node:crypto'
-import { Queue, Worker, type Job } from 'glide-mq'
+import { Worker, type Job } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import { ENQUEUE_BASE_DEFAULTS } from '../data-stores/valkey-glide-mq/index.mts'
-import { enqueueBulkReactivatingFinished } from '../data-stores/valkey-glide-mq/enqueue-or-reactivate.mts'
-import {
-  PRIORITY_DEFAULT,
-  PSQL_RETRY_OPTIONS,
-  TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
-} from '../queues/psql/config.mts'
+import { TERMINAL_ACTIVITY_RETENTION_JOB_NAME } from '../queues/psql/config.mts'
+import { psql } from '../queues/psql/queues.mts'
 import type { TerminalActivityRetentionData } from '../queues/psql/types.mts'
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
-const harnessJobId = (data: TerminalActivityRetentionData): string =>
-  `terminal_retention_harness__${data.family}`
-
-/** Private real namespace for family admission. Production job ids stay on the enqueue. */
+/** Real `psql` worker for one test. Production enqueue owns job ids and options. */
 export async function openTerminalRetentionQueueForTest(
   processor: (job: Job<TerminalActivityRetentionData>) => Promise<unknown>,
   registerCleanup?: (close: () => Promise<void>) => void,
 ) {
-  const name = `terminal_retention_${randomUUID()}`
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-  const queue = new Queue<TerminalActivityRetentionData>(name, connection)
-  const worker = new Worker<TerminalActivityRetentionData>(name, processor, {
-    ...connection,
-    blockTimeout: 100,
-    promotionInterval: 50,
-    concurrency: 2,
-  })
+  const watched = new Set<string>()
+  const worker = new Worker(
+    psql.name,
+    async (job: Job) => {
+      if (job.name !== TERMINAL_ACTIVITY_RETENTION_JOB_NAME) return job.moveToDelayed(Date.now())
+      watched.add(job.id)
+      return processor(job as Job<TerminalActivityRetentionData>)
+    },
+    {
+      ...connection,
+      blockTimeout: 100,
+      promotionInterval: 50,
+      concurrency: 2,
+    },
+  )
   const errors: unknown[] = []
   const pending = new Map<string, PromiseWithResolvers<'completed' | 'failed'>>()
   worker.on('error', error => errors.push(error))
   worker.on('completed', job => pending.get(job.id)?.resolve('completed'))
-  worker.on('failed', (job: Job<TerminalActivityRetentionData> | undefined) => {
+  worker.on('failed', (job: Job | undefined) => {
     if (!job) return
     void job
       .getState()
@@ -48,9 +46,8 @@ export async function openTerminalRetentionQueueForTest(
       try {
         await worker.close()
         if (errors.length) throw new AggregateError(errors, 'Terminal retention worker errors')
-        await queue.obliterate({ force: false })
       } finally {
-        await queue.close()
+        for (const id of watched) await (await psql.getJob(id))?.remove()
       }
     })())
   // Register ownership before readiness can reject, so partial startup cannot leak a worker.
@@ -61,33 +58,13 @@ export async function openTerminalRetentionQueueForTest(
     await close()
     throw err
   }
-  const enqueueBulk = (inputs: TerminalActivityRetentionData[]) =>
-    queue.addBulk(
-      inputs.map(data => ({
-        name: TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
-        data,
-        opts: {
-          ...ENQUEUE_BASE_DEFAULTS,
-          ...PSQL_RETRY_OPTIONS,
-          jobId: harnessJobId(data),
-          priority: PRIORITY_DEFAULT,
-        },
-      })),
-    )
   return {
-    queue,
-    admit: (families: TerminalActivityRetentionData['family'][]) =>
-      enqueueBulkReactivatingFinished({
-        queue,
-        inputs: families.map(family => ({ family })),
-        jobIdOf: harnessJobId,
-        enqueueBulk,
-      }),
-    nextTerminal: (family: TerminalActivityRetentionData['family']) => {
-      const id = harnessJobId({ family })
+    queue: psql,
+    nextTerminal: (jobId: string) => {
+      watched.add(jobId)
       const next = Promise.withResolvers<'completed' | 'failed'>()
-      pending.set(id, next)
-      return waitForRealGlideEvent(next.promise, `terminal retention ${family}`)
+      pending.set(jobId, next)
+      return waitForRealGlideEvent(next.promise, `terminal retention ${jobId}`)
     },
     close,
   }

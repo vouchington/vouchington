@@ -3,6 +3,9 @@ import { openTerminalRetentionQueueForTest } from '@voucha/test-helpers/terminal
 import { createScopedTerminalRetentionProcessorForTest } from '@voucha/test-helpers/terminal-retention-processor'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig } from '@services/data-retention/config'
+import { enqueueTerminalActivityRetention } from '@queues/psql/enqueues/activitypub-terminal-retention'
+
+const terminalJobId = (family: 'follow' | 'like') => `psql__terminal_activity_retention__${family}`
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -15,12 +18,12 @@ describe('terminal identity family native admission', () => {
       return { hasMore: false }
     })
     try {
-      const completed = harness.nextTerminal('follow')
-      const jobs = await harness.admit(['follow'])
+      const completed = harness.nextTerminal(terminalJobId('follow'))
+      const jobs = await enqueueTerminalActivityRetention(['follow'])
       expect(jobs).toHaveLength(1)
       await expect(completed).resolves.toBe('completed')
       expect(runs).toBe(2)
-      const stored = await harness.queue.getJob('terminal_retention_harness__follow')
+      const stored = await harness.queue.getJob(terminalJobId('follow'))
       expect(stored?.attemptsMade).toBe(1)
     } finally {
       await harness.close()
@@ -38,19 +41,19 @@ describe('terminal identity family native admission', () => {
       }
     })
     try {
-      const first = harness.nextTerminal('follow')
-      const like = harness.nextTerminal('like')
-      const jobs = await harness.admit(['follow', 'like'])
+      const first = harness.nextTerminal(terminalJobId('follow'))
+      const like = harness.nextTerminal(terminalJobId('like'))
+      const jobs = await enqueueTerminalActivityRetention(['follow', 'like'])
       expect(jobs.map(job => job.id).toSorted()).toEqual(
-        ['follow', 'like'].map(family => `terminal_retention_harness__${family}`).toSorted(),
+        ['follow', 'like'].map(family => terminalJobId(family)).toSorted(),
       )
       await entered.promise
-      await expect(harness.admit(['follow'])).resolves.toEqual([])
+      await expect(enqueueTerminalActivityRetention(['follow'])).resolves.toEqual([])
       await expect(like).resolves.toBe('completed')
       release.resolve()
       await expect(first).resolves.toBe('completed')
-      const next = harness.nextTerminal('follow')
-      expect(await harness.admit(['follow'])).toHaveLength(1)
+      const next = harness.nextTerminal(terminalJobId('follow'))
+      expect(await enqueueTerminalActivityRetention(['follow'])).toHaveLength(1)
       await expect(next).resolves.toBe('completed')
       expect(followRuns).toBe(2)
     } finally {
@@ -72,8 +75,9 @@ describe('terminal identity family native admission', () => {
       return fixture.process(job)
     }, fixture.registerQueueCleanup)
     try {
-      const completed = harness.nextTerminal('follow')
-      await harness.admit(['follow'])
+      const followId = terminalJobId('follow')
+      const completed = harness.nextTerminal(followId)
+      await enqueueTerminalActivityRetention(['follow'])
       await expect(completed).resolves.toBe('completed')
       expect(fixture.pages).toEqual([
         { deleted: 1, hasMore: true },
@@ -82,7 +86,7 @@ describe('terminal identity family native admission', () => {
       ])
       expect(runs).toBe(3)
       expect(attemptsAfterYield).toBe(0)
-      expect((await harness.queue.getJobCounts()).completed).toBe(1)
+      expect(await (await harness.queue.getJob(followId))?.getState()).toBe('completed')
     } finally {
       await fixture.cleanup()
     }

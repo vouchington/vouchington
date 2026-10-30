@@ -1,63 +1,41 @@
-import { randomUUID } from 'node:crypto'
-import { Queue, Worker, type Job } from 'glide-mq'
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
-import type { RealGlideConnection } from './real-glide-job-lifecycle.mts'
-import { PRIORITY_DEFAULT, PSQL_RETRY_OPTIONS } from '@queues/psql/config'
-import type { AIRetentionContinuationData, AIRetentionFamily } from '@queues/psql/types'
+import { Worker, type Job } from 'glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { psql } from '@queues/psql/queues'
+import type { AIRetentionContinuationData } from '@queues/psql/types'
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
-const harnessJobId = (family: AIRetentionFamily): string => `ai_retention_harness__${family}`
+const AI_RETENTION_CONTINUATION_JOB_NAME = 'aiRetentionContinuation'
 
-function createAIRetentionContinuationEnqueue(
-  queue: Queue<AIRetentionContinuationData> & { priorityKind: 'ranked' },
-) {
-  const enqueueBulk = createBulkEnqueueFunction({
-    queue,
-    queueName: queue.name,
-    jobName: 'aiRetentionContinuation',
-    buildJob: (family: AIRetentionFamily) => ({
-      data: { family },
-      opts: {
-        ...PSQL_RETRY_OPTIONS,
-        jobId: harnessJobId(family),
-        priority: PRIORITY_DEFAULT,
-      },
-    }),
-  })
-  return (families: readonly AIRetentionFamily[]) =>
-    enqueueBulkReactivatingFinished({
-      queue,
-      inputs: [...new Set(families)],
-      jobIdOf: harnessJobId,
-      enqueueBulk,
-    })
-}
-
+/** Real `psql` worker for one test. Production enqueue owns job ids and options. */
 export async function openAIRetentionContinuationHarness(
-  connection: RealGlideConnection,
   process: (job: Job<AIRetentionContinuationData>) => Promise<unknown>,
 ) {
-  const queue = Object.assign(
-    new Queue<AIRetentionContinuationData>(`ai_retention_${randomUUID()}`, connection),
-    { priorityKind: 'ranked' as const },
-  )
+  const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+  const watched = new Set<string>()
   const pending = new Map<string, PromiseWithResolvers<void>>()
   const failures: Error[] = []
   const failedAttempts: Error[] = []
-  const worker = new Worker<AIRetentionContinuationData>(queue.name, process, {
-    ...connection,
-    concurrency: 2,
-    // Same ranked-fixture cadence as real-glide-background-lifecycle/domain-cap.
-    blockTimeout: 100,
-    promotionInterval: 50,
-  })
+  const worker = new Worker(
+    psql.name,
+    async (job: Job) => {
+      if (job.name !== AI_RETENTION_CONTINUATION_JOB_NAME) return job.moveToDelayed(Date.now())
+      watched.add(job.id)
+      return process(job as Job<AIRetentionContinuationData>)
+    },
+    {
+      ...connection,
+      concurrency: 2,
+      // Same ranked-fixture cadence as real-glide-background-lifecycle/domain-cap.
+      blockTimeout: 100,
+      promotionInterval: 50,
+    },
+  )
   worker.on('error', error => {
     failures.push(error)
     for (const wait of pending.values()) wait.reject(error)
   })
   worker.on('completed', job => pending.get(job.id)?.resolve())
-  worker.on('failed', (job: Job<AIRetentionContinuationData> | undefined, error: Error) => {
+  worker.on('failed', (job: Job | undefined, error: Error) => {
     failedAttempts.push(error)
     if (!job) return
     // GlideMQ emits failed for a retryable attempt too; inspect once on that native event.
@@ -74,11 +52,7 @@ export async function openAIRetentionContinuationHarness(
       try {
         await worker.close()
       } finally {
-        try {
-          await queue.obliterate({ force: true })
-        } finally {
-          await queue.close()
-        }
+        for (const id of watched) await (await psql.getJob(id))?.remove()
       }
     })()
     return closing
@@ -90,15 +64,15 @@ export async function openAIRetentionContinuationHarness(
     throw err
   }
   return {
-    queue,
+    queue: psql,
     worker,
     failures,
     failedAttempts,
-    enqueue: createAIRetentionContinuationEnqueue(queue),
-    completed: (family: AIRetentionFamily) => {
+    completed: (jobId: string) => {
+      watched.add(jobId)
       const wait = Promise.withResolvers<void>()
-      pending.set(harnessJobId(family), wait)
-      return waitForRealGlideEvent(wait.promise, `AI retention ${family}`)
+      pending.set(jobId, wait)
+      return waitForRealGlideEvent(wait.promise, `AI retention ${jobId}`)
     },
     close,
   }
