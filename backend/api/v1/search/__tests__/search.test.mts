@@ -71,6 +71,8 @@ describe('GET /api/v1/search', () => {
     const response = await request.get('/api/v1/search?q=test').expect(200)
 
     expect(response.headers['cache-control'] ?? '').not.toContain('public')
+    expect(response.body).toHaveProperty('topics')
+    expect(response.body).toHaveProperty('communities')
   })
 
   it('rejects fractional limits before searching', async () => {
@@ -187,14 +189,5 @@ describe('GET /api/v1/search', () => {
         }),
       ]),
     )
-  })
-
-  it('returns 200 for authenticated request with correct shape', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    const response = await request.get('/api/v1/search?q=test').expect(200)
-
-    expect(response.body).toHaveProperty('topics')
-    expect(response.body).toHaveProperty('communities')
   })
 })

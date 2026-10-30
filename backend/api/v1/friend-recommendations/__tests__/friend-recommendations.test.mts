@@ -35,7 +35,7 @@ describe('GET /api/v1/my/friend-recommendations', () => {
     await request.get('/api/v1/my/friend-recommendations').expect(401)
   })
 
-  it('returns recommendations for authenticated user', async () => {
+  it('includes friend in results', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
@@ -44,24 +44,8 @@ describe('GET /api/v1/my/friend-recommendations', () => {
     expect(Array.isArray(response.body.results)).toBe(true)
     expect(response.body.page_info).toBeDefined()
     expect(typeof response.body.page_info.has_next_page).toBe('boolean')
-  })
-
-  it('returns users map in response', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get('/api/v1/my/friend-recommendations').expect(200)
-
     expect(response.body.users).toBeDefined()
     expect(typeof response.body.users).toBe('object')
-  })
-
-  it('includes friend in results', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get('/api/v1/my/friend-recommendations').expect(200)
-
     const resultIds = response.body.results.map((r: { id: string }) => r.id)
     expect(resultIds).toContain(friendUser.id)
   })
