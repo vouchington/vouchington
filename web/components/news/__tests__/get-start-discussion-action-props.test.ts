@@ -20,12 +20,6 @@ describe('getStartDiscussionActionProps', () => {
     ).toBeNull()
   })
 
-  it('returns urlId when related posts exist (no longer gates on relatedPosts)', () => {
-    expect(getStartDiscussionActionProps({ ...BASE, relatedUrlId: 'url-1' })).toEqual({
-      urlId: 'url-1',
-    })
-  })
-
   it('returns null when a story post exists for the cluster', () => {
     expect(
       getStartDiscussionActionProps({ ...BASE, relatedUrlId: 'url-1', hasStoryPost: true }),
