@@ -130,12 +130,9 @@ describe('guardAndRetireMonthlyPartition', () => {
     const referenceDate = new Date(
       Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
     )
-    // The real path takes these locks NOWAIT and refuses on contention. Hold them first so
-    // that NOWAIT is already satisfied, and allow one more attempt when a reader outlasts it.
-    let outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
-    if (outcome.reason === 'lock-contention') {
-      outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
-    }
+    // The hook takes the production locks in production order and waits for them, so the
+    // production NOWAIT locks are already held.
+    const outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
     expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
 
     await expect(rollupCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
@@ -168,9 +165,6 @@ function retireOwnedClearancePartition(
     async () => {
       const transaction = await beginTransaction()
       try {
-        await transaction(
-          "/* retireOwnedClearancePartition */ SELECT set_config('lock_timeout', '1500ms', true)",
-        )
         await transaction(
           `/* retireOwnedClearancePartition:lockReference */ LOCK TABLE ${references} IN ACCESS EXCLUSIVE MODE`,
         )
