@@ -1,3 +1,4 @@
+-- edited-in-place: human_review_action check allows only confirm and reverse (folded from 0644)
 CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 'supplement_received', 'appeal_received', 'counter_notice_received',
     'withdrawal_received', 'court_or_ccb_hold_received', 'submission_assessed',
     'appeal_reviewed', 'counter_notice_reviewed', 'evidence_artifact_recorded',
@@ -99,7 +100,7 @@ CREATE TABLE copyright_restrictions (
   administrator_lift_decided_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   administrator_lift_rationale_ciphertext text,
   human_reviewed_at timestamptz,
-  human_review_action copyright_restriction_human_review_actions CHECK (human_review_action IN ('confirm', 'modify', 'reverse')),
+  human_review_action copyright_restriction_human_review_actions CHECK (human_review_action IN ('confirm', 'reverse')),
   human_reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1302,7 +1303,7 @@ COMMENT ON COLUMN copyright_restrictions.lifted_at IS 'One-way timestamp recordi
 COMMENT ON COLUMN copyright_restrictions.imposed_by_id IS 'Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action.';
 COMMENT ON COLUMN copyright_restrictions.lifted_by_id IS 'Staff actor that lifted the restriction; NULL denotes an authorized system restoration.';
 COMMENT ON COLUMN copyright_restrictions.human_reviewed_at IS 'When staff completed the mandatory review of this exact provisional restriction.';
-COMMENT ON COLUMN copyright_restrictions.human_review_action IS 'Human outcome for this restriction: confirm, modify or reverse.';
+COMMENT ON COLUMN copyright_restrictions.human_review_action IS 'Human outcome for this target restriction: confirm or reverse.';
 COMMENT ON COLUMN copyright_restrictions.human_reviewed_by_id IS 'Staff reviewer; may become NULL only when the reviewer account is erased.';
 
 COMMENT ON TABLE copyright_notice_submissions IS 'Immutable receipt provenance. Statutory timing always starts from the assessed submission received_at, never parser or approval time.';
