@@ -26,28 +26,6 @@ async function collectAll(
 }
 
 describe('streamEntitiesMissingJudgementBatches', () => {
-  it('includes a post entity with a report and no judgement', async () => {
-    const author = await createTestUser()
-    const reporter = await createTestUser()
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `backfill-missing-post-${crypto.randomUUID().slice(0, 8)}`,
-      title: `Backfill Post ${crypto.randomUUID().slice(0, 8)}`,
-      markdown: 'body',
-    })
-    await insertTestModerationReport({
-      reporterUserId: reporter.id,
-      entityType: 'post',
-      entityId: postId,
-    })
-
-    const results = await collectAll(streamEntitiesMissingJudgementBatches())
-    const found = results.find(r => r.entityId === postId)
-    expect(found).toBeDefined()
-    expect(found!.entityType).toBe('post')
-    expect(found!.triggeringReportId).toEqual(expect.any(String))
-  })
-
   it('excludes a post entity that already has a judgement', async () => {
     const author = await createTestUser()
     const reporter = await createTestUser()
@@ -128,6 +106,7 @@ describe('streamEntitiesMissingJudgementBatches', () => {
     const results = await collectAll(streamEntitiesMissingJudgementBatches())
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeDefined()
+    expect(found!.entityType).toBe('post')
     expect(found!.triggeringReportId).toBe(latestReportId)
   })
 
