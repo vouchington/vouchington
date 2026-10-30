@@ -92,24 +92,9 @@ describe('UserCommunityRelationRoute', () => {
     })
 
     render(result as React.ReactElement)
-    expect(screen.getByTestId('community-card')).toHaveTextContent('community-1')
-    expect(screen.queryByTestId('empty-state')).toBeNull()
-  })
-
-  it('renders CommunityCard with hideJoinButton to suppress join control', async () => {
-    mockGetUserCommunitiesCollection.mockResolvedValue({
-      results: [{ id: 'community-1' }],
-    })
-    mockGetOwnerRelationAction.mockResolvedValue(null)
-
-    const result = await UserCommunityRelationRoute({
-      idOrUsername: 'alice',
-      listType: 'saved',
-      relationAction,
-    })
-
-    render(result as React.ReactElement)
     const card = screen.getByTestId('community-card')
+    expect(card).toHaveTextContent('community-1')
+    expect(screen.queryByTestId('empty-state')).toBeNull()
     expect(card).toHaveAttribute('data-hide-join-button', 'true')
   })
 })
