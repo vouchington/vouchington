@@ -15,6 +15,12 @@ import processPsql from '../processors.mts'
 
 const emptyCleanupResult = {
   softDeletedUsers: { deleted: 0, hasMore: false },
+  postModerationLedger: {
+    deletedVersions: 0,
+    clearedPassEvidence: 0,
+    hasMore: false,
+    remainingKinds: [],
+  },
   agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
   ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
   classifierRecords: { runs: { hasMore: false } },

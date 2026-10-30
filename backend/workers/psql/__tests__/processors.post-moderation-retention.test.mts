@@ -29,6 +29,7 @@ describe('post moderation retention continuation', () => {
       ({
         ...noAIRetention,
         classifierRecords: {},
+        agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
         postModerationLedger: {
           deletedVersions: 0,
           clearedPassEvidence: 0,
