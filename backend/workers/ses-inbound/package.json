@@ -27,7 +27,6 @@
     "mailparser": "^3.12.4"
   },
   "devDependencies": {
-    "@types/mailparser": "^3.9.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

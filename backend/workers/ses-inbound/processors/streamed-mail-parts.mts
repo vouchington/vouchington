@@ -79,7 +79,8 @@ export function streamMailParts(parser: MailParser): {
     const release = () => {
       if (released) return
       released = true
-      part.release()
+      const releasePart = part.release
+      if (releasePart) releasePart()
     }
     if (!kind) {
       const hash = createHash('sha256')
@@ -142,17 +143,24 @@ function normalizeOptionalText(value: string | undefined): string | null {
 }
 
 function createTextDecoder(contentType: HeaderValue | undefined): TextDecoder {
-  const charset =
-    contentType &&
-    typeof contentType === 'object' &&
-    !Array.isArray(contentType) &&
-    'params' in contentType &&
-    typeof contentType.params.charset === 'string'
-      ? contentType.params.charset
-      : 'utf8'
+  const charset = readContentTypeCharset(contentType)
   try {
     return new TextDecoder(charset as ConstructorParameters<typeof TextDecoder>[0])
   } catch {
     return new TextDecoder()
   }
+}
+
+function readContentTypeCharset(contentType: HeaderValue | undefined): string {
+  const charset = headerParams(contentType)?.charset
+  return typeof charset === 'string' ? charset : 'utf8'
+}
+
+function headerParams(contentType: HeaderValue | undefined): { charset?: unknown } | undefined {
+  if (!contentType || typeof contentType !== 'object' || Array.isArray(contentType))
+    return undefined
+  if (!('params' in contentType)) return undefined
+  const params: unknown = contentType.params
+  if (!params || typeof params !== 'object' || !('charset' in params)) return undefined
+  return params
 }
