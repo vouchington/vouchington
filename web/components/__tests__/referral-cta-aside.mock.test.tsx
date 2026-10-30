@@ -77,6 +77,15 @@ describe('ReferralCtaAside', () => {
     expect(screen.getByText('Sign up')).toBeInTheDocument()
     expect(screen.getByText('Share a referral link')).toBeInTheDocument()
     expect(screen.getByText('Set up your landing page')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Sign up/i })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('link', { name: /Share a referral link/i })).toHaveAttribute(
+      'href',
+      '/referral-programs',
+    )
+    expect(screen.getByRole('link', { name: /Set up your landing page/i })).toHaveAttribute(
+      'href',
+      '/my/landing-pages',
+    )
   })
 
   it('dismisses the card when X button clicked', () => {
@@ -87,20 +96,5 @@ describe('ReferralCtaAside', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(container).toBeEmptyDOMElement()
-  })
-
-  it('links to the correct hrefs', () => {
-    mockNav.setSearchParams('referrer=1')
-
-    render(<ReferralCtaAside />)
-    expect(screen.getByRole('link', { name: /Sign up/i })).toHaveAttribute('href', '/login')
-    expect(screen.getByRole('link', { name: /Share a referral link/i })).toHaveAttribute(
-      'href',
-      '/referral-programs',
-    )
-    expect(screen.getByRole('link', { name: /Set up your landing page/i })).toHaveAttribute(
-      'href',
-      '/my/landing-pages',
-    )
   })
 })

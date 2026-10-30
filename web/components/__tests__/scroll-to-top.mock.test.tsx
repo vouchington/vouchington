@@ -77,11 +77,6 @@ describe('ScrollToTop', () => {
     document.body.innerHTML = ''
   })
 
-  it('does not scroll to top on initial mount', () => {
-    render(<ScrollToTop />)
-    expect(scrollToSpy).not.toHaveBeenCalled()
-  })
-
   it('scrolls to top when the pathname changes', () => {
     const { rerender } = render(<ScrollToTop />)
     expect(scrollToSpy).not.toHaveBeenCalled()
