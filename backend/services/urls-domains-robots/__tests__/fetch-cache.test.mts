@@ -96,6 +96,33 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
     }
   })
 
+  it('reads a cached unreachable marker together with the rules key', async () => {
+    const domain = randomDomain()
+    const { rules, unreachable } = robotsCachePair()
+    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
+      status: 503,
+      statusText: 'Service Unavailable',
+      body: { cancel: () => Promise.resolve() },
+    })
+    const dependencies = cachedFetchDependencies(fetchWithTimeoutSimple)
+    const mget = vi.spyOn(cacheValkeyClient, 'mget')
+
+    try {
+      await fetchRobotsTxtCached(domain, dependencies)
+      fetchWithTimeoutSimple.mockClear()
+      mget.mockClear()
+
+      await expect(fetchRobotsTxtCached(domain, dependencies)).resolves.toBe(DISALLOW_ROBOTS_TXT)
+      expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
+      expect(mget).toHaveBeenCalledOnce()
+      expect(mget.mock.calls[0]?.[0]).toEqual([rules.getKey(domain), unreachable.getKey(domain)])
+    } finally {
+      mget.mockRestore()
+      await rules.delete(domain)
+      await unreachable.delete(domain)
+    }
+  })
+
   it('caches an HTTP 404 allow decision on the 24-hour rules key', async () => {
     const domain = randomDomain()
     const { rules, unreachable } = robotsCachePair()

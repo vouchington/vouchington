@@ -1,4 +1,4 @@
-import { ValkeyCache } from '@data-stores/valkey/cache'
+import { multiCacheGetByAnyBatch, ValkeyCache } from '@data-stores/valkey/cache'
 import onError from '@modules/on-error'
 import {
   DISALLOW_ROBOTS_TXT,
@@ -26,11 +26,9 @@ export async function fetchRobotsTxtCached(
   domain: string,
   dependencyOverrides: Partial<RobotsDependencies> = {},
 ): Promise<string> {
-  const cachedRules = await readRobotsCache(rulesCache, domain)
-  if (typeof cachedRules === 'string') return cachedRules
-  if ((await readRobotsCache(unreachableCache, domain)) === ROBOTS_UNREACHABLE_MARKER) {
-    return DISALLOW_ROBOTS_TXT
-  }
+  const cached = await readRobotsCaches(domain)
+  if (typeof cached.rules === 'string') return cached.rules
+  if (cached.unreachable === ROBOTS_UNREACHABLE_MARKER) return DISALLOW_ROBOTS_TXT
 
   const outcome = await fetchRobotsTxtOutcome(domain, dependencyOverrides)
   if (outcome.kind !== 'unreachable') {
@@ -39,17 +37,23 @@ export async function fetchRobotsTxtCached(
   }
 
   // A peer may have stored a real robots.txt body while this fetch was retrying.
-  const racedRules = await readRobotsCache(rulesCache, domain)
-  if (typeof racedRules === 'string') return racedRules
+  const raced = await readRobotsCaches(domain)
+  if (typeof raced.rules === 'string') return raced.rules
   await unreachableCache.set(domain, ROBOTS_UNREACHABLE_MARKER, UNREACHABLE_TTL_SECONDS)
   return outcome.body
 }
 
-async function readRobotsCache(cache: ValkeyCache, domain: string): Promise<unknown> {
+// Both keys hash on `{domain}`, so one MGET stays in a single cluster slot and returns the
+// rules body together with the unreachable marker.
+async function readRobotsCaches(domain: string): Promise<{ rules: unknown; unreachable: unknown }> {
   try {
-    return await cache.get(domain)
+    const [rules, unreachable] = await multiCacheGetByAnyBatch([
+      { cache: rulesCache, keys: [domain] },
+      { cache: unreachableCache, keys: [domain] },
+    ])
+    return { rules: rules[0], unreachable: unreachable[0] }
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
-    return null
+    return { rules: null, unreachable: null }
   }
 }
