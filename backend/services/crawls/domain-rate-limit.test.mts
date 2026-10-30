@@ -16,7 +16,13 @@ describe('domain-rate-limit', () => {
 
   it('normalizes Valkey script results before returning lock durations', async () => {
     const hostnameId = `test-${crypto.randomUUID()}.example.com`
-    const invoke = vi.spyOn(rateLimiterValkeyClient, 'invokeScript')
+    // invokeScript is declared as GlideReturnType. The normalizer accepts any stringifiable result.
+    const scriptClient: {
+      invokeScript(
+        ...args: Parameters<typeof rateLimiterValkeyClient.invokeScript>
+      ): Promise<unknown>
+    } = rateLimiterValkeyClient
+    const invoke = vi.spyOn(scriptClient, 'invokeScript')
     try {
       invoke.mockResolvedValueOnce(2_500)
       await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
@@ -24,6 +30,12 @@ describe('domain-rate-limit', () => {
       await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
       invoke.mockResolvedValueOnce('2500')
       await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
+      invoke.mockResolvedValueOnce({ toString: () => '2500' })
+      await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
+      invoke.mockResolvedValueOnce({ toString: () => 'not-a-number' })
+      await expect(setDomainRateLimited(hostnameId)).rejects.toThrow(
+        'set-domain-rate-limit returned invalid TTL: not-a-number',
+      )
       invoke.mockResolvedValueOnce('not-a-number')
       await expect(setDomainRateLimited(hostnameId)).rejects.toThrow(
         'set-domain-rate-limit returned invalid TTL: not-a-number',
