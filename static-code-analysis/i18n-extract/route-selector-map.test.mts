@@ -38,31 +38,6 @@ async function withRoutes(
 }
 
 describe('exact web route aliases', () => {
-  it('assembles shared copy into chrome and keeps page copy in its route', () => {
-    const result = assembleRouteAliasMap(
-      new Set(['nav.home', 'extracted.one.page.title', 'extracted.two.page.title']),
-      [
-        { pattern: '/one', aliases: new Set(['nav.home', 'extracted.one.page.title']) },
-        { pattern: '/two', aliases: new Set(['nav.home', 'extracted.two.page.title']) },
-      ],
-      [],
-    )
-
-    expect(result.chrome).toEqual(['nav.home'])
-    expect(result.routes).toEqual([
-      {
-        pattern: '/one',
-        selectorId: routeSelectorId('/one', ['extracted.one.page.title']),
-        aliases: ['extracted.one.page.title'],
-      },
-      {
-        pattern: '/two',
-        selectorId: routeSelectorId('/two', ['extracted.two.page.title']),
-        aliases: ['extracted.two.page.title'],
-      },
-    ])
-  })
-
   it('changes only the affected route selector when route membership changes', () => {
     const before = assembleRouteAliasMap(
       new Set(['extracted.one.page.title', 'extracted.two.page.title']),
@@ -114,6 +89,7 @@ describe('exact web route aliases', () => {
 
     expect(before.chromeSelector).toBe(chromeSelectorId([]))
     expect(after.chromeSelector).toBe(chromeSelectorId(['nav.home']))
+    expect(after.chrome).toEqual(['nav.home'])
     expect(after.routes[0]?.selectorId).not.toBe(before.routes[0]?.selectorId)
     expect(after.routes[1]?.selectorId).toBe(before.routes[1]?.selectorId)
     expect(after.routes).toEqual([

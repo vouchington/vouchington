@@ -20,12 +20,6 @@ describe('backend Dockerfile runtime CMDs', () => {
     expect(missing).toEqual([])
   })
 
-  it('parses at least the api, worker-cpu, and worker-io runtime stages', () => {
-    expect(images.map(image => image.stage)).toEqual(
-      expect.arrayContaining(['api', 'worker-cpu', 'worker-io']),
-    )
-  })
-
   it.each(['api', 'worker-cpu', 'worker-io'])(
     '%s runtime CMD path resolves to a real file in the deployed workspace',
     stage => {

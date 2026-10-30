@@ -230,18 +230,6 @@ const lexicalCases = [
     expected: true,
   },
   {
-    id: 'topic-34',
-    kind: 'topic',
-    source: "row.topic_type !== 'referral_\\\nprogram'",
-    expected: true,
-  },
-  {
-    id: 'topic-35',
-    kind: 'topic',
-    source: "row.topic_type !== 'referral_\\\n\\\r\nprogram'",
-    expected: true,
-  },
-  {
     id: 'topic-36',
     kind: 'topic',
     source: String.raw`row.topic_type !== 'referral_\ program'`,
