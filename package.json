@@ -156,7 +156,7 @@
     "eslint-plugin-vouchington": "^0.2.0",
     "gh-pr-attach-screenshots": "^0.2.0",
     "glide-mq": "^0.20.0",
-    "jscpd": "^5.4.1",
+    "jscpd": "^5.4.2",
     "jsdom": "^30.1.3",
     "knip": "^6",
     "no-mistakes": "^0.106.0",
