@@ -6,6 +6,13 @@ import { StoryFrame } from '@/storybook/story-frame'
 const penalty: IntegrityPenaltyRecord = {
   id: 'storybook-penalty',
   user_id: 'storybook-user',
+  user_username: 'recipient',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   reason: 'voting_ring',
   source_flag_id: 'storybook-flag',
   created_by_id: 'storybook-admin',
