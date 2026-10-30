@@ -4928,8 +4928,6 @@ rules:
           reason: 'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.'
         - object: 'column:activitypub_inbox_activities.actor_uri'
           reason: "Decision 13 allowed URL group: The activity's `actor` field (the sending remote actor's ActivityPub id), recorded for operational visibility."
-        - object: 'column:activitypub_inbox_envelopes.claimed_actor_uri'
-          reason: 'Decision 13 allowed URL group: Untrusted activity actor URI parsed during the network-free request preflight.'
         - object: 'column:bluesky_follow_records.record_uri'
           reason: "Decision 13 allowed URL group: The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly."
         - object: 'column:copyright_notice_targets.hosted_use_url'
@@ -5050,8 +5048,6 @@ rules:
       namePatterns: ['(^|_)(status|state|kind|type|source|category|mode|channel)$']
       allow:
         - object: 'column:activitypub_inbox_activities.activity_type'
-          reason: 'ActivityPub sender-defined activity type; see decision 8.'
-        - object: 'column:activitypub_inbox_envelopes.claimed_activity_type'
           reason: 'ActivityPub sender-defined activity type; see decision 8.'
         - object: 'column:oauth_authorization_requests.client_state'
           reason: 'OAuth client opaque state is replayed exactly; see decision 8.'

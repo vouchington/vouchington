@@ -96,7 +96,7 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
     expect(vitestConfig).not.toContain('fileParallelism: false')
-    expect(vitestConfig).toContain("name: 'backend-activitypub-capacity'")
+    expect(vitestConfig).not.toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {
       expect(workflow).not.toContain(`--project ${project}`)
     }

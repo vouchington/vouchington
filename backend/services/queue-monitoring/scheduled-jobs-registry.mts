@@ -6,8 +6,6 @@ const SCHEDULED_JOB_API_ORDER = [
   'email-digests-api-key-expiry',
   'activitypub-outbound-follows-recovery',
   'activitypub-outbound-votes-recovery',
-  'activitypub-inbox-recovery',
-  'activitypub-inbox-cleanup',
   'ses-inbound-reconciliation',
   'community-activity-digest-weekly',
   'notification-push-intent-recovery',

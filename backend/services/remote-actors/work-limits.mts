@@ -3,17 +3,20 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   follower_inbox_batch_size: 500,
+  inbound_backlog_cap: 256,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const remoteActorsWorkMaxValues = {
   follower_inbox_batch_size: 5000,
+  inbound_backlog_cap: 384,
 }
 
 export const remoteActorsWorkConfig = new DynamicConfig({
   key: 'remote-actors-work-config',
   fieldTypes: {
     follower_inbox_batch_size: 'number',
+    inbound_backlog_cap: 'number',
   },
   defaultFields,
 })

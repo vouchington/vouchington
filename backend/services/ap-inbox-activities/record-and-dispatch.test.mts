@@ -26,13 +26,6 @@ import {
 import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { RemoteActorRow } from '@services/remote-actors'
-import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
-import {
-  acceptTestDelivery,
-  registerActivityPubInboxAdmission,
-} from '@voucha/test-helpers/activitypub-inbox-transitions'
-
-registerActivityPubInboxAdmission()
 import { getMaximumActivityAgeDays } from './config.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
@@ -121,7 +114,7 @@ describe('recordAndDispatchInboundActivity', () => {
       actor: remoteActor.actor_uri,
       object: 'https://voucha.test/api/v1/posts/some-post',
     })
-    expect(first).toEqual({ outcome: 'applied', duplicate: false })
+    expect(first).toEqual({ duplicate: false })
 
     const replay = await recordAndDispatchInboundActivity(remoteActor, {
       signedAt: new Date(),
@@ -131,7 +124,7 @@ describe('recordAndDispatchInboundActivity', () => {
       object: 'https://voucha.test/api/v1/posts/some-post',
     })
 
-    expect(replay).toEqual({ outcome: 'applied', duplicate: true })
+    expect(replay).toEqual({ duplicate: true })
   })
   it('rolls back the dedup marker when a Follow actor has no live row', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
@@ -152,47 +145,6 @@ describe('recordAndDispatchInboundActivity', () => {
     const isFirstSeenAgain = await recordInboxActivity(activityId, activity.type, activity.actor)
     expect(isFirstSeenAgain).toBe(true)
   })
-  it('rolls back duplicate Follow recovery when durable-envelope completion is stale', async () => {
-    const remoteActor = await createRemoteActorFixture()
-    const user = await createFederatedUser()
-    const activityId = `https://remote.example/activities/${randomSuffix()}`
-    const activity = {
-      signedAt: new Date(),
-      id: activityId,
-      type: 'Follow',
-      actor: remoteActor.actor_uri,
-      object: getActorUri(user.id),
-    }
-    expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
-    const delivery = await acceptTestDelivery({
-      requestMethod: 'POST',
-      requestTarget: '/ap/inbox',
-      expectedHost: 'voucha.test',
-      signatureHeader: 'signature',
-      digestHeader: 'digest',
-      dateHeader: new Date().toUTCString(),
-      rawBody: Buffer.from('{}'),
-      claimedActivityId: activityId,
-      claimedActivityType: 'Follow',
-      claimedActorUri: remoteActor.actor_uri,
-      senderHostname: 'remote.example',
-    })
-
-    const result = await recordAndDispatchInboundActivity(remoteActor, activity, delivery)
-
-    expect(result).toEqual({ outcome: 'stale', duplicate: false })
-    const followRelation = getEntityRelationMetadataOrThrow({
-      subjectType: 'remote_actor',
-      objectType: 'user',
-      predicate: 'follow',
-    })
-    expect(await getEntityRelation(followRelation.table_name, remoteActor.id, user.id)).toEqual([])
-    expect(result).not.toHaveProperty('postCommitEnqueue')
-    const jobs = await readAllQueueJobs(activitypub)
-    expect(acceptJobsFor(jobs, activityId)).toHaveLength(0)
-
-    await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId)
-  })
 })
 
 describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () => {
@@ -211,7 +163,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
 
     const replay = await recordAndDispatchInboundActivity(remoteActor, activity)
-    expect(replay).toMatchObject({ outcome: 'applied', duplicate: true })
+    expect(replay).toMatchObject({ duplicate: true })
     expect(replay.postCommitEnqueue).toBeDefined()
     const acceptJob = await readEnqueuedJob(activitypub, await replay.postCommitEnqueue)
     const followRelation = getEntityRelationMetadataOrThrow({
@@ -246,7 +198,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     }
 
     const first = await recordAndDispatchInboundActivity(remoteActor, followActivity)
-    expect(first).toMatchObject({ outcome: 'applied', duplicate: false })
+    expect(first).toMatchObject({ duplicate: false })
     expect(first.postCommitEnqueue).toBeDefined()
     const originalAcceptJob = await readEnqueuedJob(activitypub, await first.postCommitEnqueue)
     const ownedAcceptJobsBeforeUndo = acceptJobsFor([originalAcceptJob], followActivityId)
@@ -260,10 +212,10 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
       object: { id: followActivityId, type: 'Follow', object: getActorUri(user.id) },
     }
     const undoResult = await recordAndDispatchInboundActivity(remoteActor, undoActivity)
-    expect(undoResult).toEqual({ outcome: 'applied', duplicate: false })
+    expect(undoResult).toEqual({ duplicate: false })
 
     const staleReplay = await recordAndDispatchInboundActivity(remoteActor, followActivity)
-    expect(staleReplay).toMatchObject({ outcome: 'applied', duplicate: true })
+    expect(staleReplay).toMatchObject({ duplicate: true })
     expect(staleReplay).not.toHaveProperty('postCommitEnqueue')
 
     await withCommittedPostgresTransactionForTest(query =>
@@ -273,7 +225,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
       ...followActivity,
       signedAt: new Date(),
     })
-    expect(freshSignatureReplay).toMatchObject({ outcome: 'applied', duplicate: false })
+    expect(freshSignatureReplay).toMatchObject({ duplicate: false })
     expect(freshSignatureReplay).not.toHaveProperty('postCommitEnqueue')
 
     const followRelation = getEntityRelationMetadataOrThrow({

@@ -53,5 +53,4 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'post_admission_reservations',
     'Committed replays expire after 48 hours, abandoned reservations are pruned after 48 hours, and bounded cleanup deletes both classes, bounding cardinality to recent admission traffic.',
   ],
-  ['activitypub_inbox_delivery_storage_counters', 'Primary key permits one row.'],
 ])

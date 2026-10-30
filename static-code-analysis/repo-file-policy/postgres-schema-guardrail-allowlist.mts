@@ -60,7 +60,6 @@ export const LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS = new Set<string>([
   'backend/data-stores/psql/migrations/0563-00-00-ap-post-likes.sql',
   'backend/data-stores/psql/migrations/0570-00-00-bluesky-linked-accounts.sql',
   'backend/data-stores/psql/migrations/0571-00-00-bluesky-follow-records.sql',
-  'backend/data-stores/psql/migrations/0584-00-00-ap-inbox-deliveries.sql',
   'backend/data-stores/psql/migrations/0590-00-00-oauth-authorizations.sql',
   'backend/data-stores/psql/migrations/0601-00-00-moderation-transparency-daily-rollups.sql',
 ])

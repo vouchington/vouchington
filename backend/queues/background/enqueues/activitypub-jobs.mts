@@ -6,8 +6,6 @@ import {
   type ActivityPubInboxDeliveryJob,
   type DeliverActivityData,
   type DistributeActivityData,
-  type EmptyActivityPubJobData as EmptyData,
-  type RearmFailedDeliveriesData,
   type RecoverOutboundDistributionData,
 } from './activitypub-domain.mts'
 
@@ -17,7 +15,7 @@ const DELIVERY = {
   removeOnComplete: 100,
   removeOnFail: 100,
 } as const
-const INBOX = {
+export const ACTIVITYPUB_INBOX_JOB_POLICY = {
   attempts: 5,
   backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
   removeOnComplete: 100,
@@ -27,8 +25,6 @@ const OUTBOUND_ORDERING = { key: 'activitypub:outbound' } as const
 const OUTBOUND_DISPATCH_ORDERING = { key: 'activitypub:outbound-dispatch' } as const
 const OUTBOUND_RECOVERY_ORDERING = { key: 'activitypub:outbound-recovery' } as const
 const INBOUND_ORDERING = { key: 'activitypub:inbound' } as const
-const RECOVERY_ORDERING = { key: 'activitypub:inbound-recovery' } as const
-const CLEANUP_ORDERING = { key: 'activitypub:cleanup' } as const
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
   DOMAIN,
@@ -59,40 +55,14 @@ export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubI
     name: 'processDelivery',
     priority: PRIORITY_TASK,
     ordering: INBOUND_ORDERING,
-    // Keep the shared failed-record bound. Terminal protocol rejections complete the
-    // job, so a sender cannot grow this set by forcing a rejection.
-    ...INBOX,
+    sensitive: true,
+    // Sensitive envelope jobs are removed after completion or terminal failure.
+    ...ACTIVITYPUB_INBOX_JOB_POLICY,
   },
 )
-export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<RearmFailedDeliveriesData>(
-  DOMAIN,
-  {
-    name: 'recoverDeliveries',
-    priority: PRIORITY_DISPATCH,
-    ordering: RECOVERY_ORDERING,
-    ...INBOX,
-  },
-)
-export const ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB =
-  defineBackgroundJob<RearmFailedDeliveriesData>(DOMAIN, {
-    name: 'rearmFailedDeliveries',
-    priority: PRIORITY_DISPATCH,
-    ordering: RECOVERY_ORDERING,
-    ...INBOX,
-  })
-export const ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
-  name: 'cleanupExpiredDeliveries',
-  priority: PRIORITY_DISPATCH,
-  ordering: CLEANUP_ORDERING,
-  ...INBOX,
-})
-
 export const ACTIVITYPUB_JOBS = [
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
   ACTIVITYPUB_RECOVER_OUTBOUND_JOB,
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
-  ACTIVITYPUB_RECOVER_DELIVERIES_JOB,
-  ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,
-  ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB,
 ] as const

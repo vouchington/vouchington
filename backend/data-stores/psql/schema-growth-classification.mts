@@ -172,10 +172,6 @@ export function buildUnboundedUnpartitionedTables(
         'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
       ],
       [
-        'activitypub_inbox_envelopes',
-        'Bounded signed ActivityPub envelope storage (maximum envelopes exceed GlideMQ job data): terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
-      ],
-      [
         'classifier_run_requests',
         'Minimal request identity survives run payload retirement for pending recovery and exact deduplication while its real subject exists; bounded cleanup removes requests whose subject is gone before retained identity roots retire.',
       ],

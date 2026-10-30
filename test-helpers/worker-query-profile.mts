@@ -1,5 +1,7 @@
+import { EventEmitter } from 'node:events'
 import {
   Worker as SdkWorker,
+  getOrCreateQueue,
   type TestWorkerProcessor,
   type WorkerOptions,
 } from '@vouchington/worker-runtime/testing'
@@ -60,7 +62,37 @@ class ProfiledTestWorker<D = unknown, R = unknown> extends SdkWorker<D, R> {
   }
 }
 
+/** In-memory QueueEvents boundary backed by the same queue as the profiled test worker. */
+class ProfiledTestQueueEvents extends EventEmitter {
+  private readonly queue: ReturnType<typeof getOrCreateQueue>
+  private readonly completed: (job: { id: string }) => void
+  private readonly failed: (job: { id: string }) => void
+  private readonly removed: (jobId: string) => void
+
+  constructor(queueName: string) {
+    super()
+    this.queue = getOrCreateQueue(queueName)
+    this.completed = job => this.emit('completed', { jobId: job.id })
+    this.failed = job => this.emit('failed', { jobId: job.id })
+    this.removed = jobId => this.emit('removed', { jobId })
+    this.queue.on('completed', this.completed)
+    this.queue.on('failed', this.failed)
+    this.queue.on('removed', this.removed)
+  }
+
+  waitUntilReady(): Promise<void> {
+    return Promise.resolve()
+  }
+
+  async close(): Promise<void> {
+    this.queue.off('completed', this.completed)
+    this.queue.off('failed', this.failed)
+    this.queue.off('removed', this.removed)
+    this.removeAllListeners()
+  }
+}
+
 // In-memory glide-mq test double. The explicit Worker is the configured profiling adapter.
 // oxlint-disable-next-line import/export
 export * from '@vouchington/worker-runtime/testing'
-export { ProfiledTestWorker as Worker }
+export { ProfiledTestWorker as Worker, ProfiledTestQueueEvents as QueueEvents }

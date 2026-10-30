@@ -1,47 +1,36 @@
 import { onTestFinished } from 'vitest'
 import { backgroundQueue as activitypub } from './shared-background-queue.mts'
-import {
-  ACTIVITYPUB_PROCESS_DELIVERY_JOB,
-  ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,
-} from '../queues/background/enqueues/activitypub-jobs.mts'
-import { readAllQueueJobs } from './queue-jobs.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { releaseActivityPubInboxDelivery } from '@data-stores/valkey-glide-mq/activitypub-inbox-reservations'
+import { remoteActorsWorkMaxValues } from '../services/remote-actors/work-limits.mts'
 
-/** Remove only jobs whose payload names this test delivery; reject an in-flight worker. */
-export async function removeActivityPubInboxJobsForDeliveryId(
-  deliveryId: string,
-  requestDigest?: string,
-): Promise<number> {
-  const jobs = new Map((await readAllQueueJobs(activitypub)).map(job => [job.id, job]))
-  if (requestDigest) {
-    const job = await activitypub.getJob(`activitypub-inbox__${requestDigest}`)
-    if (job) jobs.set(job.id, job)
-  }
-  let removed = 0
-  for (const job of jobs.values()) {
-    const data: unknown = job.data
-    if (typeof data !== 'object' || data === null) continue
-    const owned =
-      (job.name === ACTIVITYPUB_PROCESS_DELIVERY_JOB.name &&
-        'deliveryId' in data &&
-        data.deliveryId === deliveryId &&
-        (!requestDigest || ('requestDigest' in data && data.requestDigest === requestDigest))) ||
-      (job.name === ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB.name &&
-        'afterId' in data &&
-        data.afterId === deliveryId)
-    if (!owned) continue
-    if ((await job.getState()) === 'active')
-      throw new Error(`ActivityPub job ${job.id} is active after worker completion`)
-    await job.remove()
-    removed++
-  }
-  return removed
+/** Find only records owned by this exact signed request, across queue states. */
+export function findActivityPubInboxJobsForRequestDigest(requestDigest: string) {
+  return activitypub.searchJobs({
+    name: 'activitypub.processDelivery',
+    data: { requestDigest },
+    limit: remoteActorsWorkMaxValues.inbound_backlog_cap,
+  })
 }
 
-export function registerActivityPubInboxJobCleanup(
-  deliveryId: string,
+/** Remove the request-owned queue record after its worker has settled. */
+export async function removeActivityPubInboxJobForRequestDigest(
   requestDigest: string,
-): void {
+): Promise<number> {
+  const jobs = await findActivityPubInboxJobsForRequestDigest(requestDigest)
+  await Promise.all(
+    jobs.map(async job => {
+      if ((await job.getState()) === 'active')
+        throw new Error(`ActivityPub inbox job ${job.id} is active after worker completion`)
+      await job.remove()
+      await releaseActivityPubInboxDelivery(BACKGROUND_QUEUE_NAME, job.id)
+    }),
+  )
+  return jobs.length
+}
+
+export function registerActivityPubInboxJobCleanup(requestDigest: string): void {
   onTestFinished(async () => {
-    await removeActivityPubInboxJobsForDeliveryId(deliveryId, requestDigest)
+    await removeActivityPubInboxJobForRequestDigest(requestDigest)
   })
 }

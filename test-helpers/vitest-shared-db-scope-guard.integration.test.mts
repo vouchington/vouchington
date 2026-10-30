@@ -88,14 +88,12 @@ it('catches immediate error', () => {
         name: 'after-all.test.mts',
         source: `import { afterAll, it } from 'vitest'
 import { observeSharedDbScope } from ${JSON.stringify(observerPath)}
-afterAll(() => { try { ${scopeCall('rearmFailedActivityPubInboxDeliveries', `{ kind: 'global' }`)} } catch {} })
+afterAll(() => { try { ${scopeCall('listCopyrightStaffQueue', `{ kind: 'global' }`)} } catch {} })
 it('runs', () => {})`,
       },
     ])
     expect(result.exitCode).not.toBe(0)
-    expect(result.output).toContain(
-      'rearmFailedActivityPubInboxDeliveries on activitypub_inbox_envelopes',
-    )
+    expect(result.output).toContain('listCopyrightStaffQueue on copyright_notices')
   })
 
   it('retains violations across resetModules', async () => {

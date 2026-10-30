@@ -104,8 +104,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/data-stores/psql/__tests__/schema-*.test.mts',
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
         'backend/api/v1/platform-stats/platform-stats.test.mts',
-        'backend/api/activitypub/inbox-capacity.test.mts',
-        'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
       ],
     },
   },
@@ -128,22 +126,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
   {
     extends: true,
     test: {
-      ...backendDataStoreTestDefaults,
-      name: 'backend-activitypub-capacity',
-      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-      include: [
-        'backend/api/activitypub/inbox-capacity.test.mts',
-        'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
-      ],
-      exclude: ['**/node_modules/**', '**/.git/**'],
-      isolate: false,
-      testTimeout: 5_000,
-      hookTimeout: 5_000,
-    },
-  },
-  {
-    extends: true,
-    test: {
       pool: 'forks',
       isolate: true,
       name: 'backend-postgres-schema',
@@ -152,6 +134,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
+      setupFiles: ['./test-helpers/vitest.setup.stored-secret-encryption-keys.mts'],
       testTimeout: 5_000,
       hookTimeout: 5_000,
     },

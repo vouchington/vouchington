@@ -136,18 +136,6 @@ describe('BACKFILL_REGISTRY', () => {
     expect(BACKFILL_REGISTRY.length).toBeGreaterThan(0)
   })
 
-  it('enqueues the ActivityPub failed-delivery rearm', async () => {
-    const entry = BACKFILL_REGISTRY.find(
-      candidate => candidate.id === 'activitypub-inbox-failed-deliveries',
-    )
-    if (!entry) throw new Error('ActivityPub failed-delivery backfill missing')
-    const enqueued = await entry.trigger()
-    if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(activitypub, enqueued)).resolves.toMatchObject({
-      name: 'activitypub.rearmFailedDeliveries',
-    })
-  })
-
   it.each([
     ['activitypub-outbound-follows', 'follows'],
     ['activitypub-outbound-votes', 'votes'],

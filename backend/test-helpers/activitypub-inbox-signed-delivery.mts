@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
 import type { ActivityPubInboxEnvelope } from '../services/ap-inbox-activities/index.mts'
+import { createActivityPubInboxDeliveryJob } from '../services/ap-inbox-activities/durable-delivery-transition-intake.mts'
 import { getOrFetchRemoteActorByKeyId } from '../services/remote-actors/index.mts'
 import { insertApprovedTestFediverseInstance as approveInstance } from './entities/fediverse-instances.mts'
-import { acceptTestDelivery } from './activitypub-inbox-transitions.mts'
 import { registerActivityPubInboxJobCleanup } from './activitypub-inbox-test-jobs.mts'
 
 export { approveInstance }
@@ -83,12 +83,9 @@ export async function createSignedDelivery(
     dateHeader: headers.date,
     contentTypeHeader: 'application/activity+json',
     rawBody: Buffer.from(body),
-    claimedActivityId: activityId,
-    claimedActivityType: 'Create',
-    claimedActorUri,
     senderHostname: actor.hostname,
   }
-  const delivery = await acceptTestDelivery(envelope)
-  registerActivityPubInboxJobCleanup(delivery.deliveryId, delivery.requestDigest)
+  const delivery = createActivityPubInboxDeliveryJob(envelope)
+  registerActivityPubInboxJobCleanup(delivery.requestDigest)
   return delivery
 }

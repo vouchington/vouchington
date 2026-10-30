@@ -2,91 +2,75 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
+  createActivityPubInboxDeliveryJobId,
   enqueueActivityPubInboxDelivery,
-  enqueueBulkActivityPubInboxDeliveries,
-  enqueueCleanupExpiredActivityPubInboxDeliveries,
-  enqueueRearmFailedActivityPubInboxDeliveriesContinuation,
-  enqueueRecoverActivityPubInboxDeliveries,
+  getActivityPubInboxDeliveryTtlMs,
 } from './inbox.mts'
+import { ACTIVITYPUB_INBOX_JOB_POLICY } from '@queues/background/enqueues/activitypub-jobs'
 import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
+import { ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES } from '../../../services/ap-inbox-activities/durable-delivery-data-contract.mts'
 
-describe('ActivityPub inbox enqueues', () => {
-  it('deduplicates the signed-request digest across repeated enqueues', async () => {
-    const data = { deliveryId: randomUUID(), requestDigest: randomUUID() }
-    const jobId = `activitypub-inbox__${data.requestDigest}`
-    await enqueueActivityPubInboxDelivery(data)
-    expect(await enqueueActivityPubInboxDelivery(data)).toBeNull()
+const makeDelivery = () => ({
+  requestMethod: 'POST',
+  requestTarget: '/ap/inbox',
+  expectedHost: 'inbox.example',
+  signatureHeader: 'signed',
+  digestHeader: 'digest',
+  dateHeader: new Date().toUTCString(),
+  rawBodyBase64: Buffer.from('{}').toString('base64'),
+  senderHostname: 'remote.example',
+  requestDigest: randomUUID().replaceAll('-', ''),
+  receivedAt: new Date().toISOString(),
+})
+
+describe('ActivityPub inbox enqueue', () => {
+  it('budgets both actor fetch phases across retries and the final attempt', () => {
+    const baseline = getActivityPubInboxDeliveryTtlMs(60_000, 5_000, 10_000)
+    const attemptsWithMargin = ACTIVITYPUB_INBOX_JOB_POLICY.attempts + 1
+    expect(getActivityPubInboxDeliveryTtlMs(60_000, 5_001, 10_000) - baseline).toBe(
+      attemptsWithMargin,
+    )
+    expect(getActivityPubInboxDeliveryTtlMs(60_000, 5_000, 10_001) - baseline).toBe(
+      attemptsWithMargin * 2,
+    )
+  })
+
+  it('keeps the exact envelope in a sensitive, deduplicated job', async () => {
+    const data = makeDelivery()
+    const jobId = createActivityPubInboxDeliveryJobId(data.requestDigest)
+    const duplicateId = createActivityPubInboxDeliveryJobId(data.requestDigest)
+    await enqueueActivityPubInboxDelivery(data, jobId)
+    expect(await enqueueActivityPubInboxDelivery(data, duplicateId)).toBeNull()
+    expect(duplicateId).not.toBe(jobId)
     const jobs = await readAllQueueJobs(activitypub)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
       name: 'activitypub.processDelivery',
       data,
       opts: {
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        priority: 10,
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        deduplication: { id: jobId, mode: 'simple' },
+        ordering: { key: 'activitypub:inbound', concurrency: 4 },
+        removeOnComplete: true,
+        removeOnFail: true,
       },
     })
   })
 
-  it('preserves the same logical ids and uses recovery priority for recovered bulk jobs', async () => {
-    const data = { deliveryId: randomUUID(), requestDigest: randomUUID() }
-    const jobId = `activitypub-inbox__${data.requestDigest}`
-    const [job] = await enqueueBulkActivityPubInboxDeliveries([data])
-    expect(job).toMatchObject({
-      id: jobId,
-      data,
-      opts: { priority: 100, deduplication: { id: jobId, mode: 'simple' } },
-    })
-  })
-
-  it('enqueues the recovery dispatcher at low priority with throttled deduplication', async () => {
-    await enqueueRecoverActivityPubInboxDeliveries()
-    const jobs = await readAllQueueJobs(activitypub)
-    expect(jobs.find(job => job.name === 'activitypub.recoverDeliveries')).toMatchObject({
-      opts: {
-        priority: 100,
-        deduplication: {
-          id: 'activitypub-inbox-recovery',
-          mode: 'throttle',
-          ttl: 300_000,
-        },
-      },
-    })
-  })
-
-  it('enqueues cleanup in its own lane with interval-scoped deduplication', async () => {
-    await enqueueCleanupExpiredActivityPubInboxDeliveries()
-    const jobs = await readAllQueueJobs(activitypub)
-    expect(jobs.find(job => job.name === 'activitypub.cleanupExpiredDeliveries')).toMatchObject({
-      id: expect.stringMatching(/^activitypub-inbox-cleanup__\d+$/),
-      opts: {
-        priority: 100,
-        ordering: { key: 'activitypub:cleanup', concurrency: 1 },
-        deduplication: {
-          id: 'activitypub-inbox-cleanup',
-          mode: 'throttle',
-          ttl: 300_000,
-        },
-      },
-    })
-  })
-
-  it('enqueues a re-arm continuation whose job id is the cursor and which releases its record', async () => {
-    const afterId = randomUUID()
-    const jobId = `activitypub-inbox-failed-backfill__${afterId}`
-
-    await enqueueRearmFailedActivityPubInboxDeliveriesContinuation(afterId)
-
-    const jobs = await readAllQueueJobs(activitypub)
-    expect(jobs.find(job => job.id === jobId)).toMatchObject({
-      id: jobId,
-      name: 'activitypub.rearmFailedDeliveries',
-      data: { afterId },
-      opts: { removeOnComplete: true, removeOnFail: true },
-    })
+  it('admits the maximum body plus conservatively large headers through GlideMQ', async () => {
+    const header = '\\'.repeat(16 * 1024)
+    const data = {
+      ...makeDelivery(),
+      requestTarget: `/ap/inbox?${header}`,
+      expectedHost: header,
+      signatureHeader: header,
+      digestHeader: header,
+      dateHeader: header,
+      contentTypeHeader: header,
+      rawBodyBase64: Buffer.alloc(ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES, 0xff).toString('base64'),
+    }
+    const jobId = createActivityPubInboxDeliveryJobId(data.requestDigest)
+    await enqueueActivityPubInboxDelivery(data, jobId)
+    const job = await activitypub.getJob(jobId)
+    expect(job?.data).toMatchObject(data)
+    await job?.remove()
   })
 })

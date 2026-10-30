@@ -71,8 +71,7 @@ checks it every day, so an issue closed elsewhere is still caught. It skips loca
 - **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
   PR never depends on landing order; deleting it keeps the repeat from returning.
 - **Find stale scopes** from one complete local pass or complete Backend workflow run with
-  `VITEST_DIAGNOSTICS=1`. Combine all backend-unit shard logs and the ActivityPub capacity project
-  log from that pass into one file, then run
+  `VITEST_DIAGNOSTICS=1`. Combine all backend-unit shard logs from that pass into one file, then run
   `NODE_ENV=test NODE_PREWARM=1 node backend/test-helpers/api/request-query-profile-stale.mts <run-log>`.
   Use the worktree's `WORKTREE_DIR`, `DATABASE_URL`, and `VALKEY_URL` printed by
   `./dev/initialize backend` inline with the command. The reader loads the API entrypoint's

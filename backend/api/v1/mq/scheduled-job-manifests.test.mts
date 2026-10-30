@@ -36,8 +36,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/accountDataRequestRecovery',
   'background/activitypub-outbound-follows-recovery',
   'background/activitypub-outbound-votes-recovery',
-  'background/activitypub-inbox-recovery',
-  'background/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileCopyrightAgentDispatches',
   'ai_agents/reconcileClassifierRuns',
@@ -156,7 +154,6 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(82)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,
     )

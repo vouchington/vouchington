@@ -1,3 +1,6 @@
+/** Raw signed body limit; base64 plus the maximum accepted headers fits a GlideMQ job. */
+export const ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES = 512 * 1024
+
 export type ActivityPubInboxEnvelope = {
   requestMethod: string
   requestTarget: string
@@ -7,17 +10,7 @@ export type ActivityPubInboxEnvelope = {
   dateHeader: string
   contentTypeHeader?: string
   rawBody: Buffer
-  claimedActivityId: string
-  claimedActivityType: string
-  claimedActorUri: string
   senderHostname: string
 }
 
-export type ActivityPubInboxDelivery = ActivityPubInboxEnvelope & {
-  id: string
-  requestDigest: string
-  remoteActorId: string | null
-  receivedAt: Date
-  verifiedAt: Date | null
-  senderAllowedAt: Date | null
-}
+export type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'

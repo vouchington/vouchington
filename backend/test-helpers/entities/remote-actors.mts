@@ -13,3 +13,11 @@ export async function setTestRemoteActorFetchedAt(
     WHERE actor.id = identity.id AND identity.actor_uri = ${actorUri}
   `)
 }
+
+export async function softDeleteRemoteActorForInboxTest(remoteActorId: string): Promise<void> {
+  await write(sql`/* softDeleteRemoteActorForInboxTest */
+    UPDATE remote_actors
+    SET deleted_at = CURRENT_TIMESTAMP
+    WHERE id = ${remoteActorId}
+  `)
+}
