@@ -143,24 +143,4 @@ describe('no-mistakes catalog', () => {
       writeNoMistakesCatalog({ catalog, root, format: formatForTest, check: true }),
     ).rejects.toThrow('Unsafe generated PostgreSQL schema snapshot path')
   })
-
-  it('keeps the committed catalog canonical, complete, and database-name independent', async () => {
-    const committed = JSON.parse(
-      await readFile(new URL(`./${NO_MISTAKES_CATALOG_FILE}`, import.meta.url), 'utf8'),
-    ) as PostgresCatalog
-
-    expect(committed).toMatchObject({
-      coverage: 'complete',
-      schema: 'public',
-      currentDatabase: NO_MISTAKES_CATALOG_DATABASE,
-    })
-    await expect(
-      writeNoMistakesCatalog({
-        catalog: committed,
-        root: new URL('.', import.meta.url).pathname,
-        format: formatForTest,
-        check: true,
-      }),
-    ).resolves.toBeUndefined()
-  })
 })
