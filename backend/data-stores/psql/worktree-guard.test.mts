@@ -69,7 +69,7 @@ describe('worktree-guard', () => {
           env: {},
           moduleDir: dir,
         }),
-      ).toThrow('Cross-worktree database guard')
+      ).toThrow('targets database "voucha"')
     })
 
     it('throws with helpful instructions', () => {
@@ -82,7 +82,7 @@ describe('worktree-guard', () => {
       ).toThrow('./dev/initialize web')
     })
 
-    it('allows a non-main worktree to connect to its own database', () => {
+    it('allows the extracted database name voucha-my-feature from a non-main worktree', () => {
       const dir = makeNonMainWorktreeDir()
       expect(() =>
         assertNotCrossWorktreeConnection('postgres://localhost/voucha-my-feature', {
@@ -90,12 +90,20 @@ describe('worktree-guard', () => {
           moduleDir: dir,
         }),
       ).not.toThrow()
+    })
+
+    it('allows another extracted database name from a non-main worktree', () => {
+      const dir = makeNonMainWorktreeDir()
       expect(() =>
         assertNotCrossWorktreeConnection('postgres://user@host:5432/mydb', {
           env: {},
           moduleDir: dir,
         }),
       ).not.toThrow()
+    })
+
+    it('allows a connection string that does not name a database', () => {
+      const dir = makeNonMainWorktreeDir()
       expect(() =>
         assertNotCrossWorktreeConnection('not-a-url', {
           env: {},
@@ -121,7 +129,7 @@ describe('worktree-guard', () => {
           env: {},
           moduleDir: nested,
         }),
-      ).toThrow('Cross-worktree database guard')
+      ).toThrow('targets database "voucha"')
     })
   })
 })

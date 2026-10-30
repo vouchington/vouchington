@@ -102,6 +102,49 @@ describe('verifyLiveSchemaMatchesSnapshot', () => {
     }
   })
 
+  it('resolves when every committed extension version is platform-provisioned and the extension keys match', async () => {
+    const snapshot = buildSchemaSnapshot(await readSchemaCatalog())
+    const extensionNames = Object.keys(snapshot.extensions).toSorted()
+    const platformProvisioned: SchemaSnapshot = {
+      ...snapshot,
+      extensions: Object.fromEntries(
+        extensionNames.map(name => [
+          name,
+          { ...snapshot.extensions[name], version: 'platform-provisioned' },
+        ]),
+      ),
+    }
+    expect(Object.keys(platformProvisioned.extensions).toSorted()).toEqual(extensionNames)
+    expect(platformProvisioned.views).toBe(snapshot.views)
+    const root = await tempRootWithSchemaJson(platformProvisioned)
+
+    try {
+      await expect(verifyLiveSchemaMatchesSnapshot({ root })).resolves.toBeUndefined()
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
+  it('throws when a view definition differs -- views stay in the comparison', async () => {
+    const snapshot = buildSchemaSnapshot(await readSchemaCatalog())
+    const drifted: SchemaSnapshot = {
+      ...snapshot,
+      views: {
+        ...snapshot.views,
+        widgets_view: { definition: 'SELECT 1', comment: null, materialized: false },
+      },
+    }
+    const root = await tempRootWithSchemaJson(drifted)
+
+    try {
+      await expect(verifyLiveSchemaMatchesSnapshot({ root })).rejects.toThrow(
+        /does not match the committed schema snapshot/,
+      )
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
   it('throws when the committed snapshot has an extension the live catalog does not -- presence still participates in the comparison', async () => {
     const snapshot = buildSchemaSnapshot(await readSchemaCatalog())
     const phantomExtension = `phantom_extension_${randomUUID().replaceAll('-', '')}`

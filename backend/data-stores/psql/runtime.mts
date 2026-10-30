@@ -74,7 +74,10 @@ export const close: Psql['close'] = async () => {
   await Promise.all([psql.close(), jobSerializationPool.end()])
 }
 
-createPoolStatsSampler().startConfiguredPoolStatsSampler(
+// One sampler, created when this module loads and started with the same arguments
+// as the previous module singleton.
+const poolStatsSampler = createPoolStatsSampler()
+poolStatsSampler.startConfiguredPoolStatsSampler(
   { ...psql, jobSerializationPool },
   poolConfiguration,
   Boolean(process.env.NODE_PREWARM),
