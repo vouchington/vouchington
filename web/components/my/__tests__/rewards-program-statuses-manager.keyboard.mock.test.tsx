@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
 import { RewardsProgramStatusesManager } from '../rewards-program-statuses-manager'
