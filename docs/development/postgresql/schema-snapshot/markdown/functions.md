@@ -41,7 +41,7 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)
  RETURNS boolean
- LANGUAGE sql
+ LANGUAGE plpgsql
  STABLE
 ```
 
