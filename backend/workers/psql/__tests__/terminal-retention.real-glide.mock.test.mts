@@ -45,7 +45,7 @@ describe('terminal identity family native admission', () => {
       const like = harness.nextTerminal(terminalJobId('like'))
       const jobs = await enqueueTerminalActivityRetention(['follow', 'like'])
       expect(jobs.map(job => job.id).toSorted()).toEqual(
-        ['follow', 'like'].map(family => terminalJobId(family)).toSorted(),
+        (['follow', 'like'] as const).map(family => terminalJobId(family)).toSorted(),
       )
       await entered.promise
       await expect(enqueueTerminalActivityRetention(['follow'])).resolves.toEqual([])
