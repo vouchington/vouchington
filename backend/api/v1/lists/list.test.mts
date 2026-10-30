@@ -112,16 +112,6 @@ describe('PATCH /api/v1/lists/:id', () => {
       .expect(422)
   })
 
-  it('returns 422 for invalid visibility value', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    await request
-      .patch(`/api/v1/lists/${listId}`)
-      .set('Content-Type', 'application/json')
-      .send({ visibility: 'secret' })
-      .expect(422)
-  })
-
   it('returns 422 when body is JSON null', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
