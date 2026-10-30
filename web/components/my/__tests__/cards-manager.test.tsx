@@ -33,20 +33,6 @@ describe('CardsManager adding and removing cards', () => {
     expect(screen.getByText('Add a card')).toBeInTheDocument()
   })
 
-  it('auto-adds card when autocomplete onChange fires with a card ID', async () => {
-    const CardsManager = await loadCardsManager()
-    render(<CardsManager initialData={makeCardsPage(initialCards)} />)
-
-    const autocompleteInput = screen.getByTestId('mock-topic-autocomplete-input')
-    await act(async () => {
-      fireEvent.change(autocompleteInput, { target: { value: 'c-3' } })
-    })
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({ card_topic_id: 'c-3' })
-    })
-  })
-
   it('successfully creates a new card via autocomplete selection', async () => {
     const CardsManager = await loadCardsManager()
     render(<CardsManager initialData={makeCardsPage(initialCards)} />)

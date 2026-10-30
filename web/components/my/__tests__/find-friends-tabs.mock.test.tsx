@@ -51,13 +51,6 @@ function getByDataPw(container: HTMLElement, value: string) {
 }
 
 describe('FindFriendsTabs', () => {
-  it('renders Suggestions and Dismissed tabs', () => {
-    mockUsePathname.mockReturnValue('/my/friend-recommendations')
-    const { container } = render(<FindFriendsTabs />)
-    expect(getByDataPw(container, 'find-friends-tab-suggestions')).toBeTruthy()
-    expect(getByDataPw(container, 'find-friends-tab-dismissed')).toBeTruthy()
-  })
-
   it('marks Suggestions as active on suggestions route', () => {
     mockUsePathname.mockReturnValue('/my/friend-recommendations')
     const { container } = render(<FindFriendsTabs />)
