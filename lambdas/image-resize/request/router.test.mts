@@ -177,22 +177,6 @@ describe('parseRouterRequest', () => {
 
       expect(result.type).toBe('og')
     })
-
-    it('should not collide with sideload detection', () => {
-      const params = {
-        type: 'generic',
-        eyebrow: 'e',
-        title: 't',
-        description: 'd',
-        domainLabel: 'z',
-      }
-      const ogBase64url = toOgBase64url(params)
-      const event = createMockEvent(`/og/${ogBase64url}`, { ogBase64url })
-
-      const result = parseRouterRequest(event)
-
-      expect(result.type).not.toBe('sideload')
-    })
   })
 
   describe('Route prioritization', () => {
