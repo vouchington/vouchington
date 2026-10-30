@@ -27,16 +27,6 @@ describe('scheduled-jobs', () => {
         await request.get('/api/v1/mq/scheduled-jobs').expect(403)
       })
 
-      it('should return list of scheduled jobs when authenticated as admin', async () => {
-        const request = createRequest()
-        await request.authenticateAs(admin)
-        const response = await request.get('/api/v1/mq/scheduled-jobs').expect(200)
-
-        expect(response.body).toHaveProperty('jobs')
-        expect(Array.isArray(response.body.jobs)).toBe(true)
-        expect(response.body.jobs.length).toBeGreaterThan(0)
-      })
-
       it('should return jobs with required fields', async () => {
         const request = createRequest()
         await request.authenticateAs(admin)
@@ -56,6 +46,8 @@ describe('scheduled-jobs', () => {
         await request.authenticateAs(admin)
         const response = await request.get('/api/v1/mq/scheduled-jobs').expect(200)
 
+        expect(response.body).toHaveProperty('jobs')
+        expect(Array.isArray(response.body.jobs)).toBe(true)
         expect(response.body.jobs.length).toBe(SCHEDULED_JOBS_REGISTRY.length)
       })
     })
