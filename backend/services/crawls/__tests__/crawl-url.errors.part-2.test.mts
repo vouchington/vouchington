@@ -111,6 +111,7 @@ describe('crawl-url.errors', () => {
 
       await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerTimeoutError)
 
+      expect(await countCrawlsForUrl(url!.id)).toBe(1)
       expect(await getLatestCrawlNetworkError(url!.id)).toBe('timeout')
     })
 
@@ -186,6 +187,7 @@ describe('crawl-url.errors', () => {
         CrawlerNetworkError,
       )
 
+      expect(await countCrawlsForUrl(url!.id)).toBe(1)
       expect(await getLatestCrawlNetworkError(url!.id)).toBeNull()
     })
   })

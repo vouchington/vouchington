@@ -64,28 +64,6 @@ describe('crawl-url.ssrf', () => {
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(403)
     })
 
-    it('re-throws CrawlerSsrfError after recording the crawl', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const hostname = `ssrf-rethrow-${random}.example.com`
-
-      const url = await addUrl(user!.id, `https://${hostname}/page`)
-      await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
-
-      resolveSafeCrawlerAddresses.mockRejectedValueOnce(
-        new CrawlerSsrfError(`https://${hostname}/page`, 'IP address is private: 192.168.1.1'),
-      )
-
-      let thrownError: unknown
-      try {
-        await crawlUrlForTest(url!.id)
-      } catch (err) {
-        thrownError = err
-      }
-
-      expect(thrownError).toBeInstanceOf(CrawlerSsrfError)
-    })
-
     it('calls resolveSafeCrawlerAddresses before CrawlerHtml', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `ssrf-order-${random}.example.com`

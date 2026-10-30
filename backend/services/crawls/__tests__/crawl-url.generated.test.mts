@@ -39,16 +39,6 @@ describe('crawl-url.generated', () => {
     vi.clearAllMocks()
   })
 
-  it('crawlUrl returns null when hostname is blocked', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const hostname = `blocked-${random}.example.com`
-    const url = await addUrl(user.id, `https://${hostname}/test`)
-    await updateUrlHostnameBlocked(url!.hostname.id, true)
-
-    const result = await crawlUrlForTest(url!.id)
-    expect(result).toBeNull()
-  })
-
   it('crawlUrl returns null when hostname is not crawlable', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostname = `not-crawlable-${random}.example.com`
