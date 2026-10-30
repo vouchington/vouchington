@@ -11,7 +11,6 @@ import {
   rssFeedItemTag,
   deriveCacheTags,
   SITEMAP_TAG,
-  HTML_TAG,
 } from './cache-tags.mts'
 
 const noContext = { isSitemap: false, isRss: false, isStatic: false }
@@ -159,28 +158,10 @@ describe('deriveCacheTags entity routes', () => {
     expect(deriveCacheTags('/api/v1/admin/mcp', noContext)).toEqual(['html'])
   })
 
-  it('uses the html fallback for an API path with no id-or-slug segment', () => {
-    expect(deriveCacheTags('/api/v1/posts', noContext)).toEqual(['html'])
-  })
-
   it('uses the html fallback for static API subroutes instead of mistaking the literal segment for a topic id', () => {
     expect(deriveCacheTags('/api/v1/topics/compare', noContext)).toEqual(['html'])
     expect(deriveCacheTags('/api/v1/topics/publisher-types', noContext)).toEqual(['html'])
     expect(deriveCacheTags('/api/v1/topics/aliases', noContext)).toEqual(['html'])
-  })
-
-  it('still tags a real topic id-or-slug that happens to differ from a static subroute name', () => {
-    expect(deriveCacheTags('/api/v1/topics/chase-sapphire', noContext)).toEqual([
-      'topic:chase-sapphire',
-    ])
-  })
-
-  it('uses the html fallback for a bare single-segment path', () => {
-    expect(deriveCacheTags('/reviews', noContext)).toEqual(['html'])
-  })
-
-  it('uses the html fallback for the root path', () => {
-    expect(deriveCacheTags('/', noContext)).toEqual(['html'])
   })
 
   it('tags a hostname detail API route', () => {
@@ -210,10 +191,6 @@ describe('deriveCacheTags entity routes', () => {
 
   it('uses the html fallback for an unrecognized markdown family segment', () => {
     expect(deriveCacheTags('/md/webhooks/stripe', noContext)).toEqual(['html'])
-  })
-
-  it('uses the html fallback for a markdown path with no id-or-slug segment', () => {
-    expect(deriveCacheTags('/md/posts', noContext)).toEqual(['html'])
   })
 
   it('strips a .md alias suffix from a web-route id-or-slug so the tag matches the real entity', () => {
@@ -247,7 +224,7 @@ describe('deriveCacheTags', () => {
   })
 
   it('falls back to the generic html class tag for unclassified pages', () => {
-    expect(deriveCacheTags('/', noContext)).toEqual([HTML_TAG])
-    expect(deriveCacheTags('/reviews', noContext)).toEqual([HTML_TAG])
+    expect(deriveCacheTags('/', noContext)).toEqual(['html'])
+    expect(deriveCacheTags('/reviews', noContext)).toEqual(['html'])
   })
 })

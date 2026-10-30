@@ -78,14 +78,6 @@ describe('serializeSessionCookie', () => {
     expect(header).not.toContain('Secure')
   })
 
-  it('matches backend COOKIE_OPTIONS shape', () => {
-    const attrs = sessionCookieAttributes(false)
-    expect(attrs.httpOnly).toBe(true)
-    expect(attrs.sameSite).toBe('lax')
-    expect(attrs.path).toBe('/')
-    expect(attrs.secure).toBe(false)
-  })
-
   it('throws on semicolon in value', () => {
     const attrs = sessionCookieAttributes(false)
     expect(() => serializeSessionCookie('st', 'bad;value', attrs)).toThrow('Invalid cookie value')

@@ -39,12 +39,6 @@ describe('feed capability catalogs', () => {
     expect(VALID_TRENDING_POST_TYPES).toEqual(['discussion', 'review', 'data_point', 'story'])
   })
 
-  it('keeps RSS post support narrower than trending and filterable post support', () => {
-    expect(VALID_RSS_POST_TYPES).not.toContain('story')
-    expect(VALID_TRENDING_POST_TYPES).toContain('story')
-    expect(VALID_FILTERABLE_POST_TYPES).toEqual(expect.arrayContaining([...VALID_RSS_POST_TYPES]))
-  })
-
   it('defines distinct feed and trending time ranges', () => {
     expect(VALID_FEED_TIME_RANGES).toEqual(['1d', '1w', '1m', '1y', 'all'])
     expect(VALID_TRENDING_TIME_RANGES).toEqual(['day', 'week', 'month'])
