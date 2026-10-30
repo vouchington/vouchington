@@ -4,7 +4,7 @@ import {
   removeActivityPubInboxJobForRequestDigest,
 } from '@voucha/test-helpers/activitypub-inbox-test-jobs'
 import {
-  computeActivityPubInboxRequestDigest,
+  createActivityPubInboxDeliveryJob,
   processDurableActivityPubInboxDelivery,
 } from '@services/ap-inbox-activities'
 import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'
@@ -82,7 +82,7 @@ async function deliverSignedActivity(
     .set('Content-Type', 'application/activity+json')
     .send(body)
     .expect(202)
-  const digest = computeActivityPubInboxRequestDigest({
+  const digest = createActivityPubInboxDeliveryJob({
     requestMethod: 'POST',
     requestTarget: parsedInbox.pathname,
     expectedHost: parsedInbox.host,
@@ -91,7 +91,8 @@ async function deliverSignedActivity(
     dateHeader: signature.date,
     contentTypeHeader: 'application/activity+json',
     rawBody: Buffer.from(body),
-  })
+    senderHostname: parsedInbox.host,
+  }).requestDigest
   const jobs = await findActivityPubInboxJobsForRequestDigest(digest)
   expect(jobs).toHaveLength(1)
   const job = jobs[0]

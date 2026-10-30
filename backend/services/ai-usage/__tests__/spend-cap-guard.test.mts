@@ -6,16 +6,15 @@ import {
   assertDailySpendCapNotBreached,
   evaluateSpendCapBreach,
   SpendCapBreachError,
-  type SpendCapGuardDeps,
 } from '../spend-cap-guard.mts'
 
 type DailyAiCostTotal = Awaited<ReturnType<typeof getDailyAiCostTotalMicrounits>>
 
-function guardDeps(totalMicrounits: number, cap = 100): SpendCapGuardDeps {
+function guardDeps(totalMicrounits: number, cap = 100) {
   return {
     waitForSpendCapConfig: () => Promise.resolve(),
     getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: cap }),
-    getDailyAiCostTotalMicrounits: day =>
+    getDailyAiCostTotalMicrounits: (day?: string) =>
       Promise.resolve({ totalMicrounits, day: day ?? getCurrentUtcDay() }),
   }
 }

@@ -8,7 +8,7 @@ function emailDomain(emailAddress: string | null): string | null {
 }
 
 /** Resolve an address batch with one hostname upsert on the owning transaction. */
-export async function resolveEmailDomainHostnameIds(
+async function resolveEmailDomainHostnameIds(
   emailAddresses: readonly (string | null)[],
   options: QueryOptions = {},
 ): Promise<(string | null)[]> {

@@ -10,7 +10,7 @@ export type FixedClientGeneratedChatModelProvider = Exclude<
   'openai_compatible'
 >
 
-export const CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER = {
+const CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER = {
   apple_foundation: 'apple-foundation-system',
   windows_foundry: 'windows-system-language-model',
   android_aicore: 'android-aicore-system',

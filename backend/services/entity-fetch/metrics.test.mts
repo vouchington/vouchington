@@ -1,5 +1,5 @@
 import { it, expect, describe, beforeAll } from 'vitest'
-import { getUserMetricsByAny, getUserProfileMetricsByAny } from './metrics.mts'
+import { getUserProfileMetricsByAny } from './metrics.mts'
 import {
   createTestUser,
   createUserProfileFixture,
@@ -20,7 +20,7 @@ describe('metrics', () => {
   })
   describe('getUserMetricsByAny', () => {
     it('retrieves metrics by UUID', async () => {
-      const metrics = await getUserMetricsByAny(user.id)
+      const metrics = await getUserProfileMetricsByAny(user.id)
 
       expect(metrics).toBeDefined()
       expect(metrics).toMatchObject({
@@ -44,7 +44,7 @@ describe('metrics', () => {
       const random = Math.random().toString(36).slice(2, 15)
       const username = `testuser${random}`
       const testUser = await createTestUser({ username })
-      const metrics = await getUserMetricsByAny(username)
+      const metrics = await getUserProfileMetricsByAny(username)
 
       expect(metrics).toBeDefined()
       expect(metrics).toMatchObject({
@@ -68,7 +68,7 @@ describe('metrics', () => {
       const username = `testuser${random}`
       const testUser = await createTestUser({ username: username.toLowerCase() })
       // Query with mixed case should still work due to LOWER() in SQL
-      const metrics = await getUserMetricsByAny(username.toUpperCase())
+      const metrics = await getUserProfileMetricsByAny(username.toUpperCase())
 
       expect(metrics).toBeDefined()
       expect(metrics?.id).toBe(testUser!.id)
@@ -76,20 +76,20 @@ describe('metrics', () => {
 
     it('returns null for non-existent UUID', async () => {
       const nonExistentId = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
-      const metrics = await getUserMetricsByAny(nonExistentId)
+      const metrics = await getUserProfileMetricsByAny(nonExistentId)
 
       expect(metrics).toBeNull()
     })
 
     it('returns null for non-existent username', async () => {
       const nonExistentUsername = `nonexistent${Math.random().toString(36).slice(2, 15)}`
-      const metrics = await getUserMetricsByAny(nonExistentUsername)
+      const metrics = await getUserProfileMetricsByAny(nonExistentUsername)
 
       expect(metrics).toBeNull()
     })
 
     it('throws error for invalid identifier', async () => {
-      await expect(getUserMetricsByAny('invalid identifier!')).rejects.toThrow(
+      await expect(getUserProfileMetricsByAny('invalid identifier!')).rejects.toThrow(
         /Invalid user identifier/,
       )
     })

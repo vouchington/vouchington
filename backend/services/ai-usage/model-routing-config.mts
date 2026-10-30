@@ -41,7 +41,7 @@ export const modelRoutingConfig = new DynamicConfig({
  * The stored pair. Saving validates it (see the registry validator): the provider must own the
  * model and the model must have a price row, so a read never needs to repair a selection.
  */
-export function getServiceModelSelection(slug: ModelServiceSlug): ModelSelection {
+function getServiceModelSelection(slug: ModelServiceSlug): ModelSelection {
   const fields = modelRoutingConfig.getFields()
   return {
     provider: fields[providerFieldName(slug)] as ModelProvider,

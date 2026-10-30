@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
-import { getNotificationReconcilePlan } from './notification-reconcile.mts'
+import { enqueueNotificationReconcileForRelations } from './notification-reconcile.mts'
 
-describe('getNotificationReconcilePlan', () => {
+describe('notification reconcile', () => {
   it('never schedules notification reconciliation for user tags', () => {
     const userTags = getEntityRelationMetadataOrThrow({
       subjectType: 'user',
@@ -11,7 +11,7 @@ describe('getNotificationReconcilePlan', () => {
     })
 
     expect(
-      getNotificationReconcilePlan(userTags, [
+      enqueueNotificationReconcileForRelations(userTags, [
         {
           id: '00000000-0000-7000-8000-000000000001',
           subject_id: '00000000-0000-7000-8000-000000000002',
@@ -20,6 +20,6 @@ describe('getNotificationReconcilePlan', () => {
           created_by_id: '00000000-0000-7000-8000-000000000004',
         },
       ]),
-    ).toBeNull()
+    ).toBeUndefined()
   })
 })

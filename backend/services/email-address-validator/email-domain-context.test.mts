@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readTestEmailDomainHostname } from '@voucha/test-helpers/entities/email-domain-hostname'
-import {
-  resolveEmailDomainHostnameId,
-  resolveEmailDomainHostnameIds,
-} from './email-domain-context.mts'
+import { resolveEmailDomainHostnameId } from './email-domain-context.mts'
 
 describe('email domain hostname identity', () => {
   it('resolves the final address domain after a quoted local @ and normalizes case', async () => {
@@ -16,15 +13,15 @@ describe('email domain hostname identity', () => {
     expect(await readTestEmailDomainHostname(quotedId)).toBe(domain)
   })
 
-  it('resolves a batch of repeated and distinct domains to their own hostname IDs', async () => {
+  it('resolves repeated and distinct domains to their own hostname IDs', async () => {
     const firstDomain = `batch-first-${randomUUID()}.test`
     const secondDomain = `batch-second-${randomUUID()}.test`
-    const [firstId, repeatedId, secondId, missingId] = await resolveEmailDomainHostnameIds([
-      `first@${firstDomain}`,
+    const firstId = await resolveEmailDomainHostnameId(`first@${firstDomain}`)
+    const repeatedId = await resolveEmailDomainHostnameId(
       `"left@right"@${firstDomain.toUpperCase()}`,
-      `second@${secondDomain}`,
-      null,
-    ])
+    )
+    const secondId = await resolveEmailDomainHostnameId(`second@${secondDomain}`)
+    const missingId = await resolveEmailDomainHostnameId(null)
     expect(firstId).toBeTruthy()
     expect(repeatedId).toBe(firstId)
     expect(secondId).toBeTruthy()
