@@ -5,7 +5,7 @@ import { persistAssessedUrls, type AddUrlOptions, type AssessedUrls } from './up
 export const { addUrls, addUrl, assessUrls } = createUrlUpsert()
 
 /** One unlocked provider assessment followed by one batch persistence implementation. */
-export function createUrlUpsert(
+function createUrlUpsert(
   checkUrls: (urls: readonly string[]) => Promise<void> = assertUrlsAllowedByWebRisk,
 ) {
   const assessUrls = async (

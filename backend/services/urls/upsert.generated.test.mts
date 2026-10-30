@@ -2,7 +2,7 @@ import { it, expect, describe, vi } from 'vitest'
 import crypto from 'node:crypto'
 import { addUrl, addUrls } from './upsert.mts'
 import { dispatchUrlCreatedEvents, extractInsertedUrlIds } from './upsert-results.mts'
-import { getUrlByAny } from './get.mts'
+import { getUrlByAnyCached } from './get.mts'
 import { beginTransaction } from '@voucha/test-helpers'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getCrawlersForHostname } from '@services/crawlers'
@@ -25,7 +25,7 @@ describe('upsert.generated', () => {
       content_type: 'application/pdf',
     })
     expect(url).toBeDefined()
-    const retrieved = await getUrlByAny(url!.id)
+    const retrieved = await getUrlByAnyCached(url!.id)
     expect(retrieved).toBeDefined()
   })
 
@@ -94,7 +94,9 @@ describe('upsert.generated', () => {
       skipCreatedEvents: true,
     })
     expect(created).not.toBeNull()
-    expect(await getUrlByAny(created!.id)).toBeNull()
+    // A miss is cached by lookup key. Read the URL string here so the id lookup stays cold
+    // until the committed row is visible below.
+    expect(await getUrlByAnyCached(href)).toBeNull()
     const admission = holdQueueBulkAdmission(
       entitiesListeners,
       ENTITY_LISTENERS_URL_CREATED_JOB.name,
@@ -123,7 +125,7 @@ describe('upsert.generated', () => {
       admissionStarted = entered
       expect(entered).toBe(true)
 
-      const persisted = await getUrlByAny(created!.id)
+      const persisted = await getUrlByAnyCached(created!.id)
       expect(persisted).toMatchObject({ id: created!.id, url: href })
       expect(settled).toBe(false)
 
@@ -157,7 +159,7 @@ describe('upsert.generated', () => {
     try {
       const created = await addUrl(null, href)
       expect(created).toMatchObject({ url: href })
-      expect(await getUrlByAny(created!.id)).toMatchObject({ id: created!.id, url: href })
+      expect(await getUrlByAnyCached(created!.id)).toMatchObject({ id: created!.id, url: href })
       expect(captureException).toHaveBeenCalledTimes(1)
       expect(captureException.mock.calls[0]![0]).toBe(admissionError)
     } finally {

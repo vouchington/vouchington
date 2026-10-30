@@ -8,7 +8,7 @@ import { ensureTestReconciliationBloomFilters } from '@voucha/test-helpers/bloom
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
-import { getUrlByAny } from '@services/urls'
+import { getUrlByAnyCached } from '@services/urls'
 import { getReferralProgramAttributes } from '@services/topics/referral-programs'
 import { getCardAttributes } from '@services/topics/cards'
 import { ENTITY_LISTENERS_URL_CREATED_JOB } from '../../queues/background/enqueues/entity-listeners-jobs.mts'
@@ -207,7 +207,7 @@ describe('typed-recommendations', () => {
 
         const committed = await getPostByAny(recommendation.id)
         expect(committed?.topic_recommendation?.status).toBe('approved')
-        const persistedUrl = await getUrlByAny(landingPageUrl)
+        const persistedUrl = await getUrlByAnyCached(landingPageUrl)
         expect(persistedUrl).not.toBeNull()
         expect(approvedHandlerCalled).toBe(true)
         expect(settled).toBe(false)

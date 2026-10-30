@@ -25,10 +25,7 @@ export const getUrlById = async (
   return rows[0] || null
 }
 
-export const getUrlByAny = async (
-  id: string,
-  options: QueryOptions = {},
-): Promise<ViewUrl | null> => {
+const getUrlByAny = async (id: string, options: QueryOptions = {}): Promise<ViewUrl | null> => {
   let filter: string
   let param: string
   if (isUUID(id)) {
