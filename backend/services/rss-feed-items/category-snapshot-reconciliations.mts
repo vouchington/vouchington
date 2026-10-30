@@ -117,7 +117,7 @@ export async function reconcileRssFeedItemCategorySnapshots(
 }
 
 /** Applies selected rows independently so one poison snapshot does not starve its batch peers. */
-export async function reconcileRssFeedItemCategorySnapshotRows(
+async function reconcileRssFeedItemCategorySnapshotRows(
   rows: readonly RssFeedItemCategorySnapshotReconciliation[],
 ): Promise<{ reconciled: number }> {
   let reconciled = 0
