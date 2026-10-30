@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createTestStoryMembers } from '@voucha/test-helpers/entities/story-member-pages'
 import { enableQueryCapture, stopTestQueryCapture } from '@voucha/test-helpers/query-capture'
 import { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-member-pages'
-import { getStoryPreviewRequests } from './story-previews.mts'
+import { getStoryPreviews } from './story-previews.mts'
 
 describe('bounded story members', () => {
   it.each([0, 1, 3, 4, 25, 26, 2000])('bounds previews and detail at %i members', async count => {
@@ -63,14 +63,15 @@ describe('bounded story members', () => {
     expect(pages[fixture.story.id]!.page_info.has_next_page).toBe(true)
   })
 
-  it('selects the first direct primary per story and keeps shares standalone', () => {
-    expect(
-      getStoryPreviewRequests([
-        { id: 'delivery', entity_id: 'shared', story_id: 'story', delivery_type: 'share' },
-        { id: 'primary', story_id: 'story', delivery_type: 'direct' },
-        { id: 'later', story_id: 'story', delivery_type: 'direct' },
-        { id: 'standalone', story_id: null },
-      ]),
-    ).toEqual([{ story_id: 'story', exclude_item_id: 'primary' }])
+  it('selects the first direct primary per story and keeps shares standalone', async () => {
+    const fixture = await createTestStoryMembers(4)
+    const [primary, second, third, shared] = fixture.itemIds
+    const pages = await getStoryPreviews(null, [
+      { id: 'delivery', entity_id: shared, story_id: fixture.story.id, delivery_type: 'share' },
+      { id: primary!, story_id: fixture.story.id, delivery_type: 'direct' },
+      { id: second!, story_id: fixture.story.id, delivery_type: 'direct' },
+      { id: 'standalone', story_id: null },
+    ])
+    expect(pages[fixture.story.id]!.item_ids).toEqual([second, third, shared])
   })
 })

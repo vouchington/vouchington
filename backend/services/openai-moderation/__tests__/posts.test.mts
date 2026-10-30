@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi, beforeAll } from 'vitest'
-import { findExistingPostOpenAIModeration, upsertPostOpenAIModeration } from '../posts.mts'
+import { upsertPostOpenAIModeration } from '../posts.mts'
 import { createPost } from '@services/posts'
 import {
   createTestUser,
@@ -220,24 +220,37 @@ describe('posts', () => {
   })
 
   it('filters non-string stored category values when reusing a ledger disposition', async () => {
+    const title = `Mixed stored categories ${randomSuffix()}`
+    const markdown = 'Stored result category fixture'
+    const donor = await createPost(user, WEB_PROVENANCE, {
+      title,
+      markdown,
+      post_type: 'discussion',
+    })
     const post = await createPost(user, WEB_PROVENANCE, {
-      title: `Mixed stored categories ${randomSuffix()}`,
-      markdown: 'Stored result category fixture',
+      title,
+      markdown,
       post_type: 'discussion',
     })
     const { content_sha256 } = createPostModerationContent(post as Post)
-    await setPostModerationContentSha256(post.id, content_sha256)
+    await setPostModerationContentSha256(donor.id, content_sha256)
     await recordTestPostModerationDisposition({
-      postId: post.id,
+      postId: donor.id,
       source: 'openai_omni',
       disposition: 'review',
       reasonCode: 'provider_flagged',
       evidence: { flagged_categories: ['harassment', 42, null] },
     })
+    await setPostModerationContentSha256(post.id, content_sha256)
 
-    await expect(
-      findExistingPostOpenAIModeration(content_sha256, { readOnly: false }),
-    ).resolves.toEqual({
+    const result = await upsertPostOpenAIModeration(post as Post, {
+      readOnly: false,
+      dependencies,
+    })
+
+    expect(createOpenAIModeration).not.toHaveBeenCalled()
+    expect(result).toMatchObject({
+      reused: true,
       flagged: true,
       results: [{ flagged: true, categories: { harassment: true } }],
     })

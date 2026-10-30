@@ -39,10 +39,7 @@ export async function updateEmailPreferences(
   return getEmailPreferences(userId)
 }
 
-export function createEmailUnsubscribeToken(
-  userId: string,
-  category: EmailUnsubscribeCategory,
-): string {
+function createEmailUnsubscribeToken(userId: string, category: EmailUnsubscribeCategory): string {
   return encryptSecret(JSON.stringify({ userId, category }), UNSUBSCRIBE_PURPOSE)
 }
 

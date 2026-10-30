@@ -27,7 +27,7 @@ export class MissingStripeMembershipFactContextError extends Error {
   override name = 'MissingStripeMembershipFactContextError'
 }
 
-export class StripeMembershipEventNotIngestedError extends Error {
+class StripeMembershipEventNotIngestedError extends Error {
   override name = 'StripeMembershipEventNotIngestedError'
 }
 

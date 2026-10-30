@@ -1,25 +1,36 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
-import {
-  isRecaptchaLockedOut,
-  setRecaptchaLockedOut,
-  setRecaptchaLockedOutBackground,
-  secondsUntilEndOfUtcDay,
-} from './rate-limit-lockout.mts'
+import { isRecaptchaLockedOut, setRecaptchaLockedOutBackground } from './rate-limit-lockout.mts'
 
 const LOCKOUT_KEY = 'recaptcha:assessment-lockout'
 
-describe('secondsUntilEndOfUtcDay', () => {
-  it('returns a full day at the start of a UTC day', () => {
-    expect(secondsUntilEndOfUtcDay(new Date('2026-05-30T00:00:00.000Z'))).toBe(86_400)
+async function lockoutWrite(): Promise<readonly unknown[]> {
+  const writeLockout = vi.spyOn(rateLimiterValkeyClient, 'set')
+  try {
+    setRecaptchaLockedOutBackground()
+    await writeLockout.mock.results[0]?.value
+    return writeLockout.mock.calls[0] ?? []
+  } finally {
+    writeLockout.mockRestore()
+  }
+}
+
+describe('reCAPTCHA assessment lockout expiry', () => {
+  afterEach(async () => {
+    vi.useRealTimers()
+    await rateLimiterValkeyClient.del([LOCKOUT_KEY])
   })
 
-  it('returns the remaining seconds mid-day', () => {
-    expect(secondsUntilEndOfUtcDay(new Date('2026-05-30T23:59:59.000Z'))).toBe(1)
-  })
-
-  it('clamps to at least one second at the very end of the day', () => {
-    expect(secondsUntilEndOfUtcDay(new Date('2026-05-30T23:59:59.999Z'))).toBe(1)
+  it.each([
+    ['2026-05-30T00:00:00.000Z', 86_400],
+    ['2026-05-30T23:59:59.000Z', 1],
+    ['2026-05-30T23:59:59.999Z', 1],
+  ])('stores a UTC-day TTL at %s', async (instant, seconds) => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(instant) })
+    const call = await lockoutWrite()
+    expect(call[0]).toBe(LOCKOUT_KEY)
+    expect(call[1]).toBe('1')
+    expect(call[2]).toMatchObject({ expiry: { count: seconds } })
   })
 })
 
@@ -36,19 +47,8 @@ describe('reCAPTCHA assessment lockout', () => {
     expect(await isRecaptchaLockedOut()).toBe(false)
   })
 
-  it('reports locked out after setting the lockout', async () => {
-    await setRecaptchaLockedOut()
+  it('reports locked out after the fire-and-forget wrapper writes the key', async () => {
+    await lockoutWrite()
     expect(await isRecaptchaLockedOut()).toBe(true)
-  })
-
-  it('applies the lockout from the fire-and-forget wrapper', async () => {
-    const writeLockout = vi.spyOn(rateLimiterValkeyClient, 'set')
-    try {
-      setRecaptchaLockedOutBackground()
-      await writeLockout.mock.results[0]?.value
-      expect(await isRecaptchaLockedOut()).toBe(true)
-    } finally {
-      writeLockout.mockRestore()
-    }
   })
 })
