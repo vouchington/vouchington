@@ -34,6 +34,6 @@
     "@vouchington/postgres": "^0.3.0",
     "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.14.0"
+    "valkyries": "^0.15.0"
   }
 }

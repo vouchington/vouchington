@@ -47,7 +47,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@vouchington/edge": "^0.5.0",
-    "@vouchington/rate-limit": "^0.3.0",
+    "@vouchington/rate-limit": "^0.3.1",
     "@vouchington/session-jwt": "^0.0.2",
     "@vouchington/utils": "^0.10.2",
     "isbot": "^5.2.2"
