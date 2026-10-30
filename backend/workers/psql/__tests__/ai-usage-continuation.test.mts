@@ -17,6 +17,7 @@ describe('AI usage retention continuation', () => {
       ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
       classifierRecords: { runs: { hasMore: false } },
       aiUsageRecords: { hasMore: true },
+      agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
       postModerationLedger: { remainingKinds: [] },
       softDeletedUsers: { hasMore: false },
       supersededVoteBallots: [],

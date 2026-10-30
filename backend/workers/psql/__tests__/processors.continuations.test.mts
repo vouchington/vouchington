@@ -23,6 +23,7 @@ const emptyCleanupResult = {
   supersededVoteBallots: [],
   orphanedUserAgentStrings: { hasMore: false },
   voteIntegrityDetails: { hasMore: false },
+  aiUsageRecords: { hasMore: false },
 } as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
 
 describe('processPsql retention continuations', () => {
