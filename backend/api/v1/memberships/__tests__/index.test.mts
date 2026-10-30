@@ -149,14 +149,6 @@ describe('index', () => {
       }
     })
 
-    it('returns products', async () => {
-      const request = createRequest()
-      const response = await request.get('/api/v1/memberships/plans').expect(200)
-
-      expect(response.body).toHaveProperty('products')
-      expect(Array.isArray(response.body.products)).toBe(true)
-    })
-
     it('sets Cache-Control for unauthenticated requests', async () => {
       const request = createRequest()
       const response = await request.get('/api/v1/memberships/plans').expect(200)
@@ -173,21 +165,13 @@ describe('index', () => {
       expect(response.headers['cache-control']).toBeUndefined()
     })
 
-    it('includes catalog products', async () => {
-      const sku = { id: '00000000-0000-7000-8000-000000000006' }
-      const request = createRequest()
-      const response = await request.get('/api/v1/memberships/plans').expect(200)
-
-      const products = response.body.products as Array<{ id: string }>
-      const found = products.find((product: { id: string }) => product.id === sku.id)
-      expect(found).toBeDefined()
-    })
-
     it('returns SKU fields in response', async () => {
       const sku = { id: '00000000-0000-7000-8000-000000000006' }
       const request = createRequest()
       const response = await request.get('/api/v1/memberships/plans').expect(200)
 
+      expect(response.body).toHaveProperty('products')
+      expect(Array.isArray(response.body.products)).toBe(true)
       const products = response.body.products as Array<{
         id: string
         providers: Array<{ provider: string; price: unknown; product_id: string }>
@@ -230,28 +214,16 @@ describe('index', () => {
       await request.authenticateAs(memberUser)
       const response = await request.get('/api/v1/memberships/me').expect(200)
 
-      expect(response.body.membership).toBeDefined()
-      expect(response.body.membership.plan).toBe('plus')
-      expect(response.body.membership.status).toBe('active')
-      expect(response.body.membership).not.toHaveProperty('stripe_subscription_id')
-      expect(response.body.membership).not.toHaveProperty('stripe_customer_id')
-      expect(response.body.management).toBeNull()
-    })
-
-    it('returns membership with expected fields', async () => {
-      const memberUser = await createTestUser()
-      await createTestMembership({ user_id: memberUser.id, plan: 'plus' })
-
-      const request = createRequest()
-      await request.authenticateAs(memberUser)
-      const response = await request.get('/api/v1/memberships/me').expect(200)
-
       const m = response.body.membership
+      expect(m).toBeDefined()
       expect(m).toHaveProperty('id')
       expect(m).toHaveProperty('user_id', memberUser.id)
-      expect(m).toHaveProperty('plan', 'plus')
-      expect(m).toHaveProperty('status', 'active')
+      expect(m.plan).toBe('plus')
+      expect(m.status).toBe('active')
       expect(m).toHaveProperty('started_at')
+      expect(m).not.toHaveProperty('stripe_subscription_id')
+      expect(m).not.toHaveProperty('stripe_customer_id')
+      expect(response.body.management).toBeNull()
     })
   })
 
