@@ -1,7 +1,8 @@
 # OAuth Authorization Broker Switches
 
-Switch the shared Facebook, X, GitHub, LinkedIn, and Microsoft authorization broker on or off
-independently per provider and client. Web defaults to the provider SDK/popup flow (the Facebook JS
+Switch the shared authorization broker on or off independently per provider and client. Native
+covers Facebook, X, GitHub, LinkedIn, Microsoft, and Google; web covers the same five except
+Google, which always uses its own `GoogleLoginButton`, so `google_web_enabled` has no web effect. Web defaults to the provider SDK/popup flow (the Facebook JS
 SDK and the popup pages under `web/app/auth/callback/<provider>`) because it is the better web
 experience; native apps turn the broker on per provider.
 

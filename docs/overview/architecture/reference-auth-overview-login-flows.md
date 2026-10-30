@@ -127,7 +127,7 @@ ciphertext, then sets `dt`/`st` cookies with enriched session claims.
 Web signs in with the provider SDK/popup flow (the Facebook JS SDK and the popup pages under
 `web/app/auth/callback/<provider>`), the better web experience. The shared server-begun authorization
 broker serves the native apps for Facebook, X, GitHub, LinkedIn, Microsoft, and Google, and can
-optionally be switched on for web per provider. The per-provider, per-mode flags are an intentional
+optionally be switched on for web per provider, except Google, which always uses its own button on web. The per-provider, per-mode flags are an intentional
 method switch, not a rollout to clean up. The provider and client mode are enabled independently through the default-off `oauth-authorization-broker`
 DynamicConfig. Clients discover those capabilities from `GET /api/v1/auth/oauth/providers`, begin
 with `POST /api/v1/auth/oauth/{provider}/authorizations`, and finish with

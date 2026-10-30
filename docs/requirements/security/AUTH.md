@@ -12,7 +12,7 @@ Prerequisites:
 - Web uses the provider SDK/popup flow by default. To test the broker, enable the provider and client
   mode under the `oauth-authorization-broker` dynamic config key; every provider/mode field defaults
   to `false`
-- For Facebook web sign-in, `NEXT_PUBLIC_META_APP_ID` set in `web/.env.local`
+- For Facebook web sign-in, `NEXT_PUBLIC_FACEBOOK_APP_ID` set in `web/.env.local`
 
 ---
 
