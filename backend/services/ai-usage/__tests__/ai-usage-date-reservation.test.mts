@@ -82,10 +82,19 @@ describe('acquireTestAiUsageDateReservation', () => {
     })
     await expect(getDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 321 })
     await first.release()
+    // Slot choice follows Date. Acquiring again while the clock sits inside the reserved day
+    // drops every slot that reaches that day, and the earliest day then has none left.
+    vi.useRealTimers()
 
     const second = await acquireTestAiUsageDateReservation()
     onTestFinished(() => second.release())
     expect(second.day).not.toBe(first.day)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${first.day}T12:00:00.000Z`))
+    await expect(getDailyAiCostTotalMicrounits(second.day)).resolves.toEqual({
+      totalMicrounits: 0,
+      day: second.day,
+    })
     vi.setSystemTime(new Date(`${second.day}T12:00:00.000Z`))
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 0,
