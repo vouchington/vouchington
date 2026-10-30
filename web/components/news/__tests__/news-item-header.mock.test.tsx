@@ -61,17 +61,11 @@ const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
 })
 
 describe('NewsItemHeader', () => {
-  it('renders source badge as a link with source-badge-link testid', () => {
-    const { container } = render(<NewsItemHeader item={MOCK_ITEM} />)
-    const link = container.querySelector('[data-pw="source-badge-link"]')
-    expect(link).not.toBeNull()
-    expect(link!.textContent).toContain('Tech Feed')
-  })
-
   it('links source badge to the topic latest tab', () => {
     const { container } = render(<NewsItemHeader item={MOCK_ITEM} />)
     const link = container.querySelector('[data-pw="source-badge-link"]')
     expect(link).not.toBeNull()
+    expect(link!.textContent).toContain('Tech Feed')
     expect(link!.getAttribute('href')).toBe('/topic/tech/latest')
   })
 

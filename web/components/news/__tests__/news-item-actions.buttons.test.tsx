@@ -13,17 +13,6 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
     mockAuthState.isAuthenticated = true
   })
 
-  it('derives signed-in action visibility from auth context', () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        relatedPosts={[]}
-      />,
-    )
-
-    expect(screen.getByTestId('hide-button')).toBeDefined()
-  })
-
   it('always renders NewsDiscussMenu', () => {
     render(
       <NewsItemActions

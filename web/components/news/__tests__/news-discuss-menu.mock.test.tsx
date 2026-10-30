@@ -153,28 +153,6 @@ describe('NewsDiscussMenu', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('shows label "Discuss" when n=0', () => {
-    render(
-      <NewsDiscussMenu
-        relatedPosts={[]}
-        relatedUrlId='url-1'
-        communityDiscussionUrls={EMPTY_URLS}
-      />,
-    )
-    expect(screen.getByText('Discuss')).toBeDefined()
-  })
-
-  it('shows label "1 Post" when n=1', () => {
-    render(
-      <NewsDiscussMenu
-        relatedPosts={[makePost('p1', 'Post 1')]}
-        relatedUrlId='url-1'
-        communityDiscussionUrls={EMPTY_URLS}
-      />,
-    )
-    expect(screen.getByText('1 Post')).toBeDefined()
-  })
-
   it('shows label "3 Posts" when n=3', () => {
     mockAuthState.isAuthenticated = false
     render(
@@ -197,6 +175,7 @@ describe('NewsDiscussMenu', () => {
     const btn = container.querySelector('[data-pw="news-discuss-button"]')
     expect(btn).not.toBeNull()
     expect(btn?.tagName.toLowerCase()).toBe('button')
+    expect(screen.getByText('Discuss')).toBeDefined()
     expect(screen.queryByTestId('dropdown-separator')).toBeNull()
   })
 
@@ -223,16 +202,6 @@ describe('NewsDiscussMenu', () => {
     )
     expect(screen.getByText('1 Post')).toBeDefined()
     expect(container.querySelector('[data-pw="news-discuss-create-item"]')).not.toBeNull()
-  })
-
-  it('shows DropdownMenuSeparator when posts + actions', () => {
-    render(
-      <NewsDiscussMenu
-        relatedPosts={[makePost('p1', 'Post 1')]}
-        relatedUrlId='url-1'
-        communityDiscussionUrls={EMPTY_URLS}
-      />,
-    )
     expect(screen.getByTestId('dropdown-separator')).toBeDefined()
   })
 
