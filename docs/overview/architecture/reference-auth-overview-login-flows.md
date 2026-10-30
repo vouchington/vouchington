@@ -124,8 +124,11 @@ All OAuth flows end with `POST /api/v1/auth/oauth/{provider}/continue`, which ex
 provider token/code for a user, stores any provider access/refresh tokens as authenticated
 ciphertext, then sets `dt`/`st` cookies with enriched session claims.
 
-Facebook, X, GitHub, LinkedIn, Microsoft, and Google also support the shared server-begun authorization broker. The provider and
-client mode are enabled independently through the default-off `oauth-authorization-broker`
+Web signs in with the provider SDK/popup flow (the Facebook JS SDK and the popup pages under
+`web/app/auth/callback/<provider>`), the better web experience. The shared server-begun authorization
+broker serves the native apps for Facebook, X, GitHub, LinkedIn, Microsoft, and Google, and can
+optionally be switched on for web per provider. The per-provider, per-mode flags are an intentional
+method switch, not a rollout to clean up. The provider and client mode are enabled independently through the default-off `oauth-authorization-broker`
 DynamicConfig. Clients discover those capabilities from `GET /api/v1/auth/oauth/providers`, begin
 with `POST /api/v1/auth/oauth/{provider}/authorizations`, and finish with
 `POST /api/v1/auth/oauth/authorizations/{flowId}/complete`.
@@ -134,7 +137,7 @@ The public callback stores the provider code as authenticated ciphertext before 
 ID-only queue enqueue. Provider-account persistence and the `completion_ready` transition commit in
 one fenced transaction. X exchange must start within ten seconds of callback persistence so its
 documented 30-second code lifetime still has a bounded 15-second provider-call budget. Facebook
-and LinkedIn use confidential server exchange without provider RFC 7636; X, GitHub, Microsoft, and Google use S256 PKCE. Google broker exchange uses the server-held Google client secret while preserving the existing browser ID-token sign-in path. Its deployment must register the exact broker HTTPS callback and provide the server secret before enabling the provider; public client-ID readiness alone still suffices only for the existing web credential path. Google account identity is the stable UserInfo subject, never an email-only match. Native completion still requires its separate app-held proof. Web opens a blank
+and LinkedIn use confidential server exchange without provider RFC 7636; X, GitHub, Microsoft, and Google use S256 PKCE. Google broker exchange uses the server-held Google client secret while preserving the existing browser ID-token sign-in path. Its deployment must register the exact broker HTTPS callback and provide the server secret before enabling the provider; public client-ID readiness alone still suffices only for the existing web credential path. Google account identity is the stable UserInfo subject, never an email-only match. Native completion still requires its separate app-held proof. When the web broker is enabled, web opens a blank
 popup synchronously, then navigates it to the server-generated provider URL. The callback popup
 relays only flow ID and terminal outcome to its exact-origin opener. Web completion accepts the
 secret only from a path-scoped HttpOnly cookie whose expiry is capped by the durable authorization.
