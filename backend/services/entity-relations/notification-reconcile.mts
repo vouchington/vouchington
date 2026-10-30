@@ -42,7 +42,7 @@ function getNotificationReconcileEnqueue(
   return () => enqueueBulkReconcileRssFeedItemNotifications(plan.subjectIds, changeId)
 }
 
-export function getNotificationReconcilePlan(
+function getNotificationReconcilePlan(
   relation: EntityRelationMetadata,
   relations: EntityRelation[],
 ): { type: 'post' | 'rss_feed_item'; subjectIds: string[] } | null {

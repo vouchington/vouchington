@@ -14,8 +14,25 @@ import {
 } from '@voucha/test-helpers/api/activitypub/inbox.fixtures'
 import {
   ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES,
-  computeActivityPubInboxRequestDigest,
+  createActivityPubInboxDeliveryJob,
 } from '@services/ap-inbox-activities'
+
+function inboxRequestDigest(
+  signed: { signature: string; digest: string; date: string },
+  body: string,
+): string {
+  return createActivityPubInboxDeliveryJob({
+    requestMethod: 'POST',
+    requestTarget: '/ap/inbox',
+    expectedHost: 'inbox-test.example',
+    signatureHeader: signed.signature,
+    digestHeader: signed.digest,
+    dateHeader: signed.date,
+    contentTypeHeader: 'application/activity+json',
+    rawBody: Buffer.from(body),
+    senderHostname: 'inbox-test.example',
+  }).requestDigest
+}
 
 function makeBody(actorUri: string) {
   return JSON.stringify({
@@ -31,16 +48,7 @@ describe('POST /ap/inbox queue admission', () => {
     const { actorUri, keyId, privateKeyPem } = await createRemoteActorFixture()
     const body = makeBody(actorUri)
     const signed = signInboxRequest(body, keyId, privateKeyPem)
-    const requestDigest = computeActivityPubInboxRequestDigest({
-      requestMethod: 'POST',
-      requestTarget: '/ap/inbox',
-      expectedHost: 'inbox-test.example',
-      signatureHeader: signed.signature,
-      digestHeader: signed.digest,
-      dateHeader: signed.date,
-      contentTypeHeader: 'application/activity+json',
-      rawBody: Buffer.from(body),
-    })
+    const requestDigest = inboxRequestDigest(signed, body)
     registerActivityPubInboxJobCleanup(requestDigest)
 
     await postInbox(signed).send(body).expect(202)
@@ -82,16 +90,7 @@ describe('POST /ap/inbox queue admission', () => {
     const body = makeBody(actorUri)
     const { privateKeyPem: rotatedPrivateKey } = generateRsaSha256KeyPair()
     const signed = signInboxRequest(body, keyId, rotatedPrivateKey)
-    const requestDigest = computeActivityPubInboxRequestDigest({
-      requestMethod: 'POST',
-      requestTarget: '/ap/inbox',
-      expectedHost: 'inbox-test.example',
-      signatureHeader: signed.signature,
-      digestHeader: signed.digest,
-      dateHeader: signed.date,
-      contentTypeHeader: 'application/activity+json',
-      rawBody: Buffer.from(body),
-    })
+    const requestDigest = inboxRequestDigest(signed, body)
     registerActivityPubInboxJobCleanup(requestDigest)
 
     await postInbox(signed).send(body).expect(202)
@@ -112,16 +111,7 @@ describe('POST /ap/inbox queue admission', () => {
     const body = makeBody(actorUri)
     const { privateKeyPem: differentPrivateKey } = generateRsaSha256KeyPair()
     const signed = signInboxRequest(body, keyId, differentPrivateKey)
-    const requestDigest = computeActivityPubInboxRequestDigest({
-      requestMethod: 'POST',
-      requestTarget: '/ap/inbox',
-      expectedHost: 'inbox-test.example',
-      signatureHeader: signed.signature,
-      digestHeader: signed.digest,
-      dateHeader: signed.date,
-      contentTypeHeader: 'application/activity+json',
-      rawBody: Buffer.from(body),
-    })
+    const requestDigest = inboxRequestDigest(signed, body)
     registerActivityPubInboxJobCleanup(requestDigest)
 
     await postInbox(signed).send(body).expect(401)

@@ -1,8 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import {
-  insertCopyrightEmailIntakeNoticeLink,
-  type CopyrightEmailIntakeNoticeLink,
-} from '../services/copyright-notices/email-thread-link.mts'
+import { insertCopyrightEmailIntakeNoticeLink } from '../services/copyright-notices/email-thread-link.mts'
+
+type CopyrightEmailIntakeNoticeLink = Parameters<typeof insertCopyrightEmailIntakeNoticeLink>[1]
 
 /** Link an intake to a notice, in the caller's transaction or in one it commits itself. */
 export async function linkCopyrightEmailIntakeToNotice(
