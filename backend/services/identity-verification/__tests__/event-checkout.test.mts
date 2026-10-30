@@ -94,16 +94,6 @@ describe('onCheckoutCompletedForIdentity', () => {
     expect(mockBeginTransaction).not.toHaveBeenCalled()
   })
 
-  it('skips when checkout session id is absent', async () => {
-    await runCheckout({
-      eventData: {
-        metadata: { intent: 'identity-verification', user_id: 'user-1' },
-        payment_status: 'paid',
-      },
-    })
-    expect(mockBeginTransaction).not.toHaveBeenCalled()
-  })
-
   it('does not call Stripe when pre-guard returns 0 rows (user not in payment_pending)', async () => {
     mockBeginTransaction.mockImplementationOnce(async () => {
       const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult([]))
@@ -147,26 +137,6 @@ describe('onCheckoutCompletedForIdentity', () => {
     })
     expect(mockCreateVerificationSession).toHaveBeenCalled()
     expect(mockBeginTransaction).toHaveBeenCalledTimes(3)
-    expect(mockInvalidateUsers).not.toHaveBeenCalled()
-  })
-
-  it('rethrows Stripe errors without modifying DB state', async () => {
-    mockBeginTransaction.mockImplementationOnce(async () => {
-      const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult([{ id: 'user-1' }]))
-      return createTransactionResource(query as never)
-    })
-    mockCreateVerificationSession.mockRejectedValue(new Error('Stripe error'))
-    await expect(
-      runCheckout({
-        eventData: {
-          id: 'cs_abc',
-          metadata: { intent: 'identity-verification', user_id: 'user-1' },
-          payment_status: 'paid',
-        },
-      }),
-    ).rejects.toThrow('Stripe error')
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(2)
-    expect(mockAbandonProviderSession).not.toHaveBeenCalled()
     expect(mockInvalidateUsers).not.toHaveBeenCalled()
   })
 

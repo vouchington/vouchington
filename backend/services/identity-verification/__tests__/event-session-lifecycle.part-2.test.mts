@@ -127,20 +127,6 @@ describe('onCheckoutCompletedForIdentity', () => {
     expect(mockBeginTransaction).not.toHaveBeenCalled()
   })
 
-  it('returns early when pre-guard finds no matching user', async () => {
-    mockBeginTransaction.mockImplementationOnce(async () => {
-      const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult([]))
-      return createTransactionResource(query as never)
-    })
-    await onCheckoutCompletedForIdentity('evt_1', {
-      payment_status: 'paid',
-      metadata: { intent: 'identity-verification', user_id: 'user-1' },
-      id: 'cs_test',
-    })
-    expect(mockCreateVerificationSession).not.toHaveBeenCalled()
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-  })
-
   it('does not create a provider session after the post-reservation state guard loses a race', async () => {
     mockBeginTransaction
       .mockImplementationOnce(async () => {
@@ -164,6 +150,7 @@ describe('onCheckoutCompletedForIdentity', () => {
     expect(mockCreateVerificationSession).not.toHaveBeenCalled()
     expect(mockAbandonProviderSession).toHaveBeenCalledWith('cs_test')
     expect(mockReleaseAttempt).toHaveBeenCalledWith('cs_test')
+    expect(mockInvalidateUsers).not.toHaveBeenCalled()
   })
 
   it('creates Stripe session with checkoutSessionId as idempotencyKey and atomically claims identity_pending', async () => {
@@ -180,22 +167,6 @@ describe('onCheckoutCompletedForIdentity', () => {
     })
     expect(mockBeginTransaction).toHaveBeenCalledTimes(3)
     expect(mockInvalidateUsers).toHaveBeenCalledWith('user-1')
-  })
-
-  it('does not invalidate when claim-and-persist UPDATE is a no-op (concurrent event)', async () => {
-    let callCount = 0
-    mockBeginTransaction.mockImplementation(async () => {
-      callCount++
-      const result = callCount === 1 ? makeQueryResult([{ id: 'user-1' }]) : makeQueryResult([])
-      const query = vi.fn<VitestLooseMock>().mockResolvedValue(result)
-      return createTransactionResource(query as never)
-    })
-    await onCheckoutCompletedForIdentity('evt_1', {
-      payment_status: 'paid',
-      metadata: { intent: 'identity-verification', user_id: 'user-1' },
-      id: 'cs_test',
-    })
-    expect(mockInvalidateUsers).not.toHaveBeenCalled()
   })
 
   it('keeps the provider-creation fence after an ambiguous Stripe error so replay reconciles with the same idempotency key', async () => {
