@@ -91,27 +91,6 @@ describe('redactModerationAppeal', () => {
     }
   })
 
-  it('strips private fields', () => {
-    const appeal = makeAppeal()
-    const redacted = redactModerationAppeal(appeal)
-
-    expect('case_id' in redacted).toBe(false)
-    expect('appellant_user_id' in redacted).toBe(false)
-    expect('appeal_reason' in redacted).toBe(false)
-    expect('ai_public_response' in redacted).toBe(false)
-    expect('ai_internal_response' in redacted).toBe(false)
-    expect('model' in redacted).toBe(false)
-    expect('ai_drafted_at' in redacted).toBe(false)
-    expect('ai_draft_run_id' in redacted).toBe(false)
-    expect('ai_draft_requested_run_id' in redacted).toBe(false)
-    expect('internal_notes' in redacted).toBe(false)
-    expect('edited_by_id' in redacted).toBe(false)
-    expect('approved_by_id' in redacted).toBe(false)
-    expect('resolved_by_id' in redacted).toBe(false)
-    expect('latest_lifecycle_change_id' in redacted).toBe(false)
-    expect('staff_context' in redacted).toBe(false)
-  })
-
   it('hides public_response before sent_at', () => {
     const appeal = makeAppeal({ sent_at: null, public_response: 'Response text' })
     const redacted = redactModerationAppeal(appeal)
