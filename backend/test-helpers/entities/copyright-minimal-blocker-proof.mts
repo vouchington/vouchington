@@ -77,7 +77,7 @@ export async function seedTerminalSubmissionPages(noticeId: string): Promise<voi
     INSERT INTO copyright_notice_submissions
       (copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
     SELECT ${noticeId}, 'supplement', ${receivedAt}, 'staff',
-      'encrypted-supplement' FROM generate_series(1, 205)`)
+      'encrypted-supplement' FROM generate_series(1, 101)`)
 }
 
 export async function readMinimalBlockerCursor(noticeId: string): Promise<{

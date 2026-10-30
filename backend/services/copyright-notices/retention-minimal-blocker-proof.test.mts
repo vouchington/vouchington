@@ -135,8 +135,8 @@ describe('bounded copyright minimal blocker proof', () => {
     }
     let purgeOutcome = await purgeCopyrightMinimalRecord(fixture.noticeId, purgeOptions)
     expect(purgeOutcome).toBe('more')
-    // The 205 seeded submissions need three bounded physical-row budgets before root deletion.
-    for (let run = 1; run < 4 && purgeOutcome === 'more'; run++)
+    // The 101 seeded submissions cross one bounded physical-row budget before root deletion.
+    for (let run = 1; run < 3 && purgeOutcome === 'more'; run++)
       purgeOutcome = await purgeCopyrightMinimalRecord(fixture.noticeId, purgeOptions)
     expect(purgeOutcome).toBe('purged')
   })

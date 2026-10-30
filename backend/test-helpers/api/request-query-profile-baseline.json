@@ -58,14 +58,6 @@
     "routes": ["POST /api/v1/topics/:referralProgramId/referral-program/validations"]
   },
   {
-    "annotation": "assertTopicMergeParentCompatibility",
-    "maxCount": 2,
-    "reason": "The batched ancestor walk runs before merge capture (merge-aliases.mts:52) and again after locking topic rows and reachable ancestors (:69), so a parent edge committed during the lock wait cannot create a cycle unnoticed. Each call issues one statement.",
-    "permanent": true,
-    "code": "backend/services/topics/merge-aliases.mts:52-72",
-    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
-  },
-  {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
     "maxCount": null,
     "reason": "Manual association rereads link and review state after the intake row lock and again after the notice row lock, so a link or review committed while it waited rejects the association",

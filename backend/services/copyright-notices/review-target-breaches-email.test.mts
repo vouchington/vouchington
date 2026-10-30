@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
+import { createCopyrightNoticeForManualAssociation } from '@voucha/test-helpers/copyright-email-manual-association'
 import { readCopyrightReviewTargetBreaches } from './index.mts'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
@@ -92,7 +92,7 @@ describe('readCopyrightReviewTargetBreaches email intakes', () => {
   })
 
   it('counts a matched reply until staff decide its correspondence', async () => {
-    const { noticeId } = await createCopyrightNoticeSchemaFixture()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
     const reply = await createParsedCopyrightEmailIntake(hoursAgo(2))
     await linkCopyrightEmailIntakeToNotice({ intakeId: reply.id, noticeId, linkKind: 'thread' })
 
