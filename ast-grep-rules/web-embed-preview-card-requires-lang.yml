@@ -1,0 +1,77 @@
+id: web-embed-preview-card-requires-lang
+language: Tsx
+severity: error
+message: >-
+  EmbedPreviewCard renders a third-party title and description beside translated
+  UI chrome. Pass lang from the page's declared language. Pass null when that
+  language is not known; the title and description then set dir="auto" and omit
+  lang. Publisher names, source links, and player chrome stay unmarked.
+files:
+  - web/**/*.tsx
+rule:
+  any:
+    - all:
+        - kind: jsx_self_closing_element
+        - has:
+            field: name
+            kind: identifier
+            regex: ^EmbedPreviewCard$
+        - not:
+            has:
+              stopBy: end
+              kind: jsx_attribute
+              has:
+                stopBy: end
+                kind: property_identifier
+                regex: ^lang$
+    - all:
+        - kind: jsx_opening_element
+        - has:
+            field: name
+            kind: identifier
+            regex: ^EmbedPreviewCard$
+        - not:
+            has:
+              stopBy: end
+              kind: jsx_attribute
+              has:
+                stopBy: end
+                kind: property_identifier
+                regex: ^lang$
+examples:
+  - code: |
+      <EmbedPreviewCard preview={preview} />
+    isValid: false
+    file: web/components/posts/link-post-media/index.tsx
+  - code: |
+      <EmbedPreviewCard preview={preview} layout="hero" />
+    isValid: false
+    file: web/components/urls/crawl-meta-tags.tsx
+  - code: |
+      <EmbedPreviewCard preview={preview} lang={null} />
+    isValid: true
+    file: web/components/posts/link-post-media/index.tsx
+  - code: |
+      <EmbedPreviewCard preview={preview} lang="fr" showPlayer />
+    isValid: true
+    file: web/components/urls/crawl-meta-tags.tsx
+  - code: |
+      <Panel body={<EmbedPreviewCard preview={preview} lang={language} />} />
+    isValid: true
+    file: web/components/posts/link-post-media/index.tsx
+  - code: |
+      <Panel body={<EmbedPreviewCard preview={preview} />} />
+    isValid: false
+    file: web/components/posts/link-post-media/index.tsx
+  - code: |
+      <EmbedPreviewCard preview={preview}></EmbedPreviewCard>
+    isValid: false
+    file: web/storybook/shared/embed-preview-card.stories.tsx
+  - code: |
+      <EmbedPreviewCard preview={preview} lang="en"></EmbedPreviewCard>
+    isValid: true
+    file: web/storybook/shared/embed-preview-card.stories.tsx
+  - code: |
+      <EmbedPreviewCard preview={preview} />
+    isValid: true
+    file: backend/services/markdown/preview.tsx
