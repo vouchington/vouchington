@@ -104,6 +104,8 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/data-stores/psql/__tests__/schema-*.test.mts',
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
         'backend/api/v1/platform-stats/platform-stats.test.mts',
+        'backend/services/ai-usage/__tests__/record-monthly-partition.test.mts',
+        'backend/services/data-retention/cleanup-ai-usage*.test.mts',
       ],
     },
   },
