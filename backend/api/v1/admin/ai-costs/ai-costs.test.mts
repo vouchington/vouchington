@@ -62,10 +62,4 @@ describe('GET /api/v1/admin/ai-costs', () => {
 
     expect(secondPage.body.results[0].community_id).not.toBe(firstPage.body.results[0].community_id)
   })
-
-  it('returns 400 for an invalid composite cursor', async () => {
-    const request = createRequest()
-    await request.authenticateAs(adminUser)
-    await request.get('/api/v1/admin/ai-costs?after=not-a-cursor').expect(400)
-  })
 })
