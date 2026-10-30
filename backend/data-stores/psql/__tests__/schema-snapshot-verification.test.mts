@@ -31,7 +31,15 @@ describe('verifyLiveSchemaMatchesSnapshot', () => {
     const root = await tempRootWithSchemaJson(snapshot)
 
     try {
-      await expect(verifyLiveSchemaMatchesSnapshot({ root })).resolves.toBeUndefined()
+      const compared = await verifyLiveSchemaMatchesSnapshot({ root })
+      expect(Object.values(compared.live.extensions).map(extension => extension.version)).toEqual(
+        Object.keys(snapshot.extensions).map(() => 'platform-provisioned'),
+      )
+      expect(
+        Object.values(compared.committed.extensions).map(extension => extension.version),
+      ).toEqual(Object.keys(snapshot.extensions).map(() => 'platform-provisioned'))
+      expect(compared.live.views).toEqual(snapshot.views)
+      expect(compared.committed.views).toEqual(snapshot.views)
     } finally {
       await rm(root, { force: true, recursive: true })
     }
@@ -96,7 +104,77 @@ describe('verifyLiveSchemaMatchesSnapshot', () => {
     const root = await tempRootWithSchemaJson(drifted)
 
     try {
-      await expect(verifyLiveSchemaMatchesSnapshot({ root })).resolves.toBeUndefined()
+      const compared = await verifyLiveSchemaMatchesSnapshot({ root })
+      expect(compared.live.extensions[extensionName]?.version).toBe('platform-provisioned')
+      expect(compared.committed.extensions[extensionName]?.version).toBe('platform-provisioned')
+      expect(Object.keys(compared.committed.extensions).toSorted()).toEqual(
+        Object.keys(snapshot.extensions).toSorted(),
+      )
+      expect(compared.committed.views).toEqual(snapshot.views)
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
+  it('replaces every extension version with platform-provisioned and keeps keys and views', async () => {
+    const snapshot = buildSchemaSnapshot(await readSchemaCatalog())
+    const extensionNames = Object.keys(snapshot.extensions).toSorted()
+    const vector = snapshot.extensions['vector']
+    const pgcrypto = snapshot.extensions['pgcrypto']
+    if (!vector || !pgcrypto) throw new Error('Expected vector and pgcrypto in the live catalog.')
+    const drifted: SchemaSnapshot = {
+      ...snapshot,
+      extensions: Object.fromEntries(
+        extensionNames.map((name, index) => [
+          name,
+          { ...snapshot.extensions[name], version: index % 2 === 0 ? '1.2.3' : '4.5.6' },
+        ]),
+      ),
+    }
+    const root = await tempRootWithSchemaJson(drifted)
+
+    try {
+      const compared = await verifyLiveSchemaMatchesSnapshot({ root })
+      expect(compared.live.extensions['vector']).toEqual({
+        ...vector,
+        version: 'platform-provisioned',
+      })
+      expect(compared.committed.extensions['vector']).toEqual({
+        ...vector,
+        version: 'platform-provisioned',
+      })
+      expect(compared.live.extensions['pgcrypto']).toEqual({
+        ...pgcrypto,
+        version: 'platform-provisioned',
+      })
+      expect(compared.committed.extensions['pgcrypto']).toEqual({
+        ...pgcrypto,
+        version: 'platform-provisioned',
+      })
+      expect(Object.keys(compared.live.extensions).toSorted()).toEqual(extensionNames)
+      expect(Object.keys(compared.committed.extensions).toSorted()).toEqual(extensionNames)
+      expect(compared.live.views).toEqual(snapshot.views)
+      expect(compared.committed.views).toEqual(snapshot.views)
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
+  it('throws when a view definition differs -- views stay in the comparison', async () => {
+    const snapshot = buildSchemaSnapshot(await readSchemaCatalog())
+    const drifted: SchemaSnapshot = {
+      ...snapshot,
+      views: {
+        ...snapshot.views,
+        widgets_view: { definition: 'SELECT 1', comment: null, materialized: false },
+      },
+    }
+    const root = await tempRootWithSchemaJson(drifted)
+
+    try {
+      await expect(verifyLiveSchemaMatchesSnapshot({ root })).rejects.toThrow(
+        /does not match the committed schema snapshot/,
+      )
     } finally {
       await rm(root, { force: true, recursive: true })
     }

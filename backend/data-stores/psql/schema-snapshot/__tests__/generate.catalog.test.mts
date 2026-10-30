@@ -4,10 +4,11 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { stableStringify } from '@modules/utils/stable-stringify'
 import { writeSchemaSnapshot } from '../generate.mts'
-import { NO_MISTAKES_CATALOG_FILE } from '../no-mistakes-catalog.mts'
 import { renderSchemaMarkdown } from '../render-markdown.mts'
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 import type { PostgresCatalog } from 'no-mistakes'
+
+const NO_MISTAKES_CATALOG_FILE = 'no-mistakes-catalog.json'
 
 const snapshot: SchemaSnapshot = {
   formatVersion: 2,

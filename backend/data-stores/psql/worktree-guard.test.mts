@@ -1,15 +1,28 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import {
-  assertNotCrossWorktreeConnection,
-  databaseNameFromConnectionString,
-  findRepoRoot,
-  isNonMainWorktree,
-} from './worktree-guard.mts'
+import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
 
 const testRoot = mkdtempSync(join(tmpdir(), 'voucha-worktree-guard-'))
+
+function hasGitAncestor(start: string): boolean {
+  let dir = start
+  while (true) {
+    if (existsSync(join(dir, '.git'))) return true
+    const parent = dirname(dir)
+    if (parent === dir) return false
+    dir = parent
+  }
+}
+
+function tempRootOutsideRepo(): string {
+  const candidates = [tmpdir(), '/var/tmp', '/private/var/tmp']
+  for (const candidate of candidates) {
+    if (existsSync(candidate) && !hasGitAncestor(candidate)) return candidate
+  }
+  throw new Error('no portable temp directory outside a git repository')
+}
 
 function makeMainWorktreeDir(): string {
   const dir = mkdtempSync(join(testRoot, 'main-'))
@@ -26,95 +39,61 @@ function makeNonMainWorktreeDir(): string {
 describe('worktree-guard', () => {
   afterAll(() => rmSync(testRoot, { force: true, recursive: true }))
 
-  describe('databaseNameFromConnectionString', () => {
-    it('extracts the database name from a postgres URL', () => {
-      expect(databaseNameFromConnectionString('postgres://localhost/voucha')).toBe('voucha')
-      expect(databaseNameFromConnectionString('postgres://localhost/voucha-my-feature')).toBe(
-        'voucha-my-feature',
-      )
-      expect(databaseNameFromConnectionString('postgres://user@host:5432/mydb')).toBe('mydb')
-    })
-
-    it('returns null for an invalid URL', () => {
-      expect(databaseNameFromConnectionString('not-a-url')).toBeNull()
-    })
-  })
-
-  describe('findRepoRoot', () => {
-    it('finds the root when .git exists in the start dir', () => {
-      const dir = makeMainWorktreeDir()
-      expect(findRepoRoot(dir)).toBe(dir)
-    })
-
-    it('finds the root by walking up', () => {
-      const dir = makeMainWorktreeDir()
-      const nested = join(dir, 'a', 'b', 'c')
-      mkdirSync(nested, { recursive: true })
-      expect(findRepoRoot(nested)).toBe(dir)
-    })
-
-    it('returns null when no .git is found', () => {
-      const isolated = mkdtempSync(join(testRoot, 'no-git-'))
-      expect(findRepoRoot(isolated, testRoot)).toBeNull()
-    })
-  })
-
-  describe('isNonMainWorktree', () => {
-    it('returns false when .git is a directory (main worktree)', () => {
-      const dir = makeMainWorktreeDir()
-      expect(isNonMainWorktree(dir)).toBe(false)
-    })
-
-    it('returns true when .git is a file (non-main worktree)', () => {
-      const dir = makeNonMainWorktreeDir()
-      expect(isNonMainWorktree(dir)).toBe(true)
-    })
-
-    it('returns false when .git does not exist', () => {
-      const dir = mkdtempSync(join(testRoot, 'no-git-'))
-      expect(isNonMainWorktree(dir)).toBe(false)
-    })
-  })
-
   describe('assertNotCrossWorktreeConnection', () => {
     it('skips the check in CI', () => {
       const dir = makeNonMainWorktreeDir()
-      expect(() =>
+      expect(
         assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
           env: { CI: 'true' },
           moduleDir: dir,
         }),
-      ).not.toThrow()
+      ).toEqual({ allowedBecause: 'ci', databaseName: 'voucha' })
     })
 
     it('skips the check when DOCKER_HOST_IP is set', () => {
       const dir = makeNonMainWorktreeDir()
-      expect(() =>
+      expect(
         assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
           env: { DOCKER_HOST_IP: '172.17.0.1' },
           moduleDir: dir,
         }),
-      ).not.toThrow()
+      ).toEqual({ allowedBecause: 'docker-host', databaseName: 'voucha' })
     })
 
     it('skips the check when no repo root is found', () => {
-      const isolated = mkdtempSync(join(testRoot, 'no-git-'))
-      expect(() =>
-        assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
-          env: {},
-          moduleDir: isolated,
-        }),
-      ).not.toThrow()
+      const isolated = mkdtempSync(join(tempRootOutsideRepo(), 'voucha-worktree-guard-'))
+      try {
+        expect(
+          assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
+            env: {},
+            moduleDir: isolated,
+          }),
+        ).toEqual({ allowedBecause: 'no-repo-root', databaseName: 'voucha' })
+      } finally {
+        rmSync(isolated, { force: true, recursive: true })
+      }
     })
 
     it('allows main worktree to connect to voucha', () => {
       const dir = makeMainWorktreeDir()
-      expect(() =>
+      expect(
         assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
           env: {},
           moduleDir: dir,
         }),
-      ).not.toThrow()
+      ).toEqual({ allowedBecause: 'main-worktree', databaseName: 'voucha', repoRoot: dir })
+    })
+
+    it('walks up to the main worktree root', () => {
+      const dir = makeMainWorktreeDir()
+      const nested = join(dir, 'data-stores', 'psql')
+      mkdirSync(nested, { recursive: true })
+      expect(
+        assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
+          env: {},
+          moduleDir: nested,
+        }),
+      ).toEqual({ allowedBecause: 'main-worktree', databaseName: 'voucha', repoRoot: dir })
     })
 
     it('throws when a non-main worktree targets the main voucha database', () => {
@@ -124,7 +103,7 @@ describe('worktree-guard', () => {
           env: {},
           moduleDir: dir,
         }),
-      ).toThrow('Cross-worktree database guard')
+      ).toThrow('targets database "voucha"')
     })
 
     it('throws with helpful instructions', () => {
@@ -137,22 +116,53 @@ describe('worktree-guard', () => {
       ).toThrow('./dev/initialize web')
     })
 
-    it('allows a non-main worktree to connect to its own database', () => {
+    it('allows the extracted database name voucha-my-feature from a non-main worktree', () => {
       const dir = makeNonMainWorktreeDir()
-      expect(() =>
+      expect(
         assertNotCrossWorktreeConnection('postgres://localhost/voucha-my-feature', {
           env: {},
           moduleDir: dir,
         }),
-      ).not.toThrow()
+      ).toEqual({
+        allowedBecause: 'worktree-database',
+        databaseName: 'voucha-my-feature',
+        repoRoot: dir,
+      })
+    })
+
+    it('allows another extracted database name from a non-main worktree', () => {
+      const dir = makeNonMainWorktreeDir()
+      expect(
+        assertNotCrossWorktreeConnection('postgres://user@host:5432/mydb', {
+          env: {},
+          moduleDir: dir,
+        }),
+      ).toEqual({ allowedBecause: 'worktree-database', databaseName: 'mydb', repoRoot: dir })
+    })
+
+    it('allows a connection string that does not name a database', () => {
+      const dir = makeNonMainWorktreeDir()
+      expect(
+        assertNotCrossWorktreeConnection('not-a-url', {
+          env: {},
+          moduleDir: dir,
+        }),
+      ).toEqual({ allowedBecause: 'worktree-database', databaseName: null, repoRoot: dir })
     })
 
     it('resolves the repository from its own module directory when none is injected', () => {
-      expect(() =>
-        assertNotCrossWorktreeConnection('postgres://localhost/voucha-default-module-dir', {
-          env: {},
-        }),
-      ).not.toThrow()
+      const decision = assertNotCrossWorktreeConnection(
+        'postgres://localhost/voucha-default-module-dir',
+        { env: {} },
+      )
+      expect(decision.databaseName).toBe('voucha-default-module-dir')
+      if (
+        decision.allowedBecause !== 'main-worktree' &&
+        decision.allowedBecause !== 'worktree-database'
+      ) {
+        throw new Error(`expected a repository decision, got ${decision.allowedBecause}`)
+      }
+      expect(decision.repoRoot).toEqual(expect.any(String))
     })
 
     it('also blocks when nested in subdirectory of non-main worktree', () => {
@@ -164,7 +174,7 @@ describe('worktree-guard', () => {
           env: {},
           moduleDir: nested,
         }),
-      ).toThrow('Cross-worktree database guard')
+      ).toThrow('targets database "voucha"')
     })
   })
 })
