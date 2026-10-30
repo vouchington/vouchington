@@ -8,18 +8,14 @@ import {
   type ExplainResult,
 } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gates.mts'
 import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
 import { continuingAfterFailure } from './scenario-failures.mts'
-import {
-  captureScenarioTwice,
-  writeExplainResultFile,
-  writeSecondPassResults,
-} from './capture-passes.mts'
+import { captureScenarioTwice, writeSecondPassResults } from './capture-passes.mts'
 
 export const SEED_PREFIX = '019e0000'
 export const OUTPUT_DIR = join(import.meta.dirname, 'output')
@@ -167,7 +163,7 @@ async function captureScenario(
 export function writeResults() {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const outputPath = join(OUTPUT_DIR, `results-${timestamp}.json`)
-  writeExplainResultFile(outputPath, results, completedScenarioIds)
+  writeFileSync(outputPath, JSON.stringify({ results, completedScenarioIds }, null, 2))
   writeSecondPassResults(outputPath, completedScenarioIds)
   console.log(`\nResults written to: ${outputPath}`)
   console.log(`Total queries explained: ${results.length}`)

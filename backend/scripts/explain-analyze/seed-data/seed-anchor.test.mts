@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   assertSeedAnchorNotFuture,
   resolveSeedAnchor,
+  seedAnchorDayFor,
   SEED_ANCHOR_DATE_ENV,
 } from './seed-anchor.mts'
 
@@ -175,7 +176,7 @@ describe('seed rows are never dated after the run', () => {
   it.each(instants.map(instant => [instant.toISOString(), instant]))(
     'keeps the anchor plus the forward margin at or before %s',
     (_iso, now) => {
-      const { dayAnchorMs } = resolveSeedAnchor(undefined, now)
+      const { dayAnchorMs } = resolveSeedAnchor(seedAnchorDayFor(now), now)
 
       expect(dayAnchorMs + 15 * 60_000).toBeLessThanOrEqual(now.getTime())
       expect(now.getTime() - dayAnchorMs).toBeLessThan(

@@ -4,8 +4,8 @@ import {
   costWithoutSeqScan,
   isSeqScanNearTie,
   isStaleSeqScanNearTie,
+  forcedSeqScan,
   planTotalCost,
-  recordForcedBaselineScans,
   SEQ_SCAN_TIE_RATIO,
   type ProbedExplainResult,
 } from './seq-scan-ties.mts'
@@ -150,18 +150,12 @@ describe('sequential scan near-ties', () => {
 
     it('reads the forced scan only when the plan still scans the relation', () => {
       const posts = seqScanResult()
-      recordForcedBaselineScans(posts, ['posts'], posts.plan)
-      expect(posts.forced_seq_scans).toEqual({
-        posts: { total_cost: SEQ_PLAN_COST, scan_cost: SEQ_SCAN_COST },
+      expect(forcedSeqScan(posts.plan, 'posts')).toEqual({
+        total_cost: SEQ_PLAN_COST,
+        scan_cost: SEQ_SCAN_COST,
       })
-
-      const topics = seqScanResult()
-      recordForcedBaselineScans(topics, ['topics'], topics.plan)
-      expect(topics.forced_seq_scans).toBeUndefined()
-
-      const empty = seqScanResult()
-      recordForcedBaselineScans(empty, ['posts'], {})
-      expect(empty.forced_seq_scans).toBeUndefined()
+      expect(forcedSeqScan(posts.plan, 'topics')).toBeUndefined()
+      expect(forcedSeqScan({}, 'posts')).toBeUndefined()
     })
 
     it('treats a stale entry whose forced scan is a near-tie as advisory', () => {

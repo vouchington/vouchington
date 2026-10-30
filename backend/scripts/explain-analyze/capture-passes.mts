@@ -10,13 +10,12 @@ import { assertRequiredPlanShape } from './plan-gates.mts'
 import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 import { getScenarioContract } from './plan-expectations.mts'
 import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
-import { baselinedRelationsAbsentFromPlan, getResampleRelations } from './seq-scan-baseline.mts'
 import {
-  baselinedIndexProbeOptions,
-  costWithoutSeqScan,
-  recordForcedBaselineScans,
-  type ProbedExplainResult,
-} from './seq-scan-ties.mts'
+  getExplainResultIdentity,
+  getResampleRelations,
+  SEQ_SCAN_BASELINE,
+} from './seq-scan-baseline.mts'
+import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
 export type Capture = {
   name: string
@@ -61,15 +60,27 @@ async function probeBaselinedScans(
   result: ProbedExplainResult,
   scannedRelations: readonly string[],
 ) {
-  const baselined = baselinedRelationsAbsentFromPlan(result, scannedRelations)
-  if (baselined.length === 0) return
-  const forced = await explainAnalyze(
-    input.name,
-    input.text,
-    input.values,
-    baselinedIndexProbeOptions(input),
+  const baselined = (SEQ_SCAN_BASELINE[getExplainResultIdentity(result)] ?? []).filter(
+    relation => !scannedRelations.includes(relation),
   )
-  recordForcedBaselineScans(result, baselined, forced.plan)
+  if (baselined.length === 0) return
+  const forced = await explainAnalyze(input.name, input.text, input.values, {
+    localSettings: {
+      ...input.localSettings,
+      enable_indexscan: 'off',
+      enable_bitmapscan: 'off',
+      enable_indexonlyscan: 'off',
+    },
+    planCacheMode: input.planCacheMode,
+    planOnly: true,
+  })
+  const scans = Object.fromEntries(
+    baselined.flatMap(relation => {
+      const scan = forcedSeqScan(forced.plan, relation)
+      return scan ? [[relation, scan]] : []
+    }),
+  )
+  if (Object.keys(scans).length > 0) result.forced_seq_scans = scans
 }
 
 async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> {
@@ -152,17 +163,6 @@ export async function captureScenarioTwice(
     assertRequiredPlanShape(result)
   }
   return secondResults
-}
-
-export function writeExplainResultFile(
-  outputPath: string,
-  scenarioResults: readonly ExplainResult[],
-  completedScenarioIds: readonly string[],
-): void {
-  writeFileSync(
-    outputPath,
-    JSON.stringify({ results: scenarioResults, completedScenarioIds }, null, 2),
-  )
 }
 
 export function writeSecondPassResults(firstPath: string, completedScenarioIds: readonly string[]) {

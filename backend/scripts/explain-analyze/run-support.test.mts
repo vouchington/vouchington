@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getCapturedQueries } from '@data-stores/psql'
-import { writeAnnotatedSelectProbe } from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
+import {
+  capturedProbeStatements,
+  writeAnnotatedSelectProbe,
+} from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
 import { registerScenarioContract } from './plan-expectations.mts'
 import {
   assertScenarioManifest,
@@ -15,10 +17,6 @@ import {
 import { getScenarioFailures } from './scenario-failures.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
-function capturedStatements() {
-  return getCapturedQueries().map(({ text, values }) => ({ text, values }))
-}
-
 function recordedScenarioError(run: () => Promise<void>): Promise<void> {
   const seen: unknown[] = []
   const errorLog = vi.spyOn(console, 'error').mockImplementation(value => {
@@ -30,6 +28,58 @@ function recordedScenarioError(run: () => Promise<void>): Promise<void> {
     if (failure instanceof Error) throw failure
   })
 }
+
+describe('writeResults', () => {
+  it('persists a gate-rejected captured plan', async () => {
+    vi.resetModules()
+    vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', '')
+    const probe = await import('@voucha/test-helpers/data-stores/psql/annotated-select-probe')
+    const expectations = await import('./plan-expectations.mts')
+    const failures = await import('./scenario-failures.mts')
+    const support = await import('./run-support.mts')
+    expectations.registerScenarioContract('membership-refunds-already-refunded-batch', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: [
+            'idx_membership_refunds__stripe_charge_id',
+            'idx_membership_refunds__stripe_payment_intent_id',
+          ],
+        },
+      ],
+    })
+    const beforeFailures = failures.getScenarioFailures().length
+    await support.runAndCapture('membership-refunds-already-refunded-batch', async () => {
+      await probe.writeAnnotatedSelectProbe()
+    })
+    const failing = support.getResults().at(-1)
+    expect(failing?.query_text).toBe('/* postSearch */ SELECT 1')
+    expect(failures.getScenarioFailures().length).toBe(beforeFailures + 1)
+    expect(() => {
+      throw failures.getScenarioFailures().at(-1)?.error
+    }).toThrow(
+      'postSearch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
+    )
+    support.prepareOutputDir()
+    const existing = new Set(readdirSync(support.OUTPUT_DIR))
+    try {
+      support.writeResults()
+      const resultFile = readdirSync(support.OUTPUT_DIR).find(
+        name => !existing.has(name) && name.startsWith('results-'),
+      )
+      if (!resultFile) throw new Error('writeResults did not create a new result file')
+      const repeatFile = resultFile.replace(/^results-/, 'repeat-')
+      const written = JSON.parse(readFileSync(join(support.OUTPUT_DIR, resultFile), 'utf8'))
+      expect(written).toMatchObject({ results: [failing], completedScenarioIds: [] })
+      const repeated = JSON.parse(readFileSync(join(support.OUTPUT_DIR, repeatFile), 'utf8'))
+      expect(repeated).toMatchObject({ results: [], completedScenarioIds: [] })
+    } finally {
+      for (const name of readdirSync(support.OUTPUT_DIR)) {
+        if (!existing.has(name)) rmSync(join(support.OUTPUT_DIR, name))
+      }
+    }
+  })
+})
 
 describe('EXPLAIN scenario manifest', () => {
   it('rejects incomplete scenario manifests', () => {
@@ -74,7 +124,7 @@ describe('EXPLAIN query capture', () => {
     await runAndCapture('post-search-new', async () => {
       await writeAnnotatedSelectProbe()
     })
-    expect(capturedStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
+    expect(capturedProbeStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
     const explained = getResults().slice(before)
     expect(explained.map(result => result.query_text)).toEqual(['/* postSearch */ SELECT 1'])
     expect(explained.map(result => result.plan_cache_mode)).toEqual(['auto'])
@@ -86,7 +136,7 @@ describe('EXPLAIN query capture', () => {
     await runAndCapture('post-search-new', async () => {
       await writeAnnotatedSelectProbe()
     })
-    expect(capturedStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
+    expect(capturedProbeStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
     const explained = getResults().slice(before)
     expect(explained.map(result => result.query_text)).toEqual([
       '/* postSearch */ SELECT 1',
@@ -96,56 +146,5 @@ describe('EXPLAIN query capture', () => {
       'force_custom_plan',
       'force_generic_plan',
     ])
-  })
-})
-
-describe('writeResults', () => {
-  it('persists a gate-rejected captured plan', async () => {
-    vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', '')
-    registerScenarioContract('membership-refunds-already-refunded-batch', {
-      expectations: [
-        {
-          kind: 'usesIndexes',
-          indexes: [
-            'idx_membership_refunds__stripe_charge_id',
-            'idx_membership_refunds__stripe_payment_intent_id',
-          ],
-        },
-      ],
-    })
-    const before = getResults().length
-    const beforeFailures = getScenarioFailures().length
-    await runAndCapture('membership-refunds-already-refunded-batch', async () => {
-      await writeAnnotatedSelectProbe()
-    })
-    const explained = getResults().slice(before)
-    expect(explained.map(result => result.query_text)).toEqual(['/* postSearch */ SELECT 1'])
-    expect(getScenarioFailures().length).toBe(beforeFailures + 1)
-    expect(() => {
-      throw getScenarioFailures().at(-1)?.error
-    }).toThrow(
-      'postSearch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
-    )
-    prepareOutputDir()
-    const existing = new Set(readdirSync(OUTPUT_DIR))
-    try {
-      writeResults()
-      const resultsName = readdirSync(OUTPUT_DIR).find(
-        name => !existing.has(name) && name.startsWith('results-'),
-      )
-      expect(resultsName).toEqual(expect.stringMatching(/^results-/))
-      const written = JSON.parse(readFileSync(join(OUTPUT_DIR, resultsName ?? ''), 'utf8')) as {
-        results: { query_text: string }[]
-      }
-      expect(written.results).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ query_text: '/* postSearch */ SELECT 1' }),
-        ]),
-      )
-    } finally {
-      for (const name of readdirSync(OUTPUT_DIR)) {
-        if (!existing.has(name)) rmSync(join(OUTPUT_DIR, name))
-      }
-    }
   })
 })

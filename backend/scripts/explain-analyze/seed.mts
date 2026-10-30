@@ -68,7 +68,7 @@ import {
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
 import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-vote-comparison.mts'
-import { postShareDeliveryGroups, seedPostFeedShares } from './seed-data/post-feed-shares.mts'
+import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
 import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
@@ -132,7 +132,7 @@ async function main() {
   await seedPostCreationModerationBypass()
   await seedPostModerationRetention()
   await seedSemanticPosts()
-  await seedPostFeedShares(postShareDeliveryGroups())
+  await seedPostFeedShares()
   await seedUserRemovedPlatformPosts()
   await checkpointSeed('posts')
   await seedEntityRelations(50_000)

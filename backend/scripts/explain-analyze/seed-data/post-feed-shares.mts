@@ -8,23 +8,11 @@ const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
 export const POST_SHARE_EMPTY_USER_INDEX = 19_999
 const FIRST_TARGET_POST_INDEX = 60_000
 
-export type PostShareDelivery = { id: string; postId: string; sortAt: Date }
-
-export function postShareDeliveryGroups(): readonly [
-  readonly PostShareDelivery[],
-  readonly PostShareDelivery[],
-] {
-  return [
-    postShareSeedRows(0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET),
-    postShareSeedRows(1, POST_SHARE_DENSE_TARGET_COUNT, POST_SHARE_DENSE_DELIVERIES_PER_TARGET),
-  ]
-}
-
 function postShareSeedRows(
   recipientIndex: number,
   targetCount: number,
   deliveriesPerTarget: number,
-): PostShareDelivery[] {
+): Array<{ id: string; postId: string; sortAt: Date }> {
   return Array.from({ length: targetCount * deliveriesPerTarget }, (_, deliveryIndex) => {
     const sortAtMs = postSeedTimestampMs(0) - deliveryIndex * 1000
     return {
@@ -35,12 +23,14 @@ function postShareSeedRows(
   })
 }
 
-export async function seedPostFeedShares(
-  groups: readonly (readonly PostShareDelivery[])[],
-): Promise<void> {
+export async function seedPostFeedShares(): Promise<void> {
   console.log('Seeding repeated post feed share targets...')
   await using transaction = await beginTransaction()
-  for (const [recipientIndex, rows] of groups.entries()) {
+  for (const [recipientIndex, targetCount, deliveriesPerTarget] of [
+    [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],
+    [1, POST_SHARE_DENSE_TARGET_COUNT, POST_SHARE_DENSE_DELIVERIES_PER_TARGET],
+  ] as const) {
+    const rows = postShareSeedRows(recipientIndex, targetCount, deliveriesPerTarget)
     await transaction(
       `/* seedExplainData */ INSERT INTO post_feed_shares
         (recipient_user_id, id, shared_by_id, post_id, sort_at)

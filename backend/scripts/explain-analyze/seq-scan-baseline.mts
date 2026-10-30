@@ -20,7 +20,7 @@ for (const fingerprint of BASELINE_FINGERPRINTS) {
   relations.push(relation)
   baselineByIdentity.set(identity, relations)
 }
-const SEQ_SCAN_BASELINE: SeqScanBaseline = Object.fromEntries(baselineByIdentity)
+export const SEQ_SCAN_BASELINE: SeqScanBaseline = Object.fromEntries(baselineByIdentity)
 
 export function getExplainResultIdentity(result: ExplainResult): string {
   return [
@@ -29,16 +29,6 @@ export function getExplainResultIdentity(result: ExplainResult): string {
     result.name,
     result.plan_cache_mode ?? 'auto',
   ].join('|')
-}
-
-/** Baselined relations the chosen plan did not scan, which the capture then prices plan-only. */
-export function baselinedRelationsAbsentFromPlan(
-  result: ExplainResult,
-  scannedRelations: readonly string[],
-): readonly string[] {
-  return (SEQ_SCAN_BASELINE[getExplainResultIdentity(result)] ?? []).filter(
-    relation => !scannedRelations.includes(relation),
-  )
 }
 
 // The scan gate fails a fingerprint seen in both passes, or a baselined one absent from both, so
