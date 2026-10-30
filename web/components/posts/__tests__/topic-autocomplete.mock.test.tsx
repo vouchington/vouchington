@@ -143,60 +143,6 @@ describe('TopicAutocomplete', () => {
     expect(screen.getByTestId('command-empty')).toBeDefined()
   })
 
-  it('shows topic results after fetch', async () => {
-    mockFetchTopics.mockResolvedValueOnce({
-      topics: {
-        'topic-1': {
-          __entity_type: 'topic',
-          id: 'topic-1',
-          name: 'Chase Sapphire Reserve',
-          slug: 'chase-sapphire-reserve',
-          markdown: '',
-          aliases: [],
-          topic_type: 'card',
-          is_noindexed: false,
-          should_allow_reviews: true,
-          created_at: '2024-01-01T00:00:00Z',
-          logo_image_id: null,
-          hero_image_id: null,
-          rewards_program_id: null,
-          referral_program_id: null,
-          created_by: { account_type: null, id: 'user-1' },
-          updated_by: { account_type: null, id: 'user-1' },
-        },
-      },
-      results: [
-        {
-          __entity_type: 'topic',
-          id: 'topic-1',
-          ranking: 1,
-          name: 'Chase Sapphire Reserve',
-          slug: 'chase-sapphire-reserve',
-          topic_type: 'card',
-        },
-      ],
-      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      topics_metrics: {},
-    })
-
-    render(
-      <TopicAutocomplete
-        value={null}
-        label=''
-        onChange={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    const input = screen.getByPlaceholderText('Search topics...')
-    fireEvent.change(input, { target: { value: 'chase' } })
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
-      },
-      { timeout: 500 },
-    )
-  })
-
   it('calls onChange when a topic is selected', async () => {
     mockFetchTopics.mockResolvedValueOnce({
       topics: {

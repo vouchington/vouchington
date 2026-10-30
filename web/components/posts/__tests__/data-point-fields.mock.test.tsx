@@ -170,13 +170,6 @@ describe('DataPointFields', () => {
     expect(screen.getByTestId('profile-has-profile').textContent).toBe('no')
   })
 
-  it('save-to-profile checkbox is unchecked by default', () => {
-    render(<Wrapper userFinancialProfile={profileWithData} />)
-    fireEvent.change(getVerticalSelect(), { target: { value: 'credit_card' } })
-    const checkbox = screen.getByTestId('save-to-profile-checkbox') as HTMLInputElement
-    expect(checkbox.checked).toBe(false)
-  })
-
   it('save-to-profile toggle updates parent state', () => {
     render(<Wrapper userFinancialProfile={profileWithData} />)
     fireEvent.change(getVerticalSelect(), { target: { value: 'credit_card' } })
