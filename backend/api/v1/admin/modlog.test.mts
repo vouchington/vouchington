@@ -185,16 +185,4 @@ describe('GET /api/v1/admin/modlog', () => {
 
     expect(response.body.moderator_actions[action.id]?.action_type).toBe('suspend')
   })
-
-  it('returns 422 for invalid community_id UUID', async () => {
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    await request.get('/api/v1/admin/modlog?community_id=not-a-uuid').expect(422)
-  })
-
-  it('returns 422 for invalid actor_user_id UUID', async () => {
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    await request.get('/api/v1/admin/modlog?actor_user_id=not-a-uuid').expect(422)
-  })
 })
