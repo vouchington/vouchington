@@ -5,16 +5,10 @@ import {
   dynamicConfigValkeyClient,
   getValkeyClientByUrl,
   rateLimiterValkeyClient,
-  upsertValkeyClientByUrl,
 } from 'valkyries'
 import { config } from '@data-stores/valkey-core/config'
 
-export {
-  cacheValkeyClient,
-  dynamicConfigValkeyClient,
-  rateLimiterValkeyClient,
-  upsertValkeyClientByUrl,
-}
+export { cacheValkeyClient, dynamicConfigValkeyClient, rateLimiterValkeyClient }
 
 export const sessionValkeyClient = getValkeyClientByUrl(config.session_url, {
   readFrom: 'primary',
