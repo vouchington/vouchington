@@ -10,7 +10,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { assertScenarioFunctionCalls, gateExplainResult } from './plan-gates.mts'
+import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gates.mts'
 import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
@@ -52,7 +52,8 @@ const results: ExplainResult[] = []
 const completedScenarioIds: string[] = []
 
 function collectAndGate(result: ExplainResult): void {
-  gateExplainResult(result, results)
+  results.push(result)
+  assertRequiredPlanShape(result)
 }
 
 export function getResults(): readonly ExplainResult[] {

@@ -165,16 +165,12 @@ export function writeExplainResultFile(
   )
 }
 
-export function writeSecondPassResults(
-  firstPath: string,
-  completedScenarioIds: readonly string[],
-  secondResults: readonly ExplainResult[] = repeatedResults,
-) {
+export function writeSecondPassResults(firstPath: string, completedScenarioIds: readonly string[]) {
   const secondPath = firstPath.replace(/\/results-([^/]+)\.json$/, '/repeat-$1.json')
   if (secondPath === firstPath) throw new Error('Unexpected first EXPLAIN result path')
   writeFileSync(
     secondPath,
-    JSON.stringify({ results: secondResults, completedScenarioIds }, null, 2),
+    JSON.stringify({ results: repeatedResults, completedScenarioIds }, null, 2),
   )
   console.log(`Repeated EXPLAIN results written to: ${secondPath}`)
   console.log(
