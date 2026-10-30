@@ -1,6 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
-import type { PrivateUser } from '@voucha/types/entities/user'
+import { describe, expect, it } from 'vitest'
 import {
   assertValidCreateTopicRecommendationInput,
   assertValidTopicRecommendationInput,
@@ -8,12 +6,6 @@ import {
 } from './shared.mts'
 
 describe('shared', () => {
-  let user: PrivateUser
-
-  beforeAll(async () => {
-    user = await createTestUser()
-  })
-
   describe('assertValidTopicRecommendationInput', () => {
     it('rejects invalid topic_type with 422', () => {
       expect(() =>
@@ -255,9 +247,5 @@ describe('shared', () => {
       expect(result.topic_type).toBe('card')
       expect(result.landing_page_urls).toEqual(['https://example.com/apply'])
     })
-  })
-
-  it('user is set up', () => {
-    expect(user).toBeDefined()
   })
 })
