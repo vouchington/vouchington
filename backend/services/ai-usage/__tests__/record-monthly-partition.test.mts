@@ -3,11 +3,14 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 import {
   isTestAiUsagePartitionAttached,
-  probeBlockedAiUsageRetirement,
   readTestAiUsageIdsForMonth,
   reserveTestAiUsageMonths,
   testAiUsageCandidate,
 } from '@voucha/test-helpers/entities/ai-usage-monthly-partitions'
+import {
+  probeBlockedAiUsageRetirement,
+  retireTestAiUsagePartition,
+} from '@voucha/test-helpers/entities/ai-usage-partition-retirement'
 import { runAiUsageTierOrderRace } from '@voucha/test-helpers/entities/ai-usage-tier-lock-order'
 import {
   hasTestAiUsageResponseKey,
@@ -34,9 +37,7 @@ describe('backdated AI usage on retired monthly history', () => {
     })
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
     const candidate = testAiUsageCandidate(partition)
-    expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
-      outcome: 'dropped',
-    })
+    await retireTestAiUsagePartition(candidate)
     const usage = {
       inputTokens: 10,
       cacheReadTokens: 0,
@@ -78,9 +79,7 @@ describe('backdated AI usage on retired monthly history', () => {
     expect(await probeBlockedAiUsageRetirement(candidate, community.id)).toBe('55P03')
     expect(await probeBlockedAiUsageRetirement(candidate, null)).toBe('55P03')
     expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
-    expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
-      outcome: 'dropped',
-    })
+    await retireTestAiUsagePartition(candidate)
     const agentSlug = `test-backdated-${randomUUID()}`
     await recordAiUsage({
       createdAt,
