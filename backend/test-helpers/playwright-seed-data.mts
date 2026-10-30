@@ -5,13 +5,13 @@ import {
   type QueryValues,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { upsertRecentlyViewed } from '@services/recently-viewed'
-import { seedPlaywrightCoreData } from './playwright-test-data/core.mts'
-import { seedPlaywrightPostData } from './playwright-test-data/posts.mts'
-import { seedPlaywrightFeedData } from './playwright-test-data/feeds.mts'
-import { seedPlaywrightConversations } from './playwright-test-data/conversations.mts'
-import { seedPlaywrightPublisherTypeTopics } from './playwright-test-data/core-publisher-type-topics.mts'
-import { seedPlaywrightRssFeedCategoryData } from './playwright-test-data/rss-feed-categories.mts'
+import { upsertRecentlyViewed } from '../services/recently-viewed/index.mts'
+import { seedPlaywrightCoreData } from './playwright-seed-core.mts'
+import { seedPlaywrightPostData } from './playwright-seed-posts.mts'
+import { seedPlaywrightFeedData } from './playwright-seed-feeds.mts'
+import { seedPlaywrightConversations } from './playwright-seed-conversations.mts'
+import { seedPlaywrightPublisherTypeTopics } from './playwright-seed-publisher-type-topics.mts'
+import { seedPlaywrightRssFeedCategoryData } from './playwright-seed-rss-categories.mts'
 let seeded = false
 
 export function createPlaywrightSeedQuery(query: TransactionQuery): TransactionQuery {

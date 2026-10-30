@@ -60,6 +60,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
+    "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.0",
     "@vouchington/http-transport": "^0.1.1",

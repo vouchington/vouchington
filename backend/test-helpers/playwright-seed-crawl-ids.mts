@@ -8,8 +8,9 @@
  * rollover guard keeps seed setup before UTC midnight and tests after UTC
  * midnight on the same IDs.
  *
- * Both the seed and any tests that reference crawl IDs import from here
- * so the IDs stay in sync without importing DB modules into test workers.
+ * Seeds and tests share these IDs without importing DB modules into test workers.
+ * Playwright setup pins `PLAYWRIGHT_SEED_CRAWL_ANCHOR` before workers call
+ * `recentSeedCrawlId()`.
  */
 const SEED_CRAWL_ROLLOVER_GUARD_MS = 12 * 60 * 60 * 1000
 export const PLAYWRIGHT_SEED_CRAWL_ANCHOR_ENV = 'PLAYWRIGHT_SEED_CRAWL_ANCHOR'

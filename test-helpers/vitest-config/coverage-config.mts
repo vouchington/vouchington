@@ -48,7 +48,7 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
       '**/.next/**',
       ...(storybook || portability ? [] : ['**/test-helpers/**']),
       '**/fixtures/**',
-      'backend/scripts/seeds/playwright-test-data/**',
+      'backend/test-helpers/playwright-seed-*.mts',
       '**/__snapshots__/**',
       'web/storybook/**/*.stories.{ts,tsx}',
       ...(storybook ? [] : ['web/storybook/entities/entity-fixtures.ts']),

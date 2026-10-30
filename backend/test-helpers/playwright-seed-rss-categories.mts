@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { registerRssCategoryIdentities } from '@services/rss-feed-items/category-identities'
+import { registerRssCategoryIdentities } from '../services/rss-feed-items/category-identities.mts'
 
 /**
  * Seed unmapped RSS feed item categories for Playwright tests.

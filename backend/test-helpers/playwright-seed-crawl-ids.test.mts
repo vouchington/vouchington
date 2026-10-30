@@ -4,7 +4,7 @@ import {
   PLAYWRIGHT_SEED_CRAWL_ANCHOR_ENV,
   pinPlaywrightSeedCrawlAnchor,
   recentSeedCrawlId,
-} from './crawl-ids.mts'
+} from './playwright-seed-crawl-ids.mts'
 
 describe('recentSeedCrawlId', () => {
   afterEach(() => {

@@ -8,7 +8,7 @@ import {
   insertTestPost,
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers'
-import { approveSeedPosts } from './helpers.mts'
+import { approveSeedPosts } from './playwright-seed-rows.mts'
 
 describe('approveSeedPosts', () => {
   it('copies the inserted decision facts onto a post with prior override facts', async () => {

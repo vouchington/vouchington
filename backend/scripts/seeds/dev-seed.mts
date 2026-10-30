@@ -11,7 +11,7 @@
  * Run: pnpm run db:seed (from repo root or backend/)
  */
 
-export function assertNotProdOrStaging(env: string | undefined): boolean {
+function assertNotProdOrStaging(env: string | undefined): boolean {
   if (env === 'production' || env === 'staging') {
     process.stderr.write(
       `db:seed must not run in ${env}. Invariant data is seeded by config-driven generators (db:migrate).\n`,

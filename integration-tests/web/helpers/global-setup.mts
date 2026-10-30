@@ -5,7 +5,7 @@ import {
   setup as setupDataStores,
   teardown as teardownDataStores,
 } from '../../../test-helpers/vitest.setup.data-stores.mts'
-import { seedPlaywrightTestData } from '../../../backend/scripts/seeds/playwright-test-data.mts'
+import { seedPlaywrightTestData } from '../../../backend/test-helpers/playwright-seed-data.mts'
 import { invalidate } from '../../../backend/services/entity-cache/index.mts'
 import { prepareLocalizationCatalog } from './localization-catalog.mts'
 import { createTraceProxy, type TraceProxyHandle } from './backend-trace-proxy.mts'

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql'
-import { createPlaywrightSeedQuery } from './playwright-test-data.mts'
+import type { SQLStatement } from 'sql-template-strings'
+import { createPlaywrightSeedQuery } from './playwright-seed-data.mts'
 
 describe('createPlaywrightSeedQuery', () => {
   it('annotates fixture SQL and preserves values and the transaction client', async () => {
@@ -22,7 +23,8 @@ describe('createPlaywrightSeedQuery', () => {
     }) as unknown as TransactionQuery
     const seedQuery = createPlaywrightSeedQuery(query)
 
-    await expect(seedQuery({} as never)).rejects.toThrow(
+    const structured = { text: 'SELECT 1', values: [] } as unknown as SQLStatement
+    await expect(seedQuery(structured)).rejects.toThrow(
       'Playwright seed queries must be SQL strings',
     )
   })

@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { recentSeedCrawlId } from '../crawl-ids.mts'
+import { recentSeedCrawlId } from './playwright-seed-crawl-ids.mts'
 
 async function seedPlaywrightCrawlersAndCrawls(
   query: TransactionQuery,

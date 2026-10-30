@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
+import { resolveEmailDomainHostnameId } from '../services/email-address-validator/email-domain-context.mts'
 
 async function seedPlaywrightCleanupAndUsers(
   query: TransactionQuery,

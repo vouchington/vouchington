@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { buildEmbeddingVector, sha256 } from './helpers.mts'
+import { buildEmbeddingVector, sha256 } from './playwright-seed-rows.mts'
 export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<void> {
   const cspEmbedding1 = buildEmbeddingVector(10, 0) // Chase Sapphire cluster
   const cspEmbedding2 = buildEmbeddingVector(10, 1) // Chase Sapphire cluster (similar)
