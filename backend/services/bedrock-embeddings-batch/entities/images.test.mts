@@ -42,6 +42,7 @@ describe('entities/images', () => {
           bytes.subarray(0, 2).equals(Buffer.from([0xff, 0xd8]))
         )
       })
+      expect(mocks.getImageFromS3).toHaveBeenCalledWith(expect.any(String), 'gif')
     } finally {
       await fileBuilder.cleanup()
     }
@@ -66,19 +67,6 @@ describe('entities/images', () => {
         mocks,
       ),
     ).rejects.toThrow(`${MAX_IMAGE_EMBEDDING_SOURCE_BYTES}-byte limit`)
-    await fileBuilder.cleanup()
-  })
-
-  it('reads private S3 directly without any public image origin', async () => {
-    mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: streamBytes(Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')),
-      ContentType: 'image/png',
-    })
-    const fileBuilder = new BatchFileBuilder()
-    const image = { id: 'img-1', s3_key: 'img-1', sha_256: Buffer.from('00'.repeat(32), 'hex') }
-
-    await expect(addImageToBatch(fileBuilder, image, 10, mocks)).resolves.toBe(true)
-    expect(mocks.getImageFromS3).toHaveBeenCalledWith(expect.any(String), 'img-1')
     await fileBuilder.cleanup()
   })
 
