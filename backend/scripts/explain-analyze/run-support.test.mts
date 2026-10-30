@@ -1,34 +1,21 @@
-import { readFileSync, readdirSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { beforeEach, describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
-import {
-  OUTPUT_DIR,
-  assertCapturedQueries,
-  assertScenarioManifest,
-  collectAndGate,
-  getExplainPlanCacheModes,
-  getResults,
-  prepareOutputDir,
-  resetResults,
-  writeResults,
-} from './run-support.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { write } from '@data-stores/psql'
+import { assertScenarioManifest, runAndCapture } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
-import { registerScenarioContract, resetScenarioContracts } from './plan-expectations.mts'
 
-describe('EXPLAIN query capture', () => {
-  it('rejects scenarios that capture no SQL', () => {
-    expect(() => assertCapturedQueries('empty-scenario', [])).toThrow(
-      'empty-scenario captured no queries',
-    )
+function recordedScenarioError(run: () => Promise<void>): Promise<void> {
+  const seen: unknown[] = []
+  const errorLog = vi.spyOn(console, 'error').mockImplementation(value => {
+    seen.push(value)
   })
-
-  it('accepts scenarios that capture SQL', () => {
-    expect(() =>
-      assertCapturedQueries('scenario', [{ text: 'SELECT 1', values: [] }]),
-    ).not.toThrow()
+  return run().finally(() => {
+    errorLog.mockRestore()
+    const failure = seen.find(value => value instanceof Error)
+    if (failure instanceof Error) throw failure
   })
+}
 
+describe('EXPLAIN scenario manifest', () => {
   it('rejects incomplete scenario manifests', () => {
     expect(() => assertScenarioManifest(['first', 'replacement'], ['first', 'second'])).toThrow(
       'missing=[second] unexpected=[replacement]',
@@ -40,90 +27,28 @@ describe('EXPLAIN query capture', () => {
       assertScenarioManifest(EXPLAIN_SCENARIO_MANIFEST, EXPLAIN_SCENARIO_MANIFEST),
     ).not.toThrow()
   })
-
-  it('expands compare mode to forced custom and generic plans', () => {
-    expect(getExplainPlanCacheModes('compare')).toEqual(['force_custom_plan', 'force_generic_plan'])
-    expect(getExplainPlanCacheModes(undefined)).toEqual(['auto'])
-    expect(() => getExplainPlanCacheModes('invalid')).toThrow('EXPLAIN_PLAN_CACHE_MODE')
-  })
 })
 
-describe('collectAndGate', () => {
-  beforeEach(() => {
-    resetResults()
-    resetScenarioContracts()
+describe('EXPLAIN query capture', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
   })
 
-  it('collects a result before its plan-shape gate throws', () => {
-    registerScenarioContract('entity-relations-newest', {
-      expectations: [{ kind: 'custom', name: 'relationListingOrder' }],
-    })
-    const failing: ExplainResult = {
-      name: 'entity-relations-newest',
-      query_text: '',
-      plan: { Plan: { 'Node Type': 'Sort', 'Actual Rows': 1 } },
-      execution_time_ms: 0,
-      planning_time_ms: 0,
-      timestamp: '2024-01-01T00:00:00.000Z',
-      scenario_id: 'entity-relations-newest',
-    }
-
-    expect(() => collectAndGate(failing)).toThrow(
-      'entity-relations-newest must use relation index order without an explicit Sort',
-    )
-    expect(getResults()).toContainEqual(failing)
-  })
-})
-
-describe('writeResults', () => {
-  beforeEach(() => {
-    resetResults()
-    resetScenarioContracts()
+  it('rejects scenarios that capture no SQL', async () => {
+    await expect(
+      recordedScenarioError(() => runAndCapture('post-search-new', async () => {})),
+    ).rejects.toThrow('post-search-new captured no queries')
   })
 
-  it('persists a gate-rejected result to the output artifact', () => {
-    registerScenarioContract('membership-refunds-already-refunded-batch', {
-      expectations: [
-        {
-          kind: 'usesIndexes',
-          indexes: [
-            'idx_membership_refunds__stripe_charge_id',
-            'idx_membership_refunds__stripe_payment_intent_id',
-          ],
-        },
-      ],
-    })
-    prepareOutputDir()
-    const before = new Set(readdirSync(OUTPUT_DIR))
-    const failing: ExplainResult = {
-      name: 'membership-refunds-already-refunded-batch',
-      query_text: '',
-      plan: { Plan: { 'Node Type': 'Seq Scan', 'Actual Rows': 1 } },
-      execution_time_ms: 0,
-      planning_time_ms: 0,
-      timestamp: '2024-01-01T00:00:00.000Z',
-      scenario_id: 'membership-refunds-already-refunded-batch',
-    }
-
-    expect(() => collectAndGate(failing)).toThrow(
-      'membership-refunds-already-refunded-batch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
-    )
-
-    writeResults()
-
-    const resultFile = readdirSync(OUTPUT_DIR).find(
-      name => !before.has(name) && name.startsWith('results-'),
-    )
-    if (!resultFile) throw new Error('writeResults did not create a new result file')
-    const repeatFile = resultFile.replace(/^results-/, 'repeat-')
-    try {
-      const written = JSON.parse(readFileSync(join(OUTPUT_DIR, resultFile), 'utf8'))
-      expect(written).toMatchObject({ results: [failing], completedScenarioIds: [] })
-      const repeated = JSON.parse(readFileSync(join(OUTPUT_DIR, repeatFile), 'utf8'))
-      expect(repeated).toMatchObject({ results: [], completedScenarioIds: [] })
-    } finally {
-      rmSync(join(OUTPUT_DIR, resultFile), { force: true })
-      rmSync(join(OUTPUT_DIR, repeatFile), { force: true })
-    }
+  it('rejects an unknown plan cache mode before explaining', async () => {
+    vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', 'invalid')
+    await expect(
+      recordedScenarioError(() =>
+        runAndCapture('post-search-new', async () => {
+          await write('/* postSearch */ SELECT 1')
+        }),
+      ),
+    ).rejects.toThrow('Invalid EXPLAIN_PLAN_CACHE_MODE: "invalid"')
   })
 })

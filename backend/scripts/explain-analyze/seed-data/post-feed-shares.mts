@@ -3,12 +3,12 @@ import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts
 
 export const POST_SHARE_SPARSE_TARGET_COUNT = 8
 export const POST_SHARE_DENSE_TARGET_COUNT = 1000
-export const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
-export const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
+const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
+const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
 export const POST_SHARE_EMPTY_USER_INDEX = 19_999
 const FIRST_TARGET_POST_INDEX = 60_000
 
-export function postShareSeedRows(
+function postShareSeedRows(
   recipientIndex: number,
   targetCount: number,
   deliveriesPerTarget: number,

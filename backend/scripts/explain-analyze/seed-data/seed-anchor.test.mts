@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  MAX_SEED_FORWARD_MS,
-  SEED_ANCHOR_LAG_MS,
   assertSeedAnchorNotFuture,
   resolveSeedAnchor,
-  seedAnchorDayFor,
   SEED_ANCHOR_DATE_ENV,
 } from './seed-anchor.mts'
 
@@ -165,7 +162,6 @@ describe('seed rows are never dated after the run', () => {
     vi.resetModules()
   })
 
-  const minute = 60_000
   const instants = [
     '2026-10-31T00:00:00.000Z',
     '2026-10-31T12:14:59.999Z',
@@ -179,10 +175,12 @@ describe('seed rows are never dated after the run', () => {
   it.each(instants.map(instant => [instant.toISOString(), instant]))(
     'keeps the anchor plus the forward margin at or before %s',
     (_iso, now) => {
-      const { dayAnchorMs } = resolveSeedAnchor(seedAnchorDayFor(now), now)
+      const { dayAnchorMs } = resolveSeedAnchor(undefined, now)
 
-      expect(dayAnchorMs + MAX_SEED_FORWARD_MS).toBeLessThanOrEqual(now.getTime())
-      expect(now.getTime() - dayAnchorMs).toBeLessThan(SEED_ANCHOR_LAG_MS + 24 * 60 * minute)
+      expect(dayAnchorMs + 15 * 60_000).toBeLessThanOrEqual(now.getTime())
+      expect(now.getTime() - dayAnchorMs).toBeLessThan(
+        12 * 60 * 60_000 + 15 * 60_000 + 24 * 60 * 60_000,
+      )
       expect(() => assertSeedAnchorNotFuture(undefined, now)).not.toThrow()
     },
   )
@@ -200,8 +198,7 @@ describe('seed rows are never dated after the run', () => {
     vi.useFakeTimers()
     vi.stubEnv(SEED_ANCHOR_DATE_ENV, '2026-10-31')
     const common = await loadCommonAt('2026-10-31T12:15:00.000Z')
-    const { VOTE_WEIGHT_DISPATCH_ANCHOR_MS, VOTE_WEIGHT_DISPATCH_SEED_COUNT } =
-      await import('./vote-weight-dispatch.mts')
+    const { VOTE_WEIGHT_DISPATCH_WINDOW_END } = await import('./vote-weight-dispatch.mts')
     const anchor = common.postSeedTimestampMs(0)
     const uuidMs = (uuid: string) => Number.parseInt(uuid.slice(0, 8) + uuid.slice(9, 13), 16)
     const latest = [
@@ -209,11 +206,11 @@ describe('seed rows are never dated after the run', () => {
       uuidMs(common.seedRelationIdAfterPost(0, 1)),
       uuidMs(common.crawlSeedUuid(0xffff_ffff_ffff, 'ff')),
       common.commentSeedTimestampMs(0, 3),
-      VOTE_WEIGHT_DISPATCH_ANCHOR_MS + VOTE_WEIGHT_DISPATCH_SEED_COUNT * 100,
+      VOTE_WEIGHT_DISPATCH_WINDOW_END.getTime(),
     ]
 
     for (const timestamp of latest) {
-      expect(timestamp - anchor).toBeLessThanOrEqual(MAX_SEED_FORWARD_MS)
+      expect(timestamp - anchor).toBeLessThanOrEqual(15 * 60_000)
     }
   })
 })

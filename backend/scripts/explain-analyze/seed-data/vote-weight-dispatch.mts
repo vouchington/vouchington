@@ -2,8 +2,8 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 import { seedVoteWeightDirtyMarkers } from './vote-weight-dirty-markers.mts'
 
-export const VOTE_WEIGHT_DISPATCH_SEED_COUNT = 2_400
-export const VOTE_WEIGHT_DISPATCH_ANCHOR_MS = postSeedTimestampMs(0)
+const VOTE_WEIGHT_DISPATCH_SEED_COUNT = 2_400
+const VOTE_WEIGHT_DISPATCH_ANCHOR_MS = postSeedTimestampMs(0)
 export const VOTE_WEIGHT_DISPATCH_WINDOW_START = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 60_000)
 export const VOTE_WEIGHT_DISPATCH_WINDOW_END = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS + 60_000)
 // Mixed 500-row family pages expose expensive post-scan source-kind filtering.

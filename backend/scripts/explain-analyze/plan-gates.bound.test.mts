@@ -1,7 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
-import { assertRequiredPlanShape } from './plan-gates.mts'
-import { registerScenarioContract, resetScenarioContracts } from './plan-expectations.mts'
+
+async function loadGates() {
+  vi.resetModules()
+  const gates = await import('./plan-gates.mts')
+  const expectations = await import('./plan-expectations.mts')
+  return { ...gates, ...expectations }
+}
 
 function result(
   scenarioId: string,
@@ -20,9 +25,12 @@ function result(
 }
 
 describe('media replay read budgets', () => {
-  afterEach(resetScenarioContracts)
+  afterEach(() => {
+    vi.resetModules()
+  })
 
-  it('excludes inserted rows while rejecting excess history reads', () => {
+  it('excludes inserted rows while rejecting excess history reads', async () => {
+    const { assertRequiredPlanShape, registerScenarioContract } = await loadGates()
     registerScenarioContract('media-delivery-replay-first', {
       expectations: [{ kind: 'custom', name: 'mediaDeliveryReplay' }],
       seededRows: { media_delivery_registry_changes: 24000 },

@@ -37,12 +37,6 @@ const seedPlanDiagnosticScenarios = new Set([
 
 const resample = { statements: 0, milliseconds: 0 }
 
-export function resetRepeatedResults(): void {
-  repeatedResults.length = 0
-  resample.statements = 0
-  resample.milliseconds = 0
-}
-
 // The paired captures share one database, so they cannot show that a sequential scan is a coin
 // flip across databases. Price the same statement without sequential scans, plan only, so the
 // gate can tell a near-tie from a missing index (see seq-scan-ties.mts).
@@ -61,18 +55,16 @@ async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResu
 // The mirror image: a baselined scan the planner skipped this run may only have lost a coin flip.
 // Plan the statement plan-only with every index path disabled; a forced scan priced within
 // SEQ_SCAN_TIE_RATIO of the chosen plan keeps the stale entry advisory.
-export async function probeBaselinedScans(
+async function probeBaselinedScans(
   input: Capture,
   result: ProbedExplainResult,
   scannedRelations: readonly string[],
-  plan: typeof explainAnalyze = explainAnalyze,
-  baseline: Readonly<Record<string, readonly string[]>> = SEQ_SCAN_BASELINE,
 ) {
-  const baselined = (baseline[getExplainResultIdentity(result)] ?? []).filter(
+  const baselined = (SEQ_SCAN_BASELINE[getExplainResultIdentity(result)] ?? []).filter(
     relation => !scannedRelations.includes(relation),
   )
   if (baselined.length === 0) return
-  const forced = await plan(input.name, input.text, input.values, {
+  const forced = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: {
       ...input.localSettings,
       enable_indexscan: 'off',
