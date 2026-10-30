@@ -92,6 +92,7 @@ describe('ReportDialog', () => {
       await mockSubmitReport.mock.results.at(-1)!.value
     })
     expect(screen.getByText(/report submitted/i)).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Submit report' })).toBeNull()
     expect(mockSubmitReport).toHaveBeenCalledWith({
       entityType: 'post',
       entityId: 'post-1',
@@ -154,20 +155,5 @@ describe('ReportDialog', () => {
     })
 
     expect(screen.getByText(/report submitted/i)).toBeDefined()
-  })
-
-  it('removes the submit button after success', async () => {
-    mockSubmitReport.mockResolvedValueOnce({ report: { id: 'r1', status: 'pending' } })
-    render(<ReportDialog {...defaultProps} />)
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Spam' }))
-    const submitBtn = screen.getByRole('button', { name: 'Submit report' })
-    fireEvent.click(submitBtn)
-
-    await act(async () => {
-      await mockSubmitReport.mock.results.at(-1)!.value
-    })
-    expect(screen.getByText(/report submitted/i)).toBeDefined()
-    expect(screen.queryByRole('button', { name: 'Submit report' })).toBeNull()
   })
 })
