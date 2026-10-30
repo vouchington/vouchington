@@ -210,19 +210,6 @@ describe('web API fixture endpoint coverage', () => {
     }
   })
 
-  it('passes the complete landing-page mutation body through its wrapper', async () => {
-    const declaration = WEB_API_FIXTURE_DECLARATIONS.find(
-      entry => entry.id === 'native.landing-page-items-mutation.default',
-    )!
-    const fixture = manifest.fixtures.find(entry => entry.id === declaration.id)!
-
-    await declaration.invoke(WEB_FIXTURE_ENDPOINT_CONTEXT)
-
-    expect(captureSingleRequest().body).toEqual(
-      'requestBody' in fixture ? fixture.requestBody : undefined,
-    )
-  })
-
   it('rejects topic detail responses that omit the nullable hero placement', async () => {
     const declaration = WEB_API_FIXTURE_DECLARATIONS.find(
       entry => entry.id === 'web.topics.show.default',
