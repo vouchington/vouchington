@@ -24,7 +24,7 @@ export type ValkeyDiagnosticTopology = {
   workerQueueUrl: string
 }
 
-export function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): void {
+function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): void {
   if (topology.databaseUrls.length === 0) {
     throw new Error('No Valkey database URLs were configured')
   }
