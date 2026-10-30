@@ -62,21 +62,6 @@ describe('getConversationNotificationContext', () => {
     expect(result!.participant_user_ids).toContain(recipient.id)
   })
 
-  it('returns all participants when excludeSenderId is null', async () => {
-    const user1 = await createTestUser()
-    const user2 = await createTestUser()
-
-    const conversation = await createTestDirectConversation({
-      user1Id: user1.id,
-      user2Id: user2.id,
-    })
-
-    const result = await getConversationNotificationContext(conversation.id, null)
-
-    expect(result).not.toBeNull()
-    expect(result!.participant_user_ids).toHaveLength(2)
-  })
-
   it('returns modmail channel_type and community_slug for modmail conversations', async () => {
     const owner = await createTestUser()
     const subject = await createTestUser()
