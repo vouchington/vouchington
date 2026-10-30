@@ -22,12 +22,12 @@ interface ModQueueBanEvasionProps {
   onAction: (reportId: string) => void
 }
 
+function hasBanEvasionSource(banEvasion: CommunityBanEvasionContext) {
+  return Boolean(banEvasion.source_username) || Boolean(banEvasion.source_user_id)
+}
+
 function hasConfirmableBanEvasionEvidence(banEvasion: CommunityBanEvasionContext) {
-  return (
-    Boolean(banEvasion.source_username) ||
-    Boolean(banEvasion.source_user_id) ||
-    typeof banEvasion.score === 'number'
-  )
+  return hasBanEvasionSource(banEvasion) || typeof banEvasion.score === 'number'
 }
 
 export function ModQueueBanEvasionInfo({ banEvasion }: { banEvasion: CommunityBanEvasionContext }) {
@@ -49,7 +49,7 @@ export function ModQueueBanEvasionInfo({ banEvasion }: { banEvasion: CommunityBa
         <ShieldAlert className='mr-1 size-3' />
         {t('extracted.communities.modQueueBanEvasion.suspectedBanEvasion_c9e82beb')}
       </Badge>
-      {banEvasion.source_username || banEvasion.source_user_id ? (
+      {hasBanEvasionSource(banEvasion) ? (
         <span>
           {t('extracted.communities.modQueueBanEvasion.matches_6dc54c07')}{' '}
           {banEvasion.source_username ? (

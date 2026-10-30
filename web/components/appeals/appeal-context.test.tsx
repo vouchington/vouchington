@@ -42,7 +42,7 @@ describe('AppealContext', () => {
     expect(screen.getByText('moderator')).toBeInTheDocument()
   })
 
-  it('falls back to stable identifiers when optional display context is absent', () => {
+  it('falls back to the deleted-user label when optional display context is absent', () => {
     render(
       <AppealContext
         appeal={makeAppeal({
@@ -61,7 +61,8 @@ describe('AppealContext', () => {
       />,
     )
 
-    expect(screen.getByText('user-fallback')).toBeInTheDocument()
+    expect(screen.getByText('Deleted user')).toBeInTheDocument()
+    expect(screen.queryByText('user-fallback')).not.toBeInTheDocument()
     expect(screen.getByText('Unknown')).toBeInTheDocument()
   })
 

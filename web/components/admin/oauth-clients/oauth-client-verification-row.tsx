@@ -58,7 +58,12 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
     <tr data-pw='admin-oauth-client-row'>
       <td className={CELL_CLASS}>
         <div className='font-medium'>{client.client_name}</div>
-        <div className='font-mono text-xs text-muted-foreground'>{client.client_id}</div>
+        <div className='font-mono text-xs text-muted-foreground'>
+          {
+            // ast-grep-ignore: web-no-visible-id -- client_id is the OAuth protocol identifier admins match against the registering app, not an internal entity UUID
+            client.client_id
+          }
+        </div>
         <div className='text-xs text-muted-foreground'>
           {t('extracted.oauthClients.oauthClientVerificationRow.registeredCreatedat_e720b512', {
             createdAt: formatUtcDate(client.created_at, uiLocale),

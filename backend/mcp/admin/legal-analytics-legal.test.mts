@@ -33,7 +33,8 @@ describe('copyright association search REST and MCP parity', () => {
 
   it('preserves REST association facts while redacting personal work details before MCP wrapping', async () => {
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
-    const workMarker = `searched-work-${randomUUID()}`
+    // Digits are mapped to letters so a random digit run is never redacted as a phone number.
+    const workMarker = `searched-work-${randomUUID().replace(/\d/g, digit => 'abcdefghij'[Number(digit)] ?? digit)}`
     const email = 'claimant@example.test'
     const phone = '+1 415-555-0138'
     const workDescription = `${workMarker}. Contact ${email} or ${phone}. Case 24-cv-01234.`

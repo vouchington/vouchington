@@ -33,6 +33,10 @@ import { checkPostPublicationWriterInventory } from './post-publication-writer-i
 import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import { checkPlaywrightVisibilityFallback } from './playwright-visibility-fallback-guard.mts'
+import {
+  checkWebIdRouteSegments,
+  webIdRouteSegmentAllowlistFile,
+} from './web-id-route-segment-guard.mts'
 
 type RepoFilePolicyOptions = {
   schemaSnapshot?: unknown
@@ -106,5 +110,7 @@ export async function checkRepoFilePolicy(
   checkLivingDocsPinGuard(ctx.repoRoot, trackedFiles, errors)
   checkPublicSourceLiterals(ctx.repoRoot, trackedFiles, errors)
   checkPlaywrightVisibilityFallback(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
+  if (trackedFileSet.has(webIdRouteSegmentAllowlistFile))
+    checkWebIdRouteSegments(trackedFiles, errors)
   return { errors }
 }

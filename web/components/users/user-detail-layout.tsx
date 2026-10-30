@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
 import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 import { getUserLabel } from '@/lib/users/user-helpers'
+import { userPathSegment } from '@/lib/links/entity-href'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { UserProfileHeader } from './user-profile-header'
 import { UserProfileTabs } from './user-profile-tabs'
@@ -52,7 +53,7 @@ export function UserDetailLayout({
   asides,
   children,
 }: UserDetailLayoutProps) {
-  const usernameOrId = user.username ?? user.id
+  const usernameOrId = userPathSegment(user)
   const displayName = getUserLabel(user, deletedUserLabel)
 
   return (

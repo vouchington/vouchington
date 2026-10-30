@@ -35,9 +35,7 @@ export function InviteItem({ invite, loading, onRevoke }: Props) {
     <div className='flex items-center justify-between rounded-md border bg-card p-4'>
       <div>
         <p className='text-sm font-medium'>
-          {invite.invited_email ??
-            invite.invited_user_id ??
-            t('extracted.communities.inviteItem.unknownRecipient_5c401ba0')}
+          {invite.invited_email ?? t('extracted.communities.inviteItem.unknownRecipient_5c401ba0')}
         </p>
         <p
           className='text-xs text-muted-foreground'
