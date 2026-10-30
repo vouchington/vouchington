@@ -1,10 +1,7 @@
 {
   "flags": {
-    "chat": false,
-    "combinedSearch": false,
     "fediverse": false,
-    "memberships": false,
-    "support": false
+    "memberships": false
   },
   "overrides": {}
 }

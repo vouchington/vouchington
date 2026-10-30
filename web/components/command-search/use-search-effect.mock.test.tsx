@@ -20,7 +20,7 @@ const mockFetchFediverseSearch = vi.mocked(fetchFediverseSearch)
 function SearchEffectProbe() {
   const [results, setResults] = useState<SearchResults>(EMPTY_RESULTS)
   const [loading, setLoading] = useState(false)
-  useSearchEffect('fast', 'all', true, true, setResults, setLoading)
+  useSearchEffect('fast', 'all', true, setResults, setLoading)
   return (
     <>
       <div data-testid='loading'>{String(loading)}</div>

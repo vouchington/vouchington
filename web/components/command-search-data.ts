@@ -3,7 +3,6 @@ import type { MessageKey, createTranslator } from '@ts-shared/ui-messages'
 import { postRouteConfigs } from '@/lib/route-configs'
 import type { PostType } from '@/types/posts'
 import {
-  searchAll,
   searchTopicsOnly,
   searchCommunitiesOnly,
   searchPostsOnly,
@@ -82,9 +81,8 @@ export async function searchByTab(
     case 'fediverse':
       return searchFediverseOnly(q, signal)
     case 'pages':
+    case 'all':
       return EMPTY_RESULTS
-    default:
-      return searchAll(q, signal)
   }
 }
 

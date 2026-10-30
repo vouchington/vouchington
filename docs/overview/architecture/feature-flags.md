@@ -13,17 +13,11 @@ Feature flags use the `DynamicConfig` class from `@data-stores/valkey`, which st
 
 ## Current Flags
 
-| Flag                         | Type    | Default | Description                                                                                                                                      |
-| ---------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `memberships`                | boolean | `false` | Shows Stripe purchase controls on the web plans page together with `membershipStripeBilling`. Membership pages and purchase APIs stay available. |
-| `membershipStripeBilling`    | boolean | `false` | Shows Stripe purchase controls on the web plans page together with `memberships`. New Stripe purchase intents use `membership-billing`.          |
-| `membershipAppleBilling`     | boolean | `false` | Registered frontend visibility key with no web reader. New Apple purchase intents use `membership-billing`.                                      |
-| `membershipGoogleBilling`    | boolean | `false` | Registered frontend visibility key with no web reader. New Google Play purchase intents use `membership-billing`.                                |
-| `membershipMicrosoftBilling` | boolean | `false` | Registered frontend visibility key with no web reader. New Microsoft Store purchase intents use `membership-billing`.                            |
-| `chat`                       | boolean | `false` | Registered key with no transcript-route or navigation consumer.                                                                                  |
-| `combinedSearch`             | boolean | `false` | Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints.                                  |
-| `support`                    | boolean | `false` | Registered key with no in-app support route.                                                                                                     |
-| `fediverse`                  | boolean | `false` | Fediverse navigation, command-search tab, and PeerTube discovery affordances.                                                                    |
+| Flag                      | Type    | Default | Description                                                                                                                                      |
+| ------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `memberships`             | boolean | `false` | Shows Stripe purchase controls on the web plans page together with `membershipStripeBilling`. Membership pages and purchase APIs stay available. |
+| `membershipStripeBilling` | boolean | `false` | Shows Stripe purchase controls on the web plans page together with `memberships`. New Stripe purchase intents use `membership-billing`.          |
+| `fediverse`               | boolean | `false` | Fediverse navigation, command-search tab, and PeerTube discovery affordances.                                                                    |
 
 The `feature-flags` Dynamic Config field descriptions are the operator copy for this catalog.
 New provider purchase intents use the separate `membership-billing` namespace.
