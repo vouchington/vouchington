@@ -2612,6 +2612,7 @@ rules:
         - monitors
         - playwright
         - seed
+        - scripts
         - static-code-analysis
         - test-helpers
         - ts-shared
