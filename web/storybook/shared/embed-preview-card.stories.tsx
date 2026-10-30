@@ -33,10 +33,13 @@ const video: EmbedPreview = {
 }
 
 export const Compact: Story = {
-  args: { preview: article },
+  args: { preview: article, lang: 'en' },
   render: args => (
     <StoryFrame>
-      <EmbedPreviewCard {...args} />
+      <EmbedPreviewCard
+        {...args}
+        lang={args.lang}
+      />
     </StoryFrame>
   ),
   play: async ({ canvasElement }) => {
@@ -51,19 +54,25 @@ export const Compact: Story = {
 }
 
 export const Hero: Story = {
-  args: { preview: article, layout: 'hero' },
+  args: { preview: article, layout: 'hero', lang: 'en' },
   render: args => (
     <StoryFrame>
-      <EmbedPreviewCard {...args} />
+      <EmbedPreviewCard
+        {...args}
+        lang={args.lang}
+      />
     </StoryFrame>
   ),
 }
 
 export const VideoPlayer: Story = {
-  args: { preview: video, showPlayer: true },
+  args: { preview: video, showPlayer: true, lang: 'en' },
   render: args => (
     <StoryFrame>
-      <EmbedPreviewCard {...args} />
+      <EmbedPreviewCard
+        {...args}
+        lang={args.lang}
+      />
     </StoryFrame>
   ),
   play: async ({ canvasElement }) => {
@@ -72,16 +81,20 @@ export const VideoPlayer: Story = {
 }
 
 export const VideoCardWithoutPlayer: Story = {
-  args: { preview: video },
+  args: { preview: video, lang: 'en' },
   render: args => (
     <StoryFrame>
-      <EmbedPreviewCard {...args} />
+      <EmbedPreviewCard
+        {...args}
+        lang={args.lang}
+      />
     </StoryFrame>
   ),
 }
 
 export const NothingToShow: Story = {
   args: {
+    lang: null,
     preview: {
       ...article,
       title: null,
@@ -93,7 +106,10 @@ export const NothingToShow: Story = {
   render: args => (
     <StoryFrame>
       <p>Before</p>
-      <EmbedPreviewCard {...args} />
+      <EmbedPreviewCard
+        {...args}
+        lang={args.lang}
+      />
       <p>After</p>
     </StoryFrame>
   ),

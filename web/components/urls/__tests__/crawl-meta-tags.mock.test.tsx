@@ -211,4 +211,34 @@ describe('CrawlMetaTags', () => {
     expect(screen.getByText('{"self":"[Circular]"}')).toBeInTheDocument()
     expect(screen.queryByText('[object Object]')).toBeNull()
   })
+
+  it('marks crawled preview text with the page language and leaves the language fact unmarked', () => {
+    renderTags({
+      meta: {},
+      lang: 'ar',
+      crawlTitle: 'عنوان',
+      embedMetadata: {
+        kind: 'article',
+        requestedUrl: 'https://example.com/requested',
+        resolvedUrl: 'https://example.com/resolved',
+        title: null,
+        description: 'وصف الصفحة',
+        author: null,
+        provider: { key: 'example', name: 'Example', url: null, resourceId: null },
+        thumbnail: null,
+        player: null,
+      },
+    })
+
+    const title = screen.getByText('عنوان')
+    const description = screen.getByText('وصف الصفحة')
+    expect(title).toHaveAttribute('lang', 'ar')
+    expect(title).toHaveAttribute('dir', 'rtl')
+    expect(description).toHaveAttribute('lang', 'ar')
+    expect(description).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByText('Example')).not.toHaveAttribute('lang')
+    expect(screen.getByText('Example')).not.toHaveAttribute('dir')
+    expect(screen.getByText('ar')).not.toHaveAttribute('lang')
+    expect(screen.getByText('ar')).not.toHaveAttribute('dir')
+  })
 })
