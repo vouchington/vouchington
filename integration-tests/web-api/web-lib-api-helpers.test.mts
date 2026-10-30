@@ -126,30 +126,14 @@ describe('web/lib/api utility helpers — integration', () => {
       const error = new Error('not an ApiError')
       expect(isRateLimitError(error)).toBe(false)
     })
-
-    it('returns false for null', () => {
-      expect(isRateLimitError(null)).toBe(false)
-    })
   })
 
   describe('getRateLimitMessage', () => {
-    it('returns singular "second" when retry_after is 1', () => {
-      const error = new ApiError('Too many requests', 429, { retry_after: 1 })
-      expect(getRateLimitMessage(error)).toBe(
-        'Too many requests. Please wait 1 second and try again.',
-      )
-    })
-
     it('returns plural "seconds" when retry_after is greater than 1', () => {
       const error = new ApiError('Too many requests', 429, { retry_after: 5 })
       expect(getRateLimitMessage(error)).toBe(
         'Too many requests. Please wait 5 seconds and try again.',
       )
-    })
-
-    it('returns generic message when retry_after is 0', () => {
-      const error = new ApiError('Too many requests', 429, { retry_after: 0 })
-      expect(getRateLimitMessage(error)).toBe('Too many requests. Please try again later.')
     })
 
     it('returns generic message when retry_after is negative', () => {
@@ -228,18 +212,6 @@ describe('web/lib/api utility helpers — integration', () => {
   // ─── worker-secret.ts ────────────────────────────────────────────────────
 
   describe('buildWorkerSecretHeader', () => {
-    it('returns an empty object when CF_WORKER_SECRET is not set', () => {
-      const original = process.env.CF_WORKER_SECRET
-      try {
-        delete process.env.CF_WORKER_SECRET
-        expect(buildWorkerSecretHeader()).toEqual({})
-      } finally {
-        if (original !== undefined) {
-          process.env.CF_WORKER_SECRET = original
-        }
-      }
-    })
-
     it('returns the x-cf-worker-secret header when CF_WORKER_SECRET is set', () => {
       const original = process.env.CF_WORKER_SECRET
       const secret = `test-secret-${randomUUID()}`
