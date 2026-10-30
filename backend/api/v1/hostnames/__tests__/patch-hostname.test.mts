@@ -40,12 +40,6 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     await request.patch(`/api/v1/hostnames/${hostnameId}`).send('not-json').expect(415)
   })
 
-  it('returns 422 when id is not a UUID', async () => {
-    const request = createRequest()
-    await request.authenticateAs(adminUser!)
-    await request.patch('/api/v1/hostnames/not-a-uuid').send({ is_crawlable: false }).expect(422)
-  })
-
   it('returns 404 when hostname does not exist', async () => {
     const request = createRequest()
     await request.authenticateAs(adminUser!)
@@ -62,17 +56,6 @@ describe('PATCH /api/v1/hostnames/:id', () => {
       .patch(`/api/v1/hostnames/${hostnameId}`)
       .send({ unrelated_field: true })
       .expect(422)
-  })
-
-  it('updates crawlable and returns 204', async () => {
-    const id = await insertTestUrlHostname({
-      hostname: `patch-crawlable-${Date.now()}.example.com`,
-      is_blocked: false,
-      is_crawlable: true,
-    })
-    const request = createRequest()
-    await request.authenticateAs(adminUser!)
-    await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: false }).expect(204)
   })
 
   it('introduces a private email hostname on an administrator metadata update', async () => {

@@ -34,22 +34,6 @@ describe('hostname blocking API', () => {
     await request.patch(`/api/v1/hostnames/${uuidv7()}`).send({ is_blocked: true }).expect(404)
   })
 
-  it('returns a pending operation', async () => {
-    const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
-    const request = createRequest()
-    await request.authenticateAs(administrator)
-
-    const admission = await request
-      .patch(`/api/v1/hostnames/${hostnameId}`)
-      .send({ is_blocked: true })
-      .expect(200)
-    expect(admission.body).toEqual({
-      operation_id: expect.any(String),
-      status: 'pending',
-      totals: null,
-    })
-  })
-
   it('returns a precise conflict while an accepted cleanup is pending', async () => {
     const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
     const request = createRequest()

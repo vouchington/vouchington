@@ -21,6 +21,11 @@ describe('GET /api/v1/hostname-block-operations/:operationId', () => {
       .patch(`/api/v1/hostnames/${hostnameId}`)
       .send({ is_blocked: true })
       .expect(200)
+    expect(admission.body).toEqual({
+      operation_id: expect.any(String),
+      status: 'pending',
+      totals: null,
+    })
 
     const status = await request
       .get(`/api/v1/hostname-block-operations/${admission.body.operation_id}`)
