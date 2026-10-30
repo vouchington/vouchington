@@ -59,6 +59,7 @@ describe('moderations', () => {
         confidence_score: 0.93,
         confidence_threshold: 0.8,
       })
+      expect(r.created_at).toBeInstanceOf(Date)
     })
 
     it('returns empty array for post with no moderations in community', async () => {
@@ -79,18 +80,6 @@ describe('moderations', () => {
       const otherCommunity = await insertTestCommunity({ createdById: user.id })
       const results = await searchCommunityAgentModerations(postId, otherCommunity.id)
       expect(results.map(r => r.community_prompt_id)).not.toContain(prompt.id)
-    })
-
-    it('returned results have correct shape', async () => {
-      const results = await searchCommunityAgentModerations(postId, community.id)
-      for (const r of results) {
-        expect(typeof r.id).toBe('string')
-        expect(typeof r.post_id).toBe('string')
-        expect(typeof r.community_prompt_id).toBe('string')
-        expect(typeof r.is_flagged).toBe('boolean')
-        expect(r.results).toBeDefined()
-        expect(r.created_at).toBeInstanceOf(Date)
-      }
     })
   })
 })
