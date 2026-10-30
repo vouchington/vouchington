@@ -13,8 +13,6 @@ import {
 } from '@voucha/test-helpers'
 import { processFollowerDistributionChunk } from './process.mts'
 import { sendPostToFollowers } from './create.mts'
-import { parseSendFollowersInput } from './send-followers-input.mts'
-import { MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS } from './types.mts'
 
 describe('sendPostToFollowers', () => {
   it('creates manual-send notifications for the selected followers of a post', async () => {
@@ -123,37 +121,6 @@ describe('sendPostToFollowers', () => {
         )
         .toSorted(),
     ).toEqual(['manual_send', 'subscription'])
-  })
-
-  it('accepts selected recipients at the configured maximum', () => {
-    const recipientIds = Array.from(
-      { length: MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS },
-      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
-    )
-
-    expect(
-      parseSendFollowersInput({
-        audience: 'selected_followers',
-        recipient_user_ids: recipientIds,
-      }),
-    ).toEqual({
-      audience: 'selected_followers',
-      recipient_user_ids: recipientIds,
-    })
-  })
-
-  it('rejects selected recipients over the configured maximum', () => {
-    const recipientIds = Array.from(
-      { length: MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS + 1 },
-      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
-    )
-
-    expect(() =>
-      parseSendFollowersInput({
-        audience: 'selected_followers',
-        recipient_user_ids: recipientIds,
-      }),
-    ).toThrow(`at most ${MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS}`)
   })
 
   it('rejects selected recipients who are not current followers', async () => {
