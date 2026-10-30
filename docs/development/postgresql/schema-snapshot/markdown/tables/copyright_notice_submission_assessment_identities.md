@@ -25,7 +25,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyright_assessment_identities__submission`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT`
+- `fk_copyright_assessment_identities__submission`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -34,4 +34,7 @@ _none_
 - `uq_copyright_notice_submission_assessment_identities__notice_id`: `CREATE UNIQUE INDEX uq_copyright_notice_submission_assessment_identities__notice_id ON public.copyright_notice_submission_assessment_identities USING btree (copyright_notice_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_submission_assessment_identities FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_current_owner_deletion`: `CREATE TRIGGER trigger_reject_copyright_current_owner_deletion BEFORE DELETE ON public.copyright_notice_submission_assessment_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_submission_assessment_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_submission_assessment_identities', 'public.copyright_notice_submission_assessment_identities')`

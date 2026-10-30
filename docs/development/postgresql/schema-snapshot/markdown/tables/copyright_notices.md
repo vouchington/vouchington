@@ -9,6 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                                           | Type                                      | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                          |
 | ------------------------------------------------ | ----------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                                             | `uuid`                                    | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                  |
+| `copyright_replay_retention_group_id`            | `uuid`                                    | no       |                              |          |           |           | Live case-to-opaque-clock relation; deleting the final case root removes the only case backlink.                                                                                 |
 | `jurisdiction`                                   | `copyright_jurisdictions`                 | no       |                              |          |           |           | Procedure selected for this allegation: US DMCA, EU DSA, UK, or other owner-approved handling after AI advisor review recorded on issue 1230; this is not a legal determination. |
 | `legal_basis`                                    | `copyright_notice_legal_bases`            | no       |                              |          |           |           | Legal basis for the case; this aggregate is restricted to copyright allegations.                                                                                                 |
 | `received_at`                                    | `timestamp with time zone`                | no       |                              |          |           |           | Immutable timestamp when Voucha originally received the allegation.                                                                                                              |
@@ -22,6 +23,7 @@ Not partitioned — growth: unbounded.
 | `territorial_rationale_ciphertext`               | `text`                                    | yes      |                              |          |           |           | Encrypted current territorial rationale, erasable after case retention while the result survives.                                                                                |
 | `territorial_public_explanation_ciphertext`      | `text`                                    | yes      |                              |          |           |           | Encrypted current public territorial explanation, erasable after case retention.                                                                                                 |
 | `last_lifecycle_activity_at`                     | `timestamp with time zone`                | yes      |                              |          |           |           | Monotonic case activity from lifecycle events, retained when event partitions retire.                                                                                            |
+| `last_substantive_lifecycle_activity_at`         | `timestamp with time zone`                | yes      |                              |          |           |           | Monotonic legal-inactivity clock from the exact lifecycle UUID timestamp, excluding technical action, delivery, and placement-wide registry rearm audit.                         |
 | `last_guest_capability_activity_at`              | `timestamp with time zone`                | yes      |                              |          |           |           | Monotonic issuance, revocation, or unrevoked-expiry activity retained after a live guest token is pruned.                                                                        |
 | `claimant_user_id`                               | `uuid`                                    | yes      |                              |          |           |           | Signed-in claimant account linked to the member record; NULL for guest/email claimants or after account deletion.                                                                |
 | `claimant_display_name`                          | `text`                                    | yes      |                              |          |           |           | Immutable claimant display-name snapshot for authorized legal and staff use.                                                                                                     |
@@ -35,7 +37,9 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `copyright_notices_copyright_replay_retention_group_id_key`: `UNIQUE (copyright_replay_retention_group_id)`
 - `uq_copyright_notices__id_jurisdiction`: `UNIQUE (id, jurisdiction)`
+- `uq_copyright_notices__id_replay_group`: `UNIQUE (id, copyright_replay_retention_group_id)`
 
 **Check constraints:**
 
@@ -48,22 +52,29 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notices_claimant_user_id_fkey`: `FOREIGN KEY (claimant_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `copyright_notices_copyright_replay_retention_group_id_fkey`: `FOREIGN KEY (copyright_replay_retention_group_id) REFERENCES copyright_replay_retention_groups(id) ON DELETE RESTRICT`
 - `copyright_notices_territorial_decided_by_id_fkey`: `FOREIGN KEY (territorial_decided_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_notices__current_territorial_decision_identity`: `FOREIGN KEY (id, current_territorial_decision_identity_id) REFERENCES copyright_territorial_decision_identities(copyright_notice_id, id) ON DELETE RESTRICT`
 - `fk_copyright_notices__territorial_assessment_identity`: `FOREIGN KEY (id, territorial_authorizing_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `copyright_notices_copyright_replay_retention_group_id_key`: `CREATE UNIQUE INDEX copyright_notices_copyright_replay_retention_group_id_key ON public.copyright_notices USING btree (copyright_replay_retention_group_id)`
 - `copyright_notices_pkey`: `CREATE UNIQUE INDEX copyright_notices_pkey ON public.copyright_notices USING btree (id)`
 - `idx_copyright_notices__claimant_user`: `CREATE INDEX idx_copyright_notices__claimant_user ON public.copyright_notices USING btree (claimant_user_id) WHERE (claimant_user_id IS NOT NULL)`
 - `idx_copyright_notices__received_id`: `CREATE INDEX idx_copyright_notices__received_id ON public.copyright_notices USING btree (received_at, id)`
 - `idx_copyright_notices__territorial_decided_by`: `CREATE INDEX idx_copyright_notices__territorial_decided_by ON public.copyright_notices USING btree (territorial_decided_by_id) WHERE (territorial_decided_by_id IS NOT NULL)`
 - `uq_copyright_notices__id_jurisdiction`: `CREATE UNIQUE INDEX uq_copyright_notices__id_jurisdiction ON public.copyright_notices USING btree (id, jurisdiction)`
+- `uq_copyright_notices__id_replay_group`: `CREATE UNIQUE INDEX uq_copyright_notices__id_replay_group ON public.copyright_notices USING btree (id, copyright_replay_retention_group_id)`
 
 **Triggers:**
 
+- `trigger_assign_copyright_replay_retention_group`: `CREATE TRIGGER trigger_assign_copyright_replay_retention_group BEFORE INSERT ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_replay_retention_group()`
 - `trigger_copyright_notices_identity_immutable`: `CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE DELETE OR UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_identity()`
 - `trigger_copyright_notices_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_lifecycle()`
 - `trigger_copyright_notices_updated_at`: `CREATE TRIGGER trigger_copyright_notices_updated_at BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
 - `trigger_copyright_thread_party_claimant`: `CREATE TRIGGER trigger_copyright_thread_party_claimant AFTER UPDATE OF claimant_user_id ON public.copyright_notices FOR EACH ROW WHEN ((old.claimant_user_id IS DISTINCT FROM new.claimant_user_id)) EXECUTE FUNCTION fn_update_copyright_thread_party_generation()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_register_copyright_notice_retained_identity`: `CREATE TRIGGER trigger_register_copyright_notice_retained_identity AFTER INSERT ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_notice_retained_identity()`
+- `trigger_zz_stamp_final_copyright_replay_case_purge`: `CREATE TRIGGER trigger_zz_stamp_final_copyright_replay_case_purge BEFORE DELETE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_register_final_copyright_replay_case_purge()`

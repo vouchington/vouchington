@@ -33,7 +33,7 @@ _none_
 **Foreign keys:**
 
 - `fk_copyright_eu_dispute_settlement_referrals__decision`: `FOREIGN KEY (copyright_notice_id, copyright_territorial_decision_id) REFERENCES copyright_territorial_decision_identities(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_eu_dispute_settlement_referrals__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_eu_dispute_settlement_referrals__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_eu_dispute_settlement_referrals__recorded_by`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `fk_copyright_eu_dispute_settlement_referrals__referred_by`: `FOREIGN KEY (referred_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -49,4 +49,8 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_eu_dispute_settlement_referrals_immutable`: `CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_id', 'recorded_by_id')`
+- `trigger_copyright_eu_dispute_settlement_referrals_immutable`: `CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable BEFORE UPDATE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_id', 'recorded_by_id')`
+- `trigger_copyright_eu_dispute_settlement_referrals_purge`: `CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_purge BEFORE DELETE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_register_copy_blocker_dispute_referral`: `CREATE TRIGGER trigger_register_copy_blocker_dispute_referral BEFORE INSERT ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_eu_dispute_settlement_referrals', 'public.copyright_eu_dispute_settlement_referrals')`

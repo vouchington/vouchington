@@ -63,3 +63,5 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_email_intakes_current_result`: `CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation()`
 - `trigger_copyright_email_intakes_require_storage_object`: `CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')`
+- `trigger_copyright_notice_email_intakes_retained_identity`: `CREATE TRIGGER trigger_copyright_notice_email_intakes_retained_identity BEFORE INSERT ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_external_event_identity()`
+- `trigger_require_writable_copyright_intake`: `CREATE TRIGGER trigger_require_writable_copyright_intake BEFORE UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_ensure_writable_copyright_intake()`

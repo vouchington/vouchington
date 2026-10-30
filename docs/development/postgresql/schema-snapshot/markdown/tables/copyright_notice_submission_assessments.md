@@ -31,7 +31,7 @@ _none_
 **Foreign keys:**
 
 - `copyright_notice_submission_assessments_assessed_by_id_fkey`: `FOREIGN KEY (assessed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
-- `fk_copyright_assessments__form_screening`: `FOREIGN KEY (copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT`
+- `fk_copyright_assessments__form_screening`: `FOREIGN KEY (copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE CASCADE`
 - `fk_copyright_assessments__identity`: `FOREIGN KEY (copyright_notice_submission_id, id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT`
 - `fk_copyright_assessments__notice_identity`: `FOREIGN KEY (copyright_notice_id, id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT`
 - `fk_copyright_assessments__supersedes_submission`: `FOREIGN KEY (copyright_notice_submission_id, supersedes_assessment_id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT`
@@ -52,4 +52,7 @@ _none_
 - `trigger_copyright_notice_assessments_immutable`: `CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id')`
 - `trigger_copyright_notice_assessments_source`: `CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_assessment_source()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copy_blocker_assessment`: `CREATE TRIGGER trigger_register_copy_blocker_assessment BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_submission_assessments', 'public.copyright_notice_submission_assessments')`
 - `trigger_update_copyright_assessments_scope`: `CREATE TRIGGER trigger_update_copyright_assessments_scope BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

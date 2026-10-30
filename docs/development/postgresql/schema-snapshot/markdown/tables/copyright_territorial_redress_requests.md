@@ -8,6 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column                               | Type                                                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `transparency_generation`            | `bigint`                                                    | no       | `0`                          |          |           |           | Commit-serialized aggregate generation in which this immutable reportable fact was admitted.                        |
 | `id`                                 | `uuid`                                                      | no       | `uuidv7()`                   |          |           |           |                                                                                                                     |
 | `copyright_notice_id`                | `uuid`                                                      | no       |                              |          |           |           | Notice this redress request challenges. The composite foreign key requires the cited decision to be on this notice. |
 | `jurisdiction`                       | `copyright_jurisdictions`                                   | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                                       |
@@ -30,6 +31,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `uq_copyright_redress_requests__case_id`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyright_redress_requests__case_jurisdiction_id`: `UNIQUE (copyright_notice_id, jurisdiction, id)`
 - `uq_copyright_territorial_redress_requests__idempotency`: `UNIQUE (submitted_by_id, jurisdiction, idempotency_key)`
 - `uq_copyright_territorial_redress_requests__party`: `UNIQUE (copyright_territorial_decision_id, submitted_by_id)`
 
@@ -37,10 +40,11 @@ Not partitioned — growth: unbounded.
 
 - `chk_copyright_territorial_redress_requests__authority`: `CHECK (((challenged_decision_outcome = 'restrict'::copyright_territorial_decision_outcomes) = (authorizing_assessment_identity_id IS NOT NULL)))`
 - `chk_copyright_territorial_redress_requests__explanation`: `CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))`
-- `chk_copyright_territorial_redress_requests__filed_by`: `CHECK (((filed_by = ANY (ARRAY['notifier'::copyright_territorial_party_roles, 'poster'::copyright_territorial_party_roles, 'reviewer'::copyright_territorial_party_roles])) AND ((submitted_by_id IS NOT NULL) OR (filed_by = 'notifier'::copyright_territorial_party_roles))))`
+- `chk_copyright_territorial_redress_requests__filed_by`: `CHECK ((filed_by = ANY (ARRAY['notifier'::copyright_territorial_party_roles, 'poster'::copyright_territorial_party_roles, 'reviewer'::copyright_territorial_party_roles])))`
 - `chk_copyright_territorial_redress_requests__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
 - `chk_copyright_territorial_redress_requests__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 - `chk_copyright_territorial_redress_requests__result`: `CHECK ((((staff_disposition IS NULL) AND (current_staff_decision_identity_id IS NULL) AND (decided_at IS NULL) AND (decided_by_id IS NULL) AND (rationale_ciphertext IS NULL)) OR ((staff_disposition IS NOT NULL) AND (current_staff_decision_identity_id IS NOT NULL) AND (decided_at IS NOT NULL) AND (decided_by_id IS NOT NULL) AND (rationale_ciphertext IS NOT NULL))))`
+- `copyright_territorial_redress_req_transparency_generation_check`: `CHECK ((transparency_generation >= 0))`
 
 **Foreign keys:**
 
@@ -48,7 +52,7 @@ Not partitioned — growth: unbounded.
 - `fk_copyright_redress_requests__current_decision_identity`: `FOREIGN KEY (id, current_staff_decision_identity_id) REFERENCES copyright_territorial_redress_decision_identities(copyright_territorial_redress_request_id, id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_redress_requests__assessment`: `FOREIGN KEY (copyright_notice_id, authorizing_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_redress_requests__decision`: `FOREIGN KEY (copyright_notice_id, copyright_territorial_decision_id) REFERENCES copyright_territorial_decision_identities(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_territorial_redress_requests__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_territorial_redress_requests__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_territorial_redress_requests__submitter`: `FOREIGN KEY (submitted_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -58,13 +62,23 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_territorial_redress_requests__decision`: `CREATE INDEX idx_copyright_territorial_redress_requests__decision ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, copyright_territorial_decision_id)`
 - `idx_copyright_territorial_redress_requests__decision_page`: `CREATE INDEX idx_copyright_territorial_redress_requests__decision_page ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id, id)`
 - `idx_copyright_territorial_redress_requests__notice_id`: `CREATE INDEX idx_copyright_territorial_redress_requests__notice_id ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, id)`
+- `idx_copyright_territorial_redress_requests__report_generation`: `CREATE INDEX idx_copyright_territorial_redress_requests__report_generation ON public.copyright_territorial_redress_requests USING btree (transparency_generation, received_at)`
+- `idx_copyright_territorial_redress_requests__revoked_assessment`: `CREATE INDEX idx_copyright_territorial_redress_requests__revoked_assessment ON public.copyright_territorial_redress_requests USING btree (authorizing_assessment_identity_id) WHERE ((staff_disposition = 'revoke'::copyright_territorial_redress_decision_staff_dispositions) AND (authorizing_assessment_identity_id IS NOT NULL))`
 - `idx_copyright_territorial_redress_requests__submitter`: `CREATE INDEX idx_copyright_territorial_redress_requests__submitter ON public.copyright_territorial_redress_requests USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)`
 - `idx_cpyrght_trrtrl_rdrss_rqsts__assessment_identity_id`: `CREATE INDEX idx_cpyrght_trrtrl_rdrss_rqsts__assessment_identity_id ON public.copyright_territorial_redress_requests USING btree (authorizing_assessment_identity_id, id) WHERE (authorizing_assessment_identity_id IS NOT NULL)`
+- `uq_copyright_redress_requests__case_id`: `CREATE UNIQUE INDEX uq_copyright_redress_requests__case_id ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, id)`
+- `uq_copyright_redress_requests__case_jurisdiction_id`: `CREATE UNIQUE INDEX uq_copyright_redress_requests__case_jurisdiction_id ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, jurisdiction, id)`
 - `uq_copyright_territorial_redress_requests__guest`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id) WHERE (submitted_by_id IS NULL)`
 - `uq_copyright_territorial_redress_requests__idempotency`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__idempotency ON public.copyright_territorial_redress_requests USING btree (submitted_by_id, jurisdiction, idempotency_key)`
 - `uq_copyright_territorial_redress_requests__party`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__party ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id, submitted_by_id)`
 
 **Triggers:**
 
+- `trigger_copyright_redress_request_actor`: `CREATE TRIGGER trigger_copyright_redress_request_actor BEFORE INSERT ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_redress_request_actor()`
 - `trigger_copyright_territorial_redress_requests_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_redress_request_result()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_record_copyright_transparency_source_erasure`: `CREATE TRIGGER trigger_record_copyright_transparency_source_erasure BEFORE DELETE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_source_erasure('received_at')`
+- `trigger_register_copy_blocker_redress_request`: `CREATE TRIGGER trigger_register_copy_blocker_redress_request BEFORE INSERT ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_redress_requests', 'public.copyright_territorial_redress_requests')`
+- `trigger_stamp_copyright_transparency_fact`: `CREATE TRIGGER trigger_stamp_copyright_transparency_fact BEFORE INSERT ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_fact()`

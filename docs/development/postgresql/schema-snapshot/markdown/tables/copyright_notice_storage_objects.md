@@ -6,11 +6,12 @@ One private evidence-bucket object identity shared by every intake or artifact t
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                               |
-| ------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------- |
-| `id`          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                       |
-| `storage_key` | `text`                     | no       |                              |          |           |           | Unique private object-storage key; the row is deleted only after no intake or artifact references it. |
-| `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                       |
+| Column        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                          |
+| ------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                  |
+| `erased_at`   | `timestamp with time zone` | yes      |                              |          |           |           | All raw-object versions confirmed absent; fences every later reference while bounded DB redaction and registry cleanup continue. |
+| `storage_key` | `text`                     | no       |                              |          |           |           | Unique private object-storage key; the row is deleted only after no intake or artifact references it.                            |
+| `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,7 +30,8 @@ _none_
 
 - `copyright_notice_storage_objects_pkey`: `CREATE UNIQUE INDEX copyright_notice_storage_objects_pkey ON public.copyright_notice_storage_objects USING btree (id)`
 - `copyright_notice_storage_objects_storage_key_key`: `CREATE UNIQUE INDEX copyright_notice_storage_objects_storage_key_key ON public.copyright_notice_storage_objects USING btree (storage_key)`
+- `idx_cpyrght_ntc_strg_objcts__erased`: `CREATE INDEX idx_cpyrght_ntc_strg_objcts__erased ON public.copyright_notice_storage_objects USING btree (id) WHERE (erased_at IS NOT NULL)`
 
 **Triggers:**
 
-- `trigger_copyright_notice_storage_objects_key_immutable`: `CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable BEFORE UPDATE ON public.copyright_notice_storage_objects FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_notice_storage_objects_key_immutable`: `CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable BEFORE UPDATE ON public.copyright_notice_storage_objects FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_storage_object_mutation()`

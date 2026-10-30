@@ -32,7 +32,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_notice_acknowledgments__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_notice_acknowledgments__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -43,3 +43,6 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_territorial_notice_acknowledgments_attempt`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_attempt BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_acknowledgment_attempt()`
 - `trigger_copyright_territorial_notice_acknowledgments_updated_at`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_updated_at BEFORE UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_copy_blocker_territorial_acknowledgment`: `CREATE TRIGGER trigger_register_copy_blocker_territorial_acknowledgment BEFORE INSERT OR UPDATE OF acknowledged_at, exhausted_at, last_attempt_at ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('territorial_receipt')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_notice_acknowledgments', 'public.copyright_territorial_notice_acknowledgments')`

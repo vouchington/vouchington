@@ -41,10 +41,14 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_evidence_artifacts_pkey`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_pkey ON public.copyright_notice_evidence_artifacts USING btree (id)`
 - `idx_copyright_notice_evidence_artifacts__media_type_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON public.copyright_notice_evidence_artifacts USING btree (media_type_id)`
 - `idx_copyright_notice_evidence_artifacts__storage_object_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id ON public.copyright_notice_evidence_artifacts USING btree (storage_object_id) WHERE (storage_object_id IS NOT NULL)`
+- `idx_cpyrght_ntc_evdnc_artfcts__case`: `CREATE INDEX idx_cpyrght_ntc_evdnc_artfcts__case ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_id, id)`
 - `uq_copyright_evidence_artifacts__submission_object`: `CREATE UNIQUE INDEX uq_copyright_evidence_artifacts__submission_object ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_object_id)`
 
 **Triggers:**
 
 - `trigger_copyright_notice_evidence_immutable`: `CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
 - `trigger_copyright_notice_evidence_requires_storage_object`: `CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id')`
+- `trigger_register_copy_blocker_artifact`: `CREATE TRIGGER trigger_register_copy_blocker_artifact BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_evidence_artifacts', 'public.copyright_notice_evidence_artifacts')`
 - `trigger_update_copyright_artifacts_scope`: `CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

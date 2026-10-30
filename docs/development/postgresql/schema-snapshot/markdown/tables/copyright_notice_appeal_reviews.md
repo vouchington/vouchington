@@ -34,10 +34,10 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_appeal_reviews_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
+- `copyright_notice_appeal_reviews_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE`
 - `copyright_notice_appeal_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_notice_appeal_reviews__recommendation__submission`: `FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT`
-- `fk_copyright_notice_appeal_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_appeal_reviews__recommendation__submission`: `FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE CASCADE`
+- `fk_copyright_notice_appeal_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -52,3 +52,6 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_appeal_reviews_immutable`: `CREATE TRIGGER trigger_copyright_appeal_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
 - `trigger_copyright_appeal_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_appeal_reviews_require_actor BEFORE INSERT ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copy_blocker_appeal_review`: `CREATE TRIGGER trigger_register_copy_blocker_appeal_review BEFORE INSERT ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('submission')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_appeal_reviews', 'public.copyright_notice_appeal_reviews')`

@@ -54,3 +54,5 @@ Not partitioned — growth: unbounded.
 
 - `trigger_assert_notification_push_intent_conversation`: `CREATE TRIGGER trigger_assert_notification_push_intent_conversation BEFORE INSERT OR UPDATE ON public.notification_push_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_notification_push_intent_conversation_mismatch()`
 - `trigger_notification_push_intents_updated_at`: `CREATE TRIGGER trigger_notification_push_intents_updated_at BEFORE UPDATE ON public.notification_push_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.notification_push_intents FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.notification_push_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('notification_push_intents', 'public.notification_push_intents')`

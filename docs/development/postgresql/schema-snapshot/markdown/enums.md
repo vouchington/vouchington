@@ -380,6 +380,12 @@
 - `poster_daily_cap`
 - `non_post_target`
 
+## `copyright_case_preservation_kinds`
+
+- `litigation_threat`
+- `regulator_request`
+- `court_request`
+
 ## `copyright_claimant_misuse_event_outcomes`
 
 - `notice_withdrawn`
@@ -394,6 +400,12 @@
 - `permanent_failure`
 - `replayed`
 
+## `copyright_encryption_owner_kinds`
+
+- `notice`
+- `intake`
+- `receipt`
+
 ## `copyright_eu_dispute_settlement_results`
 
 - `decided_for_recipient`
@@ -407,6 +419,14 @@
 - `eu_dsa`
 - `uk`
 - `other`
+
+## `copyright_minimal_purge_cursor_families`
+
+- `work`
+- `new`
+- `identity`
+- `evidence`
+- `evidence_work`
 
 ## `copyright_notice_action_intent_actions`
 
@@ -612,6 +632,7 @@
 
 ## `copyright_notice_operational_retention_kinds`
 
+- `receipt_explanations`
 - `form_screening_attempts`
 - `action_attempts`
 - `delivery_attempts`
@@ -659,6 +680,26 @@
 - `terminate`
 - `reinstatement`
 
+## `copyright_replay_cleanup_families`
+
+- `identities`
+- `groups`
+
+## `copyright_replay_families`
+
+- `form_notice`
+- `submission`
+- `territorial_notice`
+- `territorial_redress`
+- `territorial_acknowledgment`
+
+## `copyright_replay_outcome_codes`
+
+- `notice_received`
+- `submission_received`
+- `redress_received`
+- `acknowledgment_recorded`
+
 ## `copyright_restriction_human_review_actions`
 
 - `confirm`
@@ -674,6 +715,10 @@
 
 - `exact`
 - `perceptual`
+
+## `copyright_submission_key_retention_cursor_families`
+
+- `submission_request`
 
 ## `copyright_territorial_decision_automation_disclosures`
 
@@ -876,6 +921,12 @@
 - `discoveries`
 - `rows`
 - `batch`
+
+## `legal_record_retention_families`
+
+- `identity_verification_attempt`
+- `user_deletion_request`
+- `user_legal_preservation_hold`
 
 ## `list_visibilities`
 
@@ -1449,6 +1500,11 @@
 
 - `singleDevice`
 - `multiDevice`
+
+## `payment_ledger_retention_families`
+
+- `stripe_event`
+- `membership_operation`
 
 ## `payment_operational_cleanup_kinds`
 

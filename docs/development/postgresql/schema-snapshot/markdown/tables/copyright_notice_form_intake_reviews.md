@@ -29,7 +29,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_form_intake_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_notice_form_intake_reviews__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_intake_reviews__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -42,3 +42,6 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_form_reviews_immutable`: `CREATE TRIGGER trigger_copyright_form_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
 - `trigger_copyright_form_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_form_reviews_require_actor BEFORE INSERT ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copy_blocker_form_review`: `CREATE TRIGGER trigger_register_copy_blocker_form_review BEFORE INSERT ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('intake')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_form_intake_reviews', 'public.copyright_notice_form_intake_reviews')`

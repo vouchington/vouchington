@@ -29,4 +29,7 @@ _none_
 - `copyright_notice_thread_party_generations_pkey`: `CREATE UNIQUE INDEX copyright_notice_thread_party_generations_pkey ON public.copyright_notice_thread_party_generations USING btree (copyright_notice_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_thread_party_generations FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_current_owner_deletion`: `CREATE TRIGGER trigger_reject_copyright_current_owner_deletion BEFORE DELETE ON public.copyright_notice_thread_party_generations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_thread_party_generations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_thread_party_generations', 'public.copyright_notice_thread_party_generations')`

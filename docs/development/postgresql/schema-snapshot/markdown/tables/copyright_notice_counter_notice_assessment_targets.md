@@ -24,7 +24,7 @@ _none_
 **Foreign keys:**
 
 - `fk_copyright_counter_targets__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_counter_targets__target_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_counter_targets__target_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -36,4 +36,6 @@ _none_
 
 - `trigger_copyright_notice_counter_assessment_targets_immutable`: `CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
 - `trigger_copyright_notice_counter_assessment_targets_scope`: `CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_counter_notice_assessment_target_scope()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_counter_notice_assessment_targets', 'public.copyright_notice_counter_notice_assessment_targets')`
 - `trigger_update_copyright_counter_targets_scope`: `CREATE TRIGGER trigger_update_copyright_counter_targets_scope BEFORE INSERT ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessment_identities', 'copyright_notice_submission_assessment_identity_id')`

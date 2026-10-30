@@ -6,15 +6,16 @@ Escalation of one EU or UK notice from either an exhausted acknowledgment or, fo
 
 Not partitioned — growth: unbounded.
 
-| Column                                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
-| ------------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `id`                                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                   |
-| `copyright_notice_id`                            | `uuid`                     | no       |                              |          |           |           | Notice this escalation belongs to. The source row must belong to the same notice. |
-| `jurisdiction`                                   | `copyright_jurisdictions`  | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.     |
-| `copyright_territorial_notice_acknowledgment_id` | `uuid`                     | yes      |                              |          |           |           | Exhausted acknowledgment that caused this escalation. Exactly one source is set.  |
-| `copyright_eu_supervised_complaint_id`           | `uuid`                     | yes      |                              |          |           |           | EU supervised complaint that caused this escalation. Exactly one source is set.   |
-| `escalated_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the escalation was recorded.                                                 |
-| `created_at`                                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
+| Column                                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                      |
+| ------------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------- |
+| `transparency_generation`                        | `bigint`                   | no       | `0`                          |          |           |           | Commit-serialized aggregate generation in which this immutable reportable fact was admitted. |
+| `id`                                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                              |
+| `copyright_notice_id`                            | `uuid`                     | no       |                              |          |           |           | Notice this escalation belongs to. The source row must belong to the same notice.            |
+| `jurisdiction`                                   | `copyright_jurisdictions`  | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                |
+| `copyright_territorial_notice_acknowledgment_id` | `uuid`                     | yes      |                              |          |           |           | Exhausted acknowledgment that caused this escalation. Exactly one source is set.             |
+| `copyright_eu_supervised_complaint_id`           | `uuid`                     | yes      |                              |          |           |           | EU supervised complaint that caused this escalation. Exactly one source is set.              |
+| `escalated_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the escalation was recorded.                                                            |
+| `created_at`                                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,21 +28,28 @@ Not partitioned — growth: unbounded.
 
 - `chk_copyright_territorial_escalations__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 - `chk_copyright_territorial_escalations__source`: `CHECK ((num_nonnulls(copyright_territorial_notice_acknowledgment_id, copyright_eu_supervised_complaint_id) = 1))`
+- `copyright_territorial_escalations_transparency_generation_check`: `CHECK ((transparency_generation >= 0))`
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_escalations__eu_supervised_complaint`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE RESTRICT`
-- `fk_copyright_territorial_escalations__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
-- `fk_copyright_territorial_escalations__notice_acknowledgment`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_escalations__eu_supervised_complaint`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE CASCADE`
+- `fk_copyright_territorial_escalations__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
+- `fk_copyright_territorial_escalations__notice_acknowledgment`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_territorial_escalations_pkey`: `CREATE UNIQUE INDEX copyright_territorial_escalations_pkey ON public.copyright_territorial_escalations USING btree (id)`
 - `idx_copyright_territorial_escalations__notice`: `CREATE INDEX idx_copyright_territorial_escalations__notice ON public.copyright_territorial_escalations USING btree (copyright_notice_id, jurisdiction)`
+- `idx_copyright_territorial_escalations__report_generation`: `CREATE INDEX idx_copyright_territorial_escalations__report_generation ON public.copyright_territorial_escalations USING btree (transparency_generation, escalated_at)`
 - `uq_copyright_territoria_escalations__eu_supervised_complaint_id`: `CREATE UNIQUE INDEX uq_copyright_territoria_escalations__eu_supervised_complaint_id ON public.copyright_territorial_escalations USING btree (copyright_eu_supervised_complaint_id)`
 - `uq_copyright_territorial_escalations__notice_acknowledgment_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_escalations__notice_acknowledgment_id ON public.copyright_territorial_escalations USING btree (copyright_territorial_notice_acknowledgment_id)`
 
 **Triggers:**
 
-- `trigger_copyright_territorial_escalations_immutable`: `CREATE TRIGGER trigger_copyright_territorial_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_escalations_immutable`: `CREATE TRIGGER trigger_copyright_territorial_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
 - `trigger_copyright_territorial_escalations_source`: `CREATE TRIGGER trigger_copyright_territorial_escalations_source BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation()`
+- `trigger_record_copyright_transparency_source_erasure`: `CREATE TRIGGER trigger_record_copyright_transparency_source_erasure BEFORE DELETE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_source_erasure('escalated_at')`
+- `trigger_register_copy_blocker_escalation`: `CREATE TRIGGER trigger_register_copy_blocker_escalation BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_escalations', 'public.copyright_territorial_escalations')`
+- `trigger_stamp_copyright_transparency_fact`: `CREATE TRIGGER trigger_stamp_copyright_transparency_fact BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_fact()`

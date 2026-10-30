@@ -51,4 +51,11 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_dsa_statement_submissions_retention_delete`: `CREATE TRIGGER trigger_copyright_dsa_statement_submissions_retention_delete BEFORE DELETE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
 - `trigger_copyright_dsa_statement_submissions_updated_at`: `CREATE TRIGGER trigger_copyright_dsa_statement_submissions_updated_at BEFORE UPDATE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_lock_copyright_dsa_statement_notice`: `CREATE TRIGGER trigger_lock_copyright_dsa_statement_notice BEFORE INSERT ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_lock_copyright_dsa_statement_notice()`
+- `trigger_register_copy_blocker_dsa_submission`: `CREATE TRIGGER trigger_register_copy_blocker_dsa_submission BEFORE INSERT OR UPDATE OF submitted_at, failed_at, lease_token ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('restriction')`
+- `trigger_register_copyright_dsa_outcome_activity`: `CREATE TRIGGER trigger_register_copyright_dsa_outcome_activity AFTER INSERT OR UPDATE OF submitted_at, failed_at ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_dsa_activity()`
+- `trigger_register_copyright_dsa_statement_count`: `CREATE TRIGGER trigger_register_copyright_dsa_statement_count AFTER INSERT OR DELETE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_dsa_statement_count()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_dsa_statement_submissions', 'public.copyright_dsa_statement_submissions')`

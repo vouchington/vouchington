@@ -6,17 +6,18 @@ Supervised complaint recorded against an EU notice. EU only. Recording it can es
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                              |
-| ------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------ |
-| `id`                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                      |
-| `copyright_notice_id`    | `uuid`                     | no       |                              |          |           |           | EU notice this supervised complaint concerns.                                        |
-| `jurisdiction`           | `copyright_jurisdictions`  | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice. |
-| `recorded_by_id`         | `uuid`                     | yes      |                              |          |           |           | User who recorded the complaint. Null after that account is deleted.                 |
-| `idempotency_key`        | `text`                     | no       |                              |          |           |           | Caller-supplied UUID replay key, scoped to the recording user and jurisdiction.      |
-| `authority_reference`    | `text`                     | no       |                              |          |           |           | Authority reference for this complaint. Unique per notice.                           |
-| `explanation_ciphertext` | `text`                     | no       |                              |          |           |           | Encrypted explanation of the supervised complaint.                                   |
-| `received_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this supervised complaint.                                        |
-| `created_at`             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                      |
+| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                      |
+| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------- |
+| `transparency_generation` | `bigint`                   | no       | `0`                          |          |           |           | Commit-serialized aggregate generation in which this immutable reportable fact was admitted. |
+| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                              |
+| `copyright_notice_id`     | `uuid`                     | no       |                              |          |           |           | EU notice this supervised complaint concerns.                                                |
+| `jurisdiction`            | `copyright_jurisdictions`  | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice.         |
+| `recorded_by_id`          | `uuid`                     | yes      |                              |          |           |           | User who recorded the complaint. Null after that account is deleted.                         |
+| `idempotency_key`         | `text`                     | no       |                              |          |           |           | Caller-supplied UUID replay key, scoped to the recording user and jurisdiction.              |
+| `authority_reference`     | `text`                     | no       |                              |          |           |           | Authority reference for this complaint. Unique per notice.                                   |
+| `explanation_ciphertext`  | `text`                     | no       |                              |          |           |           | Encrypted explanation of the supervised complaint.                                           |
+| `received_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this supervised complaint.                                                |
+| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,19 +32,26 @@ Not partitioned — growth: unbounded.
 - `chk_copyright_eu_supervised_complaints__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
 - `chk_copyright_eu_supervised_complaints__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))`
 - `chk_copyright_eu_supervised_complaints__reference`: `CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))`
+- `copyright_eu_supervised_complaint_transparency_generation_check`: `CHECK ((transparency_generation >= 0))`
 
 **Foreign keys:**
 
-- `fk_copyright_eu_supervised_complaints__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_eu_supervised_complaints__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_eu_supervised_complaints__recorded_by`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `copyright_eu_supervised_complaints_pkey`: `CREATE UNIQUE INDEX copyright_eu_supervised_complaints_pkey ON public.copyright_eu_supervised_complaints USING btree (id)`
 - `idx_copyright_eu_supervised_complaints__recorded_by`: `CREATE INDEX idx_copyright_eu_supervised_complaints__recorded_by ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)`
+- `idx_copyright_eu_supervised_complaints__report_generation`: `CREATE INDEX idx_copyright_eu_supervised_complaints__report_generation ON public.copyright_eu_supervised_complaints USING btree (transparency_generation, received_at)`
 - `uq_copyright_eu_supervised_complaints__idempotency`: `CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__idempotency ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id, jurisdiction, idempotency_key)`
 - `uq_copyright_eu_supervised_complaints__reference`: `CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__reference ON public.copyright_eu_supervised_complaints USING btree (copyright_notice_id, jurisdiction, authority_reference)`
 
 **Triggers:**
 
-- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
+- `trigger_record_copyright_transparency_source_erasure`: `CREATE TRIGGER trigger_record_copyright_transparency_source_erasure BEFORE DELETE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_source_erasure('received_at')`
+- `trigger_register_copy_blocker_supervised`: `CREATE TRIGGER trigger_register_copy_blocker_supervised BEFORE INSERT ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_eu_supervised_complaints', 'public.copyright_eu_supervised_complaints')`
+- `trigger_stamp_copyright_transparency_fact`: `CREATE TRIGGER trigger_stamp_copyright_transparency_fact BEFORE INSERT ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_fact()`

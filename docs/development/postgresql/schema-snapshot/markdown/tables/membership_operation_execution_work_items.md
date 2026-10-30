@@ -40,3 +40,4 @@ _none_
 **Triggers:**
 
 - `trigger_membership_operation_work_items_guard`: `CREATE TRIGGER trigger_membership_operation_work_items_guard BEFORE UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_operation_work_lease()`
+- `trigger_membership_operation_work_retained_fence`: `CREATE TRIGGER trigger_membership_operation_work_retained_fence BEFORE INSERT OR UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write()`
