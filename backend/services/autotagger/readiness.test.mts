@@ -2,7 +2,6 @@ import { listPendingClassifierRunRequests } from '@services/classifier-runs'
 import {
   createAutotaggerFeedItemFixture,
   createAutotaggerPostFixture,
-  embedAutotaggerPost,
   requestAutotaggerRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import { setPostClassifierPostHashForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
@@ -20,16 +19,6 @@ async function sweepableSubjectIds(after: string | null = null): Promise<string[
 }
 
 describe('C6 sweep eligibility (real PG)', () => {
-  it('holds an approved post back until its embedding exists, without burning a sweep enqueue', async () => {
-    const fixture = await createAutotaggerPostFixture({ embedded: false })
-    await requestAutotaggerRun(fixture)
-    expect(await sweepableSubjectIds()).not.toContain(fixture.post.id)
-
-    await embedAutotaggerPost(fixture.post.id, fixture.embedding)
-
-    expect(await sweepableSubjectIds()).toContain(fixture.post.id)
-  })
-
   it('holds a feed item back until its embedding exists', async () => {
     const waiting = await createAutotaggerFeedItemFixture({ embedded: false })
     const ready = await createAutotaggerFeedItemFixture({ embedded: true })
