@@ -77,8 +77,12 @@ describe('getExportDownloadUrl', () => {
 
     expect(url).toBe('https://s3.example.com/signed-url')
     expect(mockGetSignedUrl).toHaveBeenCalledOnce()
-    const [, , opts] = mockGetSignedUrl.mock.calls[0]!
+    const [, command, opts] = mockGetSignedUrl.mock.calls[0]!
     expect(opts).toEqual({ expiresIn: 3600 })
+    const cmd = command as unknown as { input: Record<string, unknown> }
+    expect(cmd.input.ResponseContentDisposition).toBe('attachment; filename="export.zip"')
+    expect(cmd.input.Bucket).toBe(S3Buckets.userExports)
+    expect(cmd.input.Key).toBe('request-123.zip')
   })
 
   it('generates presigned URL with custom expiry', async () => {
@@ -89,19 +93,6 @@ describe('getExportDownloadUrl', () => {
 
     const [, , opts] = mockGetSignedUrl.mock.calls[0]!
     expect(opts).toEqual({ expiresIn: 604800 })
-  })
-
-  it('sets correct ResponseContentDisposition', async () => {
-    mockGetSignedUrl.mockResolvedValueOnce('https://s3.example.com/signed-url' as never)
-    const { getExportDownloadUrl } = await import('./s3.mts')
-
-    await getExportDownloadUrl('request-123.zip')
-
-    const [, command] = mockGetSignedUrl.mock.calls[0]!
-    const cmd = command as unknown as { input: Record<string, unknown> }
-    expect(cmd.input.ResponseContentDisposition).toBe('attachment; filename="export.zip"')
-    expect(cmd.input.Bucket).toBe(S3Buckets.userExports)
-    expect(cmd.input.Key).toBe('request-123.zip')
   })
 })
 
