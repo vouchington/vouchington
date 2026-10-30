@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import type { PostgresCatalog, PostgresCatalogOptions } from 'no-mistakes'
 import { stableStringify } from '@modules/utils/stable-stringify'
 
-export const NO_MISTAKES_CATALOG_FILE = 'no-mistakes-catalog.json'
+const NO_MISTAKES_CATALOG_FILE = 'no-mistakes-catalog.json'
 
 /**
  * The deployed application database name. The catalog records it as `currentDatabase`, which no-mistakes
@@ -12,7 +12,7 @@ export const NO_MISTAKES_CATALOG_FILE = 'no-mistakes-catalog.json'
  * reference, so the value changes no finding; fixing it makes a per-worktree database
  * (`voucha-<hash>`) and CI's `postgres` database generate identical bytes.
  */
-export const NO_MISTAKES_CATALOG_DATABASE = 'voucha'
+const NO_MISTAKES_CATALOG_DATABASE = 'voucha'
 
 export const noMistakesCatalogOptions = {
   connectionEnv: 'DATABASE_URL',

@@ -16,12 +16,10 @@ const __dirname = import.meta.dirname
  * treating the recorded version as a byte-for-byte equality requirement between "live" and
  * "committed" produces permanent, unfixable false positives rather than catching real drift.
  * Extension *presence* still participates in the comparison below -- only `version` is normalized
- * away. Exported for direct unit coverage in `verify-live-schema.test.mts`: this is pure logic
- * with no live-DB dependency, unlike `verifyLiveSchemaMatchesSnapshot` below.
+ * away. `verifyLiveSchemaMatchesSnapshot` is the production comparison. The live schema test
+ * covers version-only drift and still compares extension presence.
  */
-export function normalizeExtensionVersionsForLiveComparison(
-  snapshot: SchemaSnapshot,
-): SchemaSnapshot {
+function normalizeExtensionVersionsForLiveComparison(snapshot: SchemaSnapshot): SchemaSnapshot {
   return {
     ...snapshot,
     extensions: Object.fromEntries(

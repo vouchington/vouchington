@@ -2,12 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import {
-  assertNotCrossWorktreeConnection,
-  databaseNameFromConnectionString,
-  findRepoRoot,
-  isNonMainWorktree,
-} from './worktree-guard.mts'
+import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
 
 const testRoot = mkdtempSync(join(tmpdir(), 'voucha-worktree-guard-'))
 
@@ -25,56 +20,6 @@ function makeNonMainWorktreeDir(): string {
 
 describe('worktree-guard', () => {
   afterAll(() => rmSync(testRoot, { force: true, recursive: true }))
-
-  describe('databaseNameFromConnectionString', () => {
-    it('extracts the database name from a postgres URL', () => {
-      expect(databaseNameFromConnectionString('postgres://localhost/voucha')).toBe('voucha')
-      expect(databaseNameFromConnectionString('postgres://localhost/voucha-my-feature')).toBe(
-        'voucha-my-feature',
-      )
-      expect(databaseNameFromConnectionString('postgres://user@host:5432/mydb')).toBe('mydb')
-    })
-
-    it('returns null for an invalid URL', () => {
-      expect(databaseNameFromConnectionString('not-a-url')).toBeNull()
-    })
-  })
-
-  describe('findRepoRoot', () => {
-    it('finds the root when .git exists in the start dir', () => {
-      const dir = makeMainWorktreeDir()
-      expect(findRepoRoot(dir)).toBe(dir)
-    })
-
-    it('finds the root by walking up', () => {
-      const dir = makeMainWorktreeDir()
-      const nested = join(dir, 'a', 'b', 'c')
-      mkdirSync(nested, { recursive: true })
-      expect(findRepoRoot(nested)).toBe(dir)
-    })
-
-    it('returns null when no .git is found', () => {
-      const isolated = mkdtempSync(join(testRoot, 'no-git-'))
-      expect(findRepoRoot(isolated, testRoot)).toBeNull()
-    })
-  })
-
-  describe('isNonMainWorktree', () => {
-    it('returns false when .git is a directory (main worktree)', () => {
-      const dir = makeMainWorktreeDir()
-      expect(isNonMainWorktree(dir)).toBe(false)
-    })
-
-    it('returns true when .git is a file (non-main worktree)', () => {
-      const dir = makeNonMainWorktreeDir()
-      expect(isNonMainWorktree(dir)).toBe(true)
-    })
-
-    it('returns false when .git does not exist', () => {
-      const dir = mkdtempSync(join(testRoot, 'no-git-'))
-      expect(isNonMainWorktree(dir)).toBe(false)
-    })
-  })
 
   describe('assertNotCrossWorktreeConnection', () => {
     it('skips the check in CI', () => {
@@ -141,6 +86,18 @@ describe('worktree-guard', () => {
       const dir = makeNonMainWorktreeDir()
       expect(() =>
         assertNotCrossWorktreeConnection('postgres://localhost/voucha-my-feature', {
+          env: {},
+          moduleDir: dir,
+        }),
+      ).not.toThrow()
+      expect(() =>
+        assertNotCrossWorktreeConnection('postgres://user@host:5432/mydb', {
+          env: {},
+          moduleDir: dir,
+        }),
+      ).not.toThrow()
+      expect(() =>
+        assertNotCrossWorktreeConnection('not-a-url', {
           env: {},
           moduleDir: dir,
         }),

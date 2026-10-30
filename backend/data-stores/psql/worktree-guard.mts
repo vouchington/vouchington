@@ -1,7 +1,7 @@
 import { statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-export function findRepoRoot(startDir: string, stopAt?: string): string | null {
+function findRepoRoot(startDir: string, stopAt?: string): string | null {
   let dir = startDir
   while (true) {
     try {
@@ -17,7 +17,7 @@ export function findRepoRoot(startDir: string, stopAt?: string): string | null {
   }
 }
 
-export function isNonMainWorktree(repoRoot: string): boolean {
+function isNonMainWorktree(repoRoot: string): boolean {
   try {
     return !statSync(resolve(repoRoot, '.git')).isDirectory()
   } catch {
@@ -25,7 +25,7 @@ export function isNonMainWorktree(repoRoot: string): boolean {
   }
 }
 
-export function databaseNameFromConnectionString(connectionString: string): string | null {
+function databaseNameFromConnectionString(connectionString: string): string | null {
   try {
     const url = new URL(connectionString)
     return decodeURIComponent(url.pathname.replace(/^\//, '')) || null

@@ -4,13 +4,11 @@ import { join } from 'node:path'
 import { format } from 'oxfmt'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { stableStringify } from '@modules/utils/stable-stringify'
-import {
-  NO_MISTAKES_CATALOG_DATABASE,
-  NO_MISTAKES_CATALOG_FILE,
-  readNoMistakesCatalog,
-  writeNoMistakesCatalog,
-} from './no-mistakes-catalog.mts'
+import { readNoMistakesCatalog, writeNoMistakesCatalog } from './no-mistakes-catalog.mts'
 import type { PostgresCatalog, PostgresCatalogOptions } from 'no-mistakes'
+
+const NO_MISTAKES_CATALOG_FILE = 'no-mistakes-catalog.json'
+const NO_MISTAKES_CATALOG_DATABASE = 'voucha'
 
 const catalog: PostgresCatalog = {
   formatVersion: 2,
