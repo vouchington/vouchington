@@ -45,7 +45,7 @@ describe('LinkValidationForm', () => {
 
     render(<LinkValidationForm referralProgramId='program-1' />)
 
-    const input = screen.getByLabelText('Validation Slug')
+    const input = screen.getByLabelText('Validation Slug') as HTMLInputElement
     fireEvent.change(input, { target: { value: VALID_UUID } })
     fireEvent.submit(input.closest('form')!)
 
@@ -54,6 +54,7 @@ describe('LinkValidationForm', () => {
     })
     expect(mockGetReferralLinkValidation).not.toHaveBeenCalled()
     expect(mockOnSuccess).toHaveBeenCalled()
+    expect(input.value).toBe('')
   })
 
   it('looks up validation by slug then links it', async () => {
@@ -113,20 +114,5 @@ describe('LinkValidationForm', () => {
         expect.objectContaining({ fallback: 'Failed to link validation' }),
       )
     })
-  })
-
-  it('clears input after successful link', async () => {
-    mockLinkValidationToReferralProgram.mockResolvedValueOnce(undefined)
-
-    render(<LinkValidationForm referralProgramId='program-1' />)
-
-    const input = screen.getByLabelText('Validation Slug') as HTMLInputElement
-    fireEvent.change(input, { target: { value: VALID_UUID } })
-    fireEvent.submit(input.closest('form')!)
-
-    await waitFor(() => {
-      expect(mockOnSuccess).toHaveBeenCalled()
-    })
-    expect(input.value).toBe('')
   })
 })
