@@ -3,16 +3,18 @@ import { fileURLToPath } from 'node:url'
 
 import type { SchemaSnapshot } from 'vouchington-tooling/pg-schema-snapshot'
 
-import { loadGeneratedConfigDrivenSql } from '../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
-import { findFirstUnguardedInsertViolation } from '../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
-import { createSchemaSnapshotFacts } from '../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
+import { loadGeneratedConfigDrivenSql } from '../backend/test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
+import { findFirstUnguardedInsertViolation } from '../backend/test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
+import { createSchemaSnapshotFacts } from '../backend/test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
 
 // Shipped config-driven INSERT policy for the static backend gate. Not a Vitest root.
+// Lives outside backend/scripts so the checker can use the test-helper facts without
+// crossing that workspace package boundary.
 const schemaPath = fileURLToPath(
-  new URL('../data-stores/psql/schema-snapshot/schema.json', import.meta.url),
+  new URL('../backend/data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
 const configDrivenDir = fileURLToPath(
-  new URL('../data-stores/psql/config-driven/', import.meta.url),
+  new URL('../backend/data-stores/psql/config-driven/', import.meta.url),
 )
 
 const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
