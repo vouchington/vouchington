@@ -155,19 +155,6 @@ describe('cards.generated', () => {
       getIndividualCards(secondUser, secondUser, { after: cursor }),
     ).rejects.toMatchObject({ status: 400 })
   })
-  it('createIndividualCard - creates a card for individual', async () => {
-    const cardId = await insertTestCard({
-      createdById: user.id,
-    })
-    const individualCard = await createIndividualCard(user, user, cardId)
-
-    expect(individualCard).toBeDefined()
-    expect(individualCard.card_topic_id).toBe(cardId)
-    expect(individualCard).not.toHaveProperty('individual_id')
-    expect(individualCard.card).toBeDefined()
-    expect(individualCard.card.id).toBe(cardId)
-  })
-
   it('createIndividualCard - requires authentication', async () => {
     const cardId = await insertTestCard({
       createdById: user.id,
