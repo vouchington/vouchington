@@ -89,7 +89,8 @@ describe('fediverse request contracts', () => {
     await request.get('/api/v1/fediverse/search?q=a&unknown=1').expect(200)
     await request.get('/api/v1/fediverse/search?q=a&cursor=x').expect(400)
     await request.get('/api/v1/fediverse/search?q=a&providers=nope').expect(400)
-    await request.get('/api/v1/fediverse/search?q=a&q=b').expect(422)
+    const repeatedQ = await request.get('/api/v1/fediverse/search?q=a&q=b').expect(422)
+    expect(repeatedQ.body.message).toContain('Invalid q')
   })
 
   it('keeps the instance detail 404 for an unknown id', async () => {

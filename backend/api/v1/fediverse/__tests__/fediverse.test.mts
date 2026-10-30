@@ -49,13 +49,6 @@ describe('GET /api/v1/fediverse/search', () => {
     expect(response.body.message).toContain('Invalid after')
   })
 
-  it('rejects a repeated q query key', async () => {
-    const request = createRequest()
-    const response = await request.get('/api/v1/fediverse/search?q=a&q=b').expect(422)
-
-    expect(response.body.message).toContain('Invalid q')
-  })
-
   it('treats an empty q value as an empty result', async () => {
     const request = createRequest()
     const response = await request.get('/api/v1/fediverse/search?q=').expect(200)
