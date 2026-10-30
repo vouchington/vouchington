@@ -4,7 +4,10 @@ import { getCopyrightRetentionWindows } from './config.mts'
 import { destroyCopyrightEncryptionKeyObject } from './encryption-key-objects.mts'
 
 /** Reclaim one reservation independently; never retain live-owner key locks across other S3 calls. */
-export async function reclaimCopyrightEncryptionKeyReservation(id: string): Promise<boolean> {
+export async function reclaimCopyrightEncryptionKeyReservation(
+  id: string,
+  nowOverride?: Date,
+): Promise<boolean> {
   await using query = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
@@ -12,8 +15,9 @@ export async function reclaimCopyrightEncryptionKeyReservation(id: string): Prom
   const { rows: locked } = await query(sql`/* lockCopyrightOrphanKeyReservation */
     SELECT id FROM copyright_retention_keys WHERE id = ${id} FOR UPDATE`)
   if (!locked.length) return false
+  const now = nowOverride ?? new Date()
   const cutoff = new Date(
-    Date.now() - getCopyrightRetentionWindows().encryptionOrphanGraceHours * 3_600_000,
+    now.getTime() - getCopyrightRetentionWindows().encryptionOrphanGraceHours * 3_600_000,
   )
   const { rows } = await query(sql`/* recheckCopyrightOrphanKeyReservation */
     SELECT id FROM copyright_retention_keys key WHERE key.id = ${id}

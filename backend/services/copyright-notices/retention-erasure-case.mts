@@ -25,6 +25,7 @@ export type CopyrightRetentionCaseOutcome = 'erased' | 'ineligible' | 'progress'
 /** Exactly one finite proof page or one durable destruction page per selected case. */
 export async function eraseCopyrightRetentionCase(
   noticeId: string,
+  nowOverride?: Date,
 ): Promise<CopyrightRetentionCaseOutcome> {
   const retentionMonths = await getCopyrightCaseRetentionMonths()
   if (retentionMonths === null) return 'ineligible'
@@ -61,7 +62,7 @@ export async function eraseCopyrightRetentionCase(
     sql`/* lockCopyrightRetentionNotice */ SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`,
   )
   // Read the actual clock after every lifetime lock wait. Candidate selection is never authority.
-  const now = new Date()
+  const now = nowOverride ?? new Date()
   const cutoff = shiftUtcCalendarMonths(now, -retentionMonths)
   const proof = await advanceCopyrightMinimalPurgeProof(
     query,

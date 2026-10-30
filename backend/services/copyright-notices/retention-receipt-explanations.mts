@@ -77,12 +77,27 @@ async function retireReceiptExplanation(
     return 'started'
   }
   await destroyCopyrightOwnerEncryptionKey({ kind: 'receipt', id: receipt.id }, query)
+  const { rows: detached } = await query<{ copyright_retention_key_id: string }>(sql`
+    /* detachRetiredCopyrightReceiptKey */
+    DELETE FROM copyright_email_receipt_encryption_keys owned
+    USING copyright_retention_keys key
+    WHERE owned.copyright_notice_email_intake_receipt_id = ${receipt.id}
+      AND key.id = owned.copyright_retention_key_id AND key.destroyed_at IS NOT NULL
+    RETURNING owned.copyright_retention_key_id`)
+  if (detached[0]) {
+    const { rows: removed } = await query<{ id: string }>(sql`
+      /* deleteRetiredCopyrightReceiptKeyRegistry */
+      DELETE FROM copyright_retention_keys
+      WHERE id = ${detached[0].copyright_retention_key_id} AND destroyed_at IS NOT NULL
+      RETURNING id`)
+    if (removed.length !== 1) throw new Error('Retired copyright receipt key registry is missing')
+  }
   await finishReceiptRetirement(query, receipt.id)
   return 'retired'
 }
 
 async function finishReceiptRetirement(query: TransactionQuery, receiptId: string): Promise<void> {
-  await query(sql`/* finishCopyrightReceiptExplanationRetirement */
+  const { rows } = await query<{ id: string }>(sql`/* finishCopyrightReceiptExplanationRetirement */
     UPDATE copyright_notice_email_intake_receipts
     SET review_decision = NULL, reviewed_by_id = NULL, reviewed_at = NULL,
       review_rationale_ciphertext = NULL, last_delivery_activity_at = NULL,
@@ -90,7 +105,11 @@ async function finishReceiptRetirement(query: TransactionQuery, receiptId: strin
       preservation_hold_placed_by_id = NULL, preservation_hold_released_at = NULL,
       preservation_hold_released_by_id = NULL, last_preservation_hold_released_at = NULL,
       final_explanation_erased_at = clock_timestamp()
-    WHERE id = ${receiptId} AND final_explanation_erased_at IS NULL`)
+    WHERE id = ${receiptId} AND final_explanation_erased_at IS NULL
+      AND NOT EXISTS (SELECT 1 FROM copyright_email_receipt_encryption_keys owned
+        WHERE owned.copyright_notice_email_intake_receipt_id = ${receiptId})
+    RETURNING id`)
+  if (rows.length !== 1) throw new Error('Retired copyright receipt still has key authority')
 }
 
 async function checkpointReceiptRetirement(

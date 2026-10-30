@@ -3,6 +3,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 import {
   createCopyrightKeyNotice,
+  readCopyrightKeyReservation,
   useCopyrightKeyObjectFaults,
 } from '@voucha/test-helpers/copyright-encryption-keys'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
@@ -25,6 +26,7 @@ import {
   ErasedCopyrightEmailIntakeReplay,
 } from './email-intakes.mts'
 import { prepareCopyrightEncryptionKey, openCopyrightSecrets } from './encryption-keys.mts'
+import { readCopyrightEncryptionKeyObject } from './encryption-key-objects.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { sweepCopyrightReceiptExplanations } from './retention-receipt-explanations.mts'
 import {
@@ -90,7 +92,12 @@ describe('standalone copyright receipt explanation retirement', () => {
       live_intake_exists: false,
     })
     expect(after?.final_explanation_erased_at).toBeInstanceOf(Date)
-    expect(after?.key_destroyed_at).toBeInstanceOf(Date)
+    expect(after?.key_id).toBeNull()
+    expect((await readCopyrightEmailOwnerKeyIds(receipt.id)).receipt_key_id).toBeNull()
+    expect(await readCopyrightKeyReservation(receipt.keyId)).toBeNull()
+    await expect(readCopyrightEncryptionKeyObject(receipt.keyId)).rejects.toMatchObject({
+      name: 'NoSuchKey',
+    })
     await expect(openCopyrightSecrets({ kind: 'receipt', id: receipt.id })).rejects.toThrow(
       'Copyright encryption owner key is unavailable',
     )

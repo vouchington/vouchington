@@ -45,10 +45,10 @@ describe('copyright minimal record clock', () => {
     const fixture = await createRetentionMinimalCase()
     const eventId = await readTestCopyrightLifecycleChangeId(fixture.noticeId)
     await expect(attemptTestCopyrightLifecycleChangeUpdate(eventId)).rejects.toThrow(
-      'copyright legal records are immutable outside a case purge',
+      'copyright legal receipt and evidence records are immutable',
     )
     await expect(attemptTestCopyrightLifecycleChangeDelete(eventId)).rejects.toThrow(
-      'copyright legal records are immutable outside a case purge',
+      'copyright legal receipt and evidence records are immutable',
     )
     await setClock(new Date('2035-10-23T00:00:00Z'))
     const erasurePages = await advanceCopyrightRetentionWorkPages(fixture.noticeId)

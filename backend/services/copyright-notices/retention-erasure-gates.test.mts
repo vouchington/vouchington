@@ -1,5 +1,8 @@
 import { createTestUser } from '@voucha/test-helpers'
-import { createHistoricalCopyrightEuReportCase } from '@voucha/test-helpers/copyright-historical-report-case'
+import {
+  createHistoricalCopyrightEuReportCase,
+  historicalCopyrightReportPeriod,
+} from '@voucha/test-helpers/copyright-historical-report-case'
 import { readCopyrightDsaRetentionClock } from '@voucha/test-helpers/copyright-retention-dsa-activity'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
@@ -21,6 +24,7 @@ import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyri
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   advanceCopyrightRetentionWorkPages,
+  getCopyrightRetentionWorkDate,
   useCopyrightRetentionWorkClock,
 } from '@voucha/test-helpers/copyright-retention-work'
 import { sweepCopyrightEvidenceRetention } from './index.mts'
@@ -138,11 +142,8 @@ describe('copyright evidence retention gates', () => {
           : await createRetentionTerritorialCase(jurisdiction, true)
       if (jurisdiction === 'eu_dsa') {
         const reporter = await createTestUser({ extraRoles: ['moderator'] })
-        await compileEuCopyrightTransparencyReport(
-          reporter,
-          new Date('2500-01-01T00:00:00Z'),
-          new Date('2501-01-01T00:00:00Z'),
-        )
+        const period = historicalCopyrightReportPeriod()
+        await compileEuCopyrightTransparencyReport(reporter, period.startedAt, period.endedAt)
       }
       const columns = await readCopyrightRetentionColumns(noticeId)
 
@@ -271,6 +272,8 @@ describe('copyright evidence retention gates', () => {
     )
 
     const result = await sweepCopyrightEvidenceRetention({
+      now: getCopyrightRetentionWorkDate(),
+      caseNow: getCopyrightRetentionWorkDate(),
       limit: 2,
       noticeIds: watched.map(entry => entry.noticeId),
     })

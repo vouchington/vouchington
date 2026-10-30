@@ -966,10 +966,8 @@ CREATE TRIGGER trigger_record_copyright_transparency_source_erasure BEFORE DELET
 
 CREATE FUNCTION fn_ensure_writable_copyright_intake()
 RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE target_intake_id uuid; target_notice_id uuid; logical_table_name text;
+DECLARE target_intake_id uuid; target_notice_id uuid;
 BEGIN
-  SELECT relname INTO logical_table_name FROM pg_class
-    WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
   target_intake_id := CASE WHEN TG_TABLE_NAME = 'copyright_notice_email_intakes' THEN (to_jsonb(NEW)->>'id')::uuid
     WHEN to_jsonb(NEW) ? 'copyright_notice_email_intake_receipt_id'
       THEN (to_jsonb(NEW)->>'copyright_notice_email_intake_receipt_id')::uuid
@@ -1016,7 +1014,7 @@ BEGIN
       WHERE receipt.id = target_intake_id AND receipt.final_explanation_erasure_started_at IS NOT NULL)
     OR EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work
     WHERE work.copyright_notice_identity_id = target_notice_id AND work.erasure_started_at IS NOT NULL
-      AND (TG_OP = 'INSERT' OR NOT fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW))))
+      AND (TG_OP = 'INSERT' OR NOT fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW))))
     OR EXISTS (SELECT 1 FROM copyright_email_intake_encryption_keys owned
     JOIN copyright_retention_keys key ON key.id = owned.copyright_retention_key_id
     WHERE owned.copyright_notice_email_intake_id = target_intake_id AND key.destroyed_at IS NOT NULL) THEN

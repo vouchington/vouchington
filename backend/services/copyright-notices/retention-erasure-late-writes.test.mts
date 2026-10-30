@@ -95,7 +95,7 @@ describe('copyright retention and late agent writes', () => {
         model: 'test-model',
         structuredOutput: { summary: 'Late reply output' },
       }),
-    ).rejects.toThrow('Copyright encryption owner key is unavailable')
+    ).resolves.toBe(false)
     await watched.expectErased()
     const retained = await readCopyrightRetentionColumns(entry.noticeId)
     expect(retained.copyright_notice_email_intake_recommendations).toEqual([])
@@ -275,7 +275,7 @@ describe('copyright retention and late agent writes', () => {
         model: 'test-model',
         structuredOutput: { summary: 'Waiting output' },
       }),
-    ).rejects.toThrow('Copyright encryption owner key is unavailable')
+    ).resolves.toBe(false)
     const retained = await readCopyrightRetentionColumns(entry.noticeId)
     expect(retained.copyright_notice_email_intake_recommendations).toEqual([])
   })

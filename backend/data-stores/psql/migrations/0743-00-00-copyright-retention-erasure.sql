@@ -60,11 +60,18 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)
-RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)
-    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL
-    AND (old_row - fn_copyright_retention_erasable_columns(table_name))
-      = (new_row - fn_copyright_retention_erasable_columns(table_name))
+RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE logical_table_name text; erasable_columns text[];
+BEGIN
+  IF current_setting('app.copyright_retention_erasure', true) IS DISTINCT FROM 'on' THEN
+    RETURN false;
+  END IF;
+  SELECT relname INTO logical_table_name FROM pg_class
+    WHERE oid = COALESCE(pg_partition_root(to_regclass(table_name)), to_regclass(table_name));
+  erasable_columns := fn_copyright_retention_erasable_columns(logical_table_name);
+  IF erasable_columns IS NULL THEN RETURN false; END IF;
+  RETURN COALESCE((old_row - erasable_columns) = (new_row - erasable_columns), false);
+END;
 $$;
 
 COMMENT ON TABLE copyright_notice_retention_erasures IS 'Append-only record that a case''s personal data and stored evidence were erased after the retention period. Its presence ends every reader and sweep touch of the case''s erased columns; the case keeps its legal skeleton and repeat-infringer facts.';
@@ -74,7 +81,7 @@ COMMENT ON COLUMN copyright_notice_retention_erasures.erased_object_count IS 'Co
 COMMENT ON COLUMN copyright_notice_retention_erasures.legal_clock_at IS 'Latest substantive case activity captured before erasure rewrites updated_at values; the minimal-record window does not restart at erasure.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.created_at IS 'Time the case was erased, derived from the UUIDv7 id; the row is append-only.';
 COMMENT ON FUNCTION fn_copyright_retention_erasable_columns(text) IS 'Columns, per table, that a retention-erasure transaction may overwrite in place; NULL for any table that is never erased. The TypeScript erasure spec must list exactly these columns.';
-COMMENT ON FUNCTION fn_copyright_retention_erasure_permitted(text, jsonb, jsonb) IS 'True only inside a transaction that set app.copyright_retention_erasure to on and only when the update changes nothing outside the table''s erasable columns; legal-record guards call it before rejecting an update.';
+COMMENT ON FUNCTION fn_copyright_retention_erasure_permitted(text, jsonb, jsonb) IS 'True only inside a transaction that set app.copyright_retention_erasure to on and only when the update changes nothing outside the logical parent table''s erasable columns; unknown relations fail closed, and legal-record guards call it before rejecting an update.';
 
 -- A decision attempt can be admitted just as the case erasure worker commits. Hold the same
 -- notice row lock that its FOR UPDATE conflicts with, then read the marker in a fresh statement.

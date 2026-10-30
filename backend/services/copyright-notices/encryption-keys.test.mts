@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createCopyrightKeyNotice,
   readCopyrightKeyReservation,
@@ -11,7 +11,6 @@ import { reclaimCopyrightEncryptionKeyReservation } from './encryption-key-orpha
 describe('copyright owner key authority', () => {
   useCopyrightIntakeEnvironment()
   const provider = useCopyrightKeyObjectFaults()
-  afterEach(() => vi.useRealTimers())
 
   it('binds prepared handles to their exact owner and rejects retained disposed capabilities', async () => {
     await using prepared = await prepareCopyrightEncryptionKey('notice')
@@ -57,9 +56,9 @@ describe('copyright owner key authority', () => {
       object_created_at: null,
       destroyed_at: null,
     })
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(Date.now() + 3 * 86_400_000))
-    expect(await reclaimCopyrightEncryptionKeyReservation(keyId)).toBe(true)
+    expect(
+      await reclaimCopyrightEncryptionKeyReservation(keyId, new Date(Date.now() + 3 * 86_400_000)),
+    ).toBe(true)
     expect(await readCopyrightKeyReservation(keyId)).toBeNull()
   })
 
@@ -68,10 +67,9 @@ describe('copyright owner key authority', () => {
     await using live = await prepareCopyrightEncryptionKey('notice')
     await createCopyrightKeyNotice(abandoned, true)
     const owner = await createCopyrightKeyNotice(live)
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(Date.now() + 3 * 86_400_000))
-    expect(await reclaimCopyrightEncryptionKeyReservation(abandoned.id)).toBe(true)
-    expect(await reclaimCopyrightEncryptionKeyReservation(live.id)).toBe(false)
+    const retentionNow = new Date(Date.now() + 3 * 86_400_000)
+    expect(await reclaimCopyrightEncryptionKeyReservation(abandoned.id, retentionNow)).toBe(true)
+    expect(await reclaimCopyrightEncryptionKeyReservation(live.id, retentionNow)).toBe(false)
     await using scope = await openCopyrightSecrets({ kind: 'notice', id: owner.noticeId })
     expect(scope.decryptSecret(owner.ciphertext, owner.purpose)).toBe('Synthetic claimant contact')
   })

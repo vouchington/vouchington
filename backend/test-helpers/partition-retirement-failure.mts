@@ -73,8 +73,19 @@ export function createCopyrightPartitionRetirementRecorder(
   const begin: typeof beginTransaction = async () => {
     const transaction = await beginTransaction()
     const record: QueryExecutor = async input => {
-      statements.push(typeof input === 'string' ? input : input.text)
-      return { rows: [], rowCount: 0, command: 'ALTER', oid: 0, fields: [] }
+      const statement = typeof input === 'string' ? input : input.text
+      statements.push(statement)
+      // The fake children are empty. The scalar report probe still returns one covered row.
+      const rows = statement.includes('/* copyrightHistoryReportIsCovered */')
+        ? [{ first_at: null, last_at: null, max_generation: null, covered: true }]
+        : []
+      return {
+        rows: rows as never[],
+        rowCount: rows.length,
+        command: rows.length ? 'SELECT' : 'ALTER',
+        oid: 0,
+        fields: [],
+      }
     }
     return Object.assign(record, {
       client: transaction.client,

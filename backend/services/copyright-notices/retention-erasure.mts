@@ -121,7 +121,7 @@ async function nextSingleCaseFamily(): Promise<'evidence' | 'evidence_work'> {
 
 /** Raw case pages and finite per-case proofs make both reads and destruction bounded per run. */
 export async function sweepCopyrightEvidenceRetention(
-  options: { now?: Date; limit?: number; noticeIds?: readonly string[] } = {},
+  options: { now?: Date; caseNow?: Date; limit?: number; noticeIds?: readonly string[] } = {},
 ): Promise<CopyrightRetentionSweepResult> {
   if (!(await isCopyrightEvidenceRetentionDeletionEnabled())) return nothingDeleted()
   const windows = getCopyrightRetentionWindows()
@@ -173,7 +173,7 @@ export async function sweepCopyrightEvidenceRetention(
   for (const noticeId of candidates.ids) {
     try {
       // oxlint-disable-next-line no-await-in-loop -- each bounded case owns its locks and commit.
-      const outcome = await eraseCopyrightRetentionCase(noticeId)
+      const outcome = await eraseCopyrightRetentionCase(noticeId, options.caseNow)
       if (outcome === 'erased') result.erased++
       else if (outcome === 'progress') result.progressed++
       else result.ineligible++

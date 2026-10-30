@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 import { createTestUser } from '@voucha/test-helpers'
-import { createHistoricalCopyrightEuReportCase } from '@voucha/test-helpers/copyright-historical-report-case'
+import {
+  createHistoricalCopyrightEuReportCase,
+  historicalCopyrightReportPeriod,
+} from '@voucha/test-helpers/copyright-historical-report-case'
 import { readCopyrightEuTransparencyReports } from '@voucha/test-helpers/copyright-report-retention'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -15,8 +18,7 @@ import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
 import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 
 const WORK_PAGE_CAP = 128
-const PERIOD_STARTED_AT = new Date('2500-01-01T00:00:00Z')
-const PERIOD_ENDED_AT = new Date('2501-01-01T00:00:00Z')
+const { startedAt: PERIOD_STARTED_AT, endedAt: PERIOD_ENDED_AT } = historicalCopyrightReportPeriod()
 
 describe('EU transparency report retention', () => {
   useDsaTransparencyReports()
@@ -69,7 +71,7 @@ describe('EU transparency report retention', () => {
     ] as const)
       expect(afterSecond[count]).toBeGreaterThanOrEqual(afterFirst[count] + 1)
 
-    const retentionNow = shiftUtcCalendarMonths(new Date('2500-01-15T00:00:00Z'), 84)
+    const retentionNow = shiftUtcCalendarMonths(first.eventAt, 84)
     const retentionCutoff = shiftUtcCalendarMonths(retentionNow, -72)
     await setClock(retentionNow)
     for (const fixture of [first, second]) {

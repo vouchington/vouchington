@@ -1,11 +1,10 @@
 import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { v7 as uuidv7 } from 'uuid'
 import {
-  prepareCopyrightEncryptionKey,
-  prepareCopyrightIntakeEncryptionKey,
-  prepareCopyrightReceiptEncryptionKey,
+  prepareCopyrightEmailApprovalKeys,
   attachCopyrightEncryptionKey,
   openCopyrightSecrets,
+  type PreparedCopyrightEncryptionKey,
 } from './encryption-keys.mts'
 /* oxlint-disable max-lines -- Email admission keeps evidence, provenance, threading, and delivery atomic. */
 import { beginTransaction } from '@data-stores/psql'
@@ -64,10 +63,10 @@ async function admitCopyrightEmailIntake(
   input: PromoteCopyrightEmailIntakeInput,
 ): Promise<{ noticeId: string; submissionId: string }> {
   const noticeId = uuidv7()
-  // ast-grep-ignore: no-three-sequential-awaits -- Prepare both independently disposable keys before opening the producer transaction; sequential await-using releases the first if the second preparation fails.
-  await using encryptionKey = await prepareCopyrightEncryptionKey('notice')
-  await using preparedIntakeKey = await prepareCopyrightIntakeEncryptionKey(input.intakeId)
-  await using preparedReceiptKey = await prepareCopyrightReceiptEncryptionKey(input.intakeId)
+  await using preparedKeys = await prepareCopyrightEmailApprovalKeys(input.intakeId)
+  const encryptionKey = preparedKeys.notice
+  const preparedIntakeKey = preparedKeys.intake
+  const preparedReceiptKey = preparedKeys.receipt
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   await using transaction = await beginTransaction()
   const { rows: existing } = await transaction<{ id: string }>(sql`
@@ -317,7 +316,7 @@ async function recordEmailPromotion(
   purpose: string,
   graph: CopyrightEmailThreadGraph,
   shouldLinkReplies: boolean,
-  preparedReceiptKey: Awaited<ReturnType<typeof prepareCopyrightReceiptEncryptionKey>>,
+  preparedReceiptKey: PreparedCopyrightEncryptionKey | null,
 ): Promise<string> {
   const { rows } = await transaction<{
     id: string

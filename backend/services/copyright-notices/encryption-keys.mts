@@ -46,6 +46,74 @@ export async function prepareCopyrightEncryptionKey(
   }
 }
 
+/** Reserve and upload the at-most-three distinct keys for one email approval. */
+export async function prepareCopyrightEmailApprovalKeys(intakeId: string): Promise<{
+  notice: PreparedCopyrightEncryptionKey
+  intake: PreparedCopyrightEncryptionKey | null
+  receipt: PreparedCopyrightEncryptionKey | null
+  [Symbol.asyncDispose](): Promise<void>
+}> {
+  const { rows: attachments } = await read<{
+    intake_key_id: string | null
+    receipt_key_id: string | null
+  }>(sql`/* readCopyrightEmailApprovalKeyAttachments */ SELECT
+    (SELECT copyright_retention_key_id FROM copyright_email_intake_encryption_keys
+      WHERE copyright_notice_email_intake_id = ${intakeId}) AS intake_key_id,
+    (SELECT copyright_retention_key_id FROM copyright_email_receipt_encryption_keys
+      WHERE copyright_notice_email_intake_receipt_id = ${intakeId}) AS receipt_key_id`)
+  const kinds: CopyrightEncryptionOwner['kind'][] = ['notice']
+  if (!attachments[0]?.intake_key_id) kinds.push('intake')
+  if (!attachments[0]?.receipt_key_id) kinds.push('receipt')
+  await using reservation = await beginTransaction()
+  const { rows } = await reservation<{
+    id: string
+    owner_kind: CopyrightEncryptionOwner['kind']
+  }>(sql`/* reserveCopyrightEmailApprovalKeys */
+    INSERT INTO copyright_retention_keys (owner_kind)
+    SELECT owner_kind FROM unnest(${kinds}::copyright_encryption_owner_kinds[]) AS owners(owner_kind)
+    RETURNING id, owner_kind`)
+  if (rows.length !== kinds.length)
+    throw new Error('Copyright approval key reservations are missing')
+  await reservation.commit()
+  const keys = rows.map(row => {
+    const key = randomBytes(32)
+    return { prepared: new PreparedCopyrightEncryptionKey(row.id, row.owner_kind, key), key }
+  })
+  try {
+    await using upload = await beginTransaction()
+    const ids = keys.map(({ prepared }) => prepared.id)
+    const { rows: locked } = await upload<{
+      id: string
+    }>(sql`/* lockCopyrightEmailApprovalKeyUploads */
+      SELECT id FROM copyright_retention_keys WHERE id = ANY(${ids}::uuid[])
+        AND destroyed_at IS NULL ORDER BY id FOR UPDATE`)
+    if (locked.length !== keys.length) throw new Error('Copyright approval key reservation expired')
+    const uploads = await Promise.allSettled(
+      keys.map(({ prepared, key }) => putCopyrightEncryptionKeyObject(prepared.id, key)),
+    )
+    const failure = uploads.find(result => result.status === 'rejected')
+    if (failure?.status === 'rejected') throw failure.reason
+    const completed = await upload(sql`/* completeCopyrightEmailApprovalKeyUploads */
+      UPDATE copyright_retention_keys SET object_created_at = clock_timestamp()
+      WHERE id = ANY(${ids}::uuid[])`)
+    if (completed.rowCount !== keys.length)
+      throw new Error('Copyright approval key upload is incomplete')
+    await upload.commit()
+    const byKind = new Map(keys.map(({ prepared }) => [prepared.kind, prepared]))
+    return {
+      notice: byKind.get('notice')!,
+      intake: byKind.get('intake') ?? null,
+      receipt: byKind.get('receipt') ?? null,
+      async [Symbol.asyncDispose]() {
+        await Promise.all(keys.map(({ prepared }) => prepared[Symbol.asyncDispose]()))
+      },
+    }
+  } catch (err) {
+    await Promise.all(keys.map(({ prepared }) => prepared[Symbol.asyncDispose]()))
+    throw err
+  }
+}
+
 async function reserveKey(kind: CopyrightEncryptionOwner['kind']): Promise<string> {
   await using query = await beginTransaction()
   const { rows } = await query<{ id: string }>(sql`/* reserveCopyrightEncryptionKey */

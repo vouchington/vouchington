@@ -3,7 +3,6 @@ import {
   prepareCopyrightIntakeEncryptionKey,
   prepareCopyrightReceiptEncryptionKey,
   attachCopyrightEncryptionKey,
-  openCopyrightSecrets,
 } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -99,15 +98,14 @@ async function rejectWithPreparedKeys(
       transaction,
     )
   await using ownerScopes = await openCopyrightOwnerSecretBatch(
-    [{ kind: 'intake', id: input.intakeId }],
+    [
+      { kind: 'intake', id: input.intakeId },
+      { kind: 'receipt', id: input.intakeId },
+    ],
     transaction,
   )
   const { decryptSecret } = ownerScopes.get({ kind: 'intake', id: input.intakeId })
-  await using receiptSecrets = await openCopyrightSecrets(
-    { kind: 'receipt', id: input.intakeId },
-    transaction,
-    'write',
-  )
+  const receiptSecrets = ownerScopes.get({ kind: 'receipt', id: input.intakeId })
   const parsedSender = intake.parsed_sender_ciphertext
     ? decryptSecret(
         intake.parsed_sender_ciphertext,

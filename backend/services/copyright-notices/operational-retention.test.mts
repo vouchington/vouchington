@@ -198,7 +198,7 @@ describe('copyright operational retention', () => {
     }
     bucket.refuse(key)
     await expect(sweepUnlinkedCopyrightEmailIntakes(expired)).rejects.toThrow(
-      'Copyright evidence delete refused',
+      'Copyright evidence object version deletion was refused',
     )
     expect(bucket.countVersions(key)).toBe(3)
     expect((await readCopyrightIntakeRetentionState(intake.id)).intakeExists).toBe(true)

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -16,21 +16,12 @@ describe('cleanupAnalyticsLocalFiles', () => {
   const originalAnalyticsLocalDir = process.env.ANALYTICS_LOCAL_DIR
   let cleanupFirehose: (() => Promise<void>) | undefined
 
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-05-01T00:00:00.000Z'))
-  })
-
   afterEach(async () => {
     try {
       await cleanupFirehose?.()
     } finally {
       cleanupFirehose = undefined
-      try {
-        restoreAnalyticsEnv()
-      } finally {
-        vi.useRealTimers()
-      }
+      restoreAnalyticsEnv()
     }
   })
 
@@ -40,7 +31,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
     process.env.ANALYTICS_LOCAL_DIR = localDir
     await writeJsonl(localDir, 'queue_jobs', '2026-01-01', [{ event: 'completed' }])
 
-    await cleanupAnalyticsLocalFiles()
+    await cleanupAnalyticsLocalFiles({ now: new Date('2026-05-01T00:00:00.000Z') })
 
     await expect(
       fs.promises.access(path.join(localDir, 'queue_jobs', '2026-01-01.jsonl')),
@@ -56,7 +47,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
     process.env.ANALYTICS_LOCAL_DIR = localDir
     await writeJsonl(localDir, 'queue_jobs', '2026-01-01', [{ event: 'completed' }])
 
-    await cleanupAnalyticsLocalFiles()
+    await cleanupAnalyticsLocalFiles({ now: new Date('2026-05-01T00:00:00.000Z') })
 
     await expect(
       fs.promises.access(path.join(localDir, 'queue_jobs', '2026-01-01.jsonl')),

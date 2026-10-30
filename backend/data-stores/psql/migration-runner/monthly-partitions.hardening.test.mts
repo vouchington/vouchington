@@ -164,6 +164,14 @@ describe('copyright monthly partition retirement', () => {
     expect(holdLocks).toHaveLength(tables.length)
     expect(holdChecks).toHaveLength(tables.length)
     expect(holdLocks.every((index, position) => index < holdChecks[position]!)).toBe(true)
+    const reportProbes = boundary.statements.filter(statement =>
+      statement.includes('/* copyrightHistoryReportIsCovered */'),
+    )
+    const reportRetirements = boundary.statements.filter(statement =>
+      statement.includes('/* recordCopyrightHistoryReportSourceRetirement */'),
+    )
+    expect(reportProbes).toHaveLength(2)
+    expect(reportRetirements).toHaveLength(2)
     expect(
       boundary.statements.filter(statement => statement.includes('retireMonthlyPartition:detach')),
     ).toHaveLength(tables.length)

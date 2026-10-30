@@ -1,7 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 import { attemptUnattributedCopyrightReviewerRedress } from '@voucha/test-helpers/copyright-report-retention'
-import { createHistoricalCopyrightEuReportCase } from '@voucha/test-helpers/copyright-historical-report-case'
+import {
+  createHistoricalCopyrightEuReportCase,
+  historicalCopyrightReportPeriod,
+} from '@voucha/test-helpers/copyright-historical-report-case'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
@@ -22,11 +25,8 @@ describe('copyright retention passive blocker checkpoints', () => {
 
   it('rebuilds an expired complaint-window proof without an entity or report generation change', async () => {
     const fixture = await createHistoricalCopyrightEuReportCase()
-    await compileEuCopyrightTransparencyReport(
-      fixture.staff,
-      new Date('2500-01-01T00:00:00.000Z'),
-      new Date('2501-01-01T00:00:00.000Z'),
-    )
+    const period = historicalCopyrightReportPeriod()
+    await compileEuCopyrightTransparencyReport(fixture.staff, period.startedAt, period.endedAt)
     await expect(attemptUnattributedCopyrightReviewerRedress(fixture.noticeId)).rejects.toThrow(
       'Non-notifier copyright redress requires an actor',
     )
@@ -40,7 +40,7 @@ describe('copyright retention passive blocker checkpoints', () => {
 
     // Expire only time-based proof facts. Keep the retention config and all source/report rows fixed.
     const complaintWindowClosed = shiftUtcCalendarMonths(complaintWindowStillOpen, 6)
-    vi.setSystemTime(complaintWindowClosed)
+    await setClock(complaintWindowClosed, { caseRetentionMonths: 1 })
     expect(await advanceCopyrightRetentionWorkPages(fixture.noticeId, WORK_PAGE_CAP)).toContain(
       'erased',
     )

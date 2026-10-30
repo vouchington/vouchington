@@ -11,7 +11,7 @@ import type {
 export async function createCopyrightNoticeAggregate(
   input: Omit<CreateCopyrightNoticeAggregateInput, 'secretPurpose'> & { secretPurpose?: string },
 ): Promise<CopyrightNoticeRecord> {
-  // The UUID-backed notice clock follows the fixture's explicit receipt time, including fake dates.
+  // The UUID-backed notice clock follows the fixture's explicit receipt time.
   const noticeId = uuidv7({ msecs: input.receivedAt.getTime() })
   await using key = await prepareCopyrightEncryptionKey('notice')
   await using transaction = await beginTransaction()

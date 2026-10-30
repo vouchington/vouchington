@@ -569,17 +569,16 @@ export async function runDataRetentionCleanup(
       ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
       : cleanupObsoleteAgentModerations(withLimits(options.agentModerations)),
   ])
-  const legalRecords = await cleanupLegalRecords(
-    limits,
-    options.legalRecords?.now,
-    options.legalRecords?.recordIds,
-  )
-  const copyrightReplayIdentities = await cleanupCopyrightReplayIdentities()
-  const copyrightSubmissionKeys = await cleanupCopyrightSubmissionKeys(
-    limits,
-    options.copyrightSubmissionKeys?.now,
-    options.copyrightSubmissionKeys?.requestIds,
-  )
+  // These bounded pages own separate legal, replay, and submission-key tables.
+  const [legalRecords, copyrightReplayIdentities, copyrightSubmissionKeys] = await Promise.all([
+    cleanupLegalRecords(limits, options.legalRecords?.now, options.legalRecords?.recordIds),
+    cleanupCopyrightReplayIdentities(),
+    cleanupCopyrightSubmissionKeys(
+      limits,
+      options.copyrightSubmissionKeys?.now,
+      options.copyrightSubmissionKeys?.requestIds,
+    ),
+  ])
   const copyrightMinimalRecords = await cleanupCopyrightMinimalRecords(
     limits,
     options.copyrightMinimalRecords,

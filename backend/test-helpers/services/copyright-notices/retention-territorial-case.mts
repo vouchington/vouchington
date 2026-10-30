@@ -7,6 +7,7 @@ import { receiveEuCopyrightNotice } from '../../../services/copyright-notices/eu
 import { recordCopyrightJurisdictionPolicyApproval } from '../../../services/copyright-notices/jurisdiction-policy.mts'
 import { receiveUkCopyrightNotice } from '../../../services/copyright-notices/uk-notice-receipt.mts'
 import { createTestUser } from '../../index.mts'
+import { v7 as uuidv7 } from 'uuid'
 
 /**
  * An EU DSA or UK notice, received under a freshly approved jurisdiction policy. Optional unresolved
@@ -53,28 +54,62 @@ export async function createRetentionTerritorialCase(
       const labels = territorialLabels(jurisdiction)
       const redressKey = randomUUID()
       const authorityReference = randomUUID()
-      const { rows: decisions } = await query<{
-        id: string
-      }>(sql`/* seedRetentionTerritorialDecision */
+      const decisionId = uuidv7()
+      const rationale = encryptSecret(
+        'private rationale',
+        `${labels.decisionPurpose}:${receipt.notice_id}`,
+      )
+      const publicExplanation = encryptSecret(
+        'private explanation',
+        `${labels.publicExplanationPurpose}:${receipt.notice_id}`,
+      )
+      await query(sql`/* seedRetentionTerritorialDecisionIdentity */
+        INSERT INTO copyright_territorial_decision_identities
+          (id, copyright_notice_id, jurisdiction)
+        VALUES (${decisionId}, ${receipt.notice_id}, ${jurisdiction})`)
+      await query(sql`/* seedRetentionTerritorialDecisionOwner */
+        UPDATE copyright_notices SET current_territorial_decision_identity_id = ${decisionId},
+          territorial_decision_outcome = 'no_action', territorial_decided_at = CURRENT_TIMESTAMP,
+          territorial_decided_by_id = ${administrator.id},
+          territorial_rationale_ciphertext = ${rationale},
+          territorial_public_explanation_ciphertext = ${publicExplanation}
+        WHERE id = ${receipt.notice_id}`)
+      await query(sql`/* seedRetentionTerritorialDecision */
       INSERT INTO copyright_territorial_decisions (
-        copyright_notice_id, jurisdiction, outcome, automation_disclosure,
+        id, copyright_notice_id, jurisdiction, decided_by_id, outcome, automation_disclosure,
         rationale_ciphertext, public_explanation_ciphertext
-      ) VALUES (${receipt.notice_id}, ${jurisdiction}, 'no_action', 'human',
-        ${encryptSecret('private rationale', `${labels.decisionPurpose}:${receipt.notice_id}`)},
-        ${encryptSecret('private explanation', `${labels.publicExplanationPurpose}:${receipt.notice_id}`)}) RETURNING id`)
-      const decisionId = decisions[0]!.id
+      ) VALUES (${decisionId}, ${receipt.notice_id}, ${jurisdiction}, ${administrator.id},
+        'no_action', 'human', ${rationale}, ${publicExplanation})`)
       const { rows: requests } = await query<{
         id: string
       }>(sql`/* seedRetentionTerritorialRedress */
       INSERT INTO copyright_territorial_redress_requests (
         copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
+        challenged_decision_outcome,
         submitted_by_id, filed_by, idempotency_key, explanation_ciphertext
-      ) VALUES (${receipt.notice_id}, ${jurisdiction}, ${decisionId}, ${claimant.id},
+      ) VALUES (${receipt.notice_id}, ${jurisdiction}, ${decisionId}, 'no_action', ${claimant.id},
         'notifier', ${redressKey}, ${encryptSecret('private redress', `${labels.redressPurpose}:${redressKey}`)}) RETURNING id`)
+      const redressDecisionId = uuidv7()
+      const redressRationale = encryptSecret(
+        'private decision',
+        `${labels.redressDecisionPurpose}:${requests[0]!.id}`,
+      )
+      await query(sql`/* seedRetentionTerritorialRedressDecisionIdentity */
+        INSERT INTO copyright_territorial_redress_decision_identities
+          (id, copyright_notice_id, copyright_territorial_redress_request_id)
+        VALUES (${redressDecisionId}, ${receipt.notice_id}, ${requests[0]!.id})`)
+      await query(sql`/* seedRetentionTerritorialRedressDecisionOwner */
+        UPDATE copyright_territorial_redress_requests
+        SET staff_disposition = 'maintain', current_staff_decision_identity_id = ${redressDecisionId},
+          decided_at = CURRENT_TIMESTAMP, decided_by_id = ${administrator.id},
+          rationale_ciphertext = ${redressRationale}
+        WHERE id = ${requests[0]!.id}`)
       await query(sql`/* seedRetentionTerritorialRedressDecision */
       INSERT INTO copyright_territorial_redress_decisions (
-        copyright_territorial_redress_request_id, staff_disposition, rationale_ciphertext
-      ) VALUES (${requests[0]!.id}, 'maintain', ${encryptSecret('private decision', `${labels.redressDecisionPurpose}:${requests[0]!.id}`)})`)
+        id, copyright_notice_id, jurisdiction, copyright_territorial_redress_request_id,
+        decided_by_id, staff_disposition, rationale_ciphertext
+      ) VALUES (${redressDecisionId}, ${receipt.notice_id}, ${jurisdiction}, ${requests[0]!.id},
+        ${administrator.id}, 'maintain', ${redressRationale})`)
       if (jurisdiction === 'eu_dsa')
         await query(sql`/* seedRetentionEuComplaint */
         INSERT INTO copyright_eu_supervised_complaints (

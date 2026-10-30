@@ -102,7 +102,7 @@ export async function advanceCopyrightRetentionToPostroot(
 ): Promise<CopyrightRetentionCaseRows> {
   let erased = false
   for (let page = 0; page < MAX_WORK_PAGES; page++) {
-    const outcome = await eraseCopyrightRetentionCase(noticeId)
+    const outcome = await eraseCopyrightRetentionCase(noticeId, options.now)
     if (outcome === 'ineligible') throw new Error('Copyright source case is still ineligible')
     if (outcome === 'erased') {
       erased = true

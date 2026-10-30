@@ -1,4 +1,4 @@
-import { afterEach, vi } from 'vitest'
+import { afterEach } from 'vitest'
 import { beginTransaction, write } from '@data-stores/psql'
 import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 import sql from 'sql-template-strings'
@@ -7,8 +7,14 @@ import { eraseCopyrightRetentionCase } from '../services/copyright-notices/reten
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
 
 const MAX_ERASURE_WORK_PAGES = 256
+let chosenRetentionDate: Date | null = null
 
-/** Freeze only Date and configure the current six-year retention contract for this test fork. */
+/** Explicit fixture clock; only retention tests opt in, and UUIDv7's default clock stays real. */
+export function getCopyrightRetentionWorkDate(): Date {
+  return chosenRetentionDate ? new Date(chosenRetentionDate) : new Date()
+}
+
+/** Configure a test-local retention instant without changing the process clock or UUIDv7 state. */
 export function useCopyrightRetentionWorkClock(): (
   now: Date,
   options?: {
@@ -18,15 +24,15 @@ export function useCopyrightRetentionWorkClock(): (
   },
 ) => Promise<void> {
   let detached = false
-  let clockActive = false
   let restoreConfig: (() => void) | undefined
   afterEach(() => {
-    if (clockActive) vi.useRealTimers()
-    clockActive = false
+    chosenRetentionDate = null
     restoreConfig?.()
     restoreConfig = undefined
   })
   return async (now, options = {}) => {
+    if (!Number.isFinite(now.getTime()))
+      throw new RangeError('Invalid copyright retention test date')
     const caseRetentionMonths = options.caseRetentionMonths ?? 72
     const retentionCaseBatchSize = options.retentionCaseBatchSize ?? 25
     const retentionProofMaxPages = options.retentionProofMaxPages ?? 32
@@ -48,8 +54,6 @@ export function useCopyrightRetentionWorkClock(): (
       retentionProofMaxPages > 64
     )
       throw new RangeError('Invalid copyright retention test work page budget')
-    if (clockActive) vi.useRealTimers()
-    clockActive = false
     restoreConfig?.()
     restoreConfig = undefined
     if (!detached) {
@@ -65,9 +69,7 @@ export function useCopyrightRetentionWorkClock(): (
       retentionProofPageSize: 50,
       retentionProofMaxPages,
     })
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(now)
-    clockActive = true
+    chosenRetentionDate = new Date(now)
   }
 }
 
@@ -78,9 +80,10 @@ export async function advanceCopyrightRetentionWorkPages(
 ): Promise<Array<'erased' | 'ineligible' | 'progress'>> {
   if (!Number.isSafeInteger(pageCount) || pageCount < 1 || pageCount > MAX_ERASURE_WORK_PAGES)
     throw new RangeError('Copyright erasure work page count is outside its fixed test bound')
+  if (!chosenRetentionDate) throw new Error('Copyright retention test clock is not configured')
   const outcomes: Array<'erased' | 'ineligible' | 'progress'> = []
   for (let page = 0; page < pageCount; page++) {
-    const outcome = await eraseCopyrightRetentionCase(noticeId)
+    const outcome = await eraseCopyrightRetentionCase(noticeId, chosenRetentionDate)
     outcomes.push(outcome)
     // Neither terminal result can advance without a change to the case or retention clock.
     if (outcome !== 'progress') break
