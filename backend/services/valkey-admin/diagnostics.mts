@@ -19,12 +19,12 @@ export type ValkeyDiagnosticResult = {
 
 type ReadOnlyDiagnosticClient = Pick<GlideClient, 'info' | 'scan'>
 
-export type ValkeyDiagnosticTopology = {
+type ValkeyDiagnosticTopology = {
   databaseUrls: readonly string[]
   workerQueueUrl: string
 }
 
-export function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): void {
+function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): void {
   if (topology.databaseUrls.length === 0) {
     throw new Error('No Valkey database URLs were configured')
   }
@@ -37,7 +37,7 @@ export function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): 
   }
 }
 
-export async function collectValkeyDiagnostics(
+async function collectValkeyDiagnostics(
   client: ReadOnlyDiagnosticClient,
   topology: ValkeyDiagnosticTopology,
   registry: FlushTargetPrefixRegistry,
