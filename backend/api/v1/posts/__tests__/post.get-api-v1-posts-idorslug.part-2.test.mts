@@ -5,7 +5,6 @@ import type { PrivateUser } from '@services/users/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestPost,
-  insertTestPost,
   createTestUser,
   createTestUserWithAge,
   followUser,
