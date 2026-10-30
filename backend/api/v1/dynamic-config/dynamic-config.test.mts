@@ -64,7 +64,7 @@ describe('dynamic-config', () => {
       expect(response.body.namespace.fields).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ name: 'memberships', type: 'boolean' }),
-          expect.objectContaining({ name: 'chat', type: 'boolean' }),
+          expect.objectContaining({ name: 'fediverse', type: 'boolean' }),
         ]),
       )
     })
