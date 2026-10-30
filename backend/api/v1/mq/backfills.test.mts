@@ -27,16 +27,6 @@ describe('backfills', () => {
         await request.get('/api/v1/mq/backfills').expect(403)
       })
 
-      it('should return list of backfills when authenticated as admin', async () => {
-        const request = createRequest()
-        await request.authenticateAs(admin)
-        const response = await request.get('/api/v1/mq/backfills').expect(200)
-
-        expect(response.body).toHaveProperty('backfills')
-        expect(Array.isArray(response.body.backfills)).toBe(true)
-        expect(response.body.backfills.length).toBeGreaterThan(0)
-      })
-
       it('should return backfills with required fields and no trigger', async () => {
         const request = createRequest()
         await request.authenticateAs(admin)
@@ -56,6 +46,8 @@ describe('backfills', () => {
         await request.authenticateAs(admin)
         const response = await request.get('/api/v1/mq/backfills').expect(200)
 
+        expect(response.body).toHaveProperty('backfills')
+        expect(Array.isArray(response.body.backfills)).toBe(true)
         expect(response.body.backfills.length).toBe(BACKFILL_REGISTRY.length)
       })
     })
