@@ -71,6 +71,7 @@ jobs:
           export S3_BUCKET_USER_EXPORTS=test-user-exports
           export S3_BUCKET_QUARANTINE=test-quarantine
           node ci/check-live-mcp-catalog.mjs
+          node backend/scripts/validate-seed-topic-csvs.mts
           pnpm run mcp:catalog -- --check
         timeout-minutes: 8
       - name: Check canonical API snapshot git state

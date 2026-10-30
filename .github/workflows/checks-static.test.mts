@@ -124,8 +124,9 @@ describe('checks-static workflow', () => {
       ),
     ).toBe(true)
     expect(compilation?.run).not.toContain('services.valkey')
-    expect(compilation?.run?.trim().split('\n').slice(-2)).toEqual([
+    expect(compilation?.run?.trim().split('\n').slice(-3)).toEqual([
       'node ci/check-live-mcp-catalog.mjs',
+      'node backend/scripts/validate-seed-topic-csvs.mts',
       'pnpm run mcp:catalog -- --check',
     ])
     expect(numberField(compilation?.['timeout-minutes'], 'contract check')).toBeGreaterThan(
