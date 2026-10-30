@@ -31,11 +31,11 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.0",
-    "@vouchington/postgres": "^0.1.2",
+    "@vouchington/postgres": "^0.3.0",
     "@vouchington/utils": "^0.10.2",
     "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.14.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",

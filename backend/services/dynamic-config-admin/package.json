@@ -111,7 +111,7 @@
     "@voucha/config": "workspace:^",
     "@vouchington/dynamic-config": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.14.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"
