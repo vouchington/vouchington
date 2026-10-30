@@ -230,26 +230,6 @@ describe('create', () => {
       })
     })
 
-    it('replaces an elapsed grant with a new grant', async () => {
-      const elapsedUser = await createTestUser()
-      const oldSku = await createTestSku({ plan: 'plus' })
-      const oldGrant = await grantMembership(admin.id, elapsedUser.id, 'plus', oldSku.id, 30)
-      await updateTestMembershipExpiresAt(oldGrant.id, new Date('2020-01-01T00:00:00Z'))
-      const newSku = await createTestSku({ plan: 'pro' })
-
-      const newGrant = await grantMembership(admin.id, elapsedUser.id, 'pro', newSku.id, 30)
-
-      await expect(getMembershipByUserId(elapsedUser.id)).resolves.toMatchObject({
-        id: newGrant.id,
-        plan: 'pro',
-        status: 'active',
-      })
-      const history = await getMembershipHistory(elapsedUser.id)
-      expect(history.map(change => change.change_type)).toEqual(
-        expect.arrayContaining(['expiration', 'admin_grant']),
-      )
-    })
-
     it('with note field: note appears in membership history', async () => {
       const noteUser = await createTestUser()
       const sku = await createTestSku({ plan: 'plus' })
@@ -282,6 +262,14 @@ describe('create', () => {
       expect(replacementChange.past_due_at).toBeNull()
       expect(replacementChange.paused_at).toBeNull()
       expect(replacementChange.membership_id).toBe(secondResult.id)
+      expect(history.map(change => change.change_type)).toEqual(
+        expect.arrayContaining(['expiration', 'admin_grant']),
+      )
+      await expect(getMembershipByUserId(historyUser.id)).resolves.toMatchObject({
+        id: secondResult.id,
+        plan: 'pro',
+        status: 'active',
+      })
     })
   })
 })
