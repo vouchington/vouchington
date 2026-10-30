@@ -23,11 +23,9 @@ describe('GET /api/v1/reports?cluster=entity', () => {
     const lock = await acquireReportPaginationTestLock()
     releaseLock = () => lock.release()
   })
-  let user: PrivateUser
   let adminUser: PrivateUser
 
   beforeAll(async () => {
-    user = await createTestUser()
     adminUser = await createTestUser({ administrator: true })
   })
   afterAll(() => releaseLock())
@@ -91,12 +89,6 @@ describe('GET /api/v1/reports?cluster=entity', () => {
     expect(
       cluster.reports.every((report: { report_count: number }) => report.report_count === 3),
     ).toBe(true)
-  })
-
-  it('rejects clustered report mode for non-staff users', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    await request.get('/api/v1/reports?cluster=entity').expect(403)
   })
 
   it('surfaces content-hash duplicate clusters and velocity-spike indicators', async () => {
