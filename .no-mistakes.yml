@@ -5521,3 +5521,50 @@ rules:
       rulePrefixes: [react-hooks-js/]
       # A blanket disable would also hide the React compiler and hook rules.
       banBlanketDisable: true
+
+  - name: JSON documents do not hide relation ids
+    rule: postgres-json-relation-ids
+    scope: repository
+    severity: error
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      idKeyPattern: '(^id$|Id$|_id$)'
+      include:
+        - backend/**/*.{ts,mts,js}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
+
+  - name: SQL identifier registries are not mutated across modules
+    rule: postgres-no-mutable-sql-registry
+    scope: repository
+    severity: error
+    options:
+      unanalyzable: advise
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+
+  - name: server route folders hold no client code
+    rule: server-route-client-boundary
+    scope: repository
+    projects: [backend]
+    severity: error
+    exclude:
+      - '**/*.test.*'
+      - '**/__tests__/**'
+
+  - name: Actions jobs do not inherit workflow write permissions
+    rule: github-actions-job-permissions
+    scope: repository
