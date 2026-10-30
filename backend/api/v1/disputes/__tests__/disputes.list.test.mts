@@ -96,15 +96,6 @@ describe('GET /api/v1/disputes', () => {
     await request.get('/api/v1/disputes').expect(401)
   })
 
-  it('returns 200 with disputes for authenticated user', async () => {
-    const request = createRequest()
-    await request.authenticateAs(regularUser)
-    const response = await request.get('/api/v1/disputes').expect(200)
-    expect(Array.isArray(response.body.disputes)).toBe(true)
-    expect(response.body.page_info).toBeDefined()
-    expect(typeof response.body.page_info.has_next_page).toBe('boolean')
-  })
-
   it('returns full fields for staff, redacted for non-staff', async () => {
     const { dispute, claimant, topicId, postId } = await makeDisputeSetup()
 
@@ -154,6 +145,9 @@ describe('GET /api/v1/disputes', () => {
     const memberRequest = createRequest()
     await memberRequest.authenticateAs(regularUser)
     const memberResponse = await memberRequest.get('/api/v1/disputes').expect(200)
+    expect(Array.isArray(memberResponse.body.disputes)).toBe(true)
+    expect(memberResponse.body.page_info).toBeDefined()
+    expect(typeof memberResponse.body.page_info.has_next_page).toBe('boolean')
     const memberDispute = memberResponse.body.disputes.find(
       (d: { id: string }) => d.id === dispute.id,
     )
