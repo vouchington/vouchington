@@ -11,6 +11,63 @@ import {
 import { cleanupLegalRecords } from './cleanup-legal-records.mts'
 
 describe('legal record retention', () => {
+  it('leaves eligible records untouched when its owned scope is empty', async () => {
+    const attemptId = await createTestIdentityVerificationAttempt(
+      DELETED_USER_ID,
+      new Date('2019-10-22T12:00:00.000Z'),
+    )
+    expect(
+      await cleanupLegalRecords(
+        { batchSize: 1, maxBatches: 1 },
+        new Date('2026-10-23T12:00:00.000Z'),
+        [],
+      ),
+    ).toEqual([
+      { family: 'identity_verification_attempt', scanned: 0, deleted: 0, hasMore: false },
+      { family: 'user_deletion_request', scanned: 0, deleted: 0, hasMore: false },
+      { family: 'user_legal_preservation_hold', scanned: 0, deleted: 0, hasMore: false },
+    ])
+    await expect(legalRecordExists('identity_verification_attempts', attemptId)).resolves.toBe(true)
+  })
+
+  it('rejects an oversized owned scope before deleting either completed proof', async () => {
+    const expiredAt = new Date('2023-10-22T12:00:00.000Z')
+    const firstId = await createTestCompletedDeletionProof(expiredAt)
+    const secondId = await createTestCompletedDeletionProof(expiredAt)
+
+    await expect(
+      cleanupLegalRecords({ batchSize: 1, maxBatches: 1 }, new Date('2026-10-23T12:00:00.000Z'), [
+        firstId,
+        secondId,
+      ]),
+    ).rejects.toThrow('Scoped legal record cleanup must fit one page')
+    await expect(legalRecordExists('user_deletion_requests', firstId)).resolves.toBe(true)
+    await expect(legalRecordExists('user_deletion_requests', secondId)).resolves.toBe(true)
+  })
+
+  it('reports no work when an owned expired page is cleaned a second time', async () => {
+    const now = new Date('2026-10-23T12:00:00.000Z')
+    const attemptId = await createTestIdentityVerificationAttempt(
+      DELETED_USER_ID,
+      new Date('2019-10-22T12:00:00.000Z'),
+    )
+    const proofId = await createTestCompletedDeletionProof(new Date('2023-10-22T12:00:00.000Z'))
+    const holdId = await createTestReleasedLegalHold(new Date('2023-10-22T12:00:00.000Z'))
+    const ids = [attemptId, proofId, holdId]
+    const limits = { batchSize: ids.length, maxBatches: 1 }
+
+    expect(await cleanupLegalRecords(limits, now, ids)).toEqual([
+      { family: 'identity_verification_attempt', scanned: 1, deleted: 1, hasMore: false },
+      { family: 'user_deletion_request', scanned: 1, deleted: 1, hasMore: false },
+      { family: 'user_legal_preservation_hold', scanned: 1, deleted: 1, hasMore: false },
+    ])
+    expect(await cleanupLegalRecords(limits, now, ids)).toEqual([
+      { family: 'identity_verification_attempt', scanned: 0, deleted: 0, hasMore: false },
+      { family: 'user_deletion_request', scanned: 0, deleted: 0, hasMore: false },
+      { family: 'user_legal_preservation_hold', scanned: 0, deleted: 0, hasMore: false },
+    ])
+  })
+
   it('expires completed deletion proof and released holds after three years', async () => {
     const now = new Date('2026-10-23T12:00:00.000Z')
     const expiredAt = new Date('2023-10-22T12:00:00.000Z')

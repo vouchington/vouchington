@@ -20,6 +20,7 @@ import { handleCopyrightKeyObjectCommand } from './copyright-key-object-store.mt
 export function useCopyrightKeyObjectFaults() {
   let loseNextPut = false
   let lostKeyId: string | null = null
+  const uploadedKeyIds = new Set<string>()
   const refused = new Set<string>()
   const corruptReads = new Map<string, 'missing_body' | 'declared_oversized' | 'stream_oversized'>()
   const truncatedListings = new Set<string>()
@@ -27,6 +28,7 @@ export function useCopyrightKeyObjectFaults() {
   beforeEach(() => {
     loseNextPut = false
     lostKeyId = null
+    uploadedKeyIds.clear()
     refused.clear()
     corruptReads.clear()
     truncatedListings.clear()
@@ -64,6 +66,8 @@ export function useCopyrightKeyObjectFaults() {
         error.name = 'NoSuchKey'
         throw error
       }
+      if (command instanceof PutObjectCommand)
+        uploadedKeyIds.add(command.input.Key!.slice('retention-keys/'.length))
       const result = handleCopyrightKeyObjectCommand(command)
       if (result === null) throw new Error('Unexpected non-key S3 operation')
       const response = await result
@@ -83,6 +87,9 @@ export function useCopyrightKeyObjectFaults() {
     lostUploadKeyId() {
       if (!lostKeyId) throw new Error('No upload acknowledgment was lost')
       return lostKeyId
+    },
+    uploadedKeyIds() {
+      return [...uploadedKeyIds]
     },
     refuseKeyRead(id: string) {
       refused.add(id)

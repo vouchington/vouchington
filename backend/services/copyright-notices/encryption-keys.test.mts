@@ -5,7 +5,11 @@ import {
   useCopyrightKeyObjectFaults,
 } from '@voucha/test-helpers/copyright-encryption-keys'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { prepareCopyrightEncryptionKey, openCopyrightSecrets } from './encryption-keys.mts'
+import {
+  prepareCopyrightEmailDecisionKeys,
+  prepareCopyrightEncryptionKey,
+  openCopyrightSecrets,
+} from './encryption-keys.mts'
 import { reclaimCopyrightEncryptionKeyReservation } from './encryption-key-orphan-reservation.mts'
 
 describe('copyright owner key authority', () => {
@@ -60,6 +64,43 @@ describe('copyright owner key authority', () => {
       await reclaimCopyrightEncryptionKeyReservation(keyId, new Date(Date.now() + 3 * 86_400_000)),
     ).toBe(true)
     expect(await readCopyrightKeyReservation(keyId)).toBeNull()
+  })
+
+  it('reclaims every unattached key after a partial email decision upload and a successful batch', async () => {
+    const intakeId = crypto.randomUUID()
+    const retentionNow = new Date(Date.now() + 3 * 86_400_000)
+    provider.loseNextUploadAcknowledgment()
+    await expect(prepareCopyrightEmailDecisionKeys(intakeId, false)).rejects.toThrow(
+      'Lost copyright key upload acknowledgment',
+    )
+    const failedIds = provider.uploadedKeyIds()
+    expect(failedIds).toHaveLength(2)
+    expect(failedIds).toContain(provider.lostUploadKeyId())
+    for (const id of failedIds) {
+      expect(await readCopyrightKeyReservation(id)).toEqual({
+        object_created_at: null,
+        destroyed_at: null,
+      })
+      expect(await reclaimCopyrightEncryptionKeyReservation(id, retentionNow)).toBe(true)
+      expect(await readCopyrightKeyReservation(id)).toBeNull()
+    }
+
+    let successfulIds: string[]
+    {
+      await using prepared = await prepareCopyrightEmailDecisionKeys(intakeId, false)
+      expect(prepared.notice).toBeNull()
+      successfulIds = [prepared.intake!.id, prepared.receipt!.id]
+      expect(new Set(successfulIds).size).toBe(2)
+      for (const id of successfulIds)
+        expect(await readCopyrightKeyReservation(id)).toMatchObject({
+          object_created_at: expect.any(Date),
+          destroyed_at: null,
+        })
+    }
+    for (const id of successfulIds) {
+      expect(await reclaimCopyrightEncryptionKeyReservation(id, retentionNow)).toBe(true)
+      expect(await readCopyrightKeyReservation(id)).toBeNull()
+    }
   })
 
   it('reclaims producer rollback orphans while preserving an attached live owner', async () => {

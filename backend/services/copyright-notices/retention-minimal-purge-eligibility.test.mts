@@ -63,6 +63,16 @@ describe('copyright minimal record clock', () => {
         new Date('2029-10-22T23:59:59Z'),
       ),
     ).toBe(false)
+    // A budget below the fixed terminal reservation must leave the root for a later run.
+    await expect(
+      purgeCopyrightMinimalRecord(fixture.noticeId, {
+        now: new Date('2035-10-23T00:00:00Z'),
+        cutoff: new Date('2029-10-23T00:00:00Z'),
+        maxBatches: 100,
+        maxPhysicalRows: 18,
+      }),
+    ).resolves.toBe('more')
+    expect(await copyrightNoticeExists(fixture.noticeId)).toBe(true)
     await expect(
       purgeCopyrightMinimalRecord(fixture.noticeId, {
         now: new Date('2035-10-23T00:00:00Z'),
@@ -181,6 +191,44 @@ describe('copyright minimal record clock', () => {
         ...options,
         maxBatches: 16,
       }),
+    ).resolves.toBe('purged')
+    expect(await copyrightNoticeExists(fixture.noticeId)).toBe(false)
+  })
+
+  it('revisits the manifest when a terminal checkpoint still has live descendants', async () => {
+    await setClock(new Date('2029-10-23T00:00:00Z'))
+    const fixture = await createRetentionMinimalCase()
+    const intentId = await seedLateCopyrightDeliveryParent(fixture.noticeId)
+    await setClock(new Date('2035-10-23T00:00:00Z'))
+    expect(await advanceCopyrightRetentionWorkPages(fixture.noticeId)).toContain('erased')
+    await addCopyrightAttemptsAfterLeafPhase(intentId)
+    const options = {
+      now: new Date('2035-10-23T00:00:00Z'),
+      cutoff: new Date('2029-10-23T00:00:00Z'),
+      pageSize: 10,
+      maxBatches: 1,
+    }
+    // Finish fresh legal proofs while the physical cap leaves the child graph present.
+    await expect(
+      purgeCopyrightMinimalRecord(fixture.noticeId, {
+        ...options,
+        maxBatches: 100,
+        maxPhysicalRows: 1,
+      }),
+    ).resolves.toBe('more')
+    // Model a checkpoint after the last child phase; the fresh graph proof must catch survivors.
+    await setCopyrightMinimalPurgePhaseForRetentionTest(
+      fixture.noticeId,
+      COPYRIGHT_MINIMAL_PURGE_PHASES.length,
+    )
+    await expect(purgeCopyrightMinimalRecord(fixture.noticeId, options)).resolves.toBe('more')
+    expect(await copyrightNoticeExists(fixture.noticeId)).toBe(true)
+    expect(await readLateCopyrightAttemptsAndPhase(fixture.noticeId, intentId)).toEqual({
+      count: 55,
+      phase_index: 0,
+    })
+    await expect(
+      purgeCopyrightMinimalRecord(fixture.noticeId, { ...options, maxBatches: 100 }),
     ).resolves.toBe('purged')
     expect(await copyrightNoticeExists(fixture.noticeId)).toBe(false)
   })
