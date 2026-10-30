@@ -12,7 +12,6 @@ import {
 } from '@/lib/api/client/mq'
 import { AiAgentsSection } from './ai-agents-section'
 import { QueueDomainsSection } from './queue-domains-section'
-import { KagiSection } from './kagi-section'
 import { BackfillTriggerDialog } from './backfill-trigger-dialog'
 import { BackfillsTable } from './backfills-table'
 import { ScheduledJobTriggerDialog } from './scheduled-job-trigger-dialog'
@@ -130,7 +129,6 @@ export default function QueuesPage() {
       <>
         <ScheduledJobsLoadingState />
         <AiAgentsSection />
-        <KagiSection />
         <QueueDomainsSection />
       </>
     )
@@ -141,7 +139,6 @@ export default function QueuesPage() {
       <>
         <ScheduledJobsErrorState error={state.error} />
         <AiAgentsSection />
-        <KagiSection />
         <QueueDomainsSection />
       </>
     )
@@ -187,7 +184,6 @@ export default function QueuesPage() {
       )}
 
       <AiAgentsSection />
-      <KagiSection />
       <QueueDomainsSection />
     </div>
   )

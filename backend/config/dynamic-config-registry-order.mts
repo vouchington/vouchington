@@ -93,7 +93,6 @@ export const REGISTRY_ORDER = [
   'ai-model-routing',
   'manual-tag-limits',
   'autotagger-paid-limits',
-  'kagi-smallweb-config',
   'app-attestation-config',
   'activitypub-inbox',
   'oauth-authorization-broker',

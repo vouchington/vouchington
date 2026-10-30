@@ -46,7 +46,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/hostnameBlockingRecovery',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
-  'background/kagi-smallweb-sync',
   'background/imports-recover-stalled',
   'memberships/dispatchMembershipPauseCollection',
   'memberships/dispatchMembershipRefundReconciliation',

@@ -85,10 +85,10 @@ export const engineeringOpsApiFixtureCases: ApiFixtureCase[] = [
   fixtureCase({
     id: 'web.admin.mq.scheduled-jobs.trigger.default',
     method: 'POST',
-    path: '/api/v1/mq/scheduled-jobs/kagi-smallweb-sync/runs',
+    path: '/api/v1/mq/scheduled-jobs/imports-recover-stalled/runs',
     route: {
       routeTemplate: '/api/v1/mq/scheduled-jobs/:id/runs',
-      pathParams: { id: 'kagi-smallweb-sync' },
+      pathParams: { id: 'imports-recover-stalled' },
     },
     status: 200,
     migratedFrom: ['backend/api/v1/mq/scheduled-jobs.mts'],

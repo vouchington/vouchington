@@ -88,11 +88,11 @@ describe('mq client — queues', () => {
       const mockResponse = {
         jobs: [
           {
-            id: 'kagi-smallweb-sync',
+            id: 'imports-recover-stalled',
             queue_name: 'background',
-            job_name: 'sync',
+            job_name: 'imports.recoverStalled',
             schedule: '0 5 * * *',
-            description: 'Sync Kagi Small Web data',
+            description: 'Recover stalled imports',
           },
         ],
       }
@@ -110,9 +110,11 @@ describe('mq client — queues', () => {
       const mockResponse = { success: true }
       mockPost.mockResolvedValueOnce(mockResponse)
 
-      const result = await triggerScheduledJob('kagi-smallweb-sync')
+      const result = await triggerScheduledJob('imports-recover-stalled')
 
-      expect(mockPost).toHaveBeenCalledWith('/api/v1/mq/scheduled-jobs/kagi-smallweb-sync/runs')
+      expect(mockPost).toHaveBeenCalledWith(
+        '/api/v1/mq/scheduled-jobs/imports-recover-stalled/runs',
+      )
       expect(result).toEqual(mockResponse)
     })
   })

@@ -85,7 +85,6 @@
     "@queues/find-your-friends": "workspace:^",
     "@queues/follower-distributions": "workspace:^",
     "@queues/heartbeat": "workspace:^",
-    "@queues/kagi-smallweb": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/oauth-authorization-exchange": "workspace:^",

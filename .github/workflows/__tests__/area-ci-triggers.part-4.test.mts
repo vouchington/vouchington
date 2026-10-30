@@ -138,7 +138,7 @@ describe('Area CI Docker triggers', () => {
     ).toBe(false)
   })
 
-  it('tracks backend packaging helpers in broad and PR filters', () => {
+  it('tracks backend package helpers in broad and PR filters', () => {
     const helpers = [
       'static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts',
       'static-code-analysis/docker-deploy/prune-opentelemetry-alternate-builds.mts',

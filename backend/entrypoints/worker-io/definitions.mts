@@ -18,7 +18,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/rss-feeds/enqueues/schedules'),
         import('@queues/urls-domains-blacklist/enqueues/schedules'),
         import('@queues/sitemaps/enqueues/schedules'),
-        import('@queues/kagi-smallweb/enqueues/schedules'),
         import('@queues/email-digests/enqueues/schedules'),
         import('@queues/user-rss-feed-imports/enqueues/schedules'),
         import('@queues/background/enqueues/hostname-blocking-schedules'),

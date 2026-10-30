@@ -108345,14 +108345,14 @@
       "id": "web.admin.mq.scheduled-jobs.trigger.default",
       "method": "POST",
       "migratedFrom": ["backend/api/v1/mq/scheduled-jobs.mts"],
-      "path": "/api/v1/mq/scheduled-jobs/kagi-smallweb-sync/runs",
+      "path": "/api/v1/mq/scheduled-jobs/imports-recover-stalled/runs",
       "responseSchema": {
         "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46",
         "key": "web.admin.mq.scheduled-jobs.trigger.default"
       },
       "route": {
         "pathParams": {
-          "id": "kagi-smallweb-sync"
+          "id": "imports-recover-stalled"
         },
         "routeTemplate": "/api/v1/mq/scheduled-jobs/:id/runs"
       },

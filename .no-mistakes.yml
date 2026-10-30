@@ -1252,7 +1252,6 @@ rules:
             callee: 'resetPostClearance',
           }
         - { file: backend/services/images/placements.mts, callee: 'query' }
-        - { file: backend/services/kagi-smallweb/get-existing-feed-urls.mts, callee: 'read' }
         - {
             file: backend/services/media-delivery-safety/delivery-denials.mts,
             callee: 'prepublishImagePlacementDenial',
