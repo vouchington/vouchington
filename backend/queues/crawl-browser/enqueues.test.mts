@@ -22,17 +22,4 @@ describe('enqueueCrawlBrowser', () => {
       deduplication: { id: `crawl_browser__${linkId}__${urlId}`, mode: 'debounce' },
     })
   })
-
-  it('encodes linkId and urlId in the deduplication id', async () => {
-    const linkId = `link-${randomUUID()}`
-    const urlId = `url-${randomUUID()}`
-
-    await enqueueCrawlBrowser({ linkId, urlId, crawlerId: 'c' })
-
-    const waiting = await readAllQueueJobs(crawlBrowserQueue)
-    const job = waiting.find(j => (j.data as { linkId?: string }).linkId === linkId)
-    expect((job!.opts as { deduplication: { id: string } }).deduplication.id).toBe(
-      `crawl_browser__${linkId}__${urlId}`,
-    )
-  })
 })
