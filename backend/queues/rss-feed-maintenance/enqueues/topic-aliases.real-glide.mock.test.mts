@@ -11,6 +11,9 @@ import { enqueueContinueInvalidatingPostsForTopicAliases } from './topic-aliases
 // The dedicated real-glide project isolates the key prefix, so this queue cannot reach the fleet.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
+// Reactivation waits out the worker's blocking read, and stays under this test's timeout.
+const CONTINUATION_DEADLINE_MS = 20_000
+
 describe('topic alias post-invalidation continuation through real GlideMQ', () => {
   // no-mistakes-timeout-reason: real GlideMQ worker retry of a failed continuation and shutdown
   it('re-activates a terminally failed continuation when the parent page retries', async () => {
@@ -51,7 +54,11 @@ describe('topic alias post-invalidation continuation through real GlideMQ', () =
         changeId,
         afterPostId,
       )) as Job[]
-      await waitForRealGlideEvent(settledRun(1).promise, 'first continuation')
+      await waitForRealGlideEvent(
+        settledRun(1).promise,
+        'first continuation',
+        CONTINUATION_DEADLINE_MS,
+      )
       await expect(first?.getState()).resolves.toBe('failed')
 
       outcome = 'complete'
@@ -60,7 +67,11 @@ describe('topic alias post-invalidation continuation through real GlideMQ', () =
         changeId,
         afterPostId,
       )) as Job[]
-      await waitForRealGlideEvent(settledRun(2).promise, 'reactivated continuation')
+      await waitForRealGlideEvent(
+        settledRun(2).promise,
+        'reactivated continuation',
+        CONTINUATION_DEADLINE_MS,
+      )
 
       expect(retried.map(job => job.id)).toEqual([first?.id])
       expect(runs).toBe(2)
