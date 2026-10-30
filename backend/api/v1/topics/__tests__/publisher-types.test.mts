@@ -19,11 +19,6 @@ describe('GET /api/v1/topics/publisher-types', () => {
     }
   })
 
-  it('is publicly accessible without authentication', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/topics/publisher-types').expect(200)
-  })
-
   it('returns a long-lived cache-control header', async () => {
     const request = createRequest()
     const response = await request.get('/api/v1/topics/publisher-types').expect(200)
