@@ -13,20 +13,6 @@ describe('CommunityAgentPromptItem simulation', () => {
     resetCommunityAgentPromptItemMocks()
   })
 
-  it('clicking Test shows the simulation panel', () => {
-    render(
-      <CommunityAgentPromptItem
-        prompt={prompt({})}
-        communitySlug={COMMUNITY_SLUG}
-      />,
-    )
-    const testBtn = [...document.querySelectorAll('button')].find(
-      b => b.textContent?.trim() === 'Test',
-    )!
-    fireEvent.click(testBtn)
-    expect(document.querySelector('[data-pw="community-agent-prompt-test-panel"]')).not.toBeNull()
-  })
-
   it('runs an automod simulation and renders projected matches', async () => {
     mocks.simulateCommunityAutomod.mockResolvedValueOnce({
       simulation: {

@@ -73,25 +73,6 @@ describe('CommunityModeratorStatsPanel', () => {
     expect(screen.getByTestId('community-moderator-stats-heading')).toBeInTheDocument()
   })
 
-  it('clicking the 90-day button triggers fetchCommunityModeratorStats with window=90', async () => {
-    mockFetchStats.mockResolvedValueOnce({ window: 90, stats: [], users: {} })
-    render(
-      <CommunityModeratorStatsPanel
-        communitySlug='credit-cards'
-        initialData={initialData}
-      />,
-    )
-
-    fireEvent.click(screen.getByTestId('moderator-stats-window-90'))
-
-    await waitFor(() => {
-      expect(mockFetchStats).toHaveBeenCalledWith('credit-cards', 90)
-      expect(screen.getByTestId('moderator-stats-window-90')).toHaveAttribute('variant', 'default')
-      expect(screen.getByTestId('moderator-stats-window-90')).not.toBeDisabled()
-      expect(screen.getByTestId('moderator-stats-window-30')).not.toBeDisabled()
-    })
-  })
-
   it('after 90-day fetch updates data, clicking 30-day triggers fetch with window=30', async () => {
     mockFetchStats.mockResolvedValueOnce({ window: 90, stats: [], users: {} })
     render(
@@ -107,6 +88,7 @@ describe('CommunityModeratorStatsPanel', () => {
     await waitFor(() => {
       expect(mockFetchStats).toHaveBeenCalledWith('credit-cards', 90)
       expect(screen.getByTestId('moderator-stats-window-90')).toHaveAttribute('variant', 'default')
+      expect(screen.getByTestId('moderator-stats-window-90')).not.toBeDisabled()
       expect(screen.getByTestId('moderator-stats-window-30')).not.toBeDisabled()
     })
 

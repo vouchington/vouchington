@@ -46,6 +46,7 @@ describe('CommunityRaidModePanel', () => {
     )
 
     expect(screen.getByText('No active restrictions.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Activate' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Activate' }))
 
     await waitFor(() => expect(mockActivate).toHaveBeenCalled())
@@ -72,17 +73,6 @@ describe('CommunityRaidModePanel', () => {
 
     expect(screen.getByText('Vote spike detected')).toBeInTheDocument()
     expect(screen.getByText(/2 unresolved velocity spikes/)).toBeInTheDocument()
-  })
-
-  it('renders the default activation form when there is no spike', () => {
-    render(
-      <CommunityRaidModePanel
-        community={makeCommunity()}
-        initialData={makeData([])}
-      />,
-    )
-
-    expect(screen.getByRole('button', { name: 'Activate' })).toBeInTheDocument()
   })
 
   it('lifts an active restriction', async () => {
