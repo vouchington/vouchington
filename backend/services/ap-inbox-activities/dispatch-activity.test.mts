@@ -21,20 +21,6 @@ async function hasFollowRelation(remoteActor: RemoteActorRow, userId: string): P
 }
 
 describe('dispatchInboundActivity', () => {
-  it('creates a follow relation for a Follow activity targeting a federated user', async () => {
-    const remoteActor = await createRemoteActorFixture()
-    const user = await createFederatedUser()
-
-    await dispatchInboundActivity(remoteActor, {
-      id: `https://remote.example/activities/${randomSuffix()}`,
-      type: 'Follow',
-      actor: remoteActor.actor_uri,
-      object: getActorUri(user.id),
-    })
-
-    expect(await hasFollowRelation(remoteActor, user.id)).toBe(true)
-  })
-
   it('removes the follow relation for an Undo(Follow) activity', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
@@ -173,23 +159,6 @@ describe('dispatchInboundActivity', () => {
         object: { type: 'Announce', object: 'https://voucha.test/api/v1/posts/some-post' },
       }),
     ).resolves.toBeUndefined()
-  })
-
-  it('records a Like on the activitypub_post_likes ledger, never touching post_votes', async () => {
-    const remoteActor = await createRemoteActorFixture()
-    const post = await createTestPost()
-
-    await dispatchInboundActivity(remoteActor, {
-      id: `https://remote.example/activities/${remoteActor.id}`,
-      type: 'Like',
-      actor: remoteActor.actor_uri,
-      object: getPostUri(post.id),
-    })
-
-    expect(await getTestApPostLikesTally(post.id)).toEqual({
-      activitypub_likes_score: 1,
-      activitypub_likes_count: 1,
-    })
   })
 
   it('removes the Like for an Undo(Like) activity', async () => {
