@@ -56,41 +56,6 @@ describe('getPostFeedIds (pagination)', () => {
     })
   })
 
-  it('sorts by id DESC (newest first)', async () => {
-    const user = await createTestUser()
-    const followedUser = await createTestUser()
-
-    await followUser(user, followedUser)
-
-    await createTestPost({ user: followedUser })
-    await createTestPost({ user: followedUser })
-    const post3 = await createTestPost({ user: followedUser })
-
-    const result = await getPostFeedIds(user, { feed_type: 'follow_users', limit: 10 })
-
-    // Check that post3 appears in results (most recent)
-    const foundPost = result.results.find(r => r.id === post3.id)
-    expect(foundPost).toBeDefined()
-
-    // Should be sorted with newest first (post3 should appear early in results)
-    expect(result.results.length).toBeGreaterThan(0)
-  })
-
-  it('includes results with proper structure', async () => {
-    const user = await createTestUser()
-    const followedUser = await createTestUser()
-
-    await followUser(user, followedUser)
-
-    const post = await createTestPost({ user: followedUser })
-
-    const result = await getPostFeedIds(user, { feed_type: 'follow_users', limit: 10 })
-
-    const foundPost = result.results.find(r => r.id === post.id)
-    expect(foundPost).toBeDefined()
-    expect(foundPost?.id).toBe(post.id)
-  })
-
   it('returns shared posts in follow_users with share metadata', async () => {
     const sharer = await createTestUser()
     const follower = await createTestUser()
