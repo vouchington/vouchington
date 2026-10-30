@@ -5,7 +5,9 @@ describe('PaginationParser — limit', () => {
   const parser = new PaginationParser({ cursor: { type: 'simple' } })
 
   it('uses default limit (25) when not specified', () => {
-    expect(parser.parse({}).limit).toBe(25)
+    const result = parser.parse({})
+    expect(result.limit).toBe(25)
+    expect(result.after).toBeUndefined()
   })
 
   it('parses a valid limit', () => {
@@ -142,12 +144,6 @@ describe('PaginationParser — cursor', () => {
     const parser = new PaginationParser({ cursor: { type: 'simple' } })
 
     expect(() => parser.parse({ after: 12345, limit: 'invalid' })).toThrow('after must be a string')
-  })
-
-  it('omits after from result when no cursor provided', () => {
-    const parser = new PaginationParser({ cursor: { type: 'simple' } })
-    const result = parser.parse({})
-    expect(result.after).toBeUndefined()
   })
 })
 
