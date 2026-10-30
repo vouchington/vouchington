@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createSettledCopyrightEuReportCase } from '@voucha/test-helpers/copyright-report-retention'
@@ -45,66 +45,79 @@ describe('copyright evidence retention erasure', () => {
   const bucket = useFakeCopyrightEvidenceBucket()
   const setClock = useCopyrightRetentionWorkClock()
 
-  it('overwrites an eligible case and deletes every object version', async () => {
-    const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
-    await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
-    const noticeIds = cases.map(entry => entry.noticeId)
-    const administratorLift = await createRetentionAdministratorLiftCase()
-    const periodStart = new Date(Date.now() - 86_400_000)
-    const periodEnd = new Date(Date.now() + 86_400_000)
-    const territorial = await createSettledCopyrightEuReportCase(periodStart, periodEnd)
-    const coverageNoticeIds = [...noticeIds, administratorLift.noticeId, territorial.noticeId]
-    const retentionNow = new Date('2035-01-01T00:00:00.000Z')
-    await setClock(retentionNow)
-    for (const key of cases.flatMap(entry => entry.evidenceKeys)) {
-      bucket.put(key, { versions: 3, deleteMarker: true })
+  describe('complete erasure coverage', () => {
+    async function prepareCompleteErasure() {
+      const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
+      await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
+      const noticeIds = cases.map(entry => entry.noticeId)
+      const administratorLift = await createRetentionAdministratorLiftCase()
+      const periodStart = new Date(Date.now() - 86_400_000)
+      const periodEnd = new Date(Date.now() + 86_400_000)
+      const territorial = await createSettledCopyrightEuReportCase(periodStart, periodEnd)
+      const coverageNoticeIds = [...noticeIds, administratorLift.noticeId, territorial.noticeId]
+      const retentionNow = new Date('2035-01-01T00:00:00.000Z')
+      await setClock(retentionNow)
+      for (const key of cases.flatMap(entry => entry.evidenceKeys)) {
+        bucket.put(key, { versions: 3, deleteMarker: true })
+      }
+      const columns = await Promise.all(
+        coverageNoticeIds.map(id => readCopyrightRetentionColumns(id)),
+      )
+      const skeletons = await Promise.all(noticeIds.map(id => readCopyrightRetentionSkeleton(id)))
+      const incidents = await Promise.all(
+        cases.map(entry => readTestRepeatInfringerIncidents(entry.posterId)),
+      )
+      const openReviewIds = await Promise.all(
+        cases.map(entry => readTestRepeatInfringerOpenReviewIds(entry.posterId)),
+      )
+      return { cases, noticeIds, coverageNoticeIds, columns, skeletons, incidents, openReviewIds }
     }
-    const columns = await Promise.all(
-      coverageNoticeIds.map(id => readCopyrightRetentionColumns(id)),
-    )
-    const skeletons = await Promise.all(noticeIds.map(id => readCopyrightRetentionSkeleton(id)))
-    const incidents = await Promise.all(
-      cases.map(entry => readTestRepeatInfringerIncidents(entry.posterId)),
-    )
-    const openReviewIds = await Promise.all(
-      cases.map(entry => readTestRepeatInfringerOpenReviewIds(entry.posterId)),
-    )
-    // The form case holds a finished but failed delivery, which the staff queue lists.
-    const [, formCase] = cases
-    expect((await readCopyrightStaffQueueCursorRows(noticeIds)).map(row => row.id)).toEqual([
-      formCase!.noticeId,
-    ])
 
-    const outcomes = await Promise.all(
-      coverageNoticeIds.map(noticeId => advanceCopyrightRetentionWorkPages(noticeId)),
-    )
-    for (const pages of outcomes) expect(pages).toContain('erased')
-    await expect(readCopyrightStaffQueueCursorRows(noticeIds)).resolves.toEqual([])
-    for (const [index, entry] of cases.entries()) {
-      for (const key of entry.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)
-      await expect(
-        readCopyrightRetentionSkeleton(entry.noticeId, skeletons[index]),
-      ).resolves.toEqual(skeletons[index])
-      await expect(readTestRepeatInfringerIncidents(entry.posterId)).resolves.toEqual(
-        incidents[index],
+    let prepared: Awaited<ReturnType<typeof prepareCompleteErasure>>
+    beforeEach(async () => {
+      prepared = await prepareCompleteErasure()
+    })
+
+    it('overwrites an eligible case and deletes every object version', async () => {
+      const { cases, noticeIds, coverageNoticeIds, columns, skeletons, incidents, openReviewIds } =
+        prepared
+      // The form case holds a finished but failed delivery, which the staff queue lists.
+      const [, formCase] = cases
+      expect((await readCopyrightStaffQueueCursorRows(noticeIds)).map(row => row.id)).toEqual([
+        formCase!.noticeId,
+      ])
+
+      const outcomes = await Promise.all(
+        coverageNoticeIds.map(noticeId => advanceCopyrightRetentionWorkPages(noticeId)),
       )
-      await expect(readTestRepeatInfringerOpenReviewIds(entry.posterId)).resolves.toEqual(
-        openReviewIds[index],
+      for (const pages of outcomes) expect(pages).toContain('erased')
+      await expect(readCopyrightStaffQueueCursorRows(noticeIds)).resolves.toEqual([])
+      for (const [index, entry] of cases.entries()) {
+        for (const key of entry.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)
+        await expect(
+          readCopyrightRetentionSkeleton(entry.noticeId, skeletons[index]),
+        ).resolves.toEqual(skeletons[index])
+        await expect(readTestRepeatInfringerIncidents(entry.posterId)).resolves.toEqual(
+          incidents[index],
+        )
+        await expect(readTestRepeatInfringerOpenReviewIds(entry.posterId)).resolves.toEqual(
+          openReviewIds[index],
+        )
+        await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toEqual({
+          retention_days: 2191,
+          erased_object_count: entry.evidenceKeys.length,
+        })
+      }
+      // Every table covered by erasure held a row in one of the fixtures, and each erasable
+      // column of each row now differs from what it held, or is still null where it was null.
+      const after = await Promise.all(
+        coverageNoticeIds.map((id, index) => readCopyrightRetentionColumns(id, columns[index])),
       )
-      await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toEqual({
-        retention_days: 2191,
-        erased_object_count: entry.evidenceKeys.length,
+      expect(findCopyrightRetentionGaps(columns, after)).toEqual({
+        uncovered: [],
+        missing: [],
+        unchanged: [],
       })
-    }
-    // Every table covered by erasure held a row in one of the fixtures, and each erasable
-    // column of each row now differs from what it held, or is still null where it was null.
-    const after = await Promise.all(
-      coverageNoticeIds.map((id, index) => readCopyrightRetentionColumns(id, columns[index])),
-    )
-    expect(findCopyrightRetentionGaps(columns, after)).toEqual({
-      uncovered: [],
-      missing: [],
-      unchanged: [],
     })
   })
 

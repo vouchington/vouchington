@@ -122,6 +122,8 @@ export async function advanceCopyrightRetentionToPostroot(
     )
     if (outcome.outcome !== 'progress')
       throw new Error(`Copyright root fixture stopped at ${outcome.outcome}`)
+    // Proof and empty-phase pages cannot remove the root. Read it only after a physical deletion.
+    if (outcome.physicalRows === 0) continue
     const state = await readCopyrightRetentionCaseRows(noticeId)
     if (state.root_purged_at && !state.notice_exists) return state
   }

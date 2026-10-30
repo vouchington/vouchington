@@ -22,27 +22,28 @@ export async function readCopyrightSensitiveColumns(): Promise<Record<string, st
   return Object.fromEntries(rows.map(row => [row.table_name, row.columns]))
 }
 
-/** Every erasable column of every row the retention sweep covers for one notice, by table. */
+/** JSON snapshots of every erasable column the sweep covers for one notice, by table. */
 export async function readCopyrightRetentionColumns(
   noticeId: string,
   retainedRows?: CopyrightRetentionRows,
 ): Promise<CopyrightRetentionRows> {
-  const tables: CopyrightRetentionRows = {}
-  for (const spec of COPYRIGHT_RETENTION_ERASURE) {
+  const query = sql`/* readCopyrightRetentionColumns */`
+  for (const [index, spec] of COPYRIGHT_RETENTION_ERASURE.entries()) {
+    if (index > 0) query.append(' UNION ALL ')
     const tokenIds = retainedRows?.[spec.table]?.map(row => row.id)
     const scope =
       spec.table === 'copyright_notice_email_thread_tokens' && tokenIds
         ? sql`id = ANY(${tokenIds}::uuid[])`
         : spec.scope(noticeId)
-    const { rows } = await read<Record<string, unknown>>(
-      sql`/* readCopyrightRetentionColumns */`
-        .append(`\n SELECT id, ${Object.keys(spec.columns).join(', ')} FROM ${spec.table} WHERE `)
-        .append(scope)
-        .append(' ORDER BY id'),
-    )
-    tables[spec.table] = rows
+    query
+      .append(sql` SELECT ${spec.table}::text AS table_name, `)
+      .append("COALESCE(jsonb_agg(to_jsonb(selected) ORDER BY selected.id), '[]'::jsonb) AS rows")
+      .append(` FROM (SELECT id, ${Object.keys(spec.columns).join(', ')} FROM ${spec.table} WHERE `)
+      .append(scope)
+      .append(') selected')
   }
-  return tables
+  const { rows } = await read<{ table_name: string; rows: Record<string, unknown>[] }>(query)
+  return Object.fromEntries(rows.map(row => [row.table_name, row.rows]))
 }
 
 /**
@@ -53,8 +54,9 @@ export async function readCopyrightRetentionSkeleton(
   noticeId: string,
   retainedRows?: CopyrightRetentionRows,
 ): Promise<CopyrightRetentionRows> {
-  const tables: CopyrightRetentionRows = {}
-  for (const spec of COPYRIGHT_RETENTION_ERASURE) {
+  const query = sql`/* readCopyrightRetentionSkeleton */`
+  for (const [index, spec] of COPYRIGHT_RETENTION_ERASURE.entries()) {
+    if (index > 0) query.append(' UNION ALL ')
     const rowName = spec.table === 'copyright_notice_email_thread_tokens' ? spec.table : 'erasable'
     const alias = rowName === 'erasable' ? ' erasable' : ''
     const tokenIds = retainedRows?.[spec.table]?.map(row => row.id)
@@ -67,17 +69,17 @@ export async function readCopyrightRetentionSkeleton(
       .join(', ')
     const operationalFence =
       spec.table === 'copyright_notice_email_intake_receipts' ? " - 'erased_at'" : ''
-    const { rows } = await read<{ row: Record<string, unknown> }>(
-      sql`/* readCopyrightRetentionSkeleton */`
-        .append(
-          `\n SELECT to_jsonb(${rowName}) - 'updated_at'${operationalFence} - ARRAY[${erasable}]::text[] AS row FROM ${spec.table}${alias} WHERE `,
-        )
-        .append(scope)
-        .append(` ORDER BY ${rowName}.id`),
-    )
-    tables[spec.table] = rows.map(entry => entry.row)
+    query
+      .append(sql` SELECT ${spec.table}::text AS table_name, `)
+      .append("COALESCE(jsonb_agg(selected.row ORDER BY selected.id), '[]'::jsonb) AS rows")
+      .append(
+        ` FROM (SELECT ${rowName}.id, to_jsonb(${rowName}) - 'updated_at'${operationalFence} - ARRAY[${erasable}]::text[] AS row FROM ${spec.table}${alias} WHERE `,
+      )
+      .append(scope)
+      .append(') selected')
   }
-  return tables
+  const { rows } = await read<{ table_name: string; rows: Record<string, unknown>[] }>(query)
+  return Object.fromEntries(rows.map(row => [row.table_name, row.rows]))
 }
 
 export async function readCopyrightRetentionMarker(

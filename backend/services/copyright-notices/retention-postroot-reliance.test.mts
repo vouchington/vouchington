@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   advanceCopyrightRetentionToPostroot,
   closeCopyrightPostrootSource,
@@ -17,12 +17,38 @@ const SECOND_EXPIRY = new Date('2043-10-23T00:00:00.000Z')
 describe('copyright postroot suspension reliance retention', () => {
   useFakeCopyrightEvidenceBucket()
   const setClock = useCopyrightRetentionWorkClock()
+  const firstOptions = {
+    now: FIRST_EXPIRY,
+    cutoff: new Date('2030-10-23T00:00:00.000Z'),
+    pageSize: 1,
+    maxBatches: 1,
+  }
 
-  it('preserves a live incident bridge, then shares cap one across released authority and parties', async () => {
+  let setup: {
+    fixture: Awaited<ReturnType<typeof createCopyrightPostrootSuspensionFixture>>
+    before: Awaited<ReturnType<typeof readCopyrightSuspensionRetentionRows>>
+    firstRoot: Awaited<ReturnType<typeof readCopyrightRetentionCaseRows>>
+    withLiveBridge: Awaited<ReturnType<typeof readCopyrightSuspensionRetentionRows>>
+  }
+
+  beforeEach(async () => {
     await setClock(START)
     const fixture = await createCopyrightPostrootSuspensionFixture()
     const accountId = fixture.poster.id
     const before = await readCopyrightSuspensionRetentionRows(accountId, fixture.reviewId)
+    await closeCopyrightPostrootSource(fixture, fixture.first)
+    await setClock(FIRST_EXPIRY)
+    const firstRoot = await advanceCopyrightRetentionToPostroot(
+      fixture.first.noticeId,
+      firstOptions,
+    )
+    const withLiveBridge = await readCopyrightSuspensionRetentionRows(accountId, fixture.reviewId)
+    setup = { fixture, before, firstRoot, withLiveBridge }
+  })
+
+  it('preserves a live incident bridge, then shares cap one across released authority and parties', async () => {
+    const { fixture, before, firstRoot, withLiveBridge } = setup
+    const accountId = fixture.poster.id
     expect(before).toMatchObject({
       reliance_exists: true,
       released_at: expect.any(Date),
@@ -32,25 +58,12 @@ describe('copyright postroot suspension reliance retention', () => {
       suspension_history_count: 1,
       last_released_at: expect.any(Date),
     })
-    await closeCopyrightPostrootSource(fixture, fixture.first)
-    await setClock(FIRST_EXPIRY)
-    const firstOptions = {
-      now: FIRST_EXPIRY,
-      cutoff: new Date('2030-10-23T00:00:00.000Z'),
-      pageSize: 1,
-      maxBatches: 1,
-    }
-    const firstRoot = await advanceCopyrightRetentionToPostroot(
-      fixture.first.noticeId,
-      firstOptions,
-    )
     expect(firstRoot).toMatchObject({
       notice_exists: false,
       party_count: 1,
       work_exists: true,
       identity_exists: true,
     })
-    const withLiveBridge = await readCopyrightSuspensionRetentionRows(accountId, fixture.reviewId)
     expect(withLiveBridge).toEqual({ ...before, source_count: 1, operative_source_count: 1 })
 
     // The sibling party is processed, but its released reliance still has a live-case source FK.
