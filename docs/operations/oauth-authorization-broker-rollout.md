@@ -8,7 +8,7 @@ experience; native apps turn the broker on per provider.
 The twelve `<provider>_<web|native>_enabled` fields are an intentional method switch, not a
 rollout to clean up. They stay so the web method can be changed per provider if ever needed, so the
 pre-launch removal of activation flags does not apply to them.
- The operator needs DynamicConfig access
+The operator needs DynamicConfig access
 (key `oauth-authorization-broker`) and API/worker log access. Flow design is in
 [login flows](../overview/architecture/reference-auth-overview-login-flows.md) and the
 [OAuth exchange queue](../overview/architecture/queues/README.md).
