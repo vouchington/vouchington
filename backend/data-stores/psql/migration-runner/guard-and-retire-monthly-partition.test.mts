@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
+  assertSafeSqlIdentifier,
   buildMonthlyPartitionName,
   createMonthlyPartitions,
 } from '@vouchington/postgres/partitions'
@@ -14,11 +15,14 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
+import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
-import { write } from '../setup.mts'
 import { getMonthlyPartitionUpperBound } from './partition-drop-guard.mts'
-import { retireMonthlyPartitionCandidate } from './monthly-partitions.mts'
+import {
+  retireMonthlyPartitionCandidate,
+  type PartitionDropOutcome,
+} from './monthly-partitions.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
 const candidate = {
@@ -126,11 +130,12 @@ describe('guardAndRetireMonthlyPartition', () => {
     const referenceDate = new Date(
       Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
     )
-    const outcome = await retireMonthlyPartitionCandidate(
-      { table: TABLE, partition, upperBound },
-      referenceDate,
-      1,
-    )
+    // The real path takes these locks NOWAIT and refuses on contention. Hold them first so
+    // that NOWAIT is already satisfied, and allow one more attempt when a reader outlasts it.
+    let outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
+    if (outcome.reason === 'lock-contention') {
+      outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
+    }
     expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
 
     await expect(rollupCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
@@ -145,6 +150,47 @@ describe('guardAndRetireMonthlyPartition', () => {
     await expect(rollupCount(occurredAt)).resolves.toBeUndefined()
   })
 })
+
+function retireOwnedClearancePartition(
+  partition: string,
+  upperBound: Date,
+  referenceDate: Date,
+): Promise<PartitionDropOutcome> {
+  const references = (PARTITION_DROP_POLICIES[TABLE]?.retirementReferenceTables ?? [])
+    .map(table => assertSafeSqlIdentifier(table))
+    .join(', ')
+  const parent = assertSafeSqlIdentifier(TABLE)
+  const child = assertSafeSqlIdentifier(partition)
+  return retireMonthlyPartitionCandidate(
+    { table: TABLE, partition, upperBound },
+    referenceDate,
+    1,
+    async () => {
+      const transaction = await beginTransaction()
+      try {
+        await transaction(
+          "/* retireOwnedClearancePartition */ SELECT set_config('lock_timeout', '1500ms', true)",
+        )
+        await transaction(
+          `/* retireOwnedClearancePartition:lockReference */ LOCK TABLE ${references} IN ACCESS EXCLUSIVE MODE`,
+        )
+        await transaction(
+          `/* retireOwnedClearancePartition:lockParent */ LOCK TABLE ${parent} IN ACCESS EXCLUSIVE MODE`,
+        )
+        await transaction(
+          `/* retireOwnedClearancePartition:lockCandidate */ LOCK TABLE ${child} IN ACCESS EXCLUSIVE MODE`,
+        )
+        await transaction(
+          '/* retireOwnedClearancePartition:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE',
+        )
+      } catch (err) {
+        await transaction.rollback()
+        throw err
+      }
+      return transaction
+    },
+  )
+}
 
 function rollupCount(occurredAt: Date): Promise<number | undefined> {
   return getTestModerationTransparencyRollupCount({
