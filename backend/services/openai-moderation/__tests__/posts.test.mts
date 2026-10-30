@@ -249,10 +249,11 @@ describe('posts', () => {
     })
 
     expect(createOpenAIModeration).not.toHaveBeenCalled()
-    expect(result).toMatchObject({
+    expect(result).toEqual({
+      results: [{ flagged: true, categories: { harassment: true } }],
+      content_sha256,
       reused: true,
       flagged: true,
-      results: [{ flagged: true, categories: { harassment: true } }],
     })
   })
 })

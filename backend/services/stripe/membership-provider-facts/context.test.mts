@@ -14,15 +14,19 @@ describe('Stripe membership provider fact context', () => {
     const sku = await createTestSku({ plan: 'plus' })
     const membership = await grantMembership(admin.id, user.id, 'plus', sku.id, 30)
     const subscriptionId = `sub_missing_context_${randomUUID()}`
+    const missingEventId = `evt_missing_receipt_${randomUUID()}`
     const subscription = makeSubscription(subscriptionId, `price_${randomUUID()}`, true)
 
     await expect(
       recordStripeMembershipProviderFacts({
-        stripeEventId: `evt_missing_receipt_${randomUUID()}`,
+        stripeEventId: missingEventId,
         membershipId: membership.id,
         subscription,
       }),
-    ).rejects.toMatchObject({ name: 'StripeMembershipEventNotIngestedError' })
+    ).rejects.toMatchObject({
+      name: 'StripeMembershipEventNotIngestedError',
+      message: `Stripe event ${missingEventId} was not durably ingested`,
+    })
 
     const event = makeStripeEvent(`evt_missing_context_${randomUUID()}`, subscriptionId, true)
     await insertStripeEvent(event)
