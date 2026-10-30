@@ -29,7 +29,7 @@ const vouchaMigrationExtensions = [
   'unaccent',
 ] as const
 
-export const psql: Psql = await createPsql({
+export const psql: Psql = createPsql({
   connectionString,
   readConnectionString,
   databaseName,

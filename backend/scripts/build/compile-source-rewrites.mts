@@ -54,8 +54,8 @@ export function rewriteModuleSource(source: string, modulePath: string): string 
     // the repository's own barrels (data-stores/valkey and data-stores/psql `export * from
     // './clients.mts'`, whose clients are created with top-level await).
     .replace(/^export \* from (['"][^'"]+['"]);?$/gm, 'import $1; export * from $1;')
-    // The bundler can't follow requires made through createRequire (sharp's addon,
-    // @vouchington/postgres's pg-cursor); Bun's own `require` in ESM is followed and embedded.
+    // The bundler can't follow requires made through createRequire (sharp's addon); Bun's own
+    // `require` in ESM is followed and embedded.
     .replace(/^const require = createRequire\(import\.meta\.url\);?$/m, '')
   // playwright-core requires its own JSON manifests through a computed path, which would load
   // them from the build machine; the relative form is bundled.
