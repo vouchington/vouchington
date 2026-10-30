@@ -162,6 +162,7 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
         {isReconciling ? (
           <div data-pw={reconciliationTestId}>
             <Button
+              data-pw='integrity-penalty-row-reconcile'
               variant='outline'
               size='touchSm'
               onClick={() => {

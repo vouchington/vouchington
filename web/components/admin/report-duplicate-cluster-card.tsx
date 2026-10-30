@@ -61,6 +61,7 @@ export function DuplicateClusterCard({
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
+                data-pw='report-duplicate-cluster-card-remove-all'
                 size='touchSm'
                 variant='destructive'
                 disabled={disabled}
@@ -95,6 +96,7 @@ export function DuplicateClusterCard({
                   {t('extracted.admin.reportDuplicateClusterCard.cancel_19766ed6')}
                 </AlertDialogCancel>
                 <AlertDialogAction
+                  data-pw='report-duplicate-cluster-card-remove-posts'
                   disabled={loading}
                   onClick={onRemove}
                 >

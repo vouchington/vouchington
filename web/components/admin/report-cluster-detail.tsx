@@ -104,6 +104,7 @@ export function ReportDetail({
           report={report}
         />
         <Button
+          data-pw='report-cluster-detail-re-run-judgement'
           size='touchSm'
           variant='outline'
           disabled={disabled}

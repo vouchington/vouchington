@@ -18,6 +18,7 @@ test.describe('Valkey Dashboard', () => {
   })
 
   test('shows rebuild buttons for each filter', async ({ page }) => {
+    await expect(page.getByTestId('bloom-filter-rebuild-card-rebuild').first()).toBeVisible()
     const filters = ['url-blocklist', 'email-blocklist', 'embedding', 'entity-cache']
     await Promise.all(
       filters.map(async filter => {
@@ -32,6 +33,7 @@ test.describe('Valkey Dashboard', () => {
   })
 
   test('has a refresh button', async ({ page }) => {
+    await expect(page.getByTestId('valkey-header-refresh')).toBeVisible()
     const buttons = page.locator('button')
     await expect(buttons.filter({ hasText: 'Refresh' })).toBeVisible()
   })
@@ -41,6 +43,7 @@ test.describe('Valkey Dashboard', () => {
   })
 
   test('shows clear all caches button', async ({ page }) => {
+    await expect(page.getByTestId('cache-management-card-clear-all-caches')).toBeVisible()
     const buttons = page.locator('button')
     await expect(buttons.filter({ hasText: 'Clear All Caches' })).toBeVisible()
   })
@@ -51,9 +54,11 @@ test.describe('Valkey Dashboard', () => {
     const rebuildBtn = filterRow.locator('button').filter({ hasText: 'Rebuild' })
     await rebuildBtn.click()
     await expect(page.getByRole('alertdialog')).toBeVisible()
+    await expect(page.getByTestId('valkey-confirm-dialog-confirm')).toBeVisible()
   })
 
   test('Clear cache group button opens confirmation dialog', async ({ page }) => {
+    await expect(page.getByTestId('cache-management-card-clear').first()).toBeVisible()
     const clearGroupButton = page
       .locator('button')
       .filter({ hasText: /^Clear$/ })
@@ -73,6 +78,7 @@ test.describe('Valkey Dashboard', () => {
   })
 
   test('shows flush buttons for each concern', async ({ page }) => {
+    await expect(page.getByTestId('flush-concerns-card-flush').first()).toBeVisible()
     const concerns = [
       'caches',
       'recently-viewed',

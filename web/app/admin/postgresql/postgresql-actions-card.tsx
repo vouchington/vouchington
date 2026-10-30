@@ -13,8 +13,9 @@ import {
   type PartitionAction,
   type PsqlAction,
 } from './postgresql-state'
+import { PsqlActionButton } from './postgresql-action-button'
 import { useTranslations } from '@/lib/i18n/use-translations'
-const PARTITION_ACTIONS = ['createPartitions', 'cleanupPartitions'] as const
+
 export function PostgreSQLActionsCard({
   actionLoading,
   onAction,
@@ -69,21 +70,38 @@ export function PostgreSQLActionsCard({
             variant='outline'
             dataPw='postgresql-run-config-driven'
           />
-          {PARTITION_ACTIONS.map(action => (
-            <Tooltip key={action}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant='outline'
-                  loading={actionLoading[action]}
-                  disabled={actionLoading[action]}
-                  onClick={() => setPendingAction(action)}
-                >
-                  {actionLoading[action] ? 'Running...' : PARTITION_ACTION_LABELS[action]}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{PARTITION_ACTION_TOOLTIPS[action]}</TooltipContent>
-            </Tooltip>
-          ))}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-pw='postgresql-partition-create'
+                variant='outline'
+                loading={actionLoading.createPartitions}
+                disabled={actionLoading.createPartitions}
+                onClick={() => setPendingAction('createPartitions')}
+              >
+                {actionLoading.createPartitions
+                  ? 'Running...'
+                  : PARTITION_ACTION_LABELS.createPartitions}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{PARTITION_ACTION_TOOLTIPS.createPartitions}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-pw='postgresql-partition-cleanup'
+                variant='outline'
+                loading={actionLoading.cleanupPartitions}
+                disabled={actionLoading.cleanupPartitions}
+                onClick={() => setPendingAction('cleanupPartitions')}
+              >
+                {actionLoading.cleanupPartitions
+                  ? 'Running...'
+                  : PARTITION_ACTION_LABELS.cleanupPartitions}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{PARTITION_ACTION_TOOLTIPS.cleanupPartitions}</TooltipContent>
+          </Tooltip>
         </div>
         <div className='mt-6 space-y-3'>
           <p className='text-sm'>
@@ -167,33 +185,5 @@ export function PostgreSQLActionsCard({
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-function PsqlActionButton({
-  action,
-  label,
-  loading,
-  onAction,
-  variant,
-  dataPw = '',
-}: {
-  action: PsqlAction
-  label: string
-  loading: boolean
-  onAction: (action: PsqlAction) => void
-  variant?: 'outline'
-  dataPw?: string
-}) {
-  return (
-    <Button
-      variant={variant}
-      loading={loading}
-      disabled={loading}
-      onClick={() => onAction(action)}
-      {...(dataPw && { 'data-pw': dataPw })}
-    >
-      {loading ? 'Running...' : label}
-    </Button>
   )
 }

@@ -24,7 +24,10 @@ const Frame = ({ children }: { children: React.ReactNode }) => (
 export const Default: Story = {
   render: () => (
     <Frame>
-      <ExternalLink href='https://www.walmart.com/plus/refer/abc123'>
+      <ExternalLink
+        href='https://www.walmart.com/plus/refer/abc123'
+        data-pw='external-link-story-source'
+      >
         https://www.walmart.com/plus/refer/abc123
       </ExternalLink>
       <ExternalLink
@@ -47,7 +50,7 @@ export const Default: Story = {
     await expect(links.length).toBeGreaterThan(0)
     await expect(links[0]).toHaveAttribute('target', '_blank')
     await expect(links[0]).toHaveAttribute('rel', 'nofollow noopener noreferrer')
-    await expect(links[0]).toHaveAttribute('data-pw', 'external-link')
+    await expect(links[0]).toHaveAttribute('data-pw', 'external-link-story-source')
   },
 }
 

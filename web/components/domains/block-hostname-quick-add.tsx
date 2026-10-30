@@ -77,6 +77,7 @@ export function BlockHostnameQuickAdd({ isAdmin }: Props) {
           disabled={isBusy}
         />
         <Button
+          data-pw='block-hostname-quick-add-block-hostname'
           type='submit'
           variant='destructive'
           disabled={isBusy || !hostname.trim()}
@@ -107,6 +108,7 @@ export function BlockHostnameQuickAdd({ isAdmin }: Props) {
               {t('extracted.domains.blockHostnameQuickAdd.cancel_19766ed6')}
             </AlertDialogCancel>
             <AlertDialogAction
+              data-pw='block-hostname-quick-add-confirm-block-hostname'
               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
               disabled={isBusy}
               onClick={handleConfirm}

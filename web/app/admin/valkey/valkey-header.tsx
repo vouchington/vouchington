@@ -30,6 +30,7 @@ export function ValkeyHeader({ loadData, loading }: ValkeyHeaderProps) {
         title={t('extracted.valkey.valkeyHeader.valkey_2392ad6b')}
       >
         <Button
+          data-pw='valkey-header-refresh'
           disabled={loading}
           loading={loading}
           onClick={loadData}

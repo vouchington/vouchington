@@ -65,6 +65,7 @@ export function IntegrityFlagsHeader({
             size='touchSm'
           >
             <Link
+              data-pw='integrity-flags-header-flags-link'
               href={flagsHref}
               prefetch={false}
             >
@@ -106,6 +107,7 @@ export function IntegrityFlagsHeader({
           </SelectContent>
         </Select>
         <Button
+          data-pw='integrity-flags-header-refresh'
           variant='outline'
           size='touchIcon'
           onClick={onRefresh}
