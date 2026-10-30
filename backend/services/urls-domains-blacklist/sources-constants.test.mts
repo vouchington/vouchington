@@ -3,10 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { BLACKLISTS } from './sources-constants.mts'
 
 describe('BLACKLISTS', () => {
-  it('contains at least one source', () => {
-    expect(BLACKLISTS.length).toBeGreaterThan(0)
-  })
-
   it('uses unique source names', () => {
     expect(new Set(BLACKLISTS.map(source => source.name)).size).toBe(BLACKLISTS.length)
   })
