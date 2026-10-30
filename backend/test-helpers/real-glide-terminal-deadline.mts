@@ -1,9 +1,9 @@
 /**
- * Below the real-glide and data-store test budgets, and above the longest in-test block or
- * delay those waits still have to outlast. A stall must name this wait before the runner's
- * own test timeout is the only error.
+ * Under every Vitest project's test budget, so a stall names this wait before that budget
+ * is the only error. A caller that must outlast a longer clock passes its own deadline,
+ * still under that test's timeout.
  */
-export const REAL_GLIDE_EVENT_DEADLINE_MS = 20_000
+export const REAL_GLIDE_EVENT_DEADLINE_MS = 4_000
 
 /**
  * Wait for a GlideMQ terminal event (`completed`, `failed`, or drained). The event resolves
