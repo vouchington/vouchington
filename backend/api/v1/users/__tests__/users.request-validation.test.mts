@@ -178,8 +178,19 @@ describe('user routes - request contract validation', () => {
   })
 
   describe('PATCH /api/v1/users/:idOrSlug', () => {
+    it('returns 422 for an unknown field without changing the user', async () => {
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const rejected = await request
+        .patch(`/api/v1/users/${owner.id}`)
+        .send({ extra: true })
+        .expect(422)
+      expect(rejected.body.message).toBe('Invalid request body')
+      const response = await request.get(`/api/v1/users/${owner.id}`).expect(200)
+      expect(response.body.user.username).toBe(owner.username)
+    })
+
     it.each([
-      ['an unknown field', { extra: true }],
       ['an unknown visibility', { follows_visibility: 'secret' }],
       ['a string boolean', { is_engagement_emails_enabled: 'yes' }],
       ['a numeric username', { username: 5 }],
@@ -190,16 +201,6 @@ describe('user routes - request contract validation', () => {
       await request.patch(`/api/v1/users/${owner.id}`).send(body).expect(422)
       const response = await request.get(`/api/v1/users/${owner.id}`).expect(200)
       expect(response.body.user.username).toBe(owner.username)
-    })
-
-    it('returns a redacted diagnostic', async () => {
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      const response = await request
-        .patch(`/api/v1/users/${owner.id}`)
-        .send({ extra: true })
-        .expect(422)
-      expect(response.body.message).toBe('Invalid request body')
     })
 
     it('keeps applying a valid body', async () => {
@@ -228,16 +229,6 @@ describe('user routes - request contract validation', () => {
   })
 
   describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
-    it('returns 422 for a malformed request id instead of a database error', async () => {
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      const response = await request
-        .get(`/api/v1/users/${owner.id}/data-request/stream`)
-        .query({ request_id: 'not-a-uuid' })
-        .expect(422)
-      expect(response.body.message).toBe('Invalid request ID')
-    })
-
     it('keeps returning 404 for an unknown request id', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)

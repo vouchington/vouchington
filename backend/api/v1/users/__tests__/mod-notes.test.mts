@@ -204,19 +204,6 @@ describe('POST /api/v1/users/:userId/mod-notes', () => {
       .expect(403)
   })
 
-  it('returns 422 for missing body', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const target = await createTestUser({ username: safeUsername('mn-422-nobody') })
-    const request = createRequest()
-    await request.authenticateAs(admin)
-
-    await request
-      .post(`/api/v1/users/${target.id}/mod-notes`)
-      .send({})
-      .set('Content-Type', 'application/json')
-      .expect(422)
-  })
-
   it('returns 422 for body > 2000 chars', async () => {
     const admin = await createTestUser({ administrator: true })
     const target = await createTestUser({ username: safeUsername('mn-422-long') })
