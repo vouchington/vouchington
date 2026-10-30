@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ExposureState, ModMediaRevealSurface } from './types.mts'
@@ -38,11 +38,15 @@ async function recordMediaReveal(
 export async function recordMediaRevealAndGetExposureState(
   moderatorId: string,
   input: RecordMediaRevealInput,
+  options: QueryOptions = {},
 ): Promise<ExposureState> {
+  const run = async (query: TransactionQuery): Promise<ExposureState> => {
+    await lockAndRecordMediaReveal(query, moderatorId, input)
+    return getExposureState(moderatorId, { query })
+  }
+  if (options.query || options.client) return withTransactionOptions(options, run)
   await using query = await beginTransaction()
-  const options = { query }
-  await lockAndRecordMediaReveal(query, moderatorId, input)
-  const result = await getExposureState(moderatorId, options)
+  const result = await run(query)
   await query.commit()
   return result
 }

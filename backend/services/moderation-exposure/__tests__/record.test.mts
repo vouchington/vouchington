@@ -48,16 +48,21 @@ describe('recordMediaReveal', () => {
     expect(after.count).toBe(before.count + 1)
   })
 
-  it('keeps a committed reveal when the caller transaction rolls back', async () => {
+  it('reads a reveal through the transaction that recorded it', async () => {
     const before = await getExposureState(moderator.id)
 
     await expect(
-      withForcedTransactionRollbackForTest(async () => {
-        await recordMediaRevealAndGetExposureState(moderator.id, { surface: 'mod_queue' })
+      withForcedTransactionRollbackForTest(async options => {
+        const during = await recordMediaRevealAndGetExposureState(
+          moderator.id,
+          { surface: 'mod_queue' },
+          options,
+        )
+        expect(during.count).toBe(before.count + 1)
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect((await getExposureState(moderator.id)).count).toBe(before.count + 1)
+    expect((await getExposureState(moderator.id)).count).toBe(before.count)
   })
 
   it('serializes concurrent reveals for one moderator through threshold evaluation', async () => {
