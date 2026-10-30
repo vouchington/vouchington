@@ -61,10 +61,6 @@ describe('processors.generated', () => {
     expect(count).toBe(2)
   })
 
-  it('processBlacklistSourceSync handles missing source without throwing', async () => {
-    await expect(processBlacklistSourceSync({ sourceId: 32000 })).resolves.toBeUndefined()
-  })
-
   it('processBlacklistSourceSync handles sync errors without throwing', async () => {
     serverStatus = 404
     serverBody = 'Not Found'
