@@ -5,7 +5,6 @@ import { electedRelationMetadata } from '../../services/users/relation-impact-ta
 import {
   cleanupRetainedRelationIdentities,
   readRetainedRelationCleanupCursors,
-  type RetainedRelationCleanupCursor,
 } from '../../services/data-retention/cleanup-retained-relation-identities.mts'
 import {
   insertTestRetainedIdentityRoot,
@@ -67,7 +66,7 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
     hasRelation: (table: string, subject: string, relation: string) => Promise<boolean>
     cleanup: typeof cleanupRetainedRelationIdentities
     cursorNames: () => Promise<string[]>
-    cursorRows: () => Promise<RetainedRelationCleanupCursor[]>
+    cursorRows: () => ReturnType<typeof readRetainedRelationCleanupCursors>
   }) => Promise<Result>,
 ): Promise<Result> {
   let query: Awaited<ReturnType<typeof beginTransaction>> | undefined

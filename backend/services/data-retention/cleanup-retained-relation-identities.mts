@@ -21,7 +21,7 @@ export type RetainedRelationIdentityCleanupPage = {
 
 export type RetainedRelationIdentityKey = { subjectId: string; relationId: string }
 
-export type RetainedRelationCleanupCursor = {
+type RetainedRelationCleanupCursor = {
   entity_relation: string
   cursor_subject_id: string | null
   cursor_relation_id: string | null
@@ -30,9 +30,13 @@ export type RetainedRelationCleanupCursor = {
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 
 /** Enum primary keys bound this inventory to the elected families; reads never change progress. */
-export async function readRetainedRelationCleanupCursors(
-  options: QueryOptions = {},
-): Promise<RetainedRelationCleanupCursor[]> {
+export async function readRetainedRelationCleanupCursors(options: QueryOptions = {}): Promise<
+  Array<{
+    entity_relation: string
+    cursor_subject_id: string | null
+    cursor_relation_id: string | null
+  }>
+> {
   const { rows } = await read<RetainedRelationCleanupCursor>(
     `/* readRetainedRelationCleanupCursors */
      SELECT entity_relation, cursor_subject_id, cursor_relation_id
