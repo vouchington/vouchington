@@ -38,23 +38,32 @@ function defaultModuleDir(): string {
   return import.meta.dirname
 }
 
+export type WorktreeConnectionDecision =
+  | { allowedBecause: 'ci'; databaseName: string | null }
+  | { allowedBecause: 'docker-host'; databaseName: string | null }
+  | { allowedBecause: 'no-repo-root'; databaseName: string | null }
+  | { allowedBecause: 'main-worktree'; databaseName: string | null; repoRoot: string }
+  | { allowedBecause: 'worktree-database'; databaseName: string | null; repoRoot: string }
+
 export function assertNotCrossWorktreeConnection(
   connectionString: string,
   { env = process.env, moduleDir }: { env?: NodeJS.ProcessEnv; moduleDir?: string } = {},
-): void {
-  if (env.CI) return
-  if (env.DOCKER_HOST_IP) return
+): WorktreeConnectionDecision {
+  const databaseName = databaseNameFromConnectionString(connectionString)
+  if (env.CI) return { allowedBecause: 'ci', databaseName }
+  if (env.DOCKER_HOST_IP) return { allowedBecause: 'docker-host', databaseName }
 
   const repoRoot = findRepoRoot(moduleDir ?? defaultModuleDir())
-  if (!repoRoot) return
-  if (!isNonMainWorktree(repoRoot)) return
+  if (!repoRoot) return { allowedBecause: 'no-repo-root', databaseName }
+  if (!isNonMainWorktree(repoRoot))
+    return { allowedBecause: 'main-worktree', databaseName, repoRoot }
 
-  const dbName = databaseNameFromConnectionString(connectionString)
-  if (dbName === 'voucha') {
+  if (databaseName === 'voucha') {
     throw new Error(
       `Cross-worktree database guard: refusing to connect to the main "voucha" database from a non-main worktree.\n` +
-        `Resolved connection string targets database "${dbName}".\n` +
+        `Resolved connection string targets database "${databaseName}".\n` +
         `Run ./dev/initialize web and source .env to configure a worktree-specific database.`,
     )
   }
+  return { allowedBecause: 'worktree-database', databaseName, repoRoot }
 }

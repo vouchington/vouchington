@@ -62,19 +62,19 @@ function normalizeExtensionVersionsForLiveComparison(snapshot: SchemaSnapshot): 
    docs/development/reference-tests-schema-checks.md */
 export async function verifyLiveSchemaMatchesSnapshot({
   root = __dirname,
-}: { root?: string } = {}): Promise<void> {
+}: { root?: string } = {}): Promise<{ live: SchemaSnapshot; committed: SchemaSnapshot }> {
   const schemaJsonPath = path.join(root, 'schema.json')
   const [catalog, committedJson] = await Promise.all([
     readSchemaCatalog(),
     readFile(schemaJsonPath, 'utf8'),
   ])
-  const live = stableStringify(
-    normalizeExtensionVersionsForLiveComparison(buildSchemaSnapshot(catalog)),
+  const liveSnapshot = normalizeExtensionVersionsForLiveComparison(buildSchemaSnapshot(catalog))
+  const committedSnapshot = normalizeExtensionVersionsForLiveComparison(
+    JSON.parse(committedJson) as SchemaSnapshot,
   )
-  const committed = stableStringify(
-    normalizeExtensionVersionsForLiveComparison(JSON.parse(committedJson) as SchemaSnapshot),
-  )
-  if (live === committed) return
+  const live = stableStringify(liveSnapshot)
+  const committed = stableStringify(committedSnapshot)
+  if (live === committed) return { live: liveSnapshot, committed: committedSnapshot }
 
   throw new Error(
     'The live PostgreSQL schema does not match the committed schema snapshot ' +
