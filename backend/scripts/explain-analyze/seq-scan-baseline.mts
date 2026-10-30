@@ -20,7 +20,7 @@ for (const fingerprint of BASELINE_FINGERPRINTS) {
   relations.push(relation)
   baselineByIdentity.set(identity, relations)
 }
-export const SEQ_SCAN_BASELINE: SeqScanBaseline = Object.fromEntries(baselineByIdentity)
+const SEQ_SCAN_BASELINE: SeqScanBaseline = Object.fromEntries(baselineByIdentity)
 
 export function getExplainResultIdentity(result: ExplainResult): string {
   return [

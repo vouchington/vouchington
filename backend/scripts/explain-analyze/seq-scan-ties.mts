@@ -16,11 +16,11 @@ export const SEQ_SCAN_TIE_RATIO = 0.25
 export type ProbedExplainResult = ExplainResult & {
   no_seq_scan_total_cost?: number
   /** Baselined relations absent from the plan, each priced plan-only with index scans disabled. */
-  forced_seq_scans?: Readonly<Record<string, ForcedSeqScan>>
+  forced_seq_scans?: Readonly<Record<string, { total_cost: number; scan_cost: number }>>
 }
 
 /** The forced plan's total cost and the cost of its sequential scan nodes on one relation. */
-export type ForcedSeqScan = { total_cost: number; scan_cost: number }
+type ForcedSeqScan = { total_cost: number; scan_cost: number }
 
 export function planTotalCost(plan: unknown): number | undefined {
   if (plan == null || typeof plan !== 'object' || Array.isArray(plan)) return undefined
