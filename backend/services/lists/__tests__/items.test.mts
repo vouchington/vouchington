@@ -152,6 +152,7 @@ describe('items service', () => {
 
     it('hydrates labels for both entity types in the list query', async () => {
       const { results } = await searchListItems(listId)
+      expect(results.length).toBeGreaterThanOrEqual(1)
       expect(results.find(item => item.entity_id === postId)?.entity_label).toBe(postTitle)
       expect(results.find(item => item.entity_id === rssFeedItemId)?.entity_label).toBe(
         rssFeedItemTitle,
@@ -178,11 +179,6 @@ describe('items service', () => {
       expect((await searchListItems(list.id)).results.map(row => row.entity_id)).not.toContain(
         item.id,
       )
-    })
-
-    it('returns items for a list', async () => {
-      const { results } = await searchListItems(listId)
-      expect(results.length).toBeGreaterThanOrEqual(1)
     })
 
     it('filters by mediaType (rss_feed_item media type)', async () => {
