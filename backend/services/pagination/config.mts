@@ -1,7 +1,7 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
-export const paginationDefaults = {
+const paginationDefaults = {
   default_limit: 25,
   max_limit: 100,
   anonymous_max_limit: 25,

@@ -5,10 +5,7 @@ import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '@services/memberships'
 import { insertStripeEvent } from '../insert-event.mts'
 import { recordStripeMembershipProviderFacts } from '../membership-provider-facts.mts'
-import {
-  MissingStripeMembershipFactContextError,
-  StripeMembershipEventNotIngestedError,
-} from './context.mts'
+import { MissingStripeMembershipFactContextError } from './context.mts'
 
 describe('Stripe membership provider fact context', () => {
   it('requires an ingested event and a Stripe direct-source context before accepting evidence', async () => {
@@ -17,15 +14,19 @@ describe('Stripe membership provider fact context', () => {
     const sku = await createTestSku({ plan: 'plus' })
     const membership = await grantMembership(admin.id, user.id, 'plus', sku.id, 30)
     const subscriptionId = `sub_missing_context_${randomUUID()}`
+    const missingEventId = `evt_missing_receipt_${randomUUID()}`
     const subscription = makeSubscription(subscriptionId, `price_${randomUUID()}`, true)
 
     await expect(
       recordStripeMembershipProviderFacts({
-        stripeEventId: `evt_missing_receipt_${randomUUID()}`,
+        stripeEventId: missingEventId,
         membershipId: membership.id,
         subscription,
       }),
-    ).rejects.toBeInstanceOf(StripeMembershipEventNotIngestedError)
+    ).rejects.toMatchObject({
+      name: 'StripeMembershipEventNotIngestedError',
+      message: `Stripe event ${missingEventId} was not durably ingested`,
+    })
 
     const event = makeStripeEvent(`evt_missing_context_${randomUUID()}`, subscriptionId, true)
     await insertStripeEvent(event)
