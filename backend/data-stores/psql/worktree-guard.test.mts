@@ -1,10 +1,28 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
 
 const testRoot = mkdtempSync(join(tmpdir(), 'voucha-worktree-guard-'))
+
+function hasGitAncestor(start: string): boolean {
+  let dir = start
+  while (true) {
+    if (existsSync(join(dir, '.git'))) return true
+    const parent = dirname(dir)
+    if (parent === dir) return false
+    dir = parent
+  }
+}
+
+function tempRootOutsideRepo(): string {
+  const candidates = [tmpdir(), '/var/tmp', '/private/var/tmp']
+  for (const candidate of candidates) {
+    if (existsSync(candidate) && !hasGitAncestor(candidate)) return candidate
+  }
+  throw new Error('no portable temp directory outside a git repository')
+}
 
 function makeMainWorktreeDir(): string {
   const dir = mkdtempSync(join(testRoot, 'main-'))
@@ -43,8 +61,7 @@ describe('worktree-guard', () => {
     })
 
     it('skips the check when no repo root is found', () => {
-      // /tmp itself is a git directory on some machines, so a temp dir there walks up to it.
-      const isolated = mkdtempSync(join('/dev/shm', 'voucha-worktree-guard-'))
+      const isolated = mkdtempSync(join(tempRootOutsideRepo(), 'voucha-worktree-guard-'))
       try {
         expect(
           assertNotCrossWorktreeConnection('postgres://localhost/voucha', {
