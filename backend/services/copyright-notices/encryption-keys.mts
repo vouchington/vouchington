@@ -46,9 +46,12 @@ export async function prepareCopyrightEncryptionKey(
   }
 }
 
-/** Reserve and upload the at-most-three distinct keys for one email approval. */
-export async function prepareCopyrightEmailApprovalKeys(intakeId: string): Promise<{
-  notice: PreparedCopyrightEncryptionKey
+/** Reserve and upload the at-most-three distinct keys for one email review decision. */
+export async function prepareCopyrightEmailDecisionKeys(
+  intakeId: string,
+  includeNotice = true,
+): Promise<{
+  notice: PreparedCopyrightEncryptionKey | null
   intake: PreparedCopyrightEncryptionKey | null
   receipt: PreparedCopyrightEncryptionKey | null
   [Symbol.asyncDispose](): Promise<void>
@@ -61,7 +64,7 @@ export async function prepareCopyrightEmailApprovalKeys(intakeId: string): Promi
       WHERE copyright_notice_email_intake_id = ${intakeId}) AS intake_key_id,
     (SELECT copyright_retention_key_id FROM copyright_email_receipt_encryption_keys
       WHERE copyright_notice_email_intake_receipt_id = ${intakeId}) AS receipt_key_id`)
-  const kinds: CopyrightEncryptionOwner['kind'][] = ['notice']
+  const kinds: CopyrightEncryptionOwner['kind'][] = includeNotice ? ['notice'] : []
   if (!attachments[0]?.intake_key_id) kinds.push('intake')
   if (!attachments[0]?.receipt_key_id) kinds.push('receipt')
   await using reservation = await beginTransaction()
@@ -101,7 +104,7 @@ export async function prepareCopyrightEmailApprovalKeys(intakeId: string): Promi
     await upload.commit()
     const byKind = new Map(keys.map(({ prepared }) => [prepared.kind, prepared]))
     return {
-      notice: byKind.get('notice')!,
+      notice: byKind.get('notice') ?? null,
       intake: byKind.get('intake') ?? null,
       receipt: byKind.get('receipt') ?? null,
       async [Symbol.asyncDispose]() {

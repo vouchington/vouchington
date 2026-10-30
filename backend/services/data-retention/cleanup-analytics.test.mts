@@ -90,6 +90,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         legalRecords: { recordIds: [] },
         paymentLedgers: { recordIds: [] },
         copyrightMinimalRecords: { noticeIds: [] },
+        activeCopyrightFamilies: [],
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],

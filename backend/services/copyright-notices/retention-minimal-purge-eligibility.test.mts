@@ -28,14 +28,16 @@ import {
   setCopyrightMinimalPurgePhaseForRetentionTest,
   useCopyrightRetentionWorkClock,
 } from '@voucha/test-helpers/copyright-retention-work'
-import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
+import {
+  cleanupCopyrightMinimalRecordsAtTestClock,
+  purgeCopyrightMinimalRecord,
+} from '@voucha/test-helpers/copyright-minimal-purge'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_1 } from './retention-minimal-purge-phases-1.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_2 } from './retention-minimal-purge-phases-2.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_3 } from './retention-minimal-purge-phases-3.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_4 } from './retention-minimal-purge-phases-4.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_5 } from './retention-minimal-purge-phases-5.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES } from './retention-minimal-purge-phases.mts'
-import { cleanupCopyrightMinimalRecords } from '../data-retention/cleanup-copyright-minimal-records.mts'
 
 describe('copyright minimal record clock', () => {
   const setClock = useCopyrightRetentionWorkClock()
@@ -116,16 +118,22 @@ describe('copyright minimal record clock', () => {
     expect(erasurePages).toContain('erased')
     await expect(readCopyrightRetentionMarker(fixture.noticeId)).resolves.not.toBeNull()
     const options = { now: new Date('2035-10-23T00:00:00Z'), noticeIds: [fixture.noticeId] }
-    const first = await cleanupCopyrightMinimalRecords({ batchSize: 1, maxBatches: 1 }, options)
+    const first = await cleanupCopyrightMinimalRecordsAtTestClock(
+      { batchSize: 1, maxBatches: 1 },
+      options,
+    )
     expect(first.progressed).toBe(1)
     expect(await copyrightNoticeExists(fixture.noticeId)).toBe(true)
-    const proofPage = await cleanupCopyrightMinimalRecords(
+    const proofPage = await cleanupCopyrightMinimalRecordsAtTestClock(
       { batchSize: 50, maxBatches: 16 },
       options,
     )
     expect(proofPage.progressed + proofPage.purged).toBe(1)
-    const resumed = await cleanupCopyrightMinimalRecords({ batchSize: 50, maxBatches: 16 }, options)
-    const completed = await cleanupCopyrightMinimalRecords(
+    const resumed = await cleanupCopyrightMinimalRecordsAtTestClock(
+      { batchSize: 50, maxBatches: 16 },
+      options,
+    )
+    const completed = await cleanupCopyrightMinimalRecordsAtTestClock(
       { batchSize: 50, maxBatches: 16 },
       options,
     )

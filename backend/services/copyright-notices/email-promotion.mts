@@ -1,7 +1,7 @@
 import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { v7 as uuidv7 } from 'uuid'
 import {
-  prepareCopyrightEmailApprovalKeys,
+  prepareCopyrightEmailDecisionKeys,
   attachCopyrightEncryptionKey,
   openCopyrightSecrets,
   type PreparedCopyrightEncryptionKey,
@@ -63,8 +63,9 @@ async function admitCopyrightEmailIntake(
   input: PromoteCopyrightEmailIntakeInput,
 ): Promise<{ noticeId: string; submissionId: string }> {
   const noticeId = uuidv7()
-  await using preparedKeys = await prepareCopyrightEmailApprovalKeys(input.intakeId)
+  await using preparedKeys = await prepareCopyrightEmailDecisionKeys(input.intakeId)
   const encryptionKey = preparedKeys.notice
+  assert(encryptionKey, 500, 'Copyright notice encryption key is missing')
   const preparedIntakeKey = preparedKeys.intake
   const preparedReceiptKey = preparedKeys.receipt
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()

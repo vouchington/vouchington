@@ -26,6 +26,7 @@ type PurgeOptions = {
 export async function purgeCopyrightMinimalRecordWithWork(
   noticeId: string,
   options: PurgeOptions,
+  nowOverride?: Date,
 ): Promise<{ outcome: CopyrightMinimalPurgeOutcome; physicalRows: number }> {
   const maxPhysicalRows = options.maxPhysicalRows ?? COPYRIGHT_MINIMAL_PURGE_MAX_PHYSICAL_ROWS
   if (
@@ -53,12 +54,16 @@ export async function purgeCopyrightMinimalRecordWithWork(
     let page: CopyrightMinimalPurgePageResult
     try {
       // no-mistakes-disable-next-line query-reached-per-item: maxBatches and pageSize are validated hard caps; each page needs its own hold recheck and commit.
-      page = await purgeCopyrightMinimalRecordPage(noticeId, {
-        now: options.now,
-        cutoff: options.cutoff,
-        pageSize,
-        remainingPhysicalRows: maxPhysicalRows - physicalRows,
-      })
+      page = await purgeCopyrightMinimalRecordPage(
+        noticeId,
+        {
+          now: options.now,
+          cutoff: options.cutoff,
+          pageSize,
+          remainingPhysicalRows: maxPhysicalRows - physicalRows,
+        },
+        nowOverride,
+      )
     } catch (err) {
       if (isCopyrightMinimalPurgeCursorBusy(err)) return { outcome: 'more', physicalRows }
       if (!isLateCopyrightChild(err)) throw err

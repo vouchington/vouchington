@@ -179,6 +179,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   table('copyright_territorial_redress_requests', {
     submitted_by_id: 'null',
     explanation_ciphertext: 'redact',
+    rationale_ciphertext: 'redact',
   }),
   table(
     'copyright_territorial_redress_decisions',

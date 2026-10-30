@@ -1,3 +1,5 @@
+// This worker seeds territorial cases and must use the shared copyright key-object fixture.
+import '../../../backend/test-helpers/copyright-key-object-cli.mts'
 import { expect, test, protectPlaywrightHookTimeouts, type Page } from '../../helpers/test.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'

@@ -84,6 +84,7 @@ export type CopyrightMinimalPurgeSweepResult = {
 export async function cleanupCopyrightMinimalRecords(
   limits: DataRetentionLimits,
   options: { now?: Date; noticeIds?: readonly string[] } = {},
+  nowOverride?: Date,
 ): Promise<CopyrightMinimalPurgeSweepResult> {
   const now = options.now ?? new Date()
   const retentionMonths = await getCopyrightCaseRetentionMonths()
@@ -127,13 +128,17 @@ export async function cleanupCopyrightMinimalRecords(
     }
     try {
       // no-mistakes-disable-next-line query-reached-per-item: the case selection and per-case page budgets are both capped; each case takes its own legal-hold lock.
-      const page = await purgeCopyrightMinimalRecordWithWork(noticeId, {
-        now,
-        cutoff,
-        pageSize,
-        maxBatches: pageBudget,
-        maxPhysicalRows: remainingPhysicalRows,
-      })
+      const page = await purgeCopyrightMinimalRecordWithWork(
+        noticeId,
+        {
+          now,
+          cutoff,
+          pageSize,
+          maxBatches: pageBudget,
+          maxPhysicalRows: remainingPhysicalRows,
+        },
+        nowOverride,
+      )
       remainingPhysicalRows -= page.physicalRows
       const outcome = page.outcome
       if (outcome === 'purged') result.purged++

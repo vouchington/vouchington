@@ -22,13 +22,12 @@ import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 const WORK_PAGE_CAP = 128
 const RETENTION_START = new Date('2029-10-23T00:00:00.000Z')
 const RETENTION_END = new Date('2035-10-23T00:00:00.000Z')
-const LAST_REPLAY_AT = new Date('2036-02-01T00:00:00.000Z')
 
 describe('copyright replay retention after minimal case purge', () => {
   useFakeCopyrightEvidenceBucket()
   const setClock = useCopyrightRetentionWorkClock()
 
-  it('touches only authorized post-purge replays and expires from the later replay clock', async () => {
+  it('touches only authorized post-purge replays and expires from the later recorded clock', async () => {
     const [claimant, unrelated, staff, administrator] = await Promise.all([
       createTestUser(),
       createTestUser(),
@@ -102,7 +101,6 @@ describe('copyright replay retention after minimal case purge', () => {
     )
     if (!acknowledgmentIdentity) throw new Error('Acknowledgment replay identity was not retained')
 
-    await setClock(new Date('2036-01-01T00:00:00.000Z'))
     await expect(acknowledgeUkCopyrightNotice(unrelated, first.notice_id)).rejects.toMatchObject({
       status: 404,
     })
@@ -115,7 +113,7 @@ describe('copyright replay retention after minimal case purge', () => {
       ]),
     })
 
-    await setClock(LAST_REPLAY_AT)
+    const replayStartedAt = new Date()
     await expect(acknowledgeUkCopyrightNotice(claimant, first.notice_id)).rejects.toMatchObject({
       status: 404,
     })
@@ -124,14 +122,18 @@ describe('copyright replay retention after minimal case purge', () => {
     ).rejects.toMatchObject({
       status: 404,
     })
+    const replayFinishedAt = new Date()
     const afterAuthorized404 = await readCopyrightReplayRetentionGroup(groupId)
     const touchedAcknowledgment = afterAuthorized404?.identities.find(
       identity => identity.family === 'territorial_acknowledgment',
     )
-    expect(touchedAcknowledgment?.last_replayed_at).toEqual(LAST_REPLAY_AT)
-    expect(
-      afterAuthorized404?.identities.find(identity => identity.family === 'territorial_notice'),
-    ).toMatchObject({ last_replayed_at: LAST_REPLAY_AT })
+    const touchedNotice = afterAuthorized404?.identities.find(
+      identity => identity.family === 'territorial_notice',
+    )
+    for (const identity of [touchedAcknowledgment, touchedNotice]) {
+      expect(identity?.last_replayed_at.getTime()).toBeGreaterThanOrEqual(replayStartedAt.getTime())
+      expect(identity?.last_replayed_at.getTime()).toBeLessThanOrEqual(replayFinishedAt.getTime())
+    }
 
     const expiry = shiftUtcCalendarMonths(
       new Date(

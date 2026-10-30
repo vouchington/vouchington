@@ -148,7 +148,9 @@ describe('copyright evidence retention gates', () => {
       const columns = await readCopyrightRetentionColumns(noticeId)
 
       const { projected_clock: activityAt } = await readCopyrightDsaRetentionClock(noticeId)
-      await setClock(new Date(shiftUtcCalendarMonths(activityAt, 1).getTime() + 86_400_000), {
+      // Two days clears month-end reverse clamping and PostgreSQL's sub-millisecond clock precision.
+      const retentionAt = new Date(shiftUtcCalendarMonths(activityAt, 1).getTime() + 2 * 86_400_000)
+      await setClock(retentionAt, {
         caseRetentionMonths: 1,
       })
       const outcomes = await advanceCopyrightRetentionWorkPages(noticeId, WORK_PAGE_CAP)

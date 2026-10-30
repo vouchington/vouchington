@@ -21,6 +21,7 @@ import {
 export async function purgeCopyrightMinimalRecordPage(
   noticeId: string,
   options: { now: Date; cutoff: Date; pageSize: number; remainingPhysicalRows: number },
+  nowOverride?: Date,
 ): Promise<CopyrightMinimalPurgePageResult> {
   const retentionMonths = await getCopyrightCaseRetentionMonths()
   if (retentionMonths === null) return { outcome: 'ineligible', physicalRows: 0 }
@@ -41,9 +42,14 @@ export async function purgeCopyrightMinimalRecordPage(
   }>(sql`/* lockCopyrightMinimalPurgeNotice */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
   if (notices.length) await lockCopyrightMinimalPurgeCursorReferences(transaction, noticeId)
-  const now = new Date()
+  const now = nowOverride ?? new Date()
   const freshCutoff = shiftUtcCalendarMonths(now, -retentionMonths)
-  if (options.now > now || options.cutoff > shiftUtcCalendarMonths(options.now, -retentionMonths))
+  if (
+    !Number.isFinite(now.getTime()) ||
+    !Number.isFinite(options.cutoff.getTime()) ||
+    options.now > now ||
+    options.cutoff > shiftUtcCalendarMonths(options.now, -retentionMonths)
+  )
     return { outcome: 'ineligible', physicalRows: 0 }
   const cutoff = new Date(Math.min(options.cutoff.getTime(), freshCutoff.getTime()))
   const { rows: workRows } = await transaction<{

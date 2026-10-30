@@ -1,8 +1,8 @@
 import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import {
-  prepareCopyrightIntakeEncryptionKey,
-  prepareCopyrightReceiptEncryptionKey,
+  prepareCopyrightEmailDecisionKeys,
   attachCopyrightEncryptionKey,
+  type PreparedCopyrightEncryptionKey,
 } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -32,24 +32,15 @@ export async function rejectCopyrightEmailIntake(
   input: CopyrightEmailRejectionInput,
 ): Promise<{ responseId: string | null; replyQueued: boolean }> {
   const replyEmail = validateCopyrightEmailRejection(input)
-  await using preparedIntakeKey = await prepareCopyrightIntakeEncryptionKey(input.intakeId)
-  return await rejectWithPreparedIntakeKey(input, replyEmail, preparedIntakeKey)
-}
-
-async function rejectWithPreparedIntakeKey(
-  input: Parameters<typeof rejectCopyrightEmailIntake>[0],
-  replyEmail: string | null,
-  preparedIntakeKey: Awaited<ReturnType<typeof prepareCopyrightIntakeEncryptionKey>>,
-): Promise<{ responseId: string | null; replyQueued: boolean }> {
-  await using preparedReceiptKey = await prepareCopyrightReceiptEncryptionKey(input.intakeId)
-  return await rejectWithPreparedKeys(input, replyEmail, preparedIntakeKey, preparedReceiptKey)
+  await using preparedKeys = await prepareCopyrightEmailDecisionKeys(input.intakeId, false)
+  return await rejectWithPreparedKeys(input, replyEmail, preparedKeys.intake, preparedKeys.receipt)
 }
 
 async function rejectWithPreparedKeys(
   input: Parameters<typeof rejectCopyrightEmailIntake>[0],
   replyEmail: string | null,
-  preparedIntakeKey: Awaited<ReturnType<typeof prepareCopyrightIntakeEncryptionKey>>,
-  preparedReceiptKey: Awaited<ReturnType<typeof prepareCopyrightReceiptEncryptionKey>>,
+  preparedIntakeKey: PreparedCopyrightEncryptionKey | null,
+  preparedReceiptKey: PreparedCopyrightEncryptionKey | null,
 ): Promise<{ responseId: string | null; replyQueued: boolean }> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{

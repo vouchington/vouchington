@@ -111,11 +111,15 @@ export async function advanceCopyrightRetentionToPostroot(
   }
   if (!erased) throw new Error('Copyright erasure fixture exceeded its work page budget')
   for (let page = 0; page < MAX_WORK_PAGES; page++) {
-    const outcome = await purgeCopyrightMinimalRecordPage(noticeId, {
-      ...options,
-      pageSize: 50,
-      remainingPhysicalRows: 100,
-    })
+    const outcome = await purgeCopyrightMinimalRecordPage(
+      noticeId,
+      {
+        ...options,
+        pageSize: 50,
+        remainingPhysicalRows: 100,
+      },
+      options.now,
+    )
     if (outcome.outcome !== 'progress')
       throw new Error(`Copyright root fixture stopped at ${outcome.outcome}`)
     const state = await readCopyrightRetentionCaseRows(noticeId)
@@ -152,7 +156,8 @@ export async function readCopyrightSuspensionRetentionRows(
           ON incident.id = source.copyright_repeat_infringer_incident_id
         WHERE source.account_user_id = ${accountId} AND incident.is_operative) AS operative_source_count,
       EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews
-        WHERE id = ${reviewId} AND account_user_id = ${accountId}) AS review_exists,
+        WHERE copyright_repeat_infringer_review_identity_id = ${reviewId}
+          AND account_user_id = ${accountId}) AS review_exists,
       (SELECT count(*)::integer FROM user_suspensions
         WHERE user_id = ${accountId}) AS suspension_history_count,
       (SELECT last_copyright_suspension_released_at FROM retained_user_identities

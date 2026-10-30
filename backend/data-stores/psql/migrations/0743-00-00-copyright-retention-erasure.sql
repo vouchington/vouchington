@@ -53,7 +53,7 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
     WHEN 'copyright_decision_rationales' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_territorial_notice_receipts' THEN ARRAY['requester_user_id', 'hosted_use_url', 'grounds_ciphertext', 'notifier_email_ciphertext']
     WHEN 'copyright_territorial_decisions' THEN ARRAY['rationale_ciphertext', 'public_explanation_ciphertext']
-    WHEN 'copyright_territorial_redress_requests' THEN ARRAY['submitted_by_id', 'explanation_ciphertext']
+    WHEN 'copyright_territorial_redress_requests' THEN ARRAY['submitted_by_id', 'explanation_ciphertext', 'rationale_ciphertext']
     WHEN 'copyright_territorial_redress_decisions' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_eu_supervised_complaints' THEN ARRAY['explanation_ciphertext']
   END

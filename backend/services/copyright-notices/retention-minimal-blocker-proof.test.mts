@@ -55,15 +55,22 @@ describe('bounded copyright minimal blocker proof', () => {
     })
 
     await setClock(RETENTION_END)
-    expect(await advanceCopyrightRetentionWorkPages(noticeId, WORK_PAGE_CAP)).toContain(
-      'ineligible',
-    )
-    expect(await readMinimalProofFormAuthority(submissionId, screeningId, noticeId)).toEqual({
+    let authority: Awaited<ReturnType<typeof readMinimalProofFormAuthority>> | undefined
+    for (let page = 0; page < WORK_PAGE_CAP; page++) {
+      const outcome = await advanceCopyrightRetentionWorkPages(noticeId, 1)
+      authority = await readMinimalProofFormAuthority(submissionId, screeningId, noticeId)
+      if (authority?.has_compliant_form_assessment) break
+      expect(outcome).toEqual(['progress'])
+    }
+    expect(authority).toEqual({
       current_screening: true,
       has_valid_target: true,
       has_claimant_receipt: true,
       has_compliant_form_assessment: true,
     })
+    expect(await advanceCopyrightRetentionWorkPages(noticeId, WORK_PAGE_CAP)).toContain(
+      'ineligible',
+    )
     await expect(readCopyrightRetentionMarker(noticeId)).resolves.toBeNull()
   })
 

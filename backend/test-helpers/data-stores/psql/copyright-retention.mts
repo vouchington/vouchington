@@ -46,7 +46,7 @@ export async function readCopyrightRetentionColumns(
 }
 
 /**
- * Every row the sweep covers for one notice with its erasable columns and `updated_at` removed:
+ * Every row the sweep covers for one notice with erasable fields and operational fence timestamps removed:
  * what must be identical before and after an erasure, because the case keeps its legal skeleton.
  */
 export async function readCopyrightRetentionSkeleton(
@@ -65,10 +65,12 @@ export async function readCopyrightRetentionSkeleton(
     const erasable = Object.keys(spec.columns)
       .map(column => `'${column}'`)
       .join(', ')
+    const operationalFence =
+      spec.table === 'copyright_notice_email_intake_receipts' ? " - 'erased_at'" : ''
     const { rows } = await read<{ row: Record<string, unknown> }>(
       sql`/* readCopyrightRetentionSkeleton */`
         .append(
-          `\n SELECT to_jsonb(${rowName}) - 'updated_at' - ARRAY[${erasable}]::text[] AS row FROM ${spec.table}${alias} WHERE `,
+          `\n SELECT to_jsonb(${rowName}) - 'updated_at'${operationalFence} - ARRAY[${erasable}]::text[] AS row FROM ${spec.table}${alias} WHERE `,
         )
         .append(scope)
         .append(` ORDER BY ${rowName}.id`),

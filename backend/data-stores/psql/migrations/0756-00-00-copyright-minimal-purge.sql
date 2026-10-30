@@ -212,15 +212,10 @@ BEGIN
       RAISE EXCEPTION 'Unknown copyright blocker mutation owner path' USING ERRCODE = 'check_violation';
   END CASE;
   IF target_notice_id IS NOT NULL THEN
-    IF TG_TABLE_NAME = 'copyright_notice_lifecycle_changes'
-      AND source_row->>'change_type' IN ('copyright_action_replayed', 'delivery_intent_replayed', 'media_delivery_registry_replayed') THEN
-      -- Technical replay audit is not a new filing or substantive activity. Its
-      -- FK-compatible lock still excludes erasure's parent FOR UPDATE and the
-      -- fresh durable-state check below fences a completed admission.
-      PERFORM id FROM copyright_notices WHERE id = target_notice_id FOR KEY SHARE;
-    ELSE
-      PERFORM id FROM copyright_notices WHERE id = target_notice_id FOR UPDATE;
-    END IF;
+    -- Writers may already hold the case FK's KEY SHARE lock. Keep that mode to
+    -- avoid concurrent FK-to-UPDATE upgrades; purge's FOR UPDATE still fences
+    -- admission, and the retained-identity update serializes proof generations.
+    PERFORM id FROM copyright_notices WHERE id = target_notice_id FOR KEY SHARE;
     IF NOT FOUND OR EXISTS (SELECT 1 FROM copyright_notice_retention_erasures
       WHERE copyright_notice_id = target_notice_id)
       OR EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations
@@ -1196,6 +1191,9 @@ COMMENT ON FUNCTION fn_project_copyright_receipt_explanation_retirement_allowed 
 
 CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work
   BEFORE DELETE ON copyright_notice_retained_identities FOR EACH ROW
+  EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work();
+CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work
+  BEFORE DELETE ON copyright_notice_email_intake_reviews FOR EACH ROW
   EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work();
 
 DO $$
