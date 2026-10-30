@@ -26,7 +26,6 @@ const EMBEDDED_ROOT = `/$bunfs/root/${EMBEDDED_ROOT_NAME}`
 // Packages that read their own files at run time. Outside these and the repository's sources,
 // a bundled module's `__dirname` is the build machine's path, which the image doesn't have.
 const REWRITTEN_PACKAGE_PATHS = [
-  '/node_modules/valkyries/dist/',
   '/node_modules/@libpg-query/parser/wasm/',
   '/node_modules/@glidemq/dashboard/dist/',
 ]
@@ -51,7 +50,9 @@ export function rewriteModuleSource(source: string, modulePath: string): string 
   let rewritten = source
     // Bun's bundler does not await an async module reached through `export * from` (linker
     // convertStmtsForChunk emits its init call without await). A preceding side-effect import
-    // takes the awaited path, so top-level-await graphs initialize in order.
+    // takes the awaited path, so top-level-await graphs initialize in order. Still needed by
+    // the repository's own barrels (data-stores/valkey and data-stores/psql `export * from
+    // './clients.mts'`, whose clients are created with top-level await).
     .replace(/^export \* from (['"][^'"]+['"]);?$/gm, 'import $1; export * from $1;')
     // The bundler can't follow requires made through createRequire (sharp's addon,
     // @vouchington/postgres's pg-cursor); Bun's own `require` in ESM is followed and embedded.
