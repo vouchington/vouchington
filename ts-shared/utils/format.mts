@@ -8,8 +8,6 @@ export {
   generateExcerpt,
   type NumberFormatLocale,
 } from '@vouchington/utils/format'
-export { formatHostnameForDisplay as formatDomainForDisplay } from '@vouchington/utils/urls'
-export { calculateWeightedAverage as calculateAverageRating } from '@vouchington/utils/format'
 
 /**
  * User-facing labels for known post type slugs.

@@ -47,10 +47,4 @@ test.describe('User Profile Sub-Pages', () => {
 
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
   })
-
-  test('saved links route redirects to /my/urls/saved when signed in', async ({ page }) => {
-    await navigateTo(page, `/user/${TEST_USER_USERNAME}/urls/saved`)
-
-    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
-  })
 })

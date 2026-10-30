@@ -1,4 +1,4 @@
-import { calculateAverageRating } from '@ts-shared/utils'
+import { calculateWeightedAverage } from '@vouchington/utils/format'
 import { communityHref, topicHref } from '@/lib/links/entity-href'
 import { getTopicDisplayName } from '@/lib/topics/display-name'
 import type {
@@ -87,7 +87,7 @@ export function projectTrendingTopics(
         typeLabel: getTopicTypeLabel(topic.topic_type),
         allowReviews: topic.should_allow_reviews,
         averageRating: metrics?.ratings?.count
-          ? calculateAverageRating(metrics.ratings.count)
+          ? calculateWeightedAverage(metrics.ratings.count)
           : null,
         followerCount: metrics?.bookmarks?.follow ?? 0,
       },

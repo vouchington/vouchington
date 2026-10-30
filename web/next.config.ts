@@ -106,55 +106,6 @@ const nextConfig: NextConfig = {
       },
     ]
   },
-  async redirects() {
-    const ownerPrivatePaths: Array<[string, string]> = [
-      ['communities/proxy-following', 'my/communities/proxy-following'],
-      ['communities/proxy-muted', 'my/communities/proxy-muted'],
-      ['communities/saved', 'my/communities/saved'],
-      ['domains/blocked', 'my/domains/blocked'],
-      ['domains/muted', 'my/domains/muted'],
-      ['posts/following', 'my/posts/following'],
-      ['posts/hidden', 'my/posts/hidden'],
-      ['posts/saved', 'my/posts/saved'],
-      ['posts/subscribed', 'my/posts/subscribed'],
-      ['rss-feed-items/hidden', 'my/news-items/hidden'],
-      ['rss-feed-items/saved', 'my/news-items/saved'],
-      ['rss-feed-items/viewed', 'my/news-items/viewed'],
-      ['rss-feeds/muted', 'my/news-sources/muted'],
-      ['topics/blocked', 'my/topics/blocked'],
-      ['topics/dismissed-recommendations', 'my/topics/dismissed-recommendations'],
-      ['topics/muted', 'my/topics/muted'],
-      ['topics/viewed', 'my/topics/viewed'],
-      ['urls/saved', 'my/urls/saved'],
-      ['users/blocked', 'my/users/blocked'],
-      ['users/dismissed-recommendations', 'my/users/dismissed-recommendations'],
-      ['users/muted', 'my/users/muted'],
-      ['users/subscribed-posts', 'my/users/subscribed-posts'],
-    ]
-    return [
-      {
-        source: '/how-it-works',
-        destination: '/',
-        permanent: true,
-      },
-      // Routing-layer redirect so this is a real HTTP 307, not a page-level redirect() call.
-      {
-        source: '/feed',
-        destination: '/feed/posts',
-        permanent: false,
-      },
-      {
-        source: '/keyboard-shortcuts',
-        destination: '/article/keyboard-shortcuts',
-        permanent: true,
-      },
-      ...ownerPrivatePaths.map(([src, dst]) => ({
-        source: `/user/:id/${src}`,
-        destination: `/${dst}`,
-        permanent: false,
-      })),
-    ]
-  },
   async rewrites() {
     if (process.env.NODE_ENV !== 'development') {
       return []

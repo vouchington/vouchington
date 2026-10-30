@@ -13,11 +13,6 @@ import { withCleanUser } from '../../helpers/auth.mts'
 test.describe('Feed Routes', () => {
   test.use({ storageState: AUTH_STATE })
 
-  test('/feed redirects to /feed/posts', async ({ page }) => {
-    await navigateTo(page, '/feed')
-    await expect(page).toHaveURL(/\/feed\/posts/)
-  })
-
   test('/feed/posts renders with dropdown filters', async ({ page }) => {
     await navigateTo(page, '/feed/posts')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('My Posts Feed')

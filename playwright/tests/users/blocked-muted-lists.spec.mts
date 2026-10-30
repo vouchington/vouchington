@@ -23,7 +23,7 @@ test.describe('Blocked and muted user lists', () => {
 
     await blockUser(viewer, target)
 
-    await navigateTo(page, `/user/${viewer.username}/users/blocked`)
+    await navigateTo(page, '/my/users/blocked')
 
     await expect(
       page.getByTestId('user-list-item').filter({ hasText: `@${target.username}` }),
@@ -43,7 +43,7 @@ test.describe('Blocked and muted user lists', () => {
 
     await muteUser(viewer, target)
 
-    await navigateTo(page, `/user/${viewer.username}/users/muted`)
+    await navigateTo(page, '/my/users/muted')
 
     await expect(
       page.getByTestId('user-list-item').filter({ hasText: `@${target.username}` }),
@@ -52,11 +52,11 @@ test.describe('Blocked and muted user lists', () => {
 
   test('blocked users list shows empty state when no blocked users', async ({ page }) => {
     const suffix = randomUsernameSuffix()
-    const viewer = await withCleanUser(page, {
+    await withCleanUser(page, {
       username: `bl-empty-viewer-${suffix}`,
     })
 
-    await navigateTo(page, `/user/${viewer.username}/users/blocked`)
+    await navigateTo(page, '/my/users/blocked')
 
     await expect(page.getByTestId('empty-state')).toBeVisible()
     await expect(page.getByTestId('empty-state-title')).toContainText('No blocked users')
@@ -64,11 +64,11 @@ test.describe('Blocked and muted user lists', () => {
 
   test('muted users list shows empty state when no muted users', async ({ page }) => {
     const suffix = randomUsernameSuffix()
-    const viewer = await withCleanUser(page, {
+    await withCleanUser(page, {
       username: `mu-empty-viewer-${suffix}`,
     })
 
-    await navigateTo(page, `/user/${viewer.username}/users/muted`)
+    await navigateTo(page, '/my/users/muted')
 
     await expect(page.getByTestId('empty-state')).toBeVisible()
     await expect(page.getByTestId('empty-state-title')).toContainText('No muted users')

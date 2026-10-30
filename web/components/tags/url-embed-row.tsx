@@ -2,7 +2,7 @@
 
 import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import { ExternalLinkIcon } from 'lucide-react'
-import { formatDomainForDisplay } from '@ts-shared/utils/format'
+import { formatHostnameForDisplay } from '@vouchington/utils/urls'
 
 interface LatestCrawl {
   title?: string | null
@@ -22,7 +22,7 @@ export function UrlEmbedRow({ url, latestCrawl }: UrlEmbedRowProps) {
   let displayUrl = url
   try {
     const parsed = new URL(url)
-    displayDomain = formatDomainForDisplay(parsed.hostname)
+    displayDomain = formatHostnameForDisplay(parsed.hostname)
     const path = parsed.pathname.replace(/\/$/, '')
     displayUrl = displayDomain + path + (parsed.search || '')
   } catch {
