@@ -116,6 +116,7 @@ describe('merge-queue ejection workflow', () => {
       expect(condition).toContain(`needs.${job}.result == 'failure'`)
       expect(condition).toContain(`needs.${job}.result == 'cancelled'`)
     }
+    expect(workflow.jobs.escalate?.env?.['DISPATCH_RESULT']).toBe('${{ needs.dispatch.result }}')
   })
 
   it('renders exactly the placeholders the prompt uses', () => {

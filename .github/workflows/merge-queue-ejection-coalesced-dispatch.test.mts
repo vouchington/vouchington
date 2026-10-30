@@ -72,11 +72,6 @@ esac
 }
 
 describe('merge-queue ejection escalate for a coalesced dispatch', () => {
-  it('passes the dispatch result into the escalate job', () => {
-    expect(escalate?.env?.['DISPATCH_RESULT']).toBe('${{ needs.dispatch.result }}')
-    expect(escalate?.if).toContain("needs.dispatch.result == 'cancelled'")
-  })
-
   it('posts an unmarked notice when dispatch was cancelled with zero steps', () => {
     const result = run({ dispatchResult: 'cancelled', jobs: [coalesced] })
     expect(result.status).toBe(0)
