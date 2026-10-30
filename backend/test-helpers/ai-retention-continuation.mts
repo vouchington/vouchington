@@ -1,12 +1,48 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { RealGlideConnection } from './real-glide-job-lifecycle.mts'
-import {
-  aiRetentionContinuationId,
-  createAIRetentionContinuationEnqueue,
-} from '@queues/psql/enqueues/ai-retention'
+import { PRIORITY_DEFAULT } from '@queues/psql/config'
 import type { AIRetentionContinuationData, AIRetentionFamily } from '@queues/psql/types'
+import {
+  aiRetentionOrderingKey,
+  getAIRetentionOrderingConcurrency,
+} from '@queues/psql/enqueues/ordering-config'
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
+
+export const aiRetentionContinuationId = (family: AIRetentionFamily): string =>
+  `ai_retention_continuation__${family}`
+
+function createAIRetentionContinuationEnqueue(
+  queue: Queue<AIRetentionContinuationData> & { priorityKind: 'ranked' },
+) {
+  const enqueueBulk = createBulkEnqueueFunction({
+    queue,
+    queueName: queue.name,
+    jobName: 'aiRetentionContinuation',
+    buildJob: (family: AIRetentionFamily) => ({
+      data: { family },
+      opts: {
+        jobId: aiRetentionContinuationId(family),
+        priority: PRIORITY_DEFAULT,
+        attempts: 3,
+        backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.5 },
+        ordering: {
+          key: aiRetentionOrderingKey(family),
+          concurrency: getAIRetentionOrderingConcurrency(family),
+        },
+      },
+    }),
+  })
+  return (families: readonly AIRetentionFamily[]) =>
+    enqueueBulkReactivatingFinished({
+      queue,
+      inputs: [...new Set(families)],
+      jobIdOf: aiRetentionContinuationId,
+      enqueueBulk,
+    })
+}
 
 export async function openAIRetentionContinuationHarness(
   connection: RealGlideConnection,

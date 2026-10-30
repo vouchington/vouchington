@@ -4,11 +4,27 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-co
 import { ENQUEUE_BASE_DEFAULTS } from '../data-stores/valkey-glide-mq/index.mts'
 import { enqueueBulkReactivatingFinished } from '../data-stores/valkey-glide-mq/enqueue-or-reactivate.mts'
 import {
-  getTerminalActivityRetentionJobOptions,
-  terminalActivityRetentionJobId,
-} from '../queues/psql/enqueues/activitypub-terminal-retention.mts'
-import { TERMINAL_ACTIVITY_RETENTION_JOB_NAME } from '../queues/psql/config.mts'
+  PRIORITY_DEFAULT,
+  PSQL_RETRY_OPTIONS,
+  TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
+} from '../queues/psql/config.mts'
+import { getTerminalActivityRetentionConcurrency } from '../queues/psql/enqueues/ordering-config.mts'
 import type { TerminalActivityRetentionData } from '../queues/psql/types.mts'
+
+const terminalActivityRetentionJobId = (data: TerminalActivityRetentionData): string =>
+  `psql__terminal_activity_retention__${data.family}`
+
+function terminalActivityRetentionJobOptions(data: TerminalActivityRetentionData) {
+  return {
+    ...PSQL_RETRY_OPTIONS,
+    jobId: terminalActivityRetentionJobId(data),
+    priority: PRIORITY_DEFAULT,
+    ordering: {
+      key: `psql:terminal-activity-retention:${data.family}`,
+      concurrency: getTerminalActivityRetentionConcurrency(),
+    },
+  }
+}
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 /** Replay the family producer's current options in a private real namespace, never shared PSQL IDs. */
@@ -63,7 +79,7 @@ export async function openTerminalRetentionQueueForTest(
       inputs.map(data => ({
         name: TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
         data,
-        opts: { ...ENQUEUE_BASE_DEFAULTS, ...getTerminalActivityRetentionJobOptions(data) },
+        opts: { ...ENQUEUE_BASE_DEFAULTS, ...terminalActivityRetentionJobOptions(data) },
       })),
     )
   return {

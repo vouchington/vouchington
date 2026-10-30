@@ -6,11 +6,18 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { psql } from '@queues/psql/queues'
-import { enqueueModerationRetentionCleanup } from '@queues/psql/enqueues/moderation-retention'
+import { moderationRetentionSchedule } from '@queues/psql/enqueues/moderation-retention'
 import { scheduledJobManifest } from '@queues/psql/enqueues/schedules'
 import type { ModerationRetentionJobData } from '@queues/psql/types'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { processModerationRetentionCleanup } from './moderation-retention.mts'
+
+const moderationRetentionTrigger = moderationRetentionSchedule.operatorSurfaces.find(
+  surface => surface.kind === 'scheduled-jobs',
+)
+if (moderationRetentionTrigger?.kind !== 'scheduled-jobs') {
+  throw new Error('moderation retention schedule has no operator trigger')
+}
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -19,7 +26,7 @@ describe('moderation retention through real GlideMQ', () => {
     const rootJobId = `scheduled:moderation:${randomUUID()}`
     const parent = (await readEnqueuedJob(
       psql,
-      await enqueueModerationRetentionCleanup(),
+      await moderationRetentionTrigger.trigger(),
     )) as Job<ModerationRetentionJobData>
     const ownedIds = [parent.id]
     onTestFinished(async () => {
@@ -71,7 +78,7 @@ describe('moderation retention through real GlideMQ', () => {
   it('receipts an actual empty bounded service run and schedules the real job directly', async () => {
     const parent = (await readEnqueuedJob(
       psql,
-      await enqueueModerationRetentionCleanup(),
+      await moderationRetentionTrigger.trigger(),
     )) as Job<ModerationRetentionJobData>
     onTestFinished(() => parent.remove())
     await parent.updateData({ remainingKinds: [] })

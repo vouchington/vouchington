@@ -1,10 +1,12 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { beginTransaction } from '@voucha/test-helpers'
-import { openAIRetentionContinuationHarness } from '@voucha/test-helpers/ai-retention-continuation'
+import {
+  aiRetentionContinuationId,
+  openAIRetentionContinuationHarness,
+} from '@voucha/test-helpers/ai-retention-continuation'
 import { createAIRetentionContinuationFixture } from '@voucha/test-helpers/ai-retention-continuation-fixtures'
 import { AI_RETENTION_FAMILIES } from '@queues/psql/types'
-import { aiRetentionContinuationId } from '@queues/psql/enqueues/ai-retention'
 import { cleanupAIRetentionFamily } from '@services/data-retention'
 import { createCommittedRetentionCacheFixture } from '@voucha/test-helpers/ai-retention-committed-cache'
 import { createAIRetentionContinuationProcessor } from '../processors/retention-continuation.mts'

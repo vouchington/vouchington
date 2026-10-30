@@ -3,10 +3,6 @@ import { openTerminalRetentionQueueForTest } from '@voucha/test-helpers/terminal
 import { createScopedTerminalRetentionProcessorForTest } from '@voucha/test-helpers/terminal-retention-processor'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig } from '@services/data-retention/config'
-import {
-  getTerminalActivityRetentionJobOptions,
-  terminalActivityRetentionJobId,
-} from '@queues/psql/enqueues/activitypub-terminal-retention'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -29,9 +25,7 @@ describe('terminal identity family native admission', () => {
       })
       await expect(completed).resolves.toBe('completed')
       expect(runs).toBe(2)
-      const stored = await harness.queue.getJob(
-        terminalActivityRetentionJobId({ family: 'follow' }),
-      )
+      const stored = await harness.queue.getJob('psql__terminal_activity_retention__follow')
       expect(stored?.attemptsMade).toBe(1)
     } finally {
       await harness.close()
@@ -64,7 +58,7 @@ describe('terminal identity family native admission', () => {
       expect(await harness.admit(['follow'])).toHaveLength(1)
       await expect(next).resolves.toBe('completed')
       expect(followRuns).toBe(2)
-      expect(getTerminalActivityRetentionJobOptions({ family: 'like' }).ordering).toEqual({
+      expect(jobs.find(job => job.data.family === 'like')?.opts.ordering).toEqual({
         key: 'psql:terminal-activity-retention:like',
         concurrency: 1,
       })
