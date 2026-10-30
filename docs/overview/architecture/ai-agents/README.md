@@ -8,8 +8,10 @@ and measurement, and [AI agents](../ai-agents.md) links the surrounding pipeline
   model-provider layer; no provider SDK appears in an agent and no agent has a hidden default model.
 - There is no shared tool loop. The one tool-using agent owns its bounded loop, and a decision that
   scores content belongs in a classifier instead.
-- Agent output is advisory. Drafts for disputes, appeals, reports and copyright intake never change
-  state or reach a user without human approval.
+- Agents that judge people or legal claims are advisory: drafts for disputes, appeals, reports and
+  copyright intake never change state or reach a user without human approval. Agents whose output
+  is low-stakes and reversible apply it directly: story-post summaries, conversation titles and the
+  add-only autotagger topics.
 - Tools exposed to agents wrap existing services and are registered in the MCP catalog; no new
   business logic lives in a tool.
 - Sanitize external content before it reaches an agent.
