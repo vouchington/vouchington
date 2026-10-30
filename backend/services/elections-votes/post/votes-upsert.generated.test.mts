@@ -21,9 +21,13 @@ describe('votes-upsert.generated', () => {
     })
 
     const before = await getPostElectionById(postId)
-    expect(before).toBeTruthy()
-    expect(before?.votes_count_up).toBe(0)
-    expect(before?.votes_count_down).toBe(0)
+    expect(before).toMatchObject({
+      __entity_type: 'post_election',
+      id: postId,
+      votes_score_net: 0,
+      votes_count_up: 0,
+      votes_count_down: 0,
+    })
 
     await upsertPostElectionVotes(user.id, [{ entityId: postId, score: 1 }])
 
