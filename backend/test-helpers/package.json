@@ -66,7 +66,7 @@
     "@vouchington/localization": "^0.3.0",
     "@vouchington/localization-compiler": "^0.3.0",
     "@vouchington/mcp-server": "^0.2.0",
-    "@vouchington/postgres": "^0.1.2",
+    "@vouchington/postgres": "^0.3.0",
     "@vouchington/rate-limit": "^0.3.0",
     "@vouchington/stripe": "^0.1.1",
     "@vouchington/utils": "^0.10.2",

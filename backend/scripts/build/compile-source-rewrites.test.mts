@@ -18,9 +18,10 @@ describe('rewriteModuleSource', () => {
   })
 
   it('drops a createRequire alias so the bundler follows the requires', () => {
-    const source = "const require = createRequire(import.meta.url);\nrequire('pg-cursor')\n"
-    expect(rewriteModuleSource(source, packageModule('lib/index.mjs'))).toBe(
-      "\nrequire('pg-cursor')\n",
+    const source =
+      "const require = createRequire(import.meta.url);\nrequire('../build/Release/sharp.node')\n"
+    expect(rewriteModuleSource(source, packageModule('dist/sharp.mjs'))).toBe(
+      "\nrequire('../build/Release/sharp.node')\n",
     )
   })
 
