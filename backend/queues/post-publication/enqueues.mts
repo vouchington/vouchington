@@ -1,9 +1,6 @@
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import { createHash } from 'node:crypto'
-import {
-  POST_PUBLICATION_EFFECTS_JOB,
-  POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
-} from '@queues/background/enqueues/post-publication-jobs'
+import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX } from './config.mts'
@@ -49,21 +46,4 @@ function postPublicationEffectJobId(data: PostPublicationEffectsJobData): string
     )
     .digest('hex')
   return `${POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX}__${owner}__${data.changeId}__${descriptorHash}`
-}
-
-const enqueueReviewSuccessionHistoryAuditJob = createBackgroundEnqueue(
-  POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
-)
-
-/** Starts a read-only, UUID-paged audit of pre-cutover review succession history. */
-export function enqueueAuditReviewSuccessionHistory(): EnqueueReturnType {
-  return enqueueReviewSuccessionHistoryAuditJob({ cursor: null, cutoffArchivedAt: null })
-}
-
-/** Continues the same frozen historical scope after a full audit page. */
-export function enqueueContinueAuditReviewSuccessionHistory(
-  cursor: string,
-  cutoffArchivedAt: string,
-): EnqueueReturnType {
-  return enqueueReviewSuccessionHistoryAuditJob({ cursor, cutoffArchivedAt })
 }

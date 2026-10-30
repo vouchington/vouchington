@@ -9938,9 +9938,6 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../../queues/openai-moderation
-      '@queues/post-publication':
-        specifier: workspace:^
-        version: link:../../queues/post-publication
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
