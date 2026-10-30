@@ -130,8 +130,9 @@ describe('guardAndRetireMonthlyPartition', () => {
     const referenceDate = new Date(
       Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
     )
-    // The hook takes the production locks in production order and waits for them, so the
-    // production NOWAIT locks are already held.
+    // The hook waits for the production locks, so the path's NOWAIT locks are already held.
+    // Posts comes before the other reference tables: waiting on the policy list order
+    // deadlocks with a writer that already holds posts and then touches feedbacks.
     const outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
     expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
 
@@ -153,9 +154,13 @@ function retireOwnedClearancePartition(
   upperBound: Date,
   referenceDate: Date,
 ): Promise<PartitionDropOutcome> {
-  const references = (PARTITION_DROP_POLICIES[TABLE]?.retirementReferenceTables ?? [])
-    .map(table => assertSafeSqlIdentifier(table))
-    .join(', ')
+  const referenceTables = PARTITION_DROP_POLICIES[TABLE]?.retirementReferenceTables ?? []
+  // A publication writer holds posts, then inserts feedback. Lock posts first so this
+  // wait does not hold feedbacks while that writer still needs them.
+  const orderedReferences = [
+    ...referenceTables.filter(table => table === 'posts'),
+    ...referenceTables.filter(table => table !== 'posts'),
+  ]
   const parent = assertSafeSqlIdentifier(TABLE)
   const child = assertSafeSqlIdentifier(partition)
   return retireMonthlyPartitionCandidate(
@@ -165,9 +170,11 @@ function retireOwnedClearancePartition(
     async () => {
       const transaction = await beginTransaction()
       try {
-        await transaction(
-          `/* retireOwnedClearancePartition:lockReference */ LOCK TABLE ${references} IN ACCESS EXCLUSIVE MODE`,
-        )
+        for (const table of orderedReferences) {
+          await transaction(
+            `/* retireOwnedClearancePartition:lockReference */ LOCK TABLE ${assertSafeSqlIdentifier(table)} IN ACCESS EXCLUSIVE MODE`,
+          )
+        }
         await transaction(
           `/* retireOwnedClearancePartition:lockParent */ LOCK TABLE ${parent} IN ACCESS EXCLUSIVE MODE`,
         )
