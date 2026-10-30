@@ -2,7 +2,7 @@ import { it, expect, describe } from 'vitest'
 import { getSourceCacheHeaders } from '@services/urls-domains-blacklist/sources'
 import { syncBlacklistSourceById } from '../sync.mts'
 
-import { countBlacklistEntriesBySource, createTestBlacklistSource } from '@voucha/test-helpers'
+import { createTestBlacklistSource, listBlacklistDomainsBySource } from '@voucha/test-helpers'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createFetchSafeTestServer } from '@voucha/test-helpers/fetch-safe-test-server'
 
@@ -27,7 +27,7 @@ describe('index.generated', () => {
 
       const reportedAt = sentryCaptureExceptionMock.mock.calls.length
       await expect(syncBlacklistSourceById(sourceId)).resolves.toBeUndefined()
-      expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
+      expect(await listBlacklistDomainsBySource(sourceId)).toEqual([])
       expect(
         sentryCaptureExceptionMock.mock.calls
           .slice(reportedAt)

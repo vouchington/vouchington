@@ -16,7 +16,7 @@ import {
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
   markUserDeletionAttemptStartedForTest,
-} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 
 describe('user deletion lifecycle', () => {
   it('creates a durable fenced request', async () => {
@@ -29,7 +29,7 @@ describe('user deletion lifecycle', () => {
     expect(request.currentPhase).toBe('posts')
   })
 
-  it('runs a fenced attempt at most once under concurrent delivery', async () => {
+  it('claims exactly one processing attempt token', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     const processPhaseBatch = vi.fn<() => Promise<{ hasMore: boolean }>>(async () => ({

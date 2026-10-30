@@ -29,7 +29,7 @@ import { deleteUser } from './delete.mts'
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
 import { addTestStripeDeletionWork } from '@voucha/test-helpers/entities/stripe-customer-deletion'
-import { markUserDeletionAttemptStartedForTest } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+import { markUserDeletionAttemptStartedForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {

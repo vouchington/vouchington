@@ -11,7 +11,7 @@ import type {
 import { userDeletionErrorMessage } from './error-message.mts'
 import { advanceUserDeletionAttempt } from './advance-attempt.mts'
 
-async function claimUserDeletionAttempt(
+export async function claimUserDeletionAttempt(
   requestId: string,
   processingAttemptId: string,
 ): Promise<UserDeletionRequest | null> {

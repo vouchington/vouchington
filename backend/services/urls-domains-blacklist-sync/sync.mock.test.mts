@@ -124,6 +124,16 @@ describe('syncBlacklistSourceById', () => {
         }),
       }),
     ).resolves.toBeUndefined()
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://example.com/list.txt',
+      expect.objectContaining({
+        headers: {
+          'Accept-Encoding': 'gzip, deflate, br',
+          'If-Modified-Since': 'Mon, 03 Feb 2025 10:00:00 GMT',
+          'If-None-Match': '"old-etag"',
+        },
+      }),
+    )
     expect(updateSourceCacheHeaders).toHaveBeenCalledWith(123, {
       etag: '"old-etag"',
       lastModifiedAt: new Date('2025-02-03T10:00:00.000Z'),
@@ -237,5 +247,7 @@ describe('syncBlacklistSourceById', () => {
         }),
       }),
     ).resolves.toBeUndefined()
+    expect(syncDomainsWithDatabase).not.toHaveBeenCalled()
+    expect(updateSourceCacheHeaders).not.toHaveBeenCalled()
   })
 })
