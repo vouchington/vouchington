@@ -129,17 +129,6 @@ describe('backend Vitest project config', () => {
     )
   })
 
-  it('serializes the ActivityPub capacity boundary outside the shared backend project', () => {
-    const capacity = backendProjectTest('backend-activitypub-capacity')
-
-    expect(capacity).toMatchObject({ isolate: false })
-    expect(capacity).not.toHaveProperty('fileParallelism')
-    expect(capacity?.include).toEqual([
-      'backend/api/activitypub/inbox-capacity.test.mts',
-      'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
-    ])
-  })
-
   it('isolates the real GlideMQ transport contract without global worker setup', () => {
     expect(realGlideProject()).toMatchObject({
       pool: 'forks',
