@@ -1,4 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto'
+import { TimeUnit } from '@valkey/valkey-glide'
 import { upsertValkeyClientByUrl } from 'valkyries'
 import { unlinkIfValueMatches } from 'valkyries/conditional'
 import { config } from '@data-stores/valkey-core/config'
@@ -70,5 +71,5 @@ export async function releaseMembershipVerificationExecutionLease(
 }
 
 function milliseconds(count: number): SetExpiry {
-  return { type: 'PX', count } as SetExpiry
+  return { type: TimeUnit.Milliseconds, count }
 }

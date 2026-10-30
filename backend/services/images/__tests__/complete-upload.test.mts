@@ -79,6 +79,7 @@ describe('completeImageUpload', () => {
     const bytes = randomBytes(64)
     const digest = createHash('sha256').update(bytes).digest('hex')
     const originalSend = S3Client.prototype.send
+    const promotedBodies: Buffer[] = []
     const send = vi.fn<VitestLooseMock>(async function (this: S3Client, command: unknown) {
       if (command instanceof GetObjectCommand && command.input.Key === imageId) {
         return { $metadata: {}, Body: Readable.from([bytes]), ContentType: 'image/png' }
@@ -87,10 +88,11 @@ describe('completeImageUpload', () => {
         command instanceof PutObjectCommand &&
         (command.input.Key === imageId || command.input.Key === digest)
       ) {
-        expect(command.input.Body).toBeInstanceOf(Readable)
-        for await (const chunk of command.input.Body as Readable) {
-          expect(Buffer.from(chunk)).toEqual(bytes)
-        }
+        const body = command.input.Body
+        if (!(body instanceof Readable)) throw new Error('Expected a readable promotion body')
+        const chunks: Buffer[] = []
+        for await (const chunk of body) chunks.push(Buffer.from(chunk))
+        promotedBodies.push(Buffer.concat(chunks))
         if (command.input.Key === digest)
           await markImageUploadFailed(imageId, 'Owned terminal failure during promotion')
         return { $metadata: {} }
@@ -105,6 +107,8 @@ describe('completeImageUpload', () => {
         { command: 'SELECT' },
       )
       expect(error).toMatchObject({ code: '25P02' })
+      expect(promotedBodies.length).toBeGreaterThan(0)
+      expect(promotedBodies.every(body => body.equals(bytes))).toBe(true)
       expect(result).toMatchObject({
         status: 409,
         message: 'Image upload is no longer eligible for promotion',

@@ -127,7 +127,7 @@ describe('Apple authoritative subscription status', () => {
       verifyAuthoritativeAppleSubscriptionStatus({
         latestTransaction: transaction(),
         expected: expected(),
-        statusResponse: response(999 as Status),
+        statusResponse: response(999),
         verifier: verifier(AutoRenewStatus.ON),
       }),
     ).rejects.toThrow('Apple subscription status was not recognized')
@@ -174,7 +174,7 @@ function transaction(
   }
 }
 
-function response(status: Status, lineage = 'original-transaction-id') {
+function response(status: Status | number, lineage = 'original-transaction-id') {
   return {
     bundleId: 'ai.voucha.ios',
     environment: Environment.SANDBOX,
