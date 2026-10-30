@@ -9,6 +9,7 @@ import {
   insertTestTopic,
   createTestUser,
   createTestUserWithAge,
+  assertValidIsoDateString,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 
@@ -55,34 +56,41 @@ describe('posts', () => {
         expect(response.headers['cache-control']).toContain(
           `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
         )
+        expect(response.body).not.toHaveProperty('bookmarks')
+        expect(response.body).not.toHaveProperty('election_votes')
+        expect(response.body).not.toHaveProperty('post_moderations')
+        expect(response.body).not.toHaveProperty('agent_moderation_elections')
       })
 
       it('should return posts as objects (streaming pattern)', async () => {
-        await insertTestPost({
+        const postId = await insertTestPost({
           title: 'Test Post for Streaming',
           slug: uniqueSlug('test-post-streaming'),
           createdById: user!.id,
           markdown: 'Test content',
         })
         const request = createRequest()
-        // Filter by creator to avoid interference from parallel tests creating/deleting posts
         const response = await request.get(`/api/v1/posts?creator=${user!.id}`).expect(200)
 
-        // Streaming pattern: posts, posts_metrics are objects, not arrays
         expect(typeof response.body.posts).toBe('object')
         expect(Array.isArray(response.body.posts)).toBe(false)
         expect(typeof response.body.posts_metrics).toBe('object')
         expect(Array.isArray(response.body.posts_metrics)).toBe(false)
-        // results should still be an array
         expect(Array.isArray(response.body.results)).toBe(true)
 
-        // Verify that posts are keyed by ID
         const resultIds = response.body.results.map((r: { id: string }) => r.id)
-        expect(resultIds.length).toBeGreaterThan(0)
-        resultIds.forEach((id: string) => {
-          expect(response.body.posts[id]).toBeDefined()
-          expect(response.body.posts_metrics[id]).toBeDefined()
-        })
+        expect(resultIds).toContain(postId)
+        for (const id of resultIds) {
+          const post = response.body.posts[id]
+          expect(post).toBeDefined()
+          assertValidIsoDateString(post.created_at, `posts[${id}].created_at`)
+          assertValidIsoDateString(post.updated_at, `posts[${id}].updated_at`)
+          const metrics = response.body.posts_metrics[id] as { updated_at?: unknown }
+          expect(metrics).toBeDefined()
+          if (metrics.updated_at) {
+            assertValidIsoDateString(metrics.updated_at, `posts_metrics[${id}].updated_at`)
+          }
+        }
       })
 
       it('should support filtering by creator username', async () => {
