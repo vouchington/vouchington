@@ -74,6 +74,7 @@ describe.each([
     await expect(executeAutotaggerAgentRun(input, dependencies(callTurn))).resolves.toBe('replay')
 
     expect(callTurn).toHaveBeenCalledTimes(1)
+    expect(callTurn.mock.calls[0]![1]).toMatchObject({ selection: TEST_MODEL_SELECTION })
     const { messages, tools } = callTurn.mock.calls[0]![0]
     const first = JSON.stringify(messages[0])
     expect(first).toContain(accepted.id)
@@ -172,15 +173,5 @@ describe.each([
       kind: 'completed',
       effects: { addedTopicIds: [] },
     })
-  })
-
-  it('calls the provider and model it was given', async () => {
-    const { lease } = await leasedAgentRun(create)
-    const callTurn = submitting()
-    await executeAutotaggerAgentRun(
-      { adapter, lease, maxAttempts: 3, signal },
-      dependencies(callTurn),
-    )
-    expect(callTurn.mock.calls[0]![1]).toMatchObject({ selection: TEST_MODEL_SELECTION })
   })
 })
