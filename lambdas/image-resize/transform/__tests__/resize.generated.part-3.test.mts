@@ -6,20 +6,6 @@ import { TransformError } from '../../errors.mts'
 
 describe('transformImage', () => {
   describe('error handling', () => {
-    it('should throw TransformError on invalid input', async () => {
-      const invalidBuffer = Buffer.from('not an image')
-
-      await expect(
-        transformImage(invalidBuffer, {
-          width: 50,
-          quality: 75,
-          lossless: false,
-          progressive: false,
-          format: 'jpeg',
-        }),
-      ).rejects.toThrow(TransformError)
-    })
-
     it('should throw TransformError with 500 status code', async () => {
       const invalidBuffer = Buffer.from('not an image')
 
