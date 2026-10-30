@@ -114,21 +114,10 @@ describe('POST /api/v1/mcp usage metering', () => {
     expect(Number(row!.units)).toBe(1)
     expect(row!.oauth_client_id ?? null).toBeNull()
     expect(JSON.stringify(row)).not.toContain(token)
+    expect(await readAnonymousApiUsageRows()).toEqual([])
     const keys = await usageQuotaKeys()
     expect(keys.some(key => key.includes(user.id))).toBe(true)
     expect(keys.filter(key => key.includes(token))).toEqual([])
-  })
-
-  it('is not metered a second time by the REST usage meter', async () => {
-    const { user, token } = await issueTestUserMcpCredential('api_key', READ_SCOPE)
-
-    await settleMeteredMcpResponses(() => postMcp(token).expect(200))
-
-    // The REST meter would settle first, as an anonymous row, because a bearer has no session.
-    const [row, ...rest] = await readApiUsageRows(user.id)
-    expect(rest).toEqual([])
-    expect(row).toMatchObject({ surface: 'mcp_user', credential: 'api_key' })
-    expect(await readAnonymousApiUsageRows()).toEqual([])
   })
 
   it('attributes an OAuth request to its client and grant and never stores the token', async () => {
