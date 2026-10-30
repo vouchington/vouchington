@@ -1,4 +1,6 @@
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, vi } from 'vitest'
+import type CrawlerRss from '@services/crawler-rss'
+import type { checkRssFeedCrawlable } from '../fetch-robots-check.mts'
 import { fetchRssFeed } from '../fetch.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
@@ -111,22 +113,36 @@ describe('fetch.generated', () => {
 
   it('fetchRssFeed still requests example.net when a forced fetch bypasses the recent-fetch skip', async () => {
     const random = Math.random().toString(36).slice(2, 15)
+    const feedUrl = `https://example.net/feed.xml?test-forced-${random}`
     const topic = await createTestTopic({ hostname: `forced-${random}.example.com` })
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
-      rss_feed_url: `https://example.net/feed.xml?test-forced-${random}`,
+      rss_feed_url: feedUrl,
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
 
+    // The live robots retry budget and the feed client timeout both outlast this project's
+    // test deadline. Inject those edges and assert the forced fetch still requests this URL.
+    const crawlerRss = vi.fn<typeof CrawlerRss>()
+    crawlerRss.mockRejectedValue(new CrawlerHttpClientError(feedUrl, 404, 1))
+    const checkCrawlable = vi.fn<typeof checkRssFeedCrawlable>().mockResolvedValue(true)
+
     let caught: unknown
     try {
-      await fetchRssFeed(feed.id, 0)
+      await fetchRssFeed(feed.id, 0, null, 0, {
+        crawlerRss,
+        checkRssFeedCrawlable: checkCrawlable,
+      })
     } catch (err) {
       caught = err
     }
+    expect(crawlerRss).toHaveBeenCalledOnce()
+    const requestedUrl = crawlerRss.mock.calls[0]?.[0]
+    expect(requestedUrl).toContain(`test-forced-${random}`)
+    expect(new URL(requestedUrl).hostname).toBe('example.net')
     expect(caught).toBeInstanceOf(CrawlerHttpClientError)
     expect(caught).toMatchObject({ status: 404 })
     expect(await getRssFeedDeletedAt(feed.id)).toBeInstanceOf(Date)
