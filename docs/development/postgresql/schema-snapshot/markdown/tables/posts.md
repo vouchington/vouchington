@@ -167,6 +167,7 @@ _none_
 
 **Triggers:**
 
+- `trigger_posts_agent_moderation_retention_hash`: `CREATE TRIGGER trigger_posts_agent_moderation_retention_hash AFTER UPDATE OF llm_moderation_content_sha256 ON public.posts FOR EACH ROW WHEN ((old.llm_moderation_content_sha256 IS DISTINCT FROM new.llm_moderation_content_sha256)) EXECUTE FUNCTION fn_register_agent_moderation_retention_post_hash()`
 - `trigger_posts_content_provenance_immutable`: `CREATE TRIGGER trigger_posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_posts_creation_source_url_id_immutable`: `CREATE TRIGGER trigger_posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_posts_post_moderation_retention_hash`: `CREATE TRIGGER trigger_posts_post_moderation_retention_hash AFTER UPDATE OF llm_moderation_content_sha256 ON public.posts FOR EACH ROW WHEN ((old.llm_moderation_content_sha256 IS DISTINCT FROM new.llm_moderation_content_sha256)) EXECUTE FUNCTION fn_create_post_moderation_retention_post_hash_work_item()`

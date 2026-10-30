@@ -18,15 +18,16 @@ import {
   runDataRetentionCleanup,
   runVoteRetentionCleanupPage,
 } from '@services/data-retention'
-import {
-  unfinishedClassifierSweeps,
-  unfinishedMembershipFamilies,
-} from './processors/retention-sweeps.mts'
+import { admitDataRetentionContinuations } from './processors/data-retention-continuation.mts'
 import {
   enqueueVoteRetentionContinuationIfNeeded,
   requireVoteRetentionSelection,
 } from './processors/vote-retention.mts'
-import { createHash } from 'node:crypto'
+import {
+  processAgentModerationRetentionContinuation,
+  startAgentModerationRetentionContinuation,
+  type AgentModerationRetentionDependencies,
+} from './processors/agent-moderation-retention.mts'
 import {
   enqueueAIRetentionContinuations,
   enqueueDataRetentionCleanupContinuation,
@@ -41,31 +42,29 @@ import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
 import {
   AI_RETENTION_FAMILIES,
   type PsqlJobs,
+  type AgentModerationRetentionContinuationData,
   type PsqlPartitionJobData,
   type PsqlRetentionJobData,
   type RefreshMaterializedViewData,
   type VoteRetentionContinuationData,
 } from '@queues/psql/types'
-import {
-  admitCopyrightRetentionContinuation,
-  processCopyrightRetentionContinuation,
-  unfinishedCopyrightFamilies,
-} from './processors/copyright-retention.mts'
+import { processCopyrightRetentionContinuation } from './processors/copyright-retention.mts'
 
-type ProcessPsqlDependencies = PartitionCleanupDependencies & {
-  createPartitions: typeof createMonthlyPartitions
-  dataRetentionCleanup: typeof runDataRetentionCleanup
-  copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
-  enqueueDataRetentionCleanupContinuation: typeof enqueueDataRetentionCleanupContinuation
-  enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
-  voteRetentionCleanupPage: typeof runVoteRetentionCleanupPage
-  enqueueDataRetentionContinuation: typeof enqueueDataRetentionContinuation
-  reconcileVoteDrift: typeof reconcilePostVoteDrift
-  refreshMaterializedView: typeof refreshMaterializedView
-  runConfigDriven: typeof runConfigDriven
-  runMigrations: typeof runMigrations
-  runViews: typeof runViews
-}
+type ProcessPsqlDependencies = PartitionCleanupDependencies &
+  AgentModerationRetentionDependencies & {
+    createPartitions: typeof createMonthlyPartitions
+    dataRetentionCleanup: typeof runDataRetentionCleanup
+    copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
+    enqueueDataRetentionCleanupContinuation: typeof enqueueDataRetentionCleanupContinuation
+    enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
+    voteRetentionCleanupPage: typeof runVoteRetentionCleanupPage
+    enqueueDataRetentionContinuation: typeof enqueueDataRetentionContinuation
+    reconcileVoteDrift: typeof reconcilePostVoteDrift
+    refreshMaterializedView: typeof refreshMaterializedView
+    runConfigDriven: typeof runConfigDriven
+    runMigrations: typeof runMigrations
+    runViews: typeof runViews
+  }
 
 export default async function processPsql(
   jobName: PsqlJobs,
@@ -73,6 +72,7 @@ export default async function processPsql(
     RefreshMaterializedViewData &
       PsqlPartitionJobData &
       PsqlRetentionJobData &
+      AgentModerationRetentionContinuationData &
       VoteRetentionContinuationData
   >,
   dependencies?: Partial<ProcessPsqlDependencies>,
@@ -114,6 +114,7 @@ export default async function processPsql(
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
             postModerationLedger: { kinds: data.continuation.activePostModerationKinds },
+            includeAgentModerations: false,
             ...(data.continuation.userPurge
               ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
               : {}),
@@ -125,35 +126,12 @@ export default async function processPsql(
           aiFamilies,
         )
       }
-      const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
-      const activeMembershipFamilies = unfinishedMembershipFamilies(result)
-      const activeCopyrightFamilies = unfinishedCopyrightFamilies(result)
-      const activePostModerationKinds = result.postModerationLedger.remainingKinds
-      const enqueueCleanup =
-        dependencies?.enqueueDataRetentionCleanupContinuation ??
-        enqueueDataRetentionCleanupContinuation
-      const userPurge = result.softDeletedUsers.hasMore
-        ? result.softDeletedUsers.userPurge
-        : undefined
-      if (!data?.continuation)
-        await admitCopyrightRetentionContinuation(activeCopyrightFamilies, jobId, enqueueCleanup)
-      if (
-        activeClassifierSweeps.length > 0 ||
-        activeMembershipFamilies.length > 0 ||
-        activePostModerationKinds.length > 0 ||
-        result.softDeletedUsers.hasMore
-      ) {
-        if (!jobId) throw new Error('Data retention continuation needs the current job ID')
-        const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
-        await enqueueCleanup({
-          runId,
-          step: (data?.continuation?.step ?? 0) + 1,
-          activeClassifierSweeps,
-          activeMembershipFamilies,
-          activePostModerationKinds,
-          ...(userPurge ? { userPurge } : {}),
-        })
-      }
+      await admitDataRetentionContinuations(result, data?.continuation, jobId, dependencies)
+      await startAgentModerationRetentionContinuation(
+        result.agentModerations.continuation,
+        jobId,
+        dependencies,
+      )
       // Cleanup continuations rerun the same bounded families, so only the first run chains vote pages.
       if (!data?.continuation) {
         await enqueueVoteRetentionContinuationIfNeeded(
@@ -164,6 +142,8 @@ export default async function processPsql(
       }
       return result
     }
+    case 'continueAgentModerationRetentionCleanup':
+      return processAgentModerationRetentionContinuation(data, dependencies)
     case 'continueVoteRetentionCleanup': {
       const selection = requireVoteRetentionSelection(data)
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.

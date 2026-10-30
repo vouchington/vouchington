@@ -129,6 +129,11 @@ import {
   type PostModerationLedgerCleanupResult,
   type PostModerationRetentionKind,
 } from './cleanup-post-moderation-ledger.mts'
+import {
+  cleanupObsoleteAgentModerations,
+  type AgentModerationCleanupContinuation,
+  type AgentModerationCleanupResult,
+} from './cleanup-agent-moderations.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -136,6 +141,20 @@ export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
+export { cleanupObsoleteAgentModerations }
+
+export function runAgentModerationRetentionCleanupPage(
+  limits: DataRetentionLimits,
+  continuation: AgentModerationCleanupContinuation,
+): Promise<AgentModerationCleanupResult> {
+  return cleanupObsoleteAgentModerations(
+    applyRetentionLimits<{
+      batchSize?: number
+      maxBatches?: number
+      continuation: AgentModerationCleanupContinuation
+    }>(limits, { continuation }),
+  )
+}
 
 type CleanupOptions = {
   retentionDays?: number
@@ -163,6 +182,7 @@ type OperationalCleanupOptions = Parameters<typeof cleanupOperationalTombstones>
 type DataRetentionCleanupOptions = {
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
+  includeAgentModerations?: boolean
   voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
   userAgentStringIds?: readonly string[]
   voteIntegrityFlagIds?: readonly string[]
@@ -207,6 +227,14 @@ type DataRetentionCleanupOptions = {
     now?: Date
     kinds?: readonly PostModerationRetentionKind[]
   }
+  agentModerations?: OptionalRetentionLimits<{
+    batchSize?: number
+    maxBatches: number
+    now?: Date
+    lowerBoundDate?: Date
+    upperBoundDate?: Date
+    continuation?: AgentModerationCleanupContinuation
+  }>
   textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
   terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
   completedAdminImportBatches?: OptionalRetentionLimits<CleanupOptions>
@@ -270,6 +298,7 @@ type DataRetentionCleanupResult = {
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
   postModerationLedger: PostModerationLedgerCleanupResult
+  agentModerations: AgentModerationCleanupResult
   textEmbeddingCache: CleanupResult
   terminalEmbeddingBatches: CleanupResult
   completedAdminImportBatches: Awaited<ReturnType<typeof cleanupCompletedImportBatches>>
@@ -496,39 +525,50 @@ export async function runDataRetentionCleanup(
   const webPushSubscriptionTombstones = await cleanupWebPushSubscriptionTombstones(
     withLimits(options.webPushSubscriptionTombstones),
   )
-  const oldModerationQueueClaims = await cleanupOldModerationQueueClaims(
-    withLimits(options.oldModerationQueueClaims),
-  )
-  const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
-    withLimits(options.oldModerationMediaReveals),
-  )
-  const postModerationLedger = await cleanupPostModerationLedger({
-    ...withLimits(options.postModerationLedger),
-    retentionDays: getPostModerationRetentionDays(),
-  })
-  const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
-  const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
-    withLimits(options.terminalEmbeddingBatches),
-  )
-  const completedAdminImportBatches = await cleanupCompletedImportBatches(
-    'admin',
-    withLimits(options.completedAdminImportBatches),
-  )
-  const completedRssImportBatches = await cleanupCompletedImportBatches(
-    'rss',
-    withLimits(options.completedRssImportBatches),
-  )
-  const expiredUserDataRequestAttempts = await cleanupExpiredUserDataRequestAttempts(
-    withLimits(options.expiredUserDataRequestAttempts),
-  )
-  const oldMediaDeliveryChanges = await cleanupOldMediaDeliveryChanges(
-    withLimits(options.oldMediaDeliveryChanges),
-  )
-  const classifierRecords = await cleanupClassifierRecords({
-    ...withLimits(options.classifierRecords),
-    retentionDays: getClassifierRetentionDays(),
-  })
-  const sesBounceEvents = await cleanupSesBounceEvents(withLimits(options.sesBounceEvents))
+  // These four cleanups touch different tables and share no data, so they run together.
+  const [
+    oldModerationQueueClaims,
+    oldModerationMediaReveals,
+    postModerationLedger,
+    agentModerations,
+  ] = await Promise.all([
+    cleanupOldModerationQueueClaims(withLimits(options.oldModerationQueueClaims)),
+    cleanupOldModerationMediaReveals(withLimits(options.oldModerationMediaReveals)),
+    cleanupPostModerationLedger({
+      ...withLimits(options.postModerationLedger),
+      retentionDays: getPostModerationRetentionDays(),
+    }),
+    options.includeAgentModerations === false
+      ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
+      : cleanupObsoleteAgentModerations(withLimits(options.agentModerations)),
+  ])
+  // Embedding-cache and import-batch cleanups touch separate tables and feed nothing else.
+  const [
+    textEmbeddingCache,
+    terminalEmbeddingBatches,
+    completedAdminImportBatches,
+    completedRssImportBatches,
+  ] = await Promise.all([
+    cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache)),
+    cleanupTerminalEmbeddingBatches(withLimits(options.terminalEmbeddingBatches)),
+    cleanupCompletedImportBatches('admin', withLimits(options.completedAdminImportBatches)),
+    cleanupCompletedImportBatches('rss', withLimits(options.completedRssImportBatches)),
+  ])
+  // Request-attempt, media-change, classifier and SES-bounce cleanups read and delete separate tables.
+  const [
+    expiredUserDataRequestAttempts,
+    oldMediaDeliveryChanges,
+    classifierRecords,
+    sesBounceEvents,
+  ] = await Promise.all([
+    cleanupExpiredUserDataRequestAttempts(withLimits(options.expiredUserDataRequestAttempts)),
+    cleanupOldMediaDeliveryChanges(withLimits(options.oldMediaDeliveryChanges)),
+    cleanupClassifierRecords({
+      ...withLimits(options.classifierRecords),
+      retentionDays: getClassifierRetentionDays(),
+    }),
+    cleanupSesBounceEvents(withLimits(options.sesBounceEvents)),
+  ])
   // Tombstone deletion checks for surviving intents, so interrupted intent cleanup cannot
   // discard delivery state; running it first only makes already-terminal rows eligible sooner.
   const [systemPrunedNotifications, userDeletedNotifications, moderationEmailSends] =
@@ -632,6 +672,7 @@ export async function runDataRetentionCleanup(
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     postModerationLedger,
+    agentModerations,
     textEmbeddingCache,
     terminalEmbeddingBatches,
     completedAdminImportBatches,

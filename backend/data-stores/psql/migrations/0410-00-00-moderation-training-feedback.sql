@@ -135,6 +135,11 @@ COMMENT ON COLUMN moderation_training_feedbacks.post_clearance_change_id IS 'Pos
 COMMENT ON COLUMN moderation_training_feedbacks.input_sha256 IS 'Optional SHA-256 digest for the moderated input text.';
 COMMENT ON COLUMN moderation_training_feedbacks.metadata IS 'Structured model outputs, prompt/version references, and export hints.';
 
+CREATE TRIGGER trigger_moderation_training_feedbacks__agent_retention
+AFTER DELETE OR UPDATE OF post_id, agent_moderation_id
+ON moderation_training_feedbacks FOR EACH ROW
+EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('post_id', 'agent_moderation_id');
+
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__actor_user_id
   ON moderation_training_feedbacks (actor_user_id)

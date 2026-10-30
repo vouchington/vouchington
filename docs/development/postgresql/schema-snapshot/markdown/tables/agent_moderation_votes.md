@@ -46,4 +46,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_agent_moderation_votes__retention`: `CREATE TRIGGER trigger_agent_moderation_votes__retention AFTER DELETE OR UPDATE OF post_id, agent_moderation_id ON public.agent_moderation_votes FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('post_id', 'agent_moderation_id')`
 - `trigger_agent_moderation_votes__ua_release`: `CREATE TRIGGER trigger_agent_moderation_votes__ua_release AFTER DELETE ON public.agent_moderation_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`

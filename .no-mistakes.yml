@@ -5227,6 +5227,8 @@ rules:
           reason: >-
             This per-post idempotent database-only recheck is serialized by the post row and its
             work item transaction lock; it needs no lease or attempt fence and is deleted on completion.
+        - object: table:agent_moderation_retention_post_work_items
+          reason: Post-locked database-only reconciliation commits its cursor with moderation rows; no external work or lease survives the transaction.
         - object: table:oauth_authorization_server_events
           reason: >-
             Consent and revocation events reject every UPDATE and ordinary DELETE. Their

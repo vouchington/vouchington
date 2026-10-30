@@ -18,7 +18,6 @@ type ReviewedIds = [string, string][]
 function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
   return keys.map(key => [key, reason])
 }
-
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
   ...REVIEWED_RETENTION_CURSOR_IDS,

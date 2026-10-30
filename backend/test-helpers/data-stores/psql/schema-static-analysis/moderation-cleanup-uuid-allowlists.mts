@@ -1,5 +1,9 @@
 export const MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
+    'agent_moderation_retention_post_work_items.cursor_moderation_record_id',
+    'Deletion-stable keyset position for hash-blocked results of one post; not a relationship.',
+  ],
+  [
     'moderation_media_reveal_cleanup_cursors.cursor_reveal_id',
     'Operational keyset position survives deletion of the swept reveal; it is not a relationship.',
   ],

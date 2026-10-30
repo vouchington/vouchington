@@ -375,6 +375,13 @@ CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__agent_moderation_post_id
   ON vote_integrity_flags (agent_moderation_post_id)
   WHERE agent_moderation_post_id IS NOT NULL;
 
+CREATE TRIGGER trigger_vote_integrity_flags__agent_moderation_retention
+AFTER DELETE OR UPDATE OF agent_moderation_post_id, agent_moderation_id
+ON vote_integrity_flags FOR EACH ROW
+EXECUTE FUNCTION fn_update_agent_moderation_retention_reference(
+  'agent_moderation_post_id', 'agent_moderation_id'
+);
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__created_by_id
   ON vote_weight_penalties (created_by_id)

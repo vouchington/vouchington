@@ -14,6 +14,7 @@ import {
 } from './config.mts'
 import { psql } from './queues.mts'
 import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
+export { enqueueAgentModerationRetentionContinuation } from './enqueues/agent-moderation-retention.mts'
 export { enqueueAIRetentionContinuations }
 export {
   enqueueCreatePartitions,

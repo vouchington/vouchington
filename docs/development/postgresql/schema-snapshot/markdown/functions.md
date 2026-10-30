@@ -613,6 +613,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
  LANGUAGE plpgsql
 ```
 
+## `fn_register_agent_moderation_retention_post_hash`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_agent_moderation_retention_post_hash()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_new_user_agent_string_cleanup_candidate`
 
 ```sql
@@ -1439,6 +1447,22 @@ CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)
  IMMUTABLE
 ```
 
+## `fn_update_agent_moderation_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_agent_moderation_retention_reference`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention_reference()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_agent_moderation_transparency`
 
 ```sql
@@ -1740,6 +1764,14 @@ CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(conte
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)
  RETURNS boolean
+ LANGUAGE plpgsql
+```
+
+## `fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)
+ RETURNS void
  LANGUAGE plpgsql
 ```
 

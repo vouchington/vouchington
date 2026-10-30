@@ -16,6 +16,7 @@ export type PsqlJobs =
   | 'continueVoteRetentionCleanup'
   | 'cleanupDeletedConversations'
   | 'cleanupOperationalTombstones'
+  | 'continueAgentModerationRetentionCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -117,6 +118,18 @@ export type PsqlRetentionJobData = {
     activePostModerationKinds: PostModerationRetentionKind[]
     /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
     userPurge?: { userId: string; communityId: string; afterModeratorId: string }
+  }
+}
+
+export type AgentModerationRetentionContinuationData = {
+  runId: string
+  step: number
+  agentModerationRetention: {
+    afterDueAt: string
+    afterId: string
+    afterPostId: string
+    upperBoundDueAt: string
+    upperBoundId: string
   }
 }
 
