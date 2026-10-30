@@ -44,7 +44,7 @@ jobs:
       pr_number: ${{ steps.triage.outputs.pr_number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
@@ -176,7 +176,7 @@ jobs:
       skip: ${{ steps.loop-breaker.outputs.skip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         timeout-minutes: 5
       - uses: jonathanong/auto-harness/actions/harness-prompt-context@8325525ec675f738a3969cb92ce20477f38dcf71 # v1.0.2
@@ -203,7 +203,7 @@ jobs:
       source-current: ${{ steps.source-state.outputs.current }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
 
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         timeout-minutes: 5
@@ -373,7 +373,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           persist-credentials: false

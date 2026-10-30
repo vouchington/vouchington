@@ -34,7 +34,7 @@ jobs:
       fix_request: ${{ steps.extract-fix.outputs.request }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -70,7 +70,7 @@ jobs:
       prompt: ${{ steps.render.outputs.prompt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
 
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
         timeout-minutes: 5
@@ -149,7 +149,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
