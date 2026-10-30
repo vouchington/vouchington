@@ -11,19 +11,13 @@ describe('assertWithinContributionQuota', () => {
     await expect(assertWithinContributionQuota(userId, true, null)).resolves.toBeUndefined()
   })
 
-  it('increments counter and allows when under limit', async () => {
-    const userId = uuidv7()
-    await resetContributionQuota(userId)
-    await expect(assertWithinContributionQuota(userId, false, null)).resolves.toBeUndefined()
-  })
-
   it('throws CONTRIBUTION_QUOTA_EXCEEDED when free limit is exceeded', async () => {
     const userId = uuidv7()
     await resetContributionQuota(userId)
 
     // Free limit is 10 — all 10 calls succeed
     for (let i = 0; i < 10; i++) {
-      await assertWithinContributionQuota(userId, false, null)
+      await expect(assertWithinContributionQuota(userId, false, null)).resolves.toBeUndefined()
     }
 
     // 11th call should be rejected (count 11 >= threshold 11)
