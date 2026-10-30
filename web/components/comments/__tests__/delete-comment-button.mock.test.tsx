@@ -58,17 +58,6 @@ describe('DeleteCommentButton', () => {
     fireEvent.click(screen.getByRole('button', { name: /Delete/i }))
     expect(await screen.findByText('Delete this comment?')).toBeDefined()
     expect(screen.getByText('This cannot be undone.')).toBeDefined()
-  })
-
-  it('shows Cancel button inside the dialog', async () => {
-    render(
-      <DeleteCommentButton
-        commentId='comment-1'
-        onDeleted={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    fireEvent.click(screen.getByRole('button', { name: /Delete/i }))
-    await screen.findByText('Delete this comment?')
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDefined()
   })
 
