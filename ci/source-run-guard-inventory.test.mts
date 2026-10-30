@@ -29,13 +29,10 @@ function siteKey(site: { workflow: string; job: string }): string {
 
 describe('listSourceRunSites', () => {
   it('extracts exactly the real workflow_run-derived jobs, no more and no fewer', () => {
-    const actual = listSourceRunSites().map(siteKey).toSorted()
+    const sites = listSourceRunSites()
+    const actual = sites.map(siteKey).toSorted()
     const expected = EXPECTED_SITES.map(siteKey).toSorted()
     expect(actual).toEqual(expected)
-  })
-
-  it('excludes a job that only reads a needs output derived from the event, not the event itself', () => {
-    const sites = listSourceRunSites()
     expect(sites).not.toContainEqual({ workflow: 'fix-dependabot.yml', job: 'check-duplicates' })
   })
 
