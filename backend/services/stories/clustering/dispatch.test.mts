@@ -39,10 +39,6 @@ describe('dispatchStoryClusteringForEmbeddedItems (real queue)', () => {
 
     expect(await dispatchersFor(rssFeedItemId)).toHaveLength(1)
   })
-
-  it('does nothing for an empty list', async () => {
-    await expect(dispatchStoryClusteringForEmbeddedItems([])).resolves.toBeUndefined()
-  })
 })
 
 describe('dispatchStoryClusteringForEmbeddedItems failure handling', () => {
@@ -74,7 +70,9 @@ describe('dispatchStoryClusteringForEmbeddedItems failure handling', () => {
   it('never touches the queue for an empty list', async () => {
     const { enqueue, report } = failingQueue(new Error('unreachable'))
 
-    await dispatchStoryClusteringForEmbeddedItems([], enqueue, report)
+    await expect(
+      dispatchStoryClusteringForEmbeddedItems([], enqueue, report),
+    ).resolves.toBeUndefined()
 
     expect(enqueue).not.toHaveBeenCalled()
   })

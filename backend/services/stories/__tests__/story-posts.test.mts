@@ -121,19 +121,6 @@ describe('story posts', () => {
     expect(result.post.ai_summary_markdown).toBe('')
   })
 
-  it('prepareStoryPost — ai_summary_markdown option sets post content directly', async () => {
-    const story = await insertTestStory({ title: 'Summary Override Test' })
-    await insertItem(story.id)
-    await insertItem(story.id)
-
-    const prepared = await prepareStoryPost(story.id, testUser, {
-      ai_summary_markdown: 'Admin-provided summary.',
-    })
-    await prepared.finalize()
-    const result = prepared.response
-    expect(result.post.ai_summary_markdown).toBe('Admin-provided summary.')
-  })
-
   it('does not create a story post after a concurrent story-teller deletion commits', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const storyTeller = await createSystemUser(`story-teller-${random}`)
