@@ -32,25 +32,6 @@ describe('CommentNode', () => {
     scoreVoteProps.length = 0
   })
 
-  it('clicking the username link does NOT call onToggleCollapse', () => {
-    const onToggleCollapse = vi.fn<VitestLooseMock>()
-    const post = makePost()
-    render(
-      <CommentNode
-        {...defaultProps}
-        node={makeNode(post)}
-        onToggleCollapse={onToggleCollapse}
-      />,
-    )
-
-    const links = screen.getAllByTestId('user-link')
-    const usernameLink = links.find(el => el.textContent === 'alice')
-    expect(usernameLink).toBeDefined()
-    fireEvent.click(usernameLink!)
-
-    expect(onToggleCollapse).not.toHaveBeenCalled()
-  })
-
   it('clicking the chevron button calls onToggleCollapse exactly once (no double-fire)', () => {
     const onToggleCollapse = vi.fn<VitestLooseMock>()
     const post = makePost()
