@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1156.0",
-    "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/queue-errors": "workspace:^",
@@ -25,8 +24,7 @@
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "@vouchington/queue-errors": "^0.2.0",
-    "mailparser": "^3.9.41",
-    "valkyries": "^0.14.0"
+    "mailparser": "^3.9.41"
   },
   "devDependencies": {
     "@types/mailparser": "^3.9.0",

@@ -26,6 +26,8 @@ const DEFAULTS = {
   import_recovery_batch_size: 100,
   import_status_page_size: 100,
   rss_feed_import_budget_ms: 15_000,
+  export_cursor_batch_size: 1_000,
+  topic_import_attempt_prune_batch_size: 100,
 }
 
 describe('getUserImportExportConfig', () => {

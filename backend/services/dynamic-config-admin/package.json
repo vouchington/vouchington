@@ -31,6 +31,7 @@
     "@queues/find-your-friends": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/psql": "workspace:^",
+    "@queues/ses-inbound": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
@@ -109,7 +110,6 @@
     "@services/web-risk": "workspace:^",
     "@voucha/config": "workspace:^",
     "@vouchington/dynamic-config": "^0.3.0",
-    "@workers/ses-inbound": "workspace:^",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.14.0"
   },

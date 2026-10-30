@@ -5,7 +5,7 @@ import {
   SES_INBOUND_RECONCILE_JOB,
 } from '@queues/background/enqueues/ses-inbound-jobs'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { sesInboundWorkConfig } from './work-limits.mts'
+import { sesInboundWorkConfig } from '@queues/ses-inbound/config'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 import { listCopyrightSesInboundObjects } from './processors/s3.mts'
 

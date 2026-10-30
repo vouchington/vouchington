@@ -37,6 +37,25 @@ export async function getHostnameCacheInvalidationWorkForTest(
   return rows[0] ?? null
 }
 
+export async function getHostnameCacheInvalidationDatabaseNowForTest(): Promise<Date> {
+  const { rows } = await read<{ now: Date }>(
+    '/* getHostnameCacheInvalidationDatabaseNowForTest */ SELECT CURRENT_TIMESTAMP AS now',
+  )
+  return rows[0]!.now
+}
+
+export async function setHostnameCacheInvalidationAttemptsForTest(
+  hostnameId: string,
+  attempts: number,
+): Promise<void> {
+  await write(
+    `/* setHostnameCacheInvalidationAttemptsForTest */
+    UPDATE url_hostname_cache_invalidation_work_items SET attempt_count = $2::int
+    WHERE url_hostname_id = $1::uuid`,
+    [hostnameId, attempts],
+  )
+}
+
 export async function ageHostnameCacheInvalidationWorkForTest(
   hostnameId: string,
   seconds: number,

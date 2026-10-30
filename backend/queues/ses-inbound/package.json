@@ -14,12 +14,14 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
+    "@data-stores/valkey": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/worker-runtime": "^0.3.1",
-    "glide-mq": "^0.20.0"
+    "glide-mq": "^0.20.0",
+    "valkyries": "^0.14.0"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^"

@@ -3438,6 +3438,9 @@ importers:
 
   backend/queues/ses-inbound:
     dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -3456,6 +3459,9 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.14.0
+        version: 0.14.0
     devDependencies:
       '@data-stores/valkey-core':
         specifier: workspace:^
@@ -6219,6 +6225,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@queues/ses-inbound':
+        specifier: workspace:^
+        version: link:../../queues/ses-inbound
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../account-data-requests
@@ -6453,9 +6462,6 @@ importers:
       '@vouchington/dynamic-config':
         specifier: ^0.3.0
         version: 0.3.0(valkyries@0.14.0)
-      '@workers/ses-inbound':
-        specifier: workspace:^
-        version: link:../../workers/ses-inbound
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -14628,9 +14634,6 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1156.0
         version: 3.1156.0
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -14661,9 +14664,6 @@ importers:
       mailparser:
         specifier: ^3.9.41
         version: 3.9.41
-      valkyries:
-        specifier: ^0.14.0
-        version: 0.14.0
     devDependencies:
       '@types/mailparser':
         specifier: ^3.9.0
