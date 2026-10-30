@@ -33,7 +33,7 @@ jobs:
       default_branch: ${{ steps.request.outputs.default_branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
