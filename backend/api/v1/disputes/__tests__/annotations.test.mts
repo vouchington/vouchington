@@ -54,14 +54,9 @@ async function makeAnnotatedPostFixture(staffId: string) {
 }
 
 describe('GET /api/v1/posts/:postId/dispute-annotation', () => {
-  let staffUser: PrivateUser
-  let postIdWithAnnotation: string
   let postIdNoAnnotation: string
 
   beforeAll(async () => {
-    staffUser = await createTestUser({ administrator: true })
-    const fixture = await makeAnnotatedPostFixture(staffUser.id)
-    postIdWithAnnotation = fixture.postId
     const creator = await createTestUser()
     postIdNoAnnotation = await insertTestPost({
       title: `No Annotation Post ${crypto.randomUUID().slice(0, 8)}`,
@@ -69,15 +64,6 @@ describe('GET /api/v1/posts/:postId/dispute-annotation', () => {
       createdById: creator.id,
       markdown: 'Regular post.',
     })
-  })
-
-  it('returns annotation when one exists (public endpoint, no auth required)', async () => {
-    const request = createRequest()
-    const response = await request
-      .get(`/api/v1/posts/${postIdWithAnnotation}/dispute-annotation`)
-      .expect(200)
-    expect(response.body.annotation).not.toBeNull()
-    expect(response.body.annotation.post_id).toBe(postIdWithAnnotation)
   })
 
   it('returns null annotation when none exists', async () => {
@@ -245,6 +231,8 @@ describe('DELETE /api/v1/disputes/:id/annotation', () => {
     const getResponse = await getRequest
       .get(`/api/v1/posts/${postId}/dispute-annotation`)
       .expect(200)
+    expect(getResponse.body.annotation).not.toBeNull()
+    expect(getResponse.body.annotation.post_id).toBe(postId)
     const annotationId = getResponse.body.annotation.id
 
     const deleteRequest = createRequest()
