@@ -10,14 +10,12 @@ describe('worker-owned inline response rate-limit exemptions', () => {
   })
 
   it.each(['/robots.txt', '/llms.txt', '/.well-known/api-catalog'])(
-    'serves %s without consulting identity or bot limiters when cache dispatch is unavailable',
+    'serves %s without consulting the limiter when cache dispatch is unavailable',
     async pathname => {
-      const identityLimiter = vi.fn<VitestLooseMock>(() => ({ success: false }))
-      const botLimiter = vi.fn<VitestLooseMock>(() => ({ success: false }))
+      const limiter = vi.fn<VitestLooseMock>(() => ({ success: false }))
       const env: Env = {
         CACHE_PLACEHOLDER_NONCE: 'invalid',
-        RATE_LIMITER_GET_HEAD: { limit: identityLimiter },
-        RATE_LIMITER_BOT_GET_HEAD: { limit: botLimiter },
+        RATE_LIMITER_GET_HEAD: { limit: limiter },
       }
 
       const response = await worker.fetch(
@@ -29,8 +27,7 @@ describe('worker-owned inline response rate-limit exemptions', () => {
       )
 
       expect(response.status).toBe(200)
-      expect(identityLimiter).not.toHaveBeenCalled()
-      expect(botLimiter).not.toHaveBeenCalled()
+      expect(limiter).not.toHaveBeenCalled()
     },
   )
 

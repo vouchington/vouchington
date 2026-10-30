@@ -17,9 +17,8 @@ wrong methods, trailing slashes, and neighboring `/ap/inbox/*` paths remain edge
 
 Pre-cache identity rate limiting treats browser traffic as anonymous/generic because the edge cannot
 check Valkey-backed session revocation. Authenticated trust-tier limits are enforced by backend
-route rate limiting after authoritative auth resolution. When absent, the anonymous limiter falls
-back to the shared `RATE_LIMITER_GET_HEAD` / `RATE_LIMITER_MUTATING` bindings, then to legacy
-auth/premium bindings as anonymous buckets for binding-migration safety.
+route rate limiting after authoritative auth resolution. Anonymous traffic uses the shared
+`RATE_LIMITER_GET_HEAD` / `RATE_LIMITER_MUTATING` bindings under the `anon` key prefix.
 
 Logic lives in [`src/identity-rate-limit.mts`](../../../../cloudflare-worker/src/identity-rate-limit.mts).
 
@@ -29,20 +28,15 @@ spoofing that header.
 
 ### Pre-cache Bindings
 
-| Binding                      | Purpose                                                    |
-| ---------------------------- | ---------------------------------------------------------- |
-| `RATE_LIMITER_GET_HEAD`      | Fallback GET/HEAD limiter when anonymous binding is absent |
-| `RATE_LIMITER_MUTATING`      | Fallback mutating limiter when anonymous binding is absent |
-| `RATE_LIMITER_ANON_GET_HEAD` | GET/HEAD limiter for pre-cache browser traffic (optional)  |
-| `RATE_LIMITER_ANON_MUTATING` | Mutating limiter for pre-cache browser traffic (optional)  |
-| `RATE_LIMITER_SERVER_ACTION` | Stricter mutating limiter for Next.js Server Action POSTs  |
-
-Legacy `RATE_LIMITER_AUTH_*` and `RATE_LIMITER_PREMIUM_*` bindings are accepted only as
-anonymous/generic fallbacks. They do not restore auth/premium edge tiering.
+| Binding                      | Purpose                                                   |
+| ---------------------------- | --------------------------------------------------------- |
+| `RATE_LIMITER_GET_HEAD`      | GET/HEAD limiter for pre-cache browser traffic            |
+| `RATE_LIMITER_MUTATING`      | Mutating limiter for pre-cache browser traffic            |
+| `RATE_LIMITER_SERVER_ACTION` | Stricter mutating limiter for Next.js Server Action POSTs |
 
 ### Unknown Bot Rate Limiting
 
-Unknown bot GET/HEAD requests skip the pre-cache limiter and run through `RATE_LIMITER_BOT_*`
+Unknown bot GET/HEAD requests skip the pre-cache limiter and run through the generic bindings under the `bot` key prefix
 on cache misses and other non-cacheable or cache-bypassed paths, so cache hits are free. Unknown bot
 mutating requests first run through the pre-cache anonymous/server-action limiter, then through the
 post-cache bot limiter. This prevents a spoofed generic bot user agent from bypassing mutating rate
@@ -51,11 +45,8 @@ The exact `POST /ap/inbox` delivery route is the sole mutating exception because
 remote-host identity is available only at the backend; neighboring and wrong-method requests do
 not inherit that exemption.
 
-### Bot Rate Limit Bindings
+### Bot and Anonymous Keys
 
-| Binding                     | Purpose                                                   |
-| --------------------------- | --------------------------------------------------------- |
-| `RATE_LIMITER_BOT_GET_HEAD` | Post-cache rate limiter for unknown bot GET/HEAD requests |
-| `RATE_LIMITER_BOT_MUTATING` | Post-cache rate limiter for unknown bot mutating requests |
-
-If the `RATE_LIMITER_BOT_*` bindings are not configured, unknown bots fall back to the normal `RATE_LIMITER_*` bindings (backwards compatible).
+Bot and anonymous traffic share the generic `RATE_LIMITER_GET_HEAD` / `RATE_LIMITER_MUTATING`
+bindings. Their buckets stay separate because the keys carry the `bot` and `anon` prefixes, so no
+separate namespaces are needed.

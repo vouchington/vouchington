@@ -128,7 +128,7 @@ describe('worker fetch handler — static web cache', () => {
         BACKEND_ORIGIN: 'https://backend.example.com',
         WEB_ORIGIN: 'https://web.example.com',
         CACHE_PLACEHOLDER_NONCE: 'test-placeholder-nonce-that-is-at-least-32-characters-long',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: botLimiter },
+        RATE_LIMITER_GET_HEAD: { limit: botLimiter },
       }
 
       const response = await worker.fetch(
@@ -160,7 +160,7 @@ describe('worker fetch handler — static web cache', () => {
       const botLimiter = vi.fn<VitestLooseMock>(() => ({ success: false }))
       const env: Env = {
         WEB_ORIGIN: 'https://web.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: botLimiter },
+        RATE_LIMITER_GET_HEAD: { limit: botLimiter },
       }
 
       const response = await worker.fetch(
