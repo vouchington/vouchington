@@ -29,7 +29,7 @@ async function parseInsert(sql: string) {
   return { insert: statement.insert, conflict: statement.insert.onConflict }
 }
 
-describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
+describe('schema-snapshot-facts (bounded topic and agent fixture)', () => {
   it('returns parsed trigger facts for a known table', async () => {
     const triggers = triggerFactsForTable('topic_aliases')
     expect(triggers).toBeDefined()
@@ -46,7 +46,7 @@ describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
   })
 })
 
-describe('generated-ddl-insert-invariants + real schema.json trigger data', () => {
+describe('generated-ddl-insert-invariants against the bounded trigger fixture', () => {
   it('flags a replay-unsafe topic_aliases DO UPDATE exactly like the real, pre-fix seed bug', async () => {
     expect(
       await findFirstUnguardedInsertViolation(
@@ -216,7 +216,7 @@ describe('replayUnsafeTrigger from parsed SQL facts', () => {
   })
 })
 
-describe('generatedDependenciesForTable (backend real schema.json singleton)', () => {
+describe('generatedDependenciesForTable (bounded topic_aliases fixture)', () => {
   it('maps the real topic_aliases.search_vector STORED column to its alias source', async () => {
     const dependencies = generatedDependenciesForTable('topic_aliases')
     expect(dependencies?.get('search_vector')).toEqual(new Set(['alias']))
