@@ -74,7 +74,8 @@ describe('LandingPagesIndex', () => {
       />,
     )
     expect(pw(container, 'landing-pages-empty-state')).toBeDefined()
-    expect(pw(container, 'landing-pages-settings-heading')).toBeDefined()
+    expect(pw(container, 'settings-page-header-title').textContent).toMatch(/landing pages/i)
+    expect(pw(container, 'settings-page-header-description').textContent).toContain('@tester')
   })
 
   it('lists pages with edit and view-live links', () => {
