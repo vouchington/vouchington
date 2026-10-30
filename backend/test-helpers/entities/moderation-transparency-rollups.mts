@@ -97,6 +97,20 @@ export async function insertTestReleasedModerationTransparencyRollupRow(options:
   `)
 }
 
+/** Publishes one global daily cohort through the production release function. */
+export async function releaseTestModerationTransparencyRollup(options: {
+  occurredAt: Date
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
+}): Promise<void> {
+  const day = options.occurredAt.toISOString().slice(0, 10)
+  await write(sql`/* releaseTestModerationTransparencyRollup */
+    SELECT fn_release_moderation_transparency_daily_rollup(
+      ${day}::date, NULL::uuid, ${options.metric}, ${options.category}, ${options.occurredAt}
+    )
+  `)
+}
+
 export async function getTestReleasedModerationTransparencyRollupCount(options: {
   occurredAt: Date
   metric: FiniteValue<'moderation_transparency_metrics'>
