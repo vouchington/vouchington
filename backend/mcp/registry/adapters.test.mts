@@ -28,10 +28,11 @@ describe('toolToMcpTool', () => {
     const result = toolToMcpTool(tool)
     expect(result.name).toBe('test_tool')
     expect(result.description).toBe('A test tool')
-  })
-
-  it('maps the display title from meta', () => {
-    expect(toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true })).title).toBe('Test Tool')
+    expect(result.title).toBe('Test Tool')
+    expect(result['_meta']).toEqual({
+      'voucha/requiredScopes': ['topics:read'],
+    })
+    expect('outputSchema' in result).toBe(false)
   })
 
   it('marks read-only tools idempotent', () => {
@@ -59,13 +60,6 @@ describe('toolToMcpTool', () => {
     })
   })
 
-  it('includes canonical required scopes in MCP metadata', () => {
-    const result = toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true }))
-    expect(result['_meta']).toEqual({
-      'voucha/requiredScopes': ['topics:read'],
-    })
-  })
-
   it('publishes the declared output schema', () => {
     const outputSchema = {
       type: 'object',
@@ -78,12 +72,6 @@ describe('toolToMcpTool', () => {
     }
 
     expect(toolToMcpTool(withSchema).outputSchema).toEqual(outputSchema)
-  })
-
-  it('omits the output schema when the tool declares none', () => {
-    const result = toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true }))
-
-    expect('outputSchema' in result).toBe(false)
   })
 
   it('omits annotations and title when the tool has no meta', () => {
