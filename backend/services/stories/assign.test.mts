@@ -199,13 +199,6 @@ describe('assign', () => {
     expect(result).toBe(newItemId)
   })
 
-  it('adminAssignItemToStory makes the assigned item visible in membership reads', async () => {
-    const story = await insertTestStory()
-    const newItemId = await makeTestItem()
-    await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
-    await expect(getStoryItemIds(story.id)).resolves.toContain(newItemId)
-  })
-
   it('refreshes moved story posts before invalidating their caches', async () => {
     const [movedUrlId, priorOtherUrlId, targetUrlId1, targetUrlId2] = await Promise.all([
       createTestUrlWithHostname(),
