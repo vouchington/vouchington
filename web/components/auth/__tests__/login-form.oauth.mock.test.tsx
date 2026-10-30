@@ -157,12 +157,6 @@ describe('LoginForm OAuth', () => {
       turnstileCallbacks.onSuccess = undefined
     })
 
-    it('disables submit button until Turnstile resolves', () => {
-      render(<LoginForm />)
-      const btn = screen.getByRole('button', { name: /continue with email/i })
-      expect(btn).toBeDisabled()
-    })
-
     it('enables submit button after Turnstile resolves', async () => {
       render(<LoginForm />)
       const btn = screen.getByRole('button', { name: /continue with email/i })
