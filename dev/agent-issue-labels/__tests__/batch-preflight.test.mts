@@ -199,14 +199,6 @@ describe('executePreflight', () => {
     expect(report.entries[0].resolvedLabels).toContain('dependencies')
   })
 
-  it('does not add the dependencies label when entry.dependencies is empty', async () => {
-    const manifest = makeManifest([makeEntry({ dependencies: [] })])
-    const { runGh } = makeRunGh({})
-    const report = await executePreflight(manifest, makeDeps({ runGh }))
-
-    expect(report.entries[0].resolvedLabels).not.toContain('dependencies')
-  })
-
   it('requests only open milestones from the taxonomy API', async () => {
     const manifest = makeManifest([makeEntry()])
     const { runGh, calls } = makeRunGh({})

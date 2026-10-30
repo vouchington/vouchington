@@ -28,10 +28,6 @@ describe('parseManifest', () => {
       milestone: null,
       extraLabels: [],
     })
-  })
-
-  it('defaults duplicateSearch to the title with no acknowledgments when omitted', () => {
-    const manifest = parseManifest(JSON.stringify(validManifest()))
     expect(manifest.entries[0].duplicateSearch).toEqual({
       query: 'Fix the thing',
       acknowledgedHits: [],
