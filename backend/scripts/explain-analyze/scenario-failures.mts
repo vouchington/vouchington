@@ -1,6 +1,6 @@
 // One run reports every failing scenario. Stopping at the first error hid later failures until
 // each fix reached CI, so a fix PR could pass its own scenario and fail on the next (#3410).
-export interface ScenarioFailure {
+interface ScenarioFailure {
   scenario: string
   error: unknown
 }
@@ -25,14 +25,6 @@ export function continuingAfterFailure<Args extends [string, ...unknown[]]>(
   fn: (...args: Args) => Promise<void>,
 ): (...args: Args) => Promise<void> {
   return (...args) => continueAfterFailure(args[0], () => fn(...args))
-}
-
-export function getScenarioFailures(): readonly ScenarioFailure[] {
-  return failures
-}
-
-export function resetScenarioFailures(): void {
-  failures.length = 0
 }
 
 // Run-level checks such as the manifest still run after scenario failures; their errors join the
