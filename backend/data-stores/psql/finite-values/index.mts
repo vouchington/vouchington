@@ -1,8 +1,8 @@
-import { EXISTING_FINITE_VALUES_1 } from './existing-1.mts'
-import { EXISTING_FINITE_VALUES_2 } from './existing-2.mts'
-import { EXISTING_FINITE_VALUES_3 } from './existing-3.mts'
-import { EXISTING_FINITE_VALUES_4 } from './existing-4.mts'
-import { EXISTING_FINITE_VALUES_5 } from './existing-5.mts'
+import type { EXISTING_FINITE_VALUES_1 } from './existing-1.mts'
+import type { EXISTING_FINITE_VALUES_2 } from './existing-2.mts'
+import type { EXISTING_FINITE_VALUES_3 } from './existing-3.mts'
+import type { EXISTING_FINITE_VALUES_4 } from './existing-4.mts'
+import type { EXISTING_FINITE_VALUES_5 } from './existing-5.mts'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { CURRENCIES } from '@ts-shared/money'
 
@@ -20,14 +20,11 @@ export const GENERATED_FINITE_VALUES = {
   ...DOMAIN_FINITE_VALUES,
 } as const
 
-const FINITE_VALUES = {
-  ...GENERATED_FINITE_VALUES,
-  ...EXISTING_FINITE_VALUES_1,
-  ...EXISTING_FINITE_VALUES_2,
-  ...EXISTING_FINITE_VALUES_3,
-  ...EXISTING_FINITE_VALUES_4,
-  ...EXISTING_FINITE_VALUES_5,
-} as const
+type FiniteValues = typeof GENERATED_FINITE_VALUES &
+  typeof EXISTING_FINITE_VALUES_1 &
+  typeof EXISTING_FINITE_VALUES_2 &
+  typeof EXISTING_FINITE_VALUES_3 &
+  typeof EXISTING_FINITE_VALUES_4 &
+  typeof EXISTING_FINITE_VALUES_5
 
-export type FiniteValue<Name extends keyof typeof FINITE_VALUES> =
-  (typeof FINITE_VALUES)[Name][number]
+export type FiniteValue<Name extends keyof FiniteValues> = FiniteValues[Name][number]
