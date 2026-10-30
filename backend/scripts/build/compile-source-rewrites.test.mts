@@ -11,12 +11,6 @@ function packageModule(relativePath: string): string {
 }
 
 describe('rewriteModuleSource', () => {
-  it('awaits async modules reached through export star by importing them first', () => {
-    expect(rewriteModuleSource("export * from './clients.mts'\n", repoModule)).toBe(
-      "import './clients.mts'; export * from './clients.mts';\n",
-    )
-  })
-
   it('drops a createRequire alias so the bundler follows the requires', () => {
     const source =
       "const require = createRequire(import.meta.url);\nrequire('../build/Release/sharp.node')\n"

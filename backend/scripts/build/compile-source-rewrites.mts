@@ -48,12 +48,6 @@ const PLAYWRIGHT_PACKAGE_JSON_REQUIRE =
 
 export function rewriteModuleSource(source: string, modulePath: string): string {
   let rewritten = source
-    // Bun's bundler does not await an async module reached through `export * from` (linker
-    // convertStmtsForChunk emits its init call without await). A preceding side-effect import
-    // takes the awaited path, so top-level-await graphs initialize in order. Still needed by
-    // the repository's own barrels (data-stores/valkey and data-stores/psql `export * from
-    // './clients.mts'`, whose clients are created with top-level await).
-    .replace(/^export \* from (['"][^'"]+['"]);?$/gm, 'import $1; export * from $1;')
     // The bundler can't follow requires made through createRequire (sharp's addon); Bun's own
     // `require` in ESM is followed and embedded.
     .replace(/^const require = createRequire\(import\.meta\.url\);?$/m, '')
