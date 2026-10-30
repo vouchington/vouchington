@@ -1,24 +1,27 @@
 import { beginTransaction } from '@data-stores/psql'
-import { readAliasCategoryRawPage } from '@services/rss-feeds/topic-alias-category-raw-page'
+import {
+  readAliasCategoryRawPage,
+  type AliasCategoryPhase,
+} from '@services/rss-feeds/topic-alias-category-raw-page'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 
 export async function runTopicAliasRawPageScenarios(aliasId: string): Promise<void> {
   await captureRawPhase(
     aliasId,
-    0,
+    'rss_item_categories',
     'readAliasCategoryRawPage authoredItems',
     'idx_rss_feed_item_categories__topic_alias_id',
   )
   await captureRawPhase(
     aliasId,
-    1,
+    'rss_item_text_categories',
     'readAliasCategoryRawPage textItems',
     'idx_rss_feed_item_categories__category_identity_id',
   )
   await captureRawPhase(
     aliasId,
-    2,
+    'rss_feed_text_categories',
     'readAliasCategoryRawPage textFeeds',
     'idx_rss_feed_categories__category_identity_id',
   )
@@ -26,7 +29,7 @@ export async function runTopicAliasRawPageScenarios(aliasId: string): Promise<vo
 
 async function captureRawPhase(
   aliasId: string,
-  phase: 0 | 1 | 2,
+  phase: Exclude<AliasCategoryPhase, 'completed'>,
   queryName: string,
   indexName: string,
 ): Promise<void> {
@@ -37,13 +40,14 @@ async function captureRawPhase(
     cursor_category_identity_id: null,
     cursor_feed_id: null,
   }
-  const label = `topic-alias-raw-phase-${phase}`
+  const label = `topic-alias-raw-${phase}`
   registerScenarioContract(label, {
     expectations: [
       { kind: 'usesIndexes', indexes: [indexName] },
       {
         kind: 'maxProcessedRows',
-        relation: phase === 2 ? 'rss_feed_categories' : 'rss_feed_item_categories',
+        relation:
+          phase === 'rss_feed_text_categories' ? 'rss_feed_categories' : 'rss_feed_item_categories',
         max: 150,
       },
     ],

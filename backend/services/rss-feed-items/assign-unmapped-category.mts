@@ -48,7 +48,7 @@ export async function assignCategoryInTransaction(
      SET alias = EXCLUDED.alias,
        unlink_requested_at = EXCLUDED.unlink_requested_at,
        generation = topic_alias_category_mapping_reconciliations.generation + 1,
-       phase = 0, sweep_upper_bound_item_id = NULL, sweep_upper_bound_feed_id = NULL,
+       phase = 'rss_item_categories', sweep_upper_bound_item_id = NULL, sweep_upper_bound_feed_id = NULL,
        cursor_item_id = NULL, cursor_category_identity_id = NULL, cursor_feed_id = NULL`,
     [alias.id, alias.alias],
   )

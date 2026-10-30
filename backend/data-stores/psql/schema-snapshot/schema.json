@@ -1267,6 +1267,14 @@
     "spending_frequencies": {
       "values": ["monthly", "annually"]
     },
+    "topic_alias_category_reconciliation_phases": {
+      "values": [
+        "rss_item_categories",
+        "rss_item_text_categories",
+        "rss_feed_text_categories",
+        "completed"
+      ]
+    },
     "topic_claim_verification_methods": {
       "values": ["dns_txt", "well_known_file", "manual_admin"]
     },
@@ -1575,7 +1583,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_latest_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;\n  change_filter TEXT := CASE WHEN TG_NARGS = 7 THEN format(' AND %I = %L', TG_ARGV[5], TG_ARGV[6]) ELSE '' END;\nBEGIN\n  -- Serialize on the target before re-reading the latest committed log entry.\n  EXECUTE format('SELECT %I FROM %I.%I WHERE %I = $1 FOR UPDATE',\n    TG_ARGV[1], TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1]) USING target_id;\n  EXECUTE format(\n    'UPDATE %I.%I target SET %I = latest.value FROM\n     (SELECT %I AS value FROM %I.%I WHERE %I = $1%s ORDER BY id DESC LIMIT 1) latest\n     WHERE target.%I = $1 AND target.%I IS DISTINCT FROM latest.value',\n    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[3], TG_ARGV[4], TG_TABLE_SCHEMA,\n    TG_TABLE_NAME, TG_ARGV[2], change_filter, TG_ARGV[1], TG_ARGV[3]) USING target_id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_mark_topic_alias_category_mapping_dirty": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\n  dirty_unlink_requested_at TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n    dirty_unlink_requested_at := NEW.unlink_requested_at;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n      AND NEW.unlink_requested_at IS NOT DISTINCT FROM OLD.unlink_requested_at THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n    dirty_unlink_requested_at := NEW.unlink_requested_at;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL AND OLD.unlink_requested_at IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n    dirty_unlink_requested_at := NULL;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations\n    (topic_alias_id, alias, unlink_requested_at)\n  VALUES (dirty_alias_id, dirty_alias, dirty_unlink_requested_at)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      unlink_requested_at = EXCLUDED.unlink_requested_at,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1,\n      phase = 0,\n      sweep_upper_bound_item_id = NULL,\n      sweep_upper_bound_feed_id = NULL,\n      cursor_item_id = NULL,\n      cursor_category_identity_id = NULL,\n      cursor_feed_id = NULL;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\n  dirty_unlink_requested_at TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n    dirty_unlink_requested_at := NEW.unlink_requested_at;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n      AND NEW.unlink_requested_at IS NOT DISTINCT FROM OLD.unlink_requested_at THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n    dirty_unlink_requested_at := NEW.unlink_requested_at;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL AND OLD.unlink_requested_at IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n    dirty_unlink_requested_at := NULL;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations\n    (topic_alias_id, alias, unlink_requested_at)\n  VALUES (dirty_alias_id, dirty_alias, dirty_unlink_requested_at)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      unlink_requested_at = EXCLUDED.unlink_requested_at,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1,\n      phase = 'rss_item_categories',\n      sweep_upper_bound_item_id = NULL,\n      sweep_upper_bound_feed_id = NULL,\n      cursor_item_id = NULL,\n      cursor_category_identity_id = NULL,\n      cursor_feed_id = NULL;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- The BEFORE trigger retains the authority lock and rejects stale generations.\n  -- Accepted transitions advance current state in that lock order, never UUID order.\n  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id\n    WHERE id = NEW.media_delivery_registry_record_id;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -125309,8 +125317,7 @@
     },
     "topic_alias_category_mapping_reconciliations": {
       "checkConstraints": {
-        "topic_alias_category_mapping_reconciliations_generation_check": "CHECK ((generation > 0))",
-        "topic_alias_category_mapping_reconciliations_phase_check": "CHECK (((phase >= 0) AND (phase <= 3)))"
+        "topic_alias_category_mapping_reconciliations_generation_check": "CHECK ((generation > 0))"
       },
       "columns": {
         "alias": {
@@ -125382,13 +125389,13 @@
         "phase": {
           "collation": null,
           "comment": "Raw category stream for this alias generation: authored item, text item, text feed, or complete.",
-          "defaultExpression": "0",
+          "defaultExpression": "'rss_item_categories'::topic_alias_category_reconciliation_phases",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 5,
-          "type": "smallint"
+          "type": "topic_alias_category_reconciliation_phases"
         },
         "sweep_upper_bound_feed_id": {
           "collation": null,

@@ -3,7 +3,18 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 
-export type AliasCategoryPhase = 0 | 1 | 2 | 3
+export type AliasCategoryPhase =
+  | 'rss_item_categories'
+  | 'rss_item_text_categories'
+  | 'rss_feed_text_categories'
+  | 'completed'
+
+const NEXT_PHASE: Record<AliasCategoryPhase, AliasCategoryPhase> = {
+  rss_item_categories: 'rss_item_text_categories',
+  rss_item_text_categories: 'rss_feed_text_categories',
+  rss_feed_text_categories: 'completed',
+  completed: 'completed',
+}
 
 export type AliasCategoryCursor = {
   phase: AliasCategoryPhase
@@ -36,14 +47,15 @@ export async function readAliasCategoryRawPage(
 ): Promise<AliasCategoryRawPage> {
   if (!Number.isSafeInteger(pageSize) || pageSize < 1)
     throw new RangeError('Invalid category page size')
-  if (cursor.phase === 3) return { rows: [], cursor, hasMore: false }
+  if (cursor.phase === 'completed') return { rows: [], cursor, hasMore: false }
 
   const upperItemId =
     cursor.sweep_upper_bound_item_id ?? (await readUpperId(query, 'rss_feed_items'))
   const upperFeedId = cursor.sweep_upper_bound_feed_id ?? (await readUpperId(query, 'rss_feeds'))
   let rows: AliasCategoryRawRow[]
-  const textIdentityId = cursor.phase === 0 ? null : await readCategoryIdentityId(query, alias)
-  if (cursor.phase === 0) {
+  const textIdentityId =
+    cursor.phase === 'rss_item_categories' ? null : await readCategoryIdentityId(query, alias)
+  if (cursor.phase === 'rss_item_categories') {
     const result = await query<AliasCategoryRawRow>(
       `/* readAliasCategoryRawPage authoredItems */
        SELECT rss_feed_item_id, category_identity_id
@@ -63,7 +75,7 @@ export async function readAliasCategoryRawPage(
       ],
     )
     rows = result.rows
-  } else if (cursor.phase === 1) {
+  } else if (cursor.phase === 'rss_item_text_categories') {
     const result = await query<AliasCategoryRawRow>(
       `/* readAliasCategoryRawPage textItems */
        SELECT category.rss_feed_item_id, category.category_identity_id
@@ -93,7 +105,7 @@ export async function readAliasCategoryRawPage(
   const selected = rows.slice(0, pageSize)
   const moreInPhase = rows.length > pageSize
   const last = selected.at(-1)
-  const nextPhase = moreInPhase ? cursor.phase : ((cursor.phase + 1) as AliasCategoryPhase)
+  const nextPhase = moreInPhase ? cursor.phase : NEXT_PHASE[cursor.phase]
   return {
     rows: selected,
     cursor: {
@@ -102,10 +114,12 @@ export async function readAliasCategoryRawPage(
       sweep_upper_bound_feed_id: upperFeedId,
       cursor_item_id: moreInPhase ? (last?.rss_feed_item_id ?? null) : null,
       cursor_category_identity_id:
-        moreInPhase && cursor.phase === 0 ? (last?.category_identity_id ?? null) : null,
+        moreInPhase && cursor.phase === 'rss_item_categories'
+          ? (last?.category_identity_id ?? null)
+          : null,
       cursor_feed_id: moreInPhase ? (last?.rss_feed_id ?? null) : null,
     },
-    hasMore: nextPhase !== 3,
+    hasMore: nextPhase !== 'completed',
   }
 }
 

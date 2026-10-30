@@ -87,7 +87,7 @@ async function reconcileTopicAliasCategoryMappingDirtyRow(
     candidate.topic_alias_id,
     candidate.alias,
     candidate,
-    candidate.phase === 2
+    candidate.phase === 'rss_feed_text_categories'
       ? currentAlias?.topic_id
         ? getRssFeedsWorkLimit('category_backfill_batch_size')
         : getRssFeedItemsWorkLimit('category_clear_batch_size')
@@ -111,7 +111,7 @@ async function applyAliasCategoryRawPage(
   page: AliasCategoryRawPage,
 ): Promise<number> {
   if (page.rows.length === 0) return 0
-  if (candidate.phase === 2) {
+  if (candidate.phase === 'rss_feed_text_categories') {
     const feeds = page.rows.flatMap(row =>
       row.rss_feed_id
         ? [{ rss_feed_id: row.rss_feed_id, category_identity_id: row.category_identity_id }]
@@ -144,7 +144,7 @@ async function applyAliasCategoryRawPage(
       rows: items,
       hasMore: page.hasMore,
       match: {
-        kind: candidate.phase === 0 ? 'alias_id' : 'alias_text',
+        kind: candidate.phase === 'rss_item_categories' ? 'alias_id' : 'alias_text',
         aliasId: candidate.topic_alias_id,
         alias: candidate.alias,
       },
@@ -154,7 +154,7 @@ async function applyAliasCategoryRawPage(
   const result = await clearUnlinkedTopicAliasItemPage(candidate.topic_alias_id, candidate.alias, {
     rows: items,
     hasMore: page.hasMore,
-    match: candidate.phase === 0 ? 'alias_id' : 'alias_text',
+    match: candidate.phase === 'rss_item_categories' ? 'alias_id' : 'alias_text',
   })
   return result.updated
 }

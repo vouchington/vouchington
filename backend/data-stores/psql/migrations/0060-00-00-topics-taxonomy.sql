@@ -867,12 +867,16 @@ COMMENT ON COLUMN topic_aliases.alias IS 'Lowercase canonical alias or hashtag l
 -- Durable, coalesced work for category mappings changed by a linked alias. This intentionally has
 -- no foreign key: a linked alias DELETE must leave a tombstone for asynchronous cleanup.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TYPE topic_alias_category_reconciliation_phases AS ENUM (
+  'rss_item_categories', 'rss_item_text_categories', 'rss_feed_text_categories', 'completed'
+);
+
 CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
   topic_alias_id UUID PRIMARY KEY,
   alias TEXT NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   unlink_requested_at TIMESTAMPTZ,
-  phase SMALLINT NOT NULL DEFAULT 0 CHECK (phase BETWEEN 0 AND 3),
+  phase topic_alias_category_reconciliation_phases NOT NULL DEFAULT 'rss_item_categories',
   sweep_upper_bound_item_id UUID,
   sweep_upper_bound_feed_id UUID,
   cursor_item_id UUID,
@@ -931,7 +935,7 @@ BEGIN
   SET alias = EXCLUDED.alias,
       unlink_requested_at = EXCLUDED.unlink_requested_at,
       generation = topic_alias_category_mapping_reconciliations.generation + 1,
-      phase = 0,
+      phase = 'rss_item_categories',
       sweep_upper_bound_item_id = NULL,
       sweep_upper_bound_feed_id = NULL,
       cursor_item_id = NULL,

@@ -55,11 +55,11 @@ export async function checkpointTopicAliasCategoryMappingDirtyRow(
   const { rowCount } = await write(
     `/* checkpointTopicAliasCategoryMappingDirtyRow */
      UPDATE topic_alias_category_mapping_reconciliations
-     SET phase = $3::smallint, sweep_upper_bound_item_id = $4::uuid,
+     SET phase = $3::topic_alias_category_reconciliation_phases, sweep_upper_bound_item_id = $4::uuid,
        sweep_upper_bound_feed_id = $5::uuid, cursor_item_id = $6::uuid,
        cursor_category_identity_id = $7::uuid, cursor_feed_id = $8::uuid
      WHERE topic_alias_id = $1::uuid AND generation = $2::bigint
-       AND phase = $9::smallint
+       AND phase = $9::topic_alias_category_reconciliation_phases
        AND cursor_item_id IS NOT DISTINCT FROM $10::uuid
        AND cursor_category_identity_id IS NOT DISTINCT FROM $11::uuid
        AND cursor_feed_id IS NOT DISTINCT FROM $12::uuid`,
@@ -102,7 +102,7 @@ export async function acknowledgeTopicAliasCategoryMappingDirtyRow(
       DELETE FROM topic_alias_category_mapping_reconciliations
       WHERE topic_alias_id = $1
         AND generation = $2
-        AND phase = $3::smallint
+        AND phase = $3::topic_alias_category_reconciliation_phases
         AND cursor_item_id IS NOT DISTINCT FROM $4::uuid
         AND cursor_category_identity_id IS NOT DISTINCT FROM $5::uuid
         AND cursor_feed_id IS NOT DISTINCT FROM $6::uuid`,

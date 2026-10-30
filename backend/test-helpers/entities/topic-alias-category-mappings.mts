@@ -162,7 +162,7 @@ export async function readAliasBackfillRawPageForTest(aliasId: string, alias: st
     aliasId,
     alias,
     {
-      phase: 1,
+      phase: 'rss_item_text_categories',
       sweep_upper_bound_item_id: null,
       sweep_upper_bound_feed_id: null,
       cursor_item_id: null,
@@ -183,7 +183,7 @@ export async function readAliasBackfillRawPageForTest(aliasId: string, alias: st
           ]
         : [],
     ),
-    hasMore: page.cursor.phase === 1,
+    hasMore: page.cursor.phase === 'rss_item_text_categories',
     match: { kind: 'alias_text' as const, aliasId, alias },
   }
 }
