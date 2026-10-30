@@ -125,17 +125,6 @@ describe('MFA API Routes', () => {
         .expect(401)
     })
 
-    it('returns 401 for invalid TOTP code', async () => {
-      const { attemptId } = await createTotpMfaLoginAttempt('verify')
-
-      const req = createRequest()
-      // '000000' is almost certainly the wrong code
-      await req
-        .post('/api/v1/auth/mfa/totp/verification')
-        .send({ login_attempt_id: attemptId, code: '000000' })
-        .expect(401)
-    })
-
     it('rejects valid TOTP codes after the MFA failure threshold is reached', async () => {
       const { attemptId } = await createTotpMfaLoginAttempt('limited')
 

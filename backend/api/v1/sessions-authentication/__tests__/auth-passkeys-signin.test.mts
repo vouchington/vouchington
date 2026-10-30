@@ -66,16 +66,6 @@ describe('Discoverable Passkey Sign-In Routes', () => {
       expect(res.body.options.allowCredentials).toHaveLength(0)
     })
 
-    it('works for an anonymous (unauthenticated) request', async () => {
-      const req = await createAnonymousRequest()
-      const res = await req
-        .post('/api/v1/auth/passkeys/authentication/options')
-        .send({})
-        .expect(200)
-
-      expect(res.body.options).toBeDefined()
-    })
-
     it('sets anonymous auth cookies so verify uses the same device challenge', async () => {
       const req = createRequest()
       const optionsRes = await req

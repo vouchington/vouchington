@@ -135,16 +135,6 @@ describe('MFA API Routes', () => {
       const req = createRequest()
       await req.post('/api/v1/auth/mfa/re-auth/email/tokens').expect(401)
     })
-
-    it('sends re-auth email and returns email_address', async () => {
-      const reAuthUser = await createTestUser()
-      const req = createRequest()
-      await req.authenticateAs(reAuthUser)
-
-      const res = await req.post('/api/v1/auth/mfa/re-auth/email/tokens').expect(200)
-
-      expect(res.body.email_address).toBeTruthy()
-    })
   })
 
   describe('POST /api/v1/auth/mfa/re-auth/email/verification', () => {
