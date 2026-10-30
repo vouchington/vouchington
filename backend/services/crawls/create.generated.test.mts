@@ -29,6 +29,11 @@ describe('create.generated', () => {
     expect(crawl.markdown).toBe('')
     expect(crawl.request_headers).toEqual({})
     expect(crawl.response_headers).toEqual({})
+    expect(crawl.last_modified_at).toBeNull()
+    expect(crawl.etag).toBeNull()
+    expect(crawl.network_error).toBeNull()
+    expect(crawl.completed_at).toBeNull()
+    expect(crawl.embeddings_generated_at).toBeNull()
   })
 
   it('createCrawl creates a crawl with optional fields', async () => {
@@ -61,20 +66,5 @@ describe('create.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(user.id, `https://example.com/create-invalid-crawler-${random}`)
     await expect(createCrawl(url!.id, 'not-a-uuid')).rejects.toThrow('Invalid crawler ID')
-  })
-
-  it('createCrawl sets null for optional fields when not provided', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const url = await addUrl(user.id, `https://example.com/create-null-fields-${random}`)
-    const crawler = await createCrawler(user, {
-      hostname_id: url!.hostname.id,
-      crawler_type: 'fetch',
-    })
-    const crawl = await createCrawl(url!.id, crawler.id)
-    expect(crawl.last_modified_at).toBeNull()
-    expect(crawl.etag).toBeNull()
-    expect(crawl.network_error).toBeNull()
-    expect(crawl.completed_at).toBeNull()
-    expect(crawl.embeddings_generated_at).toBeNull()
   })
 })
