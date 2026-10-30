@@ -76,9 +76,11 @@ describe('Session Routes', () => {
       expect(response.body.session.did).toBe(did)
       expect(response.body.session.dt).toBe(deviceToken)
       expect(response.body.session.st).toBeDefined()
+      expect(response.body.session.st).not.toBe(sessionToken)
       expect(response.body.session.sid).toBeDefined()
       // New session should have different sid
       expect(response.body.session.sid).not.toBe(sid)
+      expect(response.body.session.uid).toBeNull()
     })
 
     it('should create new device and session when no tokens provided', async () => {
@@ -140,29 +142,6 @@ describe('Session Routes', () => {
       expect(response.body.session.dt).not.toBe('invalid-token')
       // The new dt should be a valid JWT (not the garbage we sent)
       expect(response.body.session.dt).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/)
-    })
-
-    it('should preserve the original device token when valid (not refresh it)', async () => {
-      const request = createRequest()
-      const response = await request
-        .delete('/api/v1/session')
-        .send({ dt: deviceToken, st: sessionToken })
-        .expect(200)
-
-      // The device token should be preserved, not replaced with a newly generated one
-      expect(response.body.session.dt).toBe(deviceToken)
-      // The session token should be a new one
-      expect(response.body.session.st).not.toBe(sessionToken)
-    })
-
-    it('should always return uid as null', async () => {
-      const request = createRequest()
-      const response = await request
-        .delete('/api/v1/session')
-        .send({ dt: deviceToken, st: sessionToken })
-        .expect(200)
-
-      expect(response.body.session.uid).toBeNull()
     })
 
     it('should return 422 for malformed JSON body', async () => {
