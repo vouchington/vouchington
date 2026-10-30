@@ -43,6 +43,7 @@ describe('social-hostnames', () => {
       expect(response.body.hostnames).toBeDefined()
       expect(response.body.hostname_elections).toBeDefined()
       expect(response.body.topics).toBeDefined()
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('includes friend-trusted hostname in results', async () => {
@@ -68,13 +69,6 @@ describe('social-hostnames', () => {
 
       expect(response.body.hostnames[linkedHostname.id]?.topic_id).toBe(topic.id)
       expect(response.body.topics[topic.id]?.id).toBe(topic.id)
-    })
-
-    it('sets private, no-store cache-control header', async () => {
-      const request = createRequest()
-      await request.authenticateAs(currentUser)
-      const response = await request.get('/api/v1/hostnames/social').expect(200)
-      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('returns empty results for user with no friends', async () => {
