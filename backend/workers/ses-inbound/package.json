@@ -24,10 +24,9 @@
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "@vouchington/queue-errors": "^0.2.0",
-    "mailparser": "^3.9.41"
+    "mailparser": "^3.12.4"
   },
   "devDependencies": {
-    "@types/mailparser": "^3.9.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }
