@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import assert from 'node:assert/strict'
 import { selectCandidates } from '@services/copyright-notices/retention-erasure'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -29,19 +29,28 @@ export async function runCopyrightRetentionCandidateScenario(): Promise<void> {
       copyright_notice_targets: 12_500,
       copyright_notice_delivery_work_items: 1_100,
       copyright_notice_email_intakes: 1_000,
+      copyright_notice_email_intake_receipts: 1_000,
     },
   })
   const now = new Date()
+  const cutoff = new Date(now.getTime() - 100 * 86_400_000)
   await runAndCapture(
     'copyright-evidence-retention-candidates',
     async () => {
       const candidates = await selectCandidates({
         now,
-        cutoff: new Date(now.getTime() - 100 * 86_400_000),
+        cutoff,
         limit: 25,
       })
       assert.equal(candidates.length, 25, 'The aged notice fixture must fill one candidate page')
-      assert.ok(candidates.every(id => id.startsWith(oldIdPrefix)))
+      const { rows } = await read<{ count: string }>(
+        `/* assertExplainCopyrightRetentionCandidatesAged */
+         SELECT COUNT(*)::text AS count FROM copyright_notices
+         WHERE id = ANY($1::uuid[]) AND jurisdiction = 'us_dmca'
+           AND uuid_extract_timestamp(id) <= $2::timestamptz`,
+        [candidates, cutoff],
+      )
+      assert.equal(Number(rows[0]?.count), candidates.length)
     },
     undefined,
     'selectCopyrightRetentionErasureCandidates',

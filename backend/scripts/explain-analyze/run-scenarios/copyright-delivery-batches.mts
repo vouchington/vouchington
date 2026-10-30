@@ -48,6 +48,7 @@ export async function runCopyrightDeliveryBatchScenarios(): Promise<void> {
     seededRows: {
       copyright_notice_delivery_work_items: 1_100,
       copyright_notice_email_intakes: 1_000,
+      copyright_notice_email_intake_receipts: 1_000,
       copyright_notice_submissions: 1,
     },
   })

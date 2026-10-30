@@ -20,6 +20,13 @@ export async function seedReviewTargetBreaches(noticeId: string): Promise<string
     [submissionId, noticeId, encryptSecret('{}', copyrightSubmissionPurpose(submissionId))],
   )
   await write(
+    `/* seedExplainReviewTargetBreaches:assessmentIdentity */
+    INSERT INTO copyright_notice_submission_assessment_identities
+      (id, copyright_notice_id, copyright_notice_submission_id)
+    VALUES ($1::uuid, $2::uuid, $3::uuid) ON CONFLICT (id) DO NOTHING`,
+    [assessmentId, noticeId, submissionId],
+  )
+  await write(
     `/* seedExplainReviewTargetBreaches:assessment */
     INSERT INTO copyright_notice_submission_assessments
       (id, copyright_notice_submission_id, assessed_at, assessed_by_id,
@@ -31,7 +38,7 @@ export async function seedReviewTargetBreaches(noticeId: string): Promise<string
   await write(
     `/* seedExplainReviewTargetBreaches:deadline */
     INSERT INTO copyright_notice_deadlines
-      (id, copyright_notice_id, qualifying_counter_notice_assessment_id,
+      (id, copyright_notice_id, qualifying_counter_notice_assessment_identity_id,
        earliest_restoration_at, escalation_at, restoration_deadline_at)
     VALUES ($1::uuid, $2::uuid, $3::uuid,
       NOW() - INTERVAL '3 hours', NOW() - INTERVAL '2 hours',
@@ -47,6 +54,15 @@ export async function seedReviewTargetBreaches(noticeId: string): Promise<string
      INSERT INTO copyright_notice_storage_objects (id, storage_key)
      VALUES ($1::uuid, 'explain-review-target-breach-email') ON CONFLICT (id) DO NOTHING`,
     [emailStorageObjectId],
+  )
+  await write(
+    `/* seedExplainReviewTargetBreaches:emailReceipt */
+    INSERT INTO copyright_notice_email_intake_receipts
+      (id, amazon_ses_message_id, raw_sha256, raw_storage_key_sha256, raw_byte_size)
+    VALUES ($1::uuid, 'explain-review-target-breach', decode(repeat('11', 32), 'hex'),
+      sha256(convert_to('explain-review-target-breach-email', 'UTF8')), 1)
+    ON CONFLICT (id) DO NOTHING`,
+    [emailId],
   )
   await write(
     `/* seedExplainReviewTargetBreaches:email */

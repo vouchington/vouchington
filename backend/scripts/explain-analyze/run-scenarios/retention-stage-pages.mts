@@ -67,7 +67,7 @@ export async function runRetentionStagePageScenarios(): Promise<void> {
       assert.equal(Number(rows[0]?.live_count), 13)
     },
     undefined,
-    'listRetainedIdentityCleanupCandidates',
+    'listRetainedIdentityCleanupCandidates:scoped',
     {
       afterCapture: async () => {
         await restoreOrphans()

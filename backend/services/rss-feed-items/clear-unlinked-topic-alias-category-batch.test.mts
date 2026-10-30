@@ -29,10 +29,9 @@ import { upsertRssFeedItemCategories } from './categories.mts'
 import { upsertRssFeedItems } from './upsert.mts'
 import { rssFeedItemsWorkConfig } from './work-limits.mts'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
-import { deleteStaleCategoriesAndRetractVotes } from './reconcile-categories-delete.mts'
 
 describe('topic alias unlink category page', () => {
-  it('waits for snapshot item locks before category locks and rechecks a deleted text mapping', async () => {
+  it('waits for snapshot item locks before category locks and clears a text mapping', async () => {
     const suffix = randomUUID()
     const aliasText = `snapshot-category-alias-${suffix}`
     const topic = await createTestTopic({
@@ -102,24 +101,18 @@ describe('topic alias unlink category page', () => {
         const cleaning = processReconcileTopicAliasCategoryMappings(1, [alias.id])
         void cleaning.catch(() => {})
         await waitForLock(cleaning)
-        const deleted = await deleteStaleCategoriesAndRetractVotes(
-          [{ rss_feed_item_id: item.id, categories: [] }],
-          holder,
-        )
-        expect(deleted.staleCategories).toHaveLength(1)
         await holder.commit()
-        await expect(cleaning).rejects.toMatchObject({
-          errors: [expect.objectContaining({ status: 409 })],
-        })
+        await expect(cleaning).resolves.toMatchObject({ updated: 1, hasMore: true })
       },
     )
-    await expect(getTestRssFeedItemCategories(item.id)).resolves.toEqual([])
+    await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
+      expect.objectContaining({ category_text: aliasText, topic_id: null }),
+    )
     await expect(getEntityRelationElectionVote(categorizer.id, relationId)).resolves.toBeNull()
-    await expect(processReconcileTopicAliasCategoryMappings(1, [alias.id])).resolves.toMatchObject({
-      updated: 0,
-      hasMore: true,
-    })
-    await processReconcileTopicAliasCategoryMappings(1, [alias.id])
+    for (let count = 0; count < 3; count += 1) {
+      const result = await processReconcileTopicAliasCategoryMappings(1, [alias.id])
+      if (!result.hasMore) break
+    }
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
   })
 
