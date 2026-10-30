@@ -56,6 +56,9 @@ describe('GET /api/v1/lists/:id/items', () => {
     expect(Array.isArray(response.body.results)).toBe(true)
     expect(response.body).toHaveProperty('page_info')
     expect(response.body).toHaveProperty('list_items')
+    const items = Object.values(response.body.list_items) as Array<{ entity_id: string }>
+    const found = items.find(i => i.entity_id === postId)
+    expect(found).toBeDefined()
   })
 
   it('returns 404 for private list without auth', async () => {
@@ -68,14 +71,6 @@ describe('GET /api/v1/lists/:id/items', () => {
     await request.authenticateAs(user)
     const response = await request.get(`/api/v1/lists/${privateListId}/items`).expect(200)
     expect(Array.isArray(response.body.results)).toBe(true)
-  })
-
-  it('returns added post in item list', async () => {
-    const request = createRequest()
-    const response = await request.get(`/api/v1/lists/${publicListId}/items`).expect(200)
-    const items = Object.values(response.body.list_items) as Array<{ entity_id: string }>
-    const found = items.find(i => i.entity_id === postId)
-    expect(found).toBeDefined()
   })
 
   it('filters by media_type query param', async () => {

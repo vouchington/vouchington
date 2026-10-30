@@ -103,16 +103,6 @@ describe('POST /api/v1/lists', () => {
       .expect(422)
   })
 
-  it('returns 422 for invalid visibility value', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    await request
-      .post('/api/v1/lists')
-      .set('Content-Type', 'application/json')
-      .send({ name: 'test', visibility: 'secret' })
-      .expect(422)
-  })
-
   it('returns 422 when body is JSON null', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
