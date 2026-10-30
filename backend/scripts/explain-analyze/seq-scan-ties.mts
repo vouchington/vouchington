@@ -10,7 +10,7 @@ import { isLargeTable, parentRelationName } from './plan-warnings.mts'
  * another, a 14% drift; locally the bitmap alternative priced 11262 against a 11304 sequential scan.
  * 25% covers that drift. A clearly better index costs far more than a quarter of the scan.
  */
-export const SEQ_SCAN_TIE_RATIO = 0.25
+const SEQ_SCAN_TIE_RATIO = 0.25
 
 /** `no_seq_scan_total_cost` is the plan-only cost with `enable_seqscan = off`, set at capture. */
 export type ProbedExplainResult = ExplainResult & {
@@ -22,7 +22,7 @@ export type ProbedExplainResult = ExplainResult & {
 /** The forced plan's total cost and the cost of its sequential scan nodes on one relation. */
 export type ForcedSeqScan = { total_cost: number; scan_cost: number }
 
-export function planTotalCost(plan: unknown): number | undefined {
+function planTotalCost(plan: unknown): number | undefined {
   if (plan == null || typeof plan !== 'object' || Array.isArray(plan)) return undefined
   const root = (plan as Record<string, unknown>)['Plan']
   if (root == null || typeof root !== 'object') return undefined
