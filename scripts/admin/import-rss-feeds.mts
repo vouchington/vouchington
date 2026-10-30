@@ -64,14 +64,14 @@ if (args.help || !args.source) console.log(helpText())
 else {
   const seen = new Set<string>()
   const unique: string[] = []
-  let alreadyExisted = 0
+  let duplicatesSkipped = 0
   const lists = SOURCES[args.source]
   const pages = await Promise.all(lists.map(list => readList(list, args.limit)))
   for (const [index, urls] of pages.entries()) {
     const list = lists[index]!
     for (const url of urls) {
       if (args.dryRun) console.log(`${list.name} ${url}`)
-      if (seen.has(url)) alreadyExisted += 1
+      if (seen.has(url)) duplicatesSkipped += 1
       else unique.push((seen.add(url), url))
     }
   }
@@ -89,7 +89,7 @@ else {
       userAgent,
     )
     console.log(
-      `submitted ${counts.submitted}\nalready existed ${alreadyExisted}\nfailed ${counts.failed}`,
+      `submitted ${counts.submitted}\nduplicates skipped ${duplicatesSkipped}\nfailed ${counts.failed}`,
     )
   }
 }
