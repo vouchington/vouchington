@@ -70,14 +70,6 @@ describe('CreateLandingPageAside', () => {
     const result = await CreateLandingPageAside()
     render(result as ReactElement)
     expect(screen.getByText('Create your landing page')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Build it' })).toBeDefined()
-  })
-
-  it('links to /my/landing-pages', async () => {
-    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
-    mockHasLandingPage.mockResolvedValue(false)
-    const result = await CreateLandingPageAside()
-    render(result as ReactElement)
     expect(screen.getByRole('link', { name: 'Build it' }).getAttribute('href')).toBe(
       '/my/landing-pages',
     )

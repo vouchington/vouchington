@@ -74,16 +74,6 @@ describe('UpgradeMembershipAside', () => {
     const result = await UpgradeMembershipAside()
     render(result as ReactElement)
     expect(screen.getByText('Upgrade to Plus')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'View plans' })).toBeDefined()
-  })
-
-  it('links to /plans', async () => {
-    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
-    mockGetMembership.mockResolvedValue({
-      membership: null,
-    } as Awaited<ReturnType<typeof getMembership>>)
-    const result = await UpgradeMembershipAside()
-    render(result as ReactElement)
     expect(screen.getByRole('link', { name: 'View plans' }).getAttribute('href')).toBe('/plans')
   })
 
