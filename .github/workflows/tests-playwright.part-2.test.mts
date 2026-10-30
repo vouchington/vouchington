@@ -124,3 +124,62 @@ describe('tests-playwright.yml shard invocation', () => {
     ])
   })
 })
+
+function commandsInProcessGroup(pid: number): string[] {
+  const listed = spawnSync('ps', ['-ax', '-o', 'pgid=,command='], { encoding: 'utf8' })
+  expect(listed.status).toBe(0)
+  const commands: string[] = []
+  for (const line of listed.stdout.split('\n')) {
+    const match = /^(\d+)\s+(.*)$/.exec(line.trim())
+    if (match?.[1] === String(pid) && match[2] !== undefined) commands.push(match[2])
+  }
+  return commands
+}
+
+// The step backgrounds `sleep 30` to sample memory. macOS has no /proc/meminfo,
+// so the script under test is pointed at a fixture file. The step runs as its
+// own process-group leader; anything still in that group after it exits is an
+// orphan the runner would have to terminate.
+function runSamplerStep(pnpmExitCode: number): { status: number | null; orphans: string[] } {
+  const cwd = mkdtempSync(join(tmpdir(), 'playwright-sampler-'))
+  const meminfo = join(cwd, 'meminfo')
+  writeFileSync(meminfo, 'MemAvailable: 1048576 kB\nSwapFree: 1048576 kB\n')
+  const script = playwrightRunScript().replaceAll('/proc/meminfo', meminfo)
+  const pnpmStubPath = join(cwd, 'pnpm')
+  writeFileSync(pnpmStubPath, `#!/usr/bin/env bash\nsleep 0.4\nexit ${pnpmExitCode}\n`)
+  chmodSync(pnpmStubPath, 0o755)
+  const githubOutputPath = join(cwd, 'github-output')
+  writeFileSync(githubOutputPath, '')
+  const result = spawnSync('bash', ['-c', script], {
+    cwd,
+    detached: true,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CI_SHARD: '1/1',
+      GITHUB_OUTPUT: githubOutputPath,
+      GITHUB_WORKSPACE: process.cwd(),
+      PATH: `${cwd}:${process.env['PATH'] ?? ''}`,
+    },
+  })
+  const orphans = result.pid === undefined ? [] : commandsInProcessGroup(result.pid)
+  if (result.pid !== undefined) {
+    spawnSync('kill', ['-KILL', `-${result.pid}`])
+  }
+  rmSync(cwd, { force: true, recursive: true })
+  return { status: result.status, orphans }
+}
+
+describe('tests-playwright.yml memory sampler', () => {
+  it('reaps the sampler sleep before the step exits', () => {
+    const { status, orphans } = runSamplerStep(0)
+    expect(status).toBe(0)
+    expect(orphans).toEqual([])
+  })
+
+  it('keeps a Playwright failure when the sampler is running', () => {
+    const { status, orphans } = runSamplerStep(7)
+    expect(status).toBe(7)
+    expect(orphans).toEqual([])
+  })
+})
