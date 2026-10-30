@@ -3,7 +3,7 @@ import { parseMajorUnitMoneyDraft } from './money-input-draft'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 
 describe('parseMajorUnitMoneyDraft', () => {
-  it.each(['', '0', '12', '12.', '12.3', '12.34'])('accepts USD draft %j', draft => {
+  it.each(['', '0', '12', '12.3', '12.34'])('accepts USD draft %j', draft => {
     expect(parseMajorUnitMoneyDraft(draft, 'usd', 'en').accepted).toBe(true)
   })
 

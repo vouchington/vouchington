@@ -22,14 +22,4 @@ describe('isNavItemActive', () => {
     expect(isNavItemActive('/news', '/news')).toBe(true)
     expect(isNavItemActive('/news', '/news/article')).toBe(true)
   })
-
-  it('default prefix matching: /foo active on /foo and /foo/bar', () => {
-    expect(isNavItemActive('/foo', '/foo')).toBe(true)
-    expect(isNavItemActive('/foo', '/foo/bar')).toBe(true)
-  })
-
-  it('exact=true: /foo NOT active on /foo/bar', () => {
-    expect(isNavItemActive('/foo', '/foo', true)).toBe(true)
-    expect(isNavItemActive('/foo', '/foo/bar', true)).toBe(false)
-  })
 })

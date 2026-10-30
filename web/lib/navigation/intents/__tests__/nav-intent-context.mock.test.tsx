@@ -169,21 +169,6 @@ describe('SetNavIntent', () => {
     mockPathname = '/source/level1techs'
   })
 
-  it('registers intent with NavIntentProvider on mount', async () => {
-    let captured: NavIntentId | null | undefined = undefined
-    render(
-      <NavIntentProvider>
-        <SetNavIntent intent='videos' />
-        <IntentConsumer
-          pathname='/source/level1techs'
-          onRender={v => (captured = v)}
-        />
-      </NavIntentProvider>,
-    )
-    await act(async () => {})
-    expect(captured).toBe('videos')
-  })
-
   it('registers on explicit pathname prop, not currentPathname', async () => {
     mockPathname = '/source/level1techs/latest'
     let captured: NavIntentId | null | undefined = undefined

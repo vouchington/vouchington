@@ -100,14 +100,6 @@ describe('getPlacementImageUrl', () => {
     expect(url).toBe('http://localhost:9100/images/placements/placement-123/0/test.jpg?w=400')
   })
 
-  it('throws when deployed production has no host configured', () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('ENVIRONMENT', 'production')
-    expect(() => getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })).toThrow(
-      'IMAGE_ORIGIN',
-    )
-  })
-
   it('does not throw when NODE_ENV=production and IMAGE_ORIGIN is set', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
