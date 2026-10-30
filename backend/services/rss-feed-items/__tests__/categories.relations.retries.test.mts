@@ -8,15 +8,7 @@ import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
 import {
-  applyTopicAliasUnlinkPage,
-  selectTopicAliasUnlinkNextPage,
-} from '@services/topics/unlink-topic-alias-page'
-import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
-import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
-import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { RSS_FEED_CATEGORIZER_USERNAME } from '@services/users/constants'
-import { getSystemUserByUsername } from '@services/users/system-users'
-import {
+  applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
   createTestTopic,
   getEntityRelation,
   getEntityRelationVersion,
@@ -25,7 +17,14 @@ import {
   insertTestRssFeedDirect,
   withFailingTransactionQueryOptionsForTest,
   beginTransaction,
+  readAliasBackfillRawPageForTest,
 } from '@voucha/test-helpers'
+import { selectTopicAliasUnlinkNextPage } from '@services/topics/unlink-topic-alias-page'
+import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
+import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
+import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { RSS_FEED_CATEGORIZER_USERNAME } from '@services/users/constants'
+import { getSystemUserByUsername } from '@services/users/system-users'
 
 describe('RSS feed item category relation retries', () => {
   let rssFeedItemId: string
@@ -187,11 +186,12 @@ describe('RSS feed item category relation retries', () => {
     await unlinkTopicAlias(aliasId!, { expectedTopicId: topicId, skipSideEffects: true })
     await finishTopicAliasUnlink(aliasId!)
     await linkTopicAlias(destination.id, aliasId!, { skipSideEffects: true })
+    const rawPage = await readAliasBackfillRawPageForTest(aliasId!, movedAlias)
 
     await expect(
       withFailingTransactionQueryOptionsForTest(
         'updateEntityRelationElectionVoteStatsFromPrimaryBatch',
-        options => backfillCategoriesForTopicAliases(destination.id, options),
+        options => backfillCategoriesForTopicAliases(destination.id, rawPage, options),
       ),
     ).rejects.toThrow(
       'Injected query failure for updateEntityRelationElectionVoteStatsFromPrimaryBatch',
@@ -202,9 +202,11 @@ describe('RSS feed item category relation retries', () => {
       ]),
     )
 
-    await expect(backfillCategoriesForTopicAliases(destination.id)).resolves.toMatchObject({
-      updated: 1,
-    })
+    await expect(backfillCategoriesForTopicAliases(destination.id, rawPage)).resolves.toMatchObject(
+      {
+        updated: 1,
+      },
+    )
     await expect(getTestRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: movedAlias, topic_id: destination.id }),

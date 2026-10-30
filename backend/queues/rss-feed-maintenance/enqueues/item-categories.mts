@@ -9,9 +9,10 @@ import {
   RSS_FEED_ITEM_CATEGORY_ORDERING,
 } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
+import type { TopicTextCategoryJob, TopicTextCategoryCursor } from '../types.mts'
 
 const enqueueBackfillCategoriesForTopicAliasesJob = createEnqueueFunction<
-  { topicId: string },
+  TopicTextCategoryJob,
   'processBackfillCategoriesForTopicAliases'
 >({
   queue: rssFeedMaintenance,
@@ -58,16 +59,17 @@ export const enqueueContinueRssFeedItemCategorySnapshotReconciliation = (
 
 export const enqueueBackfillCategoriesForTopicAliases = (
   topicId: string,
+  cursor: TopicTextCategoryCursor | null = null,
   priority?: number,
 ): EnqueueReturnType => {
   return enqueueBackfillCategoriesForTopicAliasesJob(
-    { topicId },
+    { topicId, cursor },
     { priority: priority ?? PRIORITY_DEFAULT },
   )
 }
 
 const enqueueBackfillRssFeedCategoriesForTopicAliasJob = createEnqueueFunction<
-  { topicId: string },
+  TopicTextCategoryJob,
   'processBackfillRssFeedCategoriesForTopicAlias'
 >({
   queue: rssFeedMaintenance,
@@ -77,10 +79,11 @@ const enqueueBackfillRssFeedCategoriesForTopicAliasJob = createEnqueueFunction<
 
 export const enqueueBackfillRssFeedCategoriesForTopicAlias = (
   topicId: string,
+  cursor: TopicTextCategoryCursor | null = null,
   priority?: number,
 ): EnqueueReturnType => {
   return enqueueBackfillRssFeedCategoriesForTopicAliasJob(
-    { topicId },
+    { topicId, cursor },
     { priority: priority ?? PRIORITY_DEFAULT },
   )
 }

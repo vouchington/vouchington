@@ -1,11 +1,13 @@
-import { read, write } from '@data-stores/psql'
-
+import { beginTransaction, read, write } from '@data-stores/psql'
+import { processReconcileTopicAliasCategoryMappings } from '../../services/rss-feeds/reconcile-topic-alias-category-mappings.mts'
+import { backfillTopicTextItemPage } from '../../services/rss-feeds/topic-text-category-backfill.mts'
+import { readAliasCategoryRawPage } from '../../services/rss-feeds/topic-alias-category-raw-page.mts'
+import { getRssFeedItemsWorkLimit } from '../../services/rss-feed-items/work-limits.mts'
 export type TopicAliasCategoryMappingDirtyRowForTest = {
   alias: string
   generation: string
   topic_alias_id: string
 }
-
 export async function createTestTopicAliasForCategoryMapping({
   alias,
   topicId = null,
@@ -22,7 +24,6 @@ export async function createTestTopicAliasForCategoryMapping({
   )
   return rows[0]!.id
 }
-
 export async function updateTestTopicAliasCategoryMappingOwner(
   topicAliasId: string,
   topicId: string | null,
@@ -35,7 +36,6 @@ export async function updateTestTopicAliasCategoryMappingOwner(
     [topicId, topicAliasId],
   )
 }
-
 export async function setTestTopicAliasUnlinkPending(
   topicAliasId: string,
   topicId: string,
@@ -50,7 +50,6 @@ export async function setTestTopicAliasUnlinkPending(
     [topicAliasId, topicId],
   )
 }
-
 export async function deleteTestTopicAliasForCategoryMapping(topicAliasId: string): Promise<void> {
   await write(
     `/* deleteTestTopicAliasForCategoryMapping */
@@ -59,7 +58,6 @@ export async function deleteTestTopicAliasForCategoryMapping(topicAliasId: strin
     [topicAliasId],
   )
 }
-
 export async function getTopicAliasCategoryMappingDirtyRowForTest(
   topicAliasId: string,
 ): Promise<TopicAliasCategoryMappingDirtyRowForTest | undefined> {
@@ -123,4 +121,79 @@ export async function countTopicAliasCategoryMappingDirtyRowsForTest(
     [topicAliasIds],
   )
   return Number(rows[0]?.count ?? 0)
+}
+
+/** Drives the current bounded producers to completion for an isolated test topic. */
+export async function backfillTopicCategoryMappingsForTest(
+  topicId: string,
+): Promise<{ updated: number; hasMore: false }> {
+  const { rows: aliases } = await read<{ id: string }>(
+    `/* backfillTopicCategoryMappingsForTest aliases */
+     SELECT id FROM topic_aliases WHERE topic_id = $1::uuid ORDER BY alias LIMIT 20`,
+    [topicId],
+  )
+  let updated = 0
+  for (const alias of aliases) {
+    let complete = false
+    for (let page = 0; page < 20; page += 1) {
+      const result = await processReconcileTopicAliasCategoryMappings(1, [alias.id])
+      updated += result.updated
+      if (!result.hasMore) {
+        complete = true
+        break
+      }
+    }
+    if (!complete) throw new Error('Test alias reconciliation exceeded 20 pages')
+  }
+  let cursor: Awaited<ReturnType<typeof backfillTopicTextItemPage>>['cursor'] = null
+  for (let page = 0; page < 20; page += 1) {
+    const result = await backfillTopicTextItemPage(topicId, cursor)
+    updated += result.updated
+    if (!result.hasMore) return { updated, hasMore: false }
+    cursor = result.cursor
+  }
+  throw new Error('Test topic text backfill exceeded 20 pages')
+}
+
+export async function readAliasBackfillRawPageForTest(aliasId: string, alias: string) {
+  await using transaction = await beginTransaction()
+  const page = await readAliasCategoryRawPage(
+    transaction,
+    aliasId,
+    alias,
+    {
+      phase: 'rss_item_text_categories',
+      sweep_upper_bound_item_id: null,
+      sweep_upper_bound_feed_id: null,
+      cursor_item_id: null,
+      cursor_category_identity_id: null,
+      cursor_feed_id: null,
+    },
+    getRssFeedItemsWorkLimit('category_backfill_batch_size'),
+  )
+  await transaction.commit()
+  return {
+    rows: page.rows.flatMap(row =>
+      row.rss_feed_item_id
+        ? [
+            {
+              rss_feed_item_id: row.rss_feed_item_id,
+              category_identity_id: row.category_identity_id,
+            },
+          ]
+        : [],
+    ),
+    hasMore: page.cursor.phase === 'rss_item_text_categories',
+    match: { kind: 'alias_text' as const, aliasId, alias },
+  }
+}
+
+export async function drainTopicAliasCategoryMappingForTest(aliasId: string): Promise<number> {
+  let updated = 0
+  for (let page = 0; page < 20; page += 1) {
+    const result = await processReconcileTopicAliasCategoryMappings(1, [aliasId])
+    updated += result.updated
+    if (!result.hasMore) return updated
+  }
+  throw new Error('Test alias category generation exceeded twenty pages')
 }

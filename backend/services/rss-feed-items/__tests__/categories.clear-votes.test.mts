@@ -2,7 +2,6 @@ import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-
 import { describe, expect, it } from 'vitest'
 
 import { upsertRssFeedItemCategories } from '../categories.mts'
-import { clearCategoriesForUnlinkedTopicAlias } from '../clear-topic-alias-categories.mts'
 import { applyCollaborativeTopicRelations } from '../collaborative-topic-relations.mts'
 import { clearCategorizerVotesInTransaction } from '../category-topic-votes.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
@@ -27,7 +26,11 @@ import {
   holdTestEntityRelationVoteLock,
   setTestRssFeedItemCategoryTopicId,
   withFailingTransactionQueryOptionsForTest,
+  finishTopicAliasUnlinkForTest,
+  applyTopicAliasUnlinkPageForTest,
+  beginTransaction,
 } from '@voucha/test-helpers'
+import { selectTopicAliasUnlinkNextPage } from '@services/topics/unlink-topic-alias-page'
 import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 
 describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
@@ -64,10 +67,14 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
     expect(categorizer).not.toBeNull()
 
     await unlinkTopicAlias(alias!.id, { expectedTopicId: topic.id, skipSideEffects: true })
+    await using lookup = await beginTransaction()
+    const page = await selectTopicAliasUnlinkNextPage(lookup, alias!.id, false)
+    await lookup.rollback()
+    expect(page.phase).toBe('rss_item_categories')
     await expect(
       withFailingTransactionQueryOptionsForTest(
         'updateEntityRelationElectionVoteStatsFromPrimaryBatch',
-        options => clearCategoriesForUnlinkedTopicAlias(alias!.id, topic.id, options),
+        options => applyTopicAliasUnlinkPageForTest(page, options),
       ),
     ).rejects.toThrow(
       'Injected query failure for updateEntityRelationElectionVoteStatsFromPrimaryBatch',
@@ -82,10 +89,7 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
       choice: 'confirm',
     })
 
-    await expect(clearCategoriesForUnlinkedTopicAlias(alias!.id, topic.id)).resolves.toEqual({
-      updated: 1,
-      hasMore: false,
-    })
+    await finishTopicAliasUnlinkForTest(alias!.id)
     await expect(getEntityRelationElectionVote(categorizer!.id, relationId!)).resolves.toBeNull()
   })
 
@@ -130,7 +134,7 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
     expect(categorizer).not.toBeNull()
 
     await unlinkTopicAlias(alias!.id, { expectedTopicId: topic.id, skipSideEffects: true })
-    await clearCategoriesForUnlinkedTopicAlias(alias!.id, topic.id)
+    await finishTopicAliasUnlinkForTest(alias!.id)
 
     await expect(
       getEntityRelation(relationMetadata.table_name, item!.id, topic.id),
@@ -181,7 +185,7 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
     expect(collaborativeCategorizer).not.toBeNull()
 
     await unlinkTopicAlias(alias!.id, { expectedTopicId: topic.id, skipSideEffects: true })
-    await clearCategoriesForUnlinkedTopicAlias(alias!.id, topic.id)
+    await finishTopicAliasUnlinkForTest(alias!.id)
 
     const relationMetadata = getEntityRelationMetadataOrThrow({
       subjectType: 'rss_feed_item',

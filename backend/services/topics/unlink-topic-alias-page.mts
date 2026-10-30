@@ -12,6 +12,7 @@ import {
   recordPostPublicationChange,
 } from '@services/post-publication'
 import { normalizeHashtag } from '@ts-shared/utils'
+import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import {
   deleteTopicAliasUnlinkPhase,
   finalizeTopicAliasUnlink,
@@ -22,12 +23,25 @@ import { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-next-page.m
 export { recoverTopicAliasUnlinks } from './unlink-topic-alias-recovery.mts'
 export { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-next-page.mts'
 
+export type ClearTopicAliasUnlinkCategoryPage = (
+  query: TransactionQuery,
+  aliasId: string,
+  alias: string,
+  rows: ReadonlyArray<{ rss_feed_item_id: string; category_identity_id: string }>,
+) => Promise<void>
+
+export type ApplyTopicAliasUnlinkPageOptions = QueryOptions & {
+  clearItemCategoryPage: ClearTopicAliasUnlinkCategoryPage
+}
+
 export async function applyTopicAliasUnlinkPage(
   page: TopicAliasUnlinkPage,
-  options: QueryOptions = {},
+  options: ApplyTopicAliasUnlinkPageOptions,
 ): Promise<TopicAliasUnlinkPage | null> {
   const run = async (query: TransactionQuery) => {
     await lockTopicAliasPublicationScopes(query, [page.topicAliasId])
+    if (page.phase === 'rss_item_categories')
+      await clearUnlinkCategoryPageBeforeBindingRemoval(query, page, options.clearItemCategoryPage)
     const alias = await lockPendingAlias(query, page.topicAliasId)
     if (!alias) return null
     const preservesHashtag = Boolean(normalizeHashtag(alias.alias))
@@ -67,4 +81,29 @@ export async function applyTopicAliasUnlinkPage(
   await transaction.commit()
   if (next) await enqueueTopicAliasUnlinkPage(next)
   return next
+}
+
+async function clearUnlinkCategoryPageBeforeBindingRemoval(
+  query: TransactionQuery,
+  page: TopicAliasUnlinkPage,
+  clearItemCategoryPage: ClearTopicAliasUnlinkCategoryPage,
+): Promise<void> {
+  const { rows } = await query<{
+    alias: string
+    rss_feed_item_id: string
+    category_identity_id: string
+  }>(
+    `/* clearUnlinkCategoryPageBeforeBindingRemoval */
+     SELECT alias.alias, category.rss_feed_item_id, category.category_identity_id
+     FROM topic_aliases alias
+     JOIN rss_feed_item_categories category ON category.topic_alias_id = alias.id
+     WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL
+     ORDER BY category.rss_feed_item_id DESC, category.category_identity_id
+     LIMIT $2::integer`,
+    [page.topicAliasId, getPostPublicationWorkLimit('topic_alias_unlink_page_size')],
+  )
+  const first = rows[0]
+  if (!first || `${first.rss_feed_item_id}_${first.category_identity_id}` !== page.pageCursor)
+    return
+  await clearItemCategoryPage(query, page.topicAliasId, first.alias, rows)
 }

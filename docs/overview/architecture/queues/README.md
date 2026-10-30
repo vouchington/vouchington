@@ -294,9 +294,12 @@ discovery shares the execution cap while it waits for a user binding.
 - [AI platform](../ai-platform.md) describes model and embedding work.
 - [Fediverse federation](../fediverse-federation.md) describes federation work.
 
-RSS alias category recovery resumes from mismatched category rows. An alias dirty generation is
-acknowledged only after both item and feed mappings finish; capped pages chain through the existing
-maintenance queue. Community digest recovery admits a bounded set of closed windows after its
+RSS alias category recovery checkpoints raw item and feed positions with fixed sweep bounds for
+each alias generation, so a page with no mapping changes still makes progress. It acknowledges a
+generation only after its item and feed effects finish. A deleted alias rechecks current text
+ownership after locking its affected category page; a newer owner's generation can then restore
+the final mapping. Topic name and slug jobs keep their own frozen continuation cursor. Community
+digest recovery admits a bounded set of closed windows after its
 sent-through cursor. Each window retains recipient-page progress on its GlideMQ job, yields under
 backpressure, and advances the cursor only after the last page. Native job identities suppress
 concurrent duplicate admission; recipient notification keys and delivery receipts make recovery

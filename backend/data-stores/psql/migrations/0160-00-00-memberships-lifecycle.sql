@@ -162,6 +162,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__cont
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_lookup ON membership_provider_evidence_records (membership_provider_context_id, evidence_lookup_sha256);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__lineage_id ON membership_provider_evidence_records (membership_provider_lineage_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__pending_received_at
+  ON membership_provider_evidence_records (received_at, id)
+  INCLUDE (membership_provider_context_id, membership_provider_lineage_id)
+  WHERE provider_event_id IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__pending_id
+  ON membership_provider_evidence_records (id)
+  INCLUDE (membership_provider_context_id)
+  WHERE provider_event_id IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__rejected_at
   ON membership_provider_evidence_records (rejected_at, id)

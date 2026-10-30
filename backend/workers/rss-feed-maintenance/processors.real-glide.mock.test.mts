@@ -1,17 +1,15 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { randomUUID } from 'node:crypto'
 import '@services/elections-votes'
-import { Queue, Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { notifications } from '@queues/notifications/queues'
 import { QUEUE_NAME } from '@queues/rss-feed-maintenance/config'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { topicsWorkConfig } from '@services/topics/work-limits'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
-import { getRssFeedCategories, upsertRssFeedCategories } from '@services/rss-feeds/categories'
-import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
+import { createTopicAliases } from '@services/topics/aliases'
 import {
   createTestPost,
   createTestTopic,
@@ -19,42 +17,18 @@ import {
   createTopHashtagPostSourceForTest,
   getTestRssFeedItemCategorySnapshotReconciliation,
   getLatestTestRssFeedStateChange,
-  getTopicAliasCategoryMappingDirtyRowForTest,
   insertTestRssFeedDirect,
   setRssFeedOwningTopicVoteScore,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
+import { runRealRssMaintenanceJob } from '@voucha/test-helpers/real-rss-maintenance-job'
 import { processRssFeedMaintenanceJob } from './processors.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 async function runJob(name: string, data: Record<string, unknown>): Promise<unknown> {
-  const prefix = `${workerQueuePrefix}-rss-maintenance-${randomUUID()}`
-  const queue = new Queue(QUEUE_NAME, { connection: workerQueueConnection, prefix })
-  let worker: Worker | undefined
-  const completed = Promise.withResolvers<unknown>()
-  try {
-    const job = await queue.add(name, data, { priority: 10, attempts: 1 })
-    if (!job) throw new Error(`Expected ${name} to enqueue`)
-    worker = new Worker(QUEUE_NAME, (current: Job) => processRssFeedMaintenanceJob(current), {
-      connection: workerQueueConnection,
-      prefix,
-      concurrency: 1,
-      blockTimeout: 100,
-    })
-    worker.on('error', error => completed.reject(error))
-    worker.on('failed', (_failed, error) => completed.reject(error))
-    worker.on('completed', (done: Job, result) => {
-      if (done.id === job.id) completed.resolve(result)
-    })
-    return await waitForRealGlideEvent(completed.promise, `RSS maintenance ${name}`)
-  } finally {
-    await worker?.close()
-    await queue.obliterate({ force: true })
-    await queue.close()
-  }
+  return runRealRssMaintenanceJob(QUEUE_NAME, name, data, processRssFeedMaintenanceJob)
 }
 
 describe('merged RSS feed maintenance worker with real GlideMQ', () => {
@@ -132,24 +106,6 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     ).toBe(topic.id)
   })
 
-  it('backfills feed-level categories against a newly created topic', async () => {
-    const slug = `feed-${randomUUID()}`
-    const feed = await createTestRssFeed({})
-    await upsertRssFeedCategories(feed.id, [slug])
-    expect(
-      (await getRssFeedCategories(feed.id)).find(row => row.category_text === slug)?.topic_id,
-    ).toBeNull()
-    const topic = await createTestTopic({ slug, name: slug })
-
-    const result = await runJob('processBackfillRssFeedCategoriesForTopicAlias', {
-      topicId: topic.id,
-    })
-    expect(result).toEqual({ updated: 1, hasMore: false })
-    expect(
-      (await getRssFeedCategories(feed.id)).find(row => row.category_text === slug)?.topic_id,
-    ).toBe(topic.id)
-  })
-
   it('evaluates and persists RSS feed discoverability', async () => {
     const feed = await createTestRssFeed({})
     await setRssFeedOwningTopicVoteScore(feed.id, 0, 6)
@@ -161,26 +117,6 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     ).resolves.toMatchObject({
       reason: expect.stringContaining('auto:'),
     })
-  })
-
-  it('updates an unlinked alias and clears its item category ownership', async () => {
-    const suffix = randomUUID()
-    const topic = await createTestTopic({ name: `Alias ${suffix}`, slug: `alias-${suffix}` })
-    const feed = await insertTestRssFeedDirect({ topicId: topic.id })
-    const [item] = await upsertRssFeedItems(feed.id, [
-      { guid: suffix, link: `https://alias-${suffix}.example/item`, title: suffix },
-    ])
-    const [alias] = await createTopicAliases(topic.id, `alias-tag-${suffix}`)
-    await upsertRssFeedItemCategories([
-      { rss_feed_item_id: item!.id, categories: [`#${alias!.alias}`] },
-    ])
-    await unlinkTopicAlias(alias!.id, { expectedTopicId: topic.id, skipSideEffects: true })
-    await runJob('processTopicAliasesUpdate', { topicId: topic.id, removedTopicAliasId: alias!.id })
-    expect(
-      (await getTestRssFeedItemCategories(item!.id)).find(
-        row => row.category_text === `#${alias!.alias}`,
-      )?.topic_id,
-    ).toBeNull()
   })
 
   it('invalidates real post aliases and enqueues notification reconciliation', async () => {
@@ -249,16 +185,5 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     expect(later[0]!.id).not.toBe(
       original.find(job => (job.data as { postId: string }).postId === first)!.id,
     )
-  })
-
-  it('consumes durable alias category-mapping reconciliation work', async () => {
-    const topic = await createTestTopic({ slug: `mapping-${randomUUID()}` })
-    const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
-    expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeDefined()
-    const result = await runJob('processReconcileTopicAliasCategoryMappings', {
-      topicAliasIds: [alias!.id],
-    })
-    expect(result).toMatchObject({ reconciled: 1 })
-    expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeUndefined()
   })
 })

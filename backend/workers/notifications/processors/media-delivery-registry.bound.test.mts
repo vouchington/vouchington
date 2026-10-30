@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, readEnqueuedJob, isDeduplicatedEnqueue } from '@voucha/test-helpers'
+import { insertTestImage } from '@voucha/test-helpers/entities/images'
+import { setTestUserProfileImage } from '@voucha/test-helpers/entities/media-surface-writes'
+import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import {
   scopedTestMediaRecoveryDependencies,
   withTestMediaRecoveryBacklog,
@@ -74,6 +77,101 @@ describe('media registry staging continuation', () => {
           expect(continuations).toHaveLength(2)
         },
       )
+    } finally {
+      restore()
+    }
+  })
+})
+
+describe('media registry staging retired raw page', () => {
+  it('enqueues the raw cursor across consecutive zero-stage retired tuples', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
+      registry_reconciliation_page_size: 1,
+    })
+    try {
+      const retiredOwner = await createTestUserDirect()
+      const activeOwner = await createTestUserDirect()
+      const retiredImageId = await insertTestImage(retiredOwner.id)
+      const activeImageId = await insertTestImage(activeOwner.id)
+      await setTestUserProfileImage(retiredOwner.id, retiredImageId)
+      await setTestUserProfileImage(retiredOwner.id, null)
+      await setTestUserProfileImage(activeOwner.id, activeImageId)
+      const [retired] = await getTestImageSurfacePlacements({ imageId: retiredImageId })
+      const [active] = await getTestImageSurfacePlacements({ imageId: activeImageId })
+      if (!retired || !active) throw new Error('Missing owned staging placements')
+      expect(retired.placement_id.localeCompare(active.placement_id)).toBeLessThan(0)
+      expect(retired.retired_at).not.toBeNull()
+      expect(active.retired_at).toBeNull()
+      const stageResults: Awaited<ReturnType<typeof stageImagePlacementDeliveryRecordPage>>[] = []
+      const continuations: Awaited<
+        ReturnType<typeof enqueueContinueMediaDeliveryRegistryStaging>
+      >[] = []
+      const dependencies = {
+        ...scopedTestMediaRecoveryDependencies([]),
+        stageImagePlacementDeliveryRecordPage: async (
+          input: Parameters<typeof stageImagePlacementDeliveryRecordPage>[0],
+        ) => {
+          const result = await stageImagePlacementDeliveryRecordPage(input)
+          stageResults.push(result)
+          return result
+        },
+        enqueueContinueMediaDeliveryRegistryStaging: async (
+          staging: NonNullable<ReconcileMediaDeliveryRegistryData['staging']>,
+        ) => {
+          const result = await enqueueContinueMediaDeliveryRegistryStaging(staging)
+          continuations.push(result)
+          return result
+        },
+      }
+      const scanBefore = '2035-01-01T00:00:00.000Z'
+      await processReconcileMediaDeliveryRegistry(
+        {
+          staging: {
+            scanBefore,
+            after: {
+              placement_id: retired.placement_id,
+              placement_revision: -1,
+              image_id: '00000000-0000-0000-0000-000000000000',
+            },
+          },
+        },
+        dependencies,
+      )
+      expect(stageResults[0]).toMatchObject({ staged: 0, hasMore: true })
+      expect(continuations).toHaveLength(1)
+      const job = await readEnqueuedJob(notifications, continuations[0]!)
+      expect(job).toMatchObject({
+        name: 'notifications.processReconcileMediaDeliveryRegistry',
+        data: {
+          staging: {
+            scanBefore,
+            after: {
+              placement_id: retired.placement_id,
+              image_id: retiredImageId,
+            },
+          },
+        },
+      })
+      await processReconcileMediaDeliveryRegistry(
+        job.data as ReconcileMediaDeliveryRegistryData,
+        dependencies,
+      )
+      expect(stageResults[1]).toMatchObject({ staged: 0, hasMore: true })
+      expect(continuations).toHaveLength(2)
+      const next = await readEnqueuedJob(notifications, continuations[1]!)
+      expect(next).toMatchObject({
+        data: {
+          staging: {
+            scanBefore,
+            after: {
+              placement_id: retired.placement_id,
+              placement_revision: retired.placement_revision,
+              image_id: retiredImageId,
+            },
+          },
+        },
+      })
+      expect(continuations).toHaveLength(2)
     } finally {
       restore()
     }

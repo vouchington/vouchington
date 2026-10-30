@@ -528,7 +528,7 @@ WHERE topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__topic_alias_id
-ON rss_feed_item_categories (topic_alias_id, rss_feed_item_id DESC)
+ON rss_feed_item_categories (topic_alias_id, rss_feed_item_id DESC, category_identity_id DESC)
 WHERE topic_alias_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

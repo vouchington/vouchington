@@ -1269,6 +1269,14 @@
     "spending_frequencies": {
       "values": ["monthly", "annually"]
     },
+    "topic_alias_category_reconciliation_phases": {
+      "values": [
+        "rss_item_categories",
+        "rss_item_text_categories",
+        "rss_feed_text_categories",
+        "completed"
+      ]
+    },
     "topic_claim_verification_methods": {
       "values": ["dns_txt", "well_known_file", "manual_admin"]
     },
@@ -1557,7 +1565,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_latest_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;\n  change_filter TEXT := CASE WHEN TG_NARGS = 7 THEN format(' AND %I = %L', TG_ARGV[5], TG_ARGV[6]) ELSE '' END;\nBEGIN\n  -- Serialize on the target before re-reading the latest committed log entry.\n  EXECUTE format('SELECT %I FROM %I.%I WHERE %I = $1 FOR UPDATE',\n    TG_ARGV[1], TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1]) USING target_id;\n  EXECUTE format(\n    'UPDATE %I.%I target SET %I = latest.value FROM\n     (SELECT %I AS value FROM %I.%I WHERE %I = $1%s ORDER BY id DESC LIMIT 1) latest\n     WHERE target.%I = $1 AND target.%I IS DISTINCT FROM latest.value',\n    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[3], TG_ARGV[4], TG_TABLE_SCHEMA,\n    TG_TABLE_NAME, TG_ARGV[2], change_filter, TG_ARGV[1], TG_ARGV[3]) USING target_id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_mark_topic_alias_category_mapping_dirty()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\n  dirty_unlink_requested_at TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n    dirty_unlink_requested_at := NEW.unlink_requested_at;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n      AND NEW.unlink_requested_at IS NOT DISTINCT FROM OLD.unlink_requested_at THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n    dirty_unlink_requested_at := NEW.unlink_requested_at;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL AND OLD.unlink_requested_at IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n    dirty_unlink_requested_at := NULL;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations\n    (topic_alias_id, alias, unlink_requested_at)\n  VALUES (dirty_alias_id, dirty_alias, dirty_unlink_requested_at)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      unlink_requested_at = EXCLUDED.unlink_requested_at,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1,\n      phase = 'rss_item_categories',\n      sweep_upper_bound_item_id = NULL,\n      sweep_upper_bound_feed_id = NULL,\n      cursor_item_id = NULL,\n      cursor_category_identity_id = NULL,\n      cursor_feed_id = NULL;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- The BEFORE trigger retains the authority lock and rejects stale generations.\n  -- Accepted transitions advance current state in that lock order, never UUID order.\n  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id\n    WHERE id = NEW.media_delivery_registry_record_id;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -55863,7 +55871,7 @@
         "idx_image_placements__image": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_placements__image ON public.image_placements USING btree (image_id)",
+          "definition": "CREATE INDEX idx_image_placements__image ON public.image_placements USING btree (image_id, placement_id)",
           "immediate": true,
           "keys": [
             {
@@ -55871,6 +55879,15 @@
               "column": "image_id",
               "descending": false,
               "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -56410,7 +56427,7 @@
         "idx_image_surface_placements__image": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_surface_placements__image ON public.image_surface_placements USING btree (image_id)",
+          "definition": "CREATE INDEX idx_image_surface_placements__image ON public.image_surface_placements USING btree (image_id, placement_id)",
           "immediate": true,
           "keys": [
             {
@@ -56418,6 +56435,15 @@
               "column": "image_id",
               "descending": false,
               "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -67339,6 +67365,61 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_provider_evidence_records__pending_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_provider_evidence_records__pending_id ON public.membership_provider_evidence_records USING btree (id) INCLUDE (membership_provider_context_id) WHERE ((provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_provider_evidence_records__pending_received_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_provider_evidence_records__pending_received_at ON public.membership_provider_evidence_records USING btree (received_at, id) INCLUDE (membership_provider_context_id, membership_provider_lineage_id) WHERE ((provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "received_at",
+              "descending": false,
+              "expression": "received_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -125263,7 +125344,7 @@
         "idx_rss_feed_item_categories__topic_alias_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_categories__topic_alias_id ON public.rss_feed_item_categories USING btree (topic_alias_id, rss_feed_item_id DESC) WHERE (topic_alias_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_rss_feed_item_categories__topic_alias_id ON public.rss_feed_item_categories USING btree (topic_alias_id, rss_feed_item_id DESC, category_identity_id DESC) WHERE (topic_alias_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -125280,6 +125361,15 @@
               "column": "rss_feed_item_id",
               "descending": true,
               "expression": "rss_feed_item_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "category_identity_id",
+              "descending": true,
+              "expression": "category_identity_id",
               "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -131921,7 +132011,37 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 11
+        },
+        "cursor_category_identity_id": {
+          "comment": "Category identity tie breaker within the last raw item key scanned; a deleted identity does not prevent progress.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "cursor_feed_id": {
+          "comment": "Last raw feed key scanned by this generation; the cursor may outlive the feed and keeps empty pages progressing.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
+        },
+        "cursor_item_id": {
+          "comment": "Last raw item key scanned by this generation; the cursor may outlive the item and keeps empty pages progressing.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
         },
         "generation": {
           "comment": "Monotonic transition generation used to prevent stale workers from acknowledging newer alias ownership changes.",
@@ -131933,6 +132053,36 @@
           "nullable": false,
           "ordinalPosition": 3
         },
+        "phase": {
+          "comment": "Raw category stream for this alias generation: authored item, text item, text feed, or complete.",
+          "dataType": "topic_alias_category_reconciliation_phases",
+          "defaultExpression": "'rss_item_categories'::topic_alias_category_reconciliation_phases",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "sweep_upper_bound_feed_id": {
+          "comment": "Fixed highest feed ID admitted by this generation; the nil UUID means there were no feeds.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "sweep_upper_bound_item_id": {
+          "comment": "Fixed highest item ID admitted by this generation; the nil UUID means there were no items.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
         "topic_alias_id": {
           "comment": "Alias transition identity; the primary key coalesces pending work for the same alias.",
           "dataType": "uuid",
@@ -131943,6 +132093,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "unlink_requested_at": {
+          "comment": "Copied alias unlink request timestamp while the dedicated unlink phase owns category cleanup; NULL is selectable work.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
         "updated_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -131951,7 +132111,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 12
         }
       },
       "comment": "Coalesced cleanup/backfill work for linked topic aliases; delete tombstones have no FK by design.",
@@ -131960,7 +132120,7 @@
         "idx_topic_alias_category_mapping_reconciliations__updated_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_alias_category_mapping_reconciliations__updated_at ON public.topic_alias_category_mapping_reconciliations USING btree (updated_at, topic_alias_id)",
+          "definition": "CREATE INDEX idx_topic_alias_category_mapping_reconciliations__updated_at ON public.topic_alias_category_mapping_reconciliations USING btree (updated_at, topic_alias_id) WHERE (unlink_requested_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -131983,7 +132143,7 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(unlink_requested_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -132450,7 +132610,7 @@
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')"
         },
         "trigger_topic_aliases_mark_category_mapping_dirty": {
-          "definition": "CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()"
+          "definition": "CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id, unlink_requested_at ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()"
         },
         "trigger_topic_aliases_project_delete": {
           "definition": "CREATE TRIGGER trigger_topic_aliases_project_delete AFTER DELETE ON public.topic_aliases REFERENCING OLD TABLE AS old_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()"

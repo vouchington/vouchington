@@ -27,6 +27,8 @@ export type RetainedRelationCleanupCursor = {
   cursor_relation_id: string | null
 }
 
+const NIL_UUID = '00000000-0000-0000-0000-000000000000'
+
 /** Enum primary keys bound this inventory to the elected families; reads never change progress. */
 export async function readRetainedRelationCleanupCursors(
   options: QueryOptions = {},
@@ -129,22 +131,29 @@ async function cleanupRelationFamily(
             [relationTable],
           )
         ).rows[0]
-    const { rows: candidates } = await query<{ subject_id: string; id: string }>(
-      `/* listRetainedRelationCleanupCandidates */
-     SELECT candidate.subject_id, candidate.id FROM ${owner} candidate
-     WHERE ($1::uuid[] IS NOT NULL AND EXISTS (
-       SELECT 1 FROM UNNEST($1::uuid[], $2::uuid[]) owned(subject_id, relation_id)
-       WHERE owned.subject_id = candidate.subject_id AND owned.relation_id = candidate.id
-     )) OR ($1::uuid[] IS NULL AND ($3::uuid IS NULL OR (candidate.subject_id, candidate.id) > ($3::uuid, $4::uuid)))
-     ORDER BY candidate.subject_id, candidate.id LIMIT $5`,
-      [
-        keys?.map(key => key.subjectId) ?? null,
-        keys?.map(key => key.relationId) ?? null,
-        cursor?.cursor_subject_id ?? null,
-        cursor?.cursor_relation_id ?? null,
-        pageSize + 1,
-      ],
-    )
+    const { rows: candidates } = keys
+      ? await query<{ subject_id: string; id: string }>(
+          `/* listRetainedRelationCleanupCandidates */
+           SELECT candidate.subject_id, candidate.id
+           FROM UNNEST($1::uuid[], $2::uuid[]) owned(subject_id, relation_id)
+           JOIN LATERAL (
+             SELECT subject_id, id FROM ${owner}
+             WHERE subject_id = owned.subject_id AND id = owned.relation_id LIMIT 1
+           ) candidate ON TRUE
+           ORDER BY candidate.subject_id, candidate.id LIMIT $3`,
+          [keys.map(key => key.subjectId), keys.map(key => key.relationId), pageSize + 1],
+        )
+      : await query<{ subject_id: string; id: string }>(
+          `/* listRetainedRelationCleanupCandidates */
+           SELECT candidate.subject_id, candidate.id FROM ${owner} candidate
+           WHERE (candidate.subject_id, candidate.id) > ($1::uuid, $2::uuid)
+           ORDER BY candidate.subject_id, candidate.id LIMIT $3`,
+          [
+            cursor?.cursor_subject_id ?? NIL_UUID,
+            cursor?.cursor_relation_id ?? NIL_UUID,
+            pageSize + 1,
+          ],
+        )
     const page = candidates.slice(0, pageSize)
     const { rowCount } = await query(
       `/* deleteUnreferencedRetainedRelationPage */

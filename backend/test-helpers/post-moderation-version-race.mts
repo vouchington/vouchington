@@ -11,7 +11,6 @@ import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 export async function withConcurrentPostModerationVersionCommitForTest<T>(
   postId: string,
   operation: () => Promise<T>,
-  queryMarker = 'ensureCurrentPostModerationVersion',
 ): Promise<{ result: T; committed: PostModerationVersion }> {
   await using holder = await beginTransaction()
   const committed = await ensureCurrentPostModerationVersion(postId, { query: holder })
@@ -21,7 +20,7 @@ export async function withConcurrentPostModerationVersionCommitForTest<T>(
       holderProcessId,
       pool: 'write',
       lock: { kind: 'transaction' },
-      queryMarker,
+      queryMarker: 'captureCurrentPostVersionKeys',
       releaseHolder: () => holder[Symbol.asyncDispose](),
     },
     async waitForLock => {

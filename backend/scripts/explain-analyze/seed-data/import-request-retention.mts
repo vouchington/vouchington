@@ -57,6 +57,23 @@ export async function seedImportRequestRetention(): Promise<void> {
      ON CONFLICT DO NOTHING`,
   )
   await write(
+    `/* seedImportRequestRetention:expiredExports */
+     INSERT INTO user_data_requests
+       (id, processing_started_at, completed_at, s3_key, expires_at)
+     SELECT id, NOW() - INTERVAL '40 days', NOW() - INTERVAL '40 days',
+       'explain-export-' || id::text, NOW() - INTERVAL '1 day'
+     FROM (SELECT format('019e0000-7c05-7000-8000-%s', lpad(n::text, 12, '0'))::uuid AS id
+       FROM generate_series(0, 99) AS n) keys
+     ON CONFLICT DO NOTHING`,
+  )
+  await write(
+    `/* seedImportRequestRetention:orphanRecovery */
+     INSERT INTO user_data_requests (id, dispatched_at)
+     SELECT format('019e0000-7c04-7000-8000-%s', lpad(n::text, 12, '0'))::uuid,
+       NOW() - INTERVAL '1 day'
+     FROM generate_series(0, 99) AS n ON CONFLICT DO NOTHING`,
+  )
+  await write(
     `/* seedImportRequestRetention:attempts */
      INSERT INTO user_data_request_attempts (request_id, processing_attempt_id, started_at)
      SELECT $1::uuid, format('019e0000-7c02-7000-8000-%s', lpad(n::text, 12, '0'))::uuid,
