@@ -7,7 +7,7 @@ import {
   getUserDeletionDispatchedAtForTest,
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
-} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { processUserDeletionJob } from './user-deletion-job.mts'
 import { recoverUserDeletions } from './user-deletions.mts'
 

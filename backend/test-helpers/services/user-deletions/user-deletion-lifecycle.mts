@@ -1,10 +1,19 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { claimUserDeletionAttempt } from '../../../services/user-deletions/lifecycle.mts'
 import {
   mapUserDeletionRequest,
   type UserDeletionRequestRow,
 } from '../../../services/user-deletions/row.mts'
 import type { UserDeletionRequest } from '../../../services/user-deletions/types.mts'
+
+export async function markUserDeletionAttemptStartedForTest(
+  requestId: string,
+  processingAttemptId: string,
+): Promise<void> {
+  const claimed = await claimUserDeletionAttempt(requestId, processingAttemptId)
+  if (!claimed) throw new Error('User deletion attempt was not started')
+}
 
 export async function makeUserDeletionRecoverableForTest(
   requestId: string,
