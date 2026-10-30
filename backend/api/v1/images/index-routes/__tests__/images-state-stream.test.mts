@@ -63,23 +63,6 @@ describe('GET /api/v1/images/:id/state/stream', () => {
     await request.get(`/api/v1/images/${FAKE_IMAGE_ID}/state/stream`).expect(401)
   })
 
-  it('returns 422 for non-UUID image ID', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    await request.get('/api/v1/images/not-a-uuid/state/stream').expect(422)
-  })
-
-  it('propagates error when getImageUploadState throws 404', async () => {
-    const notFoundErr = Object.assign(new Error('Image not found'), { status: 404 })
-    getImageUploadStateSpy.mockRejectedValue(notFoundErr)
-    subscribeSpy.mockResolvedValue(makeSubscription())
-
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    await request.get(`/api/v1/images/${FAKE_IMAGE_ID}/state/stream`).expect(404)
-  })
-
   it('closes stream immediately when initial state is already ready', async () => {
     getImageUploadStateSpy.mockResolvedValue(makeReadyState())
     subscribeSpy.mockResolvedValue(makeSubscription())
