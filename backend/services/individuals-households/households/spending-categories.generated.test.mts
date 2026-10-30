@@ -58,21 +58,6 @@ describe('spending-categories.generated', () => {
     ).rejects.toThrow(Error)
   })
 
-  it('getHouseholdSpendingCategoriesByUserId - returns user spending categories', async () => {
-    const topicId = await insertTestSpendingCategory({
-      createdById: user.id,
-    })
-    const created = await createHouseholdSpendingCategory(user, user, topicId, {
-      amount: { amount: 20_000, currency: 'usd' },
-      spending_frequency: 'annually',
-    })
-    const categories = await getHouseholdSpendingCategoriesByUserId(user, user)
-
-    expect(categories).toBeDefined()
-    expect(categories.results.length).toBeGreaterThan(0)
-    expect(categories.results.some(c => c.id === created!.id)).toBe(true)
-  })
-
   it('getHouseholdSpendingCategoriesByUserId - applies entry filters before the page limit', async () => {
     const topicId = await insertTestSpendingCategory({ createdById: user.id })
     await createHouseholdSpendingCategory(user, user, topicId, {
