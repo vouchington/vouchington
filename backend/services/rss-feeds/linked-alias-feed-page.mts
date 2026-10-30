@@ -1,6 +1,13 @@
 import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import createHttpError from 'http-errors'
+
+type LinkedAliasFeedCandidate = {
+  rss_feed_id: string
+  category_identity_id: string
+  previous_topic_id: string | null
+}
 
 /** Applies one raw feed page after topic fences and category row locks. */
 export async function backfillLinkedAliasFeedPage(
@@ -28,30 +35,15 @@ export async function backfillLinkedAliasFeedPage(
     rows.map(row => row.category_identity_id),
     alias,
   ]
-  const { rows: candidates } = await transaction<{
-    rss_feed_id: string
-    category_identity_id: string
-    previous_topic_id: string | null
-  }>(candidateSql, candidateParameters)
+  const { rows: candidates } = await transaction<LinkedAliasFeedCandidate>(
+    candidateSql,
+    candidateParameters,
+  )
   if (candidates.length === 0) {
     await transaction.commit()
     return 0
   }
-  await lockTopicRssFeedAttachmentLifecycles(transaction, [
-    topicId,
-    ...candidates.flatMap(row => (row.previous_topic_id ? [row.previous_topic_id] : [])),
-  ])
-  await transaction(
-    `/* backfillLinkedAliasFeedPage lockCategories */
-     SELECT category.rss_feed_id
-     FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_id, category_identity_id)
-     JOIN rss_feed_categories category
-       ON category.rss_feed_id = raw.rss_feed_id
-       AND category.category_identity_id = raw.category_identity_id
-     ORDER BY category.rss_feed_id, category.category_identity_id
-     FOR UPDATE OF category`,
-    [candidates.map(row => row.rss_feed_id), candidates.map(row => row.category_identity_id)],
-  )
+  await lockLinkedAliasFeedCategoryPage(transaction, topicId, candidates)
   const { rows: currentCandidates } = await transaction(candidateSql, candidateParameters)
   if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
     throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
@@ -86,4 +78,27 @@ export async function backfillLinkedAliasFeedPage(
     throw createHttpError(409, 'RSS feed category mapping changed before backfill')
   await transaction.commit()
   return rowCount ?? 0
+}
+
+/** Topic attachment fences precede category row locks for the entire selected page. */
+async function lockLinkedAliasFeedCategoryPage(
+  query: TransactionQuery,
+  topicId: string,
+  candidates: readonly LinkedAliasFeedCandidate[],
+): Promise<void> {
+  await lockTopicRssFeedAttachmentLifecycles(query, [
+    topicId,
+    ...candidates.flatMap(row => (row.previous_topic_id ? [row.previous_topic_id] : [])),
+  ])
+  await query(
+    `/* backfillLinkedAliasFeedPage lockCategories */
+     SELECT category.rss_feed_id
+     FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_id, category_identity_id)
+     JOIN rss_feed_categories category
+       ON category.rss_feed_id = raw.rss_feed_id
+       AND category.category_identity_id = raw.category_identity_id
+     ORDER BY category.rss_feed_id, category.category_identity_id
+     FOR UPDATE OF category`,
+    [candidates.map(row => row.rss_feed_id), candidates.map(row => row.category_identity_id)],
+  )
 }
