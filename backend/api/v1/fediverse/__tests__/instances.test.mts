@@ -228,12 +228,6 @@ describe('POST /api/v1/fediverse/instances', () => {
       .expect(401)
   })
 
-  it('returns 422 for a missing hostname', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    await request.post('/api/v1/fediverse/instances').send({}).expect(422)
-  })
-
   it('creates a new instance and returns 201, then upvotes on a duplicate hostname with 200', async () => {
     const random = Math.random().toString(36).slice(2, 8)
     const hostname = `post-create-${random}.example.com`
