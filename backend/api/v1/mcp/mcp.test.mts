@@ -51,15 +51,6 @@ describe('POST /api/v1/mcp', () => {
       .expect(415)
   })
 
-  it('returns 401 when Authorization header is missing', async () => {
-    const req = createRequest()
-    await req
-      .post('/api/v1/mcp')
-      .set('Content-Type', 'application/json')
-      .send(MCP_LIST_BODY)
-      .expect(401)
-  })
-
   it('does not disclose malformed MCP schemas before API-key authentication', async () => {
     const req = createRequest()
     const response = await req
@@ -90,19 +81,6 @@ describe('POST /api/v1/mcp', () => {
       .set('Authorization', 'Bearer voucha_mcp_00000000000000000000000000000000_0000000000000000')
       .send(MCP_LIST_BODY)
       .expect(401)
-  })
-
-  it('returns 200 with tools list for valid key', async () => {
-    const req = createRequest()
-    const response = await req
-      .post('/api/v1/mcp')
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${validKey}`)
-      .send(MCP_LIST_BODY)
-      .expect(200)
-
-    const body = response.body as { result?: { tools?: unknown[] } }
-    expect(Array.isArray(body.result?.tools)).toBe(true)
   })
 
   it('adds a relation to another user public post when ordinary REST policy allows it', async () => {
@@ -262,6 +240,7 @@ describe('POST /api/v1/mcp', () => {
       .expect(200)
 
     const body = response.body as { result?: { tools?: Array<{ name?: string }> } }
+    expect(Array.isArray(body.result?.tools)).toBe(true)
     expect(body.result?.tools?.map(tool => tool.name)).not.toContain('search_support_messages')
   })
 
