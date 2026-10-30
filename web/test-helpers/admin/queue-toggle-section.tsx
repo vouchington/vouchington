@@ -87,12 +87,6 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(screen.getByRole('button')).toBeDisabled()
   })
 
-  test('shows retry button when fetchQueues fails', async () => {
-    fetchQueues.mockRejectedValueOnce(new Error('API unavailable'))
-    renderSection()
-    expect(await screen.findByRole('button', { name: 'Retry loading status' })).toBeInTheDocument()
-  })
-
   test('retries fetchQueues when retry button is clicked', async () => {
     fetchQueues.mockRejectedValueOnce(new Error('API unavailable'))
     renderSection()

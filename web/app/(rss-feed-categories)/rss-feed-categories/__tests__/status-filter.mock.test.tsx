@@ -47,11 +47,6 @@ describe('RssFeedCategoryStatusFilter', () => {
     mockNav.reset()
   })
 
-  it('renders the status select', () => {
-    render(<RssFeedCategoryStatusFilter />)
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
-  })
-
   it('renders with pending as default when no status param', () => {
     render(<RssFeedCategoryStatusFilter />)
     const select = screen.getByRole('combobox') as HTMLSelectElement
