@@ -27,7 +27,6 @@ describe('commitCurrentPostModerationVersions concurrency', () => {
     const { result, committed } = await withConcurrentPostModerationVersionCommitForTest(
       racedPostId,
       () => commitCurrentPostModerationVersions([racedPostId, plainPostId]),
-      'commitCurrentPostModerationVersions',
     )
 
     expect(result.map(version => version.post_id).toSorted()).toEqual(

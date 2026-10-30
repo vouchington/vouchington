@@ -15,6 +15,7 @@ import {
   getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
   selectTopicAliasUnlinkInitialPageForTest,
+  updateTopicName,
 } from '@voucha/test-helpers'
 import {
   countTestRssFeedItemAliasCategoryBindings,
@@ -79,6 +80,8 @@ describe('topic alias unlink category page', () => {
       page = next
       if (count === 19) throw new Error('Alias unlink exceeded twenty pages')
     }
+    // Keep the former topic from matching the ordinary text category as its replacement.
+    await updateTopicName(topic.id, `Renamed snapshot category ${suffix}`)
     await expect(processReconcileTopicAliasCategoryMappings(1, [alias.id])).resolves.toMatchObject({
       updated: 0,
       hasMore: true,
