@@ -1,6 +1,6 @@
 import { assertNever } from '@modules/utils/assert-never'
 /* oxlint-disable max-lines -- Clearance fixtures include ledger-backed completion setup. */
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import sql from 'sql-template-strings'
 import { recordTestPostModerationDisposition } from './post-moderation.mts'
@@ -88,7 +88,17 @@ export async function setTestPostClearanceStatus(
 ): Promise<{ id: string; community_id: string | null } | null> {
   const changeType = clearanceChangeType(status)
   const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
-  const { rows } = await write<{ id: string; community_id: string | null }>(sql`
+  await using transaction = await beginTransaction()
+  // RowExclusive on the post before history. The insert takes RowExclusive on
+  // post_clearance_changes, and a concurrent ShareRowExclusive locker that already holds
+  // posts deadlocks if this statement still waits for posts after that insert.
+  await transaction(sql`
+    /* setTestPostClearanceStatus:lockPost */
+    UPDATE posts
+    SET clearance_version = clearance_version
+    WHERE id = ${postId}
+  `)
+  const { rows } = await transaction<{ id: string; community_id: string | null }>(sql`
     /* setTestPostClearanceStatus */
     WITH inserted_change AS (
       INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id)
@@ -110,6 +120,7 @@ export async function setTestPostClearanceStatus(
     WHERE posts.id = inserted_change.post_id
     RETURNING inserted_change.id, posts.community_id
   `)
+  await transaction.commit()
   return rows[0] ?? null
 }
 
