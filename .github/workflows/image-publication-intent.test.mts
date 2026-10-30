@@ -39,13 +39,16 @@ function mainTriggerMatches(group: 'backend' | 'web', path: string): boolean {
 }
 
 describe('image publication intent', () => {
-  it('bounds the web publication selector checkout instead of fetching every branch and tag', () => {
-    const workflow = load(readFileSync('.github/workflows/main-web.yml', 'utf8')) as Workflow
-    const checkout = workflow.jobs?.['detect-image-publication']?.steps?.find(step =>
-      step.uses?.startsWith('actions/checkout@'),
-    )
-    expect(checkout?.with?.['fetch-depth']).toBe(1)
-  })
+  it.each(['backend', 'web'] as const)(
+    'bounds the %s publication selector checkout instead of fetching every branch and tag',
+    group => {
+      const workflow = load(readFileSync(`.github/workflows/main-${group}.yml`, 'utf8')) as Workflow
+      const checkout = workflow.jobs?.['detect-image-publication']?.steps?.find(step =>
+        step.uses?.startsWith('actions/checkout@'),
+      )
+      expect(checkout?.with?.['fetch-depth']).toBe(1)
+    },
+  )
 
   it.each([
     ['pnpm-lock.yaml', true, true],
