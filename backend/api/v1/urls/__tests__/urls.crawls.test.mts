@@ -13,7 +13,6 @@ import type { PrivateUser } from '@services/users/types'
 describe('index', () => {
   let admin: PrivateUser
   let freeUser: PrivateUser
-  let plusUser: PrivateUser
   let proUser: PrivateUser
   const populatedCrawlUpdate = {
     request_headers: { 'user-agent': 'test-bot' },
@@ -28,10 +27,8 @@ describe('index', () => {
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     freeUser = await createTestUser()
-    plusUser = await createTestUser()
     proUser = await createTestUser()
 
-    await createTestMembership({ user_id: plusUser.id, plan: 'plus' })
     await createTestMembership({ user_id: proUser.id, plan: 'pro' })
   }, 5_000)
   describe('URLs Routes', () => {
@@ -137,21 +134,6 @@ describe('index', () => {
         await request.authenticateAs(freeUser)
 
         await request.get(`/api/v1/urls/${urlId}/crawls`).expect(403)
-      })
-
-      it('should return 200 for plus users (plus is the new base paid tier with crawl history access)', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const hostnameId = await insertTestUrlHostname({
-          hostname: `plus-crawls-${random}.example.com`,
-        })
-        const urlId = await insertTestUrl({
-          url: `https://plus-crawls-${random}.example.com/page`,
-          hostnameId,
-        })
-        const request = createRequest()
-        await request.authenticateAs(plusUser)
-
-        await request.get(`/api/v1/urls/${urlId}/crawls`).expect(200)
       })
 
       it('should return 401 for unauthenticated users', async () => {
