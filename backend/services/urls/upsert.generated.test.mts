@@ -94,9 +94,8 @@ describe('upsert.generated', () => {
       skipCreatedEvents: true,
     })
     expect(created).not.toBeNull()
-    // A miss is cached by lookup key. Read the URL string here so the id lookup stays cold
-    // until the committed row is visible below.
-    expect(await getUrlByAnyCached(href)).toBeNull()
+    // An id miss is cached on that id. Probe a different id so the uncommitted row stays readable after commit.
+    expect(await getUrlByAnyCached(crypto.randomUUID())).toBeNull()
     const admission = holdQueueBulkAdmission(
       entitiesListeners,
       ENTITY_LISTENERS_URL_CREATED_JOB.name,

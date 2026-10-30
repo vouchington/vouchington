@@ -5,9 +5,7 @@ import { persistAssessedUrls, type AddUrlOptions, type AssessedUrls } from './up
 export const { addUrls, addUrl, assessUrls } = createUrlUpsert()
 
 /** One unlocked provider assessment followed by one batch persistence implementation. */
-function createUrlUpsert(
-  checkUrls: (urls: readonly string[]) => Promise<void> = assertUrlsAllowedByWebRisk,
-) {
+function createUrlUpsert() {
   const assessUrls = async (
     hrefs: readonly string[],
     { preserveHttp = false }: Pick<AddUrlOptions, 'preserveHttp'> = {},
@@ -32,7 +30,7 @@ function createUrlUpsert(
       return true
     })
 
-    await checkUrls(uniqueUrls.map(url => url.toString()))
+    await assertUrlsAllowedByWebRisk(uniqueUrls.map(url => url.toString()))
     return uniqueUrls
   }
   const addUrls = async (userId: string | null, hrefs: string[], options: AddUrlOptions = {}) => {
