@@ -23,6 +23,14 @@ export async function guardAndRetireMonthlyPartition(
 ): Promise<PartitionDropRefusal | null> {
   const table = assertSafeSqlIdentifier(candidate.table)
   const partition = assertSafeSqlIdentifier(candidate.partition)
+  // Common case first: a child that still holds rows (for example protected replay usage) cannot be
+  // retired, so decide that with an unlocked read before taking any lock on a hot parent table.
+  if (policy?.mustBeEmpty) {
+    const { rows } = await transaction(
+      `/* cleanupPartitions:probeNonEmpty */ SELECT 1 FROM ${partition} LIMIT 1`,
+    )
+    if (rows.length > 0) return 'in-flight'
+  }
   // Party writers update this generation before appending history. Fence them first so the
   // final hold probe cannot miss an already-held account newly joining a case.
   if (policy?.copyrightHistory) {

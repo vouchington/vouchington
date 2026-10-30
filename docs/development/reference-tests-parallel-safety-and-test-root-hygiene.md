@@ -4,6 +4,8 @@
 
 Backend database tests run in parallel forks against one persistent, dirty database. Shared test infrastructure that is not parallel-safe shows up as "flaky" CI failures. [Suite rules R1 and R2](tests.md#test-suite-rules) forbid creating a database or changing the schema from a test.
 
+An owner-directed partition lifecycle regression may need real child creation and retirement to prove routing and guarded deletion. Keep that exception in a later, ordered database-test phase after ordinary writers; reserve a synthetic month across processes, check that its child and aggregates are absent before claiming it, and retire only the child and rows the fixture created. CI gives each shard its own PostgreSQL service; the local worktree database remains disposable. If a failed run leaves an owned child whose cleanup cannot prove ownership, tear down and reinitialize that worktree's database before rerunning. Never clear a preexisting child or aggregate to make the reservation succeed.
+
 ## Shared rows and locks
 
 - **Materialized-view refreshes share one advisory lock.** The production refresh is nonblocking and throws a retryable contention error. Native preflights own refreshed-snapshot assertions in one process; database unit tests do not refresh views. The lock serializes individual refreshes, not an entire snapshot contract across multiple processes. Never replace it with a blocking production wait.

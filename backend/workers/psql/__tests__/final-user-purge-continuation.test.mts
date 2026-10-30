@@ -63,6 +63,7 @@ const settled = {
   completedRssImportBatches: continuationDone,
   expiredUserDataRequestAttempts: continuationDone,
   oldMediaDeliveryChanges: done,
+  aiUsageRecords: { ...done, cursorId: null },
   classifierRecords: {
     runCandidates: scannedDone,
     agentTopics: scannedDone,

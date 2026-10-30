@@ -46,6 +46,7 @@ describe('dev-tools Vitest config', () => {
       ['cloudflare-worker-portability', 'cloudflare-worker/scripts/wrangler/runtime.test.mts'],
       ['static-analysis-ast-grep', 'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts'],
       ['backend-data-stores', 'backend/test-helpers/entities/bluesky-link-authorizations.test.mts'],
+      ['backend-ai-usage-monthly-ddl', 'backend/services/data-retention/cleanup-ai-usage.test.mts'],
       ['backend-test-helpers', 'backend/test-helpers/sql-template-strings.test.mts'],
       [
         'backend-no-data-mocks',

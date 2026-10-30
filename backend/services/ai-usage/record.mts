@@ -1,4 +1,8 @@
-import { write, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
+import {
+  ensureAiUsageMonthForWrite,
+  needsAiUsageMonthCreation,
+} from '@data-stores/psql/ai-usage-monthly-partition'
 import sql from 'sql-template-strings'
 import { MODEL_PRICES } from '@modules/model-providers/pricing-table'
 import type { ModelUsage } from '@vouchington/ai/providers'
@@ -25,8 +29,8 @@ export interface RecordAiUsageOptions {
   /** The service tier the provider actually served, not the requested tier. */
   serviceTier: string
   usage: ModelUsage
-  /** Runs inside the caller's transaction instead of a fresh connection. */
-  query?: QueryExecutor
+  /** A live caller transaction; call before taking ledger/tier locks so this routine owns their order. */
+  query?: TransactionQuery
   /**
    * The response's true creation time (the request's start time), for a background
    * response recorded after its request day. daily-total.mts buckets spend by id-range, and
@@ -39,6 +43,76 @@ export interface RecordAiUsageOptions {
 }
 
 export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void> {
+  if (options.createdAt && needsAiUsageMonthCreation(options.createdAt, new Date())) {
+    if (options.query) {
+      // ast-grep-ignore: no-three-sequential-awaits -- FK parent locks must precede partition DDL, and the INSERT must follow creation in the same transaction.
+      const tierId = await lockAiUsageForeignKeyParents(options.query, options)
+      await ensureAiUsageMonthForWrite(options.query, options.createdAt)
+      await insertAiUsage(options, options.query, tierId)
+      return
+    }
+    await using transaction = await beginTransaction()
+    // ast-grep-ignore: no-three-sequential-awaits -- FK parent locks must precede partition DDL, and the INSERT must follow creation before commit.
+    const tierId = await lockAiUsageForeignKeyParents(transaction, options)
+    await ensureAiUsageMonthForWrite(transaction, options.createdAt)
+    await insertAiUsage(options, transaction, tierId)
+    await transaction.commit()
+    return
+  }
+  if (options.query) {
+    const tierId = await registerAiUsageTier(options.query, options.serviceTier)
+    await insertAiUsage(options, options.query, tierId)
+    return
+  }
+  await using transaction = await beginTransaction()
+  const tierId = await registerAiUsageTier(transaction, options.serviceTier)
+  await insertAiUsage(options, transaction, tierId)
+  await transaction.commit()
+}
+
+/** Lock referenced rows before the partition parent's DDL lock to match deletion FK lock order. */
+async function lockAiUsageForeignKeyParents(
+  transaction: QueryExecutor,
+  options: RecordAiUsageOptions,
+): Promise<string> {
+  // Creating a child may take an ACCESS EXCLUSIVE lock on this FK target. Acquire it before the
+  // tier upsert or any other row lock, so an ordinary writer cannot hold the tier relation while
+  // waiting for the row that this transaction owns.
+  await transaction(sql`/* lockAiUsageForeignKeyParents:tierTable */
+    LOCK TABLE ai_service_tiers IN ACCESS EXCLUSIVE MODE`)
+  if (options.communityId) {
+    await transaction(sql`/* lockAiUsageForeignKeyParents:community */
+      SELECT id FROM communities WHERE id = ${options.communityId} FOR KEY SHARE`)
+  }
+  if (options.postId) {
+    await transaction(sql`/* lockAiUsageForeignKeyParents:post */
+      SELECT id FROM posts WHERE id = ${options.postId} FOR KEY SHARE`)
+  }
+  if (options.classifierRunId) {
+    await transaction(sql`/* lockAiUsageForeignKeyParents:classifier */
+      SELECT id FROM classifier_run_identities WHERE id = ${options.classifierRunId} FOR KEY SHARE`)
+  }
+  const tierId = await registerAiUsageTier(transaction, options.serviceTier)
+  await transaction(sql`/* lockAiUsageForeignKeyParents:currency */
+    SELECT code FROM currencies WHERE code = 'usd' FOR KEY SHARE`)
+  return tierId
+}
+
+async function registerAiUsageTier(run: QueryExecutor, serviceTier: string): Promise<string> {
+  const { rows } = await run<{ id: string }>(sql`/* registerAiUsageTier */
+    INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
+    ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
+    RETURNING id`)
+  const id = rows[0]?.id
+  if (!id) throw new Error('AI service tier registration returned no row')
+  return id
+}
+
+async function insertAiUsage(
+  options: RecordAiUsageOptions,
+  run: QueryExecutor,
+  tierId: string,
+): Promise<void> {
   const {
     communityId,
     postId,
@@ -52,17 +126,11 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void
     usage,
     createdAt,
   } = options
-  const run = options.query ?? write
   const costMicrounits = getUsageCostMicrounits(
     { provider, model, serviceTier, usage },
     MODEL_PRICES,
   )
   await run(sql`/* recordAiUsage */
-    WITH registered_tier AS (
-      INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
-      ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
-      RETURNING id
-    )
     INSERT INTO ai_usage_records (
       id,
       community_id,
@@ -84,7 +152,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void
       cost_microunits,
       currency_code
     )
-    SELECT uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0')),
+    VALUES (uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0')),
       ${communityId ?? null},
       ${postId ?? null},
       ${classifierRunId ?? null},
@@ -92,7 +160,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void
       ${provider},
       ${transport},
       ${model},
-      registered_tier.id,
+      ${tierId},
       ${usage.inputTokens},
       ${usage.cacheReadTokens},
       ${usage.cacheWrite5mTokens},
@@ -102,7 +170,6 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void
       ${latencyMs ?? null},
       ${costMicrounits === null ? 'unpriced' : 'priced'},
       ${costMicrounits},
-      ${costMicrounits === null ? null : 'usd'}
-    FROM registered_tier
+      ${costMicrounits === null ? null : 'usd'})
   `)
 }

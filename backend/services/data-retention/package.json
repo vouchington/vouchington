@@ -52,6 +52,7 @@
     "@services/notifications": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "@services/user-deletions": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

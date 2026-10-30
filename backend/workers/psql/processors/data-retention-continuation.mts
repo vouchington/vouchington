@@ -25,6 +25,7 @@ export async function admitDataRetentionContinuations(
   const activePostModerationKinds = result.postModerationLedger.remainingKinds
   const enqueueCleanup =
     dependencies?.enqueueDataRetentionCleanupContinuation ?? enqueueDataRetentionCleanupContinuation
+  const activeAiUsage = result.aiUsageRecords.hasMore
   const userPurge = result.softDeletedUsers.hasMore ? result.softDeletedUsers.userPurge : undefined
   if (!continuation)
     await admitCopyrightRetentionContinuation(activeCopyrightFamilies, jobId, enqueueCleanup)
@@ -32,7 +33,8 @@ export async function admitDataRetentionContinuations(
     activeClassifierSweeps.length > 0 ||
     activeMembershipFamilies.length > 0 ||
     activePostModerationKinds.length > 0 ||
-    result.softDeletedUsers.hasMore
+    result.softDeletedUsers.hasMore ||
+    activeAiUsage
   ) {
     if (!jobId) throw new Error('Data retention continuation needs the current job ID')
     const runId = continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
@@ -43,6 +45,7 @@ export async function admitDataRetentionContinuations(
       activeMembershipFamilies,
       activePostModerationKinds,
       ...(userPurge ? { userPurge } : {}),
+      activeAiUsage,
     })
   }
 }

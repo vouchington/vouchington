@@ -52,5 +52,13 @@ export const RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS = [
     'notification_email_retention_cleanup_cursors.cursor_notification_partition_id',
     'Persisted notification partition-key tie-breaker survives user deletion; it is not a relationship.',
   ],
+  [
+    'ai_usage_retention_cursors.cursor_id',
+    'Operational raw usage keyset position survives deletion of its scanned record; it is not a relationship.',
+  ],
+  [
+    'ai_usage_retention_cursors.sweep_upper_bound_id',
+    'Fixed UUIDv7 sweep boundary is a scan position, not a relationship to a raw usage record.',
+  ],
 ] as const satisfies readonly (readonly [string, string])[]
 /* v8 ignore stop */

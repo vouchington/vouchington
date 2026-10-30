@@ -2,6 +2,7 @@
 
 import type { MonthlyPartitionTableConfig } from '@vouchington/postgres/partitions'
 import {
+  AI_USAGE_PARTITION_TABLES,
   COPYRIGHT_HISTORY_PARTITION_TABLES,
   CRAWL_PARTITION_TABLES,
   DECISION_HISTORY_PARTITION_TABLES,
@@ -11,6 +12,7 @@ import {
 } from './partition-config-monthly.mts'
 
 export {
+  AI_USAGE_PARTITION_TABLES,
   COPYRIGHT_HISTORY_PARTITION_TABLES,
   CRAWL_PARTITION_TABLES,
   DECISION_HISTORY_PARTITION_TABLES,
@@ -72,7 +74,6 @@ export const USER_KEY_PARTITION_TABLES: string[] = [
  * Default partition, split by adding explicit range partitions when needed
  */
 export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
-  'ai_usage_records',
   'mcp_call_audit_events',
   'session_referral_attributions',
 ]
@@ -85,4 +86,5 @@ export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...POST_REVISION_PARTITION_TABLES,
   ...TOPIC_REVISION_PARTITION_TABLES,
   ...DECISION_HISTORY_PARTITION_TABLES,
+  ...AI_USAGE_PARTITION_TABLES,
 ]

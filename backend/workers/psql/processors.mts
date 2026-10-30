@@ -118,6 +118,7 @@ export default async function processPsql(
             ...(data.continuation.userPurge
               ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
               : {}),
+            aiUsageRecords: { active: data.continuation.activeAiUsage ?? false },
           })
         : await cleanup(getDataRetentionLimits())
       const aiFamilies = AI_RETENTION_FAMILIES.filter(family => result[family].hasMore)

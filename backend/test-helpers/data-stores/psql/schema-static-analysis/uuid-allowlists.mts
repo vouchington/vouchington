@@ -2,11 +2,11 @@ import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-
 import { AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './ai-retention-uuid-allowlists.mts'
 import { CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './classifier-run-allowlists.mts'
 import { COPYRIGHT_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './copyright-retention-uuid-allowlists.mts'
+import { RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from './retention-cursor-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
 import { MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS } from './moderation-cleanup-uuid-allowlists.mts'
 import { NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './notification-push-retention-allowlists.mts'
-import { RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from './retention-cursor-uuid-allowlists.mts'
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'

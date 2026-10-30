@@ -12,6 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
+import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -27,6 +28,8 @@ describe('runDataRetentionCleanup', () => {
     onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
+    const releaseAiUsageSweep = await reserveTestAiUsageRetentionSweep()
+    onTestFinished(releaseAiUsageSweep)
     const now = new Date()
     const limits = { batchSize: 10, maxBatches: 10 }
     const emptyWindow = {
@@ -74,6 +77,7 @@ describe('runDataRetentionCleanup', () => {
       systemPrunedNotifications: emptyWindow,
       userDeletedNotifications: emptyWindow,
       moderationEmailSends: emptyWindow,
+      aiUsageRecords: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])

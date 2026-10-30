@@ -11,6 +11,7 @@ import {
   type PartitionDropRefusal,
 } from './partition-drop-guard.mts'
 import {
+  listAttachedMonthlyDropCandidate,
   listMonthlyDropCandidates,
   type PartitionCleanupCursor,
 } from './monthly-partition-candidates.mts'
@@ -41,8 +42,23 @@ export async function cleanupPartitions(
     limit?: number
     after?: PartitionCleanupCursor
     query?: QueryExecutor
+    /** A fold knows its completed month, so its continuation checks only that attached child. */
+    target?: { table: string; monthStart: Date }
   },
 ): Promise<PartitionCleanupPage> {
+  if (options.target) {
+    const candidates = await listAttachedMonthlyDropCandidate(
+      options.target.table,
+      options.target.monthStart,
+      options.query ?? write,
+    )
+    const outcomes = await retireMonthlyDropCandidates(
+      candidates,
+      referenceDate,
+      options.feedbackBatchSize,
+    )
+    return { outcomes, hasMore: false }
+  }
   const page = await listMonthlyDropCandidates(
     options.query ?? write,
     options.limit ?? DEFAULT_PARTITION_CLEANUP_LIMIT,

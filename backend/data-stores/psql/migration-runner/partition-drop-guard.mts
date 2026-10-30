@@ -100,6 +100,7 @@ export async function getPartitionDropStatusRefusals(
     const inFlightChecks = (policy.inFlightPredicates ?? []).map(
       predicate => `EXISTS (SELECT 1 FROM ${partition} WHERE ${predicate} LIMIT 1)`,
     )
+    if (policy.mustBeEmpty) inFlightChecks.push(`EXISTS (SELECT 1 FROM ${partition} LIMIT 1)`)
     if (inFlightChecks.length > 0) {
       checks.push(`WHEN ${inFlightChecks.join(' OR ')} THEN 'in-flight'`)
     }
@@ -157,5 +158,10 @@ export async function getPartitionDropRefusal(
     return rows.length > 0 || hasInFlightAt(index + 1)
   }
   if (await hasInFlightAt(0)) return 'in-flight'
+  if (policy.mustBeEmpty) {
+    const { rows } = await query(`/* getPartitionDropRefusal:nonempty */
+      SELECT 1 FROM ${partition} LIMIT 1`)
+    if (rows.length > 0) return 'in-flight'
+  }
   return null
 }

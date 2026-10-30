@@ -1,5 +1,6 @@
 import {
   assertSafeSqlIdentifier,
+  buildMonthlyPartitionName,
   filterRetainedMonthlyPartitionTables,
   parseMonthlyPartitionName,
 } from '@vouchington/postgres/partitions'
@@ -66,4 +67,43 @@ export async function listMonthlyDropCandidates(
       nextCursor: { priority: Number(next.priority), partition: String(next.partition_table) },
     }),
   }
+}
+
+/** A fold knows its completed month, so its continuation checks only that attached child. */
+export async function listAttachedMonthlyDropCandidate(
+  table: string,
+  monthStart: Date,
+  query: QueryExecutor,
+): Promise<PartitionDropCandidate[]> {
+  if (!ALL_MONTHLY_PARTITION_TABLES.some(config => config.table === table)) {
+    throw new Error(`Not a managed monthly partition parent: ${table}`)
+  }
+  const safeTable = assertSafeSqlIdentifier(table)
+  const partition = assertSafeSqlIdentifier(
+    buildMonthlyPartitionName(table, monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1),
+  )
+  const { rows } = await query<{ attached: boolean }>(
+    `/* listAttachedMonthlyDropCandidate */
+      SELECT EXISTS (
+        SELECT 1 FROM pg_inherits AS inheritance
+        JOIN pg_class AS parent ON parent.oid = inheritance.inhparent
+        JOIN pg_namespace AS namespace ON namespace.oid = parent.relnamespace
+        WHERE inheritance.inhparent = to_regclass($1)
+          AND inheritance.inhrelid = to_regclass($2)
+          AND namespace.nspname = current_schema()
+        LIMIT 1
+      ) AS attached`,
+    [safeTable, partition],
+  )
+  return rows[0]?.attached
+    ? [
+        {
+          table,
+          partition,
+          upperBound: new Date(
+            Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1),
+          ),
+        },
+      ]
+    : []
 }

@@ -145,6 +145,21 @@ describe('partition drop guard', () => {
     ).resolves.toBeNull()
   })
 
+  it('refuses a raw evidence child until its bounded fold has removed every row', async () => {
+    const oldCandidate = {
+      table: 'ai_usage_records',
+      partition: 'ai_usage_records__p_2025_01',
+      upperBound: new Date('2025-02-01T00:00:00.000Z'),
+    }
+    const policy = { minimumRetentionDays: 180, mustBeEmpty: true }
+    await expect(
+      getPartitionDropRefusal(queryWithResults({ nonempty: true }), oldCandidate, policy, now),
+    ).resolves.toBe('in-flight')
+    await expect(
+      getPartitionDropRefusal(queryWithResults({}), oldCandidate, policy, now),
+    ).resolves.toBeNull()
+  })
+
   it('checks eligible partition statuses in one query with index-stopping probes', async () => {
     const statements: string[] = []
     const query = (async (statement: string) => {

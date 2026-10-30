@@ -1,5 +1,5 @@
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
-/* oxlint-disable max-lines -- central retention orchestration keeps all bounded cleanup results together. */
+/* oxlint-disable max-lines, react-doctor/async-parallel -- central retention orchestration preserves dependent cleanup order. */
 // Data retention necessarily accesses tables owned by other services. This cross-service SQL is intentional:
 // the retention job must hard-delete orphaned OAuth rows that have no owning service
 // to delegate to (user_id is already NULL). Exposing hardDelete helpers from each
@@ -19,6 +19,7 @@ import {
   deleteOrphanedOAuthAccountBatch,
 } from './cleanup-batches.mts'
 import {
+  getAiUsageRawRetentionDays,
   getClassifierRetentionDays,
   getDataRetentionLimits,
   readDataRetentionField,
@@ -30,6 +31,7 @@ import {
   cleanupClassifierRecords,
   type ClassifierCleanupResult,
 } from './cleanup-classifier-records.mts'
+import { cleanupAiUsageRecords, type AiUsageCleanupResult } from './cleanup-ai-usage.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -258,6 +260,9 @@ type DataRetentionCleanupOptions = {
   otherHostnameBlocks?: OptionalRetentionLimits<OperationalCleanupOptions>
   deletedConversations?: OptionalRetentionLimits<OperationalCleanupOptions>
   appAttestationKeys?: OptionalRetentionLimits<OperationalCleanupOptions>
+  aiUsageRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
+    active?: boolean
+  }
 }
 
 type DataRetentionCleanupResult = {
@@ -320,6 +325,7 @@ type DataRetentionCleanupResult = {
   otherHostnameBlocks: OperationalTombstoneCleanupResult
   deletedConversations: OperationalTombstoneCleanupResult
   appAttestationKeys: OperationalTombstoneCleanupResult
+  aiUsageRecords: AiUsageCleanupResult
 }
 
 export type VoteRetentionSelection = {
@@ -625,6 +631,13 @@ export async function runDataRetentionCleanup(
     'app_attestation_keys',
     withLimits(options.appAttestationKeys),
   )
+  const aiUsageRecords =
+    options.aiUsageRecords?.active === false
+      ? { deleted: 0, hasMore: false, cursorId: null }
+      : await cleanupAiUsageRecords({
+          ...withLimits(options.aiUsageRecords),
+          retentionDays: getAiUsageRawRetentionDays(),
+        })
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -694,6 +707,7 @@ export async function runDataRetentionCleanup(
     otherHostnameBlocks,
     deletedConversations,
     appAttestationKeys,
+    aiUsageRecords,
   }
 }
 

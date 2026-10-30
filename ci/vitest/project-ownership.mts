@@ -74,6 +74,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     projects: noCredential([
       'backend/analytics-integration',
       'backend-data-stores',
+      'backend-ai-usage-monthly-ddl',
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-migration-initializers',
