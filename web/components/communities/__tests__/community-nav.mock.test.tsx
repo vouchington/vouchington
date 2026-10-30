@@ -130,23 +130,6 @@ describe('CommunityNav', () => {
   })
 
   describe('role-gated tabs', () => {
-    it('shows Moderation dropdown trigger for owner', () => {
-      const { container } = render(
-        <CommunityNav
-          slug='rewards-watch'
-          visibility='public'
-          newsEnabled
-          membership={{ ...MEMBERSHIP_STUB, role: 'owner' }}
-          currentUserRole='owner'
-        />,
-      )
-      // Moderation is now a dropdown; its trigger is a span (no href). Dropdown items render in a
-      // portal and are not in container when closed — test that the trigger is present.
-      const moderationTrigger = navItem(container, 'moderation')
-      expect(moderationTrigger).toBeInTheDocument()
-      expect(moderationTrigger?.tagName.toLowerCase()).not.toBe('a')
-    })
-
     it('shows Settings and Moderation tabs for owner', () => {
       const { container } = render(
         <CommunityNav
@@ -164,6 +147,7 @@ describe('CommunityNav', () => {
       // Moderation is now a dropdown trigger (span), not a direct link
       const moderationTrigger = navItem(container, 'moderation')
       expect(moderationTrigger).toBeInTheDocument()
+      expect(moderationTrigger?.tagName.toLowerCase()).not.toBe('a')
     })
 
     it('does not show Settings tab for moderator', () => {

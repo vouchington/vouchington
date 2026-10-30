@@ -107,20 +107,6 @@ describe('CommunityListItemCard', () => {
     expect(screen.getByRole('link', { name: 'Travel' })).toHaveAttribute('href', '/topic/travel')
   })
 
-  it('shows remove button for managers', () => {
-    render(
-      <CommunityListItemCard
-        item={item}
-        itemType='topic'
-        data={data}
-        communitySlug='test-community'
-        canManage
-      />,
-    )
-
-    expect(screen.getByRole('button', { name: 'Remove Travel from list' })).toBeInTheDocument()
-  })
-
   it('renders comment post items without a canonical post link', () => {
     render(
       <CommunityListItemCard
@@ -179,6 +165,7 @@ describe('CommunityListItemCard', () => {
       />,
     )
 
+    expect(screen.getByRole('button', { name: 'Remove Travel from list' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Remove Travel from list' }))
 
     await waitFor(() => {

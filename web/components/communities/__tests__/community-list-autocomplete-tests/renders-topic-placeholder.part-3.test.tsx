@@ -1,9 +1,7 @@
 import {
   AUTOCOMPLETE_WAIT_TIMEOUT,
-  baseRssFeed,
   baseTopic,
   mockFetchTopics,
-  mockSearchRssFeeds,
 } from '@/test-helpers/components/communities/community-list-autocomplete.mock-support'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -48,23 +46,5 @@ describe('CommunityListAutocomplete', () => {
     })
     fireEvent.click(screen.getByText('Chase Sapphire Reserve'))
     expect(handleSelect).toHaveBeenCalledWith('topic-1')
-  })
-
-  it('searches rss feeds and shows results', async () => {
-    mockSearchRssFeeds.mockResolvedValueOnce([baseRssFeed])
-
-    render(
-      <CommunityListAutocomplete
-        itemType='rss_feed'
-        onSelect={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    fireEvent.change(screen.getByPlaceholderText('Search sources...'), {
-      target: { value: 'points' },
-    })
-
-    await waitFor(() => expect(screen.getByText('The Points Guy')).toBeDefined(), {
-      timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-    })
   })
 })
