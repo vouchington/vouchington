@@ -26,7 +26,7 @@ type UserMetricsRow = {
   bookmarks__updated_at: Date
 }
 
-export function getUserMetricsByAny(
+function getUserMetricsByAny(
   idOrUsername: string,
   options: QueryOptions = {},
 ): Promise<UserMetrics | null> {

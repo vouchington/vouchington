@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   getOpenAITransport,
-  getServiceModelSelection,
+  loadServiceModelSelection,
   modelRoutingConfig,
 } from '../model-routing-config.mts'
 
@@ -10,7 +10,7 @@ describe('model routing config', () => {
   it('defaults every service to Haiku 5.5 through the direct transport', async () => {
     await modelRoutingConfig.waitForInitialization()
 
-    expect(getServiceModelSelection('autotagger-agent')).toEqual({
+    await expect(loadServiceModelSelection('autotagger-agent')).resolves.toEqual({
       provider: 'anthropic',
       model: 'claude-haiku-5-5',
     })
@@ -25,11 +25,13 @@ describe('model routing config', () => {
       story_post_model: 'gpt-6-luna',
     })
     try {
-      expect(getServiceModelSelection('story-post')).toEqual({
+      await expect(loadServiceModelSelection('story-post')).resolves.toEqual({
         provider: 'openai',
         model: 'gpt-6-luna',
       })
-      expect(getServiceModelSelection('report-judgement').provider).toBe('anthropic')
+      await expect(loadServiceModelSelection('report-judgement')).resolves.toMatchObject({
+        provider: 'anthropic',
+      })
       expect(getOpenAITransport()).toBe('direct')
     } finally {
       restore()

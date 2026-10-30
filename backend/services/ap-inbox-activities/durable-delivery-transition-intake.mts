@@ -21,7 +21,7 @@ export function createActivityPubInboxDeliveryJob(
   }
 }
 
-export function computeActivityPubInboxRequestDigest(
+function computeActivityPubInboxRequestDigest(
   envelope: Pick<
     ActivityPubInboxEnvelope,
     | 'requestMethod'

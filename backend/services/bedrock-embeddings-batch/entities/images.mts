@@ -11,7 +11,7 @@ import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
 const MAX_IMAGE_EMBEDDING_PIXELS = 24_000_000
 const MAX_IMAGE_EMBEDDING_DIMENSION = 1024
 
-export const MAX_IMAGE_EMBEDDING_SOURCE_BYTES = MAX_IMAGE_UPLOAD_BYTES
+const MAX_IMAGE_EMBEDDING_SOURCE_BYTES = MAX_IMAGE_UPLOAD_BYTES
 
 type PendingImage = {
   id: string
