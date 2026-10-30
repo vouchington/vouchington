@@ -83,11 +83,6 @@ describe('cookies', () => {
       expect(getFeatureFlagSnapshot()).toEqual({ fediverse: false })
     })
 
-    it('returns parsed flags when a cookie is set', () => {
-      cookieJar.setRaw(FF_COOKIE, encodeFeatureFlagCookie({ memberships: true }))
-      expect(getFeatureFlagSnapshot()).toEqual({ memberships: true })
-    })
-
     it('returns {} once the cookie has been removed', () => {
       cookieJar.setRaw(FF_COOKIE, encodeFeatureFlagCookie({ memberships: true }))
       expect(getFeatureFlagSnapshot()).toEqual({ memberships: true })

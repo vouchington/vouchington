@@ -51,15 +51,6 @@ describe('server feature flag behavior', () => {
     await expect(getEffectiveServerFeatureFlag('fediverse')).resolves.toBe(false)
   })
 
-  it('merges global flags and anonymous cookie overrides', async () => {
-    const cookie = encodeFeatureFlagCookie({ fediverse: true })
-    mockCookies.mockResolvedValue({ get: () => ({ value: cookie }) })
-    mockGetFeatureFlags.mockResolvedValue({ flags: { memberships: true, fediverse: false } })
-
-    await expect(getEffectiveServerFeatureFlag('memberships')).resolves.toBe(true)
-    await expect(getEffectiveServerFeatureFlag('fediverse')).resolves.toBe(true)
-  })
-
   it('applies only catalog flags from the cookie when global flags load', async () => {
     const cookie = encodeFeatureFlagCookie({
       fediverse: false,

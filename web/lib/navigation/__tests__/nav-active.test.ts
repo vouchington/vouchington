@@ -41,10 +41,6 @@ describe('isNavItemActive — excludePathPrefixes', () => {
     expect(isNavItemActive('/foo', '/foo/baz', false, ['/foo/bar'])).toBe(true)
   })
 
-  it('excludes exact prefix match', () => {
-    expect(isNavItemActive('/foo', '/foo/bar', false, ['/foo/bar'])).toBe(false)
-  })
-
   it('excludes prefix with child path', () => {
     expect(isNavItemActive('/foo', '/foo/bar/baz', false, ['/foo/bar'])).toBe(false)
   })

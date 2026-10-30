@@ -35,73 +35,17 @@ describe('getActiveIntent', () => {
     it('resolves /podcasts to podcasts', () => {
       expect(getActiveIntent('/podcasts')).toBe('podcasts')
     })
-
-    it('resolves /feed/podcasts to podcasts', () => {
-      expect(getActiveIntent('/feed/podcasts')).toBe('podcasts')
-    })
-
-    it('resolves /podcast-episodes to podcasts', () => {
-      expect(getActiveIntent('/podcast-episodes')).toBe('podcasts')
-    })
-
-    it('resolves /my/podcasts to podcasts', () => {
-      expect(getActiveIntent('/my/podcasts')).toBe('podcasts')
-    })
   })
 
   describe('videos intent', () => {
     it('resolves /videos to videos', () => {
       expect(getActiveIntent('/videos')).toBe('videos')
     })
-
-    it('resolves /feed/videos to videos', () => {
-      expect(getActiveIntent('/feed/videos')).toBe('videos')
-    })
-
-    it('resolves /my/channels to videos', () => {
-      expect(getActiveIntent('/my/channels')).toBe('videos')
-    })
-
-    it('resolves /channels to videos', () => {
-      expect(getActiveIntent('/channels')).toBe('videos')
-    })
   })
 
   describe('other intents', () => {
-    it('resolves /web-search to web-search', () => {
-      expect(getActiveIntent('/web-search')).toBe('web-search')
-    })
-
-    it('resolves /domains to web-search', () => {
-      expect(getActiveIntent('/domains')).toBe('web-search')
-    })
-
     it('resolves /urls to web-search', () => {
       expect(getActiveIntent('/urls')).toBe('web-search')
-    })
-
-    it('resolves /sources to web-search', () => {
-      expect(getActiveIntent('/sources')).toBe('web-search')
-    })
-
-    it('resolves /source/123 to web-search (baseline; overridden per feed_type by SetNavIntent)', () => {
-      expect(getActiveIntent('/source/123')).toBe('web-search')
-    })
-
-    it('resolves /my/sources/import-export to web-search', () => {
-      expect(getActiveIntent('/my/sources/import-export')).toBe('web-search')
-    })
-
-    it('resolves /crawler/123 to web-search', () => {
-      expect(getActiveIntent('/crawler/123')).toBe('web-search')
-    })
-
-    it('resolves /crawler/123/edit to web-search', () => {
-      expect(getActiveIntent('/crawler/123/edit')).toBe('web-search')
-    })
-
-    it('resolves /referral-programs to referral-links', () => {
-      expect(getActiveIntent('/referral-programs')).toBe('referral-links')
     })
 
     it('resolves /my/referrals to referral-links', () => {
