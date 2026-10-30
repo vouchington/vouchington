@@ -11,11 +11,12 @@ import {
   reserveTestAiUsageRetentionSweep,
 } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
-import { reserveTestAiUsageMonths } from '@voucha/test-helpers/entities/ai-usage-monthly-partitions'
 import {
-  listMonthlyDropCandidates,
-  retireMonthlyPartitionCandidate,
-} from '@data-stores/psql/migration-runner/monthly-partitions'
+  isTestAiUsagePartitionAttached,
+  reserveTestAiUsageMonths,
+  testAiUsageCandidate,
+} from '@voucha/test-helpers/entities/ai-usage-monthly-partitions'
+import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-runner/monthly-partitions'
 import { getCommunityAiCostTotals } from '../ai-usage/totals.mts'
 import { readClassifierRunUsage } from '../classifier-runs/usage-report-runs.mts'
 import { cleanupAiUsageRecords } from './cleanup-ai-usage.mts'
@@ -128,14 +129,9 @@ describe('AI usage retention', () => {
     const febBefore = await readTestAiUsageRollups(community.id, month(2))
     const cutoff = date(2, 15)
     const now = new Date(cutoff.getTime() + 180 * DAY_MS)
-    const candidates = await listMonthlyDropCandidates()
-    const january = candidates.find(
-      candidate => candidate.partition === `ai_usage_records__p_${year}_01`,
-    )!
-    const february = candidates.find(
-      candidate => candidate.partition === `ai_usage_records__p_${year}_02`,
-    )!
-    expect(await retireMonthlyPartitionCandidate(january, now)).toMatchObject({
+    const january = testAiUsageCandidate(`ai_usage_records__p_${year}_01`)
+    const february = testAiUsageCandidate(`ai_usage_records__p_${year}_02`)
+    expect(await retireMonthlyPartitionCandidate(january, now, 1)).toMatchObject({
       outcome: 'refused',
       reason: 'in-flight',
     })
@@ -155,11 +151,7 @@ describe('AI usage retention', () => {
     const second = await cleanupAiUsageRecords(laterTick)
     expect(second).toMatchObject({ deleted: 1, hasMore: true })
     expect(second.cursorId).toBe(janCommunity)
-    expect(
-      (await listMonthlyDropCandidates()).some(
-        candidate => candidate.partition === january.partition,
-      ),
-    ).toBe(false)
+    expect(await isTestAiUsagePartitionAttached(january.partition)).toBe(false)
     const third = await cleanupAiUsageRecords(laterTick)
     expect(third).toMatchObject({ deleted: 1, hasMore: false, cursorId: null })
     expect(await countTestAiUsageRows(ownedIds)).toBe(1)
@@ -188,7 +180,7 @@ describe('AI usage retention', () => {
     expect(await readTestAiUsageRollups(community.id, month(1))).toEqual(janAfter)
     expect(await readTestAiUsageRollups(community.id, month(2))).toEqual(febAfter)
     expect(
-      await retireMonthlyPartitionCandidate(february, new Date(now.getTime() + 30 * DAY_MS)),
+      await retireMonthlyPartitionCandidate(february, new Date(now.getTime() + 30 * DAY_MS), 1),
     ).toMatchObject({
       outcome: 'refused',
       reason: 'in-flight',

@@ -2,9 +2,11 @@ import { randomInt, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 import {
+  isTestAiUsagePartitionAttached,
   probeBlockedAiUsageRetirement,
   readTestAiUsageIdsForMonth,
   reserveTestAiUsageMonths,
+  testAiUsageCandidate,
 } from '@voucha/test-helpers/entities/ai-usage-monthly-partitions'
 import { runAiUsageTierOrderRace } from '@voucha/test-helpers/entities/ai-usage-tier-lock-order'
 import {
@@ -12,10 +14,7 @@ import {
   insertTestAiUsageResponseKey,
   reserveTestAiUsageRetentionSweep,
 } from '@voucha/test-helpers/entities/ai-usage-rollups'
-import {
-  listMonthlyDropCandidates,
-  retireMonthlyPartitionCandidate,
-} from '@data-stores/psql/migration-runner/monthly-partitions'
+import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-runner/monthly-partitions'
 import { getDateFromUUIDv7, mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
@@ -34,8 +33,8 @@ describe('backdated AI usage on retired monthly history', () => {
       await releaseMonth([...backdatedIds, ...ordinaryIds])
     })
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
-    const candidate = (await listMonthlyDropCandidates()).find(row => row.partition === partition)!
-    expect(await retireMonthlyPartitionCandidate(candidate, new Date())).toMatchObject({
+    const candidate = testAiUsageCandidate(partition)
+    expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
       outcome: 'dropped',
     })
     const usage = {
@@ -72,14 +71,14 @@ describe('backdated AI usage on retired monthly history', () => {
     const ownedCommunityIds: string[] = []
     onTestFinished(() => releaseMonth(ownedIds, ownedCommunityIds))
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
-    const candidate = (await listMonthlyDropCandidates()).find(row => row.partition === partition)!
+    const candidate = testAiUsageCandidate(partition)
     const user = await createTestUser()
     const community = await insertTestCommunity({ createdById: user.id })
     ownedCommunityIds.push(community.id)
     expect(await probeBlockedAiUsageRetirement(candidate, community.id)).toBe('55P03')
     expect(await probeBlockedAiUsageRetirement(candidate, null)).toBe('55P03')
-    expect((await listMonthlyDropCandidates()).some(row => row.partition === partition)).toBe(true)
-    expect(await retireMonthlyPartitionCandidate(candidate, new Date())).toMatchObject({
+    expect((await isTestAiUsagePartitionAttached(partition))).toBe(true)
+    expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
       outcome: 'dropped',
     })
     const agentSlug = `test-backdated-${randomUUID()}`
@@ -107,7 +106,7 @@ describe('backdated AI usage on retired monthly history', () => {
       createdAt.toISOString().slice(0, 10),
     )
     const responseId = await insertTestAiUsageResponseKey(mintUUIDv7(), ids[0]!)
-    expect(await retireMonthlyPartitionCandidate(candidate, new Date())).toMatchObject({
+    expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
       outcome: 'refused',
       reason: 'in-flight',
     })

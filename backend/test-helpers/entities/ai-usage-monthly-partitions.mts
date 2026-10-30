@@ -107,6 +107,24 @@ async function unlockDdl(client: PoolClient): Promise<void> {
   if (!rows[0]?.unlocked) throw new Error('AI usage partition DDL lock was not held')
 }
 
+/** A drop candidate named directly, so tests do not page the whole database's partition list. */
+export function testAiUsageCandidate(partition: string): PartitionDropCandidate {
+  return {
+    table: 'ai_usage_records',
+    partition,
+    upperBound: getMonthlyPartitionUpperBound('ai_usage_records', partition),
+  }
+}
+
+export async function isTestAiUsagePartitionAttached(partition: string): Promise<boolean> {
+  const { rows } = await write<{ attached: boolean }>(sql`/* isTestAiUsagePartitionAttached */
+    SELECT EXISTS (
+      SELECT 1 FROM pg_inherits
+      WHERE inhparent = to_regclass('ai_usage_records') AND inhrelid = to_regclass(${partition})
+    ) AS attached`)
+  return rows[0]?.attached === true
+}
+
 export async function readTestAiUsageIdsForMonth(date: Date, agentSlug: string): Promise<string[]> {
   const from = timestampToUuidv7LowerBound(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
   const to = timestampToUuidv7LowerBound(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1))
@@ -158,11 +176,7 @@ async function retireOwnedMonths(
     const { rows } = await write<{ absent: boolean }>(sql`/* retireOwnedAiUsageMonths:absent */
       SELECT to_regclass(${name}) IS NULL AS absent`)
     if (rows[0]?.absent) continue
-    const candidate: PartitionDropCandidate = {
-      table: 'ai_usage_records',
-      partition: name,
-      upperBound: getMonthlyPartitionUpperBound('ai_usage_records', name),
-    }
+    const candidate = testAiUsageCandidate(name)
     const result = await retireMonthlyPartitionCandidate(
       candidate,
       new Date('9999-01-01T00:00:00Z'),

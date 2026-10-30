@@ -15,6 +15,7 @@ const noAIRetention = {
   supersededVoteBallots: settledVoteBallots,
   orphanedUserAgentStrings: { hasMore: false },
   voteIntegrityDetails: { hasMore: false },
+  aiUsageRecords: { hasMore: false },
 }
 
 describe('post moderation retention continuation', () => {
