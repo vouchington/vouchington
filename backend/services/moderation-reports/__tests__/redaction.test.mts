@@ -170,27 +170,6 @@ describe('moderation-reports/redaction', () => {
       }
     })
 
-    it('supports sort asc', async () => {
-      const postId = await insertTestPost({
-        createdById: author.id,
-        slug: `redaction-sort-asc-${crypto.randomUUID().slice(0, 8)}`,
-        title: `Redaction Sort Asc Post ${crypto.randomUUID().slice(0, 8)}`,
-        markdown: 'body',
-      })
-      await insertTestModerationReport({
-        reporterUserId: reporter.id,
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-      })
-
-      const { reports } = await listRedactedModerationReports({
-        limit: 100,
-        sort: 'created_at_asc',
-      })
-      expect(reports.length).toBeGreaterThan(0)
-    })
-
     it('paginates with a cursor under sort asc', async () => {
       const postId = await insertTestPost({
         createdById: author.id,

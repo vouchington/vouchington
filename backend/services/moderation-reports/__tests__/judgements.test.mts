@@ -250,34 +250,17 @@ describe('moderation-reports/judgements', () => {
       const ids = result.map(r => r.id)
       expect(ids).toContain(r1)
       expect(ids).toContain(r2)
+      expect(result.find(row => row.id === r1)).toMatchObject({
+        reason: 'spam',
+        note: 'First note',
+      })
+      expect(result.find(row => row.id === r2)).toMatchObject({ reason: 'harassment' })
       // Verify order: DESC by created_at
       for (let i = 1; i < result.length; i++) {
         expect(result[i - 1]!.created_at.getTime()).toBeGreaterThanOrEqual(
           result[i]!.created_at.getTime(),
         )
       }
-    })
-
-    it('includes reason and note fields', async () => {
-      const postId = await insertTestPost({
-        createdById: author.id,
-        slug: `get-all-reports-note-${crypto.randomUUID().slice(0, 8)}`,
-        title: `Get All Reports Note Post ${crypto.randomUUID().slice(0, 8)}`,
-        markdown: 'body',
-      })
-      const r = await createTestUser()
-      await insertTestModerationReport({
-        reporterUserId: r.id,
-        entityType: 'post',
-        entityId: postId,
-        reason: 'misinformation',
-        note: 'This is false',
-      })
-
-      const result = await getAllReportsForEntity('post', postId)
-      const found = result.find(row => row.reason === 'misinformation')
-      expect(found).toBeDefined()
-      expect(found!.note).toBe('This is false')
     })
   })
 })
