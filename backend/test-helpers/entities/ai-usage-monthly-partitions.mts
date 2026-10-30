@@ -107,7 +107,7 @@ async function unlockDdl(client: PoolClient): Promise<void> {
   if (!rows[0]?.unlocked) throw new Error('AI usage partition DDL lock was not held')
 }
 
-/** A drop candidate named directly, so tests do not page the whole database's partition list. */
+// Named directly so tests do not page the whole database's partition list.
 export function testAiUsageCandidate(partition: string): PartitionDropCandidate {
   return {
     table: 'ai_usage_records',
@@ -118,11 +118,9 @@ export function testAiUsageCandidate(partition: string): PartitionDropCandidate 
 
 export async function isTestAiUsagePartitionAttached(partition: string): Promise<boolean> {
   const { rows } = await write<{ attached: boolean }>(sql`/* isTestAiUsagePartitionAttached */
-    SELECT EXISTS (
-      SELECT 1 FROM pg_inherits
-      WHERE inhparent = to_regclass('ai_usage_records') AND inhrelid = to_regclass(${partition})
-    ) AS attached`)
-  return rows[0]?.attached === true
+    SELECT EXISTS (SELECT 1 FROM pg_inherits WHERE inhrelid = to_regclass(${partition})
+      AND inhparent = to_regclass('ai_usage_records')) AS attached`)
+  return rows[0]?.attached ?? false
 }
 
 export async function readTestAiUsageIdsForMonth(date: Date, agentSlug: string): Promise<string[]> {

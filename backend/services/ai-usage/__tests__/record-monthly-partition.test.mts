@@ -77,7 +77,7 @@ describe('backdated AI usage on retired monthly history', () => {
     ownedCommunityIds.push(community.id)
     expect(await probeBlockedAiUsageRetirement(candidate, community.id)).toBe('55P03')
     expect(await probeBlockedAiUsageRetirement(candidate, null)).toBe('55P03')
-    expect((await isTestAiUsagePartitionAttached(partition))).toBe(true)
+    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
     expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
       outcome: 'dropped',
     })
