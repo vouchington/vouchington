@@ -199,15 +199,4 @@ describe('ReportInlineButton', () => {
       screen.getByTestId('flag-icon'),
     )
   })
-
-  it('renders with a flag icon', () => {
-    render(
-      <ReportInlineButton
-        entityType='post'
-        entityId='post-1'
-        isAuthenticated
-      />,
-    )
-    expect(screen.getByTestId('flag-icon')).toBeDefined()
-  })
 })

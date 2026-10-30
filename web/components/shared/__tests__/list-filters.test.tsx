@@ -104,27 +104,6 @@ describe('ListFilters', () => {
     expect(listFiltersNav.push).toHaveBeenCalledWith('?q=hello&sort=relevance', { scroll: false })
   })
 
-  it('auto-applies searchDefaultSort when submitting search via form submit', () => {
-    render(
-      <ListFilters
-        placeholder='Search topics...'
-        defaultSort='new'
-        sortOptions={[
-          { label: 'New', value: 'new' },
-          { label: 'Best', value: 'best' },
-        ]}
-        searchOnlySortOptions={[{ label: 'Relevance', value: 'relevance' }]}
-        searchDefaultSort='relevance'
-      />,
-    )
-
-    const input = screen.getByPlaceholderText('Search topics...')
-    fireEvent.change(input, { target: { value: 'hello' } })
-    fireEvent.submit(input.closest('form')!)
-
-    expect(listFiltersNav.push).toHaveBeenCalledWith('?q=hello&sort=relevance', { scroll: false })
-  })
-
   it('submits the list search via Enter on the input through the Next router', () => {
     render(
       <ListFilters
