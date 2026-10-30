@@ -153,7 +153,12 @@ describe('Valkey admin command', () => {
   })
 
   it('accepts staging and production and allows test only under NODE_ENV=test', async () => {
-    for (const environment of ['staging', 'production', 'test'] as const) {
+    const staging = await runCommand(['diagnose'], { ENVIRONMENT: 'staging' })
+    expect(staging.exitCode).toBe(0)
+    expect(JSON.parse(staging.stdout[0] ?? 'null')).toMatchObject({ environment: 'staging' })
+    expect(staging.events).toEqual(['load', 'diagnose', 'shutdown'])
+
+    for (const environment of ['production', 'test'] as const) {
       const result = await runCommand(['diagnose'], {
         ENVIRONMENT: environment,
         ...(environment === 'test' && { NODE_ENV: 'test' }),
@@ -212,11 +217,6 @@ describe('Valkey admin command', () => {
       { ENVIRONMENT: 'production' },
       '--force is allowed only for sessions',
     )
-  })
-
-  it('loads runtime dependencies only after parsing a valid operation', async () => {
-    const { events } = await runCommand(['diagnose'], { ENVIRONMENT: 'staging' })
-    expect(events).toEqual(['load', 'diagnose', 'shutdown'])
   })
 
   it('writes one schema-version 1 diagnose JSON document before shutting down quietly', async () => {
