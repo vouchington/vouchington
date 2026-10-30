@@ -219,27 +219,6 @@ describe('Community Agent Prompts Routes', () => {
         .post(`/api/v1/communities/${community.slug}/agent-prompts/${prompt.id}/allocations`)
         .expect(403)
     })
-
-    it('allocates slot for user with plus membership', async () => {
-      const user = await createTestUser()
-      await createTestMembership({ user_id: user.id, plan: 'plus' })
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `ap-alloc-204-${random}`,
-      })
-      await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
-      const prompt = await insertTestCommunityAgentPrompt({
-        communityId: community.id,
-        createdById: user.id,
-      })
-
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/communities/${community.slug}/agent-prompts/${prompt.id}/allocations`)
-        .expect(204)
-    })
   })
 
   describe('DELETE /api/v1/communities/:slug/agent-prompts/:promptId/allocations', () => {

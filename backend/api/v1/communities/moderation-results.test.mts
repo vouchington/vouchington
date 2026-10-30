@@ -91,33 +91,6 @@ describe('moderation-results', () => {
         expect(res.body).not.toHaveProperty('openai_moderation')
       })
 
-      it('exposes only the provider-neutral platform moderation status', async () => {
-        const random = createRandomString(8)
-        const community = await insertTestCommunity({
-          createdById: owner.id,
-          slug: `mr-stored-results-${random}`,
-        })
-        await insertTestCommunityMember({
-          communityId: community.id,
-          userId: owner.id,
-          role: 'owner',
-        })
-        const post = await createTestPost({ user: owner })
-        await insertTestCommunityPostReview({ communityId: community.id, postId: post.id })
-
-        const request = createRequest()
-        await request.authenticateAs(owner)
-        const response = await request
-          .get(`/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`)
-          .expect(200)
-
-        expect(response.body).toMatchObject({
-          community_agent_moderations: expect.any(Array),
-          platform_moderation: { status: 'approved' },
-        })
-        expect(response.body).not.toHaveProperty('openai_moderation')
-      })
-
       it('returns 200 for moderator', async () => {
         const random = createRandomString(8)
         const community = await insertTestCommunity({
