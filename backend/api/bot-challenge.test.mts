@@ -2,7 +2,6 @@ import type { IncomingMessage } from 'node:http'
 import type { Context } from '@jongleberry/api-server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { getBotChallengeClearanceKey } from '@services/captcha/bot-challenge-clearance'
 import { botChallengeConfig } from '@services/captcha/bot-challenge-config'
 import {
   deleteDynamicConfigFieldsForTest,
@@ -33,14 +32,14 @@ describe('low-score bot challenge', () => {
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     const sid = crypto.randomUUID()
     const ctx = context({ score: '7', sid })
-    clearanceKeys.push(getBotChallengeClearanceKey(sid))
+    clearanceKeys.push(botChallengeClearanceKey(sid))
 
     await expect(asSession(() => enforceLowScoreBotChallenge(ctx))).rejects.toMatchObject({
       status: 403,
       code: BOT_CHALLENGE_REQUIRED,
       action: BOT_CHALLENGE_ACTION_TAG,
     })
-    expect(await sessionValkeyClient.ttl(getBotChallengeClearanceKey(sid))).toBe(-2)
+    expect(await sessionValkeyClient.ttl(botChallengeClearanceKey(sid))).toBe(-2)
   })
 
   it('does not let a forged Bearer header bypass a cookie-session challenge', async () => {
@@ -110,11 +109,11 @@ describe('low-score bot challenge', () => {
   it('clears a verified session for the remaining window while retaining request signing', async () => {
     const sid = crypto.randomUUID()
     const first = context({ score: '7', token: 'proof', sid })
-    clearanceKeys.push(getBotChallengeClearanceKey(sid))
+    clearanceKeys.push(botChallengeClearanceKey(sid))
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'true')
     await asSession(() => enforceLowScoreBotChallenge(first))
 
-    const ttl = await sessionValkeyClient.ttl(getBotChallengeClearanceKey(sid))
+    const ttl = await sessionValkeyClient.ttl(botChallengeClearanceKey(sid))
     expect(ttl).toBeGreaterThan(0)
     expect(ttl).toBeLessThanOrEqual(300)
 
@@ -130,7 +129,7 @@ describe('low-score bot challenge', () => {
 
   it('always challenges when the window is zero, including an existing clearance', async () => {
     const sid = crypto.randomUUID()
-    clearanceKeys.push(getBotChallengeClearanceKey(sid))
+    clearanceKeys.push(botChallengeClearanceKey(sid))
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'true')
     await asSession(() => enforceLowScoreBotChallenge(context({ score: '7', token: 'proof', sid })))
     overrideDynamicConfigFieldsForTest(botChallengeConfig, { clearance_seconds: 0 })
@@ -144,7 +143,7 @@ describe('low-score bot challenge', () => {
   it('does not share a clearance with a different session', async () => {
     const firstSid = crypto.randomUUID()
     const otherSid = crypto.randomUUID()
-    clearanceKeys.push(getBotChallengeClearanceKey(firstSid), getBotChallengeClearanceKey(otherSid))
+    clearanceKeys.push(botChallengeClearanceKey(firstSid), botChallengeClearanceKey(otherSid))
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'true')
     await asSession(() =>
       enforceLowScoreBotChallenge(context({ score: '7', token: 'proof', sid: firstSid })),
@@ -190,4 +189,8 @@ function context(options: ContextOptions): Context {
 
 function asSession<T>(callback: () => T): T {
   return runWithSessionRequestContext(null, callback)
+}
+
+function botChallengeClearanceKey(sessionId: string): string {
+  return `bot-challenge-clearance:session:${sessionId}`
 }
