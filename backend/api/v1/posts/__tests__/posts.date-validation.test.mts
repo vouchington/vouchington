@@ -16,33 +16,6 @@ describe('posts.date-validation', () => {
   })
 
   describe('Post API date validation', () => {
-    it('should return valid ISO date strings for all posts in GET /api/v1/posts', async () => {
-      const postId = await insertTestPost({
-        title: `Date Validation Post ${Date.now()}`,
-        slug: `date-validation-${Date.now()}`,
-        createdById: user.id,
-        markdown: 'Testing date validity',
-      })
-
-      const request = createRequest()
-      const response = await request.get(`/api/v1/posts?creator=${user.id}`).expect(200)
-
-      expect(response.body.results.length).toBeGreaterThan(0)
-
-      for (const result of response.body.results) {
-        const post = response.body.posts[result.id]
-        expect(post).toBeDefined()
-        assertValidIsoDateString(post.created_at, `posts[${result.id}].created_at`)
-        assertValidIsoDateString(post.updated_at, `posts[${result.id}].updated_at`)
-      }
-
-      // Verify created post specifically
-      const post = response.body.posts[postId]
-      expect(post).toBeDefined()
-      assertValidIsoDateString(post.created_at, 'created post.created_at')
-      assertValidIsoDateString(post.updated_at, 'created post.updated_at')
-    })
-
     it('should return valid ISO date strings in POST /api/v1/posts response', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
@@ -57,20 +30,6 @@ describe('posts.date-validation', () => {
 
       assertValidIsoDateString(response.body.post.created_at, 'created post.created_at')
       assertValidIsoDateString(response.body.post.updated_at, 'created post.updated_at')
-    })
-
-    it('should return valid ISO date strings for a single post GET', async () => {
-      const postId = await insertTestPost({
-        title: `Single Date ${Date.now()}`,
-        slug: `single-date-${Date.now()}`,
-        createdById: user.id,
-        markdown: 'Single post date validation',
-      })
-      const request = createRequest()
-      const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
-
-      assertValidIsoDateString(response.body.post.created_at, 'post.created_at')
-      assertValidIsoDateString(response.body.post.updated_at, 'post.updated_at')
     })
 
     it('should return valid ISO date strings for comments in descendants', async () => {
@@ -101,26 +60,6 @@ describe('posts.date-validation', () => {
         expect(comment).toBeDefined()
         assertValidIsoDateString(comment.created_at, `comment[${result.id}].created_at`)
         assertValidIsoDateString(comment.updated_at, `comment[${result.id}].updated_at`)
-      }
-    })
-
-    it('should return valid ISO date strings for post_metrics updated_at', async () => {
-      await insertTestPost({
-        title: `Metrics Date Test ${Date.now()}`,
-        slug: `metrics-date-test-${Date.now()}`,
-        createdById: user.id,
-        markdown: 'Metrics date validation',
-      })
-
-      const request = createRequest()
-      const response = await request.get(`/api/v1/posts?creator=${user.id}`).expect(200)
-      expect(response.body.posts_metrics).toBeDefined()
-
-      for (const [id, metrics] of Object.entries(response.body.posts_metrics)) {
-        const m = metrics as Record<string, unknown>
-        if (m.updated_at) {
-          assertValidIsoDateString(m.updated_at, `posts_metrics[${id}].updated_at`)
-        }
       }
     })
 

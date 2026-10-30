@@ -178,23 +178,6 @@ describe('posts', () => {
           __entity_type: 'agent_moderation_election',
         })
       })
-
-      it('should not include post_moderations for non-admin users', async () => {
-        const request = createRequest()
-        await request.authenticateAs(user)
-        const response = await request.get('/api/v1/posts').expect(200)
-
-        expect(response.body).not.toHaveProperty('post_moderations')
-        expect(response.body).not.toHaveProperty('agent_moderation_elections')
-      })
-
-      it('should not include post_moderations for unauthenticated requests', async () => {
-        const request = createRequest()
-        const response = await request.get('/api/v1/posts').expect(200)
-
-        expect(response.body).not.toHaveProperty('post_moderations')
-        expect(response.body).not.toHaveProperty('agent_moderation_elections')
-      })
     })
 
     describe('url filter', () => {

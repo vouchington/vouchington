@@ -26,29 +26,11 @@ describe('post', () => {
   describe('Post Individual Routes', () => {
     let creator: PrivateUser
 
-    let viewer: PrivateUser
-
     beforeAll(async () => {
       creator = await createTestUser()
-      viewer = await createTestUser()
-      await followUser(viewer, creator)
     })
 
     describe('GET /api/v1/posts/:idOrSlug', () => {
-      it('does not include can_delete for non-owner viewer of a global post', async () => {
-        const postId = await insertTestPost({
-          title: 'Viewer No Delete Post',
-          slug: `viewer-no-delete-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          createdById: creator.id,
-          markdown: 'content',
-        })
-        const request = createRequest()
-        await request.authenticateAs(viewer)
-        const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
-
-        expect(response.body.post.can_delete).toBeUndefined()
-      })
-
       it('includes can_delete: true for community moderator viewing a community comment', async () => {
         const mod = await createTestUser()
         const postOwner = await createTestUser()

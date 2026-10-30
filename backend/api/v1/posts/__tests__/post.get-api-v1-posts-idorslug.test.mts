@@ -9,6 +9,7 @@ import {
   createTestUser,
   createTestUserWithAge,
   followUser,
+  assertValidIsoDateString,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 
@@ -47,6 +48,8 @@ describe('post', () => {
 
         expect(response.body.post.id).toBe(postId)
         expect(response.body.post.title).toBe('Test Post')
+        assertValidIsoDateString(response.body.post.created_at, 'post.created_at')
+        assertValidIsoDateString(response.body.post.updated_at, 'post.updated_at')
         expect(response.body).toHaveProperty('post_metrics')
         expect(response.body).toHaveProperty('post_election')
         expect(response.body).toHaveProperty('html')
@@ -207,20 +210,6 @@ describe('post', () => {
         expect(response.body.post.id).toBe(postId)
       })
 
-      it('should include can_edit_content: true for creator on a new post', async () => {
-        const postId = await insertTestPost({
-          title: 'New Post',
-          slug: `new-post-can-edit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          createdById: creator.id,
-          markdown: 'Fresh content',
-        })
-        const request = createRequest()
-        await request.authenticateAs(creator)
-        const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
-
-        expect(response.body.post.can_edit_content).toBe(true)
-      })
-
       it('should include can_edit_content: false for creator on an old post', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
         const oldId = getMinUUIDv7ForDate(twoDaysAgo)
@@ -250,6 +239,7 @@ describe('post', () => {
         const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
 
         expect(response.body.post.can_edit_content).toBeUndefined()
+        expect(response.body.post.can_delete).toBeUndefined()
       })
 
       it('includes can_delete: true for post author', async () => {
@@ -264,6 +254,7 @@ describe('post', () => {
         const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
 
         expect(response.body.post.can_delete).toBe(true)
+        expect(response.body.post.can_edit_content).toBe(true)
       })
 
       it('includes community sidecar records for community posts', async () => {

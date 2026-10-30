@@ -22,15 +22,6 @@ describe('post.vote', () => {
 
   describe('Post Vote Routes', () => {
     describe('PUT /api/v1/posts/:id/vote', () => {
-      it('allows authenticated users to vote on a post', async () => {
-        const post = await createTestPost({ user })
-
-        const request = createRequest()
-        await request.authenticateAs(user)
-
-        await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-      })
-
       it('returns Support, rather than the sentiment Like alias, for a topic recommendation', async () => {
         const creator = await createTestUser()
         const voter = await createTestUser()

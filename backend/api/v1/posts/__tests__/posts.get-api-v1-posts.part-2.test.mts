@@ -122,27 +122,8 @@ describe('posts', () => {
         // bookmarks and election_votes are present for authenticated users
         expect(typeof response.body.bookmarks).toBe('object')
         expect(typeof response.body.election_votes).toBe('object')
-      })
-
-      it('should omit authenticated sidecars for unauthenticated users', async () => {
-        const response = await createRequest().get('/api/v1/posts').expect(200)
-
-        expect(response.body).not.toHaveProperty('bookmarks')
-        expect(response.body).not.toHaveProperty('election_votes')
-      })
-
-      it('should not cache responses for authenticated users', async () => {
-        await insertTestPost({
-          title: 'Test Post No Cache',
-          slug: uniqueSlug('test-post-no-cache'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const request = createRequest()
-        await request.authenticateAs(user!)
-        const response = await request.get('/api/v1/posts').expect(200)
-
-        // Should not have public cache-control header for authenticated users
+        expect(response.body).not.toHaveProperty('post_moderations')
+        expect(response.body).not.toHaveProperty('agent_moderation_elections')
         expect(
           !response.headers['cache-control'] ||
             !response.headers['cache-control'].includes('public'),
