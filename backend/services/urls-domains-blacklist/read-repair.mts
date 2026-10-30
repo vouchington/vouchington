@@ -102,7 +102,7 @@ export async function getValkeyKeyType(key: string): Promise<string> {
   return normalizeValkeyKeyTypeForRepair(result, key)
 }
 
-export function normalizeValkeyKeyTypeForRepair(result: unknown, key: string): string {
+function normalizeValkeyKeyTypeForRepair(result: unknown, key: string): string {
   if (typeof result === 'string' || Buffer.isBuffer(result)) {
     return result.toString()
   }

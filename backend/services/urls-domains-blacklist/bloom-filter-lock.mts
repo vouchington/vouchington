@@ -3,7 +3,7 @@ import onError from '@modules/on-error'
 
 // PostgreSQL's two-int advisory keys are structurally disjoint from one-bigint keys, and
 // current_database() scopes same-filter locking to one worktree database per local cluster.
-export const BLOCKLIST_BLOOM_FILTER_LOCK_NAMESPACE = 0x4246
+const BLOCKLIST_BLOOM_FILTER_LOCK_NAMESPACE = 0x4246
 
 export async function withBlocklistBloomFilterLock<Result>(
   filterName: 'url-blocklist' | 'email-blocklist',

@@ -6,7 +6,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { EXPOSURE_BREAK_THRESHOLD } from '../config.mts'
-import { recordMediaReveal, recordMediaRevealAndGetExposureState } from '../record.mts'
+import { recordMediaRevealAndGetExposureState } from '../record.mts'
 import { getExposureState } from '../get.mts'
 
 describe('recordMediaReveal', () => {
@@ -20,8 +20,7 @@ describe('recordMediaReveal', () => {
 
   it('persists a reveal row (no postId / reportId)', async () => {
     const before = await getExposureState(moderator.id)
-    await recordMediaReveal(moderator.id, { surface: 'mod_queue' })
-    const after = await getExposureState(moderator.id)
+    const after = await recordMediaRevealAndGetExposureState(moderator.id, { surface: 'mod_queue' })
     expect(after.count).toBe(before.count + 1)
   })
 
@@ -33,33 +32,32 @@ describe('recordMediaReveal', () => {
       markdown: 'body',
     })
     const before = await getExposureState(moderator.id)
-    await recordMediaReveal(moderator.id, { postId, surface: 'post_page' })
-    const after = await getExposureState(moderator.id)
+    const after = await recordMediaRevealAndGetExposureState(moderator.id, {
+      postId,
+      surface: 'post_page',
+    })
     expect(after.count).toBe(before.count + 1)
   })
 
   it('persists a reveal row with optional metadata', async () => {
     const before = await getExposureState(moderator.id)
-    await recordMediaReveal(moderator.id, {
+    const after = await recordMediaRevealAndGetExposureState(moderator.id, {
       surface: 'reports',
       metadata: { source: 'test' },
     })
-    const after = await getExposureState(moderator.id)
     expect(after.count).toBe(before.count + 1)
   })
 
-  it('reads a reveal through the transaction that recorded it', async () => {
+  it('keeps a committed reveal when the caller transaction rolls back', async () => {
     const before = await getExposureState(moderator.id)
 
     await expect(
-      withForcedTransactionRollbackForTest(async options => {
-        await recordMediaReveal(moderator.id, { surface: 'mod_queue' }, options)
-        const during = await getExposureState(moderator.id, options)
-        expect(during.count).toBe(before.count + 1)
+      withForcedTransactionRollbackForTest(async () => {
+        await recordMediaRevealAndGetExposureState(moderator.id, { surface: 'mod_queue' })
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect((await getExposureState(moderator.id)).count).toBe(before.count)
+    expect((await getExposureState(moderator.id)).count).toBe(before.count + 1)
   })
 
   it('serializes concurrent reveals for one moderator through threshold evaluation', async () => {

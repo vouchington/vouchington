@@ -29,7 +29,7 @@ type MembershipCacheHeaders = { etag: string | null; lastModifiedAt: Date | null
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 
 // Pid keeps an interrupted run's directory distinct from another worker's live diff.
-export const BLOCKLIST_DIFF_DIRECTORY_PREFIX = `blocklist-diff-${process.pid}-`
+const BLOCKLIST_DIFF_DIRECTORY_PREFIX = `blocklist-diff-${process.pid}-`
 
 export async function syncDomainsWithDatabase(
   sourceId: DomainBlacklistSourceId,

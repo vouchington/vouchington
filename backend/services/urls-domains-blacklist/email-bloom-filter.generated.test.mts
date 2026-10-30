@@ -1,9 +1,11 @@
 import { it, expect, afterEach, beforeEach, describe, vi, type MockInstance } from 'vitest'
+import { bloomValkeyClient } from '@data-stores/valkey/clients'
+import { registerOwnedBlocklistBloomRecoveryTests } from '@voucha/test-helpers/blocklist-bloom-recovery-tests'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { checkEmailBloomFilter, addDomainsToEmailBloomFilter } from './email-bloom-filter.mts'
+import { checkBloomFilterRead } from './read-repair.mts'
 import { enqueueRebuildBloomFilterBestEffortWithEnqueue } from './rebuild-enqueue.mts'
 import * as rebuildEnqueue from './rebuild-enqueue.mts'
-import { checkBloomFilterRead, normalizeValkeyKeyTypeForRepair } from './read-repair.mts'
-import { registerOwnedBlocklistBloomRecoveryTests } from '@voucha/test-helpers/blocklist-bloom-recovery-tests'
 
 describe('email-bloom-filter.generated', () => {
   let enqueueSpy: MockInstance<typeof rebuildEnqueue.enqueueRebuildBloomFilterBestEffort>
@@ -79,7 +81,35 @@ describe('email-bloom-filter.generated', () => {
     expect(repairs).toEqual(['repair'])
   })
 
-  it('normalizeValkeyKeyTypeForRepair logs unexpected command responses', () => {
-    expect(normalizeValkeyKeyTypeForRepair(1, 'test-key')).toBe('')
+  it('logs an unexpected Valkey TYPE response and leaves the filter readable', async () => {
+    const repairs: string[] = []
+    const reportedAt = sentryCaptureExceptionMock.mock.calls.length
+    const typeSpy = vi.spyOn(bloomValkeyClient, 'customCommand').mockResolvedValue(1)
+    try {
+      await expect(
+        checkBloomFilterRead({
+          readyKey: 'ready',
+          liveKey: 'test-key',
+          value: 'blocked.example',
+          existsIfReady: async () => false,
+          repairUnavailableRead: async () => {
+            repairs.push('repair')
+          },
+        }),
+      ).resolves.toBe(false)
+      expect(repairs).toEqual([])
+      expect(typeSpy).toHaveBeenCalledWith(['TYPE', 'test-key'])
+      expect(
+        sentryCaptureExceptionMock.mock.calls
+          .slice(reportedAt)
+          .filter(
+            ([error]) =>
+              error instanceof Error &&
+              error.message === 'Unexpected Valkey TYPE response for test-key',
+          ),
+      ).toHaveLength(1)
+    } finally {
+      typeSpy.mockRestore()
+    }
   })
 })

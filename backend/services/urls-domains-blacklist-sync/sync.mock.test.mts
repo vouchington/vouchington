@@ -3,11 +3,7 @@ import undici from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { BLACKLISTS } from '@services/urls-domains-blacklist/sources-constants'
 import { ReplicaBehindError } from './replica-freshness.mts'
-import {
-  createBlacklistFetchHeaders,
-  syncBlacklistSource,
-  syncBlacklistSourceById,
-} from './sync.mts'
+import { syncBlacklistSourceById } from './sync.mts'
 
 type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
 
@@ -31,7 +27,7 @@ const dependencies = {
   syncDomainsWithDatabase,
 }
 
-describe('syncBlacklistSource', () => {
+describe('syncBlacklistSourceById', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     fetchSpy.mockReset()
@@ -63,8 +59,16 @@ describe('syncBlacklistSource', () => {
       const sourceId = index + 1
 
       await expect(
-        syncBlacklistSource(sourceId, source.url, source.type, dependencies),
-      ).resolves.toEqual(syncResult)
+        syncBlacklistSourceById(sourceId, {
+          ...dependencies,
+          getBlacklistSourceById: async () => ({
+            id: String(sourceId),
+            type: source.type,
+            name: source.name,
+            url: source.url,
+          }),
+        }),
+      ).resolves.toBeUndefined()
 
       const expectedCallNumber = index + 1
       expect(timeoutSpy).toHaveBeenNthCalledWith(expectedCallNumber, 30_000)
@@ -96,29 +100,6 @@ describe('syncBlacklistSource', () => {
     expect(updateSourceCacheHeaders).not.toHaveBeenCalled()
   })
 
-  it('builds conditional request headers from cached metadata', () => {
-    expect(
-      createBlacklistFetchHeaders({
-        etag: '"old-etag"',
-        last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
-        membership_diff_applied_at: new Date('2025-02-03T10:00:00.000Z'),
-      }),
-    ).toEqual({
-      'Accept-Encoding': 'gzip, deflate, br',
-      'If-Modified-Since': 'Mon, 03 Feb 2025 10:00:00 GMT',
-      'If-None-Match': '"old-etag"',
-    })
-    expect(
-      createBlacklistFetchHeaders({
-        etag: '"old-etag"',
-        last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
-        membership_diff_applied_at: null,
-      }),
-    ).toEqual({
-      'Accept-Encoding': 'gzip, deflate, br',
-    })
-  })
-
   it('updates cached headers and skips syncing on 304', async () => {
     const cache = {
       etag: '"old-etag"',
@@ -132,14 +113,17 @@ describe('syncBlacklistSource', () => {
       statusText: 'Not Modified',
     } as unknown as UndiciResponse)
 
-    const result = await syncBlacklistSource(
-      123,
-      'https://example.com/list.txt',
-      'url',
-      dependencies,
-    )
-
-    expect(result).toEqual({ skipped: true, domainsAdded: 0, domainsRemoved: 0 })
+    await expect(
+      syncBlacklistSourceById(123, {
+        ...dependencies,
+        getBlacklistSourceById: async () => ({
+          id: '123',
+          type: 'url',
+          name: 'example',
+          url: 'https://example.com/list.txt',
+        }),
+      }),
+    ).resolves.toBeUndefined()
     expect(updateSourceCacheHeaders).toHaveBeenCalledWith(123, {
       etag: '"old-etag"',
       lastModifiedAt: new Date('2025-02-03T10:00:00.000Z'),
@@ -159,7 +143,15 @@ describe('syncBlacklistSource', () => {
       statusText: 'Not Modified',
     } as unknown as UndiciResponse)
 
-    const failure = syncBlacklistSource(7, 'https://example.com/list.txt', 'url', dependencies)
+    const failure = syncBlacklistSourceById(7, {
+      ...dependencies,
+      getBlacklistSourceById: async () => ({
+        id: '7',
+        type: 'url',
+        name: 'example',
+        url: 'https://example.com/list.txt',
+      }),
+    })
 
     await expect(failure).rejects.toMatchObject({
       name: 'UnrecoverableError',

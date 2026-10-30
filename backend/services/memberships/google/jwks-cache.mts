@@ -37,22 +37,12 @@ export const googleOidcValkeyTrustStore: GoogleOidcTrustStore = {
   },
 }
 
-export async function refreshConfiguredGoogleOidcTrustMaterial(): Promise<GoogleOidcCachedKeys> {
-  return refreshGoogleOidcTrustMaterial({
-    jwksUrl: GOOGLE_OIDC_JWKS_URL,
-    store: googleOidcValkeyTrustStore,
-  })
-}
+const GOOGLE_OIDC_TRUST_TTL_MS = 6 * 60 * 60 * 1000
 
 /** Worker-only refresh. Request handlers receive a previously cached trust snapshot and never call this. */
-export async function refreshGoogleOidcTrustMaterial(options: {
-  jwksUrl: string
-  store: GoogleOidcTrustStore
-  cacheTtlMs?: number
-  fetchJwks?: (url: string, timeoutMs: number) => Promise<Response>
-}): Promise<GoogleOidcCachedKeys> {
+export async function refreshConfiguredGoogleOidcTrustMaterial(): Promise<GoogleOidcCachedKeys> {
   /* no-mistakes: integration=google-oidc */
-  const response = await (options.fetchJwks ?? fetchWithTimeoutSimple)(options.jwksUrl, 10_000)
+  const response = await fetchWithTimeoutSimple(GOOGLE_OIDC_JWKS_URL, 10_000)
   if (!response.ok) throw new Error(`Google OIDC JWKS refresh failed with ${response.status}`)
   const body = await response.json()
   if (!body || typeof body !== 'object' || !Array.isArray((body as { keys?: unknown }).keys))
@@ -73,9 +63,9 @@ export async function refreshGoogleOidcTrustMaterial(options: {
     throw new Error('Google OIDC JWKS response has no RSA signing keys')
   const value = {
     keysById,
-    expiresAt: new Date(Date.now() + (options.cacheTtlMs ?? 6 * 60 * 60 * 1000)),
+    expiresAt: new Date(Date.now() + GOOGLE_OIDC_TRUST_TTL_MS),
   }
-  await options.store.save(value)
+  await googleOidcValkeyTrustStore.save(value)
   return value
 }
 

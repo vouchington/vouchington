@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { deleteExportFromS3 } from '@services/account-data-requests'
 import {
   addUserDeletionExternalWorks,
-  claimUserDeletionAttempt,
   createUserDeletionRequest,
   processUserDeletionBatch,
 } from '@services/user-deletions'
@@ -30,6 +29,7 @@ import { deleteUser } from './delete.mts'
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
 import { addTestStripeDeletionWork } from '@voucha/test-helpers/entities/stripe-customer-deletion'
+import { markUserDeletionAttemptStartedForTest } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {
@@ -163,7 +163,7 @@ describe('user deletion batches', () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await addUserDeletionExternalWorks(request.id, 's3-export', ['test/export.zip'])
-    await claimUserDeletionAttempt(request.id, request.processingAttemptId)
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     const deleteS3 = vi
       .fn<typeof deleteExportFromS3>()
       .mockRejectedValueOnce(new Error('S3 unavailable'))
@@ -191,7 +191,7 @@ describe('user deletion batches', () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await addTestStripeDeletionWork(request.id, 'cus_already_deleted')
-    await claimUserDeletionAttempt(request.id, request.processingAttemptId)
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     const sanitizeCustomer = vi
       .fn<(stripeCustomerId: string) => Promise<unknown>>()
       .mockRejectedValue(makeStripeMissingCustomerError())
@@ -212,7 +212,7 @@ describe('user deletion batches', () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await addTestStripeDeletionWork(request.id, 'cus_retryable')
-    await claimUserDeletionAttempt(request.id, request.processingAttemptId)
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     const stripeError = Object.assign(new Error('Invalid customer update'), {
       code: 'parameter_invalid_empty',
       param: 'email',
@@ -252,7 +252,7 @@ describe('user deletion batches', () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await addUserDeletionExternalWorks(request.id, 's3-export', ['test/rotated-export.zip'])
-    await claimUserDeletionAttempt(request.id, request.processingAttemptId)
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     const successorAttemptId = randomUUID()
     const deleteS3 = vi.fn<typeof deleteExportFromS3>().mockImplementation(async () => {
       await rotateTestUserDeletionAttemptDuringProviderCall(request.id, successorAttemptId)
@@ -270,7 +270,7 @@ describe('user deletion batches', () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await addTestStripeDeletionWork(request.id, 'cus_rotated')
-    await claimUserDeletionAttempt(request.id, request.processingAttemptId)
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     const successorAttemptId = randomUUID()
     const sanitizeCustomer = vi
       .fn<(stripeCustomerId: string) => Promise<unknown>>()

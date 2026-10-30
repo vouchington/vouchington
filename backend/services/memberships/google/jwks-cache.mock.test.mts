@@ -1,15 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
+
+const fetchGoogleOidcJwks = vi.hoisted(() =>
+  vi.fn<(url: string, timeoutMs: number) => Promise<Response>>(),
+)
+vi.mock<typeof import('@modules/utils')>(import('@modules/utils'), async () => {
+  const actual = await vi.importActual<typeof import('@modules/utils')>('@modules/utils')
+  return { ...actual, fetchWithTimeoutSimple: fetchGoogleOidcJwks }
+})
+
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import {
   getCachedGoogleOidcTrustMaterial,
   googleOidcValkeyTrustStore,
-  refreshGoogleOidcTrustMaterial,
+  refreshConfiguredGoogleOidcTrustMaterial,
 } from './jwks-cache.mts'
 import type { GoogleOidcPublicJwk } from './types.mts'
 
-type GoogleOidcCachedKeys = Awaited<ReturnType<typeof refreshGoogleOidcTrustMaterial>>
-type GoogleOidcTrustStore = Parameters<typeof refreshGoogleOidcTrustMaterial>[0]['store']
+const GOOGLE_OIDC_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs'
+const GOOGLE_OIDC_TRUST_TTL_MS = 6 * 60 * 60 * 1000
+
+type GoogleOidcCachedKeys = Awaited<ReturnType<typeof refreshConfiguredGoogleOidcTrustMaterial>>
+type GoogleOidcTrustStore = Parameters<typeof getCachedGoogleOidcTrustMaterial>[0]['store']
 
 const trustStoreCache = new ValkeyCache<{ key: string }>({
   prefix: 'memberships-google-oidc-trust',
@@ -43,34 +55,26 @@ describe('Google OIDC JWKS cache', () => {
   it.each(utcBoundaries)(
     'refreshes only RSA keys with exact expiry at %s',
     async (_name, instant) => {
-      const store = makeTrustStore()
-      const calls: Array<[string, number]> = []
+      const key = trustStoreCache.getKey({ key: 'current' })
       const now = new Date(instant)
       vi.useFakeTimers({ toFake: ['Date'], now })
+      fetchGoogleOidcJwks.mockResolvedValue(
+        Response.json({
+          keys: [makeJwk(), { kid: 'not-rsa', kty: 'EC', n: 'n', e: 'AQAB' }, { kty: 'RSA' }, null],
+        }),
+      )
       try {
-        const refreshed = await refreshGoogleOidcTrustMaterial({
-          jwksUrl: 'https://google.example.test/certs',
-          store,
-          cacheTtlMs: 1_234,
-          async fetchJwks(url, timeoutMs) {
-            calls.push([url, timeoutMs])
-            return Response.json({
-              keys: [
-                makeJwk(),
-                { kid: 'not-rsa', kty: 'EC', n: 'n', e: 'AQAB' },
-                { kty: 'RSA' },
-                null,
-              ],
-            })
-          },
-        })
+        await cacheValkeyClient.unlink([key])
+        const refreshed = await refreshConfiguredGoogleOidcTrustMaterial()
 
-        expect(calls).toEqual([['https://google.example.test/certs', 10_000]])
+        expect(fetchGoogleOidcJwks).toHaveBeenCalledWith(GOOGLE_OIDC_JWKS_URL, 10_000)
         expect(refreshed.keysById).toEqual({ 'synthetic-key': makeJwk() })
-        expect(refreshed.expiresAt).toEqual(new Date(now.getTime() + 1_234))
-        expect(store.saved).toEqual(refreshed)
+        expect(refreshed.expiresAt).toEqual(new Date(now.getTime() + GOOGLE_OIDC_TRUST_TTL_MS))
+        await expect(googleOidcValkeyTrustStore.load()).resolves.toEqual(refreshed)
       } finally {
         vi.useRealTimers()
+        fetchGoogleOidcJwks.mockReset()
+        await cacheValkeyClient.unlink([key])
       }
     },
   )
@@ -88,18 +92,16 @@ describe('Google OIDC JWKS cache', () => {
       'Google OIDC JWKS response has no RSA signing keys',
     ],
   ])('rejects %s', async (_description, response, message) => {
-    const store = makeTrustStore()
-
-    await expect(
-      refreshGoogleOidcTrustMaterial({
-        jwksUrl: 'https://google.example.test/certs',
-        store,
-        async fetchJwks() {
-          return response
-        },
-      }),
-    ).rejects.toThrow(message)
-    expect(store.saved).toBeNull()
+    const key = trustStoreCache.getKey({ key: 'current' })
+    fetchGoogleOidcJwks.mockResolvedValue(response)
+    try {
+      await cacheValkeyClient.unlink([key])
+      await expect(refreshConfiguredGoogleOidcTrustMaterial()).rejects.toThrow(message)
+      await expect(googleOidcValkeyTrustStore.load()).resolves.toBeNull()
+    } finally {
+      fetchGoogleOidcJwks.mockReset()
+      await cacheValkeyClient.unlink([key])
+    }
   })
 
   it.each(utcBoundaries)(

@@ -11,7 +11,7 @@ export interface RecordMediaRevealInput {
   metadata?: Record<string, unknown>
 }
 
-export async function recordMediaReveal(
+async function recordMediaReveal(
   moderatorId: string,
   input: RecordMediaRevealInput,
   options?: QueryOptions,

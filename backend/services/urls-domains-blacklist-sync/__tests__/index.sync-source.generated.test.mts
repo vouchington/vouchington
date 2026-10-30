@@ -1,8 +1,9 @@
 import { it, expect, describe } from 'vitest'
 import { getSourceCacheHeaders } from '@services/urls-domains-blacklist/sources'
-import { syncBlacklistSource } from '../sync.mts'
+import { syncBlacklistSourceById } from '../sync.mts'
 
-import { createTestBlacklistSource } from '@voucha/test-helpers'
+import { countBlacklistEntriesBySource, createTestBlacklistSource } from '@voucha/test-helpers'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createFetchSafeTestServer } from '@voucha/test-helpers/fetch-safe-test-server'
 
 describe('index.generated', () => {
@@ -10,7 +11,7 @@ describe('index.generated', () => {
     String.fromCodePoint(97 + Math.floor(Math.random() * 26)),
   ).join('')
 
-  it('syncBlacklistSource throws on non-200 response', async () => {
+  it('syncBlacklistSourceById records a non-200 response without storing domains', async () => {
     const errorServer = await createFetchSafeTestServer((_req, res) => {
       res.writeHead(500, { 'Content-Type': 'text/plain' })
       res.end('Internal Server Error')
@@ -24,9 +25,18 @@ describe('index.generated', () => {
         url,
       })
 
-      await expect(syncBlacklistSource(sourceId, url)).rejects.toThrow(
-        'Failed to fetch domain blacklist: 500',
-      )
+      const reportedAt = sentryCaptureExceptionMock.mock.calls.length
+      await expect(syncBlacklistSourceById(sourceId)).resolves.toBeUndefined()
+      expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
+      expect(
+        sentryCaptureExceptionMock.mock.calls
+          .slice(reportedAt)
+          .filter(
+            ([error]) =>
+              error instanceof Error &&
+              error.message.includes('Failed to fetch domain blacklist: 500'),
+          ),
+      ).toHaveLength(1)
     } finally {
       await errorServer.close()
     }
@@ -53,7 +63,7 @@ describe('index.generated', () => {
         url,
       })
 
-      await syncBlacklistSource(sourceId, url)
+      await syncBlacklistSourceById(sourceId)
 
       const cache = await getSourceCacheHeaders(sourceId)
       expect(cache!.etag).toBe(etag)
@@ -83,7 +93,7 @@ describe('index.generated', () => {
         url,
       })
 
-      await syncBlacklistSource(sourceId, url)
+      await syncBlacklistSourceById(sourceId)
 
       const cache = await getSourceCacheHeaders(sourceId)
       expect(cache!.etag).toBe(etag)

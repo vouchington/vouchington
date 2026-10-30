@@ -6,10 +6,17 @@ import {
   getTestPrivateUserById,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
-import { getUserRateLimitContext, rateLimitContextCache } from '@services/user-rate-limits/context'
+import { ValkeyCache } from '@data-stores/valkey/cache'
+import { getUserRateLimitContext } from '@services/user-rate-limits/context'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { refreshSessionState } from './flows.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
+
+const rateLimitContextCache = new ValkeyCache({
+  prefix: 'user-rl-ctx',
+  ttlSeconds: 5 * 60,
+  mode: 'text',
+})
 
 describe('membership expiry', () => {
   it('removes paid session claims when a finite grant elapses without replacement', async () => {
