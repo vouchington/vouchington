@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { devSeedAllowed } from './dev-seed-guard.mts'
 
 describe('dev seed entry', () => {
   afterEach(() => {
@@ -33,5 +34,13 @@ describe('dev seed entry', () => {
       expect.stringContaining('db:seed must not run in staging'),
       expect.any(Function),
     )
+  })
+
+  it('returns true for development', () => {
+    expect(devSeedAllowed('development')).toBe(true)
+  })
+
+  it('returns true when env is undefined', () => {
+    expect(devSeedAllowed(undefined)).toBe(true)
   })
 })
