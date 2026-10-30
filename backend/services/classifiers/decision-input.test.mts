@@ -164,16 +164,13 @@ describe('normalizeClassifierDecisionInput', () => {
       ).toThrow('probability must be between zero and one')
     },
   )
-
-  it('returns a normalized valid input', () => {
-    const input = createInput()
-    expect(normalizeClassifierDecisionInput(input)).toBe(input)
-  })
 })
 
 describe('classifier decision helpers', () => {
   it('derives and flattens result identities for both candidate families', () => {
-    const topicInput = normalizeClassifierDecisionInput(createInput())
+    const topicSource = createInput()
+    const topicInput = normalizeClassifierDecisionInput(topicSource)
+    expect(topicInput).toBe(topicSource)
     const storyId = uuidv7()
     const storyInput = normalizeClassifierDecisionInput({
       ...createInput(),
