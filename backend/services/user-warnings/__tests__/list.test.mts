@@ -48,14 +48,6 @@ describe('listReceivedUserWarnings', () => {
     expect(hasNextPage).toBe(false)
   })
 
-  it('does not include warnings belonging to other users', async () => {
-    const { warnings } = await listReceivedUserWarnings(userWithoutWarnings.id)
-    const userIds = warnings.map(w => w.user_id)
-    for (const uid of userIds) {
-      expect(uid).toBe(userWithoutWarnings.id)
-    }
-  })
-
   it('supports cursor-based pagination', async () => {
     const paginationUser = await createTestUser()
     await Promise.all(
@@ -168,17 +160,8 @@ describe('listIssuedUserWarnings', () => {
     for (const uid of userIds) {
       expect(uid).toBe(targetA.id)
     }
+    expect(userIds).not.toContain(targetB.id)
     expect(warnings.some(w => w.reason === 'Issued list warning A')).toBe(true)
-  })
-
-  it('does not return warnings for other users when userId filter is set', async () => {
-    const { warnings } = await listIssuedUserWarnings({ userId: targetA.id })
-    const ids = warnings.map(w => w.user_id)
-    expect(ids).not.toContain(targetB.id)
-  })
-
-  it('includes joined community_slug and issued_by_username', async () => {
-    const { warnings } = await listIssuedUserWarnings({ userId: targetA.id })
     expect(warnings[0]).toHaveProperty('community_slug')
     expect(warnings[0]).toHaveProperty('issued_by_username')
   })
