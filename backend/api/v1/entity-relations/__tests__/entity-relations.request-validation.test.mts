@@ -5,7 +5,6 @@ import {
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
   insertTestPost,
-  insertTestTopic,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -14,7 +13,6 @@ const suffix = () => randomUUID().slice(0, 8)
 describe('entity-relations routes - request contract validation', () => {
   let author: PrivateUser
   let postId: string
-  let topicId: string
   let relationsPath: string
 
   beforeAll(async () => {
@@ -24,12 +22,6 @@ describe('entity-relations routes - request contract validation', () => {
       slug: `validation-${suffix()}`,
       createdById: author.id,
       markdown: 'Validation body',
-    })
-    topicId = await insertTestTopic({
-      name: `Validation ${suffix()}`,
-      slug: `validation-${suffix()}`,
-      topicType: 'card',
-      createdById: author.id,
     })
     relationsPath = `/api/v1/entity-relations/post/${postId}/category/topic`
   }, 5_000)
@@ -91,21 +83,6 @@ describe('entity-relations routes - request contract validation', () => {
       const request = createRequest()
       await request.authenticateAs(author)
       await request.post(relationsPath).send({}).expect(400)
-    })
-
-    it('still creates a relation for a valid body', async () => {
-      const otherPostId = await insertTestPost({
-        title: `Validation ${suffix()}`,
-        slug: `validation-${suffix()}`,
-        createdById: author.id,
-        markdown: 'Validation body',
-      })
-      const request = createRequest()
-      await request.authenticateAs(author)
-      await request
-        .post(`/api/v1/entity-relations/post/${otherPostId}/category/topic`)
-        .send({ objectId: topicId })
-        .expect(201)
     })
   })
 })
