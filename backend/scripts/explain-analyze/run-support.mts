@@ -8,14 +8,18 @@ import {
   type ExplainResult,
 } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gates.mts'
+import { assertScenarioFunctionCalls, gateExplainResult } from './plan-gates.mts'
 import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
 import { continuingAfterFailure } from './scenario-failures.mts'
-import { captureScenarioTwice, writeSecondPassResults } from './capture-passes.mts'
+import {
+  captureScenarioTwice,
+  writeExplainResultFile,
+  writeSecondPassResults,
+} from './capture-passes.mts'
 
 export const SEED_PREFIX = '019e0000'
 export const OUTPUT_DIR = join(import.meta.dirname, 'output')
@@ -47,9 +51,20 @@ export const seedHostnameIds = [
 const results: ExplainResult[] = []
 const completedScenarioIds: string[] = []
 
+export type ExplainCapturePlan = {
+  queries: readonly { text: string; values: readonly unknown[] }[]
+  modes: readonly ExplainPlanCacheMode[]
+}
+
+let explainCapturePlan: ExplainCapturePlan = { queries: [], modes: [] }
+
+/** Statements and plan-cache modes accepted for the latest capture, before EXPLAIN runs. */
+export function getExplainCapturePlan(): ExplainCapturePlan {
+  return explainCapturePlan
+}
+
 function collectAndGate(result: ExplainResult): void {
-  results.push(result)
-  assertRequiredPlanShape(result)
+  gateExplainResult(result, results)
 }
 
 export function getResults(): readonly ExplainResult[] {
@@ -136,9 +151,14 @@ async function captureScenario(
   )
   assertCapturedQueries(label, captured)
 
+  const modes = getExplainPlanCacheModes()
+  explainCapturePlan = {
+    queries: captured.map(query => ({ text: query.text, values: query.values })),
+    modes,
+  }
   const inputs = captured.flatMap((cq, captureIndex) => {
     const baseName = extractQueryName(cq.text) ?? label
-    return getExplainPlanCacheModes().map(planCacheMode => {
+    return modes.map(planCacheMode => {
       const suffixes = [nameSuffix, planCacheMode === 'auto' ? undefined : planCacheMode].filter(
         Boolean,
       )
@@ -162,7 +182,7 @@ async function captureScenario(
 export function writeResults() {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const outputPath = join(OUTPUT_DIR, `results-${timestamp}.json`)
-  writeFileSync(outputPath, JSON.stringify({ results, completedScenarioIds }, null, 2))
+  writeExplainResultFile(outputPath, results, completedScenarioIds)
   writeSecondPassResults(outputPath, completedScenarioIds)
   console.log(`\nResults written to: ${outputPath}`)
   console.log(`Total queries explained: ${results.length}`)

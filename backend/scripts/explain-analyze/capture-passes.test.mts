@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import type { ExplainResult } from '@data-stores/psql'
 import { captureScenarioTwice } from './capture-passes.mts'
 import { registerScenarioContract } from './plan-expectations.mts'
+import { baselinedRelationsAbsentFromPlan } from './seq-scan-baseline.mts'
+import {
+  baselinedIndexProbeOptions,
+  recordForcedBaselineScans,
+  type ProbedExplainResult,
+} from './seq-scan-ties.mts'
 
 function captureInput(scenarioId: string) {
   return {
@@ -54,5 +61,62 @@ describe('EXPLAIN function-call capture', () => {
       )
       expect((result.plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']).toBe(1)
     }
+  })
+})
+
+const limitPlan = (nodeType: string) => ({
+  Plan: {
+    'Node Type': 'Limit',
+    'Total Cost': 150,
+    Plans: [{ 'Node Type': nodeType, 'Relation Name': 'posts__default', 'Total Cost': 120 }],
+  },
+})
+
+function baselinedResult(overrides: Partial<ExplainResult> = {}): ProbedExplainResult {
+  return {
+    name: 'buildPostSearchQuery:force_generic_plan',
+    scenario_id: 'post-search-hot',
+    capture_index: 0,
+    plan_cache_mode: 'force_generic_plan',
+    query_text: 'SELECT 1',
+    plan: {},
+    execution_time_ms: 1,
+    planning_time_ms: 1,
+    timestamp: '2026-10-17T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+describe('baselined scan probe', () => {
+  it('plans a skipped baselined scan with every index path disabled', () => {
+    const captured = baselinedResult()
+    expect(baselinedRelationsAbsentFromPlan(captured, [])).toEqual(['posts'])
+    expect(
+      baselinedIndexProbeOptions({ localSettings: { work_mem: '8MB' }, planCacheMode: 'auto' }),
+    ).toEqual({
+      localSettings: {
+        work_mem: '8MB',
+        enable_indexscan: 'off',
+        enable_bitmapscan: 'off',
+        enable_indexonlyscan: 'off',
+      },
+      planCacheMode: 'auto',
+      planOnly: true,
+    })
+    recordForcedBaselineScans(captured, ['posts'], limitPlan('Seq Scan'))
+    expect(captured.forced_seq_scans).toEqual({ posts: { total_cost: 150, scan_cost: 120 } })
+  })
+
+  it('records nothing when the forced plan does not reproduce the scan', () => {
+    const captured = baselinedResult()
+    recordForcedBaselineScans(captured, ['posts'], limitPlan('Index Scan'))
+    expect(captured.forced_seq_scans).toBeUndefined()
+  })
+
+  it('does not plan when the scan was observed or is not baselined', () => {
+    expect(baselinedRelationsAbsentFromPlan(baselinedResult(), ['posts'])).toEqual([])
+    expect(
+      baselinedRelationsAbsentFromPlan(baselinedResult({ scenario_id: 'not-baselined' }), []),
+    ).toEqual([])
   })
 })

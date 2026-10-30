@@ -31,6 +31,16 @@ export function getExplainResultIdentity(result: ExplainResult): string {
   ].join('|')
 }
 
+/** Baselined relations the chosen plan did not scan, which the capture then prices plan-only. */
+export function baselinedRelationsAbsentFromPlan(
+  result: ExplainResult,
+  scannedRelations: readonly string[],
+): readonly string[] {
+  return (SEQ_SCAN_BASELINE[getExplainResultIdentity(result)] ?? []).filter(
+    relation => !scannedRelations.includes(relation),
+  )
+}
+
 // The scan gate fails a fingerprint seen in both passes, or a baselined one absent from both, so
 // the repeated pass re-samples the relations the first pass scanned and the baselined relations it
 // skipped. Re-analyzing every other large relation a plan touched took most of the run (#3402).

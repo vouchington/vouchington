@@ -15,6 +15,7 @@ import { write } from '@data-stores/psql'
 import {
   assertScenarioManifest,
   getCompletedScenarioIds,
+  getExplainCapturePlan,
   getResults,
   prepareOutputDir,
   writeResults,
@@ -136,6 +137,10 @@ async function main() {
     for (const check of [
       () => assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST),
       () => assertPlanRegistry(getResults().map(result => result.scenario_id ?? '')),
+      () => {
+        const empty = getExplainCapturePlan().queries.find(query => query.text.trim() === '')
+        if (empty) throw new Error('EXPLAIN capture recorded an empty statement')
+      },
     ]) {
       try {
         check()

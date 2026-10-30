@@ -1,6 +1,13 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ExplainResult } from '@data-stores/psql'
 import { writeAnnotatedSelectProbe } from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
-import { assertScenarioManifest, runAndCapture } from './run-support.mts'
+import { writeExplainResultFile, writeSecondPassResults } from './capture-passes.mts'
+import { gateExplainResult } from './plan-gates.mts'
+import { getScenarioContract, registerScenarioContract } from './plan-expectations.mts'
+import { assertScenarioManifest, getExplainCapturePlan, runAndCapture } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
 function recordedScenarioError(run: () => Promise<void>): Promise<void> {
@@ -50,5 +57,103 @@ describe('EXPLAIN query capture', () => {
         }),
       ),
     ).rejects.toThrow('Invalid EXPLAIN_PLAN_CACHE_MODE: "invalid"')
+  })
+
+  it('accepts captured SELECT 1 and explains it in auto mode', async () => {
+    vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', '')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await runAndCapture('post-search-new', async () => {
+      await writeAnnotatedSelectProbe()
+    })
+    expect(getExplainCapturePlan()).toEqual({
+      queries: [{ text: '/* postSearch */ SELECT 1', values: [] }],
+      modes: ['auto'],
+    })
+  })
+
+  it('explains compare mode as forced custom and generic plans', async () => {
+    vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', 'compare')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await runAndCapture('post-search-new', async () => {
+      await writeAnnotatedSelectProbe()
+    })
+    expect(getExplainCapturePlan().modes).toEqual(['force_custom_plan', 'force_generic_plan'])
+    expect(getExplainCapturePlan().queries).toEqual([
+      { text: '/* postSearch */ SELECT 1', values: [] },
+    ])
+  })
+})
+
+function ensureContract(
+  id: 'entity-relations-newest' | 'membership-refunds-already-refunded-batch',
+  contract: Parameters<typeof registerScenarioContract>[1],
+) {
+  const existing = getScenarioContract(id)
+  const same = JSON.stringify(existing.expectations) === JSON.stringify(contract.expectations)
+  if (!same) registerScenarioContract(id, contract)
+}
+
+function gatedResult(name: string, node: Record<string, unknown>): ExplainResult {
+  return {
+    name,
+    query_text: '',
+    plan: { Plan: { 'Actual Rows': 1, ...node } },
+    execution_time_ms: 0,
+    planning_time_ms: 0,
+    timestamp: '2024-01-01T00:00:00.000Z',
+    scenario_id: name,
+  }
+}
+
+describe('collectAndGate', () => {
+  it('collects a result before its plan-shape gate throws', () => {
+    ensureContract('entity-relations-newest', {
+      expectations: [{ kind: 'custom', name: 'relationListingOrder' }],
+    })
+    const failing = gatedResult('entity-relations-newest', { 'Node Type': 'Sort' })
+    const kept: ExplainResult[] = []
+    expect(() => gateExplainResult(failing, kept)).toThrow(
+      'entity-relations-newest must use relation index order without an explicit Sort',
+    )
+    expect(kept).toContainEqual(failing)
+  })
+})
+
+describe('writeResults', () => {
+  it('persists a gate-rejected result to the output artifact', () => {
+    ensureContract('membership-refunds-already-refunded-batch', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: [
+            'idx_membership_refunds__stripe_charge_id',
+            'idx_membership_refunds__stripe_payment_intent_id',
+          ],
+        },
+      ],
+    })
+    const failing = gatedResult('membership-refunds-already-refunded-batch', {
+      'Node Type': 'Seq Scan',
+    })
+    const kept: ExplainResult[] = []
+    expect(() => gateExplainResult(failing, kept)).toThrow(
+      'membership-refunds-already-refunded-batch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
+    )
+    const dir = mkdtempSync(join(tmpdir(), 'explain-results-'))
+    const outputPath = join(dir, 'results-gate.json')
+    try {
+      writeExplainResultFile(outputPath, kept, [])
+      writeSecondPassResults(outputPath, [], [])
+      expect(JSON.parse(readFileSync(outputPath, 'utf8'))).toMatchObject({
+        results: [failing],
+        completedScenarioIds: [],
+      })
+      expect(JSON.parse(readFileSync(join(dir, 'repeat-gate.json'), 'utf8'))).toMatchObject({
+        results: [],
+        completedScenarioIds: [],
+      })
+    } finally {
+      rmSync(dir, { force: true, recursive: true })
+    }
   })
 })

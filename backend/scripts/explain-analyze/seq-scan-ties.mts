@@ -63,7 +63,7 @@ function seqScanCost(plan: unknown): number {
  * keeps no scan of it (an index-only path the planner still found, or a rewritten statement)
  * proves nothing about the baselined scan.
  */
-export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqScan | undefined {
+function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqScan | undefined {
   const scans = collectNodes(probePlan).filter(
     node =>
       node.seqScan &&
@@ -75,6 +75,42 @@ export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqSc
   return scans.length > 0 && totalCost !== undefined
     ? { total_cost: totalCost, scan_cost: scans.reduce((sum, node) => sum + node.cost, 0) }
     : undefined
+}
+
+/** Plan-only settings that disable every index path so a baselined scan can be priced. */
+export function baselinedIndexProbeOptions<Mode extends string>(input: {
+  localSettings?: Readonly<Record<string, string>>
+  planCacheMode: Mode
+}): {
+  localSettings: Record<string, string>
+  planCacheMode: Mode
+  planOnly: true
+} {
+  return {
+    localSettings: {
+      ...input.localSettings,
+      enable_indexscan: 'off',
+      enable_bitmapscan: 'off',
+      enable_indexonlyscan: 'off',
+    },
+    planCacheMode: input.planCacheMode,
+    planOnly: true,
+  }
+}
+
+/** Records forced sequential-scan costs for the relations a baselined probe had to replan. */
+export function recordForcedBaselineScans(
+  result: ProbedExplainResult,
+  relations: readonly string[],
+  probePlan: unknown,
+): void {
+  const scans = Object.fromEntries(
+    relations.flatMap(relation => {
+      const scan = forcedSeqScan(probePlan, relation)
+      return scan ? [[relation, scan]] : []
+    }),
+  )
+  if (Object.keys(scans).length > 0) result.forced_seq_scans = scans
 }
 
 /** Cost of the chosen plan's own scan nodes on `relation`, whatever scan type the planner picked. */

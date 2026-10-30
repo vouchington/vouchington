@@ -18,6 +18,12 @@ export { assertScenarioFunctionCalls } from './plan-function-calls.mts'
 /** Above the current ~102k-post fixture; larger unbounded fixtures must use indexes. */
 const SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD = 150_000
 
+/** Keeps a result, then applies its plan-shape gate. A rejection leaves the result recorded. */
+export function gateExplainResult(result: ExplainResult, kept: ExplainResult[]): void {
+  kept.push(result)
+  assertRequiredPlanShape(result)
+}
+
 export function assertRequiredPlanShape(result: ExplainResult): void {
   const scenarioId = result.scenario_id
   if (!scenarioId) throw new Error('Unknown EXPLAIN scenario: missing')
