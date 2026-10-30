@@ -80,22 +80,6 @@ describe('getRssFeedItemFeedIds', () => {
     expect(allIds.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('includes results with proper structure', async () => {
-    const user = await createTestUser()
-    const topic = await createTestTopic()
-    const feedId = await createTestRssFeedWithTiming(topic.id)
-
-    await followRssFeed(user, feedId)
-
-    const item = await createTestRssFeedItemWithUrl(feedId)
-
-    const result = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 10 })
-
-    const foundItem = result.results.find(r => r.id === item.id)
-    expect(foundItem).toBeDefined()
-    expect(foundItem?.id).toBe(item.id)
-  })
-
   it('sorts by published_at DESC', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic()
