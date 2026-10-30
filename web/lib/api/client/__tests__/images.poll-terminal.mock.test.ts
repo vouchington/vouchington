@@ -34,6 +34,7 @@ describe('images', () => {
       es.emit('state', makeState({ ready: true, upload_status: 'complete' }))
       const result = await promise
       expect(result.ready).toBe(true)
+      expect(es.closed).toBe(true)
     })
 
     it('waits through non-terminal states then resolves on ready', async () => {
@@ -110,14 +111,6 @@ describe('images', () => {
       es.emit('state', makeState())
       controller.abort()
       await expect(promise).rejects.toMatchObject({ name: 'AbortError' })
-    })
-
-    it('closes the EventSource when the image becomes ready', async () => {
-      const promise = pollImageUntilTerminal('img-1', { timeoutMs: 5000 })
-      const es = MockEventSource.instances[0]!
-      es.emit('state', makeState({ ready: true, upload_status: 'complete' }))
-      await promise
-      expect(es.closed).toBe(true)
     })
 
     it('closes the EventSource on timeout', async () => {
