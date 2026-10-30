@@ -1,10 +1,7 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { beginTransaction } from '@voucha/test-helpers'
-import {
-  aiRetentionContinuationId,
-  openAIRetentionContinuationHarness,
-} from '@voucha/test-helpers/ai-retention-continuation'
+import { openAIRetentionContinuationHarness } from '@voucha/test-helpers/ai-retention-continuation'
 import { createAIRetentionContinuationFixture } from '@voucha/test-helpers/ai-retention-continuation-fixtures'
 import { AI_RETENTION_FAMILIES } from '@queues/psql/types'
 import { cleanupAIRetentionFamily } from '@services/data-retention'
@@ -16,6 +13,8 @@ import processPsql from '../processors.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+const harnessJobId = (family: (typeof AI_RETENTION_FAMILIES)[number]): string =>
+  `ai_retention_harness__${family}`
 
 describe('AI retention continuation delivery', () => {
   it.each(AI_RETENTION_FAMILIES)(
@@ -49,19 +48,15 @@ describe('AI retention continuation delivery', () => {
         const completed = harness.completed(family)
         const first = await harness.enqueue([family])
         await active.promise
-        expect(first.map(job => job.id)).toEqual([aiRetentionContinuationId(family)])
+        expect(first.map(job => job.id)).toEqual([harnessJobId(family)])
         expect(await harness.enqueue([family, family])).toEqual([])
         release.resolve()
         await completed
         expect(ids).toHaveLength(fixture.passes)
-        expect(new Set(ids)).toEqual(new Set([aiRetentionContinuationId(family)]))
+        expect(new Set(ids)).toEqual(new Set([harnessJobId(family)]))
         expect(await fixture.state()).toEqual(fixture.expected)
-        const finished = await harness.queue.getJob(aiRetentionContinuationId(family))
+        const finished = await harness.queue.getJob(harnessJobId(family))
         expect(finished?.attemptsMade).toBe(0)
-        expect(finished?.opts.ordering).toEqual({
-          key: `psql:ai-retention:${family}`,
-          concurrency: 1,
-        })
 
         const reactivated = harness.completed(family)
         expect(await harness.enqueue([family])).toHaveLength(1)
@@ -133,9 +128,9 @@ describe('AI retention continuation delivery', () => {
         },
       })
       expect(result).toBe(dailyResults)
-      expect(admitted).toEqual(backlogged.map(aiRetentionContinuationId))
+      expect(admitted).toEqual(backlogged.map(harnessJobId))
       await completed
-      expect(await harness.queue.getJob(aiRetentionContinuationId('textEmbeddingCache'))).toBeNull()
+      expect(await harness.queue.getJob(harnessJobId('textEmbeddingCache'))).toBeNull()
       for (const fixture of fixtures.values())
         expect(await fixture.state()).toEqual(fixture.expected)
       expect(harness.failures).toEqual([])
@@ -162,9 +157,7 @@ describe('AI retention continuation delivery', () => {
     })
     try {
       const completed = harness.completed('textEmbeddingCache')
-      const [admitted] = await harness.enqueue(['textEmbeddingCache'])
-      expect(admitted?.opts.attempts).toBe(3)
-      expect(admitted?.opts.backoff).toEqual({ type: 'exponential', delay: 1_000, jitter: 0.5 })
+      await harness.enqueue(['textEmbeddingCache'])
       await completed
       expect(attempts).toEqual([0, 1, 1])
       expect(await fixture.state()).toEqual(fixture.expected)
@@ -172,7 +165,7 @@ describe('AI retention continuation delivery', () => {
         'Owned retention attempt failure',
       ])
       expect(harness.failures).toEqual([])
-      const finished = await harness.queue.getJob(aiRetentionContinuationId('textEmbeddingCache'))
+      const finished = await harness.queue.getJob(harnessJobId('textEmbeddingCache'))
       expect(finished?.attemptsMade).toBe(1)
       expect(await finished?.getState()).toBe('completed')
     } finally {

@@ -8,26 +8,13 @@ import {
   PSQL_RETRY_OPTIONS,
   TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
 } from '../queues/psql/config.mts'
-import { getTerminalActivityRetentionConcurrency } from '../queues/psql/enqueues/ordering-config.mts'
 import type { TerminalActivityRetentionData } from '../queues/psql/types.mts'
-
-const terminalActivityRetentionJobId = (data: TerminalActivityRetentionData): string =>
-  `psql__terminal_activity_retention__${data.family}`
-
-function terminalActivityRetentionJobOptions(data: TerminalActivityRetentionData) {
-  return {
-    ...PSQL_RETRY_OPTIONS,
-    jobId: terminalActivityRetentionJobId(data),
-    priority: PRIORITY_DEFAULT,
-    ordering: {
-      key: `psql:terminal-activity-retention:${data.family}`,
-      concurrency: getTerminalActivityRetentionConcurrency(),
-    },
-  }
-}
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
-/** Replay the family producer's current options in a private real namespace, never shared PSQL IDs. */
+const harnessJobId = (data: TerminalActivityRetentionData): string =>
+  `terminal_retention_harness__${data.family}`
+
+/** Private real namespace for family admission. Production job ids stay on the enqueue. */
 export async function openTerminalRetentionQueueForTest(
   processor: (job: Job<TerminalActivityRetentionData>) => Promise<unknown>,
   registerCleanup?: (close: () => Promise<void>) => void,
@@ -79,7 +66,12 @@ export async function openTerminalRetentionQueueForTest(
       inputs.map(data => ({
         name: TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
         data,
-        opts: { ...ENQUEUE_BASE_DEFAULTS, ...terminalActivityRetentionJobOptions(data) },
+        opts: {
+          ...ENQUEUE_BASE_DEFAULTS,
+          ...PSQL_RETRY_OPTIONS,
+          jobId: harnessJobId(data),
+          priority: PRIORITY_DEFAULT,
+        },
       })),
     )
   return {
@@ -88,11 +80,11 @@ export async function openTerminalRetentionQueueForTest(
       enqueueBulkReactivatingFinished({
         queue,
         inputs: families.map(family => ({ family })),
-        jobIdOf: terminalActivityRetentionJobId,
+        jobIdOf: harnessJobId,
         enqueueBulk,
       }),
     nextTerminal: (family: TerminalActivityRetentionData['family']) => {
-      const id = terminalActivityRetentionJobId({ family })
+      const id = harnessJobId({ family })
       const next = Promise.withResolvers<'completed' | 'failed'>()
       pending.set(id, next)
       return waitForRealGlideEvent(next.promise, `terminal retention ${family}`)

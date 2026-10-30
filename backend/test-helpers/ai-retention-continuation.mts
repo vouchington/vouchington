@@ -3,16 +3,11 @@ import { Queue, Worker, type Job } from 'glide-mq'
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { RealGlideConnection } from './real-glide-job-lifecycle.mts'
-import { PRIORITY_DEFAULT } from '@queues/psql/config'
+import { PRIORITY_DEFAULT, PSQL_RETRY_OPTIONS } from '@queues/psql/config'
 import type { AIRetentionContinuationData, AIRetentionFamily } from '@queues/psql/types'
-import {
-  aiRetentionOrderingKey,
-  getAIRetentionOrderingConcurrency,
-} from '@queues/psql/enqueues/ordering-config'
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
-export const aiRetentionContinuationId = (family: AIRetentionFamily): string =>
-  `ai_retention_continuation__${family}`
+const harnessJobId = (family: AIRetentionFamily): string => `ai_retention_harness__${family}`
 
 function createAIRetentionContinuationEnqueue(
   queue: Queue<AIRetentionContinuationData> & { priorityKind: 'ranked' },
@@ -24,14 +19,9 @@ function createAIRetentionContinuationEnqueue(
     buildJob: (family: AIRetentionFamily) => ({
       data: { family },
       opts: {
-        jobId: aiRetentionContinuationId(family),
+        ...PSQL_RETRY_OPTIONS,
+        jobId: harnessJobId(family),
         priority: PRIORITY_DEFAULT,
-        attempts: 3,
-        backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.5 },
-        ordering: {
-          key: aiRetentionOrderingKey(family),
-          concurrency: getAIRetentionOrderingConcurrency(family),
-        },
       },
     }),
   })
@@ -39,7 +29,7 @@ function createAIRetentionContinuationEnqueue(
     enqueueBulkReactivatingFinished({
       queue,
       inputs: [...new Set(families)],
-      jobIdOf: aiRetentionContinuationId,
+      jobIdOf: harnessJobId,
       enqueueBulk,
     })
 }
@@ -107,7 +97,7 @@ export async function openAIRetentionContinuationHarness(
     enqueue: createAIRetentionContinuationEnqueue(queue),
     completed: (family: AIRetentionFamily) => {
       const wait = Promise.withResolvers<void>()
-      pending.set(aiRetentionContinuationId(family), wait)
+      pending.set(harnessJobId(family), wait)
       return waitForRealGlideEvent(wait.promise, `AI retention ${family}`)
     },
     close,

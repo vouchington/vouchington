@@ -18,14 +18,9 @@ describe('terminal identity family native admission', () => {
       const completed = harness.nextTerminal('follow')
       const jobs = await harness.admit(['follow'])
       expect(jobs).toHaveLength(1)
-      expect(jobs[0]?.opts).toMatchObject({
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        ordering: { key: 'psql:terminal-activity-retention:follow', concurrency: 1 },
-      })
       await expect(completed).resolves.toBe('completed')
       expect(runs).toBe(2)
-      const stored = await harness.queue.getJob('psql__terminal_activity_retention__follow')
+      const stored = await harness.queue.getJob('terminal_retention_harness__follow')
       expect(stored?.attemptsMade).toBe(1)
     } finally {
       await harness.close()
@@ -47,7 +42,7 @@ describe('terminal identity family native admission', () => {
       const like = harness.nextTerminal('like')
       const jobs = await harness.admit(['follow', 'like'])
       expect(jobs.map(job => job.id).toSorted()).toEqual(
-        ['follow', 'like'].map(family => `psql__terminal_activity_retention__${family}`).toSorted(),
+        ['follow', 'like'].map(family => `terminal_retention_harness__${family}`).toSorted(),
       )
       await entered.promise
       await expect(harness.admit(['follow'])).resolves.toEqual([])
@@ -58,10 +53,6 @@ describe('terminal identity family native admission', () => {
       expect(await harness.admit(['follow'])).toHaveLength(1)
       await expect(next).resolves.toBe('completed')
       expect(followRuns).toBe(2)
-      expect(jobs.find(job => job.data.family === 'like')?.opts.ordering).toEqual({
-        key: 'psql:terminal-activity-retention:like',
-        concurrency: 1,
-      })
     } finally {
       release.resolve()
       await harness.close()
