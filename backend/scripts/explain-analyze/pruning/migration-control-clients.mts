@@ -5,7 +5,7 @@ const serverClientBackendTypes = ['client backend', 'parallel worker'] as const
 
 /** How long an already-exited child's backend may remain visible, inside the control budget. */
 const migrationServerClientSettleMs = 2_000
-export const migrationServerClientSampleMs = 200
+const migrationServerClientSampleMs = 200
 
 interface MigrationActivityRow {
   pid: number
@@ -28,15 +28,13 @@ function nullableString(value: unknown, field: string): string | null {
 }
 
 /** Server clients are sessions the migration child owned. Autovacuum is not one of them. */
-export function migrationServerClients<Row extends { backendType: string }>(
-  rows: readonly Row[],
-): Row[] {
+function migrationServerClients<Row extends { backendType: string }>(rows: readonly Row[]): Row[] {
   return rows.filter(row =>
     (serverClientBackendTypes as readonly string[]).includes(row.backendType),
   )
 }
 
-export function migrationServerClientActivitySql(databaseName: string): string {
+function migrationServerClientActivitySql(databaseName: string): string {
   assert.match(databaseName, pruningDatabaseName)
   const types = serverClientBackendTypes.map(type => `'${type}'`).join(', ')
   return [
@@ -55,7 +53,7 @@ export function migrationServerClientActivitySql(databaseName: string): string {
   ].join(' ')
 }
 
-export function parseMigrationActivity(payload: string): MigrationActivityRow[] {
+function parseMigrationActivity(payload: string): MigrationActivityRow[] {
   const parsed: unknown = JSON.parse(payload)
   assert.ok(Array.isArray(parsed), 'Expected migration activity JSON array')
   return parsed.map(row => {
@@ -82,7 +80,7 @@ export function parseMigrationActivity(payload: string): MigrationActivityRow[] 
  * Re-read until no server client remains or the deadline arrives.
  * A backend that stays is still a failure. The caller owns the deadline.
  */
-export async function readSettledMigrationServerClients(input: {
+async function readSettledMigrationServerClients(input: {
   read: () => Promise<readonly MigrationActivityRow[]>
   now: () => number
   deadline: number
@@ -96,7 +94,7 @@ export async function readSettledMigrationServerClients(input: {
   return clients
 }
 
-export function formatMigrationServerClients(clients: readonly MigrationActivityRow[]): string {
+function formatMigrationServerClients(clients: readonly MigrationActivityRow[]): string {
   return clients
     .map(
       client =>

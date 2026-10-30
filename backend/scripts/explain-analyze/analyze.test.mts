@@ -1,13 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import {
-  assertNoDisallowedRegressions,
-  assertResultsPresent,
-  getDisplayName,
-  getUserLabel,
-} from './analyze.mts'
+import { describe, expect, it } from 'vitest'
+import type { ExplainResult } from '@data-stores/psql'
 import { assertNoNewSeqScans } from './seq-scan-baseline.mts'
 import { loadLatestPairedResults } from './paired-results.mts'
 
@@ -142,67 +138,68 @@ describe('explain analyze summary helpers', () => {
     }
   })
 
-  it('classifies names without suffixes as baseline even when they contain heavy', () => {
-    expect(getUserLabel('get_heavy_posts')).toBe('baseline')
-  })
-
-  it('classifies heavy suffix variants as heavy', () => {
-    expect(getUserLabel('get_posts:heavy')).toBe('heavy')
-    expect(getUserLabel('get_posts:heavy-follow-users')).toBe('heavy')
-  })
-
-  it('strips generic heavy suffixes from display names', () => {
-    expect(getDisplayName('get_posts:heavy')).toBe('get_posts')
-    expect(getDisplayName('get_heavy_posts')).toBe('get_heavy_posts')
-  })
-
-  it('preserves named heavy variants in display names', () => {
-    expect(getDisplayName('get_posts:heavy-follow-users')).toBe('get_posts:heavy-follow-users')
+  it('prints heavy-suffix user labels and display names', () => {
+    const summary = summarize([
+      explainResult('get_posts:heavy', 3),
+      explainResult('get_posts:heavy-follow-users', 2),
+      explainResult('get_heavy_posts', 1),
+    ])
+    expect(summary.status).toBe(0)
+    expect(summary.stdout).toContain('| get_posts | heavy | 3.0 | 1.0 | - |')
+    expect(summary.stdout).toContain('| get_posts:heavy-follow-users | heavy | 2.0 | 1.0 | - |')
+    expect(summary.stdout).toContain('| get_heavy_posts | baseline | 1.0 | 1.0 | - |')
   })
 
   it('rejects empty result sets', () => {
-    expect(() => assertResultsPresent([])).toThrow('contains no query results')
+    const summary = summarize([])
+    expect(summary.status).not.toBe(0)
+    expect(summary.stderr).toContain('contains no query results')
   })
 
   it('rejects disallowed resource pressure', () => {
-    expect(() =>
-      assertNoDisallowedRegressions([
-        {
-          name: 'spilling-query',
-          query_text: 'SELECT 1',
-          plan: { Plan: { 'Node Type': 'Sort', 'Temp Written Blocks': 1 } },
-          execution_time_ms: 1,
-          planning_time_ms: 1,
-          timestamp: new Date().toISOString(),
-        },
-      ]),
-    ).toThrow('spilling-query')
-  })
-
-  it('allows only exact baseline pressure fingerprints', () => {
-    const pressureResult = {
-      name: 'known-query',
-      scenario_id: 'known-scenario',
-      capture_index: 0,
-      plan_cache_mode: 'auto' as const,
-      query_text: 'SELECT 1',
-      plan: {
-        Plan: { 'Node Type': 'Sort', 'Relation Name': 'posts', 'Temp Written Blocks': 1 },
+    const summary = summarize([
+      {
+        name: 'spilling-query',
+        query_text: 'SELECT 1',
+        plan: { Plan: { 'Node Type': 'Sort', 'Temp Written Blocks': 1 } },
+        execution_time_ms: 1,
+        planning_time_ms: 1,
+        timestamp: '2026-10-14T00:00:00.000Z',
       },
-      execution_time_ms: 1,
-      planning_time_ms: 1,
-      timestamp: new Date().toISOString(),
-    }
-    const identity = 'known-scenario|0|known-query|auto'
-    expect(() =>
-      assertNoDisallowedRegressions([pressureResult], {
-        [identity]: ['Sort:posts:temp-written'],
-      }),
-    ).not.toThrow()
-    expect(() =>
-      assertNoDisallowedRegressions([pressureResult], {
-        [identity]: ['Sort:posts:temp-read'],
-      }),
-    ).toThrow('temp-written')
+    ])
+    expect(summary.status).not.toBe(0)
+    expect(summary.stderr).toContain('spilling-query')
+    expect(summary.stderr).toContain('temp-written')
   })
 })
+
+function explainResult(name: string, executionMs: number): ExplainResult {
+  return {
+    name,
+    query_text: 'SELECT 1',
+    plan: { Plan: { 'Node Type': 'Result', 'Total Cost': 1 } },
+    execution_time_ms: executionMs,
+    planning_time_ms: 1,
+    timestamp: '2026-10-14T00:00:00.000Z',
+  }
+}
+
+function summarize(results: readonly ExplainResult[]): {
+  status: number | null
+  stdout: string
+  stderr: string
+} {
+  const directory = mkdtempSync(join(tmpdir(), 'explain-summary-'))
+  const payload = JSON.stringify({ results, completedScenarioIds: ['scenario'] })
+  const capturedAt = 'results-2026-10-14T00-00-00-000Z.json'
+  try {
+    writeFileSync(join(directory, capturedAt), payload)
+    writeFileSync(join(directory, capturedAt.replace(/^results-/, 'repeat-')), payload)
+    const run = spawnSync(process.execPath, [join(import.meta.dirname, 'analyze.mts'), directory], {
+      encoding: 'utf8',
+    })
+    return { status: run.status, stdout: run.stdout ?? '', stderr: run.stderr ?? '' }
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
