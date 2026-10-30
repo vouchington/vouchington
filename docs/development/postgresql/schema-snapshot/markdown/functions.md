@@ -365,38 +365,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_active_user_data_request_claim()
  LANGUAGE plpgsql
 ```
 
-## `fn_project_activitypub_inbox_delivery_retention`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_retention()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_storage_after_delete`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_delete()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_storage_after_insert`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_insert()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_storage_after_update`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_update()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_project_activitypub_post_likes`
 
 ```sql

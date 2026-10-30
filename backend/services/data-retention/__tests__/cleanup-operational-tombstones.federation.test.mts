@@ -3,7 +3,6 @@ import {
   beginTransaction,
   countOperationalActiveLikesForTest,
   createTestExpiryWindow,
-  insertOperationalInboxEnvelopeForTest,
   insertOperationalLocalPostForTest,
   insertOperationalRemoteActorForTest,
   insertOperationalRemoteFollowForTest,
@@ -89,10 +88,6 @@ describe('ActivityPub operational retention', () => {
       query,
       new Date(window.firstEligibleDate.getTime() + 1),
     )
-    const queued = await insertOperationalRemoteActorForTest(
-      query,
-      new Date(window.firstEligibleDate.getTime() + 2),
-    )
     const stale = await insertOperationalRemoteActorForTest(query, window.secondEligibleDate)
     const recent = await insertOperationalRemoteActorForTest(query, window.afterUpperBoundDate)
     const oldFollowActivity = await insertOperationalUndoneFollowCycleForTest(
@@ -102,12 +97,11 @@ describe('ActivityPub operational retention', () => {
     )
     await insertOperationalRemoteFollowForTest(query, followed.id, userId)
     await recordLike(postId, liked.id, `${liked.actorUri}/likes/live`, { query })
-    await insertOperationalInboxEnvelopeForTest(query, queued.id, queued.actorUri)
 
     const options = {
       batchSize: 1,
       now: new Date(window.upperBoundDate.getTime() + 90 * DAY_MS),
-      ids: [followed.id, liked.id, queued.id, stale.id, recent.id],
+      ids: [followed.id, liked.id, stale.id, recent.id],
       borrowedQuery: query,
     }
     expect(
@@ -150,7 +144,7 @@ describe('ActivityPub operational retention', () => {
     await expect(
       reserveRemoteFollowCycle(oldFollowActivity, stale.id, otherUserId, { query }),
     ).rejects.toThrow(/another actor or target/)
-    for (const actor of [followed, liked, queued, recent]) {
+    for (const actor of [followed, liked, recent]) {
       expect(await operationalRowExistsForTest(query, 'remote_actors', actor.id)).toBe(true)
     }
   })
