@@ -65,19 +65,24 @@ describe('bounded story members', () => {
 
   it('selects the first direct primary per story and keeps shares standalone', async () => {
     const fixture = await createTestStoryMembers(4)
-    const primary = fixture.itemIds[0]
-    const second = fixture.itemIds[1]
-    const shared = fixture.itemIds[3]
-    if (!primary || !second || !shared) throw new Error('Expected four story members')
+    const [primary, second, third, shared] = fixture.itemIds
+    if (!primary || !second || !third || !shared) throw new Error('Expected four story members')
+    const shareStory = await createTestStoryMembers(1)
+    const shareItemId = shareStory.itemIds[0]
+    if (!shareItemId) throw new Error('Expected a share story member')
     const pages = await getStoryPreviews(null, [
       { id: 'delivery', entity_id: shared, story_id: fixture.story.id, delivery_type: 'share' },
       { id: primary, story_id: fixture.story.id, delivery_type: 'direct' },
       { id: second, story_id: fixture.story.id, delivery_type: 'direct' },
       { id: 'standalone', story_id: null },
+      {
+        id: 'share-delivery',
+        entity_id: shareItemId,
+        story_id: shareStory.story.id,
+        delivery_type: 'share',
+      },
     ])
-    expect(pages[fixture.story.id]!.item_ids).toEqual(
-      fixture.itemIds.filter(id => id !== primary).slice(0, 3),
-    )
-    expect(pages[fixture.story.id]!.item_ids).not.toContain(primary)
+    expect(pages[fixture.story.id]!.item_ids).toEqual([second, third, shared])
+    expect(pages[shareStory.story.id]).toBeUndefined()
   })
 })
