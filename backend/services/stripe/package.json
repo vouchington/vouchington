@@ -36,7 +36,7 @@
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
     "stripe": "^23.0.1",
-    "valkyries": "^0.14.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",
