@@ -648,6 +648,72 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   CONSTRAINT fk_membership_operations__binding_lineage FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
     REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT
 );
+CREATE TABLE membership_operation_retained_identities (
+  id UUID PRIMARY KEY,
+  membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
+  membership_lineage_binding_id UUID NOT NULL REFERENCES membership_lineage_bindings(id) ON DELETE RESTRICT,
+  idempotency_key TEXT NOT NULL,
+  operation_kind membership_operation_kinds NOT NULL,
+  administrator_membership_id UUID REFERENCES retained_membership_identities(id) ON DELETE RESTRICT,
+  administrator_issuer_sha256 BYTEA CHECK (administrator_issuer_sha256 IS NULL OR octet_length(administrator_issuer_sha256) = 32),
+  administrator_request_fingerprint TEXT,
+  administrator_response_snapshot JSONB CHECK (
+    administrator_response_snapshot IS NULL OR (
+      jsonb_typeof(administrator_response_snapshot) = 'object'
+      AND jsonb_typeof(administrator_response_snapshot->'refundId') = 'string'
+      AND jsonb_typeof(administrator_response_snapshot->'cancellationStatus') = 'string'
+      AND administrator_response_snapshot->>'cancellationStatus' IN ('not_requested', 'completed')
+      AND administrator_response_snapshot ?& ARRAY['refundId', 'cancellationStatus']
+    )),
+  UNIQUE (membership_provider_context_id, idempotency_key),
+  CHECK ((operation_kind = 'administrator_refund') =
+    (administrator_membership_id IS NOT NULL AND administrator_issuer_sha256 IS NOT NULL
+      AND administrator_request_fingerprint IS NOT NULL
+      AND administrator_response_snapshot IS NOT NULL))
+);
+CREATE INDEX idx_membership_operation_retained_identities__lineage_binding
+  ON membership_operation_retained_identities(membership_lineage_binding_id);
+CREATE INDEX idx_membership_operation_retained_identities__admin_membership
+  ON membership_operation_retained_identities(administrator_membership_id)
+  WHERE administrator_membership_id IS NOT NULL;
+COMMENT ON TABLE membership_operation_retained_identities IS 'Compact terminal provider operation identity and exact administrator replay result after the seven-year raw ledger expires; no provider payload, attempts, or request note.';
+COMMENT ON COLUMN membership_operation_retained_identities.membership_provider_context_id IS 'Provider application and environment that scopes the operation replay key.';
+COMMENT ON COLUMN membership_operation_retained_identities.membership_lineage_binding_id IS 'Historical lineage binding used to validate exact cancellation replay, never current membership authority.';
+COMMENT ON COLUMN membership_operation_retained_identities.idempotency_key IS 'Terminal provider operation key retained to prevent repeat financial effects on replay.';
+COMMENT ON COLUMN membership_operation_retained_identities.operation_kind IS 'Terminal operation family that determines replay fingerprint and response interpretation.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_membership_id IS 'Retained membership identity needed to validate an administrator refund replay, not live authorization.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_issuer_sha256 IS 'Digest of the staff issuer used to reject replay by a different issuer without retaining the raw identifier.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_request_fingerprint IS 'Canonical refund request fingerprint used to reject changed parameters under a retained key.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_response_snapshot IS 'Minimal terminal administrator refund response returned on exact replay after detailed ledger deletion.';
+CREATE OR REPLACE FUNCTION fn_reject_unretained_membership_operation_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.operation_kind = 'administrator_refund' THEN
+      PERFORM pg_advisory_xact_lock(hashtextextended(NEW.idempotency_key, 1950614898));
+    ELSE
+      PERFORM pg_advisory_xact_lock(hashtextextended(
+        'membership-operation:' || NEW.membership_provider_context_id::text || ':' || NEW.idempotency_key, 0));
+    END IF;
+    IF EXISTS (SELECT 1 FROM membership_operation_retained_identities identity
+      WHERE identity.membership_provider_context_id = NEW.membership_provider_context_id
+        AND identity.idempotency_key = NEW.idempotency_key) THEN
+      RAISE EXCEPTION 'completed membership operation identity is retained'
+        USING ERRCODE = 'unique_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF fn_membership_operation_fiscal_retention_allowed(OLD.id)
+    AND NOT EXISTS (SELECT 1 FROM membership_refund_operation_attempts WHERE membership_operation_id = OLD.id)
+    AND NOT EXISTS (SELECT 1 FROM membership_refunds WHERE membership_operation_id = OLD.id)
+    AND NOT EXISTS (SELECT 1 FROM membership_administrator_refund_operation_requests WHERE membership_operation_id = OLD.id)
+    THEN RETURN OLD; END IF;
+  RAISE EXCEPTION 'membership operation is within billing retention or unfinished'
+    USING ERRCODE = 'check_violation';
+END $$;
+CREATE TRIGGER trigger_membership_operations_retention_delete
+BEFORE INSERT OR DELETE ON membership_operations FOR EACH ROW
+EXECUTE FUNCTION fn_reject_unretained_membership_operation_delete();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotency ON membership_operations (membership_provider_context_id, idempotency_key);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -870,6 +936,11 @@ CREATE INDEX IF NOT EXISTS idx_membership_refunds__operation_id ON membership_re
 CREATE FUNCTION fn_reject_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF fn_membership_operation_fiscal_retention_allowed(OLD.membership_operation_id)
+      AND EXISTS (SELECT 1 FROM membership_operation_retained_identities identity
+        WHERE identity.id = OLD.membership_operation_id
+          AND identity.administrator_response_snapshot->>'refundId' = OLD.id::text)
+      THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'membership refund receipts cannot be deleted';
   END IF;
   IF ROW(NEW.id, NEW.membership_id, NEW.membership_source_id, NEW.user_id,
@@ -936,13 +1007,26 @@ END $$;
 CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE OR REPLACE FUNCTION fn_reject_membership_administrator_refund_request_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND fn_membership_operation_fiscal_retention_allowed(OLD.membership_operation_id)
+    AND NOT EXISTS (SELECT 1 FROM membership_refunds WHERE membership_operation_id = OLD.membership_operation_id)
+    THEN RETURN OLD; END IF;
+  RAISE EXCEPTION 'administrator refund request is immutable'
+    USING ERRCODE = 'check_violation';
+END $$;
+CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_invalid_membership_refund_operation_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE valid_attempt BOOLEAN;
 BEGIN
-  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
+  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund')
+    AND operation.completed_at IS NULL
+    AND operation.currency_code = NEW.currency_code
+    AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units
+    INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
   IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
@@ -951,7 +1035,13 @@ CREATE TRIGGER trigger_membership_refund_operation_attempts_valid BEFORE INSERT 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;
+  IF TG_OP = 'DELETE' THEN
+    IF fn_membership_operation_fiscal_retention_allowed(OLD.membership_operation_id)
+      AND NOT EXISTS (SELECT 1 FROM membership_refund_operation_attempt_metadata_scans
+        WHERE membership_refund_operation_attempt_id = OLD.id)
+      THEN RETURN OLD; END IF;
+    RAISE EXCEPTION 'membership refund operation attempts cannot be deleted';
+  END IF;
   IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
 END $$;
@@ -985,6 +1075,148 @@ CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON me
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- Fiscal retention is measured from the end of the terminal operation's UTC year.
+-- These functions are also used by the final immutable guard in 0618.
+CREATE FUNCTION fn_membership_operation_fiscal_retention_due(operation_id UUID)
+RETURNS BOOLEAN LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN COALESCE(current_setting('app.billing_retention_delete', true) = 'on', FALSE)
+    AND COALESCE(NULLIF(current_setting('app.payment_ledger_retention_months', true), '')::integer BETWEEN 1 AND 1200, FALSE)
+    AND EXISTS (
+      SELECT 1 FROM membership_operations operation
+      WHERE operation.id = operation_id
+        AND operation.completed_at IS NOT NULL
+        AND operation.operation_kind IN ('cancel_source', 'administrator_refund')
+        AND date_trunc('year', GREATEST(operation.requested_at, operation.completed_at)
+          AT TIME ZONE 'UTC') + make_interval(months => 12 +
+          NULLIF(current_setting('app.payment_ledger_retention_months', true), '')::integer)
+          <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
+          WHERE work.membership_operation_id = operation.id)
+        AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
+          WHERE receipt.membership_operation_id = operation.id)
+        AND NOT EXISTS (SELECT 1 FROM membership_ineligible_purchase_reversal_case_operations case_operation
+          WHERE case_operation.membership_operation_id = operation.id));
+END $$;
+COMMENT ON FUNCTION fn_membership_operation_fiscal_retention_due(UUID) IS 'Current configurable fiscal window and terminal family eligibility; live work, automatic receipts and reversal cases block deletion.';
+
+CREATE FUNCTION fn_membership_operation_fiscal_retention_allowed(operation_id UUID)
+RETURNS BOOLEAN LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN fn_membership_operation_fiscal_retention_due(operation_id)
+    AND EXISTS (SELECT 1 FROM membership_operations operation
+      JOIN membership_operation_retained_identities identity ON identity.id = operation.id
+      WHERE operation.id = operation_id
+        AND identity.membership_provider_context_id = operation.membership_provider_context_id
+        AND identity.membership_lineage_binding_id = operation.membership_lineage_binding_id
+        AND identity.idempotency_key = operation.idempotency_key
+        AND identity.operation_kind = operation.operation_kind);
+END $$;
+COMMENT ON FUNCTION fn_membership_operation_fiscal_retention_allowed(UUID) IS 'Requires the immutable exact-replay identity, validated against the original receipt before any bounded child drain.';
+
+CREATE FUNCTION fn_reject_invalid_membership_operation_retained_identity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM 1 FROM membership_operations WHERE id = NEW.id FOR UPDATE;
+  IF NOT fn_membership_operation_fiscal_retention_due(NEW.id)
+    OR NOT EXISTS (SELECT 1 FROM membership_operations operation
+      WHERE operation.id = NEW.id
+        AND operation.membership_provider_context_id = NEW.membership_provider_context_id
+        AND operation.membership_lineage_binding_id = NEW.membership_lineage_binding_id
+        AND operation.idempotency_key = NEW.idempotency_key
+        AND operation.operation_kind = NEW.operation_kind
+        AND (operation.operation_kind = 'cancel_source' OR EXISTS (
+          SELECT 1 FROM membership_administrator_refund_operation_requests request
+          JOIN membership_refunds refund ON refund.membership_operation_id = request.membership_operation_id
+          WHERE request.membership_operation_id = operation.id
+            AND (NOT request.is_cancel_requested OR refund.has_revoked_access)
+            AND NEW.administrator_membership_id = request.membership_id
+            AND NEW.administrator_issuer_sha256 = sha256(convert_to(request.issued_by_id::text, 'UTF8'))
+            AND NEW.administrator_request_fingerprint = request.request_fingerprint
+            AND NEW.administrator_response_snapshot = jsonb_build_object(
+              'refundId', refund.id, 'cancellationStatus', CASE WHEN request.is_cancel_requested
+                THEN 'completed' ELSE 'not_requested' END))))
+  THEN
+    RAISE EXCEPTION 'retained membership operation requires an expired terminal operation and exact receipt'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_operation_retained_identities_valid
+BEFORE INSERT ON membership_operation_retained_identities FOR EACH ROW
+EXECUTE FUNCTION fn_reject_invalid_membership_operation_retained_identity();
+CREATE TRIGGER trigger_membership_operation_retained_identities_immutable
+BEFORE UPDATE OR DELETE ON membership_operation_retained_identities FOR EACH ROW
+EXECUTE FUNCTION fn_reject_mutation();
+
+-- INSERT takes the parent's lifetime lock before checking the permanent replay fence.
+-- UPDATE already owns a child row lock: do not introduce the opposite lock order there.
+CREATE FUNCTION fn_reject_retained_membership_operation_child_write()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE operation_id UUID;
+BEGIN
+  IF TG_TABLE_NAME = 'membership_refund_operation_attempt_metadata_scans' THEN
+    SELECT membership_operation_id INTO operation_id FROM membership_refund_operation_attempts
+    WHERE id = NEW.membership_refund_operation_attempt_id;
+  ELSE
+    operation_id := NEW.membership_operation_id;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    PERFORM 1 FROM membership_operations WHERE id = operation_id FOR SHARE;
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    IF TG_TABLE_NAME <> 'membership_refund_operation_attempt_metadata_scans' THEN
+      IF NEW.membership_operation_id IS DISTINCT FROM OLD.membership_operation_id THEN
+        IF OLD.membership_operation_id IS NOT NULL THEN
+          RAISE EXCEPTION 'membership operation child ownership is immutable'
+            USING ERRCODE = 'check_violation';
+        END IF;
+        -- A formerly unlinked dashboard receipt is outside this parent's drain,
+        -- so acquiring its new parent here cannot invert the parent's child locks.
+        PERFORM 1 FROM membership_operations WHERE id = operation_id FOR SHARE;
+      END IF;
+      IF EXISTS (SELECT 1 FROM membership_operation_retained_identities WHERE id = OLD.membership_operation_id) THEN
+        RAISE EXCEPTION 'membership operation children cannot outlive fiscal retention'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+  END IF;
+  IF EXISTS (SELECT 1 FROM membership_operation_retained_identities WHERE id = operation_id) THEN
+    RAISE EXCEPTION 'membership operation children cannot outlive fiscal retention'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_refunds_retained_fence
+BEFORE INSERT OR UPDATE ON membership_refunds FOR EACH ROW
+EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write();
+CREATE TRIGGER trigger_membership_refund_attempts_retained_fence
+BEFORE INSERT OR UPDATE ON membership_refund_operation_attempts FOR EACH ROW
+EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write();
+CREATE TRIGGER trigger_membership_refund_scans_retained_fence
+BEFORE INSERT OR UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW
+EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write();
+CREATE TRIGGER trigger_membership_refund_requests_retained_fence
+BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW
+EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write();
+CREATE TRIGGER trigger_membership_operation_work_retained_fence
+BEFORE INSERT OR UPDATE ON membership_operation_execution_work_items FOR EACH ROW
+EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write();
+
+CREATE FUNCTION fn_reject_membership_refund_metadata_scan_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM membership_refund_operation_attempts attempt
+    WHERE attempt.id = OLD.membership_refund_operation_attempt_id
+      AND fn_membership_operation_fiscal_retention_allowed(attempt.membership_operation_id))
+    THEN RETURN OLD; END IF;
+  RAISE EXCEPTION 'membership refund metadata scans require completed fiscal retention'
+    USING ERRCODE = 'check_violation';
+END $$;
+CREATE TRIGGER trigger_membership_refund_metadata_scans_retention_delete
+BEFORE DELETE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW
+EXECUTE FUNCTION fn_reject_membership_refund_metadata_scan_delete();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_event_types (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -1003,8 +1235,57 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, payload JSONB NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
+CREATE TABLE stripe_event_retained_identities (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  stripe_event_id TEXT NOT NULL UNIQUE
+);
+COMMENT ON TABLE stripe_event_retained_identities IS 'Minimal terminal Stripe protocol identity written with processed or ignored outcome; it survives the work item and financial ledger so a valid old EventBridge replay remains an exact no-op.';
+COMMENT ON COLUMN stripe_event_retained_identities.id IS 'Internal UUIDv7 row identity, separate from the exact provider event key.';
+COMMENT ON COLUMN stripe_event_retained_identities.stripe_event_id IS 'Provider event identity only; no payload, account identifier, amount, or processing history.';
+CREATE OR REPLACE FUNCTION fn_reject_replayed_external_event_identity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_TABLE_NAME = 'stripe_events' THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('stripe-event:' || NEW.stripe_event_id, 0));
+    IF EXISTS (SELECT 1 FROM stripe_event_retained_identities identity
+      WHERE identity.stripe_event_id = NEW.stripe_event_id) THEN
+      RAISE EXCEPTION 'terminal Stripe event identity is retained'
+        USING ERRCODE = 'unique_violation';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'copyright_notice_email_intakes' THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended(
+      'copyright-email:' || NEW.amazon_ses_message_id, 0));
+    IF EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts identity
+      WHERE identity.amazon_ses_message_id = NEW.amazon_ses_message_id AND identity.erased_at IS NOT NULL) THEN
+      RAISE EXCEPTION 'copyright email identity is retained'
+        USING ERRCODE = 'unique_violation';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Unsupported replay identity admission table %', TG_TABLE_NAME;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_stripe_events_retained_identity
+BEFORE INSERT ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_external_event_identity();
+CREATE OR REPLACE FUNCTION fn_reject_unretained_stripe_event_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF current_setting('app.billing_retention_delete', true) = 'on'
+    AND date_trunc('year', OLD.occurred_at AT TIME ZONE 'UTC') + make_interval(months => 12 + NULLIF(current_setting('app.payment_ledger_retention_months', true), '')::integer)
+      <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    AND EXISTS (SELECT 1 FROM stripe_event_retained_identities identity
+      WHERE identity.stripe_event_id = OLD.stripe_event_id)
+    AND NOT EXISTS (SELECT 1 FROM stripe_event_processing_work_items work
+      WHERE work.stripe_event_id = OLD.id) THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'Stripe event is within billing retention or unfinished'
+    USING ERRCODE = 'check_violation';
+END $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE OR DELETE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_stripe_events_retention_delete BEFORE DELETE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_unretained_stripe_event_delete();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_event_processing_work_items (
   stripe_event_id UUID PRIMARY KEY REFERENCES stripe_events(id) ON DELETE CASCADE,
@@ -1017,6 +1298,20 @@ CREATE TABLE IF NOT EXISTS stripe_event_processing_work_items (
   CHECK ((leased_at IS NULL) = (lease_expires_at IS NULL)),
   CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at)
 );
+CREATE TYPE payment_ledger_retention_families AS ENUM ('stripe_event', 'membership_operation');
+COMMENT ON TYPE payment_ledger_retention_families IS 'Ledger families with independent fiscal retention progress.';
+CREATE TABLE payment_ledger_retention_cursors (
+  family payment_ledger_retention_families PRIMARY KEY,
+  cursor_record_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER trigger_payment_ledger_retention_cursors_updated_at
+BEFORE UPDATE ON payment_ledger_retention_cursors FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE payment_ledger_retention_cursors IS 'Cyclic UUIDv7 scan progress for finite billing ledgers.';
+COMMENT ON COLUMN payment_ledger_retention_cursors.family IS 'Concrete billing ledger family.';
+COMMENT ON COLUMN payment_ledger_retention_cursors.cursor_record_id IS 'Last scanned ledger UUIDv7 key, without a foreign key to a deletable row.';
+COMMENT ON COLUMN payment_ledger_retention_cursors.updated_at IS 'Last committed cursor progress.';
 COMMENT ON TABLE stripe_event_processing_work_items IS 'Processing and recovery state separate from immutable Stripe protocol events; terminal work expires after 30 days while the event remains for deduplication.';
 COMMENT ON COLUMN stripe_event_processing_work_items.stripe_event_id IS 'Inbound event being processed; cascades with its protocol record.';
 COMMENT ON COLUMN stripe_event_processing_work_items.lease_token IS 'Fencing token for the current admitted processing generation.';
@@ -1328,3 +1623,5 @@ CREATE INDEX IF NOT EXISTS idx_memberships__user_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_membership_changes_actor BEFORE INSERT ON membership_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+
+COMMENT ON COLUMN stripe_event_retained_identities.created_at IS 'Internal replay-fence registration time derived from UUIDv7, never the provider event time or a new expiry anchor.';

@@ -60,6 +60,7 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_restrictions__lifted_by`: `CREATE INDEX idx_copyright_restrictions__lifted_by ON public.copyright_restrictions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__notice_id`: `CREATE INDEX idx_copyright_restrictions__notice_id ON public.copyright_restrictions USING btree (copyright_notice_id, id)`
 - `idx_copyright_restrictions__one_active_per_target`: `CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON public.copyright_restrictions USING btree (copyright_notice_target_id) WHERE (lifted_at IS NULL)`
+- `idx_copyright_restrictions__purge_active`: `CREATE INDEX idx_copyright_restrictions__purge_active ON public.copyright_restrictions USING btree (copyright_notice_id) WHERE (lifted_at IS NULL)`
 - `idx_copyright_restrictions__target`: `CREATE INDEX idx_copyright_restrictions__target ON public.copyright_restrictions USING btree (copyright_notice_target_id)`
 
 **Triggers:**
@@ -68,4 +69,7 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_restrictions_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_lifecycle()`
 - `trigger_copyright_restrictions_updated_at`: `CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copy_blocker_restriction`: `CREATE TRIGGER trigger_register_copy_blocker_restriction BEFORE INSERT OR UPDATE OF lifted_at ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_restrictions', 'public.copyright_restrictions')`
 - `trigger_update_copyright_restrictions_scope`: `CREATE TRIGGER trigger_update_copyright_restrictions_scope BEFORE INSERT ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_targets', 'copyright_notice_target_id')`

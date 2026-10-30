@@ -15,6 +15,7 @@ import {
   type TestCopyrightConnection,
 } from '@voucha/test-helpers/copyright-repeat-infringer-concurrency'
 import { readTestRepeatInfringerEnforcementState } from '@voucha/test-helpers/copyright-repeat-infringer-enforcement'
+import { raceTestCopyrightReversalAndEnforcement } from '@voucha/test-helpers/copyright-repeat-infringer-reversal-concurrency'
 import { getPrivateUserByAny } from '@services/users/get'
 import { unsuspendUser } from '@services/users/suspension'
 import {
@@ -174,6 +175,7 @@ describe('atomic copyright repeat-infringer outcomes', () => {
 
     const results = await raceTestRepeatInfringerAuthorLock({
       accountId: poster.id,
+      stageFirstAtPurgeGate: true,
       operations: [
         connection => unsuspendUser(admin, poster.id, connection),
         connection =>
@@ -244,7 +246,7 @@ describe('atomic copyright repeat-infringer outcomes', () => {
           },
           connection,
         )
-      const results = await raceTestRepeatInfringerAuthorLock({
+      const results = await raceTestCopyrightReversalAndEnforcement({
         accountId: poster.id,
         operations: reversalFirst ? [reverse, enforce] : [enforce, reverse],
       })

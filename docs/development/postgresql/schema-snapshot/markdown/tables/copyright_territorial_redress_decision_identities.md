@@ -6,11 +6,12 @@ At most one minimal published staff decision identity per retained redress reque
 
 Not partitioned — growth: unbounded.
 
-| Column                                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                              |
-| ------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------- |
-| `id`                                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Published UUIDv7 staff redress decision identity.    |
-| `copyright_territorial_redress_request_id` | `uuid`                     | no       |                              |          |           |           | Owning request that stores the final redress result. |
-| `created_at`                               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Identity creation time derived from its UUIDv7 id.   |
+| Column                                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                         |
+| ------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| `id`                                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Published UUIDv7 staff redress decision identity.                                                               |
+| `copyright_notice_id`                      | `uuid`                     | no       |                              |          |           |           | Minimal case owner scope, retained with the request and used by the bounded purge guard after request deletion. |
+| `copyright_territorial_redress_request_id` | `uuid`                     | no       |                              |          |           |           | Owning request that stores the final redress result.                                                            |
+| `created_at`                               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Identity creation time derived from its UUIDv7 id.                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -24,13 +25,18 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_territorial_redress_copyright_territorial_redres_fkey`: `FOREIGN KEY (copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(id) ON DELETE RESTRICT`
+- `fk_copyright_redress_decision_identities__request_scope`: `FOREIGN KEY (copyright_notice_id, copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_territorial_redress_copyright_territorial_redress_key`: `CREATE UNIQUE INDEX copyright_territorial_redress_copyright_territorial_redress_key ON public.copyright_territorial_redress_decision_identities USING btree (copyright_territorial_redress_request_id)`
 - `copyright_territorial_redress_decision_identities_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_decision_identities_pkey ON public.copyright_territorial_redress_decision_identities USING btree (id)`
+- `idx_cpyrght_trrtrl_rdrss_dcsn_idntts__notice_id`: `CREATE INDEX idx_cpyrght_trrtrl_rdrss_dcsn_idntts__notice_id ON public.copyright_territorial_redress_decision_identities USING btree (copyright_notice_id, id)`
 - `uq_copyright_redress_decision_identities__request_id`: `CREATE UNIQUE INDEX uq_copyright_redress_decision_identities__request_id ON public.copyright_territorial_redress_decision_identities USING btree (copyright_territorial_redress_request_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_redress_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_current_owner_deletion`: `CREATE TRIGGER trigger_reject_copyright_current_owner_deletion BEFORE DELETE ON public.copyright_territorial_redress_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_redress_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_redress_decision_identities', 'public.copyright_territorial_redress_decision_identities')`
+- `trigger_update_copyright_redress_identity_scope`: `CREATE TRIGGER trigger_update_copyright_redress_identity_scope BEFORE INSERT ON public.copyright_territorial_redress_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_territorial_redress_requests', 'copyright_territorial_redress_request_id')`

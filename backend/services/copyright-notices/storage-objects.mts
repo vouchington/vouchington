@@ -22,7 +22,7 @@ export async function upsertCopyrightStorageObjectId(
     id: string
   }>(sql`/* upsertCopyrightStorageObjectId:existing */
     SELECT id FROM copyright_notice_storage_objects
-    WHERE storage_key = ${storageKey}
+    WHERE storage_key = ${storageKey} AND erased_at IS NULL
     FOR KEY SHARE
   `)
   if (!rows[0]) throw new Error('Copyright storage object conflict has no owner')

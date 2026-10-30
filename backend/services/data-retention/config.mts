@@ -1,85 +1,20 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
-export type DataRetentionConfig = {
-  batch_size: number
-  ai_usage_raw_retention_days: number
-  classifier_retention_days: number
-  post_moderation_retention_days: number
-  community_moderator_scan_page_size: number
-  community_purge_batch_size: number
-  topic_import_attempt_batch_size: number
-  vote_integrity_detail_days: number
-  max_batches_per_run: number
-  partition_status_probe_limit: number
-  moderation_batch_size: number
-  moderation_max_batches_per_run: number
-  ses_bounce_retention_days: number
-  ai_retention_page_size: number
-  ai_retention_max_pages_per_run: number
-  copyright_form_screening_attempt_days: number
-  copyright_action_attempt_days: number
-  copyright_delivery_attempt_days: number
-  copyright_guest_capability_days: number
-  copyright_unlinked_email_intake_days: number
-  copyright_email_thread_reply_days: number
-}
-
-/** The per-cleanup limits one retention run applies. Every cleanup in the run takes both. */
-export type DataRetentionLimits = {
-  batchSize: number
-  maxBatches: number
-}
+import {
+  DEFAULT_DATA_RETENTION_CONFIG,
+  DATA_RETENTION_MAX_VALUES,
+  type DataRetentionConfig,
+  type DataRetentionLimits,
+} from './config-values.mts'
+export {
+  DEFAULT_DATA_RETENTION_CONFIG,
+  DATA_RETENTION_MAX_VALUES,
+  type DataRetentionConfig,
+  type DataRetentionLimits,
+} from './config-values.mts'
 
 const DATA_RETENTION_CONFIG_KEY = 'data-retention-config'
-
-export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
-  batch_size: 500,
-  ai_usage_raw_retention_days: 180,
-  classifier_retention_days: 90,
-  post_moderation_retention_days: 90,
-  community_moderator_scan_page_size: 50,
-  community_purge_batch_size: 25,
-  topic_import_attempt_batch_size: 25,
-  vote_integrity_detail_days: 180,
-  max_batches_per_run: 200,
-  partition_status_probe_limit: 64,
-  moderation_batch_size: 25,
-  moderation_max_batches_per_run: 4,
-  ses_bounce_retention_days: 90,
-  ai_retention_page_size: 500,
-  ai_retention_max_pages_per_run: 10,
-  copyright_form_screening_attempt_days: 180,
-  copyright_action_attempt_days: 180,
-  copyright_delivery_attempt_days: 180,
-  copyright_guest_capability_days: 90,
-  copyright_unlinked_email_intake_days: 90,
-  copyright_email_thread_reply_days: 180,
-}
-
-export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
-  batch_size: 5_000,
-  ai_usage_raw_retention_days: 3_650,
-  classifier_retention_days: 365,
-  post_moderation_retention_days: 365,
-  community_moderator_scan_page_size: 250,
-  community_purge_batch_size: 250,
-  topic_import_attempt_batch_size: 250,
-  vote_integrity_detail_days: 180,
-  max_batches_per_run: 2_000,
-  partition_status_probe_limit: 256,
-  moderation_batch_size: 100,
-  moderation_max_batches_per_run: 20,
-  ses_bounce_retention_days: 365,
-  ai_retention_page_size: 500,
-  ai_retention_max_pages_per_run: 10,
-  copyright_form_screening_attempt_days: 3_650,
-  copyright_action_attempt_days: 3_650,
-  copyright_delivery_attempt_days: 3_650,
-  copyright_guest_capability_days: 3_650,
-  copyright_unlinked_email_intake_days: 3_650,
-  copyright_email_thread_reply_days: 3_650,
-}
 
 export const dataRetentionConfig = new DynamicConfig({
   key: DATA_RETENTION_CONFIG_KEY,
@@ -93,6 +28,13 @@ export const dataRetentionConfig = new DynamicConfig({
     community_purge_batch_size: 'number',
     topic_import_attempt_batch_size: 'number',
     partition_status_probe_limit: 'number',
+    identity_attempt_retention_months: 'number',
+    deletion_proof_retention_months: 'number',
+    released_hold_retention_months: 'number',
+    payment_ledger_retention_months: 'number',
+    copyright_minimal_case_batch_size: 'number',
+    copyright_minimal_page_size: 'number',
+    copyright_minimal_max_pages_per_case: 'number',
     moderation_batch_size: 'number',
     moderation_max_batches_per_run: 'number',
     ses_bounce_retention_days: 'number',
@@ -130,6 +72,26 @@ export function getTopicImportAttemptDeletionBatchSize(): number {
 export function getPartitionStatusProbeLimit(): number {
   return readDataRetentionField('partition_status_probe_limit')
 }
+
+export function getCopyrightMinimalPurgeLimits() {
+  return {
+    caseBatchSize: readDataRetentionField('copyright_minimal_case_batch_size'),
+    pageSize: readDataRetentionField('copyright_minimal_page_size'),
+    maxPagesPerCase: readDataRetentionField('copyright_minimal_max_pages_per_case'),
+  }
+}
+
+/** Approved non-copyright defaults remain independent, runtime-configurable windows. */
+export function getLegalRecordRetentionWindows() {
+  return {
+    identityAttemptMonths: readDataRetentionField('identity_attempt_retention_months'),
+    deletionProofMonths: readDataRetentionField('deletion_proof_retention_months'),
+    releasedHoldMonths: readDataRetentionField('released_hold_retention_months'),
+    paymentLedgerMonths: readDataRetentionField('payment_ledger_retention_months'),
+  }
+}
+
+/** Each account review has its own six-calendar-year clock, independent of case activity. */
 
 export function getClassifierRetentionDays(): number {
   return Math.max(90, readDataRetentionField('classifier_retention_days'))

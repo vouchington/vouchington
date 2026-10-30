@@ -175,6 +175,20 @@ Native admission and status presentation are tracked in
 [vouchington-clients#517](https://github.com/vouchington/vouchington-clients/issues/517); this
 producer change does not depend on native implementation.
 
+## Copyright retention review
+
+Review-authorized operators can explicitly close territorial escalations, resolve supervised
+complaints, and place or release case preservation holds. These producer APIs make the approved
+retention blockers actionable for guest cases as well as account cases. They preserve the existing
+staff authorization and sensitive rate-limit boundary. Native and web presentation remain gaps;
+the API producer does not establish rendered UI parity. Authorized live-case replays preserve their
+original result; purged cases use the existing missing-case response and retain no public response
+snapshot.
+
+The same staff boundary can preserve a retained email receipt after its private intake has been
+removed. Release requires the current opaque hold token, so an earlier token cannot release a
+replacement hold. The receipt's final explanation stays unavailable once it has expired.
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending

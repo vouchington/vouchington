@@ -4,7 +4,9 @@ import { shouldLogToConsole } from './should-log-to-console.mts'
 export type CopyrightRetentionErasureFailureContext = {
   /** Cases the same run erased before or after the failures. */
   erased: number
-  /** Cases left exactly as they were for the next run; `reason` is an error class name. */
+  /** Failed independent key reservations; no key/object identities are logged. */
+  orphanKeysFailed?: number
+  /** Unfinished case pages left for the next run; `reason` is an error class name. */
   failed: readonly { noticeId: string; reason: string }[]
 }
 
@@ -18,10 +20,11 @@ export type CopyrightRetentionErasureFailureContext = {
 export function recordCopyrightRetentionErasureFailure(
   context: CopyrightRetentionErasureFailureContext,
 ): boolean {
-  if (context.failed.length === 0) return false
+  if (context.failed.length === 0 && !context.orphanKeysFailed) return false
   const extra = {
     erasedCount: context.erased,
     failedCount: context.failed.length,
+    orphanKeyFailedCount: context.orphanKeysFailed ?? 0,
     failures: context.failed.map(({ noticeId, reason }) => ({ noticeId, reason })),
   }
   if (shouldLogToConsole()) {

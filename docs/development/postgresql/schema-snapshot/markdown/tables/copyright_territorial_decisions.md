@@ -8,6 +8,7 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 
 | Column                                               | Type                                                    | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
 | ---------------------------------------------------- | ------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `transparency_generation`                            | `bigint`                                                | no       | `0`                          |          |           |           | Commit-serialized aggregate generation in which this immutable reportable fact was admitted.                  |
 | `id`                                                 | `uuid`                                                  | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
 | `copyright_notice_id`                                | `uuid`                                                  | no       |                              |          |           |           | Notice this decision explains. At most one original and one permitted successor per notice.                   |
 | `jurisdiction`                                       | `copyright_jurisdictions`                               | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                                 |
@@ -36,13 +37,14 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 - `chk_copyright_territorial_decisions__public_explanation`: `CHECK (((char_length(public_explanation_ciphertext) >= 1) AND (char_length(public_explanation_ciphertext) <= 1048576)))`
 - `chk_copyright_territorial_decisions__rationale`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 - `chk_copyright_territorial_decisions__successor`: `CHECK (((supersedes_decision_id IS NULL) OR (outcome = 'restrict'::copyright_territorial_decision_outcomes)))`
+- `copyright_territorial_decisions_transparency_generation_check`: `CHECK ((transparency_generation >= 0))`
 
 **Foreign keys:**
 
 - `fk_copyright_territorial_decisions__assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_decisions__decided_by`: `FOREIGN KEY (decided_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_decisions__identity`: `FOREIGN KEY (copyright_notice_id, jurisdiction, id) REFERENCES copyright_territorial_decision_identities(copyright_notice_id, jurisdiction, id) ON DELETE RESTRICT`
-- `fk_copyright_territorial_decisions__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_territorial_decisions__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_territorial_decisions__predecessor`: `FOREIGN KEY (copyright_notice_id, supersedes_decision_id) REFERENCES copyright_territorial_decision_identities(copyright_notice_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -50,10 +52,18 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 - `copyright_territorial_decisions_pkey`: `CREATE UNIQUE INDEX copyright_territorial_decisions_pkey ON ONLY public.copyright_territorial_decisions USING btree (id)`
 - `idx_copyright_territorial_decisions__assessment`: `CREATE INDEX idx_copyright_territorial_decisions__assessment ON ONLY public.copyright_territorial_decisions USING btree (copyright_notice_submission_assessment_identity_id, id) WHERE (copyright_notice_submission_assessment_identity_id IS NOT NULL)`
 - `idx_copyright_territorial_decisions__decided_by`: `CREATE INDEX idx_copyright_territorial_decisions__decided_by ON ONLY public.copyright_territorial_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)`
+- `idx_copyright_territorial_decisions__report_generation`: `CREATE INDEX idx_copyright_territorial_decisions__report_generation ON ONLY public.copyright_territorial_decisions USING btree (transparency_generation, decided_at)`
+- `idx_copyright_territorial_decisions__retirement_generation`: `CREATE INDEX idx_copyright_territorial_decisions__retirement_generation ON ONLY public.copyright_territorial_decisions USING btree (jurisdiction, transparency_generation)`
+- `idx_copyright_territorial_decisions__retirement_time`: `CREATE INDEX idx_copyright_territorial_decisions__retirement_time ON ONLY public.copyright_territorial_decisions USING btree (jurisdiction, decided_at)`
 - `uq_copyright_territorial_decisions__notice_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_decisions__notice_id ON ONLY public.copyright_territorial_decisions USING btree (copyright_notice_id, id)`
 
 **Triggers:**
 
-- `trigger_copyright_territorial_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
 - `trigger_copyright_territorial_decisions_scope`: `CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_record_copyright_transparency_source_erasure`: `CREATE TRIGGER trigger_record_copyright_transparency_source_erasure BEFORE DELETE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_source_erasure('decided_at')`
+- `trigger_register_copy_blocker_territorial_decision`: `CREATE TRIGGER trigger_register_copy_blocker_territorial_decision BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_decisions', 'public.copyright_territorial_decisions')`
+- `trigger_stamp_copyright_transparency_fact`: `CREATE TRIGGER trigger_stamp_copyright_transparency_fact BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_fact()`

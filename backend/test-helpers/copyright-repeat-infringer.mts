@@ -42,13 +42,13 @@ export async function createTestRepeatInfringerNotice(
     receivedAt: new Date(),
     claimantUserId: null,
     claimantDisplayName: 'Claimant',
-    claimantContactCiphertext: crypto.randomUUID(),
+    claimantContact: crypto.randomUUID(),
     workDescription: crypto.randomUUID(),
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'signed_in_form',
-      bodyCiphertext: crypto.randomUUID(),
+      body: crypto.randomUUID(),
     },
     targets,
   })

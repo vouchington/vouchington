@@ -42,7 +42,12 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    RAISE EXCEPTION 'membership operations cannot be deleted';
+    IF fn_membership_operation_fiscal_retention_allowed(OLD.id)
+      AND NOT EXISTS (SELECT 1 FROM membership_refund_operation_attempts WHERE membership_operation_id = OLD.id)
+      AND NOT EXISTS (SELECT 1 FROM membership_refunds WHERE membership_operation_id = OLD.id)
+      AND NOT EXISTS (SELECT 1 FROM membership_administrator_refund_operation_requests WHERE membership_operation_id = OLD.id)
+      THEN RETURN OLD; END IF;
+    RAISE EXCEPTION 'membership operations cannot be deleted outside completed fiscal retention';
   END IF;
 
   IF OLD.completed_at IS NOT NULL THEN

@@ -1,10 +1,10 @@
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { lockCopyrightRepeatInfringerNoticeAccounts } from './repeat-infringer-locks.mts'
+import { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
 import {
   anyReversalSourceSql,
   statutoryRestorationSourceSql,
@@ -17,8 +17,9 @@ export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'a
 export async function syncCopyrightRepeatInfringerIncidents(
   noticeId: string,
   transaction: OwnedTransaction,
+  heldAccounts: CopyrightNoticeAccountLocks,
 ): Promise<void> {
-  const accountIds = await lockCopyrightRepeatInfringerNoticeAccounts(noticeId, transaction)
+  const accountIds = await heldAccounts.recheck(noticeId, transaction)
   const statement = sql`
     /* syncCopyrightRepeatInfringerIncidents */
     WITH eligible_targets AS (
@@ -143,14 +144,17 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   `)
   const identity = identities[0]
   assert(identity, 404, 'Copyright repeat-infringer incident not found')
-  await lockCopyrightRepeatInfringerNoticeAccounts(identity.copyright_notice_id, transaction)
+  const accountLocks = await CopyrightNoticeAccountLocks.acquire(
+    identity.copyright_notice_id,
+    transaction,
+  )
   const { rows } = await transaction<{
     copyright_notice_id: string
     current_disposition: CopyrightRepeatInfringerDisposition | null
   }>(sql`
     /* recordCopyrightRepeatInfringerDisposition */
     SELECT copyright_notice_id, current_disposition FROM copyright_repeat_infringer_incidents
-    WHERE id = ${input.incidentId}
+    WHERE id = ${input.incidentId} AND copyright_notice_id = ${identity.copyright_notice_id}
     FOR UPDATE
   `)
   const incident = rows[0]
@@ -159,6 +163,11 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
     !incident.current_disposition,
     409,
     'Copyright repeat-infringer incident already has a disposition',
+  )
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: incident.copyright_notice_id },
+    transaction,
+    'write',
   )
   await transaction(sql`
     /* recordCopyrightRepeatInfringerDisposition:current */
@@ -176,12 +185,16 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
       recorded_by_id
     ) VALUES (
       ${input.incidentId}, ${input.disposition},
-      ${encryptSecret(input.rationale, `copyright-repeat-infringer-disposition:${input.incidentId}`)},
+      ${secrets.encryptSecret(input.rationale, `copyright-repeat-infringer-disposition:${input.incidentId}`)},
       ${input.recordedAt}, ${input.currentUser.id}
     )
     RETURNING id
   `)
   assert(inserted[0], 409, 'Copyright repeat-infringer incident already has a disposition')
-  await syncCopyrightRepeatInfringerIncidents(incident.copyright_notice_id, transaction)
+  await syncCopyrightRepeatInfringerIncidents(
+    incident.copyright_notice_id,
+    transaction,
+    accountLocks,
+  )
   await transaction.commit()
 }

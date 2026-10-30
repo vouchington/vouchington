@@ -1,3 +1,4 @@
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
@@ -8,6 +9,10 @@ export async function createEuCopyrightReceiptDelivery(
   input: { noticeId: string; notifierEmail: string; requesterUserId: string | null },
   transaction: TransactionQuery,
 ): Promise<void> {
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: input.noticeId }],
+    transaction,
+  )
   const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId: input.noticeId,
@@ -16,6 +21,7 @@ export async function createEuCopyrightReceiptDelivery(
       bodyText: copyrightEuReceiptText(input.noticeId, input.requesterUserId !== null),
     },
     transaction,
+    ownerScopes,
   )
   const receipt = {
     noticeId: input.noticeId,
@@ -45,5 +51,6 @@ export async function createEuCopyrightReceiptDelivery(
         : []),
     ],
     transaction,
+    ownerScopes,
   )
 }

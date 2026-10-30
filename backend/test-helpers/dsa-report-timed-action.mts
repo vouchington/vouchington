@@ -27,13 +27,13 @@ export async function createTestTimedDsaReportAction(input: {
     receivedAt: input.receivedAt,
     claimantUserId: post.claimant.id,
     claimantDisplayName: null,
-    claimantContactCiphertext: `claimant-${crypto.randomUUID()}`,
+    claimantContact: `claimant-${crypto.randomUUID()}`,
     workDescription: `Work ${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'staff',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+      body: `notice-${crypto.randomUUID()}`,
     },
     targets: [
       {

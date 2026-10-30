@@ -28,10 +28,10 @@ describe('getOrCreateEmailAssessment', () => {
       receivedAt: new Date(),
       claimantUserId: null,
       claimantDisplayName: 'Claimant',
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: 'Original photograph',
       policyVersion: 'test-v1',
-      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'email', body: 'ciphertext' },
       targets: [
         {
           placementId,
@@ -69,10 +69,10 @@ describe('getOrCreateEmailAssessment', () => {
       receivedAt: new Date(),
       claimantUserId: null,
       claimantDisplayName: 'Claimant',
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: 'Original photograph',
       policyVersion: 'test-v1',
-      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'email', body: 'ciphertext' },
       targets: [
         {
           placementId,

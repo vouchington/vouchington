@@ -14,6 +14,7 @@ import {
 } from '../../data-stores/psql/copyright-review-target.mts'
 import { sendAllCopyrightDeliveries } from './retention-deliveries.mts'
 import { createRetentionMinimalCase, type MinimalRetentionCase } from './retention-minimal-case.mts'
+import { getCopyrightRetentionWorkDate } from '../../copyright-retention-work.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -73,8 +74,8 @@ export const createOpenDeadlineCase = () =>
     const deadlineId = await insertOpenCopyrightDeadline({
       noticeId: entry.noticeId,
       actorUserId: entry.moderator.id,
-      escalationAt: new Date(Date.now() + 10 * DAY_MS),
-      restorationDeadlineAt: new Date(Date.now() + 14 * DAY_MS),
+      escalationAt: new Date(Date.now() + 60 * DAY_MS),
+      restorationDeadlineAt: new Date(Date.now() + 90 * DAY_MS),
     })
     return () => cancelCopyrightDeadline(deadlineId)
   })
@@ -87,7 +88,7 @@ export const createUnsentDeliveryCase = () =>
       submissionId: entry.submissionId,
       correspondenceKind: 'receipt',
       compositionKind: 'deterministic_template',
-      bodyCiphertext: `receipt-${randomUUID()}`,
+      bodyText: `receipt-${randomUUID()}`,
       draftedById: null,
     })
     await createCopyrightDeliveryIntent({
@@ -104,20 +105,26 @@ export const createUnsentDeliveryCase = () =>
     return () => sendAllCopyrightDeliveries(entry.noticeId)
   })
 
-/** A guest capability that can still file against the case for another week. */
-export const createLiveGuestCapabilityCase = () =>
-  blockMinimalCase(async entry => {
-    const capability = await issueCopyrightGuestCapability({
-      issuedAt: new Date(),
+/** A live guest capability can be issued after its case's retention window has elapsed. */
+export async function addLiveGuestCapabilityBlocker(
+  entry: MinimalRetentionCase,
+): Promise<() => Promise<void>> {
+  const issuedAt = getCopyrightRetentionWorkDate()
+  const capability = await issueCopyrightGuestCapability({
+    issuedAt,
+    currentUser: entry.moderator,
+    noticeId: entry.noticeId,
+    expiresAt: new Date(issuedAt.getTime() + 7 * DAY_MS),
+  })
+  return () =>
+    revokeCopyrightGuestCapability({
       currentUser: entry.moderator,
       noticeId: entry.noticeId,
-      expiresAt: new Date(Date.now() + 7 * DAY_MS),
+      capabilityId: capability.id,
+      revokedAt: getCopyrightRetentionWorkDate(),
     })
-    return () =>
-      revokeCopyrightGuestCapability({
-        currentUser: entry.moderator,
-        noticeId: entry.noticeId,
-        capabilityId: capability.id,
-        revokedAt: new Date(),
-      })
-  })
+}
+
+/** A guest capability that can still file against the case for another week. */
+export const createLiveGuestCapabilityCase = () =>
+  blockMinimalCase(async entry => addLiveGuestCapabilityBlocker(entry))

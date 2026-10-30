@@ -1,8 +1,9 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { eraseCopyrightRetentionTableSql } from '../../../services/copyright-notices/retention-erasure-sql.mts'
+import type { CopyrightRetentionErasureTable } from '../../../services/copyright-notices/retention-erasure-table.mts'
+import { eraseCopyrightRetentionTableSql } from '../../../services/copyright-notices/retention-erasure-update-sql.mts'
 
-type CopyrightRetentionErasureTable = Parameters<typeof eraseCopyrightRetentionTableSql>[0]
+const TEST_ERASURE_PAGE_SIZE = 10
 
 /** Every table the database lets a retention-erasure transaction touch, with its erasable columns. */
 export async function readCopyrightRetentionAllowlist(): Promise<Record<string, string[]>> {
@@ -35,11 +36,11 @@ export async function attemptCopyrightRetentionStatement(options: {
   const { spec, noticeId } = options
   const statement =
     options.statement === 'overwrite'
-      ? eraseCopyrightRetentionTableSql(spec, noticeId)
+      ? eraseCopyrightRetentionTableSql(spec, noticeId, TEST_ERASURE_PAGE_SIZE)
       : sql`/* attemptCopyrightRetentionDelete */`
           .append(`\n    DELETE FROM ${spec.table} WHERE `)
           .append(spec.scope(noticeId))
-  return attemptInRolledBackTransaction(statement, options.permit)
+  return attemptInRolledBackTransaction(statement, options.permit, options.statement)
 }
 
 /**
@@ -60,6 +61,7 @@ export async function attemptCopyrightRetentionSnapshotChange(
 async function attemptInRolledBackTransaction(
   statement: ReturnType<typeof sql>,
   permit: boolean,
+  operation: CopyrightRetentionGuardStatement | 'snapshot' = 'snapshot',
 ): Promise<{ affected: number } | { rejectedWith: string }> {
   await using transaction = await beginTransaction()
   if (permit)
@@ -67,8 +69,8 @@ async function attemptInRolledBackTransaction(
       sql`/* attemptInRolledBackTransaction */ SET LOCAL app.copyright_retention_erasure = 'on'`,
     )
   try {
-    const { rowCount } = await transaction(statement)
-    return { affected: rowCount ?? 0 }
+    const { rowCount, rows } = await transaction<{ updated?: number }>(statement)
+    return { affected: operation === 'overwrite' ? (rows[0]?.updated ?? 0) : (rowCount ?? 0) }
   } catch (err) {
     return { rejectedWith: (err as { code?: string }).code ?? 'unknown' }
   }

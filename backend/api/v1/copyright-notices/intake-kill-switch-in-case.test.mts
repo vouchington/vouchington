@@ -37,13 +37,13 @@ async function openUsCase() {
     receivedAt: new Date(),
     claimantUserId: null,
     claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'guest_form',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+      body: `notice-${crypto.randomUUID()}`,
     },
     targets: [
       {
@@ -174,7 +174,7 @@ describe('copyright in-case responses with intake switched off', () => {
       .expect(200)
     expect(rejection.body).toEqual({ reply_queued: true })
     await expect(readCopyrightEmailIntakeReview(rejected.id)).resolves.toEqual([
-      { decision: 'rejected', promoted_copyright_notice_id: null },
+      { decision: 'rejected', promoted_copyright_notice_identity_id: null },
     ])
   })
 

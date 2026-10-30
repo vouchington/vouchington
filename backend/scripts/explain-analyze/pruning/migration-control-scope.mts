@@ -1,3 +1,4 @@
+import { withMigrationControlTiming } from './migration-control-timing.mts'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -61,7 +62,7 @@ export async function withOwnedMigrationControl(
       )
     }
   }
-  const run: CommandRunner = (file, args) => {
+  const run: CommandRunner = async (file, args) => {
     assert.equal(file, 'psql')
     const copy = [...args]
     const index = copy.indexOf('-d') + 1
@@ -70,7 +71,7 @@ export async function withOwnedMigrationControl(
       copy[index],
       Math.max(1, deadline - performance.now() - (cleaning ? 0 : 12_000)),
     )
-    return bounded(file, copy)
+    return withMigrationControlTiming(copy.at(-1) ?? '', deadline, () => bounded(file, copy))
   }
   try {
     directory = await mkdtemp(join(tmpdir(), 'voucha-native-migration-'))

@@ -38,3 +38,9 @@ Background jobs can take up to a minute. Do not trigger a UI action and wait for
 ## CF Worker logs
 
 Wrangler logs are written unfiltered to disk and uploaded as `wrangler-logs-<shard>` artifacts. The console hides known benign `workerd` client-disconnect writes; the raw lines stay in `wrangler-stderr.log`. Treat `wrangler-events.ndjson` exit and restart events or Playwright connection failures as the signal that the worker actually crashed. A reporter emits `playwright-test-lifecycle` JSON lines with attempt begin and end times so overlapping attempts can be matched to raw Wrangler timestamps; interleaved output alone does not show which request caused an error.
+
+Copyright fixtures in the offline browser suite share a file-backed retention-key provider with its
+API process through the explicit test preload. Both processes need the same worktree namespace,
+copyright bucket and fake replay-HMAC ring. This keeps real producer/reader encryption contracts
+without contacting S3 for those key objects. Other S3 behavior, including presigning, is preserved;
+the credentialed browser suite keeps its existing provider path.

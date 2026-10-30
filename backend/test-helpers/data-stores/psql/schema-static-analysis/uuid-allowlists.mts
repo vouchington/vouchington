@@ -1,3 +1,4 @@
+import { RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from '../../../retention-uuid-policies.mts'
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
 import { AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './ai-retention-uuid-allowlists.mts'
 import { CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './classifier-run-allowlists.mts'
@@ -21,6 +22,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'user_data_requests.processing_attempt_id',
     'Opaque current export-generation fencing token, not a relationship; object-key attempt history expires independently of owner-retained request history.',
   ],
+  ...RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...VOTE_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,

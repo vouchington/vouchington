@@ -45,3 +45,6 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_operational_cursors_updated_at`: `CREATE TRIGGER trigger_copyright_operational_cursors_updated_at BEFORE UPDATE ON public.copyright_notice_operational_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_copyright_minimal_purge_cursor_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_cursor_work BEFORE UPDATE OF cursor_blocker_assessment_identity_id ON public.copyright_notice_operational_retention_cursors FOR EACH ROW WHEN ((old.cursor_blocker_assessment_identity_id IS DISTINCT FROM new.cursor_blocker_assessment_identity_id)) EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_operational_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_operational_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_operational_retention_cursors', 'public.copyright_notice_operational_retention_cursors')`

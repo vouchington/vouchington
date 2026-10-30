@@ -44,7 +44,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_submissions_submitted_by_id_fkey`: `FOREIGN KEY (submitted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_submission_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT`
 - `fk_copyright_notice_submissions__current_assessment_identity`: `FOREIGN KEY (id, current_assessment_identity_id) REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT`
-- `fk_copyright_notice_submissions__current_form_screening`: `FOREIGN KEY (current_assessment_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_submissions__current_form_screening`: `FOREIGN KEY (id, current_assessment_form_screening_id) REFERENCES copyright_notice_form_screenings(copyright_notice_submission_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -58,10 +58,14 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_submissions__notice_id`: `CREATE INDEX idx_copyright_notice_submissions__notice_id ON public.copyright_notice_submissions USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_submissions__notice_received`: `CREATE INDEX idx_copyright_notice_submissions__notice_received ON public.copyright_notice_submissions USING btree (copyright_notice_id, received_at, id)`
 - `idx_copyright_notice_submissions__one_guest_court_hold`: `CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON public.copyright_notice_submissions USING btree (copyright_notice_guest_capability_id) WHERE ((kind = 'court_or_ccb_hold'::copyright_notice_submission_kinds) AND (copyright_notice_guest_capability_id IS NOT NULL))`
-- `idx_copyright_notice_submissions__submitted_by`: `CREATE INDEX idx_copyright_notice_submissions__submitted_by ON public.copyright_notice_submissions USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)`
+- `idx_copyright_notice_submissions__submitted_by`: `CREATE INDEX idx_copyright_notice_submissions__submitted_by ON public.copyright_notice_submissions USING btree (submitted_by_id, source_kind, kind, id) WHERE (submitted_by_id IS NOT NULL)`
 
 **Triggers:**
 
 - `trigger_copyright_notice_submissions_immutable`: `CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_submission()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
 - `trigger_copyright_thread_party_submission`: `CREATE TRIGGER trigger_copyright_thread_party_submission AFTER INSERT OR UPDATE OF submitted_by_id ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_party_generation()`
+- `trigger_register_copy_blocker_submission`: `CREATE TRIGGER trigger_register_copy_blocker_submission BEFORE INSERT ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_register_copyright_notice_submission_retained_party`: `CREATE TRIGGER trigger_register_copyright_notice_submission_retained_party AFTER INSERT ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_notice_submission_retained_party()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_submissions', 'public.copyright_notice_submissions')`

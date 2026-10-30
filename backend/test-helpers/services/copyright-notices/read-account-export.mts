@@ -2,7 +2,7 @@ import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parseCsvRows } from '../../../modules/csv/index.mts'
-import { writeExportFiles } from '../../../services/account-data-requests/export.mts'
+import { writeAccountExportFiles } from '../../account-export-files.mts'
 
 export type AccountExportView = {
   /** The parsed rows of one CSV in the export; throws when the export has no such file. */
@@ -16,7 +16,7 @@ export async function readAccountExport(userId: string): Promise<AccountExportVi
   const parentDir = await mkdtemp(join(tmpdir(), 'voucha-account-export-test-'))
   const exportDir = join(parentDir, 'export')
   try {
-    await writeExportFiles(userId, exportDir)
+    await writeAccountExportFiles(userId, exportDir)
     const names = await readdir(exportDir)
     const contents = await Promise.all(names.map(name => readFile(join(exportDir, name), 'utf8')))
     const files = new Map(names.map((name, index) => [name, contents[index]!]))

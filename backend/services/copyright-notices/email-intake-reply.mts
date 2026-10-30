@@ -1,5 +1,9 @@
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import {
@@ -25,6 +29,7 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
     responseMessage: string | null
   },
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<string> {
   const { rows } = await transaction<{
     received_at: Date
@@ -37,6 +42,13 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
     input.responseKind === 'rejected'
       ? copyrightIntakeRejectionText(rows[0]!.received_at, rows[0]!.ai_guidance)
       : null
+  ownerScopes?.assertTransaction(transaction)
+  await using ownedScopes = ownerScopes
+    ? null
+    : await openCopyrightOwnerSecretBatch([{ kind: 'intake', id: input.intakeId }], transaction)
+  const scopes = ownerScopes ?? ownedScopes!
+  const secrets = scopes.get({ kind: 'intake', id: input.intakeId })
+  const { encryptSecret } = secrets
   const id = uuidv7()
   const deliveryKind: CopyrightEmailIntakeDeliveryKind = `email_intake_${input.responseKind}`
   await transaction(sql`/* createCopyrightEmailIntakeResponseInTransaction */
@@ -49,15 +61,16 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
       ${encryptSecret(responseBody(input.responseKind, input.responseMessage, rejectedText), bodyPurpose(id))}
     )
   `)
-  await insertCopyrightDeliveryRecipient(input.recipientEmail, id, transaction)
+  await insertCopyrightDeliveryRecipient(input.recipientEmail, id, transaction, scopes)
   return id
 }
 
-export function decryptCopyrightEmailIntakeResponseBody(
+export async function decryptCopyrightEmailIntakeResponseBody(
   intentId: string,
   bodyCiphertext: string,
-): string {
-  return decryptSecret(bodyCiphertext, bodyPurpose(intentId))
+): Promise<string> {
+  await using secrets = await openCopyrightSecrets({ kind: 'delivery', id: intentId })
+  return secrets.decryptSecret(bodyCiphertext, bodyPurpose(intentId))
 }
 
 function bodyPurpose(intentId: string): string {

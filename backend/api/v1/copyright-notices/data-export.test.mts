@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient, type CreateInvalidationCommandOutput } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
-import { COPYRIGHT_CASE_TIMELINE_EVENT_TYPES } from '@services/account-data-requests/stream-copyright-cases'
+import { COPYRIGHT_CASE_TIMELINE_EVENT_TYPES } from '@services/copyright-notices/stream-copyright-cases'
 import { getCopyrightPublicNoticeDetail } from '@services/copyright-notices/read-models'
 import {
   createCopyrightAppeal,

@@ -24,6 +24,7 @@ export const ROOT_FAMILIES = {
       ['membership_changes', 'membership_id'],
       ['membership_refunds', 'membership_id'],
       ['membership_administrator_refund_operation_requests', 'membership_id'],
+      ['membership_operation_retained_identities', 'administrator_membership_id'],
     ],
   },
   api_key: {

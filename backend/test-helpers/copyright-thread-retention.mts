@@ -13,7 +13,7 @@ export async function readCopyrightThreadTokenForIntake(
           SELECT token.id, token.lookup_digest
           FROM copyright_notice_email_intake_notice_links link
           JOIN copyright_notice_email_thread_tokens token ON token.id = link.matched_token_id
-          WHERE link.copyright_notice_email_intake_id = ${intakeId}`
+          WHERE link.copyright_notice_email_intake_receipt_id = ${intakeId}`
       : sql`/* readCopyrightThreadTokenForIntake:message */
           SELECT token.id, token.lookup_digest
           FROM copyright_notice_email_thread_references reference

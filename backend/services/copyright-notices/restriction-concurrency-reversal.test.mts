@@ -37,13 +37,13 @@ describe('copyright restriction reversal concurrency', () => {
       receivedAt: new Date('2026-07-01T12:00:00.000Z'),
       claimantUserId: null,
       claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: `work-${crypto.randomUUID()}`,
       policyVersion: 'test-v1',
       initialSubmission: {
         kind: 'notice',
         sourceKind: 'signed_in_form',
-        bodyCiphertext: `notice-${crypto.randomUUID()}`,
+        body: `notice-${crypto.randomUUID()}`,
       },
       targets: [
         {

@@ -8,7 +8,8 @@ import {
 } from './action-delivery-finalization.mts'
 import {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
+  lockCopyrightActionOwners,
+  assertCopyrightActionOwner,
   hasCopyrightActionBlocker,
   lockCopyrightActionDelivery,
   lockCopyrightActionClaim,
@@ -84,14 +85,13 @@ async function prepareCopyrightAction(
 > {
   await using transaction = await beginTransaction()
   await lockCopyrightActionClaim(intent.id, transaction)
-  const placementId = await getCopyrightActionPlacementKey(
-    intent.id,
-    intent.lease_token,
-    transaction,
-  )
-  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
+  const owners = await lockCopyrightActionOwners(intent.id, intent.lease_token, transaction)
+  if (!owners) return await commitOutcome(transaction, 'not_claimed')
+  const { owner, accountLocks } = owners
+  await lockCopyrightActionPlacement(owner.placement_id, transaction)
   const legal = await lockCopyrightActionDelivery(intent.id, intent.lease_token, transaction)
   if (!legal) return await commitOutcome(transaction, 'not_claimed')
+  assertCopyrightActionOwner(legal, owner)
   if (legal.action === 'withhold' && legal.restriction_lifted_at !== null) {
     await completeCopyrightActionIntentInTransaction({
       intentId: intent.id,
@@ -113,6 +113,7 @@ async function prepareCopyrightAction(
       now,
       query: transaction,
       dependencies,
+      accountLocks,
     })
     await transaction.commit()
     return 'applied'
@@ -154,6 +155,7 @@ async function prepareCopyrightAction(
       legal,
       now,
       query: transaction,
+      accountLocks,
     })
     if (retained) return await commitOutcome(transaction, 'applied')
   }

@@ -15,6 +15,19 @@ export const copyrightDecisionDeliveryKinds = [
   'claimant_decision_notice',
 ] as const satisfies readonly CopyrightNoticeDeliveryKind[]
 
+export type CopyrightDeliveryIntentInput = {
+  noticeId: string
+  submissionId: string | null
+  correspondenceId: string | null
+  recipientUserId: string | null
+  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
+  deliveryKind: CopyrightNoticeDeliveryKind
+  channel: CopyrightDeliveryIntentRecord['channel']
+  idempotencyKey: string
+  recipientEmail?: string
+  targetPath?: string
+}
+
 export type CopyrightDeliveryIntentRecord = {
   id: string
   lease_token: string | null

@@ -1,3 +1,4 @@
+import type { CopyrightSecretBatch } from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { decryptCopyrightJson } from './erased-ciphertext.mts'
@@ -10,7 +11,9 @@ import { copyrightSubmissionPurpose } from './submissions.mts'
 export async function selectStaffLegalHolds(
   noticeIds: readonly string[],
   query: TransactionQuery,
+  secretsBatch: CopyrightSecretBatch,
 ): Promise<Map<string, CopyrightStaffCase['legal_holds']>> {
+  secretsBatch.assertTransaction(query)
   const { rows } = await query<{
     copyright_notice_id: string
     submission_id: string
@@ -54,40 +57,52 @@ export async function selectStaffLegalHolds(
       AND submission.kind = 'court_or_ccb_hold'
     ORDER BY submission.received_at, submission.id, assessment.id
   `)
+
   return groupByNotice(
-    rows.map(row => ({
-      copyright_notice_id: row.copyright_notice_id,
-      submission_id: row.submission_id,
-      received_at: row.received_at,
-      statement: parseStatement(
-        decryptCopyrightJson(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
-      ),
-      guidance: parseStoredCopyrightSubmissionGuidance(
+    rows.map(row => {
+      const secrets = secretsBatch.forCiphertexts({ kind: 'notice', id: row.copyright_notice_id }, [
+        row.body_ciphertext,
         row.guidance_ciphertext,
-        row.submission_id,
-        'court_or_ccb_hold',
-      ),
-      assessment: row.assessment_id
-        ? {
-            id: row.assessment_id,
-            is_from_original_claimant: row.is_from_original_claimant === true,
-            proceeding_kind: row.proceeding_kind,
-            ccb_claim_kind: row.ccb_claim_kind,
-            commenced_at: row.commenced_at,
-            received_by_designated_agent_at: row.received_by_designated_agent_at,
-            is_same_material: row.is_same_material === true,
-            target_ids: row.target_ids,
-            qualifying:
-              row.is_from_original_claimant === true &&
-              row.proceeding_kind !== null &&
-              row.commenced_at !== null &&
-              row.received_by_designated_agent_at !== null &&
-              row.assessed_at !== null &&
-              row.received_by_designated_agent_at <= row.assessed_at &&
-              row.is_same_material === true,
-            resolved: row.resolution_id !== null,
-          }
-        : null,
-    })),
+      ])
+      return {
+        copyright_notice_id: row.copyright_notice_id,
+        submission_id: row.submission_id,
+        received_at: row.received_at,
+        statement: parseStatement(
+          decryptCopyrightJson(
+            row.body_ciphertext,
+            copyrightSubmissionPurpose(row.submission_id),
+            secrets,
+          ),
+        ),
+        guidance: parseStoredCopyrightSubmissionGuidance(
+          row.guidance_ciphertext,
+          row.submission_id,
+          'court_or_ccb_hold',
+          secrets,
+        ),
+        assessment: row.assessment_id
+          ? {
+              id: row.assessment_id,
+              is_from_original_claimant: row.is_from_original_claimant === true,
+              proceeding_kind: row.proceeding_kind,
+              ccb_claim_kind: row.ccb_claim_kind,
+              commenced_at: row.commenced_at,
+              received_by_designated_agent_at: row.received_by_designated_agent_at,
+              is_same_material: row.is_same_material === true,
+              target_ids: row.target_ids,
+              qualifying:
+                row.is_from_original_claimant === true &&
+                row.proceeding_kind !== null &&
+                row.commenced_at !== null &&
+                row.received_by_designated_agent_at !== null &&
+                row.assessed_at !== null &&
+                row.received_by_designated_agent_at <= row.assessed_at &&
+                row.is_same_material === true,
+              resolved: row.resolution_id !== null,
+            }
+          : null,
+      }
+    }),
   )
 }

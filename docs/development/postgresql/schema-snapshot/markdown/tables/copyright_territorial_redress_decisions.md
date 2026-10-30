@@ -6,15 +6,18 @@ Staff disposition of one EU or UK redress request. The system does not choose th
 
 RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions`, access class: retention-window, growth: unbounded).
 
-| Column                                     | Type                                                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
-| ------------------------------------------ | ----------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
-| `id`                                       | `uuid`                                                      | no       | `uuidv7()`                   |          |           |           |                                                                           |
-| `copyright_territorial_redress_request_id` | `uuid`                                                      | no       |                              |          |           |           | Redress request this decision closes. One decision per request.           |
-| `decided_at`                               | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the redress decision.                                 |
-| `decided_by_id`                            | `uuid`                                                      | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted. |
-| `staff_disposition`                        | `copyright_territorial_redress_decision_staff_dispositions` | no       |                              |          |           |           | Staff outcome: maintain or revoke. The system does not choose it.         |
-| `rationale_ciphertext`                     | `text`                                                      | no       |                              |          |           |           | Encrypted staff-supplied rationale for the disposition.                   |
-| `created_at`                               | `timestamp with time zone`                                  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
+| Column                                     | Type                                                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`                      | `uuid`                                                      | no       |                              |          |           |           | Case scope of the owning request, protected by its composite foreign key.                         |
+| `jurisdiction`                             | `copyright_jurisdictions`                                   | no       |                              |          |           |           | Jurisdiction of the owning request, used by indexed report coverage checks when retiring history. |
+| `transparency_generation`                  | `bigint`                                                    | no       | `0`                          |          |           |           | Commit-serialized aggregate generation in which this immutable reportable fact was admitted.      |
+| `id`                                       | `uuid`                                                      | no       | `uuidv7()`                   |          |           |           |                                                                                                   |
+| `copyright_territorial_redress_request_id` | `uuid`                                                      | no       |                              |          |           |           | Redress request this decision closes. One decision per request.                                   |
+| `decided_at`                               | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the redress decision.                                                         |
+| `decided_by_id`                            | `uuid`                                                      | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted.                         |
+| `staff_disposition`                        | `copyright_territorial_redress_decision_staff_dispositions` | no       |                              |          |           |           | Staff outcome: maintain or revoke. The system does not choose it.                                 |
+| `rationale_ciphertext`                     | `text`                                                      | no       |                              |          |           |           | Encrypted staff-supplied rationale for the disposition.                                           |
+| `created_at`                               | `timestamp with time zone`                                  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,20 +28,31 @@ _none_
 
 - `chk_copyright_territorial_redress_decisions__disposition`: `CHECK ((staff_disposition = ANY (ARRAY['maintain'::copyright_territorial_redress_decision_staff_dispositions, 'revoke'::copyright_territorial_redress_decision_staff_dispositions])))`
 - `chk_copyright_territorial_redress_decisions__rationale`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
+- `copyright_territorial_redress_dec_transparency_generation_check`: `CHECK ((transparency_generation >= 0))`
 
 **Foreign keys:**
 
 - `fk_copyright_territorial_redress_decisions__decided_by`: `FOREIGN KEY (decided_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_redress_decisions__identity`: `FOREIGN KEY (copyright_territorial_redress_request_id, id) REFERENCES copyright_territorial_redress_decision_identities(copyright_territorial_redress_request_id, id) ON DELETE RESTRICT`
-- `fk_copyright_territorial_redress_decisions__request`: `FOREIGN KEY (copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_redress_decisions__request`: `FOREIGN KEY (copyright_notice_id, jurisdiction, copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(copyright_notice_id, jurisdiction, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_territorial_redress_decisions_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_decisions_pkey ON ONLY public.copyright_territorial_redress_decisions USING btree (id)`
 - `idx_copyright_territorial_redress_decisions__decided_by`: `CREATE INDEX idx_copyright_territorial_redress_decisions__decided_by ON ONLY public.copyright_territorial_redress_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)`
+- `idx_copyright_territorial_redress_decisions__notice_id`: `CREATE INDEX idx_copyright_territorial_redress_decisions__notice_id ON ONLY public.copyright_territorial_redress_decisions USING btree (copyright_notice_id, id)`
+- `idx_copyright_territorial_redress_decisions__report_generation`: `CREATE INDEX idx_copyright_territorial_redress_decisions__report_generation ON ONLY public.copyright_territorial_redress_decisions USING btree (transparency_generation, decided_at)`
 - `idx_copyright_territorial_redress_decisions__request`: `CREATE INDEX idx_copyright_territorial_redress_decisions__request ON ONLY public.copyright_territorial_redress_decisions USING btree (copyright_territorial_redress_request_id, id)`
+- `idx_cpyrght_trrtrl_rdrss_dcsns__retirement_generation`: `CREATE INDEX idx_cpyrght_trrtrl_rdrss_dcsns__retirement_generation ON ONLY public.copyright_territorial_redress_decisions USING btree (jurisdiction, transparency_generation)`
+- `idx_cpyrght_trrtrl_rdrss_dcsns__retirement_time`: `CREATE INDEX idx_cpyrght_trrtrl_rdrss_dcsns__retirement_time ON ONLY public.copyright_territorial_redress_decisions USING btree (jurisdiction, decided_at)`
 
 **Triggers:**
 
-- `trigger_copyright_territorial_redress_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_redress_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_record_copyright_transparency_source_erasure`: `CREATE TRIGGER trigger_record_copyright_transparency_source_erasure BEFORE DELETE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_source_erasure('decided_at')`
+- `trigger_register_copy_blocker_redress_decision`: `CREATE TRIGGER trigger_register_copy_blocker_redress_decision BEFORE INSERT ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('redress_request')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_redress_decisions', 'public.copyright_territorial_redress_decisions')`
+- `trigger_stamp_copyright_transparency_fact`: `CREATE TRIGGER trigger_stamp_copyright_transparency_fact BEFORE INSERT ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_transparency_fact()`
+- `trigger_update_copyright_redress_decision_scope`: `CREATE TRIGGER trigger_update_copyright_redress_decision_scope BEFORE INSERT ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_redress_decision_scope()`

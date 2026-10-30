@@ -80,9 +80,9 @@ export async function associateCopyrightEmailIntakeWithNotice(
   const { rows: links } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:link */
     INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
+      copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind, correspondence_action
     ) VALUES (${intakeId}, ${noticeId}, 'thread', 'pending')
-    ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+    ON CONFLICT (copyright_notice_email_intake_receipt_id) DO NOTHING
     RETURNING id
   `)
   if (!links[0]) throw copyrightEmailThreadChangedError()
@@ -125,7 +125,7 @@ async function readIntakeDecision(
     /* associateCopyrightEmailIntakeWithNotice:decision */
     SELECT intake.id,
       EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = intake.id) AS linked,
+        WHERE link.copyright_notice_email_intake_receipt_id = intake.id) AS linked,
       receipt.review_decision IS NOT NULL AS reviewed
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id

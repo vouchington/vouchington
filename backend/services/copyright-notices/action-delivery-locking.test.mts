@@ -119,7 +119,7 @@ describe('copyright queue lease fencing', () => {
   it('records an owned retry failure when intake reply preparation cannot decrypt', async () => {
     const intentId = await createTestUnreadableCopyrightResponse()
     await expect(prepareCopyrightEmailDelivery(intentId)).rejects.toThrow(
-      'Invalid encrypted secret format',
+      'Copyright ciphertext does not belong to its owner',
     )
     expect(await readTestCopyrightResponseFailure(intentId)).toEqual({
       state: 'pending',
@@ -127,7 +127,7 @@ describe('copyright queue lease fencing', () => {
       claimedAt: null,
       attempts: 1,
       nextAttemptAt: expect.any(Date),
-      failure: 'Invalid encrypted secret format',
+      failure: 'Copyright ciphertext does not belong to its owner',
     })
     await expect(prepareCopyrightEmailDelivery(intentId)).rejects.toThrow(
       'Copyright delivery intent is not available to send',

@@ -2,12 +2,14 @@
 -- Copyright action intents are durable media-delivery sagas. Legal eligibility is evaluated
 -- before an intent is created and again by the worker against the authoritative placement.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE next_state copyright_notice_action_intent_states;
 BEGIN
   next_state := CASE WHEN NEW.completed_at IS NOT NULL THEN NEW.completed_at_reason WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_action_intent_states ELSE 'pending'::copyright_notice_action_intent_states END;
   IF TG_OP = 'DELETE' THEN
+    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';
   END IF;
   IF ROW(OLD.copyright_restriction_id, OLD.copyright_notice_deadline_id,

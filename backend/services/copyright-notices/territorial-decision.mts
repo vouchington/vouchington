@@ -1,5 +1,5 @@
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -94,6 +94,11 @@ export async function recordTerritorialCopyrightDecision(
     409,
     labels.decisionExists,
   )
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: noticeId }],
+    transaction,
+  )
+  const { encryptSecret } = ownerScopes.get({ kind: 'notice', id: noticeId })
   let assessmentId: string | null = null
   if (input.outcome === 'restrict') {
     const targets = await resolveCopyrightPostImagePlacements(
@@ -163,6 +168,7 @@ export async function recordTerritorialCopyrightDecision(
     await createCopyrightClaimantDecisionNoticeInTransaction(
       { noticeId, event: 'not_accepted' },
       transaction,
+      ownerScopes,
     )
   }
   await transaction.commit()

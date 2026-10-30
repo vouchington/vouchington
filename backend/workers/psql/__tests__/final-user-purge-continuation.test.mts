@@ -12,6 +12,18 @@ const scannedDone = { ...done, scanned: 0 }
 const continuationDone = { ...done, continuation: null }
 const historyDone = { scanned: 0, changed: 0, hasMore: false }
 const settled = {
+  copyrightReplayIdentities: { reviewDue: false, deleted: 0, groupsDeleted: 0, hasMore: false },
+  copyrightSubmissionKeys: { scanned: 0, cleared: 0, hasMore: false },
+  copyrightMinimalRecords: {
+    purged: 0,
+    progressed: 0,
+    ineligible: 0,
+    retainedIdentitiesDeleted: 0,
+    hasMore: false,
+    failed: [],
+  },
+  legalRecords: [],
+  paymentLedgers: [],
   retainedRelationIdentities: [],
   retainedMediaBindings: scannedDone,
   retainedIdentityRoots: [],

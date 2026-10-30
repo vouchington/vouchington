@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
@@ -17,7 +17,7 @@ export async function getCopyrightStatementInAppSummary(intentId: string): Promi
   `)
   const row = rows[0]
   const body = row ? liveCopyrightCiphertext(row.body_ciphertext) : null
-  return row && body
-    ? decryptSecret(body, copyrightCorrespondencePurpose(row.id)).split('\n\n')[0]!
-    : null
+  if (!row || !body) return null
+  await using secrets = await openCopyrightSecrets({ kind: 'delivery', id: intentId })
+  return secrets.decryptSecret(body, copyrightCorrespondencePurpose(row.id)).split('\n\n')[0]!
 }

@@ -74,6 +74,7 @@ describe('worktree resource identity adapter', () => {
         API_KEY_CHECKSUM_SECRET=checksum
         VOUCHA_OTP_TOKEN_HASH_SECRET=otp
         VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=keys
+        VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS=fake-test-id:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
         FINAL_WEB_PUSH_PUBLIC_KEY=public
         FINAL_WEB_PUSH_PRIVATE_KEY=private
         FINAL_WEB_PUSH_SUBJECT=mailto:tests@voucha.ai

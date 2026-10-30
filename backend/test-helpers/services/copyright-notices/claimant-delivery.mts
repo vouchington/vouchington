@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { openCopyrightSecrets } from '../../../services/copyright-notices/encryption-keys.mts'
 import { createOutboundCopyrightCorrespondence } from '../../../services/copyright-notices/correspondence.mts'
 import { createCopyrightDeliveryIntent } from '../../../services/copyright-notices/delivery-intents.mts'
 
@@ -12,7 +12,7 @@ export async function recordTestClaimantEmailReceipt(noticeId: string): Promise<
     submissionId: null,
     correspondenceKind: 'receipt',
     compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    bodyText: `receipt-${crypto.randomUUID()}`,
     draftedById: null,
   })
   await createCopyrightDeliveryIntent({
@@ -42,7 +42,8 @@ export type TestInformationRequestIntent = {
 export async function readTestInformationRequestIntents(
   noticeId: string,
 ): Promise<TestInformationRequestIntent[]> {
-  const { rows } = await read<{
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{
     id: string
     state: string
     email_ciphertext: string
@@ -59,14 +60,22 @@ export async function readTestInformationRequestIntents(
       AND intent.delivery_kind = 'staff_information_request'
     ORDER BY intent.id
   `)
-  return rows.map(row => ({
+  await using secrets = rows.length
+    ? await openCopyrightSecrets({ kind: 'notice', id: noticeId }, transaction)
+    : null
+  const result = rows.map(row => ({
     id: row.id,
     state: row.state,
-    recipientEmail: decryptSecret(row.email_ciphertext, `copyright-delivery-recipient:${row.id}`),
+    recipientEmail: secrets!.decryptSecret(
+      row.email_ciphertext,
+      `copyright-delivery-recipient:${row.id}`,
+    ),
     correspondenceId: row.copyright_notice_correspondence_message_id,
     recipientRole: row.recipient_role,
     channel: row.channel,
   }))
+  await transaction.commit()
+  return result
 }
 
 export async function readTestCorrespondenceBodyCiphertext(

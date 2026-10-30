@@ -1,3 +1,7 @@
+import {
+  openCopyrightSecretsForCiphertexts,
+  type ScopedCopyrightSecrets,
+} from './encryption-keys.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -46,7 +50,12 @@ export async function selectCopyrightStatementFactsBatch(
       copyrightStatementFactsSql(noticeId, authorities),
     ),
   )
-  return copyrightStatementFactsFromRows(noticeId, rows, authorities.length)
+  await using secrets = await openCopyrightSecretsForCiphertexts(
+    { kind: 'notice', id: noticeId },
+    rows.map(row => row.public_explanation_ciphertext),
+    transaction,
+  )
+  return copyrightStatementFactsFromRows(noticeId, rows, authorities.length, secrets)
 }
 
 export type CopyrightStatementFactsRow = {
@@ -121,6 +130,7 @@ export function copyrightStatementFactsFromRows(
   noticeId: string,
   rows: readonly CopyrightStatementFactsRow[],
   expected: number,
+  secrets: ScopedCopyrightSecrets | null,
 ): CopyrightStatementFacts[] {
   assert(rows.length === expected, 404, 'Copyright notice not found')
   assert(
@@ -143,6 +153,7 @@ export function copyrightStatementFactsFromRows(
         ? (decryptCopyrightText(
             row.public_explanation_ciphertext,
             `${territorialLabels(row.jurisdiction).publicExplanationPurpose}:${noticeId}`,
+            secrets,
           ) ?? undefined)
         : undefined,
   }))

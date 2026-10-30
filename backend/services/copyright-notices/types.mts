@@ -36,14 +36,15 @@ export type CreateCopyrightNoticeAggregateInput = {
   receivedAt: Date
   claimantUserId: string | null
   claimantDisplayName: string | null
-  claimantContactCiphertext: string
+  claimantContact: string
+  secretPurpose: string
   workDescription: string
   policyVersion: string
   targets: CopyrightNoticeTargetInput[]
   initialSubmission: {
     kind: 'notice'
     sourceKind: CopyrightSubmissionSourceKind
-    bodyCiphertext: string
+    body: string
   }
 }
 

@@ -1,6 +1,6 @@
 import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecretsForCiphertexts } from './encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
@@ -39,6 +39,11 @@ export async function selectCopyrightParticipantStatements(
           AND EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = intent.copyright_notice_id AND notice.claimant_user_id = ${userId})))
     ORDER BY intent.id
   `)
+  await using secrets = await openCopyrightSecretsForCiphertexts(
+    { kind: 'notice', id: noticeId },
+    rows.map(row => row.body_ciphertext),
+    transaction,
+  )
   return rows.flatMap(row => {
     const body = liveCopyrightCiphertext(row.body_ciphertext)
     return body
@@ -48,7 +53,10 @@ export async function selectCopyrightParticipantStatements(
             delivery_kind: row.delivery_kind,
             state: row.state,
             sent_at: row.sent_at,
-            text: decryptSecret(body, copyrightCorrespondencePurpose(row.correspondence_id)),
+            text: secrets!.decryptSecret(
+              body,
+              copyrightCorrespondencePurpose(row.correspondence_id),
+            ),
           },
         ]
       : []

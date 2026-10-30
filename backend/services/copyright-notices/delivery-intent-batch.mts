@@ -1,24 +1,15 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { encryptSecret } from '@modules/token-secrets'
+import {
+  openCopyrightDeliverySecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { assertDeliveryIntentInput, assertReplayMatches } from './delivery-intent-validation.mts'
 import type {
+  CopyrightDeliveryIntentInput,
   CopyrightDeliveryIntentRecord,
-  CopyrightNoticeDeliveryKind,
 } from './delivery-types.mts'
-
-export type CopyrightDeliveryIntentInput = {
-  noticeId: string
-  submissionId: string | null
-  correspondenceId: string | null
-  recipientUserId: string | null
-  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
-  deliveryKind: CopyrightNoticeDeliveryKind
-  channel: CopyrightDeliveryIntentRecord['channel']
-  idempotencyKey: string
-  recipientEmail?: string
-  targetPath?: string
-}
 
 type KeyedIntent = CopyrightDeliveryIntentRecord & { idempotency_key: string }
 
@@ -30,6 +21,7 @@ type KeyedIntent = CopyrightDeliveryIntentRecord & { idempotency_key: string }
 export async function createCopyrightDeliveryIntents(
   inputs: readonly CopyrightDeliveryIntentInput[],
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightDeliveryIntentRecord[]> {
   if (inputs.length === 0) return []
   for (const input of inputs) assertDeliveryIntentInput(input)
@@ -129,6 +121,7 @@ export async function createCopyrightDeliveryIntents(
         : [],
     ),
     transaction,
+    ownerScopes,
   )
   return intents
 }
@@ -137,56 +130,28 @@ export async function createCopyrightDeliveryIntents(
 export async function insertCopyrightDeliveryRecipients(
   recipients: readonly { recipientEmail: string; intentId: string }[],
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<void> {
   if (recipients.length === 0) return
   for (const { recipientEmail } of recipients)
     assert(recipientEmail.trim().length > 0, 422, 'Copyright email recipient is required')
+  await using secrets = await openCopyrightDeliverySecretBatch(
+    recipients.map(item => item.intentId),
+    transaction,
+    ownerScopes,
+  )
   await transaction(sql`/* insertCopyrightDeliveryRecipients */
     INSERT INTO copyright_notice_delivery_recipients (
       copyright_notice_delivery_work_item_id, email_ciphertext
     ) SELECT recipient.intent_id, recipient.email_ciphertext FROM unnest(
       ${recipients.map(({ intentId }) => intentId)}::uuid[],
       ${recipients.map(({ recipientEmail, intentId }) =>
-        encryptSecret(recipientEmail.trim(), `copyright-delivery-recipient:${intentId}`),
+        secrets
+          .get(intentId)
+          .encryptSecret(recipientEmail.trim(), `copyright-delivery-recipient:${intentId}`),
       )}::text[]
     ) AS recipient(intent_id, email_ciphertext)
     ORDER BY recipient.intent_id ASC NULLS LAST
     ON CONFLICT (copyright_notice_delivery_work_item_id) DO NOTHING
   `)
-}
-
-function assertDeliveryIntentInput(input: CopyrightDeliveryIntentInput): void {
-  assert(
-    !['poster', 'informed_owner'].includes(input.recipientRole) || input.recipientUserId,
-    422,
-    'Poster delivery requires a user recipient',
-  )
-  assert(
-    input.recipientRole !== 'correspondent' || (!input.recipientUserId && input.recipientEmail),
-    422,
-    'Correspondent delivery requires an external email recipient',
-  )
-  assert(
-    (input.recipientRole === 'informed_owner') === Boolean(input.targetPath),
-    422,
-    'Informed owner delivery requires a community path',
-  )
-}
-
-function assertReplayMatches(
-  existing: CopyrightDeliveryIntentRecord,
-  input: CopyrightDeliveryIntentInput,
-): void {
-  assert(
-    existing.copyright_notice_id === input.noticeId &&
-      existing.copyright_notice_submission_id === input.submissionId &&
-      existing.copyright_notice_correspondence_message_id === input.correspondenceId &&
-      existing.recipient_user_id === input.recipientUserId &&
-      existing.recipient_role === input.recipientRole &&
-      existing.delivery_kind === input.deliveryKind &&
-      existing.target_path === (input.targetPath ?? null) &&
-      existing.channel === input.channel,
-    409,
-    'Copyright delivery idempotency key was reused',
-  )
 }

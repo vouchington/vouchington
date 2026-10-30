@@ -27,6 +27,48 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.ai_usage_raw_retention_days,
       integer: true,
     },
+    identity_attempt_retention_months: {
+      description: 'Months tombstoned identity attempts survive their attempt date.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.identity_attempt_retention_months,
+      integer: true,
+    },
+    deletion_proof_retention_months: {
+      description: 'Months completed account deletion proof is retained.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.deletion_proof_retention_months,
+      integer: true,
+    },
+    released_hold_retention_months: {
+      description: 'Months released legal preservation holds are retained.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.released_hold_retention_months,
+      integer: true,
+    },
+    payment_ledger_retention_months: {
+      description: 'Months payment ledgers survive the end of their fiscal year.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.payment_ledger_retention_months,
+      integer: true,
+    },
+    copyright_minimal_case_batch_size: {
+      description: 'Maximum new and unfinished copyright cases selected per retention run.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_minimal_case_batch_size,
+      integer: true,
+    },
+    copyright_minimal_page_size: {
+      description: 'Maximum case-owned rows deleted in one copyright minimal-record page.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_minimal_page_size,
+      integer: true,
+    },
+    copyright_minimal_max_pages_per_case: {
+      description: 'Maximum committed child pages per copyright case and retention run.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_minimal_max_pages_per_case,
+      integer: true,
+    },
     topic_import_attempt_batch_size: {
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,

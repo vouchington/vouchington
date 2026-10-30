@@ -7,13 +7,14 @@
 CREATE TABLE copyright_repeat_infringer_incidents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   account_user_id uuid NOT NULL,
-  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   is_operative boolean NOT NULL,
   current_disposition copyright_repeat_infringer_disposition_kinds,
   current_disposition_recorded_at timestamptz,
   current_disposition_recorded_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_copyright_incidents__id__account UNIQUE (id, account_user_id),
   CONSTRAINT uq_copyright_repeat_infringer_incidents__id__notice UNIQUE (id, copyright_notice_id),
   CONSTRAINT uq_copyrig_repeat_infringe_incident__account_user_id__notice_id UNIQUE (account_user_id, copyright_notice_id),
   CONSTRAINT chk_copyright_repeat_infringer_incidents__disposition CHECK (
@@ -31,6 +32,22 @@ ALTER TABLE copyright_repeat_infringer_incidents
 ALTER TABLE copyright_repeat_infringer_incidents
   VALIDATE CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey;
 
+CREATE FUNCTION fn_register_copyright_repeat_infringer_retained_party()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO copyright_notice_retained_parties AS party
+    (copyright_notice_identity_id, account_user_id, is_repeat_infringer_account)
+  VALUES (NEW.copyright_notice_id, NEW.account_user_id, true)
+  ON CONFLICT (copyright_notice_identity_id, account_user_id) DO UPDATE
+    SET is_repeat_infringer_account = true
+    WHERE NOT party.is_repeat_infringer_account;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_register_copyright_repeat_infringer_retained_party
+AFTER INSERT ON copyright_repeat_infringer_incidents FOR EACH ROW
+EXECUTE FUNCTION fn_register_copyright_repeat_infringer_retained_party();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at
 BEFORE UPDATE ON copyright_repeat_infringer_incidents
@@ -41,6 +58,8 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
   WHERE is_operative;
 
+CREATE INDEX idx_copyright_repeat_infringer_incidents__legal_clock
+  ON copyright_repeat_infringer_incidents (copyright_notice_id, updated_at DESC);
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_updated
   ON copyright_repeat_infringer_incidents (copyright_notice_id, updated_at);
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice_id
@@ -58,13 +77,13 @@ CREATE TABLE copyright_repeat_infringer_incident_targets (
   PRIMARY KEY (copyright_repeat_infringer_incident_id, copyright_notice_target_id),
   CONSTRAINT fk_copyr_repeat_infringe_incident_targets__incident
     FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id)
-    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT
+    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE CASCADE
 );
 
 ALTER TABLE copyright_repeat_infringer_incident_targets
   ADD CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target
   FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
-  REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+  REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE NOT VALID;
 
 ALTER TABLE copyright_repeat_infringer_incident_targets
   VALIDATE CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target;
@@ -178,6 +197,7 @@ CREATE FUNCTION fn_reject_copyright_repeat_infringer_incident()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id
@@ -222,7 +242,7 @@ COMMENT ON COLUMN copyright_repeat_infringer_dispositions.disposition IS 'Why th
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.rationale_ciphertext IS 'Encrypted staff rationale for removing the incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.recorded_at IS 'Time the moderator recorded the disposition.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.recorded_by_id IS 'Moderator who recorded the disposition. Null after that account is erased.';
-COMMENT ON TABLE copyright_repeat_infringer_reviews IS 'Required staff review opened when an account reaches two operative incidents. Opening a review does not suspend the account.';
+COMMENT ON TABLE copyright_repeat_infringer_reviews IS 'Required staff review opened when an account reaches two operative incidents. Opening a review does not suspend the account. Each review, including its encrypted rationale and outcome, expires six calendar years after its own latest opened_at or outcome_at activity; actor erasure does not restart retention.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.account_user_id IS 'Retained account identity whose second operative incident opened this review.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.opened_at IS 'Time the second operative incident opened the review.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome IS 'Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action.';
@@ -230,6 +250,29 @@ COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome_at IS 'Time the mod
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome_by_id IS 'Moderator who recorded the outcome. Null while the review is open, or after that account is erased.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.rationale_ciphertext IS 'Encrypted staff rationale recorded with the outcome.';
 
+-- Current suspension authority and its two proven incident sources, rather than all living accounts.
+CREATE TABLE copyright_account_suspension_reliances (
+  account_user_id uuid PRIMARY KEY REFERENCES retained_user_identities(id) ON DELETE CASCADE,
+  outcome copyright_repeat_infringer_review_outcomes NOT NULL CHECK (outcome IN ('restrict', 'terminate')),
+  reinstated_at timestamptz,
+  released_at timestamptz
+);
+CREATE TABLE copyright_account_suspension_incidents (
+  account_user_id uuid NOT NULL REFERENCES copyright_account_suspension_reliances(account_user_id) ON DELETE CASCADE,
+  copyright_repeat_infringer_incident_id uuid NOT NULL,
+  PRIMARY KEY (account_user_id, copyright_repeat_infringer_incident_id),
+  CONSTRAINT fk_copyright_suspension_incidents__incident FOREIGN KEY (copyright_repeat_infringer_incident_id, account_user_id)
+    REFERENCES copyright_repeat_infringer_incidents(id, account_user_id) ON DELETE RESTRICT
+);
+CREATE INDEX idx_cpyrght_accnt_sspnsn_incdnts__incident ON copyright_account_suspension_incidents (copyright_repeat_infringer_incident_id, account_user_id);
+COMMENT ON TABLE copyright_account_suspension_reliances IS 'One current copyright suspension authority per account; reinstatement permits lifting but does not release evidence while the account remains suspended.';
+COMMENT ON COLUMN copyright_account_suspension_reliances.account_user_id IS 'Retained account identity whose current suspension relies on copyright evidence.';
+COMMENT ON COLUMN copyright_account_suspension_reliances.outcome IS 'Current restrict or terminate decision; terminate requires formal reinstatement before unsuspension.';
+COMMENT ON COLUMN copyright_account_suspension_reliances.reinstated_at IS 'Formal reinstatement authorization; evidence stays required until actual unsuspension or final account purge.';
+COMMENT ON COLUMN copyright_account_suspension_reliances.released_at IS 'Actual unsuspension or final purge time; only then may provenance be drained after the case window.';
+COMMENT ON TABLE copyright_account_suspension_incidents IS 'The two canonical incident sources relied on by the current suspension; replaced atomically when a later review becomes the authority.';
+COMMENT ON COLUMN copyright_account_suspension_incidents.account_user_id IS 'Current suspension owner, with a real FK to its compact authority row.';
+COMMENT ON COLUMN copyright_account_suspension_incidents.copyright_repeat_infringer_incident_id IS 'Actual incident evidence, with a composite FK proving the same account.';
 COMMENT ON TABLE copyright_repeat_infringer_review_identities IS 'Minimal published review ids that survive pending review and detailed history retirement without authorizing account action.';
 COMMENT ON COLUMN copyright_repeat_infringer_review_identities.id IS 'Published UUIDv7 review identity.';
 COMMENT ON COLUMN copyright_repeat_infringer_review_identities.account_user_id IS 'Durable owning account identity.';

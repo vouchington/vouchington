@@ -1,5 +1,5 @@
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -17,6 +17,7 @@ export async function reviewCopyrightFormIntake(input: {
 }): Promise<{ noticeId: string; submissionId: string; is_accepted: boolean }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
+  // ast-grep-ignore: no-three-sequential-awaits -- Resolve config before opening a transaction, then acquire review serialization before reading mutable form state.
   const automationSince = await getAutomaticEnforcementSince()
   await using transaction = await beginTransaction()
   await transaction(sql`/* reviewCopyrightFormIntake:lock */
@@ -72,12 +73,17 @@ export async function reviewCopyrightFormIntake(input: {
       422,
       'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
     )
+    await using secrets = await openCopyrightSecrets(
+      { kind: 'notice', id: intake.notice_id },
+      transaction,
+      'write',
+    )
     await transaction(sql`/* reviewCopyrightFormIntake:review */
       INSERT INTO copyright_notice_form_intake_reviews (
         copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       ) VALUES (
         ${input.intakeId}, ${new Date()}, ${input.currentUser.id}, ${input.is_accepted},
-        ${encryptSecret(input.rationale, `copyright-form-review:${input.intakeId}`)}
+        ${secrets.encryptSecret(input.rationale, `copyright-form-review:${input.intakeId}`)}
       )
     `)
   }

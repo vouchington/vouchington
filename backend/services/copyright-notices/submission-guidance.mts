@@ -1,4 +1,4 @@
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
@@ -66,6 +66,8 @@ export async function getCopyrightSubmissionGuidanceSource(
   if (!row) return null
   const ciphertext = liveCopyrightCiphertext(row.body_ciphertext)
   if (!ciphertext) return null
+  await using secrets = await openCopyrightSecrets({ kind: 'notice', id: row.copyright_notice_id })
+  const { decryptSecret } = secrets
   const body: unknown = JSON.parse(
     decryptSecret(ciphertext, copyrightSubmissionPurpose(submissionId)),
   )
@@ -157,12 +159,19 @@ export async function appendCopyrightSubmissionGuidance(input: {
   model: string
   guidance: CopyrightCounterNoticeGuidance | CopyrightLegalHoldGuidance
 }): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- The parent notice lifetime lock must precede key resolution and encrypted guidance admission.
   await using transaction = await beginTransaction()
   await transaction(sql`/* appendCopyrightSubmissionGuidance:lockNotice */
     SELECT notice.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId}
-    FOR KEY SHARE OF notice`)
+    FOR UPDATE OF notice`)
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'submission', id: input.submissionId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   await transaction(sql`/* appendCopyrightSubmissionGuidance */
     INSERT INTO copyright_notice_submission_guidance (
       copyright_notice_submission_id, input_sha256, prompt_version, model,

@@ -1,6 +1,11 @@
+import { lockCopyrightAppealReviewOwners } from './appeal-review-locks.mts'
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 /* oxlint-disable max-lines -- Appeal and counter-notice reviews share one atomic moderator boundary. */
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -55,10 +60,15 @@ export async function reviewCopyrightAppeal(
     'Restriction decisions must be unique',
   )
 
+  // ast-grep-ignore: no-three-sequential-awaits -- The transaction owns appeal serialization before discovering and locking account owners ahead of mutable legal rows.
   await using transaction = await beginTransaction(transactionOptions)
   await transaction(sql`/* reviewCopyrightAppeal:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-appeal-review:${input.submissionId}`}, 0))
   `)
+  const { noticeId: lockedNoticeId, accountLocks } = await lockCopyrightAppealReviewOwners(
+    input.submissionId,
+    transaction,
+  )
   const { rows: appealRows } = await transaction<{
     copyright_notice_id: string
     submitted_by_id: string | null
@@ -73,6 +83,7 @@ export async function reviewCopyrightAppeal(
       ) AS target_ids
     FROM copyright_notice_submissions submission
     WHERE submission.id = ${input.submissionId} AND submission.kind = 'appeal'
+      AND submission.copyright_notice_id = ${lockedNoticeId}
     FOR UPDATE OF submission
   `)
   const appeal = appealRows[0]
@@ -135,6 +146,11 @@ export async function reviewCopyrightAppeal(
     422,
     'Appeal decisions must exactly cover every active restriction in the appeal',
   )
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: appeal.copyright_notice_id }],
+    transaction,
+  )
+  const { encryptSecret } = ownerScopes.get({ kind: 'notice', id: appeal.copyright_notice_id })
   const reviewedAt = new Date()
   const reviewIds: string[] = []
   const reversalRestrictionIds: string[] = []
@@ -177,10 +193,15 @@ export async function reviewCopyrightAppeal(
     if (decision.action === 'reverse') reversalRestrictionIds.push(decision.restrictionId)
   }
   // ast-grep-ignore: no-three-sequential-awaits -- the delivery build takes the notice lock before the consequences write incident and staydown rows from the reviewed restrictions, and the lifecycle event follows both in that lock order
-  const noticeDeliveries = await buildCopyrightReviewOutcomeDeliveries(firstReviews, transaction)
+  const noticeDeliveries = await buildCopyrightReviewOutcomeDeliveries(
+    firstReviews,
+    transaction,
+    ownerScopes,
+  )
   const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
     appeal.copyright_notice_id,
     transaction,
+    accountLocks,
   )
   await transaction(sql`/* reviewCopyrightAppeal:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id)
@@ -203,6 +224,7 @@ export async function reviewCopyrightAppeal(
           },
         ]
       : [],
+    ownerScopes,
   )
   if (!appeal.submitted_by_id)
     await createEmailSubmitterOutcomeInTransaction(
@@ -213,6 +235,7 @@ export async function reviewCopyrightAppeal(
         idempotencyKey: `copyright-appeal-review:${input.submissionId}:email-outcome`,
       },
       transaction,
+      ownerScopes,
     )
   const reversalIntentIds: string[] = []
   for (const restrictionId of reversalRestrictionIds) {
@@ -293,6 +316,11 @@ export async function reviewCopyrightCounterNotice(input: {
   const submission = submissionRows[0]
   assert(submission, 404, 'Copyright counter-notice not found')
   assert(submission.jurisdiction === 'us_dmca', 422, 'Only US DMCA counter-notices are supported')
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: submission.copyright_notice_id }],
+    transaction,
+  )
+  const { encryptSecret } = ownerScopes.get({ kind: 'notice', id: submission.copyright_notice_id })
   const reviewedAt = new Date()
   const aiAssisted = await copyrightSubmissionHasGuidance(input.submissionId, transaction)
   const { rows: identityRows } = await transaction<{ id: string }>(sql`
@@ -394,6 +422,7 @@ export async function reviewCopyrightCounterNotice(input: {
         idempotencyKey: `copyright-counter-review:${input.submissionId}:email-outcome`,
       },
       transaction,
+      ownerScopes,
     )
   await transaction.commit()
   return { noticeId: submission.copyright_notice_id, assessmentId: assessment.id, deadlineId }
@@ -402,12 +431,14 @@ export async function reviewCopyrightCounterNotice(input: {
 async function createEmailSubmitterOutcomeInTransaction(
   input: { noticeId: string; submissionId: string; bodyText: string; idempotencyKey: string },
   transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  ownerScopes: CopyrightSecretBatch,
 ): Promise<void> {
   const { rows } = await transaction<{
     sender_email_ciphertext: string
     amazon_ses_message_id: string
+    intake_id: string
   }>(sql`/* createEmailSubmitterOutcomeInTransaction:recipient */
-    SELECT parse.sender_email_ciphertext, intake.amazon_ses_message_id
+    SELECT parse.sender_email_ciphertext, intake.amazon_ses_message_id, intake.id AS intake_id
     FROM copyright_notice_correspondence_messages correspondence
     JOIN copyright_notice_email_intakes intake
       ON intake.id = correspondence.copyright_notice_email_intake_id
@@ -420,6 +451,11 @@ async function createEmailSubmitterOutcomeInTransaction(
   `)
   const recipient = rows[0]
   if (!recipient) return
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'intake', id: recipient.intake_id },
+    transaction,
+  )
+  const { decryptSecret } = secrets
   const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId: input.noticeId,
@@ -428,6 +464,7 @@ async function createEmailSubmitterOutcomeInTransaction(
       bodyText: input.bodyText,
     },
     transaction,
+    ownerScopes,
   )
   await createCopyrightDeliveryIntent(
     {
@@ -445,6 +482,7 @@ async function createEmailSubmitterOutcomeInTransaction(
       ),
     },
     transaction,
+    ownerScopes,
   )
 }
 

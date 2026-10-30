@@ -1,5 +1,5 @@
 import { beginTransaction, read } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from '@services/copyright-notices/encryption-keys'
 import { copyrightSubmissionPurpose } from '@services/copyright-notices/submissions'
 import { upsertCopyrightStorageObjectId } from '@services/copyright-notices/storage-objects'
 import { upsertMediaTypes } from '@services/urls/media-types'
@@ -66,6 +66,12 @@ export async function seedCopyrightStaffEvidence(): Promise<void> {
   if (!mediaTypeId) throw new Error('Unable to seed evidence media type')
   const evidenceBytes = Buffer.from('seed-explain-copyright-evidence')
   await using transaction = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: noticeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   const storageObjectId = await upsertCopyrightStorageObjectId(
     'seed-explain-copyright-evidence',
     transaction,

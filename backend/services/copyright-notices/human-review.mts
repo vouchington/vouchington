@@ -1,5 +1,6 @@
+import { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -29,6 +30,7 @@ export async function completeCopyrightMandatoryHumanReview(
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction(transactionOptions)
+  const accountLocks = await CopyrightNoticeAccountLocks.acquire(input.noticeId, transaction)
   const { rows: placementRows } = await transaction<{ placement_id: string }>(
     sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
     SELECT target.placement_id
@@ -74,7 +76,11 @@ export async function completeCopyrightMandatoryHumanReview(
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'Copyright restriction is not awaiting mandatory human review')
-  await createCopyrightReviewOutcomeNoticesInTransaction(input, transaction)
+  await using scopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: input.noticeId }],
+    transaction,
+  )
+  await createCopyrightReviewOutcomeNoticesInTransaction(input, transaction, scopes)
   let restoreIntentId: string | null = null
   if (input.action === 'reverse') {
     const intent = await createCopyrightRestoreIntentForReversalInTransaction(
@@ -86,7 +92,9 @@ export async function completeCopyrightMandatoryHumanReview(
   const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
     input.noticeId,
     transaction,
+    accountLocks,
   )
+  const { encryptSecret } = scopes.get({ kind: 'notice', id: input.noticeId })
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
     INSERT INTO copyright_notice_lifecycle_changes (
       id, copyright_notice_id, change_type, changed_by_id,

@@ -11,6 +11,7 @@ import {
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 import type { RetentionCase } from './retention-parsed-email.mts'
+import { getCopyrightRetentionWorkDate } from '../../copyright-retention-work.mts'
 
 /** Stores one original on a submission; its bucket key is `storageKey`, or a fresh one. */
 export async function addRetentionArtifact(
@@ -61,16 +62,16 @@ export async function createRetentionMinimalCase(
   if (!placement) throw new Error('fixture image placement disappeared')
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
-    receivedAt: new Date(),
+    receivedAt: getCopyrightRetentionWorkDate(),
     claimantUserId: claimant?.id ?? null,
     claimantDisplayName: 'Claimant Name',
-    claimantContactCiphertext: `ciphertext-${randomUUID()}`,
+    claimantContact: `ciphertext-${randomUUID()}`,
     workDescription: `Original photograph ${randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'signed_in_form',
-      bodyCiphertext: `notice-${randomUUID()}`,
+      body: `notice-${randomUUID()}`,
     },
     targets: [
       {

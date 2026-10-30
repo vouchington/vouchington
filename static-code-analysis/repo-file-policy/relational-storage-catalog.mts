@@ -1,3 +1,4 @@
+export { ALLOWED_AUDIT_SNAPSHOT_ID } from './relational-storage-reviewed-audit-ids.mts'
 // Every exception is an exact table.column from the committed PostgreSQL schema snapshot.
 // Remove an entry once its column no longer needs the exception. New entries require plan review.
 // JSON documents are allowed. This list records reviewed opaque provider, protocol, and replay
@@ -39,10 +40,7 @@ export const ALLOWED_OPAQUE_JSON = new Set([
 
 // Two further reviewed categories carry one reason per entry: token, cursor or protocol
 // identifiers, and audit snapshot identifiers. Both are defined in the schema rules.
-export {
-  ALLOWED_AUDIT_SNAPSHOT_ID,
-  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
-} from './relational-storage-reviewed-ids.mts'
+export { ALLOWED_TOKEN_CURSOR_PROTOCOL_ID } from './relational-storage-reviewed-ids.mts'
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
@@ -124,6 +122,10 @@ export const ALLOWED_NONRELATION_UUID = new Set([
 // Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
 export const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'oauth_grant_retention_anchors.id',
+  // The historical notice identity survives deletion of its source notice and cannot FK to it.
+  'copyright_notice_retained_identities.id',
+  // The terminal operation identity survives deletion of its source ledger row for exact replay.
+  'membership_operation_retained_identities.id',
   'post_publication_community_identities.id',
   'retained_api_key_identities.id',
   'retained_image_identities.id',

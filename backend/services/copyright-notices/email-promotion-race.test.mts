@@ -191,7 +191,7 @@ describe('copyright email promotion and threading serialization', () => {
         { copyright_notice_id: admitted.noticeId, link_kind: 'initial' },
       ])
       expect(await readCopyrightEmailIntakeReview(intake.id)).toEqual([
-        { decision: 'approved', promoted_copyright_notice_id: admitted.noticeId },
+        { decision: 'approved', promoted_copyright_notice_identity_id: admitted.noticeId },
       ])
       expect(
         await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),

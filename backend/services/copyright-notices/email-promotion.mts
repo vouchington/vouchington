@@ -1,8 +1,15 @@
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
+import { v7 as uuidv7 } from 'uuid'
+import {
+  prepareCopyrightEmailDecisionKeys,
+  attachCopyrightEncryptionKey,
+  openCopyrightSecrets,
+  type PreparedCopyrightEncryptionKey,
+} from './encryption-keys.mts'
 /* oxlint-disable max-lines -- Email admission keeps evidence, provenance, threading, and delivery atomic. */
 import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -55,6 +62,12 @@ async function assessAndEnforceCopyrightEmailIntake(
 async function admitCopyrightEmailIntake(
   input: PromoteCopyrightEmailIntakeInput,
 ): Promise<{ noticeId: string; submissionId: string }> {
+  const noticeId = uuidv7()
+  await using preparedKeys = await prepareCopyrightEmailDecisionKeys(input.intakeId)
+  const encryptionKey = preparedKeys.notice
+  assert(encryptionKey, 500, 'Copyright notice encryption key is missing')
+  const preparedIntakeKey = preparedKeys.intake
+  const preparedReceiptKey = preparedKeys.receipt
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   await using transaction = await beginTransaction()
   const { rows: existing } = await transaction<{ id: string }>(sql`
@@ -111,11 +124,20 @@ async function admitCopyrightEmailIntake(
       intake.raw_storage_object_id, intake.raw_sha256, intake.raw_media_type_id,
       (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt
+      ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
     WHERE intake.id = ${input.intakeId}
+    FOR UPDATE OF intake, receipt
   `)
   const intake = intakeRows[0]
   assert(intake?.raw_storage_object_id, 404, 'Copyright email intake not found')
+  if (preparedIntakeKey)
+    await attachCopyrightEncryptionKey(
+      preparedIntakeKey,
+      { kind: 'intake', id: intake.id },
+      transaction,
+    )
   await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
@@ -128,7 +150,7 @@ async function admitCopyrightEmailIntake(
         link.copyright_notice_id AS promoted_copyright_notice_id, submission.id AS submission_id
       FROM copyright_notice_email_intake_receipts receipt
       LEFT JOIN copyright_notice_email_intake_notice_links link
-        ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
+        ON link.copyright_notice_email_intake_receipt_id = receipt.id AND link.link_kind = 'initial'
       LEFT JOIN copyright_notice_submissions submission
         ON submission.copyright_notice_id = link.copyright_notice_id
         AND submission.kind = 'notice'
@@ -149,9 +171,9 @@ async function admitCopyrightEmailIntake(
       link_kind: string
     }>(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
       INSERT INTO copyright_notice_email_intake_notice_links (
-        copyright_notice_email_intake_id, copyright_notice_id, link_kind
+        copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind
       ) VALUES (${intake.id}, ${prior.promoted_copyright_notice_id}, 'initial')
-      ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+      ON CONFLICT (copyright_notice_email_intake_receipt_id) DO NOTHING
       RETURNING copyright_notice_id, link_kind
     `)
     const retainedLink =
@@ -160,7 +182,7 @@ async function admitCopyrightEmailIntake(
         await transaction<{ copyright_notice_id: string; link_kind: string }>(sql`
         /* promoteCopyrightEmailIntake:retainedInitialLink */
         SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
-        WHERE copyright_notice_email_intake_id = ${intake.id}
+        WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
       `)
       ).rows[0]
     assert(
@@ -193,6 +215,7 @@ async function admitCopyrightEmailIntake(
   const notice = await createCopyrightNoticeAggregateInTransaction(
     buildEmailNotice(input, purpose, intake.received_at),
     transaction,
+    { noticeId, key: encryptionKey },
   )
   const submissionId = await recordEmailPromotion(
     transaction,
@@ -202,6 +225,7 @@ async function admitCopyrightEmailIntake(
     purpose,
     graph,
     shouldLinkReplies,
+    preparedReceiptKey,
   )
   await transaction.commit()
   if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
@@ -230,12 +254,12 @@ async function assertNoThreadCorrespondenceDecision(
   const { rows } = await transaction(sql`/* promoteCopyrightEmailIntake:threadReview */
     SELECT 1
     FROM copyright_notice_email_intake_notice_links link
-    WHERE link.copyright_notice_email_intake_id = ${intakeId}
+    WHERE link.copyright_notice_email_intake_receipt_id = ${intakeId}
       AND link.link_kind = 'thread'
     UNION ALL
     SELECT 1
     FROM copyright_notice_email_intake_notice_links decided_link
-    WHERE decided_link.copyright_notice_email_intake_id = ${intakeId}
+    WHERE decided_link.copyright_notice_email_intake_receipt_id = ${intakeId}
       AND decided_link.correspondence_action IN ('admitted', 'rejected')
     LIMIT 1
   `)
@@ -267,22 +291,20 @@ function buildEmailNotice(
     receivedAt,
     claimantUserId: null,
     claimantDisplayName: input.claimantDisplayName,
-    claimantContactCiphertext: encryptSecret(input.claimantContact, purpose),
+    claimantContact: input.claimantContact,
+    secretPurpose: purpose,
     workDescription: input.workDescription,
     policyVersion: 'copyright-email-moderated-v1',
     targets: input.targets,
     initialSubmission: {
       kind: 'notice' as const,
       sourceKind: 'email' as const,
-      bodyCiphertext: encryptSecret(
-        JSON.stringify({
-          has_good_faith_belief: input.goodFaithBelief,
-          has_accuracy_authority_under_penalty_of_perjury:
-            input.accuracyAuthorityUnderPenaltyOfPerjury,
-          electronic_signature: input.electronicSignature,
-        }),
-        purpose,
-      ),
+      body: JSON.stringify({
+        has_good_faith_belief: input.goodFaithBelief,
+        has_accuracy_authority_under_penalty_of_perjury:
+          input.accuracyAuthorityUnderPenaltyOfPerjury,
+        electronic_signature: input.electronicSignature,
+      }),
     },
   }
 }
@@ -295,6 +317,7 @@ async function recordEmailPromotion(
   purpose: string,
   graph: CopyrightEmailThreadGraph,
   shouldLinkReplies: boolean,
+  preparedReceiptKey: PreparedCopyrightEncryptionKey | null,
 ): Promise<string> {
   const { rows } = await transaction<{
     id: string
@@ -308,7 +331,18 @@ async function recordEmailPromotion(
     INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
     VALUES (${submission.id}, ${intake.raw_storage_object_id}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
   `)
-  const rationaleCiphertext = encryptSecret(
+  if (preparedReceiptKey)
+    await attachCopyrightEncryptionKey(
+      preparedReceiptKey,
+      { kind: 'receipt', id: intake.id },
+      transaction,
+    )
+  await using receiptSecrets = await openCopyrightSecrets(
+    { kind: 'receipt', id: intake.id },
+    transaction,
+    'write',
+  )
+  const rationaleCiphertext = receiptSecrets.encryptSecret(
     JSON.stringify({
       rationale: input.rationale,
       manual_fallback_reason: input.manualFallbackReason,
@@ -318,7 +352,7 @@ async function recordEmailPromotion(
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
       copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
-      reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_id
+      reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_identity_id
     ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'approved',
       ${rationaleCiphertext}, ${noticeId})
   `)
@@ -328,13 +362,15 @@ async function recordEmailPromotion(
       reviewed_by_id = ${input.currentUser.id},
       review_rationale_ciphertext = ${rationaleCiphertext}
     WHERE id = ${intake.id}`)
-  const { rows: initialLinks } = await transaction<{ copyright_notice_email_intake_id: string }>(
+  const { rows: initialLinks } = await transaction<{
+    copyright_notice_email_intake_receipt_id: string
+  }>(
     sql`/* promoteCopyrightEmailIntake:initialThreadLink */
     INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind
+      copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind
     ) VALUES (${intake.id}, ${noticeId}, 'initial')
-    ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
-    RETURNING copyright_notice_email_intake_id
+    ON CONFLICT (copyright_notice_email_intake_receipt_id) DO NOTHING
+    RETURNING copyright_notice_email_intake_receipt_id
   `,
   )
   assert(initialLinks[0], 409, 'Copyright email intake was linked concurrently')
@@ -354,6 +390,11 @@ async function recordEmailPromotion(
     SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
       AND delivery_kind = 'email_intake_received' AND state NOT IN ('failed', 'bounced')
   `)
+  // ast-grep-ignore: no-three-sequential-awaits -- The owner key is resolved before encrypting the receipt, whose FK must exist before its delivery intent.
+  await using noticeScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: noticeId }],
+    transaction,
+  )
   const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId,
@@ -364,6 +405,7 @@ async function recordEmailPromotion(
         : copyrightReceiptText(noticeId),
     },
     transaction,
+    noticeScopes,
   )
   await createCopyrightDeliveryIntent(
     {
@@ -378,6 +420,7 @@ async function recordEmailPromotion(
       recipientEmail: input.claimantEmail,
     },
     transaction,
+    noticeScopes,
   )
   return submission.id
 }

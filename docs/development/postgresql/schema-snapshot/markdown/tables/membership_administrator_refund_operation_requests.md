@@ -56,4 +56,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_maror_context`: `CREATE TRIGGER trigger_maror_context BEFORE INSERT ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context()`
-- `trigger_maror_immutable`: `CREATE TRIGGER trigger_maror_immutable BEFORE DELETE OR UPDATE ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_maror_immutable`: `CREATE TRIGGER trigger_maror_immutable BEFORE DELETE OR UPDATE ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation()`
+- `trigger_membership_refund_requests_retained_fence`: `CREATE TRIGGER trigger_membership_refund_requests_retained_fence BEFORE INSERT ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write()`

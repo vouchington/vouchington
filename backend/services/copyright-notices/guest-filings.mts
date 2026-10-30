@@ -1,8 +1,10 @@
+import { lockCopyrightNoticeLifetime } from './notice-lifetime.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
-import { encryptSecret, hashToken } from '@modules/token-secrets'
+import { hashToken } from '@modules/token-secrets'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightGuestCapabilityPurpose } from './guest-capabilities.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
@@ -63,9 +65,17 @@ export async function appendCopyrightGuestFiling(input: {
       ? JSON.stringify({ summary: input.statement })
       : input.statement
   const submissionId = uuidv7()
+  // ast-grep-ignore: no-three-sequential-awaits -- Acquire the transaction and shared erasure lifetime before opening the parent key scope and locking any guest child.
   await using transaction = await beginTransaction()
+  await lockCopyrightNoticeLifetime(transaction, input.noticeId)
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: input.noticeId },
+    transaction,
+    'write',
+  )
   const capabilityId = await lockGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
+  const { encryptSecret } = secrets
   const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
     sql`/* appendCopyrightGuestFiling */
     INSERT INTO copyright_notice_submissions (

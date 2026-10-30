@@ -8,7 +8,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 export function useCopyrightIntakeEnvironment({ enabled = true } = {}): void {
   beforeEach(() => {
     vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', String(enabled))
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'test-copyright-evidence')
     vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
     vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
     vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')

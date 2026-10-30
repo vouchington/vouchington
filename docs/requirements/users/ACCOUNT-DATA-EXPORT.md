@@ -82,7 +82,9 @@ except the user's own submissions. The owner approves it after AI advisor review
 - **Repeat-infringer records about the user.** `copyright-repeat-infringer-incidents.csv` lists
   incident dates, whether each is operative, the linked notice id, and any staff disposition, with no
   claimant identity. `copyright-repeat-infringer-reviews.csv` lists decided account reviews with
-  their outcome and dates. Rationales and open reviews are withheld.
+  their outcome and dates while retained. Each review and reinstatement expires six years after
+  its own latest opening or outcome activity; expired rows are absent. Rationales and open reviews
+  are withheld.
 - **Out of scope.** Claimants who only ever used email have no account, so those requests are
   handled manually by the owner: see
   [Data requests from email-only claimants](../../runbooks/copyright-notices.md#data-requests-from-email-only-claimants). EU and UK redress records, delivery and outbox rows (transport, not user records),

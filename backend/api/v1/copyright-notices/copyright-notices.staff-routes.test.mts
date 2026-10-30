@@ -140,10 +140,10 @@ async function createAcceptedNoticeFixture() {
     receivedAt: new Date('2026-07-01T11:00:00.000Z'),
     claimantUserId: claimant.id,
     claimantDisplayName: 'Staff route claimant',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'notice' },
+    initialSubmission: { kind: 'notice', sourceKind: 'staff', body: 'notice' },
     targets: [
       {
         placementId: placement.placement_id,
@@ -175,7 +175,7 @@ async function createAcceptedNoticeFixture() {
     submissionId: aggregate.submissions[0].id,
     correspondenceKind: 'receipt',
     compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    bodyText: `receipt-${crypto.randomUUID()}`,
     draftedById: null,
   })
   const delivery = await createCopyrightDeliveryIntent({

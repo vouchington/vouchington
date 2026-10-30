@@ -1,6 +1,10 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -18,18 +22,34 @@ type DeterministicCorrespondenceInput = {
 export async function createDeterministicCopyrightCorrespondenceInTransaction(
   input: DeterministicCorrespondenceInput,
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightCorrespondenceRecord> {
-  return (await createDeterministicCopyrightCorrespondencesInTransaction([input], transaction))[0]!
+  return (
+    await createDeterministicCopyrightCorrespondencesInTransaction(
+      [input],
+      transaction,
+      ownerScopes,
+    )
+  )[0]!
 }
 
 /** One statement creates every message; results align with `inputs`. */
 export async function createDeterministicCopyrightCorrespondencesInTransaction(
   inputs: readonly DeterministicCorrespondenceInput[],
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightCorrespondenceRecord[]> {
+  ownerScopes?.assertTransaction(transaction)
   if (inputs.length === 0) return []
   for (const input of inputs)
     assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
+  await using ownedScopes = ownerScopes
+    ? null
+    : await openCopyrightOwnerSecretBatch(
+        inputs.map(input => ({ kind: 'notice', id: input.noticeId })),
+        transaction,
+      )
+  const secrets = ownerScopes ?? ownedScopes!
   const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
     sql`/* createDeterministicCopyrightCorrespondencesInTransaction */
@@ -44,7 +64,7 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
         ${inputs.map(input => input.noticeId)}::uuid[],
         ${inputs.map(input => input.submissionId)}::uuid[],
         ${inputs.map(input => input.correspondenceKind)}::copyright_notice_correspondence_kinds[],
-        ${inputs.map((input, index) => encryptSecret(input.bodyText, copyrightCorrespondencePurpose(ids[index]!)))}::text[]
+        ${inputs.map((input, index) => secrets.get({ kind: 'notice', id: input.noticeId }).encryptSecret(input.bodyText, copyrightCorrespondencePurpose(ids[index]!)))}::text[]
       ) AS input(id, notice_id, submission_id, correspondence_kind, body_ciphertext)
       JOIN copyright_notices notice ON notice.id = input.notice_id
       WHERE input.submission_id IS NULL OR EXISTS (
@@ -96,6 +116,8 @@ export async function getCopyrightEmailCorrespondence(intentId: string): Promise
     `)
   const row = rows[0]
   if (!row) throw new Error('Copyright email delivery intent has no correspondence')
+  await using secrets = await openCopyrightSecrets({ kind: 'notice', id: row.copyright_notice_id })
+  const { decryptSecret } = secrets
   return {
     intent: row,
     bodyText: decryptSecret(
@@ -117,12 +139,14 @@ export async function createOutboundCopyrightCorrespondence(
     submissionId: string | null
     correspondenceKind: CopyrightCorrespondenceKind
     compositionKind: OutboundCompositionKind
-    bodyCiphertext: string
+    bodyText: string
     draftedById: string | null
   },
   transaction?: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightCorrespondenceRecord> {
-  if (transaction) return insertOutboundCopyrightCorrespondence(input, transaction)
+  if (transaction) return insertOutboundCopyrightCorrespondence(input, transaction, ownerScopes)
+  if (ownerScopes) throw new Error('Copyright encryption scope requires its transaction')
   await using owned = await beginTransaction()
   const correspondence = await insertOutboundCopyrightCorrespondence(input, owned)
   await owned.commit()
@@ -132,7 +156,13 @@ export async function createOutboundCopyrightCorrespondence(
 async function insertOutboundCopyrightCorrespondence(
   input: Parameters<typeof createOutboundCopyrightCorrespondence>[0],
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightCorrespondenceRecord> {
+  ownerScopes?.assertTransaction(transaction)
+  await using ownedScopes = ownerScopes
+    ? null
+    : await openCopyrightOwnerSecretBatch([{ kind: 'notice', id: input.noticeId }], transaction)
+  const secrets = (ownerScopes ?? ownedScopes!).get({ kind: 'notice', id: input.noticeId })
   const id = input.id ?? uuidv7()
   const { rows } =
     await transaction<CopyrightCorrespondenceRecord>(sql`/* createOutboundCopyrightCorrespondence */
@@ -142,7 +172,7 @@ async function insertOutboundCopyrightCorrespondence(
     )
     SELECT
       ${id}, ${input.noticeId}, ${input.submissionId}, 'outbound', ${input.correspondenceKind},
-      ${input.compositionKind}, ${input.bodyCiphertext}, ${input.draftedById}
+      ${input.compositionKind}, ${secrets.encryptSecret(input.bodyText, copyrightCorrespondencePurpose(id))}, ${input.draftedById}
     FROM copyright_notices notice
     WHERE notice.id = ${input.noticeId}
       AND (

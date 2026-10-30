@@ -52,10 +52,10 @@ export async function createCopyrightRestorationHoldFixture(targetCount = 1) {
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
     claimantUserId: claimant.id,
     claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
+    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', body: 'notice' },
     targets,
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
@@ -91,7 +91,7 @@ async function createAssessmentAndReceipt(
     submissionId: aggregate.submissions[0].id,
     correspondenceKind: 'receipt',
     compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    bodyText: `receipt-${crypto.randomUUID()}`,
     draftedById: null,
   })
   return { assessment, receipt }

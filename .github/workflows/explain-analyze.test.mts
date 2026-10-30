@@ -11,7 +11,7 @@ type Step = {
 }
 
 type Workflow = {
-  jobs: { 'explain-analyze': { steps: Step[] } }
+  jobs: { 'explain-analyze': { env?: Record<string, string>; steps: Step[] } }
 }
 
 const ANCHOR_ENV = 'EXPLAIN_SEED_ANCHOR_DATE'
@@ -77,6 +77,25 @@ printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
       } finally {
         rmSync(directory, { recursive: true, force: true })
       }
+    }
+  })
+})
+
+describe('copyright key authority across EXPLAIN processes', () => {
+  it('shares the explicit fake namespace/ring and provider preload across all copyright producers and readers', () => {
+    const job = explainAnalyzeJob()
+    expect(job.env?.WORKTREE_DIR).toBe('ci-explain-${{ github.run_id }}')
+    expect(job.env?.S3_BUCKET_COPYRIGHT_EVIDENCE).toBe('test-copyright-evidence')
+    expect(job.env?.VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS).toContain('codex-test-replay-a:')
+    for (const script of [
+      'backend/scripts/seeds/dev-seed.mts',
+      'explain-analyze/seed.mts',
+      'explain-analyze/run.mts',
+    ]) {
+      const step = job.steps.find(candidate => candidate.run?.includes(script))
+      expect(step?.run).toContain(
+        'node --import ./backend/test-helpers/copyright-key-object-cli.mts',
+      )
     }
   })
 })

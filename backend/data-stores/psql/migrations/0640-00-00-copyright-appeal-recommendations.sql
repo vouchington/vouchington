@@ -1,7 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_appeal_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_appeal_recommendations__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_appeal_recommendations__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
   input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),

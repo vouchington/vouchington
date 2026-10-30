@@ -5,7 +5,8 @@ import {
   holdTestFinalPurgeUserLifecycle,
   setReciprocalTestUserDeletionActors,
 } from '../../../test-helpers/reciprocal-user-purge.mts'
-import { cleanupSoftDeletedUser, FINAL_USER_PURGE_LOCK_KEY } from '../cleanup-soft-deleted-user.mts'
+import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 
 describe('reciprocal final user purges', () => {
   it('serializes overlapping purges before either acquires user locks', async () => {

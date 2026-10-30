@@ -31,7 +31,7 @@ describe('copyright delivery inputs', () => {
     expect(inputs.facts[1]!.targetUrls).toEqual([])
     expect(inputs.parties.length).toBeGreaterThan(0)
     expect(inputs.parties.every(party => party.target_id === targetId)).toBe(true)
-    expect(decryptCopyrightClaimantEmail(inputs.claimantEmail)).toBe(
+    expect(await decryptCopyrightClaimantEmail(inputs.claimantEmail, transaction)).toBe(
       await getCopyrightClaimantEmail(noticeId, transaction),
     )
   })
@@ -57,8 +57,10 @@ describe('copyright delivery inputs', () => {
       purposes: ['notify'],
     })
     expect(inputs.claimantEmail?.email_ciphertext).toEqual(expect.any(String))
-    expect(decryptCopyrightClaimantEmail(inputs.claimantEmail)).toBe('claimant@example.test')
-    expect(decryptCopyrightClaimantEmail(null)).toBeNull()
+    expect(await decryptCopyrightClaimantEmail(inputs.claimantEmail, transaction)).toBe(
+      'claimant@example.test',
+    )
+    expect(await decryptCopyrightClaimantEmail(null, transaction)).toBeNull()
   })
 
   it('rejects an unknown notice', async () => {

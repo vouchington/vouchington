@@ -1,124 +1,148 @@
+import { getCopyrightRetentionKeyBucket } from './encryption-key-objects.mts'
 import { beginBoundedTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
+import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 import sql from 'sql-template-strings'
+import { getCopyrightCaseRetentionMonths, getCopyrightRetentionWindows } from './config.mts'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
-import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
-import { lockCopyrightRetentionCaseThreadTokens } from './retention-erasure-thread-tokens.mts'
+import { advanceCopyrightMinimalPurgeProof } from './retention-minimal-purge-proof.mts'
+import {
+  copyrightErasureTokenPageSql,
+  lockCopyrightErasurePageBeforeParent,
+} from './retention-erasure-prelocks.mts'
+import { eraseCopyrightRawObjectPage } from './retention-erasure-objects.mts'
+import {
+  readCopyrightErasureWork,
+  fenceCopyrightErasureIntakePage,
+  redactCopyrightErasurePage,
+  destroyCopyrightErasureKeyPage,
+  type CopyrightErasureWork,
+} from './retention-erasure-progress.mts'
 import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
-import { eraseCopyrightRetentionTableSql } from './retention-erasure-sql.mts'
 
-const CONNECTION_TIMEOUT_MS = 5_000
-const STATEMENT_TIMEOUT_MS = 20_000
+export type CopyrightRetentionCaseOutcome = 'erased' | 'ineligible' | 'progress'
 
-export type CopyrightRetentionCaseOutcome = 'erased' | 'ineligible'
-
-function scopeOf(table: string, noticeId: string) {
-  return COPYRIGHT_RETENTION_ERASURE.find(entry => entry.table === table)!.scope(noticeId)
-}
-
-/** Candidate identities only. This statement does not decide whether an object is exclusive. */
-function evidenceObjectIdsSql(noticeId: string) {
-  return sql`/* listCopyrightRetentionEvidenceObjectIds */
-    SELECT DISTINCT raw_storage_object_id AS id FROM copyright_notice_email_intakes WHERE `
-    .append(scopeOf('copyright_notice_email_intakes', noticeId))
-    .append(sql` AND raw_storage_object_id IS NOT NULL
-      UNION
-      SELECT DISTINCT storage_object_id AS id FROM copyright_notice_evidence_artifacts WHERE `)
-    .append(scopeOf('copyright_notice_evidence_artifacts', noticeId))
-    .append(sql` AND storage_object_id IS NOT NULL ORDER BY id`)
-}
-
-/** Run after the object-row locks: READ COMMITTED must see owners that committed while locking. */
-function exclusiveEvidenceObjectsSql(noticeId: string, objectIds: readonly string[]) {
-  return sql`/* listCopyrightRetentionEvidenceKeys */
-    WITH own_intake AS (
-      SELECT id FROM copyright_notice_email_intakes WHERE `
-    .append(scopeOf('copyright_notice_email_intakes', noticeId))
-    .append(sql`
-    ), own_artifact AS (
-      SELECT id FROM copyright_notice_evidence_artifacts WHERE `)
-    .append(scopeOf('copyright_notice_evidence_artifacts', noticeId)).append(sql`
-    )
-    SELECT object.id, object.storage_key AS key
-    FROM copyright_notice_storage_objects object
-    WHERE object.id = ANY(${[...objectIds]}::uuid[])
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intakes other
-        WHERE other.raw_storage_object_id = object.id
-          AND NOT EXISTS (SELECT 1 FROM own_intake WHERE own_intake.id = other.id)
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_evidence_artifacts other
-        WHERE other.storage_object_id = object.id
-          AND NOT EXISTS (SELECT 1 FROM own_artifact WHERE own_artifact.id = other.id)
-      )
-    ORDER BY object.id`)
-}
-
-/** Lock registry rows, then use a fresh statement to see references committed during lock waits. */
-async function listCopyrightRetentionEvidenceKeys(
-  noticeId: string,
-  transaction: TransactionQuery,
-): Promise<{ id: string; key: string }[]> {
-  const { rows: candidates } = await transaction<{ id: string }>(evidenceObjectIdsSql(noticeId))
-  const objectIds = candidates.map(row => row.id)
-  // FK writers take KEY SHARE on this row. An in-flight writer commits before these locks
-  // succeed, or waits until this transaction finishes.
-  await transaction(sql`/* lockCopyrightRetentionEvidenceObjects */
-    SELECT id FROM copyright_notice_storage_objects
-    WHERE id = ANY(${objectIds}::uuid[]) ORDER BY id FOR UPDATE`)
-  // This must be a NEW statement: a NOT EXISTS in the locking statement sees the old snapshot.
-  const { rows } = await transaction<{ id: string; key: string }>(
-    exclusiveEvidenceObjectsSql(noticeId, objectIds),
-  )
-  return rows
-}
-
-/**
- * Erases one case: its evidence-bucket objects (every version), then its personal-data columns,
- * then the marker row, all in one transaction. The accounts party to the case are locked first, so
- * a preservation hold being placed on one of them is seen or waits, then the notice row, so a
- * concurrent child insert waits, and eligibility is checked again under those locks. The database
- * changes only after the bucket confirms every version is gone; any failure rolls the transaction
- * back and the case is picked up again by the next run. The idle timeout is raised for the bucket
- * calls.
- */
+/** Exactly one finite proof page or one durable destruction page per selected case. */
 export async function eraseCopyrightRetentionCase(
   noticeId: string,
-  options: { now: Date; cutoff: Date; retentionDays: number },
+  nowOverride?: Date,
 ): Promise<CopyrightRetentionCaseOutcome> {
-  await using transaction = await beginBoundedTransaction({
-    connectionTimeoutMs: CONNECTION_TIMEOUT_MS,
-    statementTimeoutMs: STATEMENT_TIMEOUT_MS,
+  const retentionMonths = await getCopyrightCaseRetentionMonths()
+  if (retentionMonths === null) return 'ineligible'
+  const limits = getCopyrightRetentionWindows()
+  await using query = await beginBoundedTransaction({
+    connectionTimeoutMs: 5_000,
+    statementTimeoutMs: 20_000,
   })
-  await transaction(sql`/* setCopyrightRetentionTimeouts */
-    SELECT set_config('lock_timeout', '5s', true),
-      set_config('idle_in_transaction_session_timeout', '120s', true)`)
-  // Ingestion locks tokens before its FK parents. If the case gained another
-  // token while those locks were acquired, leave it for the next scheduled run.
-  if (!(await lockCopyrightRetentionCaseThreadTokens(transaction, noticeId))) return 'ineligible'
-  const { rows: stillEligible } = await transaction<{ id: string }>(
+  // ast-grep-ignore: no-three-sequential-awaits -- Set transaction deadlines before acquiring global then case lifetime locks in canonical order.
+  await query(sql`/* setCopyrightRetentionTimeouts */ SELECT set_config('lock_timeout', '5s', true),
+    set_config('idle_in_transaction_session_timeout', '120s', true)`)
+  await query(sql`/* lockCopyrightErasureLegalMutationLifetime */
+    SELECT pg_advisory_xact_lock_shared(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`)
+  await query(sql`/* lockCopyrightErasureCaseLifetime */
+    SELECT pg_advisory_xact_lock(hashtextextended('copyright-erasure:' || ${noticeId}::uuid::text, 0))`)
+  const { rows: sequenceRows } = await query<{
+    current_sequence: string
+  }>(sql`/* fenceCopyrightErasureLegalMutations */
+    SELECT current_sequence FROM copyright_legal_mutation_sequence_states WHERE is_singleton FOR SHARE`)
+  const sequence = sequenceRows[0]?.current_sequence
+  if (sequence === undefined) throw new Error('Copyright legal mutation sequence is missing')
+  const { rows: prior } =
+    await query<CopyrightErasureWork>(sql`/* readCopyrightErasurePrelockPhase */
+    SELECT erasure_started_at, erasure_legal_clock_at, erasure_stage_index, erasure_table_index,
+      erasure_intake_cursor, erasure_object_owner_cursor, erased_object_count
+    FROM copyright_notice_minimal_purge_continuations WHERE copyright_notice_identity_id = ${noticeId}`)
+  const locks = await lockCopyrightErasurePageBeforeParent(
+    query,
+    noticeId,
+    prior[0],
+    limits.proofPageSize,
+  )
+  await query(
+    sql`/* lockCopyrightRetentionNotice */ SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`,
+  )
+  // Read the actual clock after every lifetime lock wait. Candidate selection is never authority.
+  const now = nowOverride ?? new Date()
+  const cutoff = shiftUtcCalendarMonths(now, -retentionMonths)
+  const proof = await advanceCopyrightMinimalPurgeProof(
+    query,
+    noticeId,
+    limits.proofPageSize,
+    sequence,
+    now,
+    limits.complaintMonths,
+  )
+  if (proof !== 'ready') {
+    await query.commit()
+    return proof
+  }
+  const { rows: eligible } = await query(
     sql`/* recheckCopyrightRetentionEligibility */`
-      .append(copyrightRetentionEligibleSql(options.now, options.cutoff))
+      .append(
+        copyrightRetentionEligibleSql(now, cutoff, { ...limits, caseMonths: retentionMonths }),
+      )
       .append(sql`SELECT id FROM eligible WHERE id = ${noticeId}`),
   )
-  if (stillEligible.length === 0) return 'ineligible'
-  const exclusiveObjects = await listCopyrightRetentionEvidenceKeys(noticeId, transaction)
-  const keys = exclusiveObjects.map(row => row.key)
-  await deleteCopyrightEvidenceObjectVersions(keys)
-  await transaction(
+  if (!eligible.length) return 'ineligible'
+  // Every case owns an authoritative key object, including cases without raw attachments.
+  // Refuse missing provider configuration before admitting or continuing private-data overwrite.
+  getCopyrightRetentionKeyBucket()
+  const work = await readCopyrightErasureWork(query, noticeId)
+  if (!work.erasure_started_at) {
+    await query(sql`/* admitCopyrightBoundedErasure */ UPDATE copyright_notice_minimal_purge_continuations
+      SET erasure_started_at = clock_timestamp(), erasure_legal_clock_at =
+        fn_project_copyright_minimal_record_legal_clock(${noticeId}, ${limits.complaintMonths})
+      WHERE copyright_notice_identity_id = ${noticeId} AND erasure_started_at IS NULL`)
+    await query.commit()
+    return 'progress'
+  }
+  if (work.erasure_stage_index !== locks.stage || work.erasure_table_index !== locks.table)
+    return 'progress'
+  await query(
     sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
   )
-  for (const spec of COPYRIGHT_RETENTION_ERASURE) {
-    // oxlint-disable-next-line no-await-in-loop -- one transaction connection runs its statements in order.
-    await transaction(eraseCopyrightRetentionTableSql(spec, noticeId))
-  }
-  await transaction(sql`/* deleteCopyrightRetentionStorageObjects */
-    DELETE FROM copyright_notice_storage_objects
-    WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)
-  await transaction(sql`/* insertCopyrightRetentionErasure */
-    INSERT INTO copyright_notice_retention_erasures (copyright_notice_id, retention_days, erased_object_count)
-    VALUES (${noticeId}, ${options.retentionDays}, ${keys.length})`)
-  await transaction.commit()
-  return 'erased'
+  if (work.erasure_stage_index === 0) {
+    await fenceCopyrightErasureIntakePage(
+      query,
+      noticeId,
+      work,
+      limits.proofPageSize,
+      locks.intakeIds,
+    )
+  } else if (work.erasure_stage_index === 1) {
+    await eraseCopyrightRawObjectPage(query, noticeId, work, limits.proofPageSize)
+  } else if (work.erasure_stage_index === 2) {
+    let tokenHasMore = false
+    if (
+      COPYRIGHT_RETENTION_ERASURE[work.erasure_table_index]?.table ===
+      'copyright_notice_email_thread_tokens'
+    ) {
+      const { rows: tokens } = await query<{ id: string }>(
+        copyrightErasureTokenPageSql(noticeId, limits.proofPageSize + 1),
+      )
+      if (tokens.slice(0, limits.proofPageSize).some(row => !locks.tokenIds.includes(row.id)))
+        return 'progress'
+      tokenHasMore = tokens.length > limits.proofPageSize
+    }
+    await redactCopyrightErasurePage(
+      query,
+      noticeId,
+      work,
+      limits.proofPageSize,
+      locks.tokenIds,
+      tokenHasMore,
+    )
+  } else if (work.erasure_stage_index === 3) {
+    await destroyCopyrightErasureKeyPage(query, noticeId, work)
+  } else if (work.erasure_stage_index === 4) {
+    if (!work.erasure_legal_clock_at) throw new Error('Copyright erasure legal clock is missing')
+    await query(sql`/* insertCopyrightRetentionErasure */ INSERT INTO copyright_notice_retention_erasures (
+      copyright_notice_id, retention_days, erased_object_count, legal_clock_at)
+      VALUES (${noticeId}, ${Math.ceil((now.getTime() - cutoff.getTime()) / 86_400_000)},
+        ${work.erased_object_count}, ${work.erasure_legal_clock_at})`)
+    await query.commit()
+    return 'erased'
+  } else throw new Error('Invalid copyright erasure stage')
+  await query.commit()
+  return 'progress'
 }

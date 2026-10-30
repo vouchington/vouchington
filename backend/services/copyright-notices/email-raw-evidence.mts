@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { S3ImagesClient } from '@modules/aws'
 import { createCodedError } from '@vouchington/sentry'
 import { COPYRIGHT_EMAIL_QUARANTINED } from '@modules/on-error/error-codes'
@@ -28,7 +28,15 @@ export async function loadCopyrightEmailRawEvidence(
   currentUser: PrivateUser,
 ): Promise<CopyrightEmailRawEvidence | null> {
   if (!currentUserCanReviewCopyrightNotices(currentUser)) return null
-  const record = await getRawEvidenceRecord(intakeId)
+  await using transaction = await beginTransaction()
+  if (!(await lockCopyrightRawEvidenceCase(transaction, intakeId))) return null
+  await transaction(sql`/* lockCopyrightRawEvidenceIntake */ SELECT id FROM copyright_notice_email_intakes
+    WHERE id = ${intakeId} FOR SHARE`)
+  if (!(await lockCopyrightRawEvidenceCase(transaction, intakeId))) return null
+  await transaction(sql`/* lockCopyrightRawEvidenceObject */ SELECT object.id FROM copyright_notice_storage_objects object
+    JOIN copyright_notice_email_intakes intake ON intake.raw_storage_object_id = object.id
+    WHERE intake.id = ${intakeId} FOR SHARE OF object`)
+  const record = await getRawEvidenceRecord(intakeId, transaction)
   // An erased intake no longer owns an object, so there is nothing to fetch.
   if (!record?.raw_storage_key) return null
   // The stored object is the sender's unmodified message. Refuse every non-pass verdict before
@@ -57,11 +65,25 @@ export async function loadCopyrightEmailRawEvidence(
   if (!sha256.equals(record.raw_sha256)) {
     throw new Error('Copyright email evidence digest does not match its immutable receipt')
   }
+  await transaction.commit()
   return { bytes, mimeType: record.raw_mime_type, sha256: sha256.toString('hex') }
 }
 
-async function getRawEvidenceRecord(intakeId: string): Promise<RawEvidenceRecord | null> {
-  await using transaction = await beginTransaction()
+/** A link can commit during the intake lock wait; invoke before and after that lock. */
+async function lockCopyrightRawEvidenceCase(
+  query: TransactionQuery,
+  intakeId: string,
+): Promise<boolean> {
+  const { rows } = await query<{ locked: boolean }>(sql`/* lockCopyrightRawEvidenceCase */
+    SELECT pg_try_advisory_xact_lock_shared(hashtextextended('copyright-erasure:' || link.copyright_notice_id::text, 0)) AS locked
+    FROM copyright_notice_email_intake_notice_links link WHERE link.copyright_notice_email_intake_receipt_id = ${intakeId}`)
+  return !rows[0] || rows[0].locked
+}
+
+async function getRawEvidenceRecord(
+  intakeId: string,
+  transaction: TransactionQuery,
+): Promise<RawEvidenceRecord | null> {
   const { rows } = await transaction<RawEvidenceRecord>(sql`/* getCopyrightEmailRawEvidence */
     SELECT object.storage_key AS raw_storage_key,
       (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type,
@@ -70,9 +92,11 @@ async function getRawEvidenceRecord(intakeId: string): Promise<RawEvidenceRecord
     JOIN copyright_notice_email_intake_receipts receipt
       ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
-    WHERE intake.id = ${intakeId}
+    WHERE intake.id = ${intakeId} AND object.erased_at IS NULL
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        JOIN copyright_notice_minimal_purge_continuations work ON work.copyright_notice_identity_id = link.copyright_notice_id
+        WHERE link.copyright_notice_email_intake_receipt_id = intake.id AND work.erasure_started_at IS NOT NULL)
   `)
-  await transaction.commit()
   return rows[0] ?? null
 }
 

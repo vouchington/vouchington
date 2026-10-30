@@ -22,11 +22,13 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyright_notice_urgent_filings__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_urgent_filings__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_urgent_filings_pkey`: `CREATE UNIQUE INDEX copyright_notice_urgent_filings_pkey ON public.copyright_notice_urgent_filings USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_urgent_filings FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_urgent_filings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_urgent_filings', 'public.copyright_notice_urgent_filings')`

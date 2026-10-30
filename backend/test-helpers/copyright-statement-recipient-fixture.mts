@@ -42,10 +42,10 @@ export async function createMultiOwnerStatementFixture() {
     receivedAt: new Date(),
     claimantUserId: claimant.id,
     claimantDisplayName: null,
-    claimantContactCiphertext: 'private',
+    claimantContact: 'private',
     workDescription: 'work',
     policyVersion: 'test',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'private' },
+    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', body: 'private' },
     targets,
   })
   const aggregate = (await getCopyrightNoticePrivateAggregate(notice.id))!

@@ -45,4 +45,8 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_dsa_statement_submission_attempts_immutable`: `CREATE TRIGGER trigger_copyright_dsa_statement_submission_attempts_immutable BEFORE DELETE OR UPDATE ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_dsa_statement_submission_attempts_immutable`: `CREATE TRIGGER trigger_copyright_dsa_statement_submission_attempts_immutable BEFORE DELETE OR UPDATE ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_register_copy_blocker_dsa_attempt`: `CREATE TRIGGER trigger_register_copy_blocker_dsa_attempt BEFORE INSERT ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('dsa_submission')`
+- `trigger_register_copyright_dsa_attempt_activity`: `CREATE TRIGGER trigger_register_copyright_dsa_attempt_activity AFTER INSERT ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_dsa_activity()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_dsa_statement_submission_attempts', 'public.copyright_dsa_statement_submission_attempts')`

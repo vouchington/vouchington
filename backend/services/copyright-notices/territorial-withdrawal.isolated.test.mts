@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { v7 as uuidv7 } from 'uuid'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   assertTestEuWithdrawalContinuity,
@@ -27,6 +28,7 @@ import {
   submitUkCopyrightRedress,
 } from './index.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
+import { prepareCopyrightEncryptionKey } from './encryption-keys.mts'
 import {
   concealJurisdictionPolicyApprovals,
   readCopyrightTerritorialContractShape,
@@ -151,6 +153,8 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       'Please reconsider the no-action decision.',
     )
     const euGuest = await prepareTestEuWithdrawalGuestCase()
+    await using euKey = await prepareCopyrightEncryptionKey('notice')
+    const euEncryption = { noticeId: uuidv7(), key: euKey }
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', administrator.id)
       await expect(
@@ -160,6 +164,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
           crypto.randomUUID(),
           euNoticeRequest(),
           transaction,
+          euEncryption,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
     })
@@ -245,6 +250,8 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     })
     expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.restrictions).toHaveLength(1)
 
+    await using ukKey = await prepareCopyrightEncryptionKey('notice')
+    const ukEncryption = { noticeId: uuidv7(), key: ukKey }
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', administrator.id)
       await expect(
@@ -254,6 +261,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          ukEncryption,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })

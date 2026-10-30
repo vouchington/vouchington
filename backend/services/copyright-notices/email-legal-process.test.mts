@@ -1,4 +1,3 @@
-import { decryptSecret } from '@modules/token-secrets'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -16,6 +15,7 @@ import {
   recordCopyrightEmailIntakeLegalProcess,
 } from './index.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 
 const HOUR_MS = 60 * 60 * 1000
 
@@ -42,7 +42,7 @@ describe('recordCopyrightEmailIntakeLegalProcess', () => {
       decision: 'legal_process',
       reviewed_by_id: moderator.id,
       recommendation_id: null,
-      promoted_copyright_notice_id: null,
+      promoted_copyright_notice_identity_id: null,
     })
     expect(review?.reviewed_at).toBeInstanceOf(Date)
     const receiptReview = await readCopyrightEmailReceiptReview(intake.id)
@@ -54,9 +54,10 @@ describe('recordCopyrightEmailIntakeLegalProcess', () => {
     })
     expect(receiptReview?.review_rationale_ciphertext).not.toContain(reason)
     expect(review?.rationale_ciphertext).not.toContain(reason)
+    await using secrets = await openCopyrightSecrets({ kind: 'receipt', id: intake.id })
     expect(
       JSON.parse(
-        decryptSecret(
+        secrets.decryptSecret(
           review?.rationale_ciphertext as string,
           copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
         ),
@@ -64,7 +65,7 @@ describe('recordCopyrightEmailIntakeLegalProcess', () => {
     ).toEqual({ rationale: reason, manual_fallback_reason: null })
     expect(
       JSON.parse(
-        decryptSecret(
+        secrets.decryptSecret(
           receiptReview?.review_rationale_ciphertext as string,
           copyrightEmailIntakePurpose(receiptReview!.amazon_ses_message_id),
         ),

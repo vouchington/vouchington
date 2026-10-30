@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from '../services/copyright-notices/encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 
@@ -10,6 +10,12 @@ export async function insertTestHistoricalTerritorialComplaint(input: {
   receivedAt: Date
 }): Promise<string> {
   await using transaction = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: input.noticeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   const { rows } = await transaction<{ id: string }>(sql`
     /* insertTestHistoricalTerritorialComplaint */
     INSERT INTO copyright_territorial_redress_requests (

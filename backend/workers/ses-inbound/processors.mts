@@ -8,7 +8,11 @@ import {
   type RetryableSesInboundJob,
 } from '@queues/ses-inbound/enqueues'
 import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
-import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
+import {
+  createCopyrightEmailIntake,
+  recordCopyrightEmailParse,
+  withCopyrightEmailIntakeIdentityLock,
+} from '@services/copyright-notices'
 import {
   assertSesInboundProcessJobData,
   assertSesInboundReconcileJobData,
@@ -56,6 +60,7 @@ export async function processSesInboundEmail(
   const deps = {
     copySesInboundObjectToCopyrightEvidence,
     createCopyrightEmailIntake,
+    withCopyrightEmailIntakeIdentityLock,
     deleteSesInboundObject,
     enqueueCopyrightEmailIntake,
     loadSesInboundObject,

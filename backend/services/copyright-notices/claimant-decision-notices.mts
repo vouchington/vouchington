@@ -1,3 +1,7 @@
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -31,15 +35,22 @@ export type CopyrightClaimantDecisionNoticeInput = {
 export async function createCopyrightClaimantDecisionNoticeInTransaction(
   input: CopyrightClaimantDecisionNoticeInput,
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<void> {
-  const delivery = await buildCopyrightClaimantDecisionDelivery(input, transaction)
-  if (delivery) await createCopyrightStatementDeliveriesInTransaction([delivery], transaction)
+  await using ownedScopes = ownerScopes
+    ? null
+    : await openCopyrightOwnerSecretBatch([{ kind: 'notice', id: input.noticeId }], transaction)
+  const scopes = ownerScopes ?? ownedScopes!
+  const delivery = await buildCopyrightClaimantDecisionDelivery(input, transaction, scopes)
+  if (delivery)
+    await createCopyrightStatementDeliveriesInTransaction([delivery], transaction, [], scopes)
 }
 
 /** The claimant's decision delivery for one event, or null when none is owed. */
 export async function buildCopyrightClaimantDecisionDelivery(
   input: CopyrightClaimantDecisionNoticeInput,
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightStatementDeliveryInput | null> {
   const { claimant_user_id } = await lockCopyrightNoticeForClaimantDecision(
     input.noticeId,
@@ -61,7 +72,7 @@ export async function buildCopyrightClaimantDecisionDelivery(
     input,
     claimant_user_id,
     facts,
-    await getCopyrightClaimantEmail(input.noticeId, transaction),
+    await getCopyrightClaimantEmail(input.noticeId, transaction, ownerScopes),
   )
 }
 

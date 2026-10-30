@@ -13,6 +13,8 @@ const staff = (routes: string[]) =>
 export const copyrightExclusions = [
   ...staff([
     'POST /copyright-email-intakes/:id/legal-process',
+    'POST /copyright-email-intakes/:id/preservation-holds',
+    'POST /copyright-email-intakes/:id/preservation-holds/:holdToken/releases',
     'POST /copyright-eu-notices/:id/acknowledgment-failures',
     'POST /copyright-eu-notices/:id/dispute-settlements',
     'POST /copyright-eu-notices/:id/dispute-settlements/:referralId/implementations',
@@ -24,6 +26,10 @@ export const copyrightExclusions = [
     'POST /copyright-uk-notices/:id/redress-requests',
     'POST /copyright-uk-notices/:id/redress-requests/:redressId/decisions',
     'POST /copyright-uk-notices/:id/reviews',
+    'POST /copyright-notices/:id/escalations/:escalationId/closures',
+    'POST /copyright-notices/:id/supervised-complaints/:complaintId/resolutions',
+    'POST /copyright-notices/:id/preservation-holds',
+    'POST /copyright-notices/:id/preservation-holds/:holdId/releases',
     'POST /copyright-notices/:id/guest-capabilities',
     'POST /copyright-notices/:id/guest-capabilities/:capabilityId/information-requests',
     'POST /copyright-notices/:id/restrictions/:restrictionId/lifts',

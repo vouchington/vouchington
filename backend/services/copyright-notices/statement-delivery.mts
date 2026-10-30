@@ -1,13 +1,17 @@
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import { DELETED_USER_ID } from '@services/users/constants'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { createDeterministicCopyrightCorrespondencesInTransaction } from './correspondence.mts'
-import {
-  createCopyrightDeliveryIntents,
-  type CopyrightDeliveryIntentInput,
-} from './delivery-intent-batch.mts'
-import type { CopyrightNoticeDeliveryKind } from './delivery-types.mts'
+import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
+import type {
+  CopyrightDeliveryIntentInput,
+  CopyrightNoticeDeliveryKind,
+} from './delivery-types.mts'
 import type { CopyrightCorrespondenceKind } from './types.mts'
 
 export type CopyrightStatementDeliveryInput = {
@@ -31,7 +35,9 @@ export async function createCopyrightStatementDeliveriesInTransaction(
   inputs: readonly CopyrightStatementDeliveryInput[],
   transaction: TransactionQuery,
   additionalIntents: readonly CopyrightDeliveryIntentInput[] = [],
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<void> {
+  ownerScopes?.assertTransaction(transaction)
   // A repeated key is one delivery: the first input wins, as a sequential replay would find it.
   const candidates = new Map<string, CopyrightStatementDeliveryInput>()
   for (const input of inputs) {
@@ -41,7 +47,7 @@ export async function createCopyrightStatementDeliveriesInTransaction(
     if (hasRecipient && !candidates.has(input.key)) candidates.set(input.key, input)
   }
   if (candidates.size === 0) {
-    await createCopyrightDeliveryIntents(additionalIntents, transaction)
+    await createCopyrightDeliveryIntents(additionalIntents, transaction, ownerScopes)
     return
   }
   const { rows: existing } = await transaction<{
@@ -71,6 +77,16 @@ export async function createCopyrightStatementDeliveriesInTransaction(
         : null
     return input.recipientRole !== 'claimant' && !activeUserId ? [] : [{ input, activeUserId }]
   })
+  await using ownedScopes = ownerScopes
+    ? null
+    : await openCopyrightOwnerSecretBatch(
+        [
+          ...deliveries.map(({ input }) => ({ kind: 'notice' as const, id: input.noticeId })),
+          ...additionalIntents.map(input => ({ kind: 'notice' as const, id: input.noticeId })),
+        ],
+        transaction,
+      )
+  const scopes = ownerScopes ?? ownedScopes!
   const correspondences = await createDeterministicCopyrightCorrespondencesInTransaction(
     deliveries.map(({ input }) => ({
       noticeId: input.noticeId,
@@ -79,6 +95,7 @@ export async function createCopyrightStatementDeliveriesInTransaction(
       bodyText: input.text,
     })),
     transaction,
+    scopes,
   )
   const intents: CopyrightDeliveryIntentInput[] = []
   for (const [index, { input, activeUserId }] of deliveries.entries()) {
@@ -100,7 +117,7 @@ export async function createCopyrightStatementDeliveriesInTransaction(
       recipientEmail: input.recipientEmail ?? undefined,
     })
   }
-  await createCopyrightDeliveryIntents([...intents, ...additionalIntents], transaction)
+  await createCopyrightDeliveryIntents([...intents, ...additionalIntents], transaction, scopes)
 }
 
 /** Returns the accounts that are still live. Others lose their in-app delivery. */

@@ -1,3 +1,4 @@
+import { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
 import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -21,6 +22,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   imposedById: string | null
 }): Promise<CopyrightRestrictionRecord> {
   await using transaction = await beginTransaction()
+  const accountLocks = await CopyrightNoticeAccountLocks.acquire(input.noticeId, transaction)
   const { rows: targetRows } = await transaction<{ placement_id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:findTarget */
     SELECT placement_id
@@ -155,6 +157,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
       input.noticeId,
       transaction,
+      accountLocks,
     )
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */

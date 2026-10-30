@@ -24,7 +24,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyright_claimant_suspension_reversals__restriction`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
+- `fk_copyright_claimant_suspension_reversals__restriction`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -34,3 +34,5 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_claimant_suspension_reversals_immutable`: `CREATE TRIGGER trigger_copyright_claimant_suspension_reversals_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_suspension_reversals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_claimant_suspension_reversals FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_claimant_suspension_reversals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_claimant_suspension_reversals', 'public.copyright_claimant_suspension_reversals')`

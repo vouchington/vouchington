@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_guest_capabilities_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_guest_capabilities_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `copyright_notice_guest_capabilities_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `fk_copyright_guest_capabilities__identity`: `FOREIGN KEY (id, copyright_notice_id) REFERENCES copyright_notice_guest_capability_identities(id, copyright_notice_id) ON DELETE RESTRICT`
 
@@ -50,3 +50,5 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_notice_guest_capabilities_updated_at`: `CREATE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
 - `trigger_record_copyright_guest_capability_activity`: `CREATE TRIGGER trigger_record_copyright_guest_capability_activity AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_guest_capability_activity()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_guest_capabilities', 'public.copyright_notice_guest_capabilities')`

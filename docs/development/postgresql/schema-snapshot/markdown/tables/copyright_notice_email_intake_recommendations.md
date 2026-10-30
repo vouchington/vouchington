@@ -44,3 +44,4 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 
 - `trigger_copyright_email_recommendation_active_receipt`: `CREATE TRIGGER trigger_copyright_email_recommendation_active_receipt BEFORE INSERT ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_email_recommendations_immutable`: `CREATE TRIGGER trigger_copyright_email_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_require_writable_copyright_intake`: `CREATE TRIGGER trigger_require_writable_copyright_intake BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_ensure_writable_copyright_intake()`

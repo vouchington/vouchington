@@ -36,10 +36,10 @@ describe('copyright email threading', () => {
       receivedAt: new Date(),
       claimantUserId: null,
       claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      claimantContact: `ciphertext-${crypto.randomUUID()}`,
       workDescription: 'Original photograph',
       policyVersion: 'test-v1',
-      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      initialSubmission: { kind: 'notice', sourceKind: 'email', body: 'ciphertext' },
       targets: [
         {
           placementId,
@@ -55,7 +55,7 @@ describe('copyright email threading', () => {
       submissionId: null,
       correspondenceKind: 'status_update',
       compositionKind: 'deterministic_template',
-      bodyCiphertext: `body-${crypto.randomUUID()}`,
+      bodyText: `body-${crypto.randomUUID()}`,
       draftedById: null,
     })
     const intent = await createCopyrightDeliveryIntent({

@@ -1,27 +1,29 @@
 import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { describe, expect, it } from 'vitest'
-import { decryptSecret } from '@modules/token-secrets'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { readTestCopyrightRestrictionAdministratorLift } from '@voucha/test-helpers/copyright-administrator-lifts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
+import {
+  advanceCopyrightRetentionWorkPages,
+  useCopyrightRetentionWorkClock,
+} from '@voucha/test-helpers/copyright-retention-work'
 import { sendAllCopyrightDeliveries } from '@voucha/test-helpers/services/copyright-notices/retention-deliveries'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
-import { processCopyrightActionIntent, sweepCopyrightEvidenceRetention } from './index.mts'
+import { processCopyrightActionIntent } from './index.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 
 describe('administrator copyright restriction lifts', () => {
-  const configureRetention = useCopyrightRetentionConfig()
+  const setRetentionClock = useCopyrightRetentionWorkClock()
   useFakeCopyrightEvidenceBucket()
   it('lifts a confirmed post restriction after its author is deleted and retains the audit decision', async () => {
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const [poster, moderator, administrator] = await Promise.all([
       createTestUserDirect(),
       createTestUserDirect({ extraRoles: ['moderator'] }),
@@ -71,12 +73,15 @@ describe('administrator copyright restriction lifts', () => {
       lifted_by_id: administrator.id,
     })
     expect(persisted?.rationale_ciphertext).not.toContain(rationale)
-    expect(
-      decryptSecret(
-        persisted!.rationale_ciphertext,
-        `copyright-restriction-lift:${restriction.id}`,
-      ),
-    ).toBe(rationale)
+    {
+      await using secrets = await openCopyrightSecrets({ kind: 'restriction', id: restriction.id })
+      expect(
+        secrets.decryptSecret(
+          persisted!.rationale_ciphertext,
+          `copyright-restriction-lift:${restriction.id}`,
+        ),
+      ).toBe(rationale)
+    }
     const after = await getCopyrightNoticePrivateAggregate(noticeId)
     expect(after?.lifecycleEvents).toEqual(
       expect.arrayContaining([
@@ -120,12 +125,8 @@ describe('administrator copyright restriction lifts', () => {
     ])
     await sendAllCopyrightDeliveries(noticeId)
     const retentionBefore = await readCopyrightRetentionColumns(noticeId)
-    await expect(
-      sweepCopyrightEvidenceRetention({
-        now: new Date('2028-01-01T00:00:00.000Z'),
-        noticeIds: [noticeId],
-      }),
-    ).resolves.toMatchObject({ erased: 1, failed: [] })
+    await setRetentionClock(new Date('2035-01-01T00:00:00.000Z'))
+    expect(await advanceCopyrightRetentionWorkPages(noticeId)).toContain('erased')
     const erasedLift = (
       await readCopyrightRetentionColumns(noticeId)
     ).copyright_restriction_administrator_lifts?.find(row => row.id === lift.id)

@@ -1,6 +1,6 @@
 /* oxlint-disable max-lines -- Copyright read projections keep redaction rules in one audited module. */
 import { beginTransaction, read } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecretsForCiphertexts } from './encryption-keys.mts'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
@@ -74,7 +74,7 @@ export async function getCopyrightStaffEmailIntake(
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = intake.id
+      ON link.copyright_notice_email_intake_receipt_id = intake.id
     WHERE intake.id = ${intakeId}
   `)
   await using transaction = await beginTransaction()
@@ -105,10 +105,19 @@ export async function getCopyrightStaffEmailIntake(
   await transaction.commit()
   const row = rows[0]
   if (!row) return null
+  await using secrets = await openCopyrightSecretsForCiphertexts({ kind: 'intake', id: row.id }, [
+    row.sender_email_ciphertext,
+    row.subject_ciphertext,
+    row.body_ciphertext,
+    row.error_ciphertext,
+    row.structured_output_ciphertext,
+  ])
   const purpose = copyrightEmailIntakePurpose(row.amazon_ses_message_id)
   const decryptLive = (ciphertext: string | null) => {
     const live = liveCopyrightCiphertext(ciphertext)
-    return live ? decryptSecret(live, purpose) : null
+    if (!live) return null
+    if (!secrets) throw new Error('Live copyright intake text has no owner key')
+    return secrets.decryptSecret(live, purpose)
   }
   const senderEmail = decryptLive(row.sender_email_ciphertext)
   const subject = decryptLive(row.subject_ciphertext)

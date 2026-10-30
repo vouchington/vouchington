@@ -48,7 +48,7 @@ export async function rejectEuReceiptForUsNotice(): Promise<void> {
   await write(sql`/* rejectEuReceiptForUsNotice */
     INSERT INTO copyright_territorial_notice_receipts (
       copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
-      requester_user_id, requester_identity_sha256, idempotency_key, request_sha256,
+      requester_user_id, requester_identity_hmac, idempotency_key, request_sha256,
       hosted_use_url, grounds_ciphertext, notifier_email_ciphertext, has_good_faith_statement
     ) VALUES (
       ${fixture.notice_id}, 'eu_dsa', ${fixture.approval_id}, ${fixture.user_id}, ${randomBytes(32)},

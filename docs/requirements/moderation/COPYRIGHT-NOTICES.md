@@ -159,50 +159,78 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 
 ## Evidence retention
 
+The [owner-approved lifecycle](https://github.com/vouchington/vouchington/issues/3642#issuecomment-6402857533)
+keeps US, EU, and UK case evidence, personal data, all territorial/DSA case rows, the minimal legal
+record, and local transparency-database submission copies for six years after the latest substantive
+activity. Evidence erasure and minimal-record deletion use that same clock. Technical erasure,
+report compilation, cursor updates, and replay reads do not start another case-retention period.
+
+The clock includes the final decision and complaint window, redress and out-of-court outcomes,
+escalation closure, content restoration, incident cessation, account purge, released holds, and the
+last transparency-database submission. Open review, restrictions, complaint windows, redress,
+out-of-court disputes, escalations, supervisory complaints, regulator/court requests, litigation
+threats, operative incidents, actual suspension reliance, and ungenerated period aggregates block
+erasure. A living account alone is not a blocker. Account suspension provenance identifies the
+specific case evidence still required; formal reinstatement does not release it before actual
+unsuspension or account purge.
+
+Completed account-level staff reviews and reinstatements are detailed history. Their monthly
+partitions expire after six years, with scoped preservation holds. A later independent review or
+incident does not extend an earlier history event. The account owner retains pending work and its
+current final result, explanation, retained decider, and decision time. Effective termination
+facts survive later independent reviews until explicit reinstatement. Current suspension authority
+and its incident provenance continue to block unauthorized unsuspension and case erasure after
+historical review deletion.
+
+Erasure commits an admission fence, then advances bounded provider and database pages. New case
+work fails closed after admission. Every page rechecks the legal proof before irreversible work;
+a newly placed account hold stops remaining work, but cannot restore earlier eligible deletions.
+Application ciphertext uses separate keys for case evidence, private intake data, and retained
+receipt explanations. Key ownership follows each record's retention lifetime, so retaining a final
+explanation cannot prolong access to an expired private intake. Authoritative wrapped copies live
+only in private object storage. Confirmed all-version deletion destroys the live key authority;
+a database restore recovers only handles and missing keys fail closed. This does not claim deletion
+of provider keys, memory copies, or every backup. Shared raw email objects retain their existing
+physical-erasure policy: every version is deleted only when no other valid intake/artifact owner
+requires the bytes. Case-owned copies are re-encrypted under the case key.
+
+Raw submission keys keep their existing short window. Retained replay identities use a dedicated,
+separately held HMAC key, no case backlink, and an outcome code. Their period is ten years after the
+later of case purge or last replay, with annual review. These are keyed identifiers, not anonymous
+records, and they never authorize the deleted case. Live-case exact replay and external authorization
+remain required. Aggregate EU transparency reports and their nonpersonal method snapshots are
+retained indefinitely. Required report coverage also protects monthly report-source retirement.
+Exact-period cumulative snapshots preserve counts after case deletion. Compilation refuses periods
+it can no longer safely reconstruct from their existing snapshot and remaining sources; stored
+snapshots remain available.
+The extended CSV remains an export of the live retained population.
+
+Legal-record tables refuse changes outside scoped erasure and eligible purge paths. New ciphertext,
+storage references, or lookup tokens must be classified in the owning erasure contract. See the
+[runbook](../../runbooks/copyright-notices.md#evidence-retention-deletion) for operational prerequisites.
 The daily operational cleanup separately expires screening and transport attempts, unused guest
 capabilities, and case-exclusive email threading after the case has no open work and its reply
 window has passed. A per-case intake-age high-water prevents old SES replays from rebuilding
 expired references while fresh email can still thread through an eligible case. An unlinked email
-intake loses its original object and private MIME parse and attachment data after inactivity; a
-minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
+intake loses its original object and private MIME parse and attachment data after its separate
+90-day inactivity window, subject to preservation. A minimal SES receipt remains to prevent
+re-admission on replay. Erasure intent is committed before
 the first object-version delete, and the receipt blocks new processing while bounded cleanup
 continues. Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
-intake. Final legal and staff outcomes live on their owning case, receipt, or redress request for
-that owner's lifetime, including the decision, retained decider identity, decision time, and final
-redress result. The six-year policy includes EU and UK lifecycle and staff-review history and
-records advisor review with owner approval.
+intake. Final legal and staff outcomes live on their owning case or redress request for
+that owner's lifetime. A standalone unlinked receipt's final review decision, reviewer, review time,
+explanation, and independent key expire together on the six-year copyright clock with preservation
+and delivery blockers. Receipt-scoped preservation remains actionable after the private intake is
+gone; release advances the applicable retention clock. Only the minimal SES replay identity remains
+after retirement, preserving exact replay without retaining final staff facts.
+The six-year policy includes EU and UK lifecycle and staff-review history and records advisor
+review with owner approval.
 Detailed lifecycle, assessment, recommendation, and review history expires through guarded monthly partition
 retirement after the owner-approved six-year window. Recommendation history also expires when
 its private intake was erased earlier; retained review provenance cannot keep the full agent
 output indefinitely. Retained identities preserve protocol
 references without authorizing deleted records. Form intakes are created with a required notice
 foreign key, so there is no unlinked form-intake state to sweep.
-
-GDPR and UK GDPR need a retention period and real deletion or anonymisation when it ends. The US
-side must keep records for the repeat-infringer policy (17 USC 512(i)), restoration (512(g)), the
-three-year limitation period (17 USC 507(b)), and litigation holds. A sweep reconciles the two. It
-is off by default and deletes nothing until the owner approves a period.
-
-- The private-evidence erasure sweep applies to `us_dmca` cases. EU and UK case outcomes remain
-  available while their owning rows exist; their detailed history follows the separate six-year
-  partition window.
-- A case is never swept while any blocker exists: open queue work, an open deadline, an active
-  restriction, an operative incident, a pending delivery, a live guest capability, an unresolved
-  hold, a pending thread-linked email reply, or a preservation hold on a party account. Resolving
-  the reply restarts the retention period from its receipt or review.
-- Personal data and statements are overwritten and evidence object versions are deleted. The
-  minimal record survives: the notice, targets, dates, states, hashes, restrictions, deadlines,
-  hold and review outcomes, and repeat-infringer incidents, because the 512(i) count must not change.
-- Erasure fails closed: the database is overwritten only after every object version is confirmed
-  gone, and any failure rolls the case back for the next run. Agent results completed after erasure
-  cannot recreate case evidence.
-- Legal-record tables refuse UPDATE and DELETE except through one allowlisted erasure function. A
-  new copyright column holding ciphertext, a storage key, or a lookup token must be added to the
-  erasure list or recorded as kept; a test fails until it is.
-
-Enabling it needs an owner-approved period, the evidence-bucket delete permission, and a check that
-the account data export of an erased case completes. See the
-[runbook](../../runbooks/copyright-notices.md#evidence-retention-deletion).
 
 ## Activation gates
 

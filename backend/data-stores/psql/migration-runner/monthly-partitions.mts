@@ -5,6 +5,7 @@ import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-p
 import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
+import { isCopyrightReportSource } from './copyright-history-report-probe.mts'
 import {
   getPartitionDropAgeRefusal,
   type PartitionDropCandidate,
@@ -154,7 +155,11 @@ export async function retireMonthlyPartitionCandidate(
     return { ...base, outcome: 'dropped' }
   } catch (err) {
     if (err instanceof Error && 'code' in err && err.code === '55P03') {
-      return { ...base, outcome: 'refused', reason: 'lock-contention' }
+      return {
+        ...base,
+        outcome: 'refused',
+        reason: isCopyrightReportSource(candidate.table) ? 'in-flight' : 'lock-contention',
+      }
     }
     onError(new Error(`Failed to retire partition ${candidate.partition}`, { cause: err }))
     return { ...base, outcome: 'refused', reason: 'retirement-error' }

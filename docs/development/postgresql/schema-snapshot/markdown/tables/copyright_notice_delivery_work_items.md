@@ -76,11 +76,11 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_delivery_work_items_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_delivery_work_items_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `copyright_notice_delivery_work_items_recipient_user_id_fkey`: `FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyri_notice_delive_intents__correspondence_message__notice`: `FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT`
+- `fk_copyri_notice_delive_intents__correspondence_message__notice`: `FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE CASCADE`
 - `fk_copyright_notice_delivery_work_items__email_intake_receipt`: `FOREIGN KEY (copyright_notice_email_intake_receipt_id) REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_delivery_work_items__submission__notice`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT`
+- `fk_copyright_notice_delivery_work_items__submission__notice`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -90,8 +90,11 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_delivery_work_items__available`: `CREATE INDEX idx_copyright_notice_delivery_work_items__available ON public.copyright_notice_delivery_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_delivery_intent_states))`
 - `idx_copyright_notice_delivery_work_items__correspondence`: `CREATE INDEX idx_copyright_notice_delivery_work_items__correspondence ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_correspondence_message_id, copyright_notice_id) WHERE (copyright_notice_correspondence_message_id IS NOT NULL)`
 - `idx_copyright_notice_delivery_work_items__expired`: `CREATE INDEX idx_copyright_notice_delivery_work_items__expired ON public.copyright_notice_delivery_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
+- `idx_copyright_notice_delivery_work_items__legal_clock`: `CREATE INDEX idx_copyright_notice_delivery_work_items__legal_clock ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, GREATEST(uuid_extract_timestamp(id), sent_at, bounced_at) DESC)`
 - `idx_copyright_notice_delivery_work_items__notice`: `CREATE INDEX idx_copyright_notice_delivery_work_items__notice ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, id)`
+- `idx_copyright_notice_delivery_work_items__notice_id`: `CREATE INDEX idx_copyright_notice_delivery_work_items__notice_id ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, id) WHERE (copyright_notice_id IS NOT NULL)`
 - `idx_copyright_notice_delivery_work_items__notice_updated`: `CREATE INDEX idx_copyright_notice_delivery_work_items__notice_updated ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, updated_at)`
+- `idx_copyright_notice_delivery_work_items__purge_pending`: `CREATE INDEX idx_copyright_notice_delivery_work_items__purge_pending ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))`
 - `idx_copyright_notice_delivery_work_items__recipient_user`: `CREATE INDEX idx_copyright_notice_delivery_work_items__recipient_user ON public.copyright_notice_delivery_work_items USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL)`
 - `idx_copyright_notice_delivery_work_items__recoverable`: `CREATE INDEX idx_copyright_notice_delivery_work_items__recoverable ON public.copyright_notice_delivery_work_items USING btree (channel, id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))`
 - `idx_copyright_notice_delivery_work_items__submission`: `CREATE INDEX idx_copyright_notice_delivery_work_items__submission ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_submission_id, copyright_notice_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
@@ -105,3 +108,7 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_delivery_work_attempt`: `CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_delivery_attempt()`
 - `trigger_copyright_email_delivery_active_receipt`: `CREATE TRIGGER trigger_copyright_email_delivery_active_receipt BEFORE INSERT ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copy_blocker_delivery_work`: `CREATE TRIGGER trigger_register_copy_blocker_delivery_work BEFORE INSERT OR UPDATE OF recipient_role, channel, delivery_kind ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_delivery_work_items', 'public.copyright_notice_delivery_work_items')`
+- `trigger_update_copyright_receipt_delivery_activity`: `CREATE TRIGGER trigger_update_copyright_receipt_delivery_activity AFTER INSERT OR UPDATE OF sent_at, bounced_at ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_receipt_delivery_activity()`

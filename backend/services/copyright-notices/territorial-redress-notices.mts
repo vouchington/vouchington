@@ -1,3 +1,4 @@
+import type { CopyrightSecretBatch } from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getCopyrightClaimantEmail } from './claimant-email.mts'
@@ -14,6 +15,7 @@ type TerritorialRedressNoticeInput = {
 export async function buildTerritorialRedressDecisionDelivery(
   input: TerritorialRedressNoticeInput,
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightStatementDeliveryInput | null> {
   const { rows } = await transaction<{
     jurisdiction: 'eu_dsa' | 'uk'
@@ -48,7 +50,7 @@ export async function buildTerritorialRedressDecisionDelivery(
     recipientUserId: request.submitted_by_id,
     recipientRole: notifier ? 'claimant' : 'poster',
     recipientEmail: notifier
-      ? await getCopyrightClaimantEmail(input.noticeId, transaction)
+      ? await getCopyrightClaimantEmail(input.noticeId, transaction, ownerScopes)
       : undefined,
     deliveryKind: 'redress_decision_notice',
     correspondenceKind: 'decision_notice',

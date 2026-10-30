@@ -11,8 +11,8 @@ import {
   readTestCorrespondenceBodyCiphertext,
   readTestInformationRequestIntents,
 } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
-import { decryptSecret } from '@modules/token-secrets'
 import { getCopyrightEmailCorrespondence } from './correspondence.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { getPendingCopyrightStaffCases } from './read-models-staff-case.mts'
 
@@ -58,7 +58,10 @@ describe('copyright staff information request delivery', () => {
     expect(output()).not.toContain(statement)
     const stored = await readTestCorrespondenceBodyCiphertext(correspondence.id)
     expect(stored).not.toContain(statement)
-    expect(decryptSecret(stored, `copyright-correspondence:${correspondence.id}`)).toBe(statement)
+    await using secrets = await openCopyrightSecrets({ kind: 'notice', id: noticeId })
+    expect(secrets.decryptSecret(stored, `copyright-correspondence:${correspondence.id}`)).toBe(
+      statement,
+    )
   })
 
   it('rejects a request whose notice recorded no claimant email instead of silently skipping it', async () => {

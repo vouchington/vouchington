@@ -137,7 +137,7 @@ describe('copyright email intake request contracts', () => {
 
       await staff.post(url).send(body).expect(201)
       await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-        { decision: 'approved', promoted_copyright_notice_id: expect.any(String) },
+        { decision: 'approved', promoted_copyright_notice_identity_id: expect.any(String) },
       ])
     })
 
@@ -203,7 +203,7 @@ describe('copyright email intake request contracts', () => {
         .send({ ...decision, response_kind: 'rejected', response_message: 'Not a notice.' })
         .expect(200)
       await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-        { decision: 'rejected', promoted_copyright_notice_id: null },
+        { decision: 'rejected', promoted_copyright_notice_identity_id: null },
       ])
     })
 

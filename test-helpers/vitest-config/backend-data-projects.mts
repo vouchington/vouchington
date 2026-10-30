@@ -53,6 +53,7 @@ const backendMocksProject = {
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
       './test-helpers/vitest.setup.glide-mq-workers.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',
+      './backend/test-helpers/vitest.setup.s3-offline.mts',
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
       './backend/test-helpers/vitest.setup.request-query-profile.mts',
     ],

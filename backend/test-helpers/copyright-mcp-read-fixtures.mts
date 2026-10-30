@@ -1,6 +1,6 @@
 import { appendTestCopyrightFormScreening } from './copyright-form-screenings.mts'
-import { write } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { beginTransaction, write } from '@data-stores/psql'
+import { openCopyrightSecrets } from '../services/copyright-notices/encryption-keys.mts'
 import sql from 'sql-template-strings'
 import { createCopyrightFormIntake } from '../services/copyright-notices/form-intakes.mts'
 
@@ -18,16 +18,23 @@ async function appendStatement(
   )
   const id = rows[0]?.id
   if (!id) throw new Error('Could not allocate copyright submission id')
-  await write(
+  await using transaction = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: noticeId },
+    transaction,
+    'write',
+  )
+  await transaction(
     sql`/* appendStatement:insertSubmission */
     INSERT INTO copyright_notice_submissions (
       id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext
     ) VALUES (
       ${id}, ${noticeId}, ${kind}, CURRENT_TIMESTAMP, 'staff',
-      ${encryptSecret(JSON.stringify(statement), copyrightSubmissionPurpose(id))}
+      ${secrets.encryptSecret(JSON.stringify(statement), copyrightSubmissionPurpose(id))}
     )
   `,
   )
+  await transaction.commit()
 }
 
 /** Real pending form case with private contact text in both statutory statements. */

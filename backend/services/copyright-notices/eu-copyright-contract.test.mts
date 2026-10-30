@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { v7 as uuidv7 } from 'uuid'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -15,12 +16,10 @@ import {
 } from './eu-acknowledgment.mts'
 import { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
+import { prepareCopyrightEncryptionKey } from './encryption-keys.mts'
 import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
-import {
-  compileEuCopyrightTransparencyReport,
-  readEuCopyrightTransparencyFigures,
-} from './eu-reporting.mts'
+import { readEuCopyrightTransparencyFigures } from './eu-reporting.mts'
 import { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 import {
   recordCopyrightJurisdictionPolicyApproval,
@@ -60,6 +59,12 @@ describe('EU copyright notice contracts', () => {
   useDsaTransparencyReports()
   it('fails closed without an approved policy and keeps the US aggregate on us_dmca', async () => {
     const claimant = await createTestUser()
+    await using unapprovedKey = await prepareCopyrightEncryptionKey('notice')
+    await using approvedKey = await prepareCopyrightEncryptionKey('notice')
+    await using withdrawnKey = await prepareCopyrightEncryptionKey('notice')
+    const unapprovedEncryption = { noticeId: uuidv7(), key: unapprovedKey }
+    const approvedEncryption = { noticeId: uuidv7(), key: approvedKey }
+    const withdrawnEncryption = { noticeId: uuidv7(), key: withdrawnKey }
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', claimant.id)
       await expect(
@@ -69,6 +74,7 @@ describe('EU copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          unapprovedEncryption,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
       const approvalId = await insertJurisdictionPolicyApproval(
@@ -83,8 +89,9 @@ describe('EU copyright notice contracts', () => {
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
+        approvedEncryption,
       )
-      expect(opened.route_destination).toBe('staff_queue')
+      expect(opened?.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
@@ -93,6 +100,7 @@ describe('EU copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          withdrawnEncryption,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
     })
@@ -102,11 +110,11 @@ describe('EU copyright notice contracts', () => {
         receivedAt: new Date(),
         claimantUserId: claimant.id,
         claimantDisplayName: null,
-        claimantContactCiphertext: 'ciphertext',
+        claimantContact: 'ciphertext',
         workDescription: 'work',
         policyVersion: 'eu-test',
         targets: [],
-        initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'body' },
+        initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', body: 'body' },
       }),
     ).rejects.toMatchObject({ status: 422, message: 'Only US DMCA notices use this aggregate' })
     await expect(
@@ -200,11 +208,6 @@ describe('EU copyright notice contracts', () => {
     const { claimant, staff, stranger } = await euActors()
     const periodStart = new Date(Date.now() - 60_000)
     const periodEnd = new Date(Date.now() + 60_000)
-    const foreign = await receiveEuCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      noticeRequest(),
-    )
     const receipt = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
@@ -250,10 +253,11 @@ describe('EU copyright notice contracts', () => {
       explanation: 'Complaint filed with the authority',
     })
     expect(complaint.escalation_id).toEqual(expect.any(String))
-    const report = await compileEuCopyrightTransparencyReport(staff, periodStart, periodEnd, [
+    // Admission behavior owns this case. The historical reporting suite separately exercises
+    // durable global compilation; concurrent notices must not enter this case's exact counts.
+    const report = await readEuCopyrightTransparencyFigures(staff, periodStart, periodEnd, [
       receipt.notice_id,
     ])
-    expect(foreign.notice_id).not.toBe(receipt.notice_id)
     expect(report).toMatchObject({
       receipt_count: 1,
       statement_of_reasons_count: 1,

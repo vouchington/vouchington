@@ -1,8 +1,13 @@
+import type { CopyrightSecretBatch } from './encryption-key-batch.mts'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret } from '@modules/token-secrets'
+import type { ScopedCopyrightSecrets } from './encryption-keys.mts'
 import sql from 'sql-template-strings'
-import { decryptCopyrightText, liveCopyrightCiphertext } from './erased-ciphertext.mts'
+import {
+  decryptCopyrightText,
+  decryptCopyrightJson,
+  liveCopyrightCiphertext,
+} from './erased-ciphertext.mts'
 import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
@@ -73,7 +78,9 @@ type FormReviewRow = {
 export async function selectStaffFormReview(
   noticeIds: readonly string[],
   query: TransactionQuery,
+  secretsBatch: CopyrightSecretBatch,
 ): Promise<Map<string, NonNullable<CopyrightStaffCase['form_review']>>> {
+  secretsBatch.assertTransaction(query)
   const { rows } = await query<FormReviewRow>(sql`/* getPendingCopyrightStaffCase:formReview */
     SELECT DISTINCT ON (intake.copyright_notice_id) intake.copyright_notice_id,
       intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
@@ -85,10 +92,22 @@ export async function selectStaffFormReview(
     WHERE intake.copyright_notice_id = ANY(${noticeIds}::uuid[])
     ORDER BY intake.copyright_notice_id, intake.id
   `)
-  return new Map(rows.map(row => [row.copyright_notice_id, toFormReview(row)]))
+
+  return new Map(
+    rows.map(row => {
+      const secrets = secretsBatch.forCiphertexts({ kind: 'notice', id: row.copyright_notice_id }, [
+        row.rationale_ciphertext,
+        row.guidance_ciphertext,
+      ])
+      return [row.copyright_notice_id, toFormReview(row, secrets)] as const
+    }),
+  )
 }
 
-function toFormReview(row: FormReviewRow): NonNullable<CopyrightStaffCase['form_review']> {
+function toFormReview(
+  row: FormReviewRow,
+  secrets: ScopedCopyrightSecrets | null,
+): NonNullable<CopyrightStaffCase['form_review']> {
   const purpose = `copyright-form-screening:${row.intake_id}`
   const guidance = liveCopyrightCiphertext(row.guidance_ciphertext)
   return {
@@ -99,10 +118,12 @@ function toFormReview(row: FormReviewRow): NonNullable<CopyrightStaffCase['form_
           state: row.state,
           recommendation: row.recommendation,
           rationale: row.rationale_ciphertext
-            ? decryptCopyrightText(row.rationale_ciphertext, purpose)
+            ? decryptCopyrightText(row.rationale_ciphertext, purpose, secrets)
             : null,
           guidance: guidance
-            ? parseCopyrightFormGuidance(JSON.parse(decryptSecret(guidance, purpose)))
+            ? parseCopyrightFormGuidance(
+                JSON.parse(decryptCopyrightJson(guidance, purpose, secrets)),
+              )
             : null,
         }
       : null,

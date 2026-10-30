@@ -23,7 +23,7 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_notice_guest_capability_iden_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_guest_capability_iden_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -32,4 +32,7 @@ _none_
 - `idx_cpyrght_ntc_gst_cpblty_idntts__notice`: `CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice ON public.copyright_notice_guest_capability_identities USING btree (copyright_notice_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_guest_capability_identities FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_current_owner_deletion`: `CREATE TRIGGER trigger_reject_copyright_current_owner_deletion BEFORE DELETE ON public.copyright_notice_guest_capability_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_guest_capability_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_guest_capability_identities', 'public.copyright_notice_guest_capability_identities')`

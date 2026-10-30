@@ -73,7 +73,7 @@ export async function searchCopyrightStaffEmailIntakes(
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = intake.id
+      ON link.copyright_notice_email_intake_receipt_id = intake.id
     LEFT JOIN copyright_notice_delivery_work_items reply
       ON reply.copyright_notice_email_intake_receipt_id = intake.id
       AND reply.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information') AND reply.state IN ('failed', 'bounced')

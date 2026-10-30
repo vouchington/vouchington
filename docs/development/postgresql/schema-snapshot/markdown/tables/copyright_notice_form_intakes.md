@@ -6,49 +6,54 @@ Idempotent structured web-form copyright admissions. Anonymous identities are on
 
 Not partitioned — growth: unbounded.
 
-| Column                                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                        |
-| ------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------- |
-| `id`                                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                |
-| `copyright_notice_id`                             | `uuid`                     | no       |                              |          |           |           | Legal case created atomically for the structured form.                                         |
-| `copyright_notice_submission_id`                  | `uuid`                     | no       |                              |          |           |           | Initial immutable notice submission created for the form.                                      |
-| `requester_user_id`                               | `uuid`                     | yes      |                              |          |           |           | Signed-in claimant, or null for a guest form.                                                  |
-| `requester_identity_sha256`                       | `bytea`                    | no       |                              |          |           |           | Digest of a user ID or purpose-separated HMAC of a guest IP; the raw guest IP is not retained. |
-| `idempotency_key`                                 | `uuid`                     | no       |                              |          |           |           | Caller-generated UUID preventing duplicate case admission.                                     |
-| `request_sha256`                                  | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key.                                 |
-| `has_good_faith_belief`                           | `boolean`                  | no       |                              |          |           |           | Claimant affirmation of a good-faith belief that the use is unauthorized.                      |
-| `has_accuracy_authority_under_penalty_of_perjury` | `boolean`                  | no       |                              |          |           |           | Claimant affirmation of accuracy and authority under penalty of perjury.                       |
-| `electronic_signature_ciphertext`                 | `text`                     | no       |                              |          |           |           | Encrypted claimant electronic signature.                                                       |
-| `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                |
+| Column                                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
+| ------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
+| `id`                                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                     |
+| `copyright_notice_id`                             | `uuid`                     | no       |                              |          |           |           | Legal case created atomically for the structured form.                              |
+| `copyright_notice_submission_id`                  | `uuid`                     | no       |                              |          |           |           | Initial immutable notice submission created for the form.                           |
+| `requester_user_id`                               | `uuid`                     | yes      |                              |          |           |           | Signed-in claimant, or null for a guest form.                                       |
+| `requester_identity_hmac`                         | `bytea`                    | no       |                              |          |           |           | Dedicated keyed requester fingerprint; raw requester identity is not retained here. |
+| `idempotency_key`                                 | `uuid`                     | no       |                              |          |           |           | Caller-generated UUID preventing duplicate case admission.                          |
+| `request_sha256`                                  | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key.                      |
+| `has_good_faith_belief`                           | `boolean`                  | no       |                              |          |           |           | Claimant affirmation of a good-faith belief that the use is unauthorized.           |
+| `has_accuracy_authority_under_penalty_of_perjury` | `boolean`                  | no       |                              |          |           |           | Claimant affirmation of accuracy and authority under penalty of perjury.            |
+| `electronic_signature_ciphertext`                 | `text`                     | no       |                              |          |           |           | Encrypted claimant electronic signature.                                            |
+| `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `copyright_notice_form_intakes_copyright_notice_id_key`: `UNIQUE (copyright_notice_id)`
-- `uq_cop_not_for_inta__requester_identity_sha256__idempotency_key`: `UNIQUE (requester_identity_sha256, idempotency_key)`
+- `uq_cop_not_for_inta__requester_identity_hmac__idempotency_key`: `UNIQUE (requester_identity_hmac, idempotency_key)`
+- `uq_copyright_form_intakes__screening_scope`: `UNIQUE (id, copyright_notice_submission_id, copyright_notice_id)`
 - `uq_copyright_notice_form_intakes__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
 - `chk_copyri_notice_form_intakes__electronic_signature_ciphertext`: `CHECK (((char_length(electronic_signature_ciphertext) >= 1) AND (char_length(electronic_signature_ciphertext) <= 1048576)))`
 - `copyright_notice_form_intakes_request_sha256_check`: `CHECK ((octet_length(request_sha256) = 32))`
-- `copyright_notice_form_intakes_requester_identity_sha256_check`: `CHECK ((octet_length(requester_identity_sha256) = 32))`
+- `copyright_notice_form_intakes_requester_identity_hmac_check`: `CHECK ((octet_length(requester_identity_hmac) = 32))`
 
 **Foreign keys:**
 
-- `copyright_notice_form_intakes_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_notice_form_intakes_requester_user_id_fkey`: `FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_notice_form_intakes__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_intakes__submission`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_form_intakes_copyright_notice_id_key`: `CREATE UNIQUE INDEX copyright_notice_form_intakes_copyright_notice_id_key ON public.copyright_notice_form_intakes USING btree (copyright_notice_id)`
 - `copyright_notice_form_intakes_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_intakes_pkey ON public.copyright_notice_form_intakes USING btree (id)`
 - `idx_copyright_notice_form_intakes__requester`: `CREATE INDEX idx_copyright_notice_form_intakes__requester ON public.copyright_notice_form_intakes USING btree (requester_user_id, id DESC) WHERE (requester_user_id IS NOT NULL)`
-- `uq_cop_not_for_inta__requester_identity_sha256__idempotency_key`: `CREATE UNIQUE INDEX uq_cop_not_for_inta__requester_identity_sha256__idempotency_key ON public.copyright_notice_form_intakes USING btree (requester_identity_sha256, idempotency_key)`
+- `idx_copyright_notice_form_intakes__requester_notice`: `CREATE INDEX idx_copyright_notice_form_intakes__requester_notice ON public.copyright_notice_form_intakes USING btree (requester_user_id, copyright_notice_id) WHERE (requester_user_id IS NOT NULL)`
+- `uq_cop_not_for_inta__requester_identity_hmac__idempotency_key`: `CREATE UNIQUE INDEX uq_cop_not_for_inta__requester_identity_hmac__idempotency_key ON public.copyright_notice_form_intakes USING btree (requester_identity_hmac, idempotency_key)`
+- `uq_copyright_form_intakes__screening_scope`: `CREATE UNIQUE INDEX uq_copyright_form_intakes__screening_scope ON public.copyright_notice_form_intakes USING btree (id, copyright_notice_submission_id, copyright_notice_id)`
 - `uq_copyright_notice_form_intakes__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_form_intakes__submission_id ON public.copyright_notice_form_intakes USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 
 - `trigger_copyright_form_intakes_immutable`: `CREATE TRIGGER trigger_copyright_form_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id')`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copy_blocker_form_intake`: `CREATE TRIGGER trigger_register_copy_blocker_form_intake BEFORE INSERT ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_form_intakes', 'public.copyright_notice_form_intakes')`

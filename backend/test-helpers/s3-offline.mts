@@ -1,3 +1,4 @@
+import { handleCopyrightKeyObjectCommand } from './copyright-key-object-store.mts'
 import type { S3Client } from '@aws-sdk/client-s3'
 
 /**
@@ -19,7 +20,9 @@ class OfflineS3Error extends Error {
   readonly $metadata = { httpStatusCode: 403 }
 }
 
-function offlineS3Send(command: { constructor: { name: string } }): Promise<never> {
+function offlineS3Send(command: { constructor: { name: string } }): Promise<unknown> {
+  const keyObject = handleCopyrightKeyObjectCommand(command)
+  if (keyObject) return keyObject
   return Promise.reject(
     new OfflineS3Error(
       `${command.constructor.name} was not sent: database-backed tests never reach AWS; spy on S3Client.prototype.send for the answer this test needs`,

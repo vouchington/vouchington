@@ -1,3 +1,4 @@
+import type { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
@@ -6,7 +7,8 @@ import type { CopyrightActionDeliveryDependencies } from './action-delivery-depe
 import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
+  lockCopyrightActionOwners,
+  assertCopyrightActionOwner,
   hasCopyrightActionBlocker,
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
@@ -24,13 +26,19 @@ export async function finalizeCopyrightActionAfterDelivery(
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   await lockCopyrightActionClaim(intentId, transaction)
-  const placementId = await getCopyrightActionPlacementKey(intentId, leaseToken, transaction)
-  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
+  const owners = await lockCopyrightActionOwners(intentId, leaseToken, transaction)
+  if (!owners) {
+    await transaction.commit()
+    return false
+  }
+  const { owner, accountLocks } = owners
+  await lockCopyrightActionPlacement(owner.placement_id, transaction)
   const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
     return false
   }
+  assertCopyrightActionOwner(legal, owner)
   await transaction(sql`/* finalizeCopyrightActionAfterDelivery:noticeLock */
     SELECT id FROM copyright_notices WHERE id = ${legal.copyright_notice_id} FOR UPDATE
   `)
@@ -99,6 +107,7 @@ export async function finalizeCopyrightActionAfterDelivery(
     legal,
     transaction,
     dependencies,
+    accountLocks,
   })
   await transaction.commit()
   return true
@@ -111,6 +120,7 @@ async function completeCopyrightActionAndInvalidate(input: {
   legal: Parameters<typeof hasCopyrightActionBlocker>[0]
   transaction: Awaited<ReturnType<typeof beginTransaction>>
   dependencies: CopyrightActionDeliveryDependencies
+  accountLocks: CopyrightNoticeAccountLocks | null
 }): Promise<void> {
   await runSequentially([
     () =>
@@ -121,7 +131,12 @@ async function completeCopyrightActionAndInvalidate(input: {
         completedAt: input.now,
         query: input.transaction,
       }),
-    () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.transaction),
+    () =>
+      syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(
+        input.legal,
+        input.transaction,
+        input.accountLocks,
+      ),
     () =>
       insertCopyrightActionLifecycleEvent(
         input.legal,

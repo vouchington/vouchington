@@ -604,6 +604,25 @@ configure_token_storage_secrets() {
             echo -e "${GREEN}✓ Using development VOUCHA_STORED_SECRET_ENCRYPTION_KEYS${NC}"
         fi
     fi
+    if [ -n "${VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS:-}" ]; then
+        echo -e "${GREEN}✓ Using existing VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS from shared environment${NC}"
+    else
+        local existing_replay_hmac_keys default_replay_hmac_keys
+        existing_replay_hmac_keys=$(read_existing_env_var VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS)
+
+        if [ -n "$existing_replay_hmac_keys" ]; then
+            VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS=$existing_replay_hmac_keys
+            echo -e "${GREEN}✓ Reusing existing local VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS${NC}"
+        else
+            default_replay_hmac_keys=$(read_env_example_var VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS)
+            if [ -z "$default_replay_hmac_keys" ]; then
+                echo -e "${RED}Error: VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS is missing from .env.example.${NC}"
+                exit 1
+            fi
+            VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS=$default_replay_hmac_keys
+            echo -e "${GREEN}✓ Using development VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS${NC}"
+        fi
+    fi
     echo ""
 }
 
@@ -867,6 +886,7 @@ EOF
         append_env_var_value CF_WORKER_SECRET "$CF_WORKER_SECRET" || return 1
         env_file_export_line API_KEY_CHECKSUM_SECRET "$API_KEY_CHECKSUM_SECRET" || return 1
         env_file_export_line VOUCHA_OTP_TOKEN_HASH_SECRET "$VOUCHA_OTP_TOKEN_HASH_SECRET" || return 1
+        env_file_export_line VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS "$VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS" || return 1
         env_file_export_line VOUCHA_STORED_SECRET_ENCRYPTION_KEYS "$VOUCHA_STORED_SECRET_ENCRYPTION_KEYS" || return 1
         append_s3_credentials_to_env || return 1
         append_env_var_value WEB_PUSH_PUBLIC_KEY "$FINAL_WEB_PUSH_PUBLIC_KEY" || return 1

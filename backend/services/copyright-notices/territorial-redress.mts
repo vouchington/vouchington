@@ -1,5 +1,6 @@
+import { CopyrightNoticeAccountLocks } from './repeat-infringer-locks.mts'
+import { openCopyrightOwnerSecretBatch } from './encryption-key-batch.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { getImagePlacementKey } from '@services/images/placements'
 import assert from 'http-assert'
@@ -51,6 +52,7 @@ export async function recordTerritorialCopyrightRedressDecision(
   const disposition = assertStaffDisposition(input.disposition)
   const rationale = assertBoundedText(input.rationale, 50_000, 'rationale is required')
   await using transaction = await beginTransaction()
+  const accountLocks = await CopyrightNoticeAccountLocks.acquire(noticeId, transaction)
   const { rows: requests } = await transaction<{ id: string; decision_is_live: boolean }>(
     selectTerritorialRedressRequest(jurisdiction, redressId, noticeId),
   )
@@ -82,11 +84,14 @@ export async function recordTerritorialCopyrightRedressDecision(
     selectExistingTerritorialRedressDecision(redressId),
   )
   assert(!existing[0], 409, labels.redressDecisionExists)
-  const decisionId = uuidv7()
-  const rationaleCiphertext = encryptSecret(
-    rationale,
-    `${labels.redressDecisionPurpose}:${redressId}`,
+  await using ownerScopes = await openCopyrightOwnerSecretBatch(
+    [{ kind: 'notice', id: noticeId }],
+    transaction,
   )
+  const decisionId = uuidv7()
+  const rationaleCiphertext = ownerScopes
+    .get({ kind: 'notice', id: noticeId })
+    .encryptSecret(rationale, `${labels.redressDecisionPurpose}:${redressId}`)
   await transaction(sql`/* recordTerritorialCopyrightRedressDecision:identity */
     INSERT INTO copyright_territorial_redress_decision_identities
       (id, copyright_territorial_redress_request_id)
@@ -132,19 +137,22 @@ export async function recordTerritorialCopyrightRedressDecision(
     staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
       noticeId,
       transaction,
+      accountLocks,
     )
     const claimantNotice = await buildCopyrightClaimantDecisionDelivery(
       { noticeId, event: 'reversed' },
       transaction,
+      ownerScopes,
     )
     if (claimantNotice) deliveries.push(claimantNotice)
   }
   const redressNotice = await buildTerritorialRedressDecisionDelivery(
     { noticeId, redressId, disposition, rationale },
     transaction,
+    ownerScopes,
   )
   if (redressNotice) deliveries.push(redressNotice)
-  await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction)
+  await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction, [], ownerScopes)
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(restoreIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)

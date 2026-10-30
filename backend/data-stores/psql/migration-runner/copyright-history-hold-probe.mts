@@ -21,7 +21,7 @@ export function copyrightHistoryHoldProbe(table: string, partitionName: string):
     copyright_notice_lifecycle_changes: [
       `JOIN ${partition} candidate_row ON candidate_row.copyright_notice_id = preserved.notice_id`,
       `JOIN copyright_notice_email_intake_notice_links link ON link.copyright_notice_id = preserved.notice_id
-       JOIN ${partition} candidate_row ON candidate_row.copyright_notice_email_intake_id = link.copyright_notice_email_intake_id`,
+       JOIN ${partition} candidate_row ON candidate_row.copyright_notice_email_intake_id = link.copyright_notice_email_intake_receipt_id`,
     ],
     copyright_territorial_decisions: [
       `JOIN ${partition} candidate_row ON candidate_row.copyright_notice_id = preserved.notice_id`,
@@ -36,11 +36,11 @@ export function copyrightHistoryHoldProbe(table: string, partitionName: string):
     ],
     copyright_notice_email_intake_recommendations: [
       `JOIN copyright_notice_email_intake_notice_links link ON link.copyright_notice_id = preserved.notice_id
-       JOIN ${partition} candidate_row ON candidate_row.copyright_notice_email_intake_receipt_id = link.copyright_notice_email_intake_id`,
+       JOIN ${partition} candidate_row ON candidate_row.copyright_notice_email_intake_receipt_id = link.copyright_notice_email_intake_receipt_id`,
     ],
     copyright_notice_email_intake_reviews: [
       `JOIN copyright_notice_email_intake_notice_links link ON link.copyright_notice_id = preserved.notice_id
-       JOIN ${partition} candidate_row ON candidate_row.copyright_notice_email_intake_receipt_id = link.copyright_notice_email_intake_id`,
+       JOIN ${partition} candidate_row ON candidate_row.copyright_notice_email_intake_receipt_id = link.copyright_notice_email_intake_receipt_id`,
       `JOIN ${partition} candidate_row ON candidate_row.promoted_copyright_notice_id = preserved.notice_id`,
     ],
     copyright_notice_email_correspondence_reviews: [

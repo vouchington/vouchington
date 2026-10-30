@@ -8,12 +8,21 @@ export async function markStripeEventCompleted(
 ): Promise<void> {
   if (leaseToken === null) throw new Error('Stripe event has no processing work')
   await write(sql`/* markStripeEventCompleted */
-    UPDATE stripe_event_processing_work_items
-    SET processed_at = CASE WHEN ${status} = 'processed' THEN clock_timestamp() ELSE NULL END,
-        ignored_at = CASE WHEN ${status} = 'ignored' THEN clock_timestamp() ELSE NULL END,
-        leased_at = NULL, lease_expires_at = NULL, last_error_at = NULL, last_error_message = NULL
-    WHERE stripe_event_id = ${id} AND lease_token = ${leaseToken}
-      AND lease_expires_at > clock_timestamp() AND processed_at IS NULL AND ignored_at IS NULL
+    WITH completed AS (
+      UPDATE stripe_event_processing_work_items
+      SET processed_at = CASE WHEN ${status} = 'processed' THEN clock_timestamp() ELSE NULL END,
+          ignored_at = CASE WHEN ${status} = 'ignored' THEN clock_timestamp() ELSE NULL END,
+          leased_at = NULL, lease_expires_at = NULL,
+          last_error_at = NULL, last_error_message = NULL
+      WHERE stripe_event_id = ${id} AND lease_token = ${leaseToken}
+        AND lease_expires_at > clock_timestamp() AND processed_at IS NULL AND ignored_at IS NULL
+      RETURNING stripe_event_id
+    )
+    INSERT INTO stripe_event_retained_identities (stripe_event_id)
+    SELECT event.stripe_event_id FROM completed
+    JOIN stripe_events event ON event.id = completed.stripe_event_id
+    ORDER BY event.stripe_event_id
+    ON CONFLICT (stripe_event_id) DO NOTHING
   `)
 }
 

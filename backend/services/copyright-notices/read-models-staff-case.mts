@@ -1,3 +1,5 @@
+import { openCopyrightCiphertextSecretBatch } from './encryption-key-batch.mts'
+import { getCopyrightRetentionWindows } from './config.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { readClaimantMisuseSummaries } from './claimant-misuse-summary.mts'
@@ -47,7 +49,18 @@ export async function getPendingCopyrightStaffCases(
   noticeIds: readonly string[],
   query: TransactionQuery,
 ): Promise<Map<string, CopyrightStaffCase>> {
-  if (noticeIds.length === 0) return new Map()
+  const boundedNoticeIds = [...new Set(noticeIds)].toSorted()
+  if (boundedNoticeIds.length === 0) return new Map()
+  if (boundedNoticeIds.length > getCopyrightRetentionWindows().encryptionOwnerBatchSize)
+    throw new RangeError('Copyright staff case page exceeds its owner-key cap')
+
+  // Erasure owns the notice row until its marker and owner-key destruction commit. Lock the
+  // bounded candidate set first, then take a fresh READ COMMITTED statement snapshot below.
+  await query(sql`/* lockCopyrightStaffCaseNoticeOwners */
+    SELECT notice.id FROM copyright_notices notice
+    WHERE notice.id = ANY(${boundedNoticeIds}::uuid[])
+    ORDER BY notice.id FOR SHARE OF notice
+  `)
   const { rows } = await query<NoticeRow>(sql`/* getPendingCopyrightStaffCase:notice */
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.claimant_user_id,
       notice.claimant_display_name, notice.claimant_contact_ciphertext, notice.work_description,
@@ -57,10 +70,18 @@ export async function getPendingCopyrightStaffCases(
     LEFT JOIN copyright_notice_form_intakes form ON form.copyright_notice_id = notice.id
     LEFT JOIN copyright_notice_email_intake_notice_links email_link
       ON email_link.copyright_notice_id = notice.id AND email_link.link_kind = 'initial'
-    LEFT JOIN copyright_notice_email_intakes email ON email.id = email_link.copyright_notice_email_intake_id
+    LEFT JOIN copyright_notice_email_intake_receipts email ON email.id = email_link.copyright_notice_email_intake_receipt_id
     LEFT JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
-    WHERE notice.id = ANY(${noticeIds}::uuid[])
+    WHERE notice.id = ANY(${boundedNoticeIds}::uuid[])
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_retention_erasures erased
+        WHERE erased.copyright_notice_id = notice.id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+        WHERE work.copyright_notice_identity_id = notice.id AND work.erasure_started_at IS NOT NULL
+      )
   `)
   // Only notices with a readable claimant contact load their sections, so a dropped notice never
   // decrypts its submissions.
@@ -73,6 +94,13 @@ export async function getPendingCopyrightStaffCases(
   const claimantIds = [...new Set(listed.flatMap(({ notice }) => notice.claimant_user_id ?? []))]
   const territorialIds = listed.flatMap(({ notice }) =>
     notice.jurisdiction === 'us_dmca' ? [] : [notice.id],
+  )
+  await using secretsBatch = await openCopyrightCiphertextSecretBatch(
+    listed.map(item => ({
+      owner: { kind: 'notice' as const, id: item.notice.id },
+      ciphertexts: [item.notice.claimant_contact_ciphertext],
+    })),
+    query,
   )
   const [
     targets,
@@ -91,20 +119,24 @@ export async function getPendingCopyrightStaffCases(
   ] = await Promise.all([
     selectStaffTargets(ids, query),
     selectStaffEvidence(ids, query),
-    selectStaffFormReview(ids, query),
+    selectStaffFormReview(ids, query, secretsBatch),
     selectStaffRestrictions(ids, query),
-    selectStaffAppeals(ids, query),
-    selectStaffCounterNotices(ids, query),
-    selectStaffLegalHolds(ids, query),
+    selectStaffAppeals(ids, query, secretsBatch),
+    selectStaffCounterNotices(ids, query, secretsBatch),
+    selectStaffLegalHolds(ids, query, secretsBatch),
     selectStaffActionIntents(ids, query),
     selectStaffDeliveryIntents(ids, query),
     selectStaffEmailCorrespondence(ids, query),
     selectStaffStaydownMatches(ids, query),
     readClaimantMisuseSummaries(claimantIds, query),
-    selectStaffTerritorialCases(territorialIds, query),
+    selectStaffTerritorialCases(territorialIds, query, secretsBatch),
   ])
+
   return new Map(
     listed.map(({ notice, contactPurpose }): [string, CopyrightStaffCase] => {
+      const secrets = secretsBatch.forCiphertexts({ kind: 'notice', id: notice.id }, [
+        notice.claimant_contact_ciphertext,
+      ])
       const territorialCase = territorial.get(notice.id)
       return [
         notice.id,
@@ -114,7 +146,11 @@ export async function getPendingCopyrightStaffCases(
           jurisdiction: notice.jurisdiction,
           claimant: {
             display_name: notice.claimant_display_name,
-            contact: decryptCopyrightText(notice.claimant_contact_ciphertext, contactPurpose),
+            contact: decryptCopyrightText(
+              notice.claimant_contact_ciphertext,
+              contactPurpose,
+              secrets,
+            ),
             misuse: notice.claimant_user_id ? misuse.get(notice.claimant_user_id)! : null,
           },
           work_description: notice.work_description,

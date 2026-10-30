@@ -1,4 +1,5 @@
-import { decryptSecret, encryptSecret, hashToken } from '@modules/token-secrets'
+import { hashToken } from '@modules/token-secrets'
+import type { ScopedCopyrightSecrets } from './encryption-keys.mts'
 
 export const COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE = 'copyright-email-thread-reference'
 
@@ -24,7 +25,9 @@ export function copyrightEmailReplyHeaders(input: {
 export function encryptCopyrightEmailReplyHeaders(
   headers: CopyrightEmailReplyHeaders,
   purpose: string,
+  secrets: ScopedCopyrightSecrets,
 ): string | null {
+  const { encryptSecret } = secrets
   if (headers.inReplyTo.length === 0 && headers.references.length === 0) return null
   return encryptSecret(JSON.stringify(headers), purpose)
 }
@@ -32,7 +35,9 @@ export function encryptCopyrightEmailReplyHeaders(
 export function decryptCopyrightEmailReplyHeaders(
   ciphertext: string | null,
   purpose: string,
+  secrets: ScopedCopyrightSecrets,
 ): CopyrightEmailReplyHeaders {
+  const { decryptSecret } = secrets
   if (!ciphertext) return { inReplyTo: [], references: [] }
   const parsed = JSON.parse(decryptSecret(ciphertext, purpose)) as {
     inReplyTo?: unknown

@@ -44,7 +44,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       link_kind: string
     }>(sql`/* linkCopyrightEmailIntakeToNotice:existingThread */
       SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}
     `)
     if (retained[0])
       return (
@@ -87,7 +87,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
         link_kind: string
       }>(sql`/* linkCopyrightEmailIntakeToNotice:existingInitial */
         SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
-        WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+        WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`)
       return (
         retained[0]?.copyright_notice_id === input.noticeId &&
         retained[0]?.link_kind === input.linkKind
@@ -99,12 +99,12 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     link_kind: string
   }>(sql`/* linkCopyrightEmailIntakeToNotice */
     INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind,
+      copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind,
       matched_token_id, correspondence_action
     ) VALUES (
       ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
       ${matchedTokenId}, ${input.linkKind === 'thread' ? 'pending' : null}
-    ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+    ) ON CONFLICT (copyright_notice_email_intake_receipt_id) DO NOTHING
     RETURNING copyright_notice_id, link_kind
   `)
   const retained =
@@ -113,7 +113,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       await transaction<{ copyright_notice_id: string; link_kind: string }>(sql`
       /* linkCopyrightEmailIntakeToNotice:retained */
       SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
-      WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}
     `)
     ).rows[0]
   const linked =

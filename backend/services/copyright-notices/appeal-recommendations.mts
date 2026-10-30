@@ -1,4 +1,4 @@
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { isUUID } from '@modules/utils'
 import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -43,7 +43,9 @@ async function getCopyrightAppealForRecommendation(
     GROUP BY submission.id, notice.id
   `)
   const row = rows[0]
-  if (!row) return null
+  if (!row || row.body_ciphertext === COPYRIGHT_ERASED_CIPHERTEXT) return null
+  await using secrets = await openCopyrightSecrets({ kind: 'notice', id: row.copyright_notice_id })
+  const { decryptSecret } = secrets
   return {
     appeal: parseStoredCopyrightAppeal(
       decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(submissionId)),
@@ -88,12 +90,19 @@ async function appendCopyrightAppealRecommendation(input: {
   recommendation: 'confirm' | 'modify' | 'reverse' | 'uncertain'
   rationale: string
 }): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- The parent notice lifetime lock must precede key resolution and the encrypted child write.
   await using transaction = await beginTransaction()
   await transaction(sql`/* appendCopyrightAppealRecommendation:lockNotice */
     SELECT notice.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId}
-    FOR KEY SHARE OF notice`)
+    FOR UPDATE OF notice`)
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'submission', id: input.submissionId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = secrets
   await transaction(sql`/* appendCopyrightAppealRecommendation */
     INSERT INTO copyright_notice_appeal_recommendations (copyright_notice_submission_id, input_sha256, prompt_version, model, recommendation, rationale_ciphertext)
     SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model}, ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-appeal:${input.submissionId}`)}

@@ -15,6 +15,7 @@ import {
   wasDataRequestMadeBySubject,
 } from '@services/account-data-requests'
 import { getPrivateUserByAny } from '@services/users/get'
+import { streamCopyrightExports } from '@services/copyright-notices/stream-copyright'
 import { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
 import { DATA_EXPORT_EXPIRY_DAYS } from '@queues/account-lifecycle/config'
 import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
@@ -31,7 +32,7 @@ type ExportRequestDependencies = {
   publishTerminalStatus: typeof publishTerminalStatus
   uploadExportToS3: typeof uploadExportToS3
   wasDataRequestMadeBySubject: typeof wasDataRequestMadeBySubject
-  writeExportFiles: typeof writeExportFiles
+  writeExportFiles: (userId: string, exportDir: string) => Promise<void>
   zipDir: typeof zipDir
 }
 
@@ -54,7 +55,7 @@ export async function processExportRequest(
     publishTerminalStatus,
     uploadExportToS3,
     wasDataRequestMadeBySubject,
-    writeExportFiles,
+    writeExportFiles: writeOwnedExportFiles,
     zipDir,
     ...dependencies,
   }
@@ -140,6 +141,11 @@ export async function processExportRequest(
       await rm(tmpDir, { recursive: true, force: true })
     }
   }
+}
+
+/** The worker composes account data and copyright-owned exports before provider upload. */
+function writeOwnedExportFiles(userId: string, exportDir: string): Promise<void> {
+  return writeExportFiles(userId, exportDir, streamCopyrightExports)
 }
 
 export {

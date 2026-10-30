@@ -1,6 +1,8 @@
+import { lockCopyrightIntakeCaseLifetimes } from './encryption-intake-lifetimes.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
+import { copyrightCorrespondencePurpose } from './correspondence.mts'
 /* oxlint-disable max-lines -- Matched-email decisions share one immutable human-review boundary. */
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -77,13 +79,14 @@ export async function admitCopyrightEmailCorrespondence(input: {
     'Review rationale is required',
   )
   await using transaction = await beginTransaction()
+  await lockCopyrightIntakeCaseLifetimes(transaction, [input.intakeId])
   // The immutable thread link identifies the parent before any intake lock. Agent
   // completion and retention take that same parent-to-child order.
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
     /* admitCopyrightEmailCorrespondence:lockNotice */
     SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
-    WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
+    WHERE link.copyright_notice_email_intake_receipt_id = ${input.intakeId} AND link.link_kind = 'thread'
     FOR UPDATE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
@@ -98,7 +101,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
     JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
+      ON link.copyright_notice_email_intake_receipt_id = intake.id AND link.link_kind = 'thread'
     JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
     WHERE intake.id = ${input.intakeId}
@@ -115,7 +118,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
       correspondence_message_id AS correspondence_id,
       correspondence_action AS action
     FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+    WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}
       AND correspondence_action IN ('admitted', 'rejected')
   `)
   const prior = admittedRows[0]
@@ -136,6 +139,21 @@ export async function admitCopyrightEmailCorrespondence(input: {
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
+  await using caseSecrets = await openCopyrightSecrets(
+    { kind: 'notice', id: pending.notice_id },
+    transaction,
+    'write',
+  )
+  await using intakeSecrets = await openCopyrightSecrets(
+    { kind: 'intake', id: input.intakeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret } = caseSecrets
+  const bodyText = intakeSecrets.decryptSecret(
+    pending.body_ciphertext,
+    copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
+  )
   const submissionId = uuidv7()
   const { rows: submissions } = await transaction<{
     id: string
@@ -155,8 +173,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
         noticeId: pending.notice_id,
         submissionId: submission.id,
         receivedAt: pending.received_at,
-        sesMessageId: pending.amazon_ses_message_id,
-        bodyCiphertext: pending.body_ciphertext,
+        bodyText,
       },
       transaction,
     )
@@ -182,23 +199,24 @@ export async function admitCopyrightEmailCorrespondence(input: {
       copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size
     ) VALUES (${submission.id}, ${pending.raw_storage_object_id}, ${pending.raw_sha256}, ${pending.raw_media_type_id}, ${pending.raw_byte_size})
   `)
+  const correspondenceId = uuidv7()
   const { rows: correspondenceRows } = await transaction<{
     id: string
   }>(sql`/* admitCopyrightEmailCorrespondence:correspondence */
     INSERT INTO copyright_notice_correspondence_messages (
-      copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
+      id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
       direction, composition_kind, correspondence_kind, body_ciphertext
-    ) VALUES (${pending.notice_id}, ${submission.id}, ${input.intakeId}, 'inbound', 'inbound', 'inbound_message', ${pending.body_ciphertext})
+    ) VALUES (${correspondenceId}, ${pending.notice_id}, ${submission.id}, ${input.intakeId}, 'inbound', 'inbound', 'inbound_message', ${caseSecrets.encryptSecret(bodyText, copyrightCorrespondencePurpose(correspondenceId))})
     RETURNING id
   `)
   const correspondence = correspondenceRows[0]
   assert(correspondence, 500, 'Failed to record copyright email correspondence')
-  const rationaleCiphertext = encryptSecret(
+  const rationaleCiphertext = caseSecrets.encryptSecret(
     input.rationale,
     copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
   )
   const manualFallbackCiphertext = input.manualFallbackReason
-    ? encryptSecret(
+    ? caseSecrets.encryptSecret(
         input.manualFallbackReason,
         copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
       )
@@ -258,8 +276,8 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     /* rejectCopyrightEmailCorrespondence:lockNotice */
     SELECT notice.id FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
-    WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR KEY SHARE OF notice
+    WHERE link.copyright_notice_email_intake_receipt_id = ${input.intakeId} AND link.link_kind = 'thread'
+    FOR UPDATE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } = await transaction<{
@@ -269,7 +287,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     SELECT link.copyright_notice_id AS notice_id, intake.amazon_ses_message_id
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
+      ON link.copyright_notice_email_intake_receipt_id = intake.id AND link.link_kind = 'thread'
     WHERE intake.id = ${input.intakeId}
     FOR UPDATE OF intake
   `)
@@ -281,7 +299,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     action: 'admitted' | 'rejected'
   }>(sql`/* rejectCopyrightEmailCorrespondence:existing */
     SELECT correspondence_action AS action FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+    WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}
       AND correspondence_action IN ('admitted', 'rejected')
   `)
   if (existingRows[0]) {
@@ -293,27 +311,27 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     await transaction.commit()
     return { noticeId: pending.notice_id, isDuplicate: true }
   }
-  const rationaleCiphertext = encryptSecret(
+  await using caseSecrets = await openCopyrightSecrets(
+    { kind: 'notice', id: pending.notice_id },
+    transaction,
+    'write',
+  )
+  const rationaleCiphertext = caseSecrets.encryptSecret(
     input.rationale,
     copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
   )
   const manualFallbackCiphertext = input.manualFallbackReason
-    ? encryptSecret(
+    ? caseSecrets.encryptSecret(
         input.manualFallbackReason,
         copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
       )
     : null
-  await recordRejectedCopyrightCorrespondenceReview(transaction, {
+  await recordRejectedCopyrightCorrespondenceDecision(transaction, {
     input,
     noticeId: pending.notice_id,
     rationaleCiphertext,
     manualFallbackCiphertext,
   })
-  await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_email_intake_id)
-    VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id}, ${input.intakeId})
-  `)
   await transaction.commit()
   return { noticeId: pending.notice_id, isDuplicate: false }
 }
@@ -420,7 +438,7 @@ async function recordAdmittedCopyrightCorrespondenceReview(
       correspondence_reviewed_by_id = ${input.currentUser.id},
       correspondence_rationale_ciphertext = ${rationaleCiphertext},
       correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+    WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`)
 }
 
 /** A rejected link also owns its final review result after finite review history expires. */
@@ -451,5 +469,19 @@ async function recordRejectedCopyrightCorrespondenceReview(
       correspondence_reviewed_by_id = ${input.currentUser.id},
       correspondence_rationale_ciphertext = ${rationaleCiphertext},
       correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+    WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`)
+}
+
+/** The final link/history result and its case activity event commit together. */
+async function recordRejectedCopyrightCorrespondenceDecision(
+  transaction: TransactionQuery,
+  result: Parameters<typeof recordRejectedCopyrightCorrespondenceReview>[1],
+): Promise<void> {
+  await recordRejectedCopyrightCorrespondenceReview(transaction, result)
+  await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+      copyright_notice_email_intake_id)
+    VALUES (${result.noticeId}, 'email_correspondence_rejected',
+      ${result.input.currentUser.id}, ${result.input.intakeId})
+  `)
 }

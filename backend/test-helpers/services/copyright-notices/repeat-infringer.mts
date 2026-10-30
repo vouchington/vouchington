@@ -32,13 +32,13 @@ export async function confirmTestRepeatInfringerNotice(
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
     claimantUserId: null,
     claimantDisplayName: 'Claimant',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'signed_in_form',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+      body: `notice-${crypto.randomUUID()}`,
     },
     targets: [
       {

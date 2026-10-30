@@ -9,7 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                                             | Type                                                   | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                  |
 | -------------------------------------------------- | ------------------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------- |
 | `id`                                               | `uuid`                                                 | no       | `uuidv7()`                   |          |           |           |                                                                                                          |
-| `copyright_notice_email_intake_id`                 | `uuid`                                                 | no       |                              |          |           |           | Inbound email associated with the case.                                                                  |
+| `copyright_notice_email_intake_receipt_id`         | `uuid`                                                 | no       |                              |          |           |           | Inbound email associated with the case.                                                                  |
 | `copyright_notice_id`                              | `uuid`                                                 | no       |                              |          |           |           | Copyright case associated with the inbound email.                                                        |
 | `link_kind`                                        | `copyright_notice_email_intake_link_kinds`             | no       |                              |          |           |           | Whether the email opened the case or matched its thread.                                                 |
 | `correspondence_action`                            | `copyright_notice_email_correspondence_review_actions` | yes      |                              |          |           |           | Current pending, admitted, or rejected result for a matched email; null for an initial case email.       |
@@ -29,8 +29,8 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notice_email_intake__correspondence_submission_id_key`: `UNIQUE (correspondence_submission_id)`
 - `copyright_notice_email_intake_not_correspondence_message_id_key`: `UNIQUE (correspondence_message_id)`
-- `uq_copyr_notice_email_intake_notice_links__notice_id__intake_id`: `UNIQUE (copyright_notice_id, copyright_notice_email_intake_id)`
-- `uq_copyright_notice_email_intake_notice_links__intake_id`: `UNIQUE (copyright_notice_email_intake_id)`
+- `uq_copyr_notice_email_intake_notice_links__notice_id__intake_id`: `UNIQUE (copyright_notice_id, copyright_notice_email_intake_receipt_id)`
+- `uq_copyright_notice_email_intake_notice_links__intake_id`: `UNIQUE (copyright_notice_email_intake_receipt_id)`
 
 **Check constraints:**
 
@@ -42,9 +42,9 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_intake_correspondence_reviewed_by_i_fkey`: `FOREIGN KEY (correspondence_reviewed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intake_correspondence_submission_id_fkey`: `FOREIGN KEY (correspondence_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intake_no_correspondence_message_id_fkey`: `FOREIGN KEY (correspondence_message_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_intake_notice_links__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_notice_links__intake_receipt`: `FOREIGN KEY (copyright_notice_email_intake_receipt_id) REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_notice_links__matched_token`: `FOREIGN KEY (matched_token_id) REFERENCES copyright_notice_email_thread_tokens(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_intake_notice_links__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_notice_links__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -54,8 +54,9 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_email_intake_notice_links__matched_token`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token ON public.copyright_notice_email_intake_notice_links USING btree (matched_token_id) WHERE (matched_token_id IS NOT NULL)`
 - `idx_copyright_notice_email_intake_notice_links__notice`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__notice ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_email_intake_notice_links__reviewed_by`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__reviewed_by ON public.copyright_notice_email_intake_notice_links USING btree (correspondence_reviewed_by_id) WHERE (correspondence_reviewed_by_id IS NOT NULL)`
-- `uq_copyr_notice_email_intake_notice_links__notice_id__intake_id`: `CREATE UNIQUE INDEX uq_copyr_notice_email_intake_notice_links__notice_id__intake_id ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, copyright_notice_email_intake_id)`
-- `uq_copyright_notice_email_intake_notice_links__intake_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_notice_links__intake_id ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_id)`
+- `idx_cpyrght_ntc_eml_intk_ntc_lnks__case_intake`: `CREATE INDEX idx_cpyrght_ntc_eml_intk_ntc_lnks__case_intake ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, copyright_notice_email_intake_receipt_id)`
+- `uq_copyr_notice_email_intake_notice_links__notice_id__intake_id`: `CREATE UNIQUE INDEX uq_copyr_notice_email_intake_notice_links__notice_id__intake_id ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, copyright_notice_email_intake_receipt_id)`
+- `uq_copyright_notice_email_intake_notice_links__intake_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_notice_links__intake_id ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_receipt_id)`
 
 **Triggers:**
 
@@ -63,3 +64,7 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_email_thread_links_current_decision`: `CREATE TRIGGER trigger_copyright_email_thread_links_current_decision BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_current_decision()`
 - `trigger_copyright_thread_activity_on_link`: `CREATE TRIGGER trigger_copyright_thread_activity_on_link AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copyright_email_link_activity`: `CREATE TRIGGER trigger_register_copyright_email_link_activity AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_email_case_activity()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_email_intake_notice_links', 'public.copyright_notice_email_intake_notice_links')`
+- `trigger_require_writable_copyright_intake`: `CREATE TRIGGER trigger_require_writable_copyright_intake BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_writable_copyright_intake()`

@@ -72,13 +72,11 @@ describe('copyright staff queue urgency', () => {
       return intake.copyright_notice_id
     }
     // The plain intake has waited longest, so only urgency can put the deadline cases ahead of it.
-    // Requester locks and notice IDs are independent; urgency timestamps own the expected order.
-    const [olderIntake, due, missed, filingCase] = await Promise.all([
-      createGuestNotice(new Date(decisionNow.getTime() - 30 * day)),
-      createGuestNotice(decisionNow),
-      createGuestNotice(decisionNow),
-      createGuestNotice(decisionNow),
-    ])
+    // Intakes share one target post, so they run sequentially instead of contending for its publication lock.
+    const olderIntake = await createGuestNotice(new Date(decisionNow.getTime() - 30 * day))
+    const due = await createGuestNotice(decisionNow)
+    const missed = await createGuestNotice(decisionNow)
+    const filingCase = await createGuestNotice(decisionNow)
     const capability = await issueCopyrightGuestCapability({
       issuedAt: decisionNow,
       currentUser: moderator,
@@ -132,8 +130,8 @@ describe('copyright staff queue urgency', () => {
           new Date(decisionNow.getTime() - 31 * day),
         )
         await assertInterleaving(due, interleavingControl, filingCase, false)
-        const first = await read(ownedIds, false, 100)
-        expect(first.copyright_notices.map(item => item.id)).toEqual(ownedIds)
+        // Single-case pages only: a 100-case page would FOR SHARE-lock other tests' notices inside
+        // this repeatable-read snapshot, and their concurrent updates abort it with 40001.
         const walked = await read(ownedIds, false, 1)
         const owned = walked.copyright_notices
         expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)

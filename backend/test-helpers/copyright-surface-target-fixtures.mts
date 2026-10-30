@@ -162,13 +162,13 @@ export async function createTestCopyrightRestrictionForImage(fixture: Fixture, a
     receivedAt: at,
     claimantUserId: null,
     claimantDisplayName: 'Test claimant',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `Test work ${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'staff',
-      bodyCiphertext: `body-${crypto.randomUUID()}`,
+      body: `body-${crypto.randomUUID()}`,
     },
     targets: [resolved],
   })

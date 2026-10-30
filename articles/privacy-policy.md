@@ -203,20 +203,33 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Security logs** — retained for up to 12 months
 - **Identity verification** — after verification ends or an account is deleted, we retain only a keyed hash of the identity document and verification lifecycle dates indefinitely to prevent the same document from verifying another account. The retained record has no account, name, image, document details, or provider payload.
 - **Vote integrity flags** — describe the voted item, not voters, and are removed with that item; network and device details are removed after 180 days
-- **Copyright case records and evidence** — we keep US copyright notices, appeals, counter-notices,
-  correspondence, evidence, and case decisions for three years after the case's last activity. This
-  follows the general limit for civil copyright claims (17 U.S.C. §507(b)). The three years do not
-  start while any of these is open:
-  - the case, a staff review, or a statutory deadline, such as a counter-notice restoration window;
-  - a restriction that is still in force;
-  - a legal hold, court action, or Copyright Claims Board proceeding that is unresolved; or
-  - an incident that still counts under our repeat-infringer policy under 17 U.S.C. §512(i).
+- **Copyright case records and evidence** — we keep US, EU, and UK copyright notices, appeals,
+  counter-notices, local transparency-database submission copies, correspondence, evidence, decisions, and the minimal
+  legal record for six years after the case's last substantive activity. The period starts only
+  after reviews and statutory deadlines are complete, restrictions are lifted, legal holds and
+  proceedings are resolved, and repeat-infringer obligations no longer require the case. New case
+  activity restarts the period. This includes EU supervisory complaints and submissions made under
+  local EU law. After the period ends, we erase case evidence, personal information, and case-linked
+  submission copies. Deleting your account does not immediately delete copyright case records. We do
+  not publish private evidence or correspondence.
 
-  After that, we delete the evidence and the personal data in the case, such as names, contact
-  details, signatures, and message text. We keep a minimal record for the repeat-infringer policy:
-  that we received the notice, our decisions, the dates, and the repeat-infringer facts. Deleting
-  your account does not delete copyright case records. We do not publish private evidence or
-  correspondence.
+  Detailed staff-review history expires after six years. Current account and case decisions,
+  their explanations, and effective termination authority remain on their owning record while
+  that authority is in effect. Current suspension enforcement and the case evidence it still
+  relies on follow their separate legal lifecycle.
+
+  Unlinked private email-intake data expires after 90 days of inactivity, subject to preservation.
+  Final email-review decisions, reviewer details, review times, and explanations follow the
+  six-year copyright clock and preservation rules. We erase those facts and the explanation key
+  when that period ends. A minimal receipt prevents the same email from being processed again.
+
+  We retain a keyed HMAC replay-prevention value and its outcome code for ten years after the later
+  of case erasure and the last replay. This value has no case backlink and uses a key separate from
+  the keys that protect case data. We review this retention annually. The HMAC remains a keyed
+  identifier.
+
+  Aggregate EU copyright transparency reports and snapshots of the reporting method are retained
+  indefinitely. They contain aggregate counts and no personal information or case backlink.
 
 ---
 

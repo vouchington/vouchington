@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import {
-  createCopyrightDeliveryIntents,
-  type CopyrightDeliveryIntentInput,
-} from './delivery-intent-batch.mts'
+import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
+import type { CopyrightDeliveryIntentInput } from './delivery-types.mts'
 
 describe('delivery intent batches', () => {
   useCopyrightIntakeEnvironment()

@@ -1,3 +1,7 @@
+import {
+  openCopyrightOwnerSecretBatch,
+  type CopyrightSecretBatch,
+} from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -16,10 +20,17 @@ export type ReviewOutcomeNoticeInput = {
 export async function createCopyrightReviewOutcomeNoticesInTransaction(
   input: ReviewOutcomeNoticeInput,
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<void> {
+  await using ownedScopes = ownerScopes
+    ? null
+    : await openCopyrightOwnerSecretBatch([{ kind: 'notice', id: input.noticeId }], transaction)
+  const scopes = ownerScopes ?? ownedScopes!
   await createCopyrightStatementDeliveriesInTransaction(
-    await buildCopyrightReviewOutcomeDeliveries([input], transaction),
+    await buildCopyrightReviewOutcomeDeliveries([input], transaction, scopes),
     transaction,
+    [],
+    scopes,
   )
 }
 
@@ -30,6 +41,7 @@ export async function createCopyrightReviewOutcomeNoticesInTransaction(
 export async function buildCopyrightReviewOutcomeDeliveries(
   inputs: readonly ReviewOutcomeNoticeInput[],
   transaction: TransactionQuery,
+  ownerScopes?: CopyrightSecretBatch,
 ): Promise<CopyrightStatementDeliveryInput[]> {
   const first = inputs[0]
   if (!first) return []
@@ -51,5 +63,6 @@ export async function buildCopyrightReviewOutcomeDeliveries(
       event: input.action === 'confirm' ? 'confirmed' : 'reversed',
     })),
     transaction,
+    ownerScopes,
   )
 }

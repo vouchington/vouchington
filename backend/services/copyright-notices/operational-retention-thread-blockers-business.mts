@@ -43,19 +43,19 @@ function businessPageSql(
       return sql`/* scanCopyrightThreadEmailLinkBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
-          SELECT id, copyright_notice_email_intake_id, link_kind
+          SELECT id, copyright_notice_email_intake_receipt_id, link_kind
           FROM copyright_notice_email_intake_notice_links
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT page.id, (page.link_kind = 'thread' AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-          WHERE receipt.id = page.copyright_notice_email_intake_id
+          WHERE receipt.id = page.copyright_notice_email_intake_receipt_id
             AND receipt.review_decision IS NOT NULL
           LIMIT 1
         ) AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_email_intake_notice_links reviewed
-          WHERE reviewed.copyright_notice_email_intake_id = page.copyright_notice_email_intake_id
+          WHERE reviewed.copyright_notice_email_intake_receipt_id = page.copyright_notice_email_intake_receipt_id
             AND reviewed.correspondence_action IN ('admitted', 'rejected') LIMIT 1
         )) AS blocked FROM page`
     case 'incidents':

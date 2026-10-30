@@ -62,7 +62,7 @@ CREATE INDEX idx_copyright_dsa_statement_submission_attempts__replayed_by
   WHERE replayed_by_id IS NOT NULL;
 CREATE TRIGGER trigger_copyright_dsa_statement_submission_attempts_immutable
   BEFORE UPDATE OR DELETE ON copyright_dsa_statement_submission_attempts
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation();
 
 COMMENT ON TABLE copyright_dsa_statement_submissions IS 'One durable public DSA Transparency Database statement per copyright restriction decision; the payload is frozen before retry.';
 COMMENT ON COLUMN copyright_dsa_statement_submissions.id IS 'UUIDv7 durable work-item identifier.';
@@ -88,3 +88,7 @@ COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.status_code IS 'HT
 COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.error_code IS 'Small failure class or lease_expired marker, never a response body or token.';
 COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.replayed_by_id IS 'Retained administrator identity, present only on a replay row and never an authorization source.';
 COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.created_at IS 'Attempt time derived from the UUIDv7 identifier.';
+
+CREATE TRIGGER trigger_copyright_dsa_statement_submissions_retention_delete
+BEFORE DELETE ON copyright_dsa_statement_submissions FOR EACH ROW
+EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation();

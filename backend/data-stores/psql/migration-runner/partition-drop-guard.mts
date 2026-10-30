@@ -5,6 +5,11 @@ import {
 import type { PartitionDropPolicy } from '../config-driven/utils/partition-drop-policies.mts'
 import type { QueryExecutor } from '../types.mts'
 import { copyrightHistoryHoldProbe } from './copyright-history-hold-probe.mts'
+import {
+  copyrightHistoryReportProbeSql,
+  copyrightHistoryReportIsCovered,
+  isCopyrightReportSource,
+} from './copyright-history-report-probe.mts'
 
 export type PartitionDropRefusal =
   | 'no-declared-retention'
@@ -97,6 +102,12 @@ export async function getPartitionDropStatusRefusals(
     if (policy.copyrightHistory) {
       checks.push(`WHEN ${copyrightHistoryHoldProbe(candidate.table, partition)} THEN 'legal-hold'`)
     }
+    if (isCopyrightReportSource(candidate.table)) {
+      checks.push(`WHEN EXISTS (
+        SELECT 1 FROM (${copyrightHistoryReportProbeSql(partition)}) AS report_source
+        WHERE NOT report_source.covered
+      ) THEN 'in-flight'`)
+    }
     const inFlightChecks = (policy.inFlightPredicates ?? []).map(
       predicate => `EXISTS (SELECT 1 FROM ${partition} WHERE ${predicate} LIMIT 1)`,
     )
@@ -162,6 +173,9 @@ export async function getPartitionDropRefusal(
     const { rows } = await query(`/* getPartitionDropRefusal:nonempty */
       SELECT 1 FROM ${partition} LIMIT 1`)
     if (rows.length > 0) return 'in-flight'
+  }
+  if (isCopyrightReportSource(candidate.table)) {
+    if (!(await copyrightHistoryReportIsCovered(query, partition))) return 'in-flight'
   }
   return null
 }

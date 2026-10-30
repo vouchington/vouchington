@@ -1,4 +1,4 @@
-import { decryptSecret } from '@modules/token-secrets'
+import type { ScopedCopyrightSecrets } from './encryption-keys.mts'
 
 /** What the retention sweep leaves in a ciphertext column it has erased; see the erasure spec. */
 export const COPYRIGHT_ERASED_CIPHERTEXT = 'erased'
@@ -12,13 +12,25 @@ export function liveCopyrightCiphertext(ciphertext: string | null): string | nul
 }
 
 /** Decrypts a stored copyright text, or returns the erased marker once the sweep has erased it. */
-export function decryptCopyrightText(ciphertext: string, purpose: string): string {
+export function decryptCopyrightText(
+  ciphertext: string,
+  purpose: string,
+  secrets: ScopedCopyrightSecrets | null,
+): string {
   const live = liveCopyrightCiphertext(ciphertext)
-  return live === null ? COPYRIGHT_ERASED_TEXT : decryptSecret(live, purpose)
+  if (live === null) return COPYRIGHT_ERASED_TEXT
+  if (!secrets) throw new Error('Live copyright ciphertext has no owner key')
+  return secrets.decryptSecret(live, purpose)
 }
 
 /** Decrypts a stored JSON document, or an empty object once the sweep has erased it. */
-export function decryptCopyrightJson(ciphertext: string, purpose: string): string {
+export function decryptCopyrightJson(
+  ciphertext: string,
+  purpose: string,
+  secrets: ScopedCopyrightSecrets | null,
+): string {
   const live = liveCopyrightCiphertext(ciphertext)
-  return live === null ? '{}' : decryptSecret(live, purpose)
+  if (live === null) return '{}'
+  if (!secrets) throw new Error('Live copyright ciphertext has no owner key')
+  return secrets.decryptSecret(live, purpose)
 }

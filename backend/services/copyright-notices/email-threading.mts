@@ -51,7 +51,7 @@ export async function recordCopyrightEmailThreadReferences(input: {
   const { rows: links } = await transaction<{ copyright_notice_id: string }>(sql`
     /* recordCopyrightEmailThreadReferences:caseLink */
     SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+    WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}`)
   if (links[0]) {
     await lockCopyrightOperationalThreadCase(transaction, links[0].copyright_notice_id)
     const { rows: retired } = await transaction<{ copyright_notice_id: string }>(sql`

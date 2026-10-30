@@ -1,4 +1,3 @@
-import { decryptSecret } from '@modules/token-secrets'
 import {
   countCopyrightGuestCapabilities,
   countCopyrightUrgentFilings,
@@ -18,6 +17,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import { recordTestClaimantEmailReceipt } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import {
   appendCopyrightGuestFiling,
   getCopyrightParticipantNoticeDetail,
@@ -47,13 +47,13 @@ async function openNotice() {
     receivedAt,
     claimantUserId: null,
     claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    claimantContact: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
       sourceKind: 'staff',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+      body: `notice-${crypto.randomUUID()}`,
     },
     targets: [
       {
@@ -134,7 +134,10 @@ describe('copyright guest lifecycle guards', () => {
     expect(after?.holdAssessments).toEqual([])
     const stored = await readCopyrightSubmissionCiphertext(filing.id)
     expect(stored).not.toBe(statement)
-    expect(decryptSecret(stored, copyrightSubmissionPurpose(filing.id))).toBe(statement)
+    {
+      await using secrets = await openCopyrightSecrets({ kind: 'submission', id: filing.id })
+      expect(secrets.decryptSecret(stored, copyrightSubmissionPurpose(filing.id))).toBe(statement)
+    }
     expect(await countCopyrightUrgentFilings(court.id)).toBe(1)
     await markCopyrightNoticeAccepted(notice.id, receivedAt)
     const viewer = { ...owner, roles: [] as const }
@@ -175,9 +178,12 @@ describe('copyright guest lifecycle guards', () => {
       statement: `Please send the registration ${crypto.randomUUID()}`,
     })
     const stored = await readCopyrightCorrespondenceCiphertext(request.id)
-    expect(decryptSecret(stored, copyrightCorrespondencePurpose(request.id))).toContain(
-      'Please send the registration',
-    )
+    {
+      await using secrets = await openCopyrightSecrets({ kind: 'notice', id: notice.id })
+      expect(secrets.decryptSecret(stored, copyrightCorrespondencePurpose(request.id))).toContain(
+        'Please send the registration',
+      )
+    }
     await expect(
       appendCopyrightGuestFiling({
         noticeId: notice.id,

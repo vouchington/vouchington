@@ -1,3 +1,10 @@
+import {
+  COPYRIGHT_RETENTION_FIELD_TYPES,
+  COPYRIGHT_RETENTION_DEFAULT_FIELDS,
+  COPYRIGHT_RETENTION_WINDOW_MAX_VALUES,
+} from './config-retention-fields.mts'
+export { COPYRIGHT_RETENTION_WINDOW_MAX_VALUES } from './config-retention-fields.mts'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import { DynamicConfig } from '@data-stores/valkey'
 import { parseCopyrightDsaSorDatabaseFrom } from './dsa-start-date.mts'
 
@@ -8,11 +15,12 @@ import { parseCopyrightDsaSorDatabaseFrom } from './dsa-start-date.mts'
 export const copyrightConfig = new DynamicConfig({
   key: 'copyright',
   fieldTypes: {
+    ...COPYRIGHT_RETENTION_FIELD_TYPES,
     automaticProvisionalWithholding: 'boolean',
     automaticProvisionalWithholdingSince: 'string',
     reviewTargetMinutes: 'number',
     evidenceRetentionDeletion: 'boolean',
-    evidenceRetentionDays: 'number',
+    replayPolicyReviewedAt: 'string',
     emailThreadGraphMaxRows: 'number',
     staydownMatching: 'boolean',
     trustedFlaggerPriority: 'boolean',
@@ -26,14 +34,13 @@ export const copyrightConfig = new DynamicConfig({
     automaticWithholdingPosterDailyCap: 'number',
   },
   defaultFields: {
+    ...COPYRIGHT_RETENTION_DEFAULT_FIELDS,
     automaticProvisionalWithholding: false,
     automaticProvisionalWithholdingSince: '',
     // 0 means unset: no review-target page until an operator records an approved target.
     reviewTargetMinutes: 0,
-    evidenceRetentionDeletion: false,
-    // 0 means unset: nothing is deleted until the owner approves a retention period, even when the
-    // switch is on.
-    evidenceRetentionDays: 0,
+    evidenceRetentionDeletion: true,
+    replayPolicyReviewedAt: '',
     emailThreadGraphMaxRows: 1000,
     staydownMatching: false,
     trustedFlaggerPriority: false,
@@ -113,20 +120,42 @@ export async function getCopyrightReviewTargetMinutes(): Promise<number | null> 
   return typeof minutes === 'number' && minutes > 0 ? minutes : null
 }
 
-/** Whether the evidence retention-deletion sweep may run. Off by default; read the runbook first. */
+/** Whether the evidence retention-deletion sweep may run. */
 export async function isCopyrightEvidenceRetentionDeletionEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().evidenceRetentionDeletion === true
 }
 
-/**
- * The owner-approved days a case's evidence is kept after its last lifecycle event before the
- * retention sweep may delete it, or null while the period is unset (0).
- */
-export async function getCopyrightEvidenceRetentionDays(): Promise<number | null> {
+/** Copyright evidence and legal case records share one calendar-month expiry. */
+export async function getCopyrightCaseRetentionMonths(): Promise<number | null> {
   await copyrightConfig.waitForInitialization()
-  const days = copyrightConfig.getFields().evidenceRetentionDays
-  return typeof days === 'number' && Number.isInteger(days) && days > 0 ? days : null
+  const months = copyrightConfig.getFields().caseRetentionMonths
+  return typeof months === 'number' && Number.isInteger(months) && months > 0 && months <= 1200
+    ? months
+    : null
+}
+
+/** Runtime windows remain bounded even when a malformed config bypasses the admin API. */
+export function getCopyrightRetentionWindows() {
+  const read = (field: keyof typeof COPYRIGHT_RETENTION_WINDOW_MAX_VALUES) =>
+    getBoundedPositiveIntegerField(copyrightConfig, field, {
+      defaultValue: COPYRIGHT_RETENTION_DEFAULT_FIELDS[field],
+      maxValue: COPYRIGHT_RETENTION_WINDOW_MAX_VALUES[field],
+    })
+  return {
+    caseMonths:
+      copyrightConfig.getFields().caseRetentionMonths === 0 ? 0 : read('caseRetentionMonths'),
+    complaintMonths: read('complaintWindowMonths'),
+    replayMonths: read('replayRetentionMonths'),
+    replayReviewMonths: read('replayReviewMonths'),
+    submissionKeyDays: read('submissionKeyRetentionDays'),
+    caseBatchSize: read('retentionCaseBatchSize'),
+    proofPageSize: read('retentionProofPageSize'),
+    proofMaxPages: read('retentionProofMaxPages'),
+    encryptionOwnerBatchSize: read('encryptionOwnerBatchSize'),
+    encryptionFetchConcurrency: read('encryptionFetchConcurrency'),
+    encryptionOrphanGraceHours: read('encryptionOrphanGraceHours'),
+  }
 }
 
 /**

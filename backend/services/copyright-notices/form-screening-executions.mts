@@ -1,12 +1,13 @@
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import {
   type CopyrightFormGuidance,
   parseCopyrightFormGuidance,
 } from './form-screening-guidance.mts'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
+import { isCopyrightFormIntakeLiveForScreening } from './form-screening-intake.mts'
 
 type Transaction = Awaited<ReturnType<typeof beginTransaction>>
 export type CopyrightFormScreeningAttempt = {
@@ -109,13 +110,14 @@ export async function completeCopyrightFormScreening(
 ): Promise<string | null> {
   if (attempt.intakeId !== input.intakeId) throw new TypeError('Screening attempt intake mismatch')
   const guidance = parseCopyrightFormGuidance(input.guidance)
+  // ast-grep-ignore: no-three-sequential-awaits -- Review serialization precedes the notice lifetime lock and fresh execution-state query on this transaction.
   await using transaction = await beginTransaction()
   await lockCopyrightFormReview(attempt.intakeId, transaction)
   await transaction(sql`/* completeCopyrightFormScreening:lockNotice */
     SELECT notice.id FROM copyright_notice_form_intakes intake
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
     WHERE intake.id = ${attempt.intakeId}
-    FOR KEY SHARE OF notice`)
+    FOR UPDATE OF notice`)
   const { rows: executions } = await transaction<{
     state: string
     copyright_notice_form_screening_id: string | null
@@ -134,14 +136,23 @@ export async function completeCopyrightFormScreening(
     await transaction.commit()
     return execution?.state === 'completed' ? execution.copyright_notice_form_screening_id : null
   }
+  if (!(await isCopyrightFormIntakeLiveForScreening(attempt.intakeId, transaction))) {
+    await transaction.commit()
+    return null
+  }
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'form_intake', id: attempt.intakeId },
+    transaction,
+    'write',
+  )
   const purpose = `copyright-form-screening:${input.intakeId}`
   const { rows } = await transaction<{ id: string }>(sql`/* completeCopyrightFormScreening:result */
     INSERT INTO copyright_notice_form_screenings (
       copyright_notice_form_intake_id, input_sha256, prompt_version, model, recommendation,
       rationale_ciphertext, guidance_ciphertext
     ) SELECT intake.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
-      ${input.recommendation}, ${encryptSecret(input.rationale, purpose)},
-      ${encryptSecret(JSON.stringify(guidance), purpose)}
+      ${input.recommendation}, ${secrets.encryptSecret(input.rationale, purpose)},
+      ${secrets.encryptSecret(JSON.stringify(guidance), purpose)}
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id

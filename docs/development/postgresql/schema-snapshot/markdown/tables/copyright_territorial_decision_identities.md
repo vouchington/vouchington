@@ -26,7 +26,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_decision_identities__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_territorial_decision_identities__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -35,4 +35,7 @@ Not partitioned — growth: unbounded.
 - `uq_copyright_territorial_identities__notice_jurisdiction_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_identities__notice_jurisdiction_id ON public.copyright_territorial_decision_identities USING btree (copyright_notice_id, jurisdiction, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_territorial_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_current_owner_deletion`: `CREATE TRIGGER trigger_reject_copyright_current_owner_deletion BEFORE DELETE ON public.copyright_territorial_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_decision_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_decision_identities', 'public.copyright_territorial_decision_identities')`

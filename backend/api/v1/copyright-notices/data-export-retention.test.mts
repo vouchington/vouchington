@@ -1,32 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import {
-  decryptExportedCopyrightJson,
-  decryptExportedCopyrightText,
-  EXPORT_COPYRIGHT_ERASED_TEXT,
-} from '@services/account-data-requests/stream-copyright-erased'
-import { sweepCopyrightEvidenceRetention } from '@services/copyright-notices'
 import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readAccountExport } from '@voucha/test-helpers/services/copyright-notices/read-account-export'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
+import {
+  advanceCopyrightRetentionWorkPages,
+  useCopyrightRetentionWorkClock,
+} from '@voucha/test-helpers/copyright-retention-work'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
 
-const DAY_MS = 24 * 60 * 60 * 1000
 const OWN_FILING_FILES = [
   'copyright-notices-filed.csv',
   'copyright-appeals.csv',
   'copyright-counter-notices.csv',
 ]
 
-describe('account data export after the copyright retention sweep', () => {
+describe('account data export after copyright retention erasure', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useFakeCopyrightEvidenceBucket()
-  const configure = useCopyrightRetentionConfig()
+  const setClock = useCopyrightRetentionWorkClock()
 
-  it('still exports both parties of an erased case, drops what the sweep erased, and states the erasure', async () => {
-    await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
+  it('still exports both parties of an erased case, omits protected filings, and states erasure', async () => {
     const erasedCase = await createRetentionFormCase()
     for (const key of erasedCase.evidenceKeys) bucket.put(key)
     const { copyright_notice_form_intakes: intakes } = await readCopyrightRetentionColumns(
@@ -55,21 +50,8 @@ describe('account data export after the copyright retention sweep', () => {
     const lastLifecycleAt = Math.max(
       ...aggregate.lifecycleEvents.map(event => event.created_at.getTime()),
     )
-    const result = await sweepCopyrightEvidenceRetention({
-      now: new Date(lastLifecycleAt + 400 * DAY_MS),
-      noticeIds: [erasedCase.noticeId],
-    })
-
-    expect(result).toEqual({ erased: 1, ineligible: 0, failed: [] })
-    const erasedColumns = await readCopyrightRetentionColumns(erasedCase.noticeId)
-    const textCiphertext = erasedColumns.copyright_notices?.[0]?.claimant_contact_ciphertext
-    const jsonCiphertext = erasedColumns.copyright_notice_submissions?.[0]?.body_ciphertext
-    if (typeof textCiphertext !== 'string' || typeof jsonCiphertext !== 'string')
-      throw new Error('retention fixture did not retain erased ciphertext')
-    expect(decryptExportedCopyrightText(textCiphertext, 'unused purpose')).toBe(
-      EXPORT_COPYRIGHT_ERASED_TEXT,
-    )
-    expect(decryptExportedCopyrightJson(jsonCiphertext, 'unused purpose')).toBeNull()
+    await setClock(new Date(lastLifecycleAt + 7 * 365 * 24 * 60 * 60 * 1000))
+    expect(await advanceCopyrightRetentionWorkPages(erasedCase.noticeId)).toContain('erased')
     const claimant = await readAccountExport(claimantId)
     const poster = await readAccountExport(posterId)
     for (const file of OWN_FILING_FILES) {

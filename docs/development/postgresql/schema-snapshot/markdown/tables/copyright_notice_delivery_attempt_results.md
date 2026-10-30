@@ -34,3 +34,5 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_delivery_attempt_results_immutable`: `CREATE TRIGGER trigger_copyright_delivery_attempt_results_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_attempt_results FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_delivery_attempt_results FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_delivery_attempt_results FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_delivery_attempt_results', 'public.copyright_notice_delivery_attempt_results')`

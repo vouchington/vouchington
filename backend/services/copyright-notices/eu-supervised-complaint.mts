@@ -1,5 +1,5 @@
+import { openCopyrightSecrets } from './encryption-keys.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -40,6 +40,12 @@ export async function recordEuCopyrightSupervisedComplaint(
     403,
     'Forbidden',
   )
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'notice', id: noticeId },
+    transaction,
+    'write',
+  )
+  const { encryptSecret, decryptSecret } = secrets
   const { rows: complaints } = await transaction<{ id: string }>(
     sql`/* recordEuCopyrightSupervisedComplaint */
     INSERT INTO copyright_eu_supervised_complaints (

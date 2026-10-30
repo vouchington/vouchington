@@ -1,3 +1,7 @@
+import {
+  attachCopyrightEncryptionKey,
+  type PreparedCopyrightEncryptionKey,
+} from './encryption-keys.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -8,16 +12,19 @@ import { insertCopyrightNoticeTargetsInTransaction } from './notice-targets.mts'
 export async function createCopyrightNoticeAggregateInTransaction(
   input: CreateCopyrightNoticeAggregateInput,
   transaction: TransactionQuery,
+  encryption: { noticeId: string; key: PreparedCopyrightEncryptionKey },
 ): Promise<CopyrightNoticeRecord> {
   assert(input.jurisdiction === 'us_dmca', 422, 'Only US DMCA notices use this aggregate')
   assert(input.targets.length > 0, 422, 'A copyright notice requires at least one hosted target')
+  const owner = { kind: 'notice' as const, id: encryption.noticeId }
+  await attachCopyrightEncryptionKey(encryption.key, owner, transaction)
   const { rows } = await transaction<CopyrightNoticeRecord>(sql`/* createCopyrightNoticeAggregate */
     INSERT INTO copyright_notices (
-      jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
+      id, jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
       claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      ${input.jurisdiction}, 'copyright', ${input.receivedAt}, ${input.claimantUserId},
-      ${input.claimantDisplayName}, ${input.claimantContactCiphertext}, ${input.workDescription},
+      ${encryption.noticeId}, ${input.jurisdiction}, 'copyright', ${input.receivedAt}, ${input.claimantUserId},
+      ${input.claimantDisplayName}, ${encryption.key.encrypt(input.claimantContact, input.secretPurpose, owner)}, ${input.workDescription},
       ${input.policyVersion}
     )
     RETURNING id, jurisdiction, legal_basis, received_at, accepted_at, provisional_withholding_at,
@@ -33,7 +40,7 @@ export async function createCopyrightNoticeAggregateInTransaction(
         copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext
       ) VALUES (
         ${notice.id}, ${input.claimantUserId}, 'notice', ${input.receivedAt},
-        ${input.initialSubmission.sourceKind}, ${input.initialSubmission.bodyCiphertext}
+        ${input.initialSubmission.sourceKind}, ${encryption.key.encrypt(input.initialSubmission.body, input.secretPurpose, owner)}
       )
     `),
     transaction(sql`/* createCopyrightNoticeAggregate:event */

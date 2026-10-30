@@ -386,38 +386,77 @@ and no filing on the case is unassessed; it pages again after resolution if rest
 
 ## Evidence retention deletion
 
-The hourly `copyright-evidence-retention` job deletes the evidence and claimant personal data of old
-`us_dmca` cases and keeps the minimal record the repeat-infringer count needs (see
-[evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention)). It does
-nothing until you do all of the following, in order:
+The hourly copyright retention job advances the
+[approved six-year closed-case lifecycle](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention)
+in durable pages. Inspect the configured case window and blockers before enabling or changing it;
+retention is measured in UTC calendar months, including month-end and leap-day clamping.
 
-1. **Get an owner-approved period.** The owner sets how many days a case is kept after its last
-   lifecycle event. Do not choose one yourself. It must cover the three-year limitation period and any
-   restoration and repeat-infringer need.
-2. **Confirm the evidence-bucket permissions.** The worker role needs `s3:ListBucketVersions`,
-   `s3:DeleteObjectVersion`, and `s3:DeleteObject` on `S3_BUCKET_COPYRIGHT_EVIDENCE`. Without them every
-   erasure fails and nothing changes.
-3. **Confirm the account data export tolerates erased rows.** Erased columns read as
-   `[erased by the retention policy]` instead of failing. Before enabling, request an
-   [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records) for an account
-   party to a case the sweep has erased (in staging after a first run) and confirm it completes.
-4. **Check for open legal process.** An open [preservation hold](#dmca-512h-subpoenas) keeps every case
-   that account is party to out of the sweep. The sweep cannot see legal process no hold records (an
-   email-only claimant, or a matter nobody placed a hold for): place the hold first, and keep the switch
-   off while an open legal matter covers records a hold cannot reach.
-5. **Set the period, then the switch.** Set `evidenceRetentionDays` to the approved number of days,
-   then `evidenceRetentionDeletion` to `true`. The first run erases every case already past the period.
+Verify evidence-bucket version-list/delete permissions and the dedicated `retention-keys/` read/write
+and worker erase permissions. Source changes alone do not apply permissions. The API and worker
+must be able to read key objects, producers must create them immutably, and the worker
+must confirm all versions absent before completing destruction. Never recreate a missing key or
+fall back to global ciphertext decryption after a restore. Keep old stored-secret KEK slots while
+any live wrapped data key needs them.
 
-To stop, set `evidenceRetentionDeletion` to `false` (or the days to `0`); erased data stays gone. When
-a case cannot be erased the job still completes and sends the Sentry warning
-`copyright_retention_erasure_failed` with counts, failed notice ids, and the error class, never keys or
-claimant text. The case keeps its data and is retried hourly, so fix the cause (usually permissions).
+The separately provisioned `VOUCHA_COPYRIGHT_REPLAY_HMAC_KEYS` ring uses comma-separated
+`key-id:base64` entries. IDs are unique and the first slot is active; material is a dedicated random
+32-byte key, separate from OTP and encryption secrets. Populate the deployment secret before
+applying environment injection or rolling out any consuming task. A source change does not provision
+the secret. For rotation, deploy the new slot everywhere with the old slot still first,
+then move the new slot first. All configured candidate hashes are locked in one deterministic order, including during mixed active-slot rollout. The service fails closed if a retained slot is missing or an existing key ID changes material. Retain old IDs and material while any live or retained replay identity
+requires them; never reuse an ID with different material. Local initializer defaults are fake and
+must never be copied to production. After an actual policy review, record its UTC ISO timestamp in `copyright.replayPolicyReviewedAt`; the daily cleanup warns while unset or overdue and never advances it automatically. Annual review must consider the retained replay period and
+whether old slots are still required. Do not log key values or requester fingerprints.
 
-Afterwards an erased case still opens in the staff queue with contact and screening rationale reading
-`[erased]`, and the raw `.eml` is unavailable. The sweep leaves EU and UK cases, repeat-infringer
-reviews, guest capabilities, email never promoted to a case, and any case with an active restriction
-or operative incident. An erasure request before the period ends is a data-subject request for the
-owner to decide, not something this switch handles.
+Confirm account exports tolerate erased skeletons. During active erasure, new writes and key reads
+fail closed; a completed erased case has no raw `.eml` or recoverable application ciphertext.
+Shared originals needed by another case remain available only to that owner. Unlinked private
+intakes retain their separate 90-day operational window. Their final receipt review facts, explanations,
+and keys expire together on the six-year copyright clock with preservation blockers; only the SES
+replay identity remains. Receipt and private-intake keys are independent, so receipt preservation
+does not preserve access to expired private-intake ciphertext.
+
+Use case- or receipt-scoped preservation for written litigation threats and regulator/court requests,
+including email-only claimants. A retained receipt can be preserved after its private intake is gone.
+Releasing preservation advances the applicable clock; it cannot recreate data already erased.
+Open proceedings, complaint windows, account holds, live restrictions,
+operative incidents, actual suspension reliance, unsettled DSA delivery work, and missing report
+coverage prevent admission. Closing a matter is a real authorized staff action; a timestamp must
+not be fabricated to force eligibility.
+
+To pause case work, use the existing deletion switch or set the case window to zero. Already erased
+data stays gone. The independent orphan-key cleanup still reports its own progress when only the
+case window is paused. Results expose progressed pages and `hasMore`; low page budgets rotate work
+families, so maintenance cannot starve cases. A run may need later scheduled runs to finish.
+`copyright_retention_erasure_failed` reports unfinished case IDs/error classes and aggregate orphan
+key failures, without key paths, secret material, or claimant text. Fix the cause; partial external
+erasures are confirmed idempotently on the next eligible page.
+
+Raw-object deletion relists a bounded head page after each delete. It never resumes from a version
+marker that it just deleted, and never equates a latest-version 404 with all-version erasure. The
+[AWS version-list ordering contract](https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/ListVersionsRequest.html)
+places the exact key before longer prefix neighbors; only exact-key-free confirmation permits the
+raw-object admission fence and subsequent registry cleanup.
+
+## Minimal legal-record deletion
+
+The daily cleanup drains the minimal record under the same substantive six-year clock and legal
+proof as evidence erasure. Completing evidence erasure does not create another retention period.
+Physical descendant deletion and retained-party cleanup are bounded and resumable. The physical-work
+allowance includes direct deletions, owned cascades, and final bookkeeping, separately from raw page
+and batch limits. Current final facts remain intact until their owning unit can be removed
+atomically. If the remaining allowance cannot fit that unit, it stays intact for a later run.
+Promoted-intake review backlinks drain before the original case identity can disappear. A fresh
+hold stops remaining pages; prior eligible deletions cannot be undone. Local DSA submission/attempt rows
+remain protocol state until no active retry, lease, replay round, or dead-letter work requires them.
+All case facts must be covered by the appropriate aggregate generation before their source rows go.
+
+Stored transparency snapshots contain no staff creator or case IDs. Compilation serializes with
+fact admission and purge, adds only newer fact generations to the previous exact-period snapshot,
+and preserves its method. Monthly source retirement requires a covering report generation. A new or
+outdated period cannot be compiled when the required source deltas have expired; already covered
+exact periods and stored snapshots remain available. Compilation timeouts publish no partial report.
+The extended CSV describes the live retained population, not an immutable historical census.
 
 ## Data requests from email-only claimants
 
@@ -514,10 +553,10 @@ an alleged infringer, to the extent Voucha has it.
      revealing which blocker applies. After soft deletion it pauses only the 90-day final purge, not the
      immediate deletion phases or data they already erased. For an account soft-deleted more than 90 days
      ago, act promptly: without a hold it is eligible for the next purge.
-   - **Audit.** Placing and releasing write moderator actions visible only to administrators, and the hold
-     rows are never deleted. See [account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals).
-   - **Case evidence.** The only thing that destroys case evidence is the retention sweep (off by
-     default). A hold keeps the sweep away from every case the held account is party to (see
+   - **Audit.** Placing and releasing write moderator actions visible only to administrators; released
+     hold rows expire three years after release. See [account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals).
+   - **Case evidence.** The retention sweep destroys case evidence after its window. A hold keeps
+     the sweep away from every case the held account is party to (see
      [Evidence retention deletion](#evidence-retention-deletion)); a hold on a different account does not.
 
    If the owner also directs a copy of the data, an administrator requests an
@@ -545,3 +584,14 @@ aggregate; participants see their stored texts under "Notices sent to you". See 
 
 Before enabling intake, supply `COPYRIGHT_INTAKE_ENABLED` to the email delivery worker as well as the
 backend. Replay failed staff replies separately from receipts.
+
+Live copyright request replays preserve their original authorized receipt. Once the case is erased or purged, a matching authorized replay updates only the retained replay clock and receives the existing missing-case 404; retained outcome codes remain internal. Cleanup scans bounded identity and opaque-group UUID pages, and measures expiry from final case-root purge or the last authorized replay, whichever is later.
+
+### Account review retention
+
+Completed account-review and reinstatement history retires through guarded monthly partition
+cleanup after six years. Pending work and current final decisions remain on account owners;
+current and effective termination explanations remain available while authoritative. Later
+independent reviews do not prolong old history. Scoped preservation holds still prevent retirement.
+Suspension reliance identifies case evidence that cannot yet be purged, and formal reinstatement
+still precedes unsuspension.

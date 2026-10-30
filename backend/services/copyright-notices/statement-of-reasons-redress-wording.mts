@@ -1,5 +1,5 @@
 import { getSiteUrl } from '@modules/utils'
-import { TERRITORIAL_COMPLAINT_WINDOW_MONTHS } from './territorial-fields.mts'
+import { getCopyrightRetentionWindows } from './config.mts'
 import type { CopyrightStatementFields } from './statement-of-reasons-types.mts'
 
 /** The Commission's list of certified out-of-court dispute settlement bodies (DSA Article 21). */
@@ -27,7 +27,7 @@ function copyrightRedressRouteText(route: CopyrightStatementFields['redress'][nu
     case 'court':
       return COPYRIGHT_COURT_REDRESS_TEXT
     case 'internal_complaint':
-      return `You may submit an internal complaint within ${TERRITORIAL_COMPLAINT_WINDOW_MONTHS} months after you are informed of this decision. ${route.path ? copyrightRouteSentence('Internal complaint', route.path) : 'To submit a complaint, reply to this email.'}`
+      return `You may submit an internal complaint within ${getCopyrightRetentionWindows().complaintMonths} months after you are informed of this decision. ${route.path ? copyrightRouteSentence('Internal complaint', route.path) : 'To submit a complaint, reply to this email.'}`
     case 'out_of_court_dispute_settlement':
       return `You may refer this decision to a certified out-of-court dispute settlement body under Article 21 of the Digital Services Act. You can find certified out-of-court dispute settlement bodies on the European Commission's list: ${COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL}.`
     case 'appeal':

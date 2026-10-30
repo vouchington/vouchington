@@ -5,6 +5,10 @@ import {
 } from '@vouchington/postgres/partitions'
 import type { PartitionDropPolicy } from '../config-driven/utils/partition-drop-policies.mts'
 import type { QueryExecutor } from '../types.mts'
+import {
+  isCopyrightReportSource,
+  recordCopyrightHistoryReportSourceRetirement,
+} from './copyright-history-report-probe.mts'
 import { beforeRetireMonthlyPartition } from './before-retire-monthly-partition.mts'
 import { clearBoundedFeedbackReferences } from './feedback-reference-retirement.mts'
 import {
@@ -31,11 +35,17 @@ export async function guardAndRetireMonthlyPartition(
     )
     if (rows.length > 0) return 'in-flight'
   }
+  const reportSource = isCopyrightReportSource(candidate.table)
+  if (reportSource) {
+    // Report compilation takes this row before reading source history.
+    await transaction(`/* cleanupPartitions:lockReportGeneration */
+      SELECT 1 FROM copyright_legal_mutation_sequence_states WHERE is_singleton FOR SHARE`)
+  }
   // Party writers update this generation before appending history. Fence them first so the
   // final hold probe cannot miss an already-held account newly joining a case.
   if (policy?.copyrightHistory) {
     await transaction(
-      '/* cleanupPartitions:lockCopyrightParties */ LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE',
+      `/* cleanupPartitions:lockCopyrightParties */ LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE${reportSource ? ' NOWAIT' : ''}`,
     )
   }
   // FK teardown during DETACH/DROP touches referenced tables. Acquire their final lock modes
@@ -51,7 +61,8 @@ export async function guardAndRetireMonthlyPartition(
   }
   // A raw history writer can take the parent before validating its referenced rows. Once we
   // hold referenced-table locks, waiting for either history lock could deadlock with that writer.
-  const historyLockNowait = policy?.retirementReferenceTables?.length ? ' NOWAIT' : ''
+  const historyLockNowait =
+    reportSource || policy?.retirementReferenceTables?.length ? ' NOWAIT' : ''
   // Ordinary DETACH needs ACCESS EXCLUSIVE on the parent, so take that final mode before the child
   // to avoid a lock-upgrade deadlock with concurrent readers and writers.
   await transaction(
@@ -62,7 +73,7 @@ export async function guardAndRetireMonthlyPartition(
   )
   if (policy?.legalHoldAccountColumn || policy?.copyrightHistory) {
     await transaction(
-      `/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE`,
+      `/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE${historyLockNowait}`,
     )
   }
   const reason = await getPartitionDropRefusal(transaction, candidate, policy, referenceDate)
@@ -74,6 +85,9 @@ export async function guardAndRetireMonthlyPartition(
       feedbackBatchSize,
     )
     if (feedbackPending) return 'feedback-references-pending'
+  }
+  if (reportSource) {
+    await recordCopyrightHistoryReportSourceRetirement(transaction, partition)
   }
   const parsed = parseMonthlyPartitionName(candidate.partition)!
   await retireMonthlyPartition(

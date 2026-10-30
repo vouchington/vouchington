@@ -44,7 +44,7 @@ export async function deleteCaseThreadPage(
       await transaction(sql`/* clearExpiredCopyrightCaseMatchedToken */
         UPDATE copyright_notice_email_intake_notice_links
         SET matched_token_id = NULL
-        WHERE copyright_notice_email_intake_id = ${intakeId}
+        WHERE copyright_notice_email_intake_receipt_id = ${intakeId}
           AND copyright_notice_id = ${noticeId}
           AND matched_token_id = ${matchedTokenId}::uuid`)
       await deleteOrphanTokens(transaction, [matchedTokenId])
@@ -81,14 +81,14 @@ export async function deleteCaseThreadPage(
           WHERE edge.reply_message_intake_receipt_id = ${intakeId}
             AND edge.ancestor_message_intake_receipt_id = ANY(${ids}::uuid[])
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other
-              WHERE other.copyright_notice_email_intake_id = edge.ancestor_message_intake_receipt_id
+              WHERE other.copyright_notice_email_intake_receipt_id = edge.ancestor_message_intake_receipt_id
                 AND other.copyright_notice_id <> ${noticeId})`
       : sql`/* deleteExpiredCopyrightCaseAncestorReplies */
           DELETE FROM copyright_notice_email_message_ancestors edge
           WHERE edge.ancestor_message_intake_receipt_id = ${intakeId}
             AND edge.reply_message_intake_receipt_id = ANY(${ids}::uuid[])
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other
-              WHERE other.copyright_notice_email_intake_id = edge.reply_message_intake_receipt_id
+              WHERE other.copyright_notice_email_intake_receipt_id = edge.reply_message_intake_receipt_id
                 AND other.copyright_notice_id <> ${noticeId})`,
   )
   return { deleted: rowCount ?? 0, phase, edgeCursor: ids.at(-1)! }

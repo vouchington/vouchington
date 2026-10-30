@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightDecisionDeliveryKinds } from './delivery-types.mts'
-import { TERRITORIAL_COMPLAINT_WINDOW_MONTHS } from './territorial-fields.mts'
+import { getCopyrightRetentionWindows } from './config.mts'
 
 export type TerritorialInformedWindow = {
   informed_at: Date | null
@@ -72,7 +72,7 @@ export async function getTerritorialInformedWindows(
       THEN MIN(informed.informed_at) ELSE NULL END AS informed_at,
       CASE WHEN COUNT(informed.informed_at) =
         request.notifier::int + (request.poster_user_id IS NOT NULL)::int
-      THEN MAX((informed.informed_at AT TIME ZONE 'UTC' + make_interval(months => ${TERRITORIAL_COMPLAINT_WINDOW_MONTHS})) AT TIME ZONE 'UTC')
+      THEN MAX((informed.informed_at AT TIME ZONE 'UTC' + make_interval(months => ${getCopyrightRetentionWindows().complaintMonths})) AT TIME ZONE 'UTC')
       ELSE NULL END AS window_ends_at
     FROM request
     LEFT JOIN informed ON informed.request_index = request.request_index

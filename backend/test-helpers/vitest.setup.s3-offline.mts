@@ -7,4 +7,9 @@ import { installOfflineS3Send } from './s3-offline.mts'
 // 30s `dsa-statement-payload.test.mts` stall). Tests that need S3 spy on `S3Client.prototype.send`,
 // as the copyright evidence helpers do. Real S3 stays in the credentialed `backend-aws` project,
 // which does not load this file.
+process.env.S3_BUCKET_COPYRIGHT_EVIDENCE = 'test-copyright-evidence'
 installOfflineS3Send(S3Client)
+
+// Retention-key objects use the same file-backed fixture from the lazy image client. Loading it
+// here keeps the real GlideMQ worker project offline while preserving ordinary S3 denial behavior.
+await import('./copyright-key-object-cli.mts')

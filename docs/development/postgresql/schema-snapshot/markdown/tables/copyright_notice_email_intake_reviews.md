@@ -15,7 +15,7 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 | `reviewed_by_id`                                  | `uuid`                                           | yes      |                              |          |           |           | Staff member who decided the intake; erased on account deletion.                                                                                                                                                                   |
 | `decision`                                        | `copyright_notice_email_intake_review_decisions` | no       |                              |          |           |           | Staff decision: approved opened a case, rejected declined the email as a copyright notice and may have queued a reply, legal_process closed it as legal process such as a subpoena with no reply, case, or claimant-visible event. |
 | `rationale_ciphertext`                            | `text`                                           | no       |                              |          |           |           | Encrypted staff rationale, or for legal_process the encrypted reason; it can name a legal matter and is never logged or returned.                                                                                                  |
-| `promoted_copyright_notice_id`                    | `uuid`                                           | yes      |                              |          |           |           | Legal case created by an approved review; null for every other decision.                                                                                                                                                           |
+| `promoted_copyright_notice_identity_id`           | `uuid`                                           | yes      |                              |          |           |           | Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.                                                                                                   |
 | `created_at`                                      | `timestamp with time zone`                       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
@@ -26,13 +26,13 @@ _none_
 **Check constraints:**
 
 - `chk_copyright_notice_email_intake_reviews__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
-- `copyright_notice_email_intake_reviews_check`: `CHECK (((decision = 'approved'::copyright_notice_email_intake_review_decisions) = (promoted_copyright_notice_id IS NOT NULL)))`
+- `copyright_notice_email_intake_reviews_check`: `CHECK (((decision = 'approved'::copyright_notice_email_intake_review_decisions) = (promoted_copyright_notice_identity_id IS NOT NULL)))`
 - `copyright_notice_email_intake_reviews_decision_check`: `CHECK ((decision = ANY (ARRAY['approved'::copyright_notice_email_intake_review_decisions, 'rejected'::copyright_notice_email_intake_review_decisions, 'legal_process'::copyright_notice_email_intake_review_decisions])))`
 
 **Foreign keys:**
 
 - `copyright_notice_email_intake_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
-- `fk_copyri_notice_email_intake_review__promoted_copyright_notice`: `FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyri_notice_email_intake_review__promoted_copyright_notice`: `FOREIGN KEY (promoted_copyright_notice_identity_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_email_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_reviews__intake_receipt`: `FOREIGN KEY (copyright_notice_email_intake_receipt_id) REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT`
 
@@ -40,7 +40,7 @@ _none_
 
 - `copyright_notice_email_intake_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_reviews_pkey ON ONLY public.copyright_notice_email_intake_reviews USING btree (id)`
 - `idx_copyright_notice_email_intake_reviews__intake`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__intake ON ONLY public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_receipt_id, id DESC)`
-- `idx_copyright_notice_email_intake_reviews__promoted_notice`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__promoted_notice ON ONLY public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_id, id) WHERE (promoted_copyright_notice_id IS NOT NULL)`
+- `idx_copyright_notice_email_intake_reviews__promoted_notice`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__promoted_notice ON ONLY public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_identity_id, id) WHERE (promoted_copyright_notice_identity_id IS NOT NULL)`
 - `idx_copyright_notice_email_intake_reviews__recommendation`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__recommendation ON ONLY public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
 - `idx_copyright_notice_email_intake_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__reviewer ON ONLY public.copyright_notice_email_intake_reviews USING btree (reviewed_by_id, id DESC)`
 
@@ -48,6 +48,9 @@ _none_
 
 - `trigger_copyright_email_review_active_receipt`: `CREATE TRIGGER trigger_copyright_email_review_active_receipt BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_email_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
+- `trigger_copyright_email_reviews_live_case`: `CREATE TRIGGER trigger_copyright_email_reviews_live_case BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_review_without_live_case()`
 - `trigger_copyright_email_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
 - `trigger_copyright_thread_activity_on_intake_review`: `CREATE TRIGGER trigger_copyright_thread_activity_on_intake_review AFTER INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_intake_review()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_require_writable_copyright_intake`: `CREATE TRIGGER trigger_require_writable_copyright_intake BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_ensure_writable_copyright_intake()`

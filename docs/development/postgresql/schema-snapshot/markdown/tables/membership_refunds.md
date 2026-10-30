@@ -67,3 +67,4 @@ _none_
 
 - `trigger_membership_refunds_guard`: `CREATE TRIGGER trigger_membership_refunds_guard BEFORE DELETE OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_mutation()`
 - `trigger_membership_refunds_request_key`: `CREATE TRIGGER trigger_membership_refunds_request_key BEFORE INSERT OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_request_key_mismatch()`
+- `trigger_membership_refunds_retained_fence`: `CREATE TRIGGER trigger_membership_refunds_retained_fence BEFORE INSERT OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_retained_membership_operation_child_write()`

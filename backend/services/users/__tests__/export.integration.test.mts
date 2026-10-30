@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { updateUserFields } from '../update-fields.mts'
 import { grantConsent } from '@services/user-consents/create'
-import { writeExportFiles } from '@services/account-data-requests/export'
+import { writeAccountExportFiles } from '@voucha/test-helpers/account-export-files'
 
 describe('writeExportFiles', () => {
   it('creates all expected CSV files for a user with an email address', async () => {
@@ -21,7 +21,7 @@ describe('writeExportFiles', () => {
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
     const exportDir = join(parentDir, 'export')
     try {
-      await writeExportFiles(user.id, exportDir)
+      await writeAccountExportFiles(user.id, exportDir)
 
       const files = await readdir(exportDir)
       expect(files).toContain('profile.csv')
@@ -49,7 +49,7 @@ describe('writeExportFiles', () => {
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
     const exportDir = join(parentDir, 'export')
     try {
-      await writeExportFiles(user.id, exportDir)
+      await writeAccountExportFiles(user.id, exportDir)
 
       const emailsCsv = await readFile(join(exportDir, 'emails.csv'), 'utf8')
       expect(emailsCsv).toContain('email_address')
@@ -79,7 +79,7 @@ describe('writeExportFiles', () => {
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
     const exportDir = join(parentDir, 'export')
     try {
-      await writeExportFiles(user.id, exportDir)
+      await writeAccountExportFiles(user.id, exportDir)
 
       const profileCsv = await readFile(join(exportDir, 'profile.csv'), 'utf8')
       const profile = readSingleRowCsv(profileCsv)
@@ -113,7 +113,7 @@ describe('writeExportFiles', () => {
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
     const exportDir = join(parentDir, 'export')
     try {
-      await writeExportFiles(user.id, exportDir)
+      await writeAccountExportFiles(user.id, exportDir)
 
       const profileCsv = await readFile(join(exportDir, 'profile.csv'), 'utf8')
       const profile = readSingleRowCsv(profileCsv)
@@ -133,7 +133,7 @@ describe('writeExportFiles', () => {
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
     const exportDir = join(parentDir, 'export')
     try {
-      await writeExportFiles(user.id, exportDir)
+      await writeAccountExportFiles(user.id, exportDir)
 
       const consentsCsv = await readFile(join(exportDir, 'consents.csv'), 'utf8')
       const consents = parseCsvRows(consentsCsv)
@@ -194,7 +194,7 @@ describe('writeExportFiles', () => {
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
     const exportDir = join(parentDir, 'export')
     try {
-      await writeExportFiles(user.id, exportDir)
+      await writeAccountExportFiles(user.id, exportDir)
 
       const topicsCsv = await readFile(join(exportDir, 'followed-topics.csv'), 'utf8')
       const feedsCsv = await readFile(join(exportDir, 'followed-rss-feeds.csv'), 'utf8')

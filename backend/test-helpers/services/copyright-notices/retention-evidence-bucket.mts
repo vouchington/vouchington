@@ -1,3 +1,4 @@
+import { handleCopyrightKeyObjectCommand } from '../../copyright-key-object-store.mts'
 import { DeleteObjectsCommand, ListObjectVersionsCommand, S3Client } from '@aws-sdk/client-s3'
 import { afterEach, beforeEach, vi } from 'vitest'
 
@@ -16,6 +17,11 @@ export type FakeEvidenceBucket = {
   allow(key: string): void
   /** Number of `DeleteObjects` requests the sweep has sent. */
   deleteRequests(): number
+  /** One-shot barrier for a deterministic ingress-versus-erasure test. */
+  beforeNextDelete(effect: () => Promise<void>): void
+  malformedNextListing(
+    fault: 'truncated_empty' | 'over_cap' | 'foreign_key' | 'missing_version',
+  ): void
 }
 
 /**
@@ -28,15 +34,26 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
   const refused = new Set<string>()
   let deleteCalls = 0
   let nextVersion = 0
+  let beforeDelete: (() => Promise<void>) | null = null
+  let malformedListing: Parameters<FakeEvidenceBucket['malformedNextListing']>[0] | null = null
 
   beforeEach(() => {
     objects.clear()
     refused.clear()
     deleteCalls = 0
+    beforeDelete = null
+    malformedListing = null
     vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', BUCKET)
     vi.spyOn(S3Client.prototype, 'send').mockImplementation((async (command: unknown) => {
+      const keyObject = handleCopyrightKeyObjectCommand(command)
+      if (keyObject) return keyObject
       if (command instanceof ListObjectVersionsCommand) return list(command.input)
-      if (command instanceof DeleteObjectsCommand) return remove(command.input)
+      if (command instanceof DeleteObjectsCommand) {
+        const effect = beforeDelete
+        beforeDelete = null
+        if (effect) await effect()
+        return remove(command.input)
+      }
       throw new Error('Unexpected S3 command in the retention sweep')
     }) as never)
   })
@@ -52,6 +69,21 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
     MaxKeys?: number
   }) {
     expectBucket(input.Bucket)
+    const fault = malformedListing
+    malformedListing = null
+    if (fault === 'truncated_empty') return { IsTruncated: true, Versions: [] }
+    if (fault === 'over_cap')
+      return {
+        IsTruncated: false,
+        Versions: Array.from({ length: (input.MaxKeys ?? PAGE_SIZE) + 1 }, (_, index) => ({
+          Key: input.Prefix,
+          VersionId: `provider-version-${index}`,
+        })),
+      }
+    if (fault === 'foreign_key')
+      return { IsTruncated: false, Versions: [{ Key: `foreign-${input.Prefix}`, VersionId: '1' }] }
+    if (fault === 'missing_version')
+      return { IsTruncated: false, Versions: [{ Key: input.Prefix }] }
     const entries = [...objects.entries()]
       .filter(([key]) => key.startsWith(input.Prefix ?? ''))
       .toSorted(([left], [right]) => left.localeCompare(right))
@@ -111,6 +143,12 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
     refuse: key => void refused.add(key),
     allow: key => void refused.delete(key),
     deleteRequests: () => deleteCalls,
+    beforeNextDelete(effect) {
+      beforeDelete = effect
+    },
+    malformedNextListing(fault) {
+      malformedListing = fault
+    },
   }
 }
 

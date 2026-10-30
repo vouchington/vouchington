@@ -14,14 +14,14 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
         AND receipt.review_decision IS NULL
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = intake.id
+        WHERE link.copyright_notice_email_intake_receipt_id = intake.id
           AND link.correspondence_action IN ('admitted', 'rejected')
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links link
         JOIN copyright_notice_retention_erasures erased
           ON erased.copyright_notice_id = link.copyright_notice_id
-        WHERE link.copyright_notice_email_intake_id = intake.id
+        WHERE link.copyright_notice_email_intake_receipt_id = intake.id
       )
       UNION ALL
       SELECT 'form-screening'::text AS kind, intake.copyright_notice_submission_id AS id

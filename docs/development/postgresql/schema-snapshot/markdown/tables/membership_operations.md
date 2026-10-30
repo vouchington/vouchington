@@ -81,3 +81,4 @@ _none_
 - `trigger_membership_operations_finalize_work`: `CREATE TRIGGER trigger_membership_operations_finalize_work AFTER UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_update_membership_operation_work()`
 - `trigger_membership_operations_guard`: `CREATE TRIGGER trigger_membership_operations_guard BEFORE DELETE OR UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_operation_mutation()`
 - `trigger_membership_operations_initialize_work`: `CREATE TRIGGER trigger_membership_operations_initialize_work AFTER INSERT ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_create_membership_operation_work()`
+- `trigger_membership_operations_retention_delete`: `CREATE TRIGGER trigger_membership_operations_retention_delete BEFORE INSERT OR DELETE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_unretained_membership_operation_delete()`

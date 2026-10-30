@@ -14,7 +14,7 @@ export function copyrightEmailIntakeAwaitingReviewSql(): SQLStatement {
     )
     AND NOT EXISTS (
       SELECT 1 FROM copyright_notice_email_intake_notice_links awaiting_link
-      WHERE awaiting_link.copyright_notice_email_intake_id = intake.id
+      WHERE awaiting_link.copyright_notice_email_intake_receipt_id = intake.id
         AND (awaiting_link.link_kind <> 'thread'
           OR awaiting_link.correspondence_action IN ('admitted', 'rejected'))
     )

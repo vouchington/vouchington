@@ -9,6 +9,8 @@ Not partitioned — growth: unbounded.
 | Column                            | Type                                              | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                                       |
 | --------------------------------- | ------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                              | `uuid`                                            | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                               |
+| `copyright_notice_id`             | `uuid`                                            | no       |                              |          |           |           | Concrete case scope derived from its intake, preserved for atomic owner purge authorization.                                                                                                  |
+| `copyright_notice_submission_id`  | `uuid`                                            | no       |                              |          |           |           | Concrete submission scope derived from its intake, preventing cross-submission current screening references.                                                                                  |
 | `copyright_notice_form_intake_id` | `uuid`                                            | no       |                              |          |           |           | Structured form intake evaluated for obvious spam or invalidity.                                                                                                                              |
 | `input_sha256`                    | `bytea`                                           | no       |                              |          |           |           | Digest of the exact structured fields screened by the model.                                                                                                                                  |
 | `prompt_version`                  | `text`                                            | no       |                              |          |           |           | Versioned anti-spam screening prompt.                                                                                                                                                         |
@@ -22,6 +24,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `uq_copyright_form_screenings__submission_id`: `UNIQUE (copyright_notice_submission_id, id)`
 - `uq_copyright_notice_form_screenings__intake_id__id`: `UNIQUE (copyright_notice_form_intake_id, id)`
 
 **Check constraints:**
@@ -35,14 +38,20 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_notice_form_screenings__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_screenings__intake`: `FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_form_intakes(id, copyright_notice_submission_id, copyright_notice_id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_form_screenings_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_screenings_pkey ON public.copyright_notice_form_screenings USING btree (id)`
+- `idx_copyright_notice_form_screenings__notice_id`: `CREATE INDEX idx_copyright_notice_form_screenings__notice_id ON public.copyright_notice_form_screenings USING btree (copyright_notice_id, id)`
+- `idx_copyright_notice_form_screenings__owner_scope`: `CREATE INDEX idx_copyright_notice_form_screenings__owner_scope ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, copyright_notice_submission_id, copyright_notice_id)`
+- `uq_copyright_form_screenings__submission_id`: `CREATE UNIQUE INDEX uq_copyright_form_screenings__submission_id ON public.copyright_notice_form_screenings USING btree (copyright_notice_submission_id, id)`
 - `uq_copyright_notice_form_screenings__intake_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_form_screenings__intake_id__id ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, id)`
 
 **Triggers:**
 
 - `trigger_copyright_form_screenings_immutable`: `CREATE TRIGGER trigger_copyright_form_screenings_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_screenings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_form_screenings FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_register_copyright_minimal_purge_delete_work`: `CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work BEFORE DELETE ON public.copyright_notice_form_screenings FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_purge_row_work()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_form_screenings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_form_screenings', 'public.copyright_notice_form_screenings')`
+- `trigger_update_copyright_form_screening_scope`: `CREATE TRIGGER trigger_update_copyright_form_screening_scope BEFORE INSERT ON public.copyright_notice_form_screenings FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_form_screening_scope()`

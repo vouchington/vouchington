@@ -1,3 +1,4 @@
+import { openCopyrightSecretsForCiphertexts } from './encryption-keys.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
@@ -75,8 +76,18 @@ export async function selectCopyrightDeliveryInputs(
   `),
   )
   const row = rows[0]!
+  await using secrets = await openCopyrightSecretsForCiphertexts(
+    { kind: 'notice', id: noticeId },
+    row.facts.map(fact => fact.public_explanation_ciphertext),
+    transaction,
+  )
   return {
-    facts: copyrightStatementFactsFromRows(noticeId, row.facts, request.authorities.length),
+    facts: copyrightStatementFactsFromRows(
+      noticeId,
+      row.facts,
+      request.authorities.length,
+      secrets,
+    ),
     parties: row.parties,
     claimantEmail: row.claimant_email,
     claimantDecisionFlags: row.claimant_decision_flags,

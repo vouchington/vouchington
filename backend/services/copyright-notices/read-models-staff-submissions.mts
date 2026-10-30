@@ -1,5 +1,5 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
-import { decryptSecret } from '@modules/token-secrets'
+import type { CopyrightSecretBatch } from './encryption-key-batch.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { groupByNotice } from './read-models-staff-group.mts'
@@ -8,7 +8,12 @@ import { parseStoredCopyrightSubmissionGuidance } from './read-models-staff-guid
 
 export { selectStaffRestrictions } from './read-models-staff-restrictions.mts'
 
-export async function selectStaffAppeals(noticeIds: readonly string[], query: TransactionQuery) {
+export async function selectStaffAppeals(
+  noticeIds: readonly string[],
+  query: TransactionQuery,
+  secretsBatch: CopyrightSecretBatch,
+) {
+  secretsBatch.assertTransaction(query)
   const { rows } = await query<{
     copyright_notice_id: string
     submission_id: string
@@ -27,8 +32,11 @@ export async function selectStaffAppeals(noticeIds: readonly string[], query: Tr
     WHERE submission.copyright_notice_id = ANY(${noticeIds}::uuid[]) AND submission.kind = 'appeal' AND review.id IS NULL
     ORDER BY submission.received_at, submission.id
   `)
+
   return groupByNotice(
     rows.map(row => {
+      const secrets = secretsBatch.get({ kind: 'notice', id: row.copyright_notice_id })
+      const { decryptSecret } = secrets
       const appeal = parseAppeal(
         decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
       )
@@ -56,7 +64,9 @@ export async function selectStaffAppeals(noticeIds: readonly string[], query: Tr
 export async function selectStaffCounterNotices(
   noticeIds: readonly string[],
   query: TransactionQuery,
+  secretsBatch: CopyrightSecretBatch,
 ) {
+  secretsBatch.assertTransaction(query)
   const { rows } = await query<{
     copyright_notice_id: string
     submission_id: string
@@ -77,21 +87,27 @@ export async function selectStaffCounterNotices(
     WHERE submission.copyright_notice_id = ANY(${noticeIds}::uuid[]) AND submission.kind = 'counter_notice' AND review.id IS NULL
     ORDER BY submission.received_at, submission.id
   `)
+
   return groupByNotice(
-    rows.map(row => ({
-      copyright_notice_id: row.copyright_notice_id,
-      submission_id: row.submission_id,
-      received_at: row.received_at,
-      target_ids: row.target_ids,
-      guidance: parseStoredCopyrightSubmissionGuidance(
-        row.guidance_ciphertext,
-        row.submission_id,
-        'counter_notice',
-      ),
-      statement: parseStatement(
-        decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
-      ),
-    })),
+    rows.map(row => {
+      const secrets = secretsBatch.get({ kind: 'notice', id: row.copyright_notice_id })
+      const { decryptSecret } = secrets
+      return {
+        copyright_notice_id: row.copyright_notice_id,
+        submission_id: row.submission_id,
+        received_at: row.received_at,
+        target_ids: row.target_ids,
+        guidance: parseStoredCopyrightSubmissionGuidance(
+          row.guidance_ciphertext,
+          row.submission_id,
+          'counter_notice',
+          secrets,
+        ),
+        statement: parseStatement(
+          decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
+        ),
+      }
+    }),
   )
 }
 

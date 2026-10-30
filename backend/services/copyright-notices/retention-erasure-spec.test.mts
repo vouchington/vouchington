@@ -13,6 +13,7 @@ import {
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
+import { createRetentionTerritorialCase } from '@voucha/test-helpers/services/copyright-notices/retention-territorial-case'
 import { addTestCopyrightSubmissionGuidanceForRetentionCase } from '@voucha/test-helpers/copyright-submission-guidance-retention'
 import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/copyright-retention-administrator-lift'
 import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
@@ -32,11 +33,12 @@ const changesWithoutPermit = (spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]
     spec.table !== 'copyright_notice_email_intake_notice_links' &&
     Object.values(spec.columns).every(kind => kind === 'null'))
 
-/**
- * Tables the sweep deliberately keeps whole: EU and UK cases (the EU-only tables and the shared
- * territorial tables) are not swept, and a repeat-infringer decision is the 17 USC 512(i) record.
- */
-const KEPT_TABLES = [/^copyright_(eu|uk|territorial)_/, /^copyright_repeat_infringer_/]
+/** Reviews follow account retention; case dispositions lose their DEK, then drain at root purge. */
+const KEPT_TABLES = [/^copyright_repeat_infringer_/]
+/** Payload-free scan position survives deletion of the raw-object registry handle; no ownership. */
+const NONPERSONAL_COLUMNS = new Set([
+  'copyright_key_orphan_cleanup_cursors.cursor_storage_object_id',
+])
 
 type Target = { spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]; noticeId: string }
 
@@ -46,6 +48,7 @@ async function createTargets(): Promise<Target[]> {
     createRetentionEmailCase(),
     createRetentionFormCase(),
     createRetentionAdministratorLiftCase(),
+    createRetentionTerritorialCase('eu_dsa', true),
   ])
   const cases = caseResults.map(result => {
     if (result.status === 'rejected') throw result.reason
@@ -130,7 +133,10 @@ describe('copyright retention erasure spec and legal-record guards', () => {
       KEPT_TABLES.some(pattern => pattern.test(table))
         ? []
         : columns
-            .filter(column => !(column in erasedColumns(table)))
+            .filter(
+              column =>
+                !(column in erasedColumns(table)) && !NONPERSONAL_COLUMNS.has(`${table}.${column}`),
+            )
             .map(column => `${table}.${column}`),
     )
 
