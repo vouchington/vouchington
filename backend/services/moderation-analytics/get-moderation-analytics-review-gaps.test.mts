@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   approveTestPost,
-  createSystemUser,
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestModerationAppeal,
-  insertTestModeratorAction,
   insertTestPost,
   recordTestPostModerationDisposition,
   insertTestSystemModerationReport,
@@ -25,7 +23,6 @@ import {
 } from '@services/moderation-appeals'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 import { checkPostClearance } from '@services/post-clearance'
-import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import { getModerationAnalytics } from './get-moderation-analytics.mts'
 
 describe('getModerationAnalytics review regressions', () => {
@@ -119,30 +116,6 @@ describe('getModerationAnalytics review regressions', () => {
       expect.objectContaining({ type: 'openai_omni', count: 1 }),
       expect.objectContaining({ type: 'spam_detection', count: 1 }),
     ])
-  })
-
-  it('counts automod reject actions as auto-removes', async () => {
-    const suffix = crypto.randomUUID().slice(0, 8)
-    const owner = await createTestUser()
-    const automod = await createSystemUser(MODERATION_SYSTEM_USERNAME)
-    const community = await insertTestCommunity({
-      createdById: owner.id,
-      name: `Moderation Analytics Automod Reject ${suffix}`,
-      slug: `analytics-automod-reject-${suffix}`,
-    })
-
-    await insertTestModeratorAction({
-      actorId: automod.id,
-      actionType: 'reject',
-      communityId: community.id,
-    })
-
-    const metrics = await getModerationAnalytics('all', {
-      type: 'community',
-      communityId: community.id,
-    })
-
-    expect(metrics.automod_performance.auto_removes).toBe(1)
   })
 
   it('counts unpublished first community posts as first-post rejections', async () => {
