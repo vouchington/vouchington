@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from 'uuid'
 import {
   attachCopyrightEncryptionKey,
   prepareCopyrightEncryptionKey,
+  openCopyrightSecrets,
 } from '../services/copyright-notices/encryption-keys.mts'
 import { destroyCopyrightOwnerEncryptionKey } from '../services/copyright-notices/encryption-key-destruction.mts'
 import { copyrightEmailIntakePurpose } from '../services/copyright-notices/email-intakes.mts'
@@ -138,22 +139,27 @@ export async function readCopyrightEmailOwnerKeyIds(id: string) {
   return rows[0]!
 }
 
-/** Model retained transport work after private-intake erasure; only its state and activity clock are read. */
+/** Insert real intake-encrypted delivery work before private-intake retirement. */
 export async function seedCopyrightReceiptDelivery(
   receiptId: string,
   kind: 'pending' | 'sent',
-  ciphertext: string,
 ): Promise<void> {
   const id = kind === 'pending' ? uuidv7({ msecs: HISTORICAL_REVIEW.getTime() + 1 }) : uuidv7()
   const sentAt = kind === 'sent' ? new Date() : null
   await using query = await beginTransaction()
+  await using secrets = await openCopyrightSecrets(
+    { kind: 'intake', id: receiptId },
+    query,
+    'write',
+  )
+  const body = secrets.encryptSecret('Copyright receipt delivery', `copyright-delivery-body:${id}`)
   await query(sql`/* seedCopyrightReceiptDelivery */
     INSERT INTO copyright_notice_delivery_work_items (
       id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind,
       channel, idempotency_key, body_ciphertext, delivery_attempted_at, sent_at
     ) VALUES (
       ${id}, ${receiptId}, 'correspondent', 'email_intake_received', 'email',
-      ${`receipt-delivery-${randomUUID()}`}, ${ciphertext}, ${sentAt}, ${sentAt}
+      ${`receipt-delivery-${randomUUID()}`}, ${body}, ${sentAt}, ${sentAt}
     )`)
   await query.commit()
 }
@@ -168,24 +174,23 @@ export async function linkHistoricalCopyrightReceipt(
     VALUES (${receiptId}, ${noticeId}, 'initial')`)
 }
 
-/** Preserve a historical case link while retiring its fixture-owned private intake. */
-export async function retireLinkedHistoricalCopyrightPrivateIntake(
-  receiptId: string,
-): Promise<void> {
+/** Retire a fixture-owned private intake after its already admitted work or case link. */
+export async function retireHistoricalCopyrightPrivateIntake(receiptId: string): Promise<void> {
   await using query = await beginTransaction()
-  const { rows } = await query<{ reviewed_at: Date }>(sql`/* lockLinkedHistoricalReceipt */
+  const { rows } = await query<{ reviewed_at: Date }>(sql`/* lockHistoricalReceiptPrivateIntake */
     SELECT receipt.reviewed_at FROM copyright_notice_email_intake_receipts receipt
-    WHERE receipt.id = ${receiptId} AND EXISTS (
-      SELECT 1 FROM copyright_notice_email_intake_notice_links link
-      WHERE link.copyright_notice_email_intake_receipt_id = receipt.id
-    ) FOR UPDATE`)
-  if (!rows[0]?.reviewed_at) throw new Error('Historical receipt must be reviewed and linked')
-  await query(sql`/* markLinkedHistoricalReceiptPrivateErasure */
+    JOIN copyright_notice_email_intakes intake ON intake.id = receipt.id
+    WHERE receipt.id = ${receiptId} FOR UPDATE OF receipt, intake`)
+  if (!rows[0]?.reviewed_at)
+    throw new Error('Historical receipt must be reviewed with a live private intake')
+  await query(sql`/* markHistoricalReceiptPrivateErasure */
     UPDATE copyright_notice_email_intake_receipts
-    SET erased_at = ${new Date(rows[0].reviewed_at.getTime() + 91 * 86_400_000)}
+    SET erased_at = clock_timestamp()
     WHERE id = ${receiptId} AND erased_at IS NULL`)
   await destroyCopyrightOwnerEncryptionKey({ kind: 'intake', id: receiptId }, query)
-  await query(sql`/* retireLinkedHistoricalPrivateIntake */
+  await query(sql`/* scopeHistoricalCopyrightPrivateIntakeRetirement */
+    SELECT set_config('app.copyright_operational_retention', 'on', true)`)
+  await query(sql`/* retireHistoricalPrivateIntake */
     DELETE FROM copyright_notice_email_intakes WHERE id = ${receiptId}`)
   await query.commit()
 }
