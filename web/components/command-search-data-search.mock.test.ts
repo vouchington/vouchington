@@ -34,7 +34,6 @@ import {
   makeTopicsSearchResponse,
 } from '@/test-helpers/api-responses'
 import {
-  searchAll,
   searchCommunitiesOnly,
   searchDomainsOnly,
   searchFediverseOnly,
@@ -82,35 +81,7 @@ describe('search functions', () => {
     vi.clearAllMocks()
   })
 
-  describe('searchAll', () => {
-    it('fetches all entity types in parallel and returns extracted results', async () => {
-      mockFetchTopics.mockResolvedValueOnce(makeTopicsSearchResponse({ topics: [topic] }))
-      mockFetchPosts.mockResolvedValueOnce({
-        results: [{ id: 'post-1' }],
-        posts: { 'post-1': post },
-        page_info: { has_next_page: false },
-      })
-      mockFetchRssFeedItems.mockResolvedValueOnce(
-        makeRssFeedItemsFeedResponse({ rssFeedItems: [rssItem] }),
-      )
-      mockFetchHostnames.mockResolvedValueOnce({
-        results: [{ id: 'domain-1' }],
-        hostnames: { 'domain-1': hostname },
-        page_info: { has_next_page: false },
-      })
-      mockFetchCommunities.mockResolvedValueOnce(
-        makeCommunitiesSearchResponse({ communities: [community] }),
-      )
-
-      const result = await searchAll('test', signal)
-
-      expect(result.topics).toEqual([topic])
-      expect(result.posts).toEqual([post])
-      expect(result.news).toEqual([rssItem])
-      expect(result.domains).toEqual([hostname])
-      expect(result.communities).toEqual([community])
-    })
-
+  describe('bookmark ordering', () => {
     it('orders bookmarked posts before neutral and negatively bookmarked posts', async () => {
       const ids = ['plain', 'saved', 'followed', 'negative', 'proxy-followed', 'muted']
       mockFetchPosts.mockResolvedValueOnce({
@@ -125,18 +96,7 @@ describe('search functions', () => {
         },
         page_info: { has_next_page: false },
       })
-      mockFetchTopics.mockResolvedValueOnce(makeTopicsSearchResponse({ topics: [] }))
-      mockFetchRssFeedItems.mockResolvedValueOnce(
-        makeRssFeedItemsFeedResponse({ rssFeedItems: [] }),
-      )
-      mockFetchHostnames.mockResolvedValueOnce({
-        results: [],
-        hostnames: {},
-        page_info: { has_next_page: false },
-      })
-      mockFetchCommunities.mockResolvedValueOnce(makeCommunitiesSearchResponse({ communities: [] }))
-
-      const result = await searchAll('test', signal)
+      const result = await searchPostsOnly('test', signal)
 
       expect(result.posts.map(item => item.id)).toEqual([
         'saved',

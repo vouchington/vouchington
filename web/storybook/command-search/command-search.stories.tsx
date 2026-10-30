@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>
 function SearchPreview({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <StoryFrame>
-      <FeatureFlagsProvider globalFlags={{ combinedSearch: true }}>
+      <FeatureFlagsProvider globalFlags={{}}>
         <CommandSearch
           open
           onOpenChange={() => {}}
