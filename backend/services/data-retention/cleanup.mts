@@ -542,29 +542,33 @@ export async function runDataRetentionCleanup(
       ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
       : cleanupObsoleteAgentModerations(withLimits(options.agentModerations)),
   ])
-  const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
-  const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
-    withLimits(options.terminalEmbeddingBatches),
-  )
-  const completedAdminImportBatches = await cleanupCompletedImportBatches(
-    'admin',
-    withLimits(options.completedAdminImportBatches),
-  )
-  const completedRssImportBatches = await cleanupCompletedImportBatches(
-    'rss',
-    withLimits(options.completedRssImportBatches),
-  )
-  const expiredUserDataRequestAttempts = await cleanupExpiredUserDataRequestAttempts(
-    withLimits(options.expiredUserDataRequestAttempts),
-  )
-  const oldMediaDeliveryChanges = await cleanupOldMediaDeliveryChanges(
-    withLimits(options.oldMediaDeliveryChanges),
-  )
-  const classifierRecords = await cleanupClassifierRecords({
-    ...withLimits(options.classifierRecords),
-    retentionDays: getClassifierRetentionDays(),
-  })
-  const sesBounceEvents = await cleanupSesBounceEvents(withLimits(options.sesBounceEvents))
+  // Embedding-cache and import-batch cleanups touch separate tables and feed nothing else.
+  const [
+    textEmbeddingCache,
+    terminalEmbeddingBatches,
+    completedAdminImportBatches,
+    completedRssImportBatches,
+  ] = await Promise.all([
+    cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache)),
+    cleanupTerminalEmbeddingBatches(withLimits(options.terminalEmbeddingBatches)),
+    cleanupCompletedImportBatches('admin', withLimits(options.completedAdminImportBatches)),
+    cleanupCompletedImportBatches('rss', withLimits(options.completedRssImportBatches)),
+  ])
+  // Request-attempt, media-change, classifier and SES-bounce cleanups read and delete separate tables.
+  const [
+    expiredUserDataRequestAttempts,
+    oldMediaDeliveryChanges,
+    classifierRecords,
+    sesBounceEvents,
+  ] = await Promise.all([
+    cleanupExpiredUserDataRequestAttempts(withLimits(options.expiredUserDataRequestAttempts)),
+    cleanupOldMediaDeliveryChanges(withLimits(options.oldMediaDeliveryChanges)),
+    cleanupClassifierRecords({
+      ...withLimits(options.classifierRecords),
+      retentionDays: getClassifierRetentionDays(),
+    }),
+    cleanupSesBounceEvents(withLimits(options.sesBounceEvents)),
+  ])
   // Tombstone deletion checks for surviving intents, so interrupted intent cleanup cannot
   // discard delivery state; running it first only makes already-terminal rows eligible sooner.
   const [systemPrunedNotifications, userDeletedNotifications, moderationEmailSends] =
