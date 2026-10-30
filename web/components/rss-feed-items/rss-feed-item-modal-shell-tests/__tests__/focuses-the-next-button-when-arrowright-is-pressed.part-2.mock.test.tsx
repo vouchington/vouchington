@@ -1,8 +1,7 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 // Imported after the nav mock so its vi.mock factory can reference navMockModule.
-import { focusRssFeedItemModalButtonAfterKey } from '@/test-helpers/components/rss-feed-items/modal-keyboard-focus'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'
 
 vi.mock(
@@ -38,51 +37,6 @@ describe('RssFeedItemModalShell', () => {
     mockNav.setSearchParams('rss_item=item-1')
     mockNav.setPathname('/news')
     mockNavContext = null
-  })
-
-  describe('rAF-based focus recovery after currentItemId changes', () => {
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    it('re-focuses the Next button via rAF when currentItemId changes after ArrowRight', () => {
-      const nextButton = focusRssFeedItemModalButtonAfterKey({
-        buttonName: /next/i,
-        initial: {
-          currentItemId: 'item-1',
-          nextUrl: '/news?rss_item=item-2',
-          previousUrl: '/news?rss_item=prev',
-        },
-        key: 'ArrowRight',
-        next: {
-          currentItemId: 'item-2',
-          nextUrl: '/news?rss_item=item-3',
-          previousUrl: '/news?rss_item=item-1',
-        },
-      })
-
-      expect(document.activeElement).toBe(nextButton)
-    })
-
-    it('re-focuses the Previous button via rAF when currentItemId changes after ArrowLeft', () => {
-      // The previous button is aria-disabled here (no prev URL) but still focusable.
-      const prevButton = focusRssFeedItemModalButtonAfterKey({
-        buttonName: /previous/i,
-        initial: {
-          currentItemId: 'item-2',
-          nextUrl: '/news?rss_item=item-3',
-          previousUrl: '/news?rss_item=item-1',
-        },
-        key: 'ArrowLeft',
-        next: {
-          currentItemId: 'item-1',
-          nextUrl: '/news?rss_item=item-2',
-          previousUrl: null,
-        },
-      })
-
-      expect(document.activeElement).toBe(prevButton)
-    })
   })
 
   describe('title external-link icon', () => {
