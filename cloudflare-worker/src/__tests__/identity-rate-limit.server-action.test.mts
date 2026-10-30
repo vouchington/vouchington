@@ -19,7 +19,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -39,7 +39,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -57,7 +57,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
   it('blocks when rate limit is exceeded', async () => {
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async () => ({ success: false }),
         },
       },
@@ -70,7 +70,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
   it('blocks when ip is null and binding is configured', async () => {
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async () => ({ success: true }),
         },
       },
@@ -96,7 +96,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
 
     await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -121,7 +121,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
         RATE_LIMITER_SERVER_ACTION: {
           limit: async () => ({ success: false }),
         },
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -145,7 +145,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
         RATE_LIMITER_SERVER_ACTION: {
           limit: async () => ({ success: false }),
         },
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -169,7 +169,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
         RATE_LIMITER_SERVER_ACTION: {
           limit: async () => ({ success: false }),
         },
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -191,7 +191,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -217,7 +217,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
       },
     }
     const env = {
-      RATE_LIMITER_ANON_MUTATING: limiter,
+      RATE_LIMITER_MUTATING: limiter,
       RATE_LIMITER_SERVER_ACTION: limiter,
     }
 
@@ -248,7 +248,7 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: false }

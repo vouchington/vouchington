@@ -16,8 +16,8 @@ IP-level rate limiting at the CDN edge before requests reach the backend.
 - Exact `POST /ap/inbox` bypasses both generic and unknown-bot edge mutating buckets so the backend's DynamicConfig source-IP attempt limiter plus approved-hostname, HTTP-signature, and authenticated-hostname limiter are authoritative; wrong methods, trailing slashes, and neighboring paths remain edge-limited
 
 **Config:** Staging declares `RATE_LIMITER_GET_HEAD`, `RATE_LIMITER_MUTATING`, and
-`RATE_LIMITER_SERVER_ACTION` in the private Worker deployment manifest. Optional anonymous and bot
-bindings fall back to the matching shared method-class binding when absent.
+`RATE_LIMITER_SERVER_ACTION` in the private Worker deployment manifest.
+Bot and anonymous traffic use the shared method-class bindings under their own key prefixes.
 
 Voucha selects which bindings and routes consume each budget. The shared bucket and rejection
 engine lives in `@vouchington/rate-limit/edge`; the Worker keeps its bot and identity policy.

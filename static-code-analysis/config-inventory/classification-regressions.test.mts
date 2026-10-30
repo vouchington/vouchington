@@ -24,11 +24,7 @@ describe('config inventory classification regressions', () => {
         'process.env.DATABASE_PORT',
         'process.env.VALKEY_REQUEST_TIMEOUT_MS',
       ].join('\n'),
-      'cloudflare-worker/src/rate-limit.mts': [
-        'input.env.RATE_LIMITER_ANON_GET_HEAD',
-        'input.env.RATE_LIMITER_BOT_MUTATING',
-        'input.env.RATE_LIMITER_SERVER_ACTION',
-      ].join('\n'),
+      'cloudflare-worker/src/rate-limit.mts': ['input.env.RATE_LIMITER_SERVER_ACTION'].join('\n'),
       'backend/services/markdown/index.mts': ['process.env[SIDELOAD_SIGNING_KEYS_ENV]'].join('\n'),
       'ts-shared/env-contract/index.mts': [
         'export function collectTypedEnvContractEntries() {',
@@ -127,16 +123,6 @@ describe('config inventory classification regressions', () => {
         expect.objectContaining({
           name: 'GOOGLE_CLIENT_ID',
           classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
-        }),
-        expect.objectContaining({
-          name: 'RATE_LIMITER_ANON_GET_HEAD',
-          classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
-          reviewReason: expect.stringContaining('Cloudflare RateLimiter binding'),
-        }),
-        expect.objectContaining({
-          name: 'RATE_LIMITER_BOT_MUTATING',
-          classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
-          reviewReason: expect.stringContaining('Cloudflare RateLimiter binding'),
         }),
         expect.objectContaining({
           name: 'RATE_LIMITER_SERVER_ACTION',

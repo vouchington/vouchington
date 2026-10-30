@@ -11,10 +11,6 @@ function rejectingRateLimiter(): NonNullable<Env['RATE_LIMITER_MUTATING']> {
   return { limit: async () => ({ success: false }) }
 }
 
-function allowingRateLimiter(): NonNullable<Env['RATE_LIMITER_MUTATING']> {
-  return { limit: async () => ({ success: true }) }
-}
-
 describe('ActivityPub inbox edge rate-limit ownership', () => {
   beforeEach(() => {
     setupMemoryCaches()
@@ -54,7 +50,6 @@ describe('ActivityPub inbox edge rate-limit ownership', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_MUTATING: rejectingRateLimiter(),
-      RATE_LIMITER_BOT_MUTATING: rejectingRateLimiter(),
     }
 
     const response = await worker.fetch(
@@ -80,7 +75,6 @@ describe('ActivityPub inbox edge rate-limit ownership', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_MUTATING: rejectingRateLimiter(),
-      RATE_LIMITER_BOT_MUTATING: rejectingRateLimiter(),
     }
 
     const response = await worker.fetch(
@@ -103,7 +97,6 @@ describe('ActivityPub inbox edge rate-limit ownership', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_MUTATING: rejectingRateLimiter(),
-      RATE_LIMITER_BOT_MUTATING: rejectingRateLimiter(),
     }
 
     const response = await worker.fetch(
@@ -167,8 +160,7 @@ describe('ActivityPub inbox edge rate-limit ownership', () => {
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
-      RATE_LIMITER_MUTATING: allowingRateLimiter(),
-      RATE_LIMITER_BOT_MUTATING: rejectingRateLimiter(),
+      RATE_LIMITER_MUTATING: rejectingRateLimiter(),
     }
 
     const response = await worker.fetch(

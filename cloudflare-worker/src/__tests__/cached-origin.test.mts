@@ -134,7 +134,7 @@ describe('CachedOrigin.fetch', () => {
       { audience: 'bot', isRsc: false },
       {
         BACKEND_ORIGIN: 'https://backend.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
+        RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
       },
     )
     const dispatchHeaders = {
@@ -152,7 +152,7 @@ describe('CachedOrigin.fetch', () => {
       { audience: 'bot', isRsc: false },
       {
         BACKEND_ORIGIN: 'https://backend.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: true }) },
+        RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: true }) },
       },
     )
     const allowedResponse = await allowed.fetch(
@@ -163,7 +163,7 @@ describe('CachedOrigin.fetch', () => {
     expect(captured()?.headers.get('x-voucha-dispatch-ip')).toBeNull()
   })
 
-  // Proves RATE_LIMITER_BOT_GET_HEAD is never consulted without the dispatch-only header,
+  // Proves RATE_LIMITER_GET_HEAD is never consulted without the dispatch-only header,
   // even though it's configured here to deny.
   it('does not run the bot limiter when the dispatch-only header is absent', async () => {
     const fetchSpy = vi.fn<VitestLooseMock>(() => Promise.resolve(new Response('ok')))
@@ -173,7 +173,7 @@ describe('CachedOrigin.fetch', () => {
       { audience: 'anon', isRsc: false },
       {
         BACKEND_ORIGIN: 'https://backend.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
+        RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
       },
     )
     const response = await origin.fetch(new Request('https://voucha.ai/api/v1/posts'))

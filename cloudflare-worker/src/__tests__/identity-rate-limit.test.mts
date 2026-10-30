@@ -17,7 +17,7 @@ describe('checkConfiguredIdentityBuckets', () => {
   it('skips limiting for fully cached routes', async () => {
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: { limit: async () => ({ success: false }) },
+        RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
       },
       ...baseInput,
       isFullyCachedRoute: true,
@@ -29,7 +29,7 @@ describe('checkConfiguredIdentityBuckets', () => {
   it('skips pre-cache limiting for unknown bot GET requests', async () => {
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: { limit: async () => ({ success: false }) },
+        RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
       },
       ...baseInput,
       botTier: 'unknown',
@@ -43,7 +43,7 @@ describe('checkConfiguredIdentityBuckets', () => {
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: false }
@@ -73,7 +73,7 @@ describe('checkConfiguredIdentityBuckets', () => {
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
+        RATE_LIMITER_GET_HEAD: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -132,7 +132,7 @@ describe('checkConfiguredIdentityBuckets', () => {
 
     const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -150,7 +150,7 @@ describe('checkConfiguredIdentityBuckets', () => {
   it('shares one mutating key across POST, PUT, PATCH, and DELETE', async () => {
     const keys: string[] = []
     const env = {
-      RATE_LIMITER_ANON_MUTATING: {
+      RATE_LIMITER_MUTATING: {
         limit: async ({ key }: { key: string }) => {
           keys.push(key)
           return { success: true }

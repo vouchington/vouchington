@@ -112,7 +112,7 @@ describe('worker fetch handler — bot headers, rate limiting, noindex, and cach
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
-      RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
     }
 
     const response = await worker.fetch(
@@ -132,13 +132,16 @@ describe('worker fetch handler — bot headers, rate limiting, noindex, and cach
     ) as unknown as typeof fetch
     globalThis.fetch = fetchSpy
 
+    const keys: string[] = []
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
-      // Pre-cache limiter configured but should be skipped for unknown bots
-      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
-      // Bot limiter allows through
-      RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: true }) },
+      RATE_LIMITER_GET_HEAD: {
+        limit: async ({ key }) => {
+          keys.push(key)
+          return { success: true }
+        },
+      },
     }
 
     const response = await worker.fetch(
@@ -151,6 +154,8 @@ describe('worker fetch handler — bot headers, rate limiting, noindex, and cach
 
     expect(response.status).toBe(200)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
+    // Pre-cache identity limiting is skipped for unknown bots; only the post-cache bot key is used.
+    expect(keys).toEqual(['bot:web:GET:1.1.1.1'])
   })
 
   it('adds x-robots-tag noindex header when NOINDEX=true', async () => {

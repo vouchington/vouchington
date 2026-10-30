@@ -66,8 +66,8 @@ export function getIdentityRateLimitBuckets(input: IdentityRateLimitInput): Edge
   // requests that happen to carry a next-action header are not misclassified.
   const isServerActionRequest = Boolean(input.isServerAction) && input.method === 'POST'
   const genericBinding = isGetOrHead
-    ? (input.env.RATE_LIMITER_ANON_GET_HEAD ?? input.env.RATE_LIMITER_GET_HEAD)
-    : (input.env.RATE_LIMITER_ANON_MUTATING ?? input.env.RATE_LIMITER_MUTATING)
+    ? input.env.RATE_LIMITER_GET_HEAD
+    : input.env.RATE_LIMITER_MUTATING
 
   const serverActionBinding = isServerActionRequest ? input.env.RATE_LIMITER_SERVER_ACTION : null
   return [
