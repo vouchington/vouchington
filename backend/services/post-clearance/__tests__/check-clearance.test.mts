@@ -249,6 +249,7 @@ describe('resetPostClearance', () => {
     })
 
     await expect(resetPostClearance(postId, userId)).resolves.toBe(false)
+    expect(await getPostClearanceStatus(postId)).toBe('pending')
     await expect(getPostClearanceChanges(postId)).resolves.toEqual([])
   })
   // keep generated shard bindings live for typecheck

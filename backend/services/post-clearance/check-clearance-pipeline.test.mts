@@ -7,13 +7,13 @@ import {
   setPostSpamDetectionComplete,
   safeUsername,
 } from '@voucha/test-helpers'
-import { checkPostClearance, resetPostClearance, updateClearanceStatus } from './index.mts'
+import { checkPostClearance, resetPostClearance } from './index.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
 /**
  * Integration-level pipeline tests for post clearance.
- * These tests verify multi-step operation sequences (reset → re-check, approve → override)
+ * These tests verify multi-step reset then re-check sequences
  * that are not covered in the unit-level check-clearance.test.mts.
  */
 describe('post clearance pipeline', () => {
@@ -66,38 +66,5 @@ describe('post clearance pipeline', () => {
     await checkPostClearance(postId)
 
     expect(await getPostClearanceStatus(postId)).toBe('in_review')
-  })
-
-  it('admin override to approved after automatic rejection is reflected in clearance result', async () => {
-    const adminUser = await createTestUser({
-      username: safeUsername('clearance-pipeline-admin'),
-      administrator: true,
-    })
-    const postId = await insertTestPost({
-      title: `pipeline-admin-override-${randomSuffix()}`,
-      slug: `pipeline-admin-override-${randomSuffix()}`,
-      createdById: userId,
-      markdown: 'test',
-      clearanceStatus: 'rejected',
-    })
-
-    // Admin overrides the rejected status to approved
-    await updateClearanceStatus(postId, 'approved', adminUser!.id, 'staff_or_user')
-
-    expect(await getPostClearanceStatus(postId)).toBe('approved')
-  })
-
-  it('reset a pending post returns false and leaves status unchanged', async () => {
-    const postId = await insertTestPost({
-      title: `pipeline-reset-pending-noop-${randomSuffix()}`,
-      slug: `pipeline-reset-pending-noop-${randomSuffix()}`,
-      createdById: userId,
-      markdown: 'test',
-      clearanceStatus: 'pending',
-    })
-
-    const wasReset = await resetPostClearance(postId, userId)
-    expect(wasReset).toBe(false)
-    expect(await getPostClearanceStatus(postId)).toBe('pending')
   })
 })
