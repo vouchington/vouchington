@@ -5,16 +5,7 @@ import {
   capturedProbeStatements,
   writeAnnotatedSelectProbe,
 } from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
-import { registerScenarioContract } from './plan-expectations.mts'
-import {
-  assertScenarioManifest,
-  getResults,
-  OUTPUT_DIR,
-  prepareOutputDir,
-  runAndCapture,
-  writeResults,
-} from './run-support.mts'
-import { getScenarioFailures } from './scenario-failures.mts'
+import { assertScenarioManifest, getResults, runAndCapture } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
 function recordedScenarioError(run: () => Promise<void>): Promise<void> {
