@@ -195,11 +195,6 @@ describe('routing', () => {
     expect(getRouteTarget('/nodeinformation')).toBe('web')
   })
 
-  it('routes the Bluesky AT-Protocol client-metadata document to backend (Phase D1)', () => {
-    expect(getRouteTarget('/client-metadata.json')).toBe('backend')
-    expect(getRouteTarget('/CLIENT-METADATA.JSON')).toBe('backend')
-  })
-
   it('routes only the exact client-metadata path outside the API prefix', () => {
     expect(getRouteTarget('/client-metadata.json')).toBe('backend')
     expect(getRouteTarget('/CLIENT-METADATA.JSON')).toBe('backend')
