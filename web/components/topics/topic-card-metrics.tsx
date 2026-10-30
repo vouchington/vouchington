@@ -1,7 +1,8 @@
 'use client'
 
 import { Users, Star } from 'lucide-react'
-import { formatCompactNumber, calculateAverageRating } from '@ts-shared/utils/format'
+import { formatCompactNumber } from '@ts-shared/utils/format'
+import { calculateWeightedAverage } from '@vouchington/utils/format'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import type { Topic, TopicMetrics } from '@/types/topics'
 
@@ -12,7 +13,7 @@ interface TopicCardMetricsProps {
 
 export function TopicCardMetrics({ topic, metrics }: TopicCardMetricsProps) {
   const uiLocale = useUiLocale()
-  const averageRating = metrics?.ratings ? calculateAverageRating(metrics.ratings.count) : null
+  const averageRating = metrics?.ratings ? calculateWeightedAverage(metrics.ratings.count) : null
   const followerCount = metrics?.bookmarks.follow || 0
   const reviewCount = metrics?.ratings
     ? Object.values(metrics.ratings.count).reduce((sum, count) => sum + count, 0)

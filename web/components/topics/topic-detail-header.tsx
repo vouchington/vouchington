@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Star } from 'lucide-react'
-import { calculateAverageRating } from '@ts-shared/utils/format'
+import { calculateWeightedAverage } from '@vouchington/utils/format'
 import { TopicLogo } from '@/components/shared/topic-logo'
 import { TopicVouchDisavowVote } from '@/components/topics/topic-vouch-disavow-vote'
 import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
@@ -62,7 +62,7 @@ export function TopicDetailHeader({
   const t = useTranslations()
   const { currentUser } = useAuth()
   const currentUserId = currentUser?.id
-  const averageRating = metrics?.ratings ? calculateAverageRating(metrics.ratings.count) : null
+  const averageRating = metrics?.ratings ? calculateWeightedAverage(metrics.ratings.count) : null
   const isSource = topic.topic_type === 'rss_feed'
   const provenanceOwner = isSource ? sourceFeed : topic
 
