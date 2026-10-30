@@ -105,11 +105,9 @@ owns completion-time permissions and effects.
 ## Provider and removal boundaries
 
 Fixed classifiers use OpenAI Decisions through the structured-decision boundary, with Jev retained as a per-classifier fallback; the local C5 detector performs
-no provider call. The retained focused OpenRouter agents are
-appeal resolution,
-dispute resolution,
-report judgement and
-story-post summarization. Their terminal provider metadata settles
+no provider call. The retained focused agents (appeal resolution, dispute resolution, report
+judgement and story-post summarization) use the model provider layer, where each service's setting
+selects Anthropic or OpenAI, the latter directly or through OpenRouter. Their terminal provider metadata settles
 usage directly, outside direct OpenAI background-response recovery.
 
 Copyright email intake, form screening and appeal recommendation are separate agents owned by the
