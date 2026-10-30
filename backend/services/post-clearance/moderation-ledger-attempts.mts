@@ -9,7 +9,6 @@ import {
   type PostModerationDisposition,
   type PostModerationVersion,
   POST_MODERATION_POLICY_REVISION,
-  type PostModerationVersion,
 } from './moderation-ledger-types.mts'
 import {
   ensureCurrentPostModerationVersion,

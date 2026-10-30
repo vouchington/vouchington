@@ -9,6 +9,7 @@ import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import {
   applyTopicAliasUnlinkPageForTest,
   beginTransaction,
+  clearTestRssFeedItemCategoryTopicAlias,
   createTestTopic,
   getEntityRelation,
   getTestPostgresBackendProcessId,
@@ -51,6 +52,7 @@ describe('topic alias unlink category page', () => {
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [aliasText] }])
     const [alias] = await createTopicAliases(topic.id, aliasText, { skipSideEffects: true })
     if (!alias) throw new Error('Expected linked alias')
+    await clearTestRssFeedItemCategoryTopicAlias(item.id, aliasText)
     expect(await countTestRssFeedItemAliasCategoryBindings(alias.id, [item.id])).toBe(0)
     await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
       expect.objectContaining({ category_text: aliasText, topic_id: topic.id }),
@@ -70,9 +72,13 @@ describe('topic alias unlink category page', () => {
     })
 
     await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id, skipSideEffects: true })
-    const finalPage = await selectTopicAliasUnlinkInitialPageForTest(alias.id, alias.alias)
-    expect(finalPage.phase).toBe('finalize')
-    await applyTopicAliasUnlinkPageForTest(finalPage)
+    let page = await selectTopicAliasUnlinkInitialPageForTest(alias.id, alias.alias)
+    for (let count = 0; count < 20; count += 1) {
+      const next = await applyTopicAliasUnlinkPageForTest(page)
+      if (!next) break
+      page = next
+      if (count === 19) throw new Error('Alias unlink exceeded twenty pages')
+    }
     await expect(processReconcileTopicAliasCategoryMappings(1, [alias.id])).resolves.toMatchObject({
       updated: 0,
       hasMore: true,

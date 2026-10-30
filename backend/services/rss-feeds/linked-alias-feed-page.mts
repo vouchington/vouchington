@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+import createHttpError from 'http-errors'
 
 /** Applies one raw feed page after topic fences and category row locks. */
 export async function backfillLinkedAliasFeedPage(
@@ -10,12 +11,7 @@ export async function backfillLinkedAliasFeedPage(
 ): Promise<number> {
   if (rows.length === 0) return 0
   await using transaction = await beginTransaction()
-  const { rows: candidates } = await transaction<{
-    rss_feed_id: string
-    category_identity_id: string
-    previous_topic_id: string | null
-  }>(
-    `/* backfillLinkedAliasFeedPage candidates */
+  const candidateSql = `/* backfillLinkedAliasFeedPage candidates */
      SELECT category.rss_feed_id, category.category_identity_id,
        category.topic_id AS previous_topic_id
      FROM UNNEST($2::uuid[], $3::uuid[]) AS raw(rss_feed_id, category_identity_id)
@@ -25,9 +21,18 @@ export async function backfillLinkedAliasFeedPage(
      JOIN rss_category_identities identity ON identity.id = category.category_identity_id
      WHERE identity.category_text = LOWER($4::text)
        AND category.topic_id IS DISTINCT FROM $1::uuid
-     ORDER BY category.rss_feed_id, category.category_identity_id`,
-    [topicId, rows.map(row => row.rss_feed_id), rows.map(row => row.category_identity_id), alias],
-  )
+     ORDER BY category.rss_feed_id, category.category_identity_id`
+  const candidateParameters = [
+    topicId,
+    rows.map(row => row.rss_feed_id),
+    rows.map(row => row.category_identity_id),
+    alias,
+  ]
+  const { rows: candidates } = await transaction<{
+    rss_feed_id: string
+    category_identity_id: string
+    previous_topic_id: string | null
+  }>(candidateSql, candidateParameters)
   if (candidates.length === 0) {
     await transaction.commit()
     return 0
@@ -47,6 +52,9 @@ export async function backfillLinkedAliasFeedPage(
      FOR UPDATE OF category`,
     [candidates.map(row => row.rss_feed_id), candidates.map(row => row.category_identity_id)],
   )
+  const { rows: currentCandidates } = await transaction(candidateSql, candidateParameters)
+  if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
+    throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
   const { rows: owner } = await transaction<{ id: string }>(
     `/* backfillLinkedAliasFeedPage currentOwner */
      SELECT id FROM topic_aliases
@@ -74,6 +82,8 @@ export async function backfillLinkedAliasFeedPage(
       candidates.map(row => row.previous_topic_id),
     ],
   )
+  if (rowCount !== candidates.length)
+    throw createHttpError(409, 'RSS feed category mapping changed before backfill')
   await transaction.commit()
   return rowCount ?? 0
 }
