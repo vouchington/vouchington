@@ -84,7 +84,12 @@ async function retireReceiptExplanation(
 async function finishReceiptRetirement(query: TransactionQuery, receiptId: string): Promise<void> {
   await query(sql`/* finishCopyrightReceiptExplanationRetirement */
     UPDATE copyright_notice_email_intake_receipts
-    SET review_rationale_ciphertext = NULL, final_explanation_erased_at = clock_timestamp()
+    SET review_decision = NULL, reviewed_by_id = NULL, reviewed_at = NULL,
+      review_rationale_ciphertext = NULL, last_delivery_activity_at = NULL,
+      preservation_hold_kind = NULL, preservation_hold_placed_at = NULL,
+      preservation_hold_placed_by_id = NULL, preservation_hold_released_at = NULL,
+      preservation_hold_released_by_id = NULL, last_preservation_hold_released_at = NULL,
+      final_explanation_erased_at = clock_timestamp()
     WHERE id = ${receiptId} AND final_explanation_erased_at IS NULL`)
 }
 

@@ -7,11 +7,11 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { createDeterministicCopyrightCorrespondencesInTransaction } from './correspondence.mts'
-import {
-  createCopyrightDeliveryIntents,
-  type CopyrightDeliveryIntentInput,
-} from './delivery-intent-batch.mts'
-import type { CopyrightNoticeDeliveryKind } from './delivery-types.mts'
+import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
+import type {
+  CopyrightDeliveryIntentInput,
+  CopyrightNoticeDeliveryKind,
+} from './delivery-types.mts'
 import type { CopyrightCorrespondenceKind } from './types.mts'
 
 export type CopyrightStatementDeliveryInput = {

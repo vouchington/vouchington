@@ -16,7 +16,7 @@ import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyri
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { createCopyrightEmailIntake } from './email-intakes.mts'
 import { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 describe('copyright intake erasure lifetime locks', () => {
   const bucket = useFakeCopyrightEvidenceBucket()

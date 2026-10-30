@@ -1139,17 +1139,19 @@ CREATE FUNCTION fn_project_copyright_receipt_explanation_eligible(target_receipt
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
     WHERE receipt.id = target_receipt_id AND receipt.reviewed_at IS NOT NULL
+      AND receipt.erased_at IS NOT NULL
       AND receipt.final_explanation_erased_at IS NULL AND receipt.current_preservation_hold_token IS NULL
       AND GREATEST(receipt.created_at, receipt.reviewed_at, receipt.last_preservation_hold_released_at,
         receipt.last_delivery_activity_at) <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(months => 72)) AT TIME ZONE 'UTC'
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intakes intake WHERE intake.id = receipt.id)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
         WHERE link.copyright_notice_email_intake_receipt_id = receipt.id)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
         WHERE delivery.copyright_notice_email_intake_receipt_id = receipt.id AND delivery.state IN ('pending', 'claimed')))
 $$;
-COMMENT ON FUNCTION fn_project_copyright_receipt_explanation_eligible IS 'Exact standalone seventy-two-month review, actual delivery and preservation-release clock with retained-owner hold, linked-case and pending-delivery blockers.';
+COMMENT ON FUNCTION fn_project_copyright_receipt_explanation_eligible IS 'Exact standalone seventy-two-month review, actual delivery and preservation-release clock with private-intake, linked-case and pending-delivery blockers.';
 
--- The retained receipt, not a disposable live intake or reviewer, owns this finite explanation.
+-- One fenced retirement clears the standalone final result and its provenance after key destruction.
 CREATE FUNCTION fn_project_copyright_receipt_explanation_retirement_allowed(old_row jsonb, new_row jsonb)
 RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE receipt_id uuid := (old_row->>'id')::uuid;
@@ -1157,23 +1159,40 @@ BEGIN
   IF current_setting('app.copyright_receipt_retention_id', true) IS DISTINCT FROM receipt_id::text
     OR old_row->>'reviewed_at' IS NULL OR old_row->>'current_preservation_hold_token' IS NOT NULL
     OR old_row->>'final_explanation_erased_at' IS NOT NULL
-    OR (old_row - ARRAY['review_rationale_ciphertext', 'final_explanation_erasure_started_at', 'final_explanation_erased_at'])
-      IS DISTINCT FROM (new_row - ARRAY['review_rationale_ciphertext', 'final_explanation_erasure_started_at', 'final_explanation_erased_at'])
     OR NOT fn_project_copyright_receipt_explanation_eligible(receipt_id)
     THEN RETURN false; END IF;
   IF old_row->>'final_explanation_erasure_started_at' IS NULL THEN
     RETURN new_row->>'final_explanation_erasure_started_at' IS NOT NULL
-      AND new_row->>'final_explanation_erased_at' IS NULL
-      AND new_row->>'review_rationale_ciphertext' IS NOT DISTINCT FROM old_row->>'review_rationale_ciphertext';
+      AND (old_row - 'final_explanation_erasure_started_at') =
+        (new_row - 'final_explanation_erasure_started_at');
   END IF;
   RETURN new_row->>'final_explanation_erasure_started_at' = old_row->>'final_explanation_erasure_started_at'
-    AND new_row->>'final_explanation_erased_at' IS NOT NULL AND new_row->>'review_rationale_ciphertext' IS NULL
+    AND new_row->>'final_explanation_erased_at' IS NOT NULL
+    AND new_row->>'review_decision' IS NULL AND new_row->>'reviewed_by_id' IS NULL
+    AND new_row->>'reviewed_at' IS NULL AND new_row->>'review_rationale_ciphertext' IS NULL
+    AND new_row->>'last_delivery_activity_at' IS NULL
+    AND new_row->>'preservation_hold_kind' IS NULL
+    AND new_row->>'preservation_hold_placed_at' IS NULL
+    AND new_row->>'preservation_hold_placed_by_id' IS NULL
+    AND new_row->>'preservation_hold_released_at' IS NULL
+    AND new_row->>'preservation_hold_released_by_id' IS NULL
+    AND new_row->>'last_preservation_hold_released_at' IS NULL
+    AND (old_row - ARRAY['review_decision', 'reviewed_by_id', 'reviewed_at',
+      'review_rationale_ciphertext', 'last_delivery_activity_at', 'preservation_hold_kind',
+      'preservation_hold_placed_at', 'preservation_hold_placed_by_id',
+      'preservation_hold_released_at', 'preservation_hold_released_by_id',
+      'last_preservation_hold_released_at', 'final_explanation_erased_at']) =
+      (new_row - ARRAY['review_decision', 'reviewed_by_id', 'reviewed_at',
+      'review_rationale_ciphertext', 'last_delivery_activity_at', 'preservation_hold_kind',
+      'preservation_hold_placed_at', 'preservation_hold_placed_by_id',
+      'preservation_hold_released_at', 'preservation_hold_released_by_id',
+      'last_preservation_hold_released_at', 'final_explanation_erased_at'])
     AND NOT EXISTS (SELECT 1 FROM copyright_email_receipt_encryption_keys owned
       JOIN copyright_retention_keys key ON key.id = owned.copyright_retention_key_id
       WHERE owned.copyright_notice_email_intake_receipt_id = receipt_id AND key.destroyed_at IS NULL);
 END;
 $$;
-COMMENT ON FUNCTION fn_project_copyright_receipt_explanation_retirement_allowed IS 'Authorizes only fenced standalone receipt explanation retirement after seventy-two calendar months and current preservation/delivery checks; final review facts and SES replay identity remain.';
+COMMENT ON FUNCTION fn_project_copyright_receipt_explanation_retirement_allowed IS 'Authorizes fenced standalone review retirement after seventy-two calendar months, current preservation and delivery checks, and receipt-key destruction; only SES replay identity remains.';
 
 CREATE TRIGGER trigger_register_copyright_minimal_purge_delete_work
   BEFORE DELETE ON copyright_notice_retained_identities FOR EACH ROW

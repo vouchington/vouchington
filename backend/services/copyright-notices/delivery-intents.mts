@@ -11,10 +11,10 @@ import assert from 'http-assert'
 import {
   createCopyrightDeliveryIntents,
   insertCopyrightDeliveryRecipients,
-  type CopyrightDeliveryIntentInput,
 } from './delivery-intent-batch.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type {
+  CopyrightDeliveryIntentInput,
   CopyrightDeliveryIntentRecord,
   CopyrightDeliveryRecipientRecord,
 } from './delivery-types.mts'

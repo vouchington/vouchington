@@ -1,3 +1,5 @@
+// The worker creates copyright key objects through backend fixtures.
+import '../../../backend/test-helpers/copyright-key-object-cli.mts'
 import { randomBytes } from 'node:crypto'
 import { expect, test, type Page } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'

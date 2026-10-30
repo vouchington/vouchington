@@ -7,7 +7,7 @@ import {
   useCopyrightRetentionWorkClock,
 } from '@voucha/test-helpers/copyright-retention-work'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
 import {
   readCopyrightRetentionCaseRows,

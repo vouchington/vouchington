@@ -219,9 +219,9 @@ Each of these providers has their own privacy policy. We select providers who ma
   relies on follow their separate legal lifecycle.
 
   Unlinked private email-intake data expires after 90 days of inactivity, subject to preservation.
-  Final email-review explanations follow the six-year copyright clock and preservation rules.
-  We delete the explanation and its encryption key when that period ends. A separate minimal
-  receipt prevents the same email from being processed again.
+  Final email-review decisions, reviewer details, review times, and explanations follow the
+  six-year copyright clock and preservation rules. We erase those facts and the explanation key
+  when that period ends. A minimal receipt prevents the same email from being processed again.
 
   We retain a keyed HMAC replay-prevention value and its outcome code for ten years after the later
   of case erasure and the last replay. This value has no case backlink and uses a key separate from

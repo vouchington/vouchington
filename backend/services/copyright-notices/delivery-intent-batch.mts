@@ -7,22 +7,9 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { assertDeliveryIntentInput, assertReplayMatches } from './delivery-intent-validation.mts'
 import type {
+  CopyrightDeliveryIntentInput,
   CopyrightDeliveryIntentRecord,
-  CopyrightNoticeDeliveryKind,
 } from './delivery-types.mts'
-
-export type CopyrightDeliveryIntentInput = {
-  noticeId: string
-  submissionId: string | null
-  correspondenceId: string | null
-  recipientUserId: string | null
-  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
-  deliveryKind: CopyrightNoticeDeliveryKind
-  channel: CopyrightDeliveryIntentRecord['channel']
-  idempotencyKey: string
-  recipientEmail?: string
-  targetPath?: string
-}
 
 type KeyedIntent = CopyrightDeliveryIntentRecord & { idempotency_key: string }
 

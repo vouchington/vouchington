@@ -16,7 +16,7 @@ import { acknowledgeUkCopyrightNotice } from './uk-acknowledgment.mts'
 import { recordUkCopyrightReview } from './uk-review.mts'
 import { finishUkRetentionReplayDelivery } from '@voucha/test-helpers/entities/copyright-territorial-retention'
 import { copyrightNoticeExists } from '@voucha/test-helpers/entities/copyright-minimal-account-clock'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 
 const WORK_PAGE_CAP = 128

@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers/copyright-postroot-retention'
 import { useCopyrightRetentionWorkClock } from '@voucha/test-helpers/copyright-retention-work'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 
 const START = new Date('2029-10-23T00:00:00.000Z')
 const FIRST_EXPIRY = new Date('2036-10-23T00:00:00.000Z')

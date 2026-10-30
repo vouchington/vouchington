@@ -411,9 +411,10 @@ whether old slots are still required. Do not log key values or requester fingerp
 Confirm account exports tolerate erased skeletons. During active erasure, new writes and key reads
 fail closed; a completed erased case has no raw `.eml` or recoverable application ciphertext.
 Shared originals needed by another case remain available only to that owner. Unlinked private
-intakes retain their separate 90-day operational window. Their final receipt explanations and keys
-use the six-year copyright clock and preservation blockers. These keys are independent: retaining a
-receipt explanation must not preserve access to expired private-intake ciphertext.
+intakes retain their separate 90-day operational window. Their final receipt review facts, explanations,
+and keys expire together on the six-year copyright clock with preservation blockers; only the SES
+replay identity remains. Receipt and private-intake keys are independent, so receipt preservation
+does not preserve access to expired private-intake ciphertext.
 
 Use case- or receipt-scoped preservation for written litigation threats and regulator/court requests,
 including email-only claimants. A retained receipt can be preserved after its private intake is gone.

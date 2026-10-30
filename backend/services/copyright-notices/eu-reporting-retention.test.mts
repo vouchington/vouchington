@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers/copyright-retention-work'
 import { copyrightNoticeExists } from '@voucha/test-helpers/entities/copyright-minimal-account-clock'
 import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 
 const WORK_PAGE_CAP = 128
 const PERIOD_STARTED_AT = new Date('2500-01-01T00:00:00Z')

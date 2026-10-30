@@ -9,6 +9,7 @@ import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import {
   linkHistoricalCopyrightReceipt,
+  retireLinkedHistoricalCopyrightPrivateIntake,
   positionCopyrightReceiptExplanationCursor,
   readCopyrightEmailOwnerKeyIds,
   readCopyrightReceiptExplanationEligibility,
@@ -41,7 +42,7 @@ describe('standalone copyright receipt explanation retirement', () => {
   useCopyrightKeyObjectFaults()
   useCopyrightOperationalCursorReservation()
 
-  it('retires only the old receipt explanation and key while retaining final facts and SES replay fence', async () => {
+  it('retires standalone review facts and key while retaining the SES replay fence', async () => {
     const staff = await moderator()
     const receipt = await seedHistoricalCopyrightReceiptExplanation(staff.id)
     const before = await readCopyrightReceiptExplanationState(receipt.id)
@@ -82,12 +83,12 @@ describe('standalone copyright receipt explanation retirement', () => {
     const after = await readCopyrightReceiptExplanationState(receipt.id)
     expect(after).toMatchObject({
       amazon_ses_message_id: receipt.sesMessageId,
-      review_decision: 'rejected',
-      reviewed_by_id: staff.id,
+      review_decision: null,
+      reviewed_by_id: null,
+      reviewed_at: null,
       review_rationale_ciphertext: null,
       live_intake_exists: false,
     })
-    expect(after?.reviewed_at).toEqual(before?.reviewed_at)
     expect(after?.final_explanation_erased_at).toBeInstanceOf(Date)
     expect(after?.key_destroyed_at).toBeInstanceOf(Date)
     await expect(openCopyrightSecrets({ kind: 'receipt', id: receipt.id })).rejects.toThrow(
@@ -191,11 +192,27 @@ describe('standalone copyright receipt explanation retirement', () => {
     expect((await readCopyrightReceiptExplanationState(receipt.id))?.key_destroyed_at).toBeNull()
   })
 
-  it('blocks on recent actual delivery, pending delivery, and a case link', async () => {
+  it('keeps review facts while the private intake is still live', async () => {
     const staff = await moderator()
-    const sent = await seedHistoricalCopyrightReceiptExplanation(staff.id, { withLiveIntake: true })
+    const receipt = await seedHistoricalCopyrightReceiptExplanation(staff.id, {
+      withLiveIntake: true,
+    })
+    expect(await readCopyrightReceiptExplanationEligibility(receipt.id)).toBe(false)
+    await positionCopyrightReceiptExplanationCursor(receipt.id)
+    expect(await sweepCopyrightReceiptExplanations({ maxBatches: 1 })).toMatchObject({
+      scanned: 1,
+      retired: 0,
+    })
+    expect((await readCopyrightReceiptExplanationState(receipt.id))?.review_decision).toBe(
+      'rejected',
+    )
+  })
+
+  it('blocks recent delivery, unresolved delivery, and a case link', async () => {
+    const staff = await moderator()
+    const sent = await seedHistoricalCopyrightReceiptExplanation(staff.id)
     expect(await readCopyrightReceiptExplanationEligibility(sent.id)).toBe(true)
-    await seedCopyrightReceiptDelivery(sent.id, 'sent')
+    await seedCopyrightReceiptDelivery(sent.id, 'sent', sent.ciphertext)
     expect(
       (await readCopyrightReceiptExplanationState(sent.id))?.last_delivery_activity_at,
     ).toBeInstanceOf(Date)
@@ -206,11 +223,9 @@ describe('standalone copyright receipt explanation retirement', () => {
       retired: 0,
     })
 
-    const pending = await seedHistoricalCopyrightReceiptExplanation(staff.id, {
-      withLiveIntake: true,
-    })
+    const pending = await seedHistoricalCopyrightReceiptExplanation(staff.id)
     expect(await readCopyrightReceiptExplanationEligibility(pending.id)).toBe(true)
-    await seedCopyrightReceiptDelivery(pending.id, 'pending')
+    await seedCopyrightReceiptDelivery(pending.id, 'pending', pending.ciphertext)
     expect(await readCopyrightReceiptExplanationEligibility(pending.id)).toBe(false)
     await positionCopyrightReceiptExplanationCursor(pending.id)
     expect(await sweepCopyrightReceiptExplanations({ maxBatches: 1 })).toMatchObject({
@@ -218,14 +233,20 @@ describe('standalone copyright receipt explanation retirement', () => {
       retired: 0,
     })
 
+    const unlinkedControl = await seedHistoricalCopyrightReceiptExplanation(staff.id, {
+      decision: 'approved',
+    })
+    expect(await readCopyrightReceiptExplanationEligibility(unlinkedControl.id)).toBe(true)
+
     await using caseKey = await prepareCopyrightEncryptionKey('notice')
     const notice = await createCopyrightKeyNotice(caseKey)
     const linked = await seedHistoricalCopyrightReceiptExplanation(staff.id, {
       withLiveIntake: true,
       decision: 'approved',
     })
-    expect(await readCopyrightReceiptExplanationEligibility(linked.id)).toBe(true)
     await linkHistoricalCopyrightReceipt(linked.id, notice.noticeId)
+    await retireLinkedHistoricalCopyrightPrivateIntake(linked.id)
+    expect((await readCopyrightReceiptExplanationState(linked.id))?.live_intake_exists).toBe(false)
     expect(await readCopyrightReceiptExplanationEligibility(linked.id)).toBe(false)
     await positionCopyrightReceiptExplanationCursor(linked.id)
     expect(await sweepCopyrightReceiptExplanations({ maxBatches: 1 })).toMatchObject({

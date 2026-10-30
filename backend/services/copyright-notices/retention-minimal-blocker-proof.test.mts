@@ -18,7 +18,7 @@ import {
 } from '@voucha/test-helpers/copyright-retention-work'
 import { readCopyrightRetentionMarker } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 
 const RETENTION_START = new Date('2029-10-23T00:00:00.000Z')
 const RETENTION_END = new Date('2035-10-23T00:00:00.000Z')

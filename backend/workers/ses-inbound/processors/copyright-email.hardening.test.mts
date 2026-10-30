@@ -13,7 +13,7 @@ import {
   withCopyrightEmailIntakeIdentityLock,
 } from '@services/copyright-notices'
 import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
-import { linkCopyrightEmailIntakeToNotice } from '@services/copyright-notices/email-threading'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { rejectCopyrightEmailCorrespondence } from '@services/copyright-notices/email-correspondence-admission'
 import {
   processCopyrightInboundEmail,

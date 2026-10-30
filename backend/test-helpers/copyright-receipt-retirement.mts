@@ -5,8 +5,8 @@ import { v7 as uuidv7 } from 'uuid'
 import {
   attachCopyrightEncryptionKey,
   prepareCopyrightEncryptionKey,
-  openCopyrightSecrets,
 } from '../services/copyright-notices/encryption-keys.mts'
+import { destroyCopyrightOwnerEncryptionKey } from '../services/copyright-notices/encryption-key-destruction.mts'
 import { copyrightEmailIntakePurpose } from '../services/copyright-notices/email-intakes.mts'
 import { upsertCopyrightStorageObjectId } from '../services/copyright-notices/storage-objects.mts'
 import { upsertMediaTypes } from '../services/urls/media-types.mts'
@@ -97,9 +97,9 @@ export async function readCopyrightReceiptExplanationEligibility(id: string): Pr
 export async function readCopyrightReceiptExplanationState(id: string) {
   const { rows } = await read<{
     amazon_ses_message_id: string
-    review_decision: string
-    reviewed_at: Date
-    reviewed_by_id: string
+    review_decision: string | null
+    reviewed_at: Date | null
+    reviewed_by_id: string | null
     erased_at: Date | null
     review_rationale_ciphertext: string | null
     final_explanation_erasure_started_at: Date | null
@@ -138,27 +138,22 @@ export async function readCopyrightEmailOwnerKeyIds(id: string) {
   return rows[0]!
 }
 
-/** Persist a real intake-encrypted body; only the sent variant advances actual delivery activity. */
+/** Model retained transport work after private-intake erasure; only its state and activity clock are read. */
 export async function seedCopyrightReceiptDelivery(
   receiptId: string,
   kind: 'pending' | 'sent',
+  ciphertext: string,
 ): Promise<void> {
   const id = kind === 'pending' ? uuidv7({ msecs: HISTORICAL_REVIEW.getTime() + 1 }) : uuidv7()
   const sentAt = kind === 'sent' ? new Date() : null
   await using query = await beginTransaction()
-  await using secrets = await openCopyrightSecrets(
-    { kind: 'intake', id: receiptId },
-    query,
-    'write',
-  )
-  const body = secrets.encryptSecret('Copyright receipt delivery', `copyright-delivery-body:${id}`)
   await query(sql`/* seedCopyrightReceiptDelivery */
     INSERT INTO copyright_notice_delivery_work_items (
       id, copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind,
       channel, idempotency_key, body_ciphertext, delivery_attempted_at, sent_at
     ) VALUES (
       ${id}, ${receiptId}, 'correspondent', 'email_intake_received', 'email',
-      ${`receipt-delivery-${randomUUID()}`}, ${body}, ${sentAt}, ${sentAt}
+      ${`receipt-delivery-${randomUUID()}`}, ${ciphertext}, ${sentAt}, ${sentAt}
     )`)
   await query.commit()
 }
@@ -171,4 +166,26 @@ export async function linkHistoricalCopyrightReceipt(
     INSERT INTO copyright_notice_email_intake_notice_links
       (copyright_notice_email_intake_receipt_id, copyright_notice_id, link_kind)
     VALUES (${receiptId}, ${noticeId}, 'initial')`)
+}
+
+/** Preserve a historical case link while retiring its fixture-owned private intake. */
+export async function retireLinkedHistoricalCopyrightPrivateIntake(
+  receiptId: string,
+): Promise<void> {
+  await using query = await beginTransaction()
+  const { rows } = await query<{ reviewed_at: Date }>(sql`/* lockLinkedHistoricalReceipt */
+    SELECT receipt.reviewed_at FROM copyright_notice_email_intake_receipts receipt
+    WHERE receipt.id = ${receiptId} AND EXISTS (
+      SELECT 1 FROM copyright_notice_email_intake_notice_links link
+      WHERE link.copyright_notice_email_intake_receipt_id = receipt.id
+    ) FOR UPDATE`)
+  if (!rows[0]?.reviewed_at) throw new Error('Historical receipt must be reviewed and linked')
+  await query(sql`/* markLinkedHistoricalReceiptPrivateErasure */
+    UPDATE copyright_notice_email_intake_receipts
+    SET erased_at = ${new Date(rows[0].reviewed_at.getTime() + 91 * 86_400_000)}
+    WHERE id = ${receiptId} AND erased_at IS NULL`)
+  await destroyCopyrightOwnerEncryptionKey({ kind: 'intake', id: receiptId }, query)
+  await query(sql`/* retireLinkedHistoricalPrivateIntake */
+    DELETE FROM copyright_notice_email_intakes WHERE id = ${receiptId}`)
+  await query.commit()
 }

@@ -17,7 +17,7 @@ CREATE TABLE copyright_notice_email_intake_receipts (
   final_explanation_erasure_started_at timestamptz,
   final_explanation_erased_at timestamptz,
   CONSTRAINT chk_copyright_email_receipts__explanation_retirement CHECK (
-    (final_explanation_erasure_started_at IS NULL OR reviewed_at IS NOT NULL)
+    (final_explanation_erasure_started_at IS NULL OR reviewed_at IS NOT NULL OR final_explanation_erased_at IS NOT NULL)
     AND (final_explanation_erased_at IS NULL OR (final_explanation_erasure_started_at IS NOT NULL
       AND final_explanation_erased_at >= final_explanation_erasure_started_at))),
   current_preservation_hold_token uuid,
@@ -55,13 +55,13 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_storage_key_sha256 
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_byte_size IS 'Original MIME size used to reject changed replay evidence.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.erased_at IS 'Time the private intake began operational erasure; the replay identity survives.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_rationale_ciphertext IS 'Final initial-review explanation encrypted with the receipt-owned immutable SES message identity; retained independently of finite review history.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result, retained independently of finite review history.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result until standalone receipt retirement; then erased with reviewer and review time.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review, erased at standalone receipt retirement.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review, erased at standalone receipt retirement.';
 
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.last_delivery_activity_at IS 'Durable latest actual reply issuance, provider acceptance or bounce; excludes lease, retry and reclaim maintenance and survives transport cleanup.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.final_explanation_erasure_started_at IS 'Durable irreversible-retirement fence set only after the standalone seventy-two-month clock and preservation checks; blocks new key access and late holds.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.final_explanation_erased_at IS 'Time the standalone final explanation and its distinct key were retired after seventy-two calendar months and preservation checks; final decision facts and SES replay identity remain.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.final_explanation_erased_at IS 'Time the standalone final review, explanation, key, and preservation provenance were retired after seventy-two calendar months; only SES replay identity remains.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.current_preservation_hold_token IS 'Opaque current receipt preservation authority; clearing it requires the exact current token and retains latest release provenance.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_kind IS 'Typed legal preservation basis for the latest receipt hold, independent of the reviewer or a disposable private intake.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_placed_at IS 'Time the latest receipt preservation hold was placed.';

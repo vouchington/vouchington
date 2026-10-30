@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { useCopyrightRetentionWorkClock } from '@voucha/test-helpers/copyright-retention-work'
 import { cleanupCopyrightMinimalRecords } from '../data-retention/cleanup-copyright-minimal-records.mts'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 import { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
 
 const ISSUED_AT = new Date()

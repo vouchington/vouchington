@@ -10,7 +10,7 @@ import {
   useCopyrightRetentionWorkClock,
 } from '@voucha/test-helpers/copyright-retention-work'
 import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 
 describe('copyright retention positive report proof', () => {
   useDsaTransparencyReports()

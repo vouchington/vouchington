@@ -28,7 +28,7 @@ import {
   setCopyrightMinimalPurgePhaseForRetentionTest,
   useCopyrightRetentionWorkClock,
 } from '@voucha/test-helpers/copyright-retention-work'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_1 } from './retention-minimal-purge-phases-1.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_2 } from './retention-minimal-purge-phases-2.mts'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES_3 } from './retention-minimal-purge-phases-3.mts'

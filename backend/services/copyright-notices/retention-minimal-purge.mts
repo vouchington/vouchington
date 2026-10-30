@@ -22,14 +22,6 @@ type PurgeOptions = {
   maxPhysicalRows?: number
 }
 
-/** Existing public outcome; all mutation work flows through the one budgeted implementation. */
-export async function purgeCopyrightMinimalRecord(
-  noticeId: string,
-  options: PurgeOptions,
-): Promise<CopyrightMinimalPurgeOutcome> {
-  return (await purgeCopyrightMinimalRecordWithWork(noticeId, options)).outcome
-}
-
 /** Raw page and batch allowances are independent of the hard per-run physical DELETE ceiling. */
 export async function purgeCopyrightMinimalRecordWithWork(
   noticeId: string,

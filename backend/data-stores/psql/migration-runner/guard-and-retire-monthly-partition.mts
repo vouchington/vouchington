@@ -61,7 +61,8 @@ export async function guardAndRetireMonthlyPartition(
   }
   // A raw history writer can take the parent before validating its referenced rows. Once we
   // hold referenced-table locks, waiting for either history lock could deadlock with that writer.
-  const historyLockNowait = reportSource || policy?.retirementReferenceTables?.length ? ' NOWAIT' : ''
+  const historyLockNowait =
+    reportSource || policy?.retirementReferenceTables?.length ? ' NOWAIT' : ''
   // Ordinary DETACH needs ACCESS EXCLUSIVE on the parent, so take that final mode before the child
   // to avoid a lock-upgrade deadlock with concurrent readers and writers.
   await transaction(

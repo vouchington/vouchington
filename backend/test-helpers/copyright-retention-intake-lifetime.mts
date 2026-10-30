@@ -4,7 +4,7 @@ import { beforeEach, vi } from 'vitest'
 import { Readable } from 'node:stream'
 import sql from 'sql-template-strings'
 import { openCopyrightOwnerSecretBatch } from '../services/copyright-notices/encryption-key-batch.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 
 type Deferred<T> = ReturnType<typeof Promise.withResolvers<T>>
 

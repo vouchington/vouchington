@@ -9,10 +9,6 @@ import { REVIEWED_RETENTION_CURSOR_IDS } from './relational-storage-retention-cu
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
   ...REVIEWED_RETENTION_CURSOR_IDS,
-  [
-    'copyright_notice_email_intake_receipts.current_preservation_hold_token',
-    'Opaque current receipt preservation transition token; never joined or used as entity authority.',
-  ],
   ...reviewed(
     'Deletion-stable retention keyset coordinate or frozen sweep bound; the swept source row may no longer exist.',
     [

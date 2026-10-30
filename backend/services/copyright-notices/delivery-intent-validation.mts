@@ -1,6 +1,8 @@
 import assert from 'http-assert'
-import type { CopyrightDeliveryIntentInput } from './delivery-intent-batch.mts'
-import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
+import type {
+  CopyrightDeliveryIntentInput,
+  CopyrightDeliveryIntentRecord,
+} from './delivery-types.mts'
 
 export function assertDeliveryIntentInput(input: CopyrightDeliveryIntentInput): void {
   assert(

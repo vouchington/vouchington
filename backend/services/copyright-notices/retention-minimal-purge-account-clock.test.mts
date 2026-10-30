@@ -15,7 +15,7 @@ import {
   setCopyrightMinimalPurgePhaseForRetentionTest,
   useCopyrightRetentionWorkClock,
 } from '@voucha/test-helpers/copyright-retention-work'
-import { purgeCopyrightMinimalRecord } from './retention-minimal-purge.mts'
+import { purgeCopyrightMinimalRecord } from '@voucha/test-helpers/copyright-minimal-purge'
 import { COPYRIGHT_MINIMAL_PURGE_PHASES } from './retention-minimal-purge-phases.mts'
 
 const WORK_PAGE_CAP = 128
