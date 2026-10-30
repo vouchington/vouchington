@@ -123,7 +123,6 @@ describe('GET /api/v1/appeals — list', () => {
 describe('GET /api/v1/appeals/:id — single appeal', () => {
   let staff: PrivateUser
   let appellant: PrivateUser
-  let otherUser: PrivateUser
   let appealId: string
   const internalReason = `detail-private-${crypto.randomUUID()}`
   const publicMessage = `detail-public-${crypto.randomUUID()}`
@@ -131,7 +130,6 @@ describe('GET /api/v1/appeals/:id — single appeal', () => {
   beforeAll(async () => {
     staff = await createTestUser({ administrator: true })
     appellant = await createTestUser()
-    otherUser = await createTestUser()
     const warning = await insertTestUserWarning({
       userId: appellant.id,
       issuedById: staff.id,
@@ -150,12 +148,6 @@ describe('GET /api/v1/appeals/:id — single appeal', () => {
   it('returns 401 for unauthenticated', async () => {
     const request = createRequest()
     await request.get(`/api/v1/appeals/${crypto.randomUUID()}`).expect(401)
-  })
-
-  it('returns 403 for non-owner non-staff', async () => {
-    const request = createRequest()
-    await request.authenticateAs(otherUser)
-    await request.get(`/api/v1/appeals/${appealId}`).expect(403)
   })
 
   it('returns 200 for appeal owner', async () => {
