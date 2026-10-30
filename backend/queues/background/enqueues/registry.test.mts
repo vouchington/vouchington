@@ -66,7 +66,7 @@ describe('background registry', () => {
         BACKGROUND_JOBS.filter(job => job.domain === domain).map(job => job.name),
       )
     }
-    expect(getBackgroundWorkerBaseline()).toBe(123)
+    expect(getBackgroundWorkerBaseline()).toBe(118)
     expect(isBackgroundDomain('ses-inbound')).toBe(true)
     expect(isBackgroundDomain('emails')).toBe(false)
   })
