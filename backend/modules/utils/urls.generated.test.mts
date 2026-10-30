@@ -43,15 +43,6 @@ describe('isHttpUrlWithoutFragment', () => {
 })
 
 describe('isHttpUrlWithoutFragment fragment policy', () => {
-  it('should validate HTTPS URLs', () => {
-    expect(isHttpUrlWithoutFragment('https://example.com')).toBe(true)
-    expect(isHttpUrlWithoutFragment('https://example.com/path')).toBe(true)
-  })
-
-  it('should validate HTTP URLs', () => {
-    expect(isHttpUrlWithoutFragment('http://example.com')).toBe(true)
-  })
-
   it('should reject URLs with fragments', () => {
     expect(isHttpUrlWithoutFragment('https://example.com#fragment')).toBe(false)
   })
@@ -126,10 +117,6 @@ describe('normalizeUrlForUrlTable', () => {
     expect(() => normalizeUrlForUrlTable('ftp://example.com')).toThrow('URL must use http or https')
     expect(() => normalizeUrlForUrlTable(scriptUrl)).toThrow('URL must use http or https')
     expect(() => normalizeUrlForUrlTable('mailto:x@y.com')).toThrow('URL must use http or https')
-  })
-
-  it('should throw error for invalid URLs', () => {
-    expect(() => normalizeUrlForUrlTable('not a url')).toThrow('Invalid URL')
   })
 
   it('should reject malformed URL strings that WHATWG URL can parse', () => {

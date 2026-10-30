@@ -21,15 +21,9 @@ describe('hashToken', () => {
     const emailHash = hashToken('email-address-login-token', '123456')
     const phoneHash = hashToken('phone-number-login-token', '123456')
 
-    expect(emailHash).toMatch(/^[A-F0-9]{64}$/)
+    expect(emailHash).toBe('7867DC59F99D5CD9D356920FCB9D8B9F70B7AF0AF0E77378F1496D788EA384E1')
     expect(phoneHash).toMatch(/^[A-F0-9]{64}$/)
     expect(emailHash).not.toBe(phoneHash)
-  })
-
-  it('matches the legacy stored-token digest', () => {
-    expect(hashToken('email-address-login-token', '123456')).toBe(
-      '7867DC59F99D5CD9D356920FCB9D8B9F70B7AF0AF0E77378F1496D788EA384E1',
-    )
   })
 
   it('does not use bare SHA-256 of the token', () => {

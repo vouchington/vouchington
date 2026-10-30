@@ -67,19 +67,13 @@ describe('buildPublicPostEligibilityFilter', () => {
     expect(statement.text).toContain('candidate_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('access_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('candidate_post.archived_at IS NULL')
+    expect(statement.text).toContain('access_post.archived_at IS NULL')
     expect(statement.text).toContain("access_post.privacy = 'public'")
     expect(statement.text).toContain("access_post.broadcast = 'everyone'")
     expect(statement.text).toContain('publication_suspension.lifted_at IS NULL')
     expect(statement.text).toContain('publication_root_suspension.lifted_at IS NULL')
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
     expect(statement.text).toContain('story_posts post_story')
-  })
-
-  it('never permits archived public discovery', () => {
-    const statement = buildPublicPostEligibilityFilter('candidate_post', 'access_post')
-
-    expect(statement.text).toContain('candidate_post.archived_at IS NULL')
-    expect(statement.text).toContain('access_post.archived_at IS NULL')
   })
 
   it('allows registered-audience posts only when explicitly requested', () => {
@@ -121,16 +115,6 @@ describe('buildViewerPostDiscoveryEligibilityFilter', () => {
     expect(statement.text).toContain('publication_suspension.lifted_at IS NULL')
     expect(statement.text).toContain("access_post.broadcast = 'everyone'")
     expect(statement.text).toContain('publication_discovery_follow.subject_id')
-  })
-
-  it('does not grant moderators administrator discovery exceptions', () => {
-    const statement = buildViewerPostDiscoveryEligibilityFilter('candidate_post', 'access_post', {
-      currentUserId: '00000000-0000-0000-0000-000000000001',
-      isAdministrator: false,
-    })
-
-    expect(statement.text).toContain('candidate_post.approved_at IS NOT NULL')
-    expect(statement.text).toContain('publication_discovery_follow')
   })
 
   it('retains administrator clearance exceptions while enforcing discovery state', () => {
