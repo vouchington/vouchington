@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { write } from '@data-stores/psql'
+import { writeAnnotatedSelectProbe } from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
 import { assertScenarioManifest, runAndCapture } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
@@ -46,7 +46,7 @@ describe('EXPLAIN query capture', () => {
     await expect(
       recordedScenarioError(() =>
         runAndCapture('post-search-new', async () => {
-          await write('/* postSearch */ SELECT 1')
+          await writeAnnotatedSelectProbe()
         }),
       ),
     ).rejects.toThrow('Invalid EXPLAIN_PLAN_CACHE_MODE: "invalid"')
