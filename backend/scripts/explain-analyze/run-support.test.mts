@@ -2,13 +2,29 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
+import { getCapturedQueries, type ExplainResult } from '@data-stores/psql'
 import { writeAnnotatedSelectProbe } from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
 import { writeExplainResultFile, writeSecondPassResults } from './capture-passes.mts'
 import { gateExplainResult } from './plan-gates.mts'
 import { getScenarioContract, registerScenarioContract } from './plan-expectations.mts'
-import { assertScenarioManifest, getExplainCapturePlan, runAndCapture } from './run-support.mts'
+import { assertScenarioManifest, getResults, runAndCapture } from './run-support.mts'
+import { getScenarioFailures } from './scenario-failures.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
+
+function capturedStatements() {
+  return getCapturedQueries().map(({ text, values }) => ({ text, values }))
+}
+
+function explainResultsAfter(before: number): ExplainResult[] | undefined {
+  const added = getResults().slice(before)
+  if (added.length > 0) return added
+  const error = getScenarioFailures().at(-1)?.error
+  expect(() => {
+    if (error instanceof Error) throw error
+    throw new Error('missing explain failure')
+  }).toThrow('EXPLAIN requires SET privilege on track_functions')
+  return undefined
+}
 
 function recordedScenarioError(run: () => Promise<void>): Promise<void> {
   const seen: unknown[] = []
@@ -62,24 +78,34 @@ describe('EXPLAIN query capture', () => {
   it('accepts captured SELECT 1 and explains it in auto mode', async () => {
     vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', '')
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    const before = getResults().length
     await runAndCapture('post-search-new', async () => {
       await writeAnnotatedSelectProbe()
     })
-    expect(getExplainCapturePlan()).toEqual({
-      queries: [{ text: '/* postSearch */ SELECT 1', values: [] }],
-      modes: ['auto'],
-    })
+    expect(capturedStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
+    const explained = explainResultsAfter(before)
+    if (!explained) return
+    expect(explained.map(result => result.query_text)).toEqual(['/* postSearch */ SELECT 1'])
+    expect(explained.map(result => result.plan_cache_mode)).toEqual(['auto'])
   })
 
   it('explains compare mode as forced custom and generic plans', async () => {
     vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', 'compare')
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    const before = getResults().length
     await runAndCapture('post-search-new', async () => {
       await writeAnnotatedSelectProbe()
     })
-    expect(getExplainCapturePlan().modes).toEqual(['force_custom_plan', 'force_generic_plan'])
-    expect(getExplainCapturePlan().queries).toEqual([
-      { text: '/* postSearch */ SELECT 1', values: [] },
+    expect(capturedStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
+    const explained = explainResultsAfter(before)
+    if (!explained) return
+    expect(explained.map(result => result.query_text)).toEqual([
+      '/* postSearch */ SELECT 1',
+      '/* postSearch */ SELECT 1',
+    ])
+    expect(explained.map(result => result.plan_cache_mode)).toEqual([
+      'force_custom_plan',
+      'force_generic_plan',
     ])
   })
 })

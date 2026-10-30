@@ -51,18 +51,6 @@ export const seedHostnameIds = [
 const results: ExplainResult[] = []
 const completedScenarioIds: string[] = []
 
-export type ExplainCapturePlan = {
-  queries: readonly { text: string; values: readonly unknown[] }[]
-  modes: readonly ExplainPlanCacheMode[]
-}
-
-let explainCapturePlan: ExplainCapturePlan = { queries: [], modes: [] }
-
-/** Statements and plan-cache modes accepted for the latest capture, before EXPLAIN runs. */
-export function getExplainCapturePlan(): ExplainCapturePlan {
-  return explainCapturePlan
-}
-
 function collectAndGate(result: ExplainResult): void {
   gateExplainResult(result, results)
 }
@@ -152,10 +140,6 @@ async function captureScenario(
   assertCapturedQueries(label, captured)
 
   const modes = getExplainPlanCacheModes()
-  explainCapturePlan = {
-    queries: captured.map(query => ({ text: query.text, values: query.values })),
-    modes,
-  }
   const inputs = captured.flatMap((cq, captureIndex) => {
     const baseName = extractQueryName(cq.text) ?? label
     return modes.map(planCacheMode => {
