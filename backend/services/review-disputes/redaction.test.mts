@@ -67,7 +67,8 @@ function makeDispute(overrides: Partial<ReviewDisputeResponse> = {}): ReviewDisp
 
 describe('redactReviewDispute', () => {
   it('strips all staff-only workflow fields from member JSON', () => {
-    const rawJson = JSON.stringify(redactReviewDispute(makeDispute()))
+    const redacted = redactReviewDispute(makeDispute())
+    const rawJson = JSON.stringify(redacted)
     for (const field of [
       'disputant_user_id',
       'claim_text',
@@ -89,12 +90,6 @@ describe('redactReviewDispute', () => {
     ]) {
       expect(rawJson).not.toContain(`"${field}"`)
     }
-  })
-
-  it('strips private fields from the dispute', () => {
-    const dispute = makeDispute()
-    const redacted = redactReviewDispute(dispute)
-
     expect(redacted).not.toHaveProperty('disputant_user_id')
     expect(redacted).not.toHaveProperty('claim_text')
     expect(redacted).not.toHaveProperty('ai_public_response')
