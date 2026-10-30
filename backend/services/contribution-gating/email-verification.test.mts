@@ -103,7 +103,9 @@ describe('hasVerifiedNonDisposableEmail', () => {
 
     await invalidateVerifiedEmailCache(user.id)
     const result = await hasVerifiedNonDisposableEmail(user.id)
+    const cached = await hasVerifiedNonDisposableEmail(user.id)
     expect(result).toBe(true)
+    expect(cached).toBe(true)
   })
 
   it('returns false for user with only disposable email domain', async () => {
@@ -210,19 +212,5 @@ describe('hasVerifiedNonDisposableEmail', () => {
     }
     await invalidateVerifiedEmailCache(user.id)
     await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(true)
-  })
-
-  it('caches results and returns cached value on second call', async () => {
-    const ts = Date.now()
-    const user = await createTestUserDirect()
-    const email = `cached-test-${ts}@gmail.com`
-
-    await addVerifiedEmailForUser(user.id, email)
-
-    await invalidateVerifiedEmailCache(user.id)
-    const result1 = await hasVerifiedNonDisposableEmail(user.id)
-    const result2 = await hasVerifiedNonDisposableEmail(user.id) // should use cache
-    expect(result1).toBe(result2)
-    expect(result1).toBe(true)
   })
 })
