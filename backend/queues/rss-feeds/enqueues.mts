@@ -20,10 +20,8 @@ type FetchRssFeedInput = {
   deduplicationScope?: FetchRssFeedDeduplicationScope
 }
 
-const buildRssFeedJobId = (
-  rssFeedId: string,
-  scope: FetchRssFeedDeduplicationScope = 'dispatch',
-) => (scope === 'request' ? `rss-feed-request__${rssFeedId}` : `rss-feed__${rssFeedId}`)
+const buildRssFeedJobId = (rssFeedId: string, scope: FetchRssFeedDeduplicationScope = 'dispatch') =>
+  scope === 'request' ? `rss-feed-request__${rssFeedId}` : `rss-feed__${rssFeedId}`
 
 const enqueueBulkFetchRssFeedJobs = createBackgroundBulkEnqueue(
   RSS_FEEDS_FETCH_JOB,
