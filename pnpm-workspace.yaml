@@ -47,9 +47,6 @@ allowBuilds:
 dangerouslyAllowAllBuilds: false
 disallowWorkspaceCycles: true
 engineStrict: true
-ignoredOptionalDependencies:
-  # Next's optional Sharp range includes a vulnerable release; web's direct dependency is authoritative.
-  - sharp
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
   - '@vouchington/api-client'
