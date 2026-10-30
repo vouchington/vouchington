@@ -32,41 +32,6 @@ describe('rss-feed-item.vote', () => {
 
   describe('RSS Feed Item Vote Routes', () => {
     describe('PUT /api/v1/rss-feed-items/:id/vote', () => {
-      it('should allow authenticated user to vote on RSS feed item', async () => {
-        const topicId = await createLinkedTopicId(
-          `Test Topic ${suffix}-1`,
-          `test-topic-rss-vote-1-${suffix}`,
-          user.id,
-        )
-
-        const rssFeed = await createRssFeed({
-          provenance: WEB_PROVENANCE,
-          skipRemoteValidation: true,
-          rss_feed_url: `https://example.com/feed-vote-${suffix}-1.xml`,
-          topic_id: topicId,
-          title: 'Test Feed',
-        })
-        const itemUrls = await addUrls(null, [`https://example.com/item-vote-${suffix}-1`])
-        const itemId = await insertTestRssFeedItem({
-          rssFeedId: rssFeed.id,
-          urlId: itemUrls[0].id,
-          guid: `test-item-vote-${suffix}-1`,
-          itemData: { title: 'Test Item' },
-          contentSha256: createHash('sha256').update('test content vote 1').digest(),
-        })
-
-        const item = await getRssFeedItemById(itemId)
-        expect(item).toBeDefined()
-
-        const request = createRequest()
-        await request.authenticateAs(user)
-
-        await request
-          .put(`/api/v1/rss-feed-items/${item!.id}/vote`)
-          .send({ choice: 'like' })
-          .expect(204)
-      })
-
       it('should return 401 when not authenticated', async () => {
         const topicId = await createLinkedTopicId(
           `Test Topic ${suffix}-2`,

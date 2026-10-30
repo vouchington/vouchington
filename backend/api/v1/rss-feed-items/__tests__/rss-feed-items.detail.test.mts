@@ -129,6 +129,9 @@ describe('RSS Feed Items Routes', () => {
       expect(response.body.rss_feed_item.id).toBe(itemId)
       expect(response.body.rss_feed_item.election).toBeUndefined()
       expect(response.body.rss_feed_item_election).toBeDefined()
+      expect(response.body.rss_feed_item_election).toHaveProperty('votes_score_net')
+      expect(response.body.rss_feed_item_election).toHaveProperty('votes_count_up')
+      expect(response.body.rss_feed_item_election).toHaveProperty('votes_count_down')
       expect(response.body.rss_feed_item_embeds[itemId]).toMatchObject({
         rss_feed_item_id: itemId,
         source_url: url!.url,
@@ -147,30 +150,6 @@ describe('RSS Feed Items Routes', () => {
       )
       expect(response.headers['vary']).toContain('Cookie')
       expect(response.headers['vary']).toContain('Authorization')
-    })
-
-    it('returns rss_feed_item_election for unauthenticated users', async () => {
-      const viewer = await createTestUser()
-      const topic = await createTestTopic({ user: viewer })
-      const feedId = await createTestRssFeedWithTiming(topic.id)
-      const guid = `election-guid-${Math.random().toString(36).slice(2, 10)}`
-      const url = await addUrl(null, `https://example.com/${guid}`, { content_type: 'text/html' })
-      const itemId = await insertTestRssFeedItem({
-        rssFeedId: feedId,
-        urlId: url!.id,
-        guid,
-        itemData: { title: `Election ${guid}` },
-        contentSha256: createHash('sha256').update(`${guid}-election`).digest(),
-      })
-
-      const request = createRequest()
-      const response = await request.get(`/api/v1/rss-feed-items/${itemId}`).expect(200)
-
-      expect(response.body.rss_feed_item.election).toBeUndefined()
-      expect(response.body.rss_feed_item_election).toBeDefined()
-      expect(response.body.rss_feed_item_election).toHaveProperty('votes_score_net')
-      expect(response.body.rss_feed_item_election).toHaveProperty('votes_count_up')
-      expect(response.body.rss_feed_item_election).toHaveProperty('votes_count_down')
     })
   })
 
