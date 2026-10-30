@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { describe, expect, it, vi } from 'vitest'
 import {
   getDomainRateLimitRemainingMs,
   normalizeDomainRateLimitMs,
-  normalizeDomainRateLimitScriptResult,
   setDomainRateLimited,
 } from './domain-rate-limit.mts'
 
@@ -14,13 +14,23 @@ describe('domain-rate-limit', () => {
     expect(normalizeDomainRateLimitMs(2_500)).toBe(2_500)
   })
 
-  it('normalizes Valkey script results before returning lock durations', () => {
-    expect(normalizeDomainRateLimitScriptResult(2_500)).toBe(2_500)
-    expect(normalizeDomainRateLimitScriptResult(2_500n)).toBe(2_500)
-    expect(normalizeDomainRateLimitScriptResult({ toString: () => '2500' })).toBe(2_500)
-    expect(() => normalizeDomainRateLimitScriptResult({ toString: () => 'not-a-number' })).toThrow(
-      'set-domain-rate-limit returned invalid TTL: not-a-number',
-    )
+  it('normalizes Valkey script results before returning lock durations', async () => {
+    const hostnameId = `test-${crypto.randomUUID()}.example.com`
+    const invoke = vi.spyOn(rateLimiterValkeyClient, 'invokeScript')
+    try {
+      invoke.mockResolvedValueOnce(2_500)
+      await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
+      invoke.mockResolvedValueOnce(2_500n)
+      await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
+      invoke.mockResolvedValueOnce('2500')
+      await expect(setDomainRateLimited(hostnameId)).resolves.toBe(2_500)
+      invoke.mockResolvedValueOnce('not-a-number')
+      await expect(setDomainRateLimited(hostnameId)).rejects.toThrow(
+        'set-domain-rate-limit returned invalid TTL: not-a-number',
+      )
+    } finally {
+      invoke.mockRestore()
+    }
   })
 
   it('returns null when key does not exist', async () => {

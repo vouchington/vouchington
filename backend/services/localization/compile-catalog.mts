@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { compileLocalizationSqlite, loadCatalogDirectory } from '@vouchington/localization-compiler'
 
-export async function compileCatalogDirectory(source: string, output: string): Promise<string> {
+async function compileCatalogDirectory(source: string, output: string): Promise<string> {
   const loaded = await loadCatalogDirectory(resolve(source))
   mkdirSync(dirname(output), { recursive: true })
   const resolvedOutput = resolve(output)

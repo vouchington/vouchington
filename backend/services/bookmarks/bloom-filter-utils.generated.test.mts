@@ -1,5 +1,5 @@
 import { expect, it, describe } from 'vitest'
-import { getBookmarkBloomFilterName, normalizeBookmarkObjectIds } from './bloom-filter-utils.mts'
+import { getBookmarkBloomFilter, normalizeBookmarkObjectIds } from './bloom-filter-utils.mts'
 
 describe('bloom-filter-utils.generated', () => {
   it('normalizeBookmarkObjectIds lowercases and normalizes keys', () => {
@@ -8,7 +8,6 @@ describe('bloom-filter-utils.generated', () => {
   })
 
   it('getBookmarkBloomFilterName returns expected key format', () => {
-    const name = getBookmarkBloomFilterName('user-1')
-    expect(name).toBe('user-bookmarks:user-1')
+    expect(getBookmarkBloomFilter('user-1').getKey()).toBe('bloom-filter:user-bookmarks:user-1')
   })
 })
