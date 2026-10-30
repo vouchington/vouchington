@@ -108,11 +108,6 @@ describe.each(TOPIC_SLUGS)('(topics)/%s generateMetadata exports', slug => {
 })
 
 describe('(topics)/referral-program admin route completeness', () => {
-  it.each(REFERRAL_PROGRAM_ADMIN_SUBPAGES)('[id]/%s exists', subpage => {
-    const path = join(WEB_APP, '(topics)', 'referral-program', '[id]', subpage)
-    assert(existsSync(path), `missing: web/app/(topics)/referral-program/[id]/${subpage}`)
-  })
-
   it.each(REFERRAL_PROGRAM_ADMIN_SUBPAGES)('[id]/%s exports generateMetadata', subpage => {
     const path = join(WEB_APP, '(topics)', 'referral-program', '[id]', subpage)
     assert(existsSync(path), `missing: web/app/(topics)/referral-program/[id]/${subpage}`)

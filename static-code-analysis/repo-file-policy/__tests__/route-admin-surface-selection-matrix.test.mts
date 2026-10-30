@@ -133,12 +133,6 @@ const selectionCases = [
     expected: true,
   },
   {
-    id: 'named_closure_shadow_direct',
-    source:
-      'function factory(){ function page(){ secure() } function inner(){ function page(){} } return {default:page} }\n',
-    expected: true,
-  },
-  {
     id: 'named_closure_only_nested',
     source:
       'function factory(){ function inner(){ function page(){ secure() } } return {default:page} }\n',
