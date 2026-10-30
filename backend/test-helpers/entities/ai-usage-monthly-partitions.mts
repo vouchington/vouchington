@@ -1,11 +1,9 @@
-import { advisoryLockPool, beginTransaction, type PoolClient, write } from '@data-stores/psql'
+import { advisoryLockPool, type PoolClient, write } from '@data-stores/psql'
 import {
   createMonthlyPartitions,
   buildMonthlyPartitionName,
 } from '@vouchington/postgres/partitions'
-import { guardAndRetireMonthlyPartition } from '../../data-stores/psql/migration-runner/guard-and-retire-monthly-partition.mts'
-import { retireMonthlyPartitionCandidate } from '../../data-stores/psql/migration-runner/monthly-partitions.mts'
-import { PARTITION_DROP_POLICIES } from '../../data-stores/psql/config-driven/utils/partition-drop-policies.mts'
+import { retireTestAiUsagePartition } from './ai-usage-partition-retirement.mts'
 import {
   getMonthlyPartitionUpperBound,
   type PartitionDropCandidate,
@@ -133,34 +131,6 @@ export async function readTestAiUsageIdsForMonth(date: Date, agentSlug: string):
   return rows.map(row => row.id)
 }
 
-/** Hold a referenced row while the real retirement guard attempts its NOWAIT fence. */
-export async function probeBlockedAiUsageRetirement(
-  candidate: PartitionDropCandidate,
-  communityId: string | null,
-): Promise<string> {
-  await using holder = await beginTransaction()
-  if (communityId) {
-    await holder(sql`/* probeBlockedAiUsageRetirement:holdCommunity */
-      SELECT id FROM communities WHERE id = ${communityId} FOR UPDATE`)
-  } else {
-    await holder(sql`/* probeBlockedAiUsageRetirement:holdResponseKeys */
-      LOCK TABLE ai_usage_provider_response_keys IN ROW EXCLUSIVE MODE`)
-  }
-  await using retire = await beginTransaction()
-  try {
-    await guardAndRetireMonthlyPartition(
-      retire,
-      candidate,
-      PARTITION_DROP_POLICIES.ai_usage_records,
-      new Date(),
-      1,
-    )
-    return 'unexpected-retirement'
-  } catch (err) {
-    return (err as { code?: string }).code ?? 'unknown-error'
-  }
-}
-
 async function retireOwnedMonths(
   months: ReadonlyMap<string, Date>,
   ownedIds: readonly string[],
@@ -174,15 +144,7 @@ async function retireOwnedMonths(
     const { rows } = await write<{ absent: boolean }>(sql`/* retireOwnedAiUsageMonths:absent */
       SELECT to_regclass(${name}) IS NULL AS absent`)
     if (rows[0]?.absent) continue
-    const candidate = testAiUsageCandidate(name)
-    const result = await retireMonthlyPartitionCandidate(
-      candidate,
-      new Date('9999-01-01T00:00:00Z'),
-      1,
-    )
-    if (result.outcome !== 'dropped') {
-      throw new Error(`Owned AI usage partition ${name} was not retired: ${result.reason}`)
-    }
+    await retireTestAiUsagePartition(testAiUsageCandidate(name))
   }
   const monthStarts = [...months.values()]
   if (monthStarts.length > 0) {
