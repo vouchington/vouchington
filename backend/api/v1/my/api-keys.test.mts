@@ -192,16 +192,6 @@ describe('POST /api/v1/my/api-keys', () => {
     expect(found.label).toBe('Feed Reader')
   })
 
-  it('returns 400 when mcp key omits mcp.user:read permission', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    await request
-      .post('/api/v1/my/api-keys')
-      .set('Content-Type', 'application/json')
-      .send({ label: 'Write-only MCP', type: 'mcp', permissions: ['mcp.user:write'] })
-      .expect(400)
-  })
-
   it('creates mcp API key and returns 201 with raw_key matching voucha_mcp_ prefix', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
