@@ -1,5 +1,8 @@
 import onError from '@modules/on-error'
-import { createMonthlyPartitions as createPlatformMonthlyPartitions } from '@vouchington/postgres/partitions'
+import {
+  createMonthlyPartitions as createPlatformMonthlyPartitions,
+  type MonthlyPartitionTableConfig,
+} from '@vouchington/postgres/partitions'
 import { ALL_MONTHLY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
 import { beginTransaction, write } from '../setup.mts'
@@ -30,9 +33,40 @@ export type PartitionCleanupPage = {
 }
 
 const DEFAULT_PARTITION_CLEANUP_LIMIT = 5
+const POST_CLEARANCE_CHANGES = 'post_clearance_changes'
 
 export async function createMonthlyPartitions(writer: QueryExecutor = write): Promise<void> {
-  await createPlatformMonthlyPartitions(writer, { tables: ALL_MONTHLY_PARTITION_TABLES })
+  const clearance = ALL_MONTHLY_PARTITION_TABLES.filter(
+    table => table.table === POST_CLEARANCE_CHANGES,
+  )
+  const others = ALL_MONTHLY_PARTITION_TABLES.filter(
+    table => table.table !== POST_CLEARANCE_CHANGES,
+  )
+  if (others.length > 0) await createPlatformMonthlyPartitions(writer, { tables: others })
+  await createPostClearancePartitions(writer, clearance)
+}
+
+export async function createPostClearancePartitions(
+  writer: QueryExecutor,
+  tables: readonly MonthlyPartitionTableConfig[],
+  baseDate?: Date,
+): Promise<void> {
+  if (tables.length === 0) return
+  const create = async (query: QueryExecutor) => {
+    await query(`/* createPostClearancePartitions:lockPosts */
+      LOCK TABLE posts IN SHARE ROW EXCLUSIVE MODE`)
+    await createPlatformMonthlyPartitions(query, {
+      tables,
+      ...(baseDate ? { baseDate } : {}),
+    })
+  }
+  if (writer !== write) {
+    await create(writer)
+    return
+  }
+  await using transaction = await beginTransaction()
+  await create(transaction)
+  await transaction.commit()
 }
 
 export async function cleanupPartitions(

@@ -26,6 +26,14 @@ describe('createMonthlyPartitions', () => {
         statement.includes('DROP TABLE IF EXISTS rss_feed_crawls__default'),
       ),
     ).toBe(false)
+    const postsLock = statements.findIndex(statement =>
+      statement.includes('createPostClearancePartitions:lockPosts'),
+    )
+    const clearancePartition = statements.findIndex(statement =>
+      statement.includes('PARTITION OF post_clearance_changes'),
+    )
+    expect(postsLock).toBeGreaterThanOrEqual(0)
+    expect(clearancePartition).toBeGreaterThan(postsLock)
   })
 })
 

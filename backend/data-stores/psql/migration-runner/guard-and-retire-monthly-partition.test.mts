@@ -3,7 +3,6 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   assertSafeSqlIdentifier,
   buildMonthlyPartitionName,
-  createMonthlyPartitions,
 } from '@vouchington/postgres/partitions'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -18,8 +17,11 @@ import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-p
 import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
+import {
+  createPostClearancePartitions,
+  retireMonthlyPartitionCandidate,
+} from './monthly-partitions.mts'
 import { getMonthlyPartitionUpperBound } from './partition-drop-guard.mts'
-import { retireMonthlyPartitionCandidate } from './monthly-partitions.mts'
 
 type PartitionDropOutcome = Awaited<ReturnType<typeof retireMonthlyPartitionCandidate>>
 
@@ -92,10 +94,11 @@ describe('guardAndRetireMonthlyPartition', () => {
     const month = occurredAt.getUTCMonth() + 1
     const partition = buildMonthlyPartitionName(TABLE, year, month)
     // One owned child. A catalog sweep at this reference date would also retire live months.
-    await createMonthlyPartitions(write, {
-      tables: [{ table: TABLE, pastMonths: 0, futureMonths: 0 }],
-      baseDate: occurredAt,
-    })
+    await createPostClearancePartitions(
+      write,
+      [{ table: TABLE, pastMonths: 0, futureMonths: 0 }],
+      occurredAt,
+    )
 
     const author = await createTestUser()
     const postId = await insertTestPost({

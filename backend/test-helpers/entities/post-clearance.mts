@@ -40,7 +40,14 @@ export async function insertTestPostClearanceChange(options: {
   const id = options.occurredAt
     ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
     : null
-  const { rows } = await write<{ id: string }>(sql`
+  await using transaction = await beginTransaction()
+  // RowExclusive on posts before history. FOR UPDATE is only RowShare and does not
+  // wait for the ShareRowExclusive lock clearance-month attach takes on posts.
+  await transaction(sql`
+    /* insertTestPostClearanceChange:lockPost */
+    UPDATE posts SET created_via = created_via WHERE id = ${options.postId}
+  `)
+  const { rows } = await transaction<{ id: string }>(sql`
     /* insertTestPostClearanceChange */
     INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id, metadata, moderation_transparency_categories)
     VALUES (
@@ -53,6 +60,7 @@ export async function insertTestPostClearanceChange(options: {
     )
     RETURNING id
   `)
+  await transaction.commit()
   return rows[0]!
 }
 
@@ -89,48 +97,39 @@ export async function setTestPostClearanceStatus(
   const changeType = clearanceChangeType(status)
   const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
   await using transaction = await beginTransaction()
-  // History before RowExclusive on posts. Holding the post first deadlocks a session that
-  // already has post_clearance_changes and then needs ShareRowExclusive on posts.
-  const { rows: insertedRows } = await transaction<{
-    id: string
-    change_type: string
-    created_at: Date
-    changed_by_id: string | null
-    public_reason_code: string | null
-    is_platform_override: boolean
-  }>(sql`
-    /* setTestPostClearanceStatus */
-    INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id)
-    SELECT COALESCE(${changeId}::uuid, uuidv7()), post.id, ${changeType}, ${updatedById ?? null}
-    FROM posts post
-    WHERE post.id = ${postId}
-    RETURNING id, change_type, created_at, changed_by_id, public_reason_code, is_platform_override
+  // Posts before history. Clearance-month attach locks post_clearance_changes,
+  // then ShareRowExclusive on posts; createPostClearancePartitions takes posts
+  // first. Waiting here means this transaction does not already hold history.
+  await transaction(sql`
+    /* setTestPostClearanceStatus:lockPost */
+    UPDATE posts
+    SET clearance_version = clearance_version
+    WHERE id = ${postId}
   `)
-  const inserted = insertedRows[0]
-  if (!inserted) {
-    await transaction.commit()
-    return null
-  }
-  const { rows } = await transaction<{ community_id: string | null }>(sql`
-    /* setTestPostClearanceStatus:projectPost */
+  const { rows } = await transaction<{ id: string; community_id: string | null }>(sql`
+    /* setTestPostClearanceStatus */
+    WITH inserted_change AS (
+      INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id)
+      VALUES (COALESCE(${changeId}::uuid, uuidv7()), ${postId}, ${changeType}, ${updatedById ?? null})
+      RETURNING id, post_id, change_type, created_at, changed_by_id, public_reason_code, is_platform_override
+    )
     UPDATE posts
     SET
       clearance_version = posts.clearance_version + 1,
-      clearance_changed_at = ${inserted.created_at}::timestamptz,
-      clearance_changed_by_id = ${inserted.changed_by_id}::uuid,
-      clearance_public_reason_code = ${inserted.public_reason_code},
-      clearance_is_platform_override = ${inserted.is_platform_override}::boolean,
-      approved_at = CASE WHEN ${inserted.change_type} = 'approve' THEN ${inserted.created_at}::timestamptz ELSE NULL END,
-      rejected_at = CASE WHEN ${inserted.change_type} = 'reject' THEN ${inserted.created_at}::timestamptz ELSE NULL END,
-      in_review_at = CASE WHEN ${inserted.change_type} = 'mark_in_review' THEN ${inserted.created_at}::timestamptz ELSE NULL END,
+      clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
+      clearance_public_reason_code = inserted_change.public_reason_code,
+      clearance_is_platform_override = inserted_change.is_platform_override,
+      approved_at = CASE WHEN inserted_change.change_type = 'approve' THEN inserted_change.created_at ELSE NULL END,
+      rejected_at = CASE WHEN inserted_change.change_type = 'reject' THEN inserted_change.created_at ELSE NULL END,
+      in_review_at = CASE WHEN inserted_change.change_type = 'mark_in_review' THEN inserted_change.created_at ELSE NULL END,
       updated_by_id = COALESCE(${updatedById ?? null}, updated_by_id)
-    WHERE id = ${postId}
-    RETURNING community_id
+    FROM inserted_change
+    WHERE posts.id = inserted_change.post_id
+    RETURNING inserted_change.id, posts.community_id
   `)
-  const projected = rows[0]
-  if (!projected) return null
   await transaction.commit()
-  return { id: inserted.id, community_id: projected.community_id }
+  return rows[0] ?? null
 }
 
 export async function approveTestPost(postId: string): Promise<void> {
