@@ -13,7 +13,7 @@ CREATE TABLE copyright_notice_email_intake_receipts (
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
   erased_at timestamptz,
   review_decision copyright_notice_email_intake_review_decisions,
-  review_retirement_check_after timestamptz NOT NULL DEFAULT '-infinity'::timestamptz,
+  review_retirement_check_at timestamptz NOT NULL DEFAULT '-infinity'::timestamptz,
   current_preservation_hold_token uuid,
   preservation_hold_kind copyright_email_receipt_preservation_kinds
     CHECK (preservation_hold_kind IN ('litigation_threat', 'regulator_request', 'court_request')),
@@ -52,7 +52,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_rationale_cipher
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result until the standalone legal-record window expires.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_retirement_check_after IS 'Next bounded eligibility probe for a completed standalone review; a blocked receipt yields to later candidates.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_retirement_check_at IS 'Next bounded eligibility probe for a completed standalone review; a blocked receipt yields to later candidates.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.current_preservation_hold_token IS 'Opaque compare-and-release authority for the current standalone receipt hold; it identifies no row and is erased with final review facts.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_kind IS 'Legal basis of the latest standalone receipt preservation hold.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_placed_at IS 'Time the latest standalone receipt preservation hold was placed.';
@@ -62,7 +62,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_relea
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.last_preservation_hold_released_at IS 'Latest receipt hold release, which restarts the six-year legal-record clock.';
 CREATE INDEX idx_cpyrght_ntc_eml_intk_rcpts__preservation_placed_by ON copyright_notice_email_intake_receipts(preservation_hold_placed_by_id) WHERE preservation_hold_placed_by_id IS NOT NULL;
 CREATE INDEX idx_cpyrght_ntc_eml_intk_rcpts__preservation_released_by ON copyright_notice_email_intake_receipts(preservation_hold_released_by_id) WHERE preservation_hold_released_by_id IS NOT NULL;
-CREATE INDEX idx_copyright_email_receipts__review_retirement ON copyright_notice_email_intake_receipts(review_retirement_check_after, reviewed_at, id)
+CREATE INDEX idx_cpyrght_ntc_eml_intk_rcpts__review_retirement ON copyright_notice_email_intake_receipts(review_retirement_check_at, reviewed_at, id)
   WHERE review_decision IS NOT NULL;
 
 CREATE FUNCTION fn_copyright_receipt_review_retirement_eligible(receipt_id uuid)
@@ -105,7 +105,7 @@ BEGIN
     THEN RETURN false; END IF;
   RETURN new_row.review_decision IS NULL AND new_row.reviewed_at IS NULL
     AND new_row.reviewed_by_id IS NULL AND new_row.review_rationale_ciphertext IS NULL
-    AND new_row.review_retirement_check_after = '-infinity'::timestamptz
+    AND new_row.review_retirement_check_at = '-infinity'::timestamptz
     AND new_row.current_preservation_hold_token IS NULL
     AND new_row.preservation_hold_kind IS NULL AND new_row.preservation_hold_placed_at IS NULL
     AND new_row.preservation_hold_placed_by_id IS NULL
@@ -113,12 +113,12 @@ BEGIN
     AND new_row.preservation_hold_released_by_id IS NULL
     AND new_row.last_preservation_hold_released_at IS NULL
     AND (to_jsonb(old_row) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id',
-      'review_rationale_ciphertext', 'review_retirement_check_after', 'preservation_hold_kind',
+      'review_rationale_ciphertext', 'review_retirement_check_at', 'preservation_hold_kind',
       'preservation_hold_placed_at', 'preservation_hold_placed_by_id',
       'preservation_hold_released_at', 'preservation_hold_released_by_id',
       'last_preservation_hold_released_at']) =
       (to_jsonb(new_row) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id',
-      'review_rationale_ciphertext', 'review_retirement_check_after', 'preservation_hold_kind',
+      'review_rationale_ciphertext', 'review_retirement_check_at', 'preservation_hold_kind',
       'preservation_hold_placed_at', 'preservation_hold_placed_by_id',
       'preservation_hold_released_at', 'preservation_hold_released_by_id',
       'last_preservation_hold_released_at']);
@@ -138,9 +138,9 @@ BEGIN
   IF fn_copyright_receipt_review_retirement_allowed(OLD, NEW) THEN RETURN NEW; END IF;
   IF current_setting('app.copyright_receipt_review_retirement', true) = 'on'
     AND OLD.review_decision IS NOT NULL
-    AND NEW.review_retirement_check_after > OLD.review_retirement_check_after
-    AND (to_jsonb(OLD) - 'review_retirement_check_after') =
-        (to_jsonb(NEW) - 'review_retirement_check_after') THEN RETURN NEW; END IF;
+    AND NEW.review_retirement_check_at > OLD.review_retirement_check_at
+    AND (to_jsonb(OLD) - 'review_retirement_check_at') =
+        (to_jsonb(NEW) - 'review_retirement_check_at') THEN RETURN NEW; END IF;
   IF (to_jsonb(OLD) - ARRAY['current_preservation_hold_token', 'preservation_hold_kind',
       'preservation_hold_placed_at', 'preservation_hold_placed_by_id', 'preservation_hold_released_at',
       'preservation_hold_released_by_id', 'last_preservation_hold_released_at']) =

@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -47,6 +48,7 @@ export async function placeCopyrightEmailReceiptPreservationHold(
     UNION ALL
     SELECT 1 FROM copyright_notice_email_intake_reviews
     WHERE copyright_notice_email_intake_receipt_id = ${receiptId}
+      AND id < ${getMinUUIDv7ForDate(new Date(Date.now() + 86_400_000))}
       AND promoted_copyright_notice_id IS NOT NULL
     UNION ALL
     SELECT 1 FROM copyright_notice_correspondence_messages

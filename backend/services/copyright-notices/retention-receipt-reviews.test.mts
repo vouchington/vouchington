@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
+import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
+import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import {
   attemptCopyrightReceiptReviewMutation,
@@ -14,12 +17,15 @@ import {
   releaseCopyrightEmailReceiptPreservationHold,
 } from './retention-receipt-preservation.mts'
 import { sweepCopyrightReceiptReviews } from './retention-receipt-reviews.mts'
+import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 
 const oldReview = new Date('2001-01-01T00:00:00.000Z')
 
 describe('standalone copyright receipt review expiry', () => {
   useCopyrightIntakeEnvironment()
+  useCopyrightOperationalCursorReservation()
+  useFakeCopyrightEvidenceBucket()
   it('erases expired final facts while retaining exact SES replay identity', async () => {
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
     const receipt = await seedCopyrightReceiptReview({
@@ -97,8 +103,15 @@ describe('standalone copyright receipt review expiry', () => {
     const receipt = await seedCopyrightReceiptReview({
       reviewerId: reviewer.id,
       reviewedAt: oldReview,
+      erased: false,
     })
-    const rationaleId = await seedOldCopyrightReceiptRationale(receipt.id, reviewer.id)
+    const rationaleId = await seedOldCopyrightReceiptRationale(receipt, reviewer.id)
+    await positionCopyrightOperationalCursor('unlinked_email_intakes', receipt.id)
+    await sweepUnlinkedCopyrightEmailIntakes({
+      retentionDays: 90,
+      childLimit: 2,
+      maxBatches: 10,
+    })
     await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1 })
     expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBe('rejected')
     expect(await retireOldCopyrightReceiptRationale(rationaleId)).toBe(1)

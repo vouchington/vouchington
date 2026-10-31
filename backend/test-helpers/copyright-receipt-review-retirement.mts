@@ -2,6 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
+import { upsertMediaTypes } from '../services/urls/media-types.mts'
+import { upsertCopyrightStorageObjectId } from '../services/copyright-notices/storage-objects.mts'
 
 export async function seedCopyrightReceiptReview(input: {
   reviewerId: string
@@ -47,12 +49,27 @@ export async function attemptCopyrightReceiptReviewMutation(id: string) {
     WHERE id = ${id}`)
 }
 
-export async function seedOldCopyrightReceiptRationale(receiptId: string, reviewerId: string) {
+export async function seedOldCopyrightReceiptRationale(
+  receipt: { id: string; sesMessageId: string; rawStorageKey: string; rawSha256: Buffer },
+  reviewerId: string,
+) {
   const id = v7({ msecs: new Date('2002-01-01T00:00:00.000Z').getTime() })
-  await write(sql`/* seedOldCopyrightReceiptRationale */
+  await using transaction = await beginTransaction()
+  const mediaTypeId = await upsertMediaTypes('message/rfc822', { query: transaction })
+  const storageObjectId = await upsertCopyrightStorageObjectId(receipt.rawStorageKey, transaction)
+  await transaction(sql`/* seedActiveOldCopyrightReceiptIntake */
+    INSERT INTO copyright_notice_email_intakes
+      (id, amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256,
+       raw_media_type_id, raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict,
+       spam_verdict, virus_verdict)
+    VALUES (${receipt.id}, ${receipt.sesMessageId}, ${new Date('2001-01-01T00:00:00.000Z')},
+      ${storageObjectId}, ${receipt.rawSha256}, ${mediaTypeId}, 12,
+      'pass', 'pass', 'pass', 'pass', 'pass')`)
+  await transaction(sql`/* seedOldCopyrightReceiptRationale */
     INSERT INTO copyright_decision_rationales
       (id, copyright_notice_email_intake_receipt_id, recorded_by_id, tool_name, rationale_ciphertext)
-    VALUES (${id}, ${receiptId}, ${reviewerId}, 'review_copyright_email_intake', 'v1:attempt')`)
+    VALUES (${id}, ${receipt.id}, ${reviewerId}, 'review_copyright_email_intake', 'v1:attempt')`)
+  await transaction.commit()
   return id
 }
 
