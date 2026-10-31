@@ -57,7 +57,6 @@ function ExternalLink({
       target={target}
       rel={relValue}
       className={cn(className)}
-      data-pw='external-link'
       {...props}
     >
       {children}

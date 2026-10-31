@@ -72,6 +72,9 @@ test.describe('Referral Program Validations', () => {
     await expect(page.getByTestId('validation-rules-add-button')).toBeVisible()
     await expect(page.getByTestId(`rule-edit-${referralProgram.ruleId}`)).toBeVisible()
     await expect(page.getByTestId(`rule-delete-${referralProgram.ruleId}`)).toBeVisible()
+    await page.getByTestId(`rule-delete-${referralProgram.ruleId}`).click()
+    await expect(page.getByTestId('validation-rules-table-delete')).toBeVisible()
+    await page.getByRole('alertdialog').press('Escape')
   })
 
   test('shows rule form when add rule button clicked', async ({ page }) => {

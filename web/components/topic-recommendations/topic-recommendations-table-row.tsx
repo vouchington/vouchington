@@ -75,6 +75,7 @@ export function TopicRecommendationsTableRow({
             />
           </Button>
           <Button
+            data-pw='topic-recommendations-table-row-open-post-from-topic'
             type='button'
             variant='link'
             size='sm'
@@ -101,6 +102,7 @@ export function TopicRecommendationsTableRow({
               {t('extracted.topicRecommendations.topicRecommendationsTableRow.text_a137f17a')}
             </span>
             <Button
+              data-pw='topic-recommendations-table-row-open-post-from-date'
               type='button'
               variant='link'
               size='sm'

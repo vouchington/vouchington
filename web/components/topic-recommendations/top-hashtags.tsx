@@ -172,6 +172,7 @@ export function TopHashtags({
       ) : null}
       {data.page_info.has_next_page ? (
         <Button
+          data-pw='top-hashtags-load-more'
           type='button'
           variant='outline'
           disabled={loading}
