@@ -1,52 +1,28 @@
 import undici, { Response as UndiciResponse } from 'undici'
-import { beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
+import { describe, expect, it, vi, type MockInstance } from 'vitest'
 import {
   overrideDynamicConfigFieldsForTest,
   urlExistsForTest,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
 import { createOwnedWebRiskFixture } from '@voucha/test-helpers/web-risk-state'
+import * as webRiskCheck from '@services/web-risk/check'
 import { webRiskConfig } from '@services/web-risk/config'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
+import { addUrl, assessUrls } from './upsert.mts'
 
-const ownedWebRisk = vi.hoisted(() => ({
-  check: null as ((url: string) => Promise<void>) | null,
-}))
-
-// Worker setup evaluates URL upsert before this file is loaded, so the mock has to
-// rebind a fresh upsert. The real checker stays parameter-free and uses the owned namespace.
-// eslint-disable-next-line no-mistakes/module-mock-boundary -- owned namespace only
-vi.mock<typeof import('@services/web-risk/check')>(
-  import('@services/web-risk/check'),
-  async importOriginal => {
-    const actual = await importOriginal()
-    return {
-      ...actual,
-      assertUrlsAllowedByWebRisk: async urls => {
-        const check = ownedWebRisk.check
-        if (check === null) throw new Error('Owned Web Risk fixture is not bound')
-        await Promise.all(urls.map(url => check(url)))
-      },
-    }
-  },
-)
-
-type UrlUpsert = Pick<typeof import('./upsert.mts'), 'addUrl' | 'assessUrls'>
-
-let addUrl: UrlUpsert['addUrl']
-let assessUrls: UrlUpsert['assessUrls']
+function spyOnOwnedWebRiskCheck(
+  fixture: ReturnType<typeof createOwnedWebRiskFixture>,
+): MockInstance<typeof webRiskCheck.assertUrlsAllowedByWebRisk> {
+  return vi.spyOn(webRiskCheck, 'assertUrlsAllowedByWebRisk').mockImplementation(async urls => {
+    await Promise.all(urls.map(url => fixture.check(url)))
+  })
+}
 
 describe('addUrl integrates with Google Web Risk blocking', () => {
-  beforeAll(async () => {
-    vi.resetModules()
-    const upsert = await import('./upsert.mts')
-    addUrl = upsert.addUrl
-    assessUrls = upsert.assessUrls
-  })
-
   it('rechecks mutable hostname policy after an earlier successful validation', async () => {
     const fixture = createOwnedWebRiskFixture()
-    ownedWebRisk.check = fixture.check
+    const checkSpy = spyOnOwnedWebRiskCheck(fixture)
     const domain = `changed-policy-${crypto.randomUUID()}.example.com`
     const url = `https://${domain}/new-profile-url`
     const hostnames = await upsertUrlHostnames(null, [domain])
@@ -56,7 +32,7 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
       await expect(addUrl(null, url)).rejects.toMatchObject({ status: 400 })
       expect(await urlExistsForTest(url)).toBe(false)
     } finally {
-      ownedWebRisk.check = null
+      checkSpy.mockRestore()
       await fixture.cleanup()
     }
   })
@@ -65,12 +41,13 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')
     let restoreConfig: (() => void) | undefined
     let fetchSpy: MockInstance<typeof undici.fetch> | undefined
+    let checkSpy: MockInstance<typeof webRiskCheck.assertUrlsAllowedByWebRisk> | undefined
     let fixture: ReturnType<typeof createOwnedWebRiskFixture> | undefined
     try {
       await webRiskConfig.waitForInitialization()
       restoreConfig = overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: true })
       fixture = createOwnedWebRiskFixture()
-      ownedWebRisk.check = fixture.check
+      checkSpy = spyOnOwnedWebRiskCheck(fixture)
       const currentFetchSpy = vi.spyOn(undici, 'fetch')
       fetchSpy = currentFetchSpy
       if (undici.fetch !== currentFetchSpy) {
@@ -91,7 +68,7 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
       expect(currentFetchSpy).toHaveBeenCalledTimes(1)
       await expect(fixture.countWindow(fixture.windowKeys()[1])).resolves.toBe(1)
     } finally {
-      ownedWebRisk.check = null
+      checkSpy?.mockRestore()
       try {
         await fixture?.cleanup()
       } finally {
