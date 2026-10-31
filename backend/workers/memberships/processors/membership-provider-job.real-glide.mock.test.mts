@@ -42,11 +42,12 @@ describe('membership verification execution lease with real Valkey', () => {
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 2,
     })
-    const held: string[] = []
+    const held: MembershipVerificationExecutionLease[] = []
     try {
       const first = await acquireMembershipVerificationExecutionLease()
+      if (first) held.push(first)
       const second = await acquireMembershipVerificationExecutionLease()
-      for (const lease of [first, second]) if (lease) held.push(lease.key)
+      if (second) held.push(second)
       if (!first || !second) throw new Error('Expected two verification execution leases')
       expect(first.key).not.toBe(second.key)
       await expect(acquireMembershipVerificationExecutionLease()).resolves.toBeNull()
@@ -57,7 +58,6 @@ describe('membership verification execution lease with real Valkey', () => {
       await expect(renewMembershipVerificationExecutionLease(forged)).resolves.toBe(false)
       await expect(releaseMembershipVerificationExecutionLease(forged)).resolves.toBe(false)
       await expect(workerQueueCommandClient.get(first.key)).resolves.toBe(first.token)
-
       await expect(renewMembershipVerificationExecutionLease(first)).resolves.toBe(true)
       const ttl = await workerQueueCommandClient.pttl(first.key)
       expect(ttl).toBeGreaterThan(50_000)
@@ -75,7 +75,7 @@ describe('membership verification execution lease with real Valkey', () => {
       await expect(workerQueueCommandClient.get(second.key)).resolves.toBeNull()
     } finally {
       restoreConfig()
-      if (held.length > 0) await workerQueueCommandClient.unlink(held)
+      await Promise.all(held.map(lease => releaseMembershipVerificationExecutionLease(lease)))
     }
   })
 })
