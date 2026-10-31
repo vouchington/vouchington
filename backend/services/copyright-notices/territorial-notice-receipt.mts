@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
@@ -55,8 +54,6 @@ export async function receiveTerritorialCopyrightNotice(
     request,
     transaction,
   )
-  if (!receipt.is_duplicate)
-    await advanceCopyrightLastLegalActivityAt(transaction, receipt.notice_id)
   await transaction.commit()
   return receipt
 }

@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -158,10 +157,15 @@ async function createAuthenticatedCopyrightSubmission(
       INSERT INTO copyright_notice_submission_requests (
         copyright_notice_submission_id, requester_user_id, idempotency_key, request_sha256
       ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKey}, ${requestSha256})
-    )
-    INSERT INTO copyright_notice_lifecycle_changes (
+    ), recorded_event AS (
+      INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
-    ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
+      ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
+      RETURNING copyright_notice_id
+    )
+    UPDATE copyright_notices SET last_legal_activity_at =
+      GREATEST(last_legal_activity_at, clock_timestamp())
+    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
   `)
   await createCopyrightDeliveryIntent(
     {
@@ -176,7 +180,6 @@ async function createAuthenticatedCopyrightSubmission(
     },
     transaction,
   )
-  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   return { submission, isDuplicate: false }
 }
