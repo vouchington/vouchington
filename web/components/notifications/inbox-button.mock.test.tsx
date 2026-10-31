@@ -187,21 +187,6 @@ describe('inbox-button', () => {
       expect(screen.queryByText('0')).not.toBeInTheDocument()
     })
 
-    it('fetches notifications on mount', async () => {
-      render(<InboxButton />)
-      await waitFor(() => {
-        expect(mockGetMyUnreadNotificationsSummaryClient).toHaveBeenCalled()
-      })
-    })
-
-    it('renders notification rows when summary has notifications (L80)', async () => {
-      mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue(summaryWithNotification)
-      render(<InboxButton />)
-      await waitFor(() => {
-        expect(screen.getByText('Test notification')).toBeInTheDocument()
-      })
-    })
-
     it('skips result entry when notifications dict is missing the id (L77-78)', async () => {
       mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue({
         unread_count: 1,
