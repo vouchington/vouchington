@@ -9,10 +9,11 @@ import {
   RSS_FEED_CRAWL_TIERS_VIEW,
 } from '@queues/psql/config'
 import { psql } from '@queues/psql/queues'
-import { PSQL_SCHEDULED_ADMIN_JOB_TYPES } from '@queues/psql/types'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
 import { SCHEDULED_JOBS_REGISTRY } from '@services/queue-monitoring/scheduled-jobs-registry'
+
+const PSQL_SCHEDULED_ADMIN_JOB_TYPES = ['createPartitions', 'cleanupPartitions'] as const
 
 const EXPECTED_SCHEDULED_JOBS = [
   'background-cpu/bedrock-embeddings:backlog-dispatcher',

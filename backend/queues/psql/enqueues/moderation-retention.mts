@@ -18,7 +18,7 @@ const enqueueModerationRetentionJob = createEnqueueFunction<ModerationRetentionJ
   jobName: MODERATION_RETENTION_JOB_NAME,
 })
 
-export async function enqueueModerationRetentionCleanup() {
+async function enqueueModerationRetentionCleanup() {
   await moderationRetentionQueueConfig.waitForInitialization()
   return enqueueModerationRetentionJob({}, getModerationRetentionJobOptions())
 }

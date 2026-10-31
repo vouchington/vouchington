@@ -26,7 +26,7 @@ export const PSQL_MANUAL_ONLY_ADMIN_JOB_TYPES = [
   'runConfigDriven',
 ] as const satisfies readonly PsqlJobs[]
 
-export const PSQL_SCHEDULED_ADMIN_JOB_TYPES = [
+const PSQL_SCHEDULED_ADMIN_JOB_TYPES = [
   'createPartitions',
   'cleanupPartitions',
 ] as const satisfies readonly PsqlJobs[]
