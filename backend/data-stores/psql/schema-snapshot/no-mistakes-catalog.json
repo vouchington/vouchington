@@ -1739,7 +1739,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_human_actor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NULL THEN\n    RAISE EXCEPTION 'copyright human decisions require an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_immutable_with_actor_erasure()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasure()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  logical_table_name text;\n  actor_column text;\n  old_actor jsonb;\n  new_actor jsonb;\nBEGIN\n  SELECT relname INTO logical_table_name FROM pg_class\n    WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(OLD) - TG_ARGV) IS DISTINCT FROM (to_jsonb(NEW) - TG_ARGV) THEN\n    RAISE EXCEPTION 'copyright legal records are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  FOREACH actor_column IN ARRAY TG_ARGV LOOP\n    old_actor := to_jsonb(OLD) -> actor_column;\n    new_actor := to_jsonb(NEW) -> actor_column;\n    IF old_actor IS DISTINCT FROM new_actor\n      AND (old_actor = 'null'::jsonb OR new_actor <> 'null'::jsonb) THEN\n      RAISE EXCEPTION 'copyright legal record actors may only be erased' USING ERRCODE = 'check_violation';\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasure()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  logical_table_name text;\n  actor_column text;\n  old_actor jsonb;\n  new_actor jsonb;\nBEGIN\n  SELECT relname INTO logical_table_name FROM pg_class\n    WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);\n  IF TG_OP = 'UPDATE' AND logical_table_name = 'copyright_notice_submission_requests'\n    AND current_setting('app.copyright_submission_key_retention', true) = 'on'\n    AND uuid_extract_timestamp(OLD.id) < clock_timestamp() - interval '30 days'\n    AND OLD.idempotency_key IS NOT NULL AND NEW.idempotency_key IS NULL\n    AND (to_jsonb(OLD) - 'idempotency_key') = (to_jsonb(NEW) - 'idempotency_key') THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(OLD) - TG_ARGV) IS DISTINCT FROM (to_jsonb(NEW) - TG_ARGV) THEN\n    RAISE EXCEPTION 'copyright legal records are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  FOREACH actor_column IN ARRAY TG_ARGV LOOP\n    old_actor := to_jsonb(OLD) -> actor_column;\n    new_actor := to_jsonb(NEW) -> actor_column;\n    IF old_actor IS DISTINCT FROM new_actor\n      AND (old_actor = 'null'::jsonb OR new_actor <> 'null'::jsonb) THEN\n      RAISE EXCEPTION 'copyright legal record actors may only be erased' USING ERRCODE = 'check_violation';\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_lifecycle_event_source_notice()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.id = NEW.media_delivery_registry_record_id\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -40517,6 +40517,10 @@
     },
     "copyright_notice_submission_requests": {
       "checkConstraints": {
+        "copyright_notice_submission_reques_idempotency_key_sha256_check": {
+          "definition": "CHECK ((octet_length(idempotency_key_sha256) = 32))",
+          "validated": true
+        },
         "copyright_notice_submission_requests_request_sha256_check": {
           "definition": "CHECK ((octet_length(request_sha256) = 32))",
           "validated": true
@@ -40541,7 +40545,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -40554,14 +40558,24 @@
           "ordinalPosition": 1
         },
         "idempotency_key": {
-          "comment": "Caller-generated UUID preventing duplicate response admission.",
+          "comment": "Raw caller UUID cleared after 30 days; the digest preserves exact replay while the case exists.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 4
+        },
+        "idempotency_key_sha256": {
+          "comment": "Digest of the canonical caller UUID used to match retries after raw-key expiry.",
+          "dataType": "bytea",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
         },
         "request_sha256": {
           "comment": "Digest used to reject conflicting reuse of an idempotency key.",
@@ -40571,7 +40585,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "requester_user_id": {
           "comment": "Authenticated affected poster making the request.",
@@ -40627,36 +40641,27 @@
           "unique": true,
           "valid": true
         },
-        "uq_copyr_notic_submi_reques__requester_user_id__idempotency_key": {
+        "idx_copyright_submission_requests__uncleared_key_age": {
           "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyr_notic_submi_reques__requester_user_id__idempotency_key ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key)",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_submission_requests__uncleared_key_age ON public.copyright_notice_submission_requests USING btree (id) WHERE (idempotency_key IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "requester_user_id",
+              "column": "id",
               "descending": false,
-              "expression": "requester_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "idempotency_key",
-              "descending": false,
-              "expression": "idempotency_key",
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(idempotency_key IS NOT NULL)",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "uq_copyright_notice_submission_requests__submission_id": {
@@ -40681,6 +40686,38 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_copyright_submission_requests__requester__key_digest": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_submission_requests__requester__key_digest ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key_sha256)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "requester_user_id",
+              "descending": false,
+              "expression": "requester_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "idempotency_key_sha256",
+              "descending": false,
+              "expression": "idempotency_key_sha256",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bytea_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -40694,11 +40731,11 @@
         }
       },
       "uniqueConstraints": {
-        "uq_copyr_notic_submi_reques__requester_user_id__idempotency_key": {
-          "columns": ["requester_user_id", "idempotency_key"]
-        },
         "uq_copyright_notice_submission_requests__submission_id": {
           "columns": ["copyright_notice_submission_id"]
+        },
+        "uq_copyright_submission_requests__requester__key_digest": {
+          "columns": ["requester_user_id", "idempotency_key_sha256"]
         }
       }
     },
