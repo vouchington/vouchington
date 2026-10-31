@@ -29,7 +29,7 @@ import '@services/referral-program-link-validations'
 import { createPostModerationContent } from '@services/posts/content'
 import { createPost, getPostByAny } from '@services/posts'
 import type { Post } from '@services/posts/types'
-import { getUrlByAny } from '@services/urls/get'
+import { getUrlByAnyCached } from '@services/urls/get'
 import { processPostCreated, processPostUpdated } from '../posts.mts'
 import { recoverPostCreatedEffects } from '../post-created-recovery.mts'
 
@@ -103,7 +103,7 @@ describe('post entity listener creation dispatch', () => {
     const creator = await createTestUser()
     const canonicalUrlId = await createTestUrlWithHostname()
     const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
-    const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
+    const sourceUrlId = (await getUrlByAnyCached(sourceUrl))!.id
     await using observer = createEntityRelationCrawlObserver(new Set([canonicalUrlId, sourceUrlId]))
     const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Redirect recovery ${randomUUID()}`,
@@ -135,7 +135,7 @@ describe('post entity listener creation dispatch', () => {
     const creator = await createTestUser()
     const canonicalUrlId = await createTestUrlWithHostname()
     const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
-    const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
+    const sourceUrlId = (await getUrlByAnyCached(sourceUrl))!.id
     await using observer = createEntityRelationCrawlObserver(new Set([canonicalUrlId, sourceUrlId]))
     const postId = await insertTestPost({
       title: `Relation-only redirect recovery ${randomUUID()}`,
