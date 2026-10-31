@@ -14,6 +14,8 @@ Not partitioned — growth: unbounded.
 | `copyright_territorial_notice_acknowledgment_id` | `uuid`                     | yes      |                              |          |           |           | Exhausted acknowledgment that caused this escalation. Exactly one source is set.  |
 | `copyright_eu_supervised_complaint_id`           | `uuid`                     | yes      |                              |          |           |           | EU supervised complaint that caused this escalation. Exactly one source is set.   |
 | `escalated_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the escalation was recorded.                                                 |
+| `closed_at`                                      | `timestamp with time zone` | yes      |                              |          |           |           | Explicit staff closure time; NULL while the escalation remains open.              |
+| `closed_by_id`                                   | `uuid`                     | yes      |                              |          |           |           | Staff identity recording closure.                                                 |
 | `created_at`                                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
@@ -25,11 +27,13 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `chk_copyright_territorial_escalations__closed`: `CHECK (((closed_at IS NULL) = (closed_by_id IS NULL)))`
 - `chk_copyright_territorial_escalations__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 - `chk_copyright_territorial_escalations__source`: `CHECK ((num_nonnulls(copyright_territorial_notice_acknowledgment_id, copyright_eu_supervised_complaint_id) = 1))`
 
 **Foreign keys:**
 
+- `copyright_territorial_escalations_closed_by_id_fkey`: `FOREIGN KEY (closed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_escalations__eu_supervised_complaint`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_escalations__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
 - `fk_copyright_territorial_escalations__notice_acknowledgment`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE RESTRICT`
@@ -37,11 +41,13 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `copyright_territorial_escalations_pkey`: `CREATE UNIQUE INDEX copyright_territorial_escalations_pkey ON public.copyright_territorial_escalations USING btree (id)`
+- `idx_copyright_territorial_escalations__closed_by`: `CREATE INDEX idx_copyright_territorial_escalations__closed_by ON public.copyright_territorial_escalations USING btree (closed_by_id) WHERE (closed_by_id IS NOT NULL)`
 - `idx_copyright_territorial_escalations__notice`: `CREATE INDEX idx_copyright_territorial_escalations__notice ON public.copyright_territorial_escalations USING btree (copyright_notice_id, jurisdiction)`
+- `idx_copyright_territorial_escalations__open`: `CREATE INDEX idx_copyright_territorial_escalations__open ON public.copyright_territorial_escalations USING btree (copyright_notice_id) WHERE (closed_at IS NULL)`
 - `uq_copyright_territoria_escalations__eu_supervised_complaint_id`: `CREATE UNIQUE INDEX uq_copyright_territoria_escalations__eu_supervised_complaint_id ON public.copyright_territorial_escalations USING btree (copyright_eu_supervised_complaint_id)`
 - `uq_copyright_territorial_escalations__notice_acknowledgment_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_escalations__notice_acknowledgment_id ON public.copyright_territorial_escalations USING btree (copyright_territorial_notice_acknowledgment_id)`
 
 **Triggers:**
 
-- `trigger_copyright_territorial_escalations_immutable`: `CREATE TRIGGER trigger_copyright_territorial_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_copyright_territorial_escalations_source`: `CREATE TRIGGER trigger_copyright_territorial_escalations_source BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation()`
+- `trigger_copyright_territorial_escalations_terminal`: `CREATE TRIGGER trigger_copyright_territorial_escalations_terminal BEFORE UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()`

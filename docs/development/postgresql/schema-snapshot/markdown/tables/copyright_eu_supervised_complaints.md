@@ -16,6 +16,8 @@ Not partitioned — growth: unbounded.
 | `authority_reference`    | `text`                     | no       |                              |          |           |           | Authority reference for this complaint. Unique per notice.                           |
 | `explanation_ciphertext` | `text`                     | no       |                              |          |           |           | Encrypted explanation of the supervised complaint.                                   |
 | `received_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this supervised complaint.                                        |
+| `resolved_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Staff resolution time; NULL while the complaint remains open.                        |
+| `resolved_by_id`         | `uuid`                     | yes      |                              |          |           |           | Staff identity recording resolution.                                                 |
 | `created_at`             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
@@ -31,19 +33,23 @@ Not partitioned — growth: unbounded.
 - `chk_copyright_eu_supervised_complaints__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
 - `chk_copyright_eu_supervised_complaints__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))`
 - `chk_copyright_eu_supervised_complaints__reference`: `CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))`
+- `chk_copyright_eu_supervised_complaints__resolved`: `CHECK (((resolved_at IS NULL) = (resolved_by_id IS NULL)))`
 
 **Foreign keys:**
 
+- `copyright_eu_supervised_complaints_resolved_by_id_fkey`: `FOREIGN KEY (resolved_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_eu_supervised_complaints__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
 - `fk_copyright_eu_supervised_complaints__recorded_by`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `copyright_eu_supervised_complaints_pkey`: `CREATE UNIQUE INDEX copyright_eu_supervised_complaints_pkey ON public.copyright_eu_supervised_complaints USING btree (id)`
+- `idx_copyright_eu_supervised_complaints__open`: `CREATE INDEX idx_copyright_eu_supervised_complaints__open ON public.copyright_eu_supervised_complaints USING btree (copyright_notice_id) WHERE (resolved_at IS NULL)`
 - `idx_copyright_eu_supervised_complaints__recorded_by`: `CREATE INDEX idx_copyright_eu_supervised_complaints__recorded_by ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)`
+- `idx_copyright_eu_supervised_complaints__resolved_by`: `CREATE INDEX idx_copyright_eu_supervised_complaints__resolved_by ON public.copyright_eu_supervised_complaints USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)`
 - `uq_copyright_eu_supervised_complaints__idempotency`: `CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__idempotency ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id, jurisdiction, idempotency_key)`
 - `uq_copyright_eu_supervised_complaints__reference`: `CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__reference ON public.copyright_eu_supervised_complaints USING btree (copyright_notice_id, jurisdiction, authority_reference)`
 
 **Triggers:**
 
-- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_eu_supervised_complaints_terminal`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_terminal BEFORE UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()`
