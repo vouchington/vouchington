@@ -1,4 +1,5 @@
-import { describe, expect, it, onTestFinished } from 'vitest'
+import '@services/elections-votes'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import {
   getTestRssFeedItemCategorySnapshotReconciliation,
@@ -6,6 +7,8 @@ import {
 } from '@voucha/test-helpers'
 import { reconcileRssFeedItemCategorySnapshots } from '../category-snapshot-reconciliations.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
+
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 function itemInput(suffix: string, categories: string[], title = 'Initial title') {
   return {
@@ -31,6 +34,9 @@ describe('RSS category snapshot notification identity', () => {
     })
     const first = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
     expect(first).toMatchObject({ generation: '1' })
+    expect(first!.change_id).toMatch(
+      /^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/,
+    )
     const beforeFirst = new Set((await jobs()).map(job => job.id))
 
     await expect(reconcileRssFeedItemCategorySnapshots(undefined, [item!.id])).resolves.toEqual({
