@@ -114,7 +114,7 @@ async function createSourceInTransaction(
   }
 }
 
-export type CreateRssFeedSourceArgs = {
+type CreateRssFeedSourceArgs = {
   provenance: ContentProvenance
   rssFeedUrlId: string
   hostnameId: string
@@ -125,7 +125,7 @@ export type CreateRssFeedSourceArgs = {
   createdById: string | null
 }
 
-export async function createRssFeedSource(
+async function createRssFeedSource(
   args: CreateRssFeedSourceArgs,
 ): Promise<(CreateSourceTransactionResult & { slug: string; name: string }) | null> {
   const result = await createSourceInTransaction(
