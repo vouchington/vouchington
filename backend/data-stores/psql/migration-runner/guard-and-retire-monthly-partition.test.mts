@@ -19,10 +19,9 @@ import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
 import { getMonthlyPartitionUpperBound } from './partition-drop-guard.mts'
-import {
-  retireMonthlyPartitionCandidate,
-  type PartitionDropOutcome,
-} from './monthly-partitions.mts'
+import { retireMonthlyPartitionCandidate } from './monthly-partitions.mts'
+
+type PartitionDropOutcome = Awaited<ReturnType<typeof retireMonthlyPartitionCandidate>>
 
 const now = new Date('2026-10-23T00:00:00.000Z')
 const candidate = {

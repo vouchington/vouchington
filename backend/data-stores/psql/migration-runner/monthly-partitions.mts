@@ -16,7 +16,7 @@ import {
   type PartitionCleanupCursor,
 } from './monthly-partition-candidates.mts'
 
-export type PartitionDropOutcome = {
+type PartitionDropOutcome = {
   table: string
   partition: string
   outcome: 'dropped' | 'refused'
