@@ -25,17 +25,24 @@ describe('extract-metadata enqueue through real GlideMQ', () => {
 
   it('deduplicates a production extraction by the image id', async () => {
     const imageId = randomUUID()
-    await enqueueExtractImageMetadata(imageId)
-    const jobs = await imageUploadsQueue.searchJobs({
-      name: 'extract-metadata',
-      data: { id: imageId },
-    })
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]?.opts.deduplication).toEqual({
-      id: `extract-image-metadata-${imageId}`,
-      mode: 'simple',
-    })
-    await jobs[0]?.remove()
+    try {
+      await enqueueExtractImageMetadata(imageId)
+      const jobs = await imageUploadsQueue.searchJobs({
+        name: 'extract-metadata',
+        data: { id: imageId },
+      })
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0]?.opts.deduplication).toEqual({
+        id: `extract-image-metadata-${imageId}`,
+        mode: 'simple',
+      })
+    } finally {
+      const jobs = await imageUploadsQueue.searchJobs({
+        name: 'extract-metadata',
+        data: { id: imageId },
+      })
+      await Promise.all(jobs.map(job => job.remove()))
+    }
   })
 
   it.each(['complete', 'fail'] as const)(

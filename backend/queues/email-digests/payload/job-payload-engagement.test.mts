@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { communityItemVariableKeys } from './job-payload-contract.mts'
 import { parseEmailDigestJob } from './job-payload.mts'
 
-const communityCountKeys = Object.entries(communityItemVariableKeys).flatMap(([key, kind]) =>
-  kind === 'number' ? [key] : [],
-)
+const communityCountKeys = [
+  'pendingPostReviews',
+  'pendingApplications',
+  'pendingReports',
+  'escalatedItems',
+  'suspectedBanEvaders',
+  'netMemberChange',
+  'totalActiveMembers',
+  'newDiscussionPosts',
+  'newReviewPosts',
+  'newDataPointPosts',
+  'topDiscussionReplyCount',
+  'activeMemberCount',
+  'activeMemberRate',
+] as const
 
 const address = { emailAddress: 'owner@example.test' }
 const moderationInput = {
