@@ -24,7 +24,7 @@ export type RssFeedHardDeleteJobs =
   | 'processFinalizeHardDeleteRssFeed'
   | 'processRecoverRssFeedHardDeletes'
 
-export const RSS_FEED_HARD_DELETE_CHILD_PHASES = [
+const RSS_FEED_HARD_DELETE_CHILD_PHASES = [
   'setting_changes',
   'crawls',
   'community_list_feeds',

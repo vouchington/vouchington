@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
-import { getExtractImageMetadataJobOptions } from './enqueues.mts'
+import { enqueueExtractImageMetadata } from './enqueues.mts'
 import { imageUploadsQueue } from './queues.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -18,9 +18,24 @@ describe('extract-metadata enqueue through real GlideMQ', () => {
   // Priority only orders pickup; zero skips the scheduler's ~5s promotion of prioritized jobs.
   const productionOptions = (imageId: string) => ({
     ...ENQUEUE_BASE_DEFAULTS,
-    ...getExtractImageMetadataJobOptions(imageId),
+    deduplication: { id: `extract-image-metadata-${imageId}`, mode: 'simple' as const },
     attempts: 1,
     priority: 0,
+  })
+
+  it('deduplicates a production extraction by the image id', async () => {
+    const imageId = randomUUID()
+    await enqueueExtractImageMetadata(imageId)
+    const jobs = await imageUploadsQueue.searchJobs({
+      name: 'extract-metadata',
+      data: { id: imageId },
+    })
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]?.opts.deduplication).toEqual({
+      id: `extract-image-metadata-${imageId}`,
+      mode: 'simple',
+    })
+    await jobs[0]?.remove()
   })
 
   it.each(['complete', 'fail'] as const)(

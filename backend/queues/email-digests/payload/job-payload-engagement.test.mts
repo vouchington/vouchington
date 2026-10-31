@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { communityCountKeys } from './job-payload-engagement.mts'
+import { communityItemVariableKeys } from './job-payload-contract.mts'
 import { parseEmailDigestJob } from './job-payload.mts'
+
+const communityCountKeys = Object.entries(communityItemVariableKeys).flatMap(([key, kind]) =>
+  kind === 'number' ? [key] : [],
+)
 
 const address = { emailAddress: 'owner@example.test' }
 const moderationInput = {

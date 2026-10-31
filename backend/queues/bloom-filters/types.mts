@@ -5,7 +5,7 @@ export type BloomFilterProcessorJobs =
   | 'processDeleteUserBookmarkBloomFilter'
   | 'processRebuildEmbeddingBloomFilter'
 
-export const BLOOM_FILTER_REBUILD_INPUTS = [
+const BLOOM_FILTER_REBUILD_INPUTS = [
   'url-blocklist',
   'email-blocklist',
   'embedding',

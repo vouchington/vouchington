@@ -26,7 +26,7 @@ const communityCountKeyList: string[] = []
 for (const [key, kind] of Object.entries(communityItemVariableKeys)) {
   if (kind === 'number') communityCountKeyList.push(key)
 }
-export const communityCountKeys: readonly string[] = communityCountKeyList
+const communityCountKeys: readonly string[] = communityCountKeyList
 
 export const parseEngagementVariables = {
   processSendFollowTopicsEmail: (data: unknown) =>

@@ -3,12 +3,11 @@ import { once } from 'node:events'
 import { Worker, type Job, type JobOptions } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
+import { workerQueueCommandClient, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { membershipVerificationQueueConfig } from '@queues/memberships/config'
 import { buildGooglePlayNotificationJob } from '@queues/memberships/enqueues/google-play-jobs'
 import {
   acquireMembershipVerificationExecutionLease,
-  membershipVerificationLeaseNamespace,
   releaseMembershipVerificationExecutionLease,
   renewMembershipVerificationExecutionLease,
   type MembershipVerificationExecutionLease,
@@ -41,6 +40,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('membership verification execution lease with real Valkey', () => {
   it('bounds contention and fences renewal and release by owner token', async () => {
+    const membershipVerificationLeaseNamespace = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
     const keys = [0, 1].map(slot => `${membershipVerificationLeaseNamespace}:slot:${slot}`)
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 2,
