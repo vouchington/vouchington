@@ -3,6 +3,7 @@ backend:
   - 'ci/backend-unit-pg-waits.sql'
   - 'ci/backend-unit-unfinished-files.mts'
   - 'ci/check-live-mcp-catalog.mjs'
+  - 'ci/check-topic-merge-foreign-keys.mts'
   - 'ci/package.json'
   - 'api-fixtures/**'
   - 'vitest.config.mts'
