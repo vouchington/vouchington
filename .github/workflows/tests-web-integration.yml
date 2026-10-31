@@ -53,9 +53,11 @@ jobs:
         id: shards
         with:
           total: ${{ steps.shard-total.outputs.shard-total }}
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         if: ${{ !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - uses: ./.github/actions/build-web-targets
         if: ${{ !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
         timeout-minutes: 9

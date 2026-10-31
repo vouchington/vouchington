@@ -20,8 +20,10 @@ jobs:
         with:
           fetch-depth: 2 # the baseline check diffs a pull request against HEAD^1
         timeout-minutes: 3
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Check workflow runner policy
         run: pnpm exec vouchington runner-policy --config .github/runner-policy.json --root .github/workflows
         timeout-minutes: 1
@@ -186,8 +188,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Install CI tools via mise
         uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         # Keep mise-action's implicit cache disabled under the hosted CI cache policy.

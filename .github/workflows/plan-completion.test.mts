@@ -87,6 +87,10 @@ describe('plan completion advisory workflow', () => {
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
     expect(setupNodeIndex).toBeGreaterThan(checkoutIndex)
     expect(auditScriptIndex).toBeGreaterThan(setupNodeIndex)
-    expect(steps[setupNodeIndex]?.with).toEqual({ 'install-scripts': 'false' })
+    expect(steps[setupNodeIndex]?.with?.['install-scripts']).toBe('false')
+    expect(Object.keys(steps[setupNodeIndex]?.with ?? {}).toSorted()).toEqual([
+      'deadline-seconds',
+      'install-scripts',
+    ])
   })
 })
