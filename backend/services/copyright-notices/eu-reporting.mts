@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
@@ -134,7 +134,7 @@ export async function compileEuCopyrightTransparencyReport(
     // Repeatable Read cannot see the winner after an ON CONFLICT serialization failure.
     // Leave this owned transaction before reading the immutable report in a new snapshot.
     await transaction.rollback()
-    const published = await readStoredEuReport(periodStartedAt, periodEndedAt)
+    const published = await readStoredEuReport(periodStartedAt, periodEndedAt, write)
     if (published) return published
     throw createHttpError(503, 'EU report publication is busy', { cause: err })
   }
