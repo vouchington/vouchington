@@ -185,7 +185,7 @@ async function getRssFeedItemCategorySnapshots(
   return new Map(rows.map(row => [row.rss_feed_item_id, row.categories]))
 }
 
-export async function acknowledgeRssFeedItemCategorySnapshot(
+async function acknowledgeRssFeedItemCategorySnapshot(
   snapshot: RssFeedItemCategorySnapshotReconciliation,
 ): Promise<void> {
   await write(
