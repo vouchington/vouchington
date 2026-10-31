@@ -53,11 +53,6 @@ function ForwardRefAside({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
 }
 
 describe('PageWithAside', () => {
-  it('renders page-content-wrapper test id', () => {
-    const { container } = render(<PageWithAside>content</PageWithAside>)
-    expect(container.querySelector('[data-pw="page-content-wrapper"]')).not.toBeNull()
-  })
-
   it('wraps children in the main min-w-0 column', () => {
     const { container } = render(<PageWithAside>content</PageWithAside>)
     const wrapper = container.querySelector('.min-w-0')

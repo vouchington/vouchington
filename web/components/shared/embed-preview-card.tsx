@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button'
 import type { EmbedPreview } from '@/lib/embeds/embed-preview'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ExternalLink } from '@/components/ui/external-link'
+import {
+  getContentLanguageDir,
+  getEffectiveContentLanguage,
+} from '@ts-shared/languages/content-languages'
 
 interface EmbedPreviewCardProps {
   preview: EmbedPreview
@@ -14,6 +18,16 @@ interface EmbedPreviewCardProps {
   /** Detail pages promote article thumbnails without changing compact list/card previews. */
   layout?: 'compact' | 'hero'
   className?: string
+  /** Declared page language for the embed title and description. Null when the caller has none. */
+  lang: string | null
+}
+
+function authoredLanguageAttributes(lang: string | null) {
+  const language = getEffectiveContentLanguage({ declaredLanguage: lang })
+  return {
+    lang: language,
+    dir: getContentLanguageDir(language),
+  }
 }
 
 function isHttpsUrl(url: string | null): url is string {
@@ -30,6 +44,7 @@ export function EmbedPreviewCard({
   showPlayer = false,
   layout = 'compact',
   className,
+  lang,
 }: EmbedPreviewCardProps) {
   const t = useTranslations()
   const hasContent =
@@ -94,9 +109,21 @@ export function EmbedPreviewCard({
       )}
       <div className='min-w-0 flex-1 space-y-1'>
         {preview.provider && <p className='text-xs text-muted-foreground'>{preview.provider}</p>}
-        {preview.title && <p className='line-clamp-2 text-sm font-medium'>{preview.title}</p>}
+        {preview.title && (
+          <p
+            className='line-clamp-2 text-sm font-medium'
+            {...authoredLanguageAttributes(lang)}
+          >
+            {preview.title}
+          </p>
+        )}
         {preview.description && (
-          <p className='line-clamp-2 text-sm text-muted-foreground'>{preview.description}</p>
+          <p
+            className='line-clamp-2 text-sm text-muted-foreground'
+            {...authoredLanguageAttributes(lang)}
+          >
+            {preview.description}
+          </p>
         )}
         {isHttpsUrl(preview.sourceUrl) && (
           <Button

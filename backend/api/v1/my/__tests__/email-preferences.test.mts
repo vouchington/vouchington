@@ -2,13 +2,20 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  createEmailUnsubscribeToken,
+  createEmailUnsubscribeUrl,
   getEmailPreferences,
   type EmailPreferences,
+  type EmailUnsubscribeCategory,
 } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 
 const ENCRYPTION_KEYS = 'test:raw32:this fake test key is not secret'
+
+function emailUnsubscribeToken(userId: string, category: EmailUnsubscribeCategory): string {
+  const token = new URL(createEmailUnsubscribeUrl(userId, category)).searchParams.get('token')
+  if (token === null) throw new Error('Unsubscribe URL did not include a token')
+  return token
+}
 
 describe('GET /api/v1/my/email-preferences', () => {
   let user: PrivateUser
@@ -93,7 +100,7 @@ describe('POST /api/v1/email-unsubscribe', () => {
 
   it('does not require login to unsubscribe from outcome emails', async () => {
     const user = await createTestUser()
-    const token = createEmailUnsubscribeToken(user.id, 'outcome_emails')
+    const token = emailUnsubscribeToken(user.id, 'outcome_emails')
     const request = createRequest()
 
     await request
@@ -115,7 +122,7 @@ describe('POST /api/v1/email-unsubscribe', () => {
     ],
   ])('unsubscribes from the %s category', async (category, expected) => {
     const user = await createTestUser()
-    const token = createEmailUnsubscribeToken(user.id, category)
+    const token = emailUnsubscribeToken(user.id, category)
 
     await createRequest()
       .post(`/api/v1/email-unsubscribe?token=${encodeURIComponent(token)}`)
@@ -130,7 +137,7 @@ describe('POST /api/v1/email-unsubscribe', () => {
 
   it('accepts an unsubscribe token in the request body', async () => {
     const user = await createTestUser()
-    const token = createEmailUnsubscribeToken(user.id, 'outcome_emails')
+    const token = emailUnsubscribeToken(user.id, 'outcome_emails')
 
     await createRequest().post('/api/v1/email-unsubscribe').send({ token }).expect(200)
 

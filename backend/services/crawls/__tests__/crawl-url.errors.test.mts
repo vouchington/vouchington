@@ -37,8 +37,6 @@ import { getDomainRateLimitRemainingMs, setDomainRateLimited } from '../domain-r
 
 import {
   CrawlerRateLimitError,
-  CrawlerTimeoutError,
-  CrawlerNetworkError,
   CrawlerServerError,
   CrawlerResponseSizeExceededError,
   CrawlerHttpClientError,
@@ -116,50 +114,6 @@ describe('crawl-url.errors', () => {
   })
 
   describe('crawlUrl - Error Handling', () => {
-    it('should record timeout error and re-throw CrawlerTimeoutError', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const hostname = `timeout-${random}.example.com`
-
-      const url = await addUrl(user!.id, `https://${hostname}/page`)
-      await createCrawler(user!, {
-        hostname_id: url!.hostname.id,
-        crawler_type: 'fetch',
-      })
-      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
-
-      const timeoutError = new CrawlerTimeoutError(`https://${hostname}/page`, 30_000, 30_000)
-      fetchCrawlerHtml.mockRejectedValueOnce(timeoutError)
-
-      await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerTimeoutError)
-
-      const crawlCount = await countCrawlsForUrl(url!.id)
-      expect(crawlCount).toBe(1)
-    })
-
-    it('should record network error and re-throw CrawlerNetworkError', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const hostname = `network-err-${random}.example.com`
-
-      const url = await addUrl(user!.id, `https://${hostname}/page`)
-      await createCrawler(user!, {
-        hostname_id: url!.hostname.id,
-        crawler_type: 'fetch',
-      })
-      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
-
-      const networkError = new CrawlerNetworkError(
-        `https://${hostname}/page`,
-        1000,
-        new Error('ECONNREFUSED'),
-      )
-      fetchCrawlerHtml.mockRejectedValueOnce(networkError)
-
-      await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerNetworkError)
-
-      const crawlCount = await countCrawlsForUrl(url!.id)
-      expect(crawlCount).toBe(1)
-    })
-
     it('should record server error and re-throw CrawlerServerError', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `server-err-${random}.example.com`

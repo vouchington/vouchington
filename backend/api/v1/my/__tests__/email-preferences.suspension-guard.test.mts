@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
-import { createEmailUnsubscribeToken, getEmailPreferences } from '@services/users'
+import { createEmailUnsubscribeUrl, getEmailPreferences } from '@services/users'
 
 describe('email preference suspension guard', () => {
   const suspendedUserIds: string[] = []
@@ -39,7 +39,10 @@ describe('email preference suspension guard', () => {
 
   it('keeps the signed-token unsubscribe available to a suspended user', async () => {
     const user = await createSuspendedUser()
-    const token = createEmailUnsubscribeToken(user.id, 'outcome_emails')
+    const token = new URL(createEmailUnsubscribeUrl(user.id, 'outcome_emails')).searchParams.get(
+      'token',
+    )
+    if (token === null) throw new Error('Unsubscribe URL did not include a token')
 
     await createRequest().post('/api/v1/email-unsubscribe').send({ token }).expect(200)
 

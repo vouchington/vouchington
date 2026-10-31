@@ -77,20 +77,6 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
     await request.get(`/api/v1/users/${user.id}/data-request/stream`).expect(404)
   })
 
-  it('sets SSE headers and sends initial terminal status when request is already ready', async () => {
-    const user = await createTestUser({ username: safeUsername('dr-stream-ready') })
-    await createDataRequest(user.id, user.id)
-
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get(`/api/v1/users/${user.id}/data-request/stream`).expect(200)
-
-    expect(response.headers['content-type']).toContain('text/event-stream')
-    expect(pipeChannelToSSESpy).toHaveBeenCalled()
-    expect(subscribeSpy).toHaveBeenCalled()
-  })
-
   it('sends ready status with a download URL when completed export has an s3 key', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-ready-url') })
     const dr = await createDataRequest(user.id, user.id)
@@ -141,8 +127,10 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.get(`/api/v1/users/${user.id}/data-request/stream`).expect(200)
+    const response = await request.get(`/api/v1/users/${user.id}/data-request/stream`).expect(200)
 
+    expect(response.headers['content-type']).toContain('text/event-stream')
+    expect(pipeChannelToSSESpy).toHaveBeenCalled()
     // subscribe must be called before pipeChannelToSSE
     const subscribeOrder = subscribeSpy.mock.invocationCallOrder[0] ?? Infinity
     const pipeOrder = pipeChannelToSSESpy.mock.invocationCallOrder[0] ?? Infinity
@@ -266,6 +254,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
       const response = await streamAs(owner, owner.id, 'not-a-uuid')
 
       expect(response.status).toBe(422)
+      expect(response.body.message).toBe('Invalid request ID')
       expect(subscribeSpy).not.toHaveBeenCalled()
     })
 

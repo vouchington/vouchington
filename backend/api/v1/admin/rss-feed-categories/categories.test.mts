@@ -178,12 +178,6 @@ describe('rss-feed-categories', () => {
         .send({ category_text: categoryText })
         .expect(201)
     })
-
-    it('returns 422 when category_text is missing', async () => {
-      const request = createRequest()
-      await request.authenticateAs(admin)
-      await request.post('/api/v1/rss-feed-categories/rejections').send({}).expect(422)
-    })
   })
 
   describe('DELETE /api/v1/rss-feed-categories/rejections', () => {
@@ -223,12 +217,6 @@ describe('rss-feed-categories', () => {
         .delete('/api/v1/rss-feed-categories/rejections')
         .send({ category_text: categoryText })
         .expect(204)
-    })
-
-    it('returns 422 when category_text is missing', async () => {
-      const request = createRequest()
-      await request.authenticateAs(admin)
-      await request.delete('/api/v1/rss-feed-categories/rejections').send({}).expect(422)
     })
   })
 

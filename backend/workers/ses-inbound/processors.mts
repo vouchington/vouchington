@@ -16,7 +16,7 @@ import {
   type SesInboundProcessJobData,
   type SesInboundReconcileJobData,
 } from '@ts-shared/ses-inbound-contract'
-import { getSesInboundReconcileMaxPagesPerRun } from './work-limits.mts'
+import { getSesInboundReconcileMaxPagesPerRun } from '@queues/ses-inbound/config'
 import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.mts'
 import {
   processCopyrightInboundEmail,

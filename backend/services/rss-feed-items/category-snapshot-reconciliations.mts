@@ -117,7 +117,7 @@ export async function reconcileRssFeedItemCategorySnapshots(
 }
 
 /** Applies selected rows independently so one poison snapshot does not starve its batch peers. */
-export async function reconcileRssFeedItemCategorySnapshotRows(
+async function reconcileRssFeedItemCategorySnapshotRows(
   rows: readonly RssFeedItemCategorySnapshotReconciliation[],
 ): Promise<{ reconciled: number }> {
   let reconciled = 0
@@ -185,7 +185,7 @@ async function getRssFeedItemCategorySnapshots(
   return new Map(rows.map(row => [row.rss_feed_item_id, row.categories]))
 }
 
-export async function acknowledgeRssFeedItemCategorySnapshot(
+async function acknowledgeRssFeedItemCategorySnapshot(
   snapshot: RssFeedItemCategorySnapshotReconciliation,
 ): Promise<void> {
   await write(

@@ -35,7 +35,7 @@ const publicRoutes = [
 ] as const
 
 const authenticatedRoutes = [
-  { name: 'feed page', path: '/feed' },
+  { name: 'feed page', path: '/feed/posts' },
   { name: 'feed news page', path: '/feed/news' },
   { name: 'feed podcasts page', path: '/feed/podcasts' },
   { name: 'my profile page', path: '/my/profile' },

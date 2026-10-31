@@ -9,30 +9,28 @@ import {
   getActivityPubInboxWindowSeconds,
   recordActivityPubInboxSenderDeliveryOnce,
 } from '@services/route-rate-limits'
-import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
+import type { ActivityPubInboxDeliveryJob } from './durable-delivery-data-contract.mts'
 import { parseInboundActivity } from './parse-activity.mts'
 import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 
 export type ProcessDurableInboxResult =
-  | { outcome: 'stale' }
   | { outcome: 'processed'; duplicate: boolean }
   | { outcome: 'deferred'; deferredUntil: Date }
 
+/** The job holds the exact signed request, including the original receipt time across retries. */
 export async function processDurableActivityPubInboxDelivery(
-  deliveryId: string,
+  delivery: ActivityPubInboxDeliveryJob,
+  checkpoint: (delivery: ActivityPubInboxDeliveryJob) => Promise<unknown>,
 ): Promise<ProcessDurableInboxResult> {
-  const loaded = await activityPubInboxDeliveryTransitions.load(deliveryId)
-  if (loaded.outcome === 'stale') return { outcome: 'stale' }
-  const delivery = loaded.value
-
   if (!(await isFediverseInstanceApprovedByHostname(delivery.senderHostname))) {
     throw createHttpError(403, 'Instance no longer approved')
   }
 
-  const activity = parseInboundActivity(delivery.rawBody)
+  const rawBody = Buffer.from(delivery.rawBodyBase64, 'base64')
+  const activity = parseInboundActivity(rawBody)
   let remoteActor
-  if (delivery.verifiedAt && delivery.remoteActorId) {
-    remoteActor = await getCheckpointedRemoteActorByIdFromPrimary(delivery.remoteActorId)
+  if (delivery.verifiedRemoteActorId) {
+    remoteActor = await getCheckpointedRemoteActorByIdFromPrimary(delivery.verifiedRemoteActorId)
     if (!remoteActor) throw createHttpError(401, 'Previously verified signing actor is inactive')
   } else {
     const keyId = extractSignatureKeyId(delivery.signatureHeader)
@@ -42,13 +40,13 @@ export async function processDurableActivityPubInboxDelivery(
       delivery.requestMethod,
       delivery.requestTarget,
       delivery.expectedHost,
-      delivery.rawBody,
+      rawBody,
       delivery.signatureHeader,
       delivery.digestHeader,
       delivery.dateHeader,
       remoteActor.public_key_pem,
       {
-        referenceTime: delivery.receivedAt,
+        referenceTime: new Date(delivery.receivedAt),
         additionalHeaders: delivery.contentTypeHeader
           ? { 'content-type': delivery.contentTypeHeader }
           : undefined,
@@ -59,34 +57,30 @@ export async function processDurableActivityPubInboxDelivery(
   if (activity.actor !== remoteActor.actor_uri) {
     throw createHttpError(401, 'Signing actor does not match activity actor')
   }
-  if (
-    !delivery.verifiedAt &&
-    (await activityPubInboxDeliveryTransitions.verify(deliveryId, remoteActor.id)).outcome ===
-      'stale'
-  ) {
-    return { outcome: 'stale' }
+  let currentDelivery = delivery
+  if (!delivery.verifiedRemoteActorId) {
+    currentDelivery = { ...currentDelivery, verifiedRemoteActorId: remoteActor.id }
+    await checkpoint(currentDelivery)
   }
 
-  if (!delivery.senderAllowedAt) {
+  if (!currentDelivery.senderAllowed) {
     const limited = await recordActivityPubInboxSenderDeliveryOnce(
-      delivery.senderHostname,
-      delivery.id,
+      currentDelivery.senderHostname,
+      currentDelivery.requestDigest,
     )
     if (limited) {
-      const deferredUntil = new Date(Date.now() + getActivityPubInboxWindowSeconds() * 1000)
-      return { outcome: 'deferred', deferredUntil }
+      return {
+        outcome: 'deferred',
+        deferredUntil: new Date(Date.now() + getActivityPubInboxWindowSeconds() * 1000),
+      }
     }
-    if ((await activityPubInboxDeliveryTransitions.admitSender(deliveryId)).outcome === 'stale') {
-      return { outcome: 'stale' }
-    }
+    currentDelivery = { ...currentDelivery, senderAllowed: true }
+    await checkpoint(currentDelivery)
   }
 
-  const completed = await recordAndDispatchInboundActivity(
-    remoteActor,
-    { ...activity, signedAt: new Date(delivery.dateHeader) },
-    { deliveryId },
-  )
-  if (completed.outcome === 'stale') return { outcome: 'stale' }
-  const { duplicate } = completed
-  return { outcome: 'processed', duplicate }
+  const result = await recordAndDispatchInboundActivity(remoteActor, {
+    ...activity,
+    signedAt: new Date(currentDelivery.dateHeader),
+  })
+  return { outcome: 'processed', duplicate: result.duplicate }
 }

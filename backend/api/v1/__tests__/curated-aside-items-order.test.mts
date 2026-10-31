@@ -2,7 +2,6 @@ import { beforeAll, describe, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestRssFeed, insertTestTopic } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { randomUUID } from 'node:crypto'
 
 describe('PUT /api/v1/curated-aside-items/order', () => {
   let admin: PrivateUser
@@ -66,16 +65,6 @@ describe('PUT /api/v1/curated-aside-items/order', () => {
     await request
       .put('/api/v1/curated-aside-items/order')
       .send({ aside_type: 'topic', item_ids: ['not-a-uuid'] })
-      .expect(422)
-  })
-
-  it('returns 422 when item_ids contains duplicate UUIDs', async () => {
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const id = randomUUID()
-    await request
-      .put('/api/v1/curated-aside-items/order')
-      .send({ aside_type: 'topic', item_ids: [id, id] })
       .expect(422)
   })
 

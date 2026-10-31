@@ -11,7 +11,6 @@ import {
   accountDataRequestsAdditionalMaxValues,
   dataRequestConfig,
 } from '@services/account-data-requests/work-limits'
-import { kagiSmallWebImportConfig } from '@services/kagi-smallweb/import-config'
 import { apiKeyExpiryConfig } from '@services/api-keys/work-limits'
 import {
   membershipWorkConfig,
@@ -52,22 +51,6 @@ export const workDynamicConfigRegistryEntries = [
         description: 'Maximum concurrent moderation-history cleanup jobs across workers.',
         minValue: 1,
         maxValue: 1,
-        integer: true,
-      },
-    },
-  }),
-  defineDynamicConfigNamespace({
-    namespace: 'kagi-smallweb-config',
-    label: 'Kagi Smallweb',
-    description: 'Controls for Kagi Small Web feed import. Disabled by default.',
-    config: kagiSmallWebImportConfig,
-    access: { update_roles: ['developer'] },
-    fields: {
-      enabled: { description: 'Enable Kagi Small Web feed import dispatcher.' },
-      candidate_batch_size: {
-        description: 'Maximum fetched feed URLs per indexed deduplication probe.',
-        minValue: 1,
-        maxValue: 5000,
         integer: true,
       },
     },

@@ -9,8 +9,8 @@ import {
   upsertRssFeedCategories,
   getRssFeedCategories,
   deleteRssFeedCategories,
-  backfillCategoriesForTopicAlias,
 } from '../categories.mts'
+import { backfillTopicTextFeedPage } from '../topic-text-category-backfill.mts'
 
 describe('rss-feed categories', () => {
   let rssFeedId: string
@@ -157,7 +157,7 @@ describe('rss-feed categories', () => {
     })
   })
 
-  describe('backfillCategoriesForTopicAlias', () => {
+  describe('backfillTopicTextFeedPage', () => {
     it('fills topic_id for existing rows matching the topic slug', async () => {
       const slug = `podcast-cat-${createRandomString(10)}`
       const feed = await createTestRssFeed({})
@@ -168,7 +168,7 @@ describe('rss-feed categories', () => {
 
       // Create the topic and run the backfill
       const topic = await createTestTopic({ slug, name: slug })
-      const count = await backfillCategoriesForTopicAlias(topic.id)
+      const count = await backfillTopicTextFeedPage(topic.id)
       expect(count.updated).toBeGreaterThan(0)
 
       const after = await getRssFeedCategories(feed.id)
@@ -180,8 +180,10 @@ describe('rss-feed categories', () => {
         slug: `no-match-${createRandomString(8)}`,
         name: `No Match ${createRandomString(8)}`,
       })
-      const count = await backfillCategoriesForTopicAlias(topic.id)
-      expect(count).toEqual({ updated: 0, hasMore: false })
+      const first = await backfillTopicTextFeedPage(topic.id)
+      expect(first).toMatchObject({ updated: 0, hasMore: true })
+      const last = await backfillTopicTextFeedPage(topic.id, first.cursor)
+      expect(last).toMatchObject({ updated: 0, hasMore: false })
     })
   })
 

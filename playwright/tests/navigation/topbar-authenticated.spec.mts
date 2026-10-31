@@ -30,16 +30,6 @@ test.describe('Topbar - authenticated', () => {
     await expect(avatarButton).toContainText(expectedInitials)
   })
 
-  test('profile dropdown opens on avatar click', async ({ page }) => {
-    await navigateTo(page, '/')
-
-    await page.getByTestId('navbar-profile-menu-button').click()
-
-    // Dropdown menu should appear
-    const menu = page.getByRole('menu')
-    await expect(menu).toBeVisible()
-  })
-
   test('profile dropdown contains expected menu items', async ({ page }) => {
     await navigateTo(page, '/')
 

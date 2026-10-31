@@ -23,16 +23,9 @@ describe('GET /api/v1/my/export/rss-feeds?format=csv', () => {
     const response = await request.get('/api/v1/my/export/rss-feeds?format=csv').expect(200)
 
     expect(response.headers['content-type']).toContain('text/csv')
-    expect(response.text).toContain('title,url,feed_type,home_page_url,topic')
-  })
-
-  it('sets Content-Disposition attachment header', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-    const response = await request.get('/api/v1/my/export/rss-feeds?format=csv').expect(200)
-
     expect(response.headers['content-disposition']).toContain('attachment')
     expect(response.headers['content-disposition']).toContain('rss-feeds.csv')
+    expect(response.text).toContain('title,url,feed_type,home_page_url,topic')
   })
 })
 

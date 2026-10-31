@@ -54,7 +54,7 @@ export async function recordMembershipChangeIfNeeded(options: {
   if (!recorded) throw new DuplicateStripeMembershipEventError()
 }
 
-export function getMembershipLifecycleSnapshot(
+function getMembershipLifecycleSnapshot(
   status: MembershipStatus,
   cancelAtPeriodEnd: boolean,
   membership: Pick<Membership, 'cancelled_at' | 'expired_at' | 'past_due_at' | 'paused_at'>,

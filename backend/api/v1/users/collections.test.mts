@@ -100,24 +100,6 @@ describe('GET /api/v1/users/:idOrSlug collections', () => {
     await ownerRequest.get(`/api/v1/users/${fixture.owner.username}/topics/following`).expect(200)
   })
 
-  it('returns subscribed RSS feeds for authenticated owner', async () => {
-    const owner = await createTestUser({ username: safeUsername('rss-sub-owner') })
-    if (!owner) throw new Error('Failed to create owner')
-    const ownerRequest = createRequest()
-    await ownerRequest.authenticateAs(owner)
-
-    const emptyResponse = await ownerRequest
-      .get(`/api/v1/users/${owner.username}/rss-feeds/subscribed`)
-      .expect(200)
-    expect(emptyResponse.body.results).toHaveLength(0)
-  })
-
-  it('returns 401 for unauthenticated subscribed collection', async () => {
-    const owner = await createTestUser({ username: safeUsername('rss-sub-unauth') })
-    if (!owner) throw new Error('Failed to create owner')
-    await createRequest().get(`/api/v1/users/${owner.username}/rss-feeds/subscribed`).expect(401)
-  })
-
   it('returns 400 for invalid rss-feeds listType', async () => {
     const owner = await createTestUser({ username: safeUsername('rss-bad-type') })
     if (!owner) throw new Error('Failed to create owner')

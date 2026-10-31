@@ -114,40 +114,6 @@ describe('query.generated', () => {
     expect((result!.object_data as { id: string }).id).toBe(topic.id)
   })
 
-  it('getEntityRelations works with post->url relation (object without soft delete)', async () => {
-    const user = await createTestUser({ administrator: true })
-    const post = await createTestPost()
-
-    // Create a URL without soft delete support
-    const random = Math.random().toString(36).slice(2, 8)
-    const hostnameId = await insertTestUrlHostname({
-      hostname: `post-url-test-${random}.example.com`,
-    })
-
-    const urlId = await insertTestUrl({
-      url: `https://post-url-test-${random}.example.com/test`,
-      hostnameId,
-    })
-
-    const metadata = getEntityRelationMetadataOrThrow({
-      subjectType: 'post',
-      objectType: 'url',
-      predicate: 'related',
-    })
-
-    await upsertEntityRelation(user!, metadata, post, [{ id: urlId }])
-
-    // This should work without applying deleted_at filter for urls.
-    // Note: 'related' is an election-enabled predicate, so this test also validates
-    // that has_soft_delete: false works correctly with election infrastructure
-    const results = await getEntityRelations('post', post.id, 'related', 'url', asAnonymous)
-
-    expect(results.length).toBeGreaterThanOrEqual(1)
-    const result = results.find(r => r.object_id === urlId)
-    expect(result).toBeDefined()
-    expect(result!.subject_id).toBe(post.id)
-  })
-
   it('getEntityRelations includes latest_crawl=null in object_data for urls without a crawl', async () => {
     const user = await createTestUser({ administrator: true })
     const post = await createTestPost()
@@ -171,6 +137,7 @@ describe('query.generated', () => {
     const results = await getEntityRelations('post', post.id, 'related', 'url', asAnonymous)
     const result = results.find(r => r.object_id === urlId)
     expect(result).toBeDefined()
+    expect(result!.subject_id).toBe(post.id)
     const data = result!.object_data as { latest_crawl: unknown }
     expect(data.latest_crawl).toBeNull()
   })

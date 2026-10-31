@@ -23,8 +23,12 @@ export async function getUndispatchedJudgements(): Promise<
 > {
   const WORK_PAGE_SIZE = getModerationReportsWorkLimit('dispatch_batch_size')
   const now = Date.now()
-  const olderThanId = getMinUUIDv7ForDate(new Date(now - 2 * 60 * 1000))
-  const newerThanId = getMaxUUIDv7ForDate(new Date(now - 30 * 60 * 1000))
+  const olderThanId = getMinUUIDv7ForDate(
+    new Date(now - getModerationReportsWorkLimit('dispatch_min_age_seconds') * 1000),
+  )
+  const newerThanId = getMaxUUIDv7ForDate(
+    new Date(now - getModerationReportsWorkLimit('dispatch_max_age_seconds') * 1000),
+  )
   const { rows } = await read<{
     judgement_id: string
     entity_type: string

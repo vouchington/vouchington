@@ -60,22 +60,6 @@ describe('postRouteConfigs post types', () => {
 })
 
 describe('getPostTypeFromSlug', () => {
-  it('article slug maps to article type', () => {
-    expect(getPostTypeFromSlug('article')).toBe('article')
-  })
-
-  it('blog-post slug maps to blog_post type', () => {
-    expect(getPostTypeFromSlug('blog-post')).toBe('blog_post')
-  })
-
-  it('review slug maps to review type', () => {
-    expect(getPostTypeFromSlug('review')).toBe('review')
-  })
-
-  it('discussion slug maps to discussion type', () => {
-    expect(getPostTypeFromSlug('discussion')).toBe('discussion')
-  })
-
   it('story slug maps to story type', () => {
     expect(getPostTypeFromSlug('story')).toBe('story')
   })

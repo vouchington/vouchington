@@ -55,6 +55,24 @@ describe('SES inbound MIME parsing', () => {
     })
   })
 
+  it('decodes a quoted-printable body with the content-type charset', async () => {
+    const raw = Buffer.from(
+      [
+        'From: tests+charset@voucha.ai',
+        'Subject: Cafe',
+        'Content-Type: text/plain; charset=iso-8859-1',
+        'Content-Transfer-Encoding: quoted-printable',
+        '',
+        'caf=E9',
+      ].join('\r\n'),
+    )
+
+    await expect(parseSesInboundMime(Readable.from([raw]))).resolves.toMatchObject({
+      fromEmail: 'tests+charset@voucha.ai',
+      bodyText: 'café',
+    })
+  })
+
   it('carries automatic and mailing-list headers to the intake boundary', async () => {
     const raw = Buffer.from(
       [

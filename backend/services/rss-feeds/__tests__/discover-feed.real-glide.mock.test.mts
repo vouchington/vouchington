@@ -1,3 +1,4 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { Queue, QueueEvents, type Job } from 'glide-mq'
@@ -9,7 +10,6 @@ import {
   getFirstRssFeedImportRowId,
   getRssFeedImportDiscoveriesForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
-import { submitRssFeedImport } from '../../user-import-export/rss-feed-imports.mts'
 import { fetchAndClassifyFeed } from '../validate.mts'
 import { discoverFeedUrlFromHtml } from '../discover-feed.mts'
 import { RssFeedDiscoveryPendingError } from '../discovery-pending.mts'
@@ -25,7 +25,7 @@ describe('RSS feed import pending discovery admission recovery', () => {
   it('re-enqueues a pending discovery before retrying its remote page fetch', async () => {
     const user = await createTestUser()
     const pageUrl = `https://discovery-retry-${randomUUID()}.example.com/blog`
-    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
+    const submitted = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [pageUrl])
     const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
     const queue = new Queue(CRAWL_URLS_QUEUE_NAME, {
       connection: workerQueueConnection,

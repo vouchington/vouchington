@@ -184,20 +184,6 @@ describe('InfiniteScroll', () => {
     resolveLoad()
   })
 
-  it('observes the sentinel element when hasNextPage is true', () => {
-    render(
-      <InfiniteScroll
-        hasNextPage
-        endCursor='cursor1'
-        onLoadMore={vi.fn<VitestLooseMock>()}
-      >
-        <div>content</div>
-      </InfiniteScroll>,
-    )
-    flushRaf()
-    expect(mockObserve).toHaveBeenCalledOnce()
-  })
-
   it('fires onLoadMore again when resetKey changes with the same endCursor', async () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     const { rerender } = render(

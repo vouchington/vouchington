@@ -1,7 +1,7 @@
 import { it, expect, afterAll, beforeAll, describe } from 'vitest'
 import { getHostnamePolicy } from '@services/urls-domains-blacklist'
-import { syncBlacklistSource } from '../sync.mts'
-import { createTestBlacklistSource, countBlacklistEntriesBySource } from '@voucha/test-helpers'
+import { syncBlacklistSourceById } from '../sync.mts'
+import { createTestBlacklistSource, listBlacklistDomainsBySource } from '@voucha/test-helpers'
 import {
   createFetchSafeTestServer,
   type FetchSafeTestServer,
@@ -47,25 +47,16 @@ describe('index.generated (syncBlacklistSource)', () => {
       '',
     ].join('\n')
 
-    // First sync - should add all domains
-    const result = await syncBlacklistSource(sourceId, url)
+    const domains = [
+      `fraud-${suffix}.example`,
+      `malicious-${suffix}.example`,
+      `phishing-${suffix}.example`,
+    ]
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(domains)
 
-    expect(result.skipped).toBe(false)
-    expect(result.domainsAdded).toBeGreaterThan(0)
-    expect(result.domainsRemoved).toBe(0)
-
-    const count = await countBlacklistEntriesBySource(sourceId)
-    expect(count).toBe(result.domainsAdded)
-    expect(count).toBeLessThan(2000)
-
-    // Second sync - should detect no changes since same data
-    const result2 = await syncBlacklistSource(sourceId, url)
-
-    expect(result2.domainsAdded).toBe(0)
-    expect(result2.domainsRemoved).toBe(0)
-
-    const count2 = await countBlacklistEntriesBySource(sourceId)
-    expect(count2).toBe(count)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(domains)
   })
 
   it('syncBlacklistSource removes domains no longer in list', async () => {
@@ -74,7 +65,6 @@ describe('index.generated (syncBlacklistSource)', () => {
       name: `test-sync-removal-a-${suffix}`,
       url: server!.url('/list.txt'),
     })
-    const url = server!.url('/list.txt')
     const domainA = `alpha-${suffix}.com`
     const domainB = `beta-${suffix}.com`
     const domainC = `gamma-${suffix}.com`
@@ -82,17 +72,16 @@ describe('index.generated (syncBlacklistSource)', () => {
 
     // First sync with 3 domains
     serverContent = `${domainA}\n${domainB}\n${domainC}\n`
-    const result1 = await syncBlacklistSource(sourceId, url)
-    expect(result1.domainsAdded).toBe(3)
-    expect(result1.domainsRemoved).toBe(0)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(3)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(
+      [domainA, domainB, domainC].toSorted(),
+    )
 
-    // Second sync: remove domainC, add domainD
     serverContent = `${domainA}\n${domainB}\n${domainD}\n`
-    const result2 = await syncBlacklistSource(sourceId, url)
-    expect(result2.domainsAdded).toBe(1)
-    expect(result2.domainsRemoved).toBe(1)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(3)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(
+      [domainA, domainB, domainD].toSorted(),
+    )
 
     // Verify specific domains
     expect(await isBlocked(domainA)).toBe(true)
@@ -107,19 +96,24 @@ describe('index.generated (syncBlacklistSource)', () => {
       name: `test-sync-replacement-${suffix}`,
       url: server!.url('/list.txt'),
     })
-    const url = server!.url('/list.txt')
 
     // First sync
     serverContent = 'old1.com\nold2.com\n'
-    const result1 = await syncBlacklistSource(sourceId, url)
-    expect(result1.domainsAdded).toBe(2)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['old1.com', 'old2.com'])
 
-    // Second sync - entirely different list
     serverContent = 'new1.com\nnew2.com\nnew3.com\n'
-    const result2 = await syncBlacklistSource(sourceId, url)
-    expect(result2.domainsAdded).toBe(3)
-    expect(result2.domainsRemoved).toBe(2)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(3)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual([
+      'new1.com',
+      'new2.com',
+      'new3.com',
+    ])
+    expect(await isBlocked('old1.com')).toBe(false)
+    expect(await isBlocked('old2.com')).toBe(false)
+    expect(await isBlocked('new1.com')).toBe(true)
+    expect(await isBlocked('new2.com')).toBe(true)
+    expect(await isBlocked('new3.com')).toBe(true)
   })
 
   it('syncBlacklistSource handles empty new list', async () => {
@@ -128,18 +122,15 @@ describe('index.generated (syncBlacklistSource)', () => {
       name: `test-sync-empty-${suffix}`,
       url: server!.url('/list.txt'),
     })
-    const url = server!.url('/list.txt')
 
     // First sync with domains
     serverContent = 'a.com\nb.com\n'
-    await syncBlacklistSource(sourceId, url)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['a.com', 'b.com'])
 
-    // Second sync with empty list - removes all
     serverContent = ''
-    const result = await syncBlacklistSource(sourceId, url)
-    expect(result.domainsAdded).toBe(0)
-    expect(result.domainsRemoved).toBe(2)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual([])
   })
 
   it('syncBlacklistSource handles empty current DB (first sync)', async () => {
@@ -148,13 +139,10 @@ describe('index.generated (syncBlacklistSource)', () => {
       name: `test-sync-first-${suffix}`,
       url: server!.url('/list.txt'),
     })
-    const url = server!.url('/list.txt')
 
     serverContent = 'first.com\nsecond.com\n'
-    const result = await syncBlacklistSource(sourceId, url)
-    expect(result.skipped).toBe(false)
-    expect(result.domainsAdded).toBe(2)
-    expect(result.domainsRemoved).toBe(0)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['first.com', 'second.com'])
   })
 
   it('syncBlacklistSource skips comment lines and empty lines in input', async () => {
@@ -163,12 +151,10 @@ describe('index.generated (syncBlacklistSource)', () => {
       name: `test-sync-comments-${suffix}`,
       url: server!.url('/list.txt'),
     })
-    const url = server!.url('/list.txt')
 
     serverContent = '# Comment header\n\nalpha.com\n# Another comment\nbeta.com\n\n'
-    const result = await syncBlacklistSource(sourceId, url)
-    expect(result.domainsAdded).toBe(2)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(2)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['alpha.com', 'beta.com'])
   })
 
   it('syncBlacklistSource deduplicates duplicate domains in input', async () => {
@@ -177,17 +163,12 @@ describe('index.generated (syncBlacklistSource)', () => {
       name: `test-sync-dedup-${suffix}`,
       url: server!.url('/list.txt'),
     })
-    const url = server!.url('/list.txt')
 
     serverContent = 'dup.com\ndup.com\nunique.com\ndup.com\n'
-    const result = await syncBlacklistSource(sourceId, url)
-    expect(result.domainsAdded).toBe(2)
-    expect(result.domainsRemoved).toBe(0)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(2)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['dup.com', 'unique.com'])
 
-    const result2 = await syncBlacklistSource(sourceId, url)
-    expect(result2.domainsAdded).toBe(0)
-    expect(result2.domainsRemoved).toBe(0)
-    expect(await countBlacklistEntriesBySource(sourceId)).toBe(2)
+    await syncBlacklistSourceById(sourceId)
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['dup.com', 'unique.com'])
   })
 })

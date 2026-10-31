@@ -3,6 +3,19 @@ export type RssFeedItemCategoriesJobs =
   | 'processBackfillCategoriesForTopicAliases'
   | 'processBackfillRssFeedCategoriesForTopicAlias'
 
+export type TopicTextCategoryCursor = {
+  phase: 0 | 1 | 2
+  name: string
+  slug: string
+  scanUpperId: string
+  afterId: string | null
+}
+
+export type TopicTextCategoryJob = {
+  topicId: string
+  cursor?: TopicTextCategoryCursor | null
+}
+
 export type RssFeedDiscoverabilityJobs = 'processEvaluateRssFeedDiscoverability'
 
 export type RssFeedHardDeleteJobs =
@@ -11,7 +24,7 @@ export type RssFeedHardDeleteJobs =
   | 'processFinalizeHardDeleteRssFeed'
   | 'processRecoverRssFeedHardDeletes'
 
-export const RSS_FEED_HARD_DELETE_CHILD_PHASES = [
+const RSS_FEED_HARD_DELETE_CHILD_PHASES = [
   'setting_changes',
   'crawls',
   'community_list_feeds',

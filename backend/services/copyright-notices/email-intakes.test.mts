@@ -21,7 +21,7 @@ import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 function readRecoverableResponseIds(responseId: string) {

@@ -17,16 +17,8 @@ export async function assertContributionAdmissionCapacityOrReject(
   source: ContributionPolicySource,
   policy: ContributionAdmissionPolicy,
 ): Promise<void> {
-  return runContributionAdmissionCapacityCheckOrReject(() =>
-    assertContributionAdmissionCapacity(query, actorId, source, policy),
-  )
-}
-
-export async function runContributionAdmissionCapacityCheckOrReject<T>(
-  check: () => Promise<T>,
-): Promise<T> {
   try {
-    return await check()
+    await assertContributionAdmissionCapacity(query, actorId, source, policy)
   } catch (err) {
     if (isContributionQuotaRejection(err)) throw new RejectedContributionAdmissionCapacityError(err)
     throw err

@@ -26,8 +26,8 @@ test.describe('Route coverage baseline', () => {
     await expect(page).toHaveURL('/urls')
   })
 
-  test('covers /feed', async ({ page }) => {
-    await navigateTo(page, '/feed')
+  test('covers /feed/posts', async ({ page }) => {
+    await navigateTo(page, '/feed/posts')
 
     await expect(page).toHaveURL(/\/(feed\/posts|login)/)
     // Reference post action selectors for coverage reporting.

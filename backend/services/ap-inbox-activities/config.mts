@@ -10,20 +10,14 @@ export const MAXIMUM_TERMINAL_IDENTITY_RETENTION_DAYS = 10 * MAXIMUM_ACTIVITY_AG
 export const activityPubInboxConfig = new DynamicConfig({
   key: 'activitypub-inbox',
   fieldTypes: {
-    async_delivery_enabled: 'boolean',
     maximum_activity_age_days: 'number',
     terminal_identity_retention_days: 'number',
   },
   defaultFields: {
-    async_delivery_enabled: false,
     maximum_activity_age_days: DEFAULT_MAXIMUM_ACTIVITY_AGE_DAYS,
     terminal_identity_retention_days: MINIMUM_TERMINAL_IDENTITY_RETENTION_DAYS,
   },
 })
-
-export function isAsyncActivityPubInboxDeliveryEnabled(): boolean {
-  return activityPubInboxConfig.getFields().async_delivery_enabled === true
-}
 
 export function getMaximumActivityAgeDays(): number {
   return getBoundedPositiveIntegerField(activityPubInboxConfig, 'maximum_activity_age_days', {

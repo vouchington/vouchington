@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
-import { getUrlByAny } from '@services/urls/get'
+import { getUrlByAnyCached } from '@services/urls/get'
 import { getRssFeedByUrlId } from './get.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import * as setCanonicalUrlModule from '@services/urls/set-canonical'
@@ -82,8 +82,8 @@ describe('source creation canonical mapping failure', () => {
       expect(sentryCaptureExceptionMock.mock.calls.some(([captured]) => captured === error)).toBe(
         true,
       )
-      expect(await getUrlByAny(originalUrl)).toMatchObject({ canonical_url_id: null })
-      const target = await getUrlByAny(targetUrl)
+      expect(await getUrlByAnyCached(originalUrl)).toMatchObject({ canonical_url_id: null })
+      const target = await getUrlByAnyCached(targetUrl)
       if (!target) throw new Error('The owned redirected feed URL was not persisted')
       expect(await getRssFeedByUrlId(target.id)).toEqual({ id: result.rss_feed_id })
       agent.assertNoPendingInterceptors()

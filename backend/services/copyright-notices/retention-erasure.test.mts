@@ -30,7 +30,7 @@ import {
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000

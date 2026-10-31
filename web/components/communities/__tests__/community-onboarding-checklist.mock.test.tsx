@@ -58,17 +58,6 @@ describe('CommunityOnboardingChecklist', () => {
     mockGetPreference.mockReturnValue('')
   })
 
-  it('renders the checklist card when getPreference returns empty string', () => {
-    render(
-      <CommunityOnboardingChecklist
-        communitySlug='credit-cards'
-        hasRules={false}
-        automodConfigured={false}
-      />,
-    )
-    expect(screen.getByTestId('community-onboarding-checklist')).toBeInTheDocument()
-  })
-
   it('returns null when getPreference returns dismissed', () => {
     mockGetPreference.mockReturnValue('dismissed')
     const { container } = render(
@@ -90,6 +79,7 @@ describe('CommunityOnboardingChecklist', () => {
       />,
     )
 
+    expect(screen.getByTestId('community-onboarding-checklist')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('community-onboarding-dismiss'))
 
     expect(mockSetPreference).toHaveBeenCalledWith(

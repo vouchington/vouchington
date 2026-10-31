@@ -28,16 +28,6 @@ describe('parsePostsSearchParams', () => {
   })
 
   describe('post_types filter', () => {
-    it('parses article post type', async () => {
-      const { searchOptions } = await parsePostsSearchParams({ post_types: 'article' })
-      expect(searchOptions.post_types).toEqual(['article'])
-    })
-
-    it('parses blog_post post type', async () => {
-      const { searchOptions } = await parsePostsSearchParams({ post_types: 'blog_post' })
-      expect(searchOptions.post_types).toEqual(['blog_post'])
-    })
-
     it('parses story post type', async () => {
       const { searchOptions } = await parsePostsSearchParams({ post_types: 'story' })
       expect(searchOptions.post_types).toEqual(['story'])

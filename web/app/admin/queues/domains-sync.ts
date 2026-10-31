@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-// The page shows the same domain in more than one control; a mutation in one bumps this version so
-// every control reloads the domain state instead of keeping its own stale copy.
+// A domain mutation tells every mounted control to reload instead of keeping a stale copy.
 let version = 0
 const listeners = new Set<() => void>()
 

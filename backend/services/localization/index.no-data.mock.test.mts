@@ -4,11 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
 import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
 import { headerValue, isLocalizationClientError } from './index.mts'
-import {
-  createLocalizationDatabaseOwner,
-  localizationSqlitePath,
-  DEFAULT_LOCALIZATION_SQLITE_PATH,
-} from './database.mts'
+import { createLocalizationDatabaseOwner, localizationSqlitePath } from './database.mts'
 
 import { queryValues } from './query.mts'
 
@@ -127,7 +123,7 @@ describe('localization service', () => {
     expect(headerValue('etag')).toBe('etag')
     expect(headerValue(['a', 'b'])).toBe('a,b')
     vi.stubEnv('LOCALIZATION_SQLITE_PATH', undefined)
-    expect(localizationSqlitePath()).toBe(DEFAULT_LOCALIZATION_SQLITE_PATH)
+    expect(localizationSqlitePath()).toBe('/app/localization/catalog.sqlite')
   })
 })
 

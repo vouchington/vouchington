@@ -31,6 +31,7 @@
     "@queues/find-your-friends": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/psql": "workspace:^",
+    "@queues/ses-inbound": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
@@ -65,7 +66,6 @@
     "@services/friend-recommendations": "workspace:^",
     "@services/hostname-blocking": "workspace:^",
     "@services/images": "workspace:^",
-    "@services/kagi-smallweb": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@services/lists": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
@@ -109,9 +109,8 @@
     "@services/web-risk": "workspace:^",
     "@voucha/config": "workspace:^",
     "@vouchington/dynamic-config": "^0.3.0",
-    "@workers/ses-inbound": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

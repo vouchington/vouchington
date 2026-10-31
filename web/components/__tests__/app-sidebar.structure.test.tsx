@@ -33,13 +33,6 @@ describe('sidebar structure', () => {
     expect(link.getAttribute('href')).toBe('/stories')
   })
 
-  it('shows Explore Communities when on the Communities intent', () => {
-    setMockPathname('/communities')
-    renderSidebar()
-    const link = screen.getByRole('link', { name: /^Explore$/i })
-    expect(link.getAttribute('href')).toBe('/communities')
-  })
-
   it('does not show Trending in sidebar', () => {
     renderSidebar()
     expect(screen.queryByRole('link', { name: /^Trending$/i })).toBeNull()

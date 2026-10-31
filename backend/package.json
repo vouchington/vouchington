@@ -53,7 +53,7 @@
     "db:clean": "bash ../dev/db-clean --db-only",
     "db:snapshot:update": "node ../dev/postgresql-snapshot-update.mts",
     "db:snapshot:check": "node data-stores/psql/schema-snapshot/generate.mts --check",
-    "seed:playwright": "node scripts/seeds/playwright-test-data.mts",
+    "seed:playwright": "node test-helpers/playwright-seed-data.mts",
     "db:seed": "node scripts/seeds/dev-seed.mts"
   },
   "dependencies": {
@@ -67,6 +67,6 @@
     "@voucha/test-helpers": "workspace:^"
   },
   "engines": {
-    "node": ">=26.0.0"
+    "node": ">=24.16.0"
   }
 }

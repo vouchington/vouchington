@@ -29,18 +29,6 @@ describe('get', () => {
   })
 
   describe('getCommunityOrThrow', () => {
-    it('returns the community when found by id', async () => {
-      const inserted = await insertTestCommunity({ createdById: owner.id })
-      const community = await getCommunityOrThrow(inserted.id)
-      expect(community.id).toBe(inserted.id)
-    })
-
-    it('returns the community when found by slug', async () => {
-      const inserted = await insertTestCommunity({ createdById: owner.id })
-      const community = await getCommunityOrThrow(inserted.slug)
-      expect(community.id).toBe(inserted.id)
-    })
-
     it('returns only the declared community columns, owner, and image placements', async () => {
       const inserted = await insertTestCommunity({ createdById: owner.id })
       await setCommunityLanguageDetectionFieldsForTest(inserted.id)
@@ -51,6 +39,10 @@ describe('get', () => {
         getCommunityBySlugOnly(inserted.slug),
       ])
 
+      expect(communities[0].id).toBe(inserted.id)
+      expect(communities[0].owner!.id).toBe(owner.id)
+      expect(communities[0].owner!.username).toBe(owner.username)
+      expect(communities[1].id).toBe(inserted.id)
       expect(communities[0].lingua_rs_detected_language).toBe('fr')
       const expectedKeys = [
         'archived_at',

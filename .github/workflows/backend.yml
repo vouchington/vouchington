@@ -51,9 +51,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-        timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+        timeout-minutes: 3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Typecheck backend with Bun declarations
         run: pnpm --dir backend run typecheck:bun
         timeout-minutes: 5
@@ -237,6 +239,7 @@ jobs:
         test-postgres-schema,
         backend-smoke,
         test-explain-analyze,
+        typecheck-bun,
         validate-backend-images,
         publish-backend-images,
         coverage,
@@ -252,4 +255,4 @@ jobs:
         timeout-minutes: 1
         with:
           results: >-
-            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"prepare-postgres":{"result":"${{ needs.prepare-postgres.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"validate-backend-images":{"result":"${{ needs.validate-backend-images.result }}"},"publish-backend-images":{"result":"${{ needs.publish-backend-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"prepare-postgres":{"result":"${{ needs.prepare-postgres.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"typecheck-bun":{"result":"${{ needs.typecheck-bun.result }}"},"validate-backend-images":{"result":"${{ needs.validate-backend-images.result }}"},"publish-backend-images":{"result":"${{ needs.publish-backend-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

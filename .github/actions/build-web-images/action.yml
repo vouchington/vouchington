@@ -107,7 +107,7 @@ runs:
           echo "- Size: \`$IMAGE_SIZE\` ($IMAGE_BYTES bytes)"
         } >> "$GITHUB_STEP_SUMMARY"
 
-    - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
+    - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
     - name: Run Docker smoke test
       shell: bash
       env:

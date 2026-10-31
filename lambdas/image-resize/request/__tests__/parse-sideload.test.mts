@@ -127,16 +127,6 @@ describe('parseSideloadRequest', () => {
     expect(result.url).toBe(url)
   })
 
-  it('should allow https URLs', () => {
-    const url = 'https://example.com/image.jpg'
-    const base64url = toBase64Url(url)
-    const event = createMockEvent(base64url, { w: '800' })
-
-    const result = parseSideloadRequest(event)
-
-    expect(result.url).toBe(url)
-  })
-
   it('should throw on missing width', () => {
     const url = 'https://example.com/image.jpg'
     const base64url = toBase64Url(url)

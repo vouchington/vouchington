@@ -8,15 +8,38 @@ import {
   getTestMembershipGrant,
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import {
   createMembership,
   getMembershipByStripeSubscriptionId,
   getMembershipByUserId,
   getMembershipHistory,
+  getRetainedDirectMembershipSourceByStripeIdentity,
   grantMembership,
 } from '@services/memberships'
-import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
-import { reconcileStripeMembershipSource } from './reconcile-source.mts'
+import {
+  getStripeMembershipSourceIdentity,
+  type StripeMembershipSourceIdentity,
+} from '@services/memberships/create-types'
+import { reconcileLockedStripeMembershipSource } from './reconcile-source.mts'
+import type { StripeSubscriptionMembershipValues } from './subscription-values.mts'
+
+function reconcileOwnedStripeSource(
+  eventId: string,
+  sourceIdentity: StripeMembershipSourceIdentity,
+  values: StripeSubscriptionMembershipValues,
+) {
+  return withCommittedPostgresTransactionForTest(query =>
+    reconcileLockedStripeMembershipSource(eventId, sourceIdentity, values, query, new Date()),
+  )
+}
+
+async function expectRetainedSourceWithoutDirectMembership(
+  sourceIdentity: StripeMembershipSourceIdentity,
+) {
+  expect(await getMembershipByStripeSubscriptionId(sourceIdentity)).toBeNull()
+  expect(await getRetainedDirectMembershipSourceByStripeIdentity(sourceIdentity)).not.toBeNull()
+}
 
 describe('reconcileStripeMembershipSource hardening', () => {
   it('restores only the oldest of two queued grants after a direct term ends', async () => {
@@ -44,21 +67,16 @@ describe('reconcileStripeMembershipSource hardening', () => {
     const directMembership = await getMembershipByStripeSubscriptionId(sourceIdentity)
     if (!directMembership) throw new Error('Expected active direct membership')
 
-    await reconcileStripeMembershipSource(
-      `evt_terminal_grant_queue_${randomUUID()}`,
-      directMembership,
-      sourceIdentity,
-      {
-        status: 'cancelled',
-        plan: 'pro',
-        skuId: directSku.id,
-        expiresAt: undefined,
-        effectiveAt: undefined,
-        currentPeriodStart: undefined,
-        terminalEffectiveAt: undefined,
-        cancelAtPeriodEnd: false,
-      },
-    )
+    await reconcileOwnedStripeSource(`evt_terminal_grant_queue_${randomUUID()}`, sourceIdentity, {
+      status: 'cancelled',
+      plan: 'pro',
+      skuId: directSku.id,
+      expiresAt: undefined,
+      effectiveAt: undefined,
+      currentPeriodStart: undefined,
+      terminalEffectiveAt: undefined,
+      cancelAtPeriodEnd: false,
+    })
 
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
       plan: 'plus',
@@ -111,10 +129,10 @@ describe('reconcileStripeMembershipSource hardening', () => {
       const retainedBeforeUpdate = await getTestMembershipRaw(retained.id)
       const historyBeforeUpdate = await getMembershipHistory(member.id)
 
+      await expectRetainedSourceWithoutDirectMembership(sourceIdentity)
       await expect(
-        reconcileStripeMembershipSource(
+        reconcileOwnedStripeSource(
           `evt_retained_${grantPlan}_grant_${randomUUID()}`,
-          null,
           sourceIdentity,
           {
             status: 'active',
@@ -173,8 +191,9 @@ describe('reconcileStripeMembershipSource hardening', () => {
     })
     const historyBeforeUpdate = await getMembershipHistory(member.id)
 
+    await expectRetainedSourceWithoutDirectMembership(sourceIdentity)
     await expect(
-      reconcileStripeMembershipSource(`evt_competing_${randomUUID()}`, null, sourceIdentity, {
+      reconcileOwnedStripeSource(`evt_competing_${randomUUID()}`, sourceIdentity, {
         status: 'active',
         plan: 'pro',
         skuId: retainedSku.id,

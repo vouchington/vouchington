@@ -3,7 +3,7 @@ import { insertTestRssFeedDirect } from '@voucha/test-helpers/entities/rss-feeds
 import { updateRssFeedTiming } from '@voucha/test-helpers/entities/rss-feeds-state'
 import { getRssFeedCrawlTiers } from '@voucha/test-helpers/data-stores/psql/rss-feed-crawl-tiers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { uuidAfter, uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { rssFeedCrawlConfig } from './crawl-config.mts'
 import { getRssFeedsToFetch } from './get-to-fetch.mts'
 import { updateRssFeedById } from './update.mts'
@@ -50,26 +50,28 @@ describe('tiered RSS feed selection', () => {
   })
 
   it('advances the raw lane cursor when a source page has no due feeds', async () => {
-    const feeds = await Promise.all([insertTestRssFeedDirect({}), insertTestRssFeedDirect({})])
-    feeds.sort((left, right) => left.id.localeCompare(right.id))
-    await updateRssFeedTiming(feeds[0]!.id, new Date(AS_OF.getTime() - 1))
+    // The next raw id after the not-due feed is the owned due feed. Two random ids
+    // leave a gap where another test's due feed fills a limit-1 page.
+    const earlier = await insertTestRssFeedDirect({})
+    const later = await insertTestRssFeedDirect({ id: uuidAfter(earlier.id) })
+    await updateRssFeedTiming(earlier.id, new Date(AS_OF.getTime() - 1))
     const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 2 })
     try {
       const first = await getRssFeedsToFetch({
         limit: 1,
         rawBudget: 2,
         asOf: AS_OF,
-        cursor: { lane: 5, afterId: uuidBefore(feeds[0]!.id) },
+        cursor: { lane: 5, afterId: uuidBefore(earlier.id) },
       })
       expect(first.feeds).toEqual([])
       expect(first.rawRowsRead).toBeGreaterThan(0)
-      expect(first.nextCursor?.afterId).toBe(feeds[0]!.id)
+      expect(first.nextCursor?.afterId).toBe(earlier.id)
       const second = await getRssFeedsToFetch({
         limit: 1,
         asOf: AS_OF,
         cursor: first.nextCursor,
       })
-      expect(second.feeds.map(feed => feed.id)).toContain(feeds[1]!.id)
+      expect(second.feeds.map(feed => feed.id)).toContain(later.id)
     } finally {
       restore()
     }

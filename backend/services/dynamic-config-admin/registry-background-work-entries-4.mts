@@ -18,7 +18,7 @@ import {
 } from '@services/oauth-accounts/work-limits'
 import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth-github/work-limits'
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
-import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@workers/ses-inbound/work-limits'
+import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@queues/ses-inbound/config'
 import {
   psqlQueueConfig,
   psqlQueueDescriptions,
@@ -98,6 +98,7 @@ export const backgroundWorkEntries4 = [
     maxValues: sesInboundWorkMaxValues,
     descriptions: {
       reconcile_max_pages_per_run: 'Maximum S3 copyright inbox pages per reconciliation job.',
+      retained_failed_job_scan_limit: 'Failed SES process jobs scanned per reconciliation run.',
     },
   }),
   defineBoundedWorkNamespace({

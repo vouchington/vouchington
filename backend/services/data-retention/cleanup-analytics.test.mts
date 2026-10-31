@@ -4,10 +4,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { acquireModerationOperationRetentionTestLock } from '@voucha/test-helpers'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
+import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { flush as flushFirehose } from '../../data-stores/analytics/backend-firehose.mts'
 import * as firehoseProvider from '../../modules/aws/firehose.mts'
-import { cleanupAnalyticsLocalFiles, runDataRetentionCleanup } from './cleanup.mts'
+import { cleanupAnalyticsLocalFiles } from './cleanup-analytics-local.mts'
+import { runDataRetentionCleanup } from './cleanup.mts'
 
 describe('cleanupAnalyticsLocalFiles', () => {
   const originalAnalyticsBackend = process.env.ANALYTICS_BACKEND
@@ -65,6 +67,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
     onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
+    const releaseAiUsageSweep = await reserveTestAiUsageRetentionSweep()
+    onTestFinished(releaseAiUsageSweep)
     const firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch').mockResolvedValue({
       $metadata: {},
       FailedPutCount: 0,
@@ -128,6 +132,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         systemPrunedNotifications: emptyWindow,
         userDeletedNotifications: emptyWindow,
         moderationEmailSends: emptyWindow,
+        aiUsageRecords: emptyWindow,
       }),
     ).resolves.toMatchObject({
       retainedIdentityRoots: [],
@@ -156,6 +161,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
       terminalGooglePlayAcknowledgments: { deleted: 0, hasMore: false },
       terminalStripeEventWork: { deleted: 0, hasMore: false, cursorId: null },
       abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false, cursorId: null },
+      aiUsageRecords: { deleted: 0, hasMore: false, cursorId: null },
       emailAddressLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       phoneNumberLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       expiredUserSessions: { deleted: 0, hasMore: false, continuation: null },

@@ -71,14 +71,6 @@ describe('FindPeopleAside', () => {
     const result = await FindPeopleAside()
     render(result as ReactElement)
     expect(screen.getByText('Find people to follow')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Discover people' })).toBeDefined()
-  })
-
-  it('links to /users', async () => {
-    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
-    mockFollowsAnyUser.mockResolvedValue(false)
-    const result = await FindPeopleAside()
-    render(result as ReactElement)
     expect(screen.getByRole('link', { name: 'Discover people' }).getAttribute('href')).toBe(
       '/users',
     )

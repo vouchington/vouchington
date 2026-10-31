@@ -78,12 +78,6 @@ describe('buildEditableState', () => {
     expect(state.rejection_reason).toBe('Does not meet criteria')
   })
 
-  it('returns empty string for rejection_reason when null', () => {
-    const post = makePost({ rejection_reason: null })
-    const state = buildEditableState(post)
-    expect(state.rejection_reason).toBe('')
-  })
-
   it('includes typed fields from topic_recommendation', () => {
     const post = makePost({
       topic_type: 'referral_program',

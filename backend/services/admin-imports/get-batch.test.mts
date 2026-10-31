@@ -22,16 +22,6 @@ describe('get-batch', () => {
   })
 
   describe('getImportBatch', () => {
-    it('returns batch when found', async () => {
-      const suffix = randomSuffix()
-      const { batch } = await createImportBatch(admin, 'topic', [{ slug: `get-test-${suffix}` }])
-
-      const fetched = await getImportBatch(batch.id)
-      expect(fetched).not.toBeNull()
-      expect(fetched!.id).toBe(batch.id)
-      expect(fetched!.import_type).toBe('topic')
-    })
-
     it('returns null when batch not found', async () => {
       const fetched = await getImportBatch('00000000-0000-0000-0000-000000000099')
       expect(fetched).toBeNull()

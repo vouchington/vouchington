@@ -32,6 +32,6 @@
     "@vouchington/worker-runtime": "^0.3.1",
     "glide-mq": "^0.20.0",
     "p-map": "^7.1.1",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.15.0"
   }
 }

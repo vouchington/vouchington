@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -11,13 +12,14 @@ import {
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { autoFollowOnRecommendationApproval } from './auto-follow-on-approval.mts'
-import { createTopicRecommendation } from '@services/topic-recommendations'
+import { prepareTopicRecommendation } from '@services/topic-recommendations'
 
 describe('recommendation approval auto-follow database failure', () => {
   it('reports a user lookup failure and leaves the request pending for a healthy retry', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user })
-    const recommendation = await createTopicRecommendation(
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
       user,
       WEB_PROVENANCE,
       {

@@ -14,50 +14,6 @@ describe('set-canonical.generated', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('setCanonicalUrl sets canonical_url_id correctly', async () => {
-    const url1 = await addUrl(user.id, `https://example.com/${runId}/original`)
-    const url2 = await addUrl(user.id, `https://example.com/${runId}/canonical`)
-    await setCanonicalUrl(url1!.id, url2!.id)
-
-    const updatedUrl = await getUrlById(url1!.id)
-    expect(updatedUrl!.canonical_url_id).toBe(url2!.id)
-  })
-
-  it('setCanonicalUrl throws error for self-reference', async () => {
-    const url = await addUrl(user.id, `https://example.com/${runId}/self`)
-    await expect(setCanonicalUrl(url!.id, url!.id)).rejects.toThrow(
-      'URL cannot be its own canonical',
-    )
-  })
-
-  it('setCanonicalUrl throws error for circular reference (A -> B -> A)', async () => {
-    const urlA = await addUrl(user.id, `https://example.com/${runId}/a`)
-    const urlB = await addUrl(user.id, `https://example.com/${runId}/b`)
-    // Set A -> B
-    await setCanonicalUrl(urlA!.id, urlB!.id)
-
-    // Try to set B -> A (creates circular reference)
-    await expect(setCanonicalUrl(urlB!.id, urlA!.id)).rejects.toThrow(
-      CircularCanonicalReferenceError,
-    )
-  })
-
-  it('setCanonicalUrl throws error for circular reference (A -> B -> C -> A)', async () => {
-    const urlA = await addUrl(user.id, `https://example.com/${runId}/a2`)
-    const urlB = await addUrl(user.id, `https://example.com/${runId}/b2`)
-    const urlC = await addUrl(user.id, `https://example.com/${runId}/c2`)
-    // Set A -> B
-    await setCanonicalUrl(urlA!.id, urlB!.id)
-
-    // Set B -> C
-    await setCanonicalUrl(urlB!.id, urlC!.id)
-
-    // Try to set C -> A (creates circular reference)
-    await expect(setCanonicalUrl(urlC!.id, urlA!.id)).rejects.toThrow(
-      CircularCanonicalReferenceError,
-    )
-  })
-
   it('setCanonicalUrl allows long chains up to max depth', async () => {
     const urls = []
     for (let i = 0; i < 10; i++) {

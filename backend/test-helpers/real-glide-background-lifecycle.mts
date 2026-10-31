@@ -12,7 +12,7 @@ type JobDefinition = { readonly name: string; readonly options: Readonly<JobOpti
 export type RealGlideBackgroundHarness<TJob extends JobDefinition> = {
   queue: Queue
   add(job: TJob, data: object, options?: JobOptions): Promise<Job>
-  settled(job: { id: string }): Promise<Terminal>
+  settled(job: { id: string }, deadlineMs?: number): Promise<Terminal>
   activated(job: { id: string }, times: number): Promise<void>
   stalledJobIds: readonly string[]
   registerBeforeClose(release: () => void | Promise<void>): void
@@ -128,7 +128,8 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
       if (!added) throw new Error(`Expected ${job.name} to be added`)
       return added
     },
-    settled: job => waitForRealGlideEvent(deferredFor(job.id).promise, `GlideMQ job ${job.id}`),
+    settled: (job, deadlineMs) =>
+      waitForRealGlideEvent(deferredFor(job.id).promise, `GlideMQ job ${job.id}`, deadlineMs),
     activated: (job, times) => {
       if ((activations.get(job.id) ?? 0) >= times) return Promise.resolve()
       const waiting = Promise.withResolvers<void>()

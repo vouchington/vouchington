@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
+import { REAL_GLIDE_EVENT_DEADLINE_MS } from '../backend/test-helpers/real-glide-terminal-deadline.mts'
 
 type VitestProjectConfig = {
   root?: string
@@ -46,6 +47,7 @@ describe('dev-tools Vitest config', () => {
       ['cloudflare-worker-portability', 'cloudflare-worker/scripts/wrangler/runtime.test.mts'],
       ['static-analysis-ast-grep', 'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts'],
       ['backend-data-stores', 'backend/test-helpers/entities/bluesky-link-authorizations.test.mts'],
+      ['backend-ai-usage-monthly-ddl', 'backend/services/data-retention/cleanup-ai-usage.test.mts'],
       ['backend-test-helpers', 'backend/test-helpers/sql-template-strings.test.mts'],
       [
         'backend-no-data-mocks',
@@ -202,6 +204,15 @@ describe('Vitest timeout policy (#10762, #8078)', () => {
   it('declares backstop testTimeout/hookTimeout at the root (#10762)', () => {
     expect(rootConfig.test?.testTimeout).toBe(5_000)
     expect(rootConfig.test?.hookTimeout).toBe(5_000)
+  })
+
+  it('keeps the real GlideMQ event deadline under every project test budget', () => {
+    const budgets = projectTimeouts.map(project => project.testTimeout)
+    expect(budgets.every(budget => typeof budget === 'number')).toBe(true)
+    const projectBudget = Math.min(
+      ...budgets.filter((budget): budget is number => budget !== undefined),
+    )
+    expect(REAL_GLIDE_EVENT_DEADLINE_MS).toBeLessThan(projectBudget)
   })
 })
 

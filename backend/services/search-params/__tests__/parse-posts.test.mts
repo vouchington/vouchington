@@ -9,17 +9,6 @@ import {
 import { parsePostsSearchParams } from '../parse-posts.mts'
 
 describe('parse-posts', () => {
-  it('parsePostsSearchParams returns defaults for empty query', async () => {
-    const { shouldReturnEmpty, searchOptions } = await parsePostsSearchParams({})
-    expect(shouldReturnEmpty).toBe(false)
-    expect(searchOptions.limit).toBe(25)
-  })
-
-  it('parsePostsSearchParams shouldReturnEmpty=false when no identifiers provided', async () => {
-    const { shouldReturnEmpty } = await parsePostsSearchParams({ limit: '10' })
-    expect(shouldReturnEmpty).toBe(false)
-  })
-
   it('parsePostsSearchParams shouldReturnEmpty=true when topic slug not found', async () => {
     const { shouldReturnEmpty } = await parsePostsSearchParams({
       topic: 'nonexistent-topic-slug-xyz',
@@ -206,11 +195,6 @@ describe('parse-posts', () => {
   it('parsePostsSearchParams parses drafts booleanish', async () => {
     const { searchOptions } = await parsePostsSearchParams({ drafts: '1' })
     expect(searchOptions.drafts).toBe(true)
-  })
-
-  it('parsePostsSearchParams ignores the internal omitLimit option', async () => {
-    const { searchOptions } = await parsePostsSearchParams({ omitLimit: 'true' })
-    expect(searchOptions).not.toHaveProperty('omitLimit')
   })
 
   it('parsePostsSearchParams throws 422 for invalid similar_rss_feed_item format', async () => {

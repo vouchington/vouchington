@@ -10,7 +10,7 @@ import {
   insertTestPost,
 } from '../../../backend/test-helpers/index.mts'
 import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'
-import { seedPlaywrightPublisherTypeTopics } from '../../../backend/scripts/seeds/playwright-test-data/core-publisher-type-topics.mts'
+import { seedPlaywrightPublisherTypeTopics } from '../../../backend/test-helpers/playwright-seed-publisher-type-topics.mts'
 
 // Uses seed data:
 // - Test user: '019f0000-0000-7000-8000-000000000000'

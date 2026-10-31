@@ -2,6 +2,25 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { WorkerQueryProfile } from '../backend/test-helpers/query-profiles.mts'
 
 describe('worker query profile adapter', () => {
+  it('exposes queue terminal events through the in-memory GlideMQ alias', async () => {
+    const { Queue, QueueEvents } = await import('./worker-query-profile.mts')
+    const queueName = `app-factory-events-${crypto.randomUUID()}`
+    const queue = new Queue(queueName, {})
+    const events = new QueueEvents(queueName)
+    onTestFinished(async () => {
+      await events.close()
+      await queue.close()
+    })
+    const removedIds: string[] = []
+    events.on('removed', ({ jobId }: { jobId: string }) => removedIds.push(jobId))
+    await events.waitUntilReady()
+
+    const job = await queue.add('owned-event-job', {})
+    if (!job) throw new Error('The owned event queue did not admit its job')
+    await job.remove()
+    expect(removedIds).toEqual([job.id])
+  })
+
   it.each([false, true])(
     'profiles an app-factory job through the glide-mq alias (reset modules: %s)',
     async resetModules => {

@@ -15,7 +15,7 @@ import {
   reviewCopyrightAppeal,
 } from './index.mts'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 describe('email appeal restoration for a surface image', () => {
   it('restores a community image after staff admit and reverse an emailed appeal', async () => {

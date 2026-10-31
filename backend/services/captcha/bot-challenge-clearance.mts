@@ -1,7 +1,7 @@
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { TimeUnit } from '@valkey/valkey-glide'
 
-export function getBotChallengeClearanceKey(sessionId: string): string {
+function getBotChallengeClearanceKey(sessionId: string): string {
   return `bot-challenge-clearance:session:${sessionId}`
 }
 

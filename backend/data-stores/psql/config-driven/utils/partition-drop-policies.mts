@@ -23,6 +23,8 @@ export type PartitionDropPolicy = {
   copyrightHistory?: true
   /** Referenced tables whose FK teardown locks precede the history parent lock. */
   retirementReferenceTables?: readonly string[]
+  /** The child is raw evidence whose rows are removed only after an atomic fold. */
+  mustBeEmpty?: boolean
   /** Each predicate must have a matching partial index on the partition parent. */
   inFlightPredicates?: readonly string[]
 }
@@ -75,6 +77,21 @@ PARTITION_DROP_POLICIES.user_data_requests = {
 PARTITION_DROP_POLICIES.user_data_request_attempts = {
   minimumRetentionDays: 30,
   legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
+}
+
+// Any row left after bounded folding, including protected replay usage, blocks DROP.
+PARTITION_DROP_POLICIES.ai_usage_records = {
+  minimumRetentionDays: 180,
+  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+  mustBeEmpty: true,
+  retirementReferenceTables: [
+    'ai_usage_provider_response_keys',
+    'communities',
+    'posts',
+    'classifier_run_identities',
+    'ai_service_tiers',
+    'currencies',
+  ],
 }
 
 PARTITION_DROP_POLICIES.topic_revisions = {

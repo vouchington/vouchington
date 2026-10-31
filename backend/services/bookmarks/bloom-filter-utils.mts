@@ -43,7 +43,7 @@ export function normalizeBookmarkObjectIds(objectIds: string[]): string[] {
   return objectIds.map(objectId => normalizeKey(objectId))
 }
 
-export function getBookmarkBloomFilterName(userId: string): string {
+function getBookmarkBloomFilterName(userId: string): string {
   return `user-bookmarks:${userId}`
 }
 

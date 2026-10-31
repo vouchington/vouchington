@@ -33,9 +33,4 @@ test.describe('Communities Browse Page', () => {
     await page.getByTestId(`community-card-link-${COMMUNITY_SLUG}`).click()
     await expect(page).toHaveURL(`/communities/${COMMUNITY_SLUG}`)
   })
-
-  test('unauthenticated user can view browse page', async ({ page }) => {
-    await navigateTo(page, '/communities')
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Communities')
-  })
 })

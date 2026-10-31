@@ -49,12 +49,6 @@ describe('recommended-rss-feeds', () => {
       expect(Array.isArray(response.body.results)).toBe(true)
       expect(response.body.page_info).toBeDefined()
       expect(response.body.rss_feeds).toBeDefined()
-    })
-
-    it('sets private, no-store cache-control header', async () => {
-      const request = createRequest()
-      await request.authenticateAs(currentUser)
-      const response = await request.get('/api/v1/rss-feeds/recommended').expect(200)
       expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
@@ -64,16 +58,6 @@ describe('recommended-rss-feeds', () => {
       await request.get('/api/v1/rss-feeds/recommended?source=invalid').expect(400)
     })
 
-    it('supports source=friends', async () => {
-      const request = createRequest()
-      await request.authenticateAs(currentUser)
-      const response = await request
-        .get('/api/v1/rss-feeds/recommended?source=friends&limit=100')
-        .expect(200)
-
-      expect(Array.isArray(response.body.results)).toBe(true)
-    })
-
     it('includes friend-followed feed in friends source results', async () => {
       const request = createRequest()
       await request.authenticateAs(currentUser)
@@ -81,6 +65,7 @@ describe('recommended-rss-feeds', () => {
         .get('/api/v1/rss-feeds/recommended?source=friends&limit=100')
         .expect(200)
 
+      expect(Array.isArray(response.body.results)).toBe(true)
       const ids = response.body.results.map((r: { id: string }) => r.id)
       expect(ids).toContain(friendFeedId)
     })

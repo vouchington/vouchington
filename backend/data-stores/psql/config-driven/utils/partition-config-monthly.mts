@@ -57,6 +57,11 @@ export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   monthlyPartitionTable('crawls', { retentionDays: 30, dropPriority: 1, futureMonths: 2 }),
 ]
 
+/** Per-call evidence is folded in bounded pages before its whole monthly child is retired. */
+export const AI_USAGE_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
+  monthlyPartitionTable('ai_usage_records', { retentionDays: 180 }),
+]
+
 /**
  * Monthly decision history is retired by whole guarded partitions after six years.
  * `retentionDays: 0` admits these tables to the shared monthly catalog selector;

@@ -57,18 +57,20 @@ fetch on the request path:
 - `verifyDigest` reads only the request body → self-contained.
 - The instance-allowlist check, `isFediverseInstanceApprovedByHostname`, is a DB read →
   self-contained.
-- `getRemoteActorByKeyId` is a DB read of an already-cached signer. When that row exists, the
+- `getRemoteActorByKeyId` is a DB read of an already-cached signer. When that row is fresh, the
   handler runs `verifySignature` against the cached key and rejects invalid signatures before
   `accept()`. Crypto against local state is still self-contained.
-- Unknown `keyId`s skip that local check, persist via
-  `activityPubInboxDeliveryTransitions.accept()`, enqueue, and return `202`. The handler never
-  calls `getOrFetchRemoteActorByKeyId` on the worker-enabled request path. That outbound fetch
-  and received-time verification run inside the worker after dequeue, where public egress is
-  available.
+- Unknown or stale `keyId`s skip that local check and enqueue the signed request envelope before returning
+  `202`. The handler never calls `getOrFetchRemoteActorByKeyId` on the worker-enabled request path.
+  That outbound fetch and received-time verification run inside the worker after dequeue, where
+  public egress is available.
+- After reading and validating the bounded body, atomic inbound capacity reservation protects shared
+  queue storage before enqueue. Saturation returns a retryable response without accepting the request.
+  Each job retains its reservation through retries and sender delays, releasing it at its terminal
+  outcome independently of other jobs.
 
-Model any new "external sender, auth needs a fetch" route on this file: self-contained checks
-gate persistence and enqueue; the network-dependent verification happens after the job leaves the
-request path.
+Model any new "external sender, auth needs a fetch" route on this file: self-contained checks gate
+enqueue; the network-dependent verification happens after the job leaves the request path.
 
 Google Play RTDN uses the public Cloudflare ingress at
 `/api/v1/memberships/google-play/notifications`: the API verifies Pub/Sub OIDC against a Valkey

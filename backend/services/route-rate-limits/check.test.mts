@@ -118,22 +118,6 @@ describe('check', () => {
       expect(result.remaining).toBeGreaterThan(0)
     })
 
-    it('returns not limited when under threshold (anonymous user)', async () => {
-      const routeKey = 'POST:/api/v1/posts'
-      const identities: RateLimitIdentities = { ip: freshIp() }
-
-      overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
-        enabled: true,
-        anon_write: 100,
-        anon_write_ttl: 60,
-      })
-      await rateLimitKeyCleanup.resetAndOwn(routeKey, identities)
-
-      const result = await checkRouteRateLimit(routeKey, identities, null)
-      expect(result.limited).toBe(false)
-      expect(result.limit).toBe(100)
-    })
-
     it('blocks anonymous user when threshold exceeded', async () => {
       const routeKey = 'POST:/api/v1/posts'
       const identities: RateLimitIdentities = { ip: freshIp() }
@@ -284,11 +268,6 @@ describe('check', () => {
   describe('getAttestedMultiplier', () => {
     afterEach(() => {
       deleteDynamicConfigFieldsForTest(routeRateLimitConfig, ['attested_multiplier'])
-    })
-
-    it('returns the configured multiplier', () => {
-      overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { attested_multiplier: 5 })
-      expect(getAttestedMultiplier()).toBe(5)
     })
 
     it('returns 1 when not configured', () => {

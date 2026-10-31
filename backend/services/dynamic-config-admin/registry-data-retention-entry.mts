@@ -21,6 +21,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.community_purge_batch_size,
       integer: true,
     },
+    ai_usage_raw_retention_days: {
+      description: 'Minimum age of AI provider-call records before folding and deletion.',
+      minValue: 180,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_usage_raw_retention_days,
+      integer: true,
+    },
     topic_import_attempt_batch_size: {
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,
@@ -127,6 +133,13 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
         'Keep copyright email thread references for this many days after a case becomes inactive.',
       minValue: 1,
       maxValue: DATA_RETENTION_MAX_VALUES.copyright_email_thread_reply_days,
+      integer: true,
+    },
+    post_moderation_retention_days: {
+      description:
+        'Minimum age of a successor before deleting its previous post moderation version, and age before clearing current automated pass evidence.',
+      minValue: 90,
+      maxValue: DATA_RETENTION_MAX_VALUES.post_moderation_retention_days,
       integer: true,
     },
   },

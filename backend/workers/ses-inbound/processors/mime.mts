@@ -48,12 +48,12 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
   await new Promise<void>((resolve, reject) => {
     parser.once('headers', headers => {
       sender = asAddress(headers.get('from'))
-      subject = String(headers.get('subject') ?? '')
-      messageId = String(headers.get('message-id') ?? '').trim() || null
-      autoSubmitted = String(headers.get('auto-submitted') ?? '').trim()
-      precedence = String(headers.get('precedence') ?? '').trim()
-      listId = String(headers.get('list-id') ?? '').trim()
-      listUnsubscribe = String(headers.get('list-unsubscribe') ?? '').trim()
+      subject = headerString(headers.get('subject'))
+      messageId = headerString(headers.get('message-id')).trim() || null
+      autoSubmitted = headerString(headers.get('auto-submitted')).trim()
+      precedence = headerString(headers.get('precedence')).trim()
+      listId = headerString(headers.get('list-id')).trim()
+      listUnsubscribe = headerString(headers.get('list-unsubscribe')).trim()
       recipientEmails = [
         ...new Set(
           ['to', 'delivered-to', 'x-original-to'].flatMap(header =>
@@ -78,7 +78,7 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     parser.once('error', error => {
       rawMime.destroy()
       headerLimiter.destroy()
-      reject(error)
+      reject(error instanceof Error ? error : new Error('Mail parser failed', { cause: error }))
     })
     parser.once('end', resolve)
     rawMime.once('error', error => {
@@ -140,6 +140,12 @@ function createMimeHeaderLimitStream(): Transform {
       callback(null, chunk)
     },
   })
+}
+
+function headerString(value: HeaderValue | undefined): string {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && value.every(item => typeof item === 'string')) return value.join(',')
+  return ''
 }
 
 function asAddress(value: HeaderValue | undefined): AddressObject | undefined {

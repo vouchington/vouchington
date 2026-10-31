@@ -19,7 +19,7 @@ type UpdateIndividualRewardsProgramStatusData = {
   expires_on?: string | null
 }
 
-export async function getIndividualRewardsProgramStatusById(
+async function getIndividualRewardsProgramStatusById(
   currentUser: PrivateUser | null,
   user: PrivateUser,
   id: string,

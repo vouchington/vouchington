@@ -117,7 +117,10 @@ export function LinkPostMedia({ embed, view }: LinkPostMediaProps) {
   if (view === 'card') {
     return (
       <div data-pw='link-post-article-embed-card'>
-        <EmbedPreviewCard preview={preview} />
+        <EmbedPreviewCard
+          preview={preview}
+          lang={null}
+        />
       </div>
     )
   }
@@ -131,6 +134,7 @@ export function LinkPostMedia({ embed, view }: LinkPostMediaProps) {
       <EmbedPreviewCard
         preview={preview}
         layout='hero'
+        lang={null}
       />
     </div>
   )

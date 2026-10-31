@@ -18,6 +18,7 @@ describe('copyright retention continuation', () => {
       step: 1,
       activeClassifierSweeps: [],
       activeMembershipFamilies: [],
+      activePostModerationKinds: [],
       copyrightFamilies: ['copyrightFormScreeningAttempts', 'copyrightActionAttempts'],
     })
     const first = await psql.getJob(copyrightIds[0]!)

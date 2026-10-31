@@ -28,6 +28,10 @@ export const PROVIDER_LOOKUP_BOUNDS = new Map<string, string>(
 )
 
 export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
+  [
+    'ai_usage_retention_cursors',
+    'A checked singleton persists the cyclic UUIDv7 keyset position for AI usage folding.',
+  ],
   ...PROVIDER_LOOKUP_BOUNDS,
   ...STATIC_IDENTITY_EXCEPTIONS,
   ...EXTRA_BOUNDED_TABLES,
@@ -53,5 +57,4 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'post_admission_reservations',
     'Committed replays expire after 48 hours, abandoned reservations are pruned after 48 hours, and bounded cleanup deletes both classes, bounding cardinality to recent admission traffic.',
   ],
-  ['activitypub_inbox_delivery_storage_counters', 'Primary key permits one row.'],
 ])

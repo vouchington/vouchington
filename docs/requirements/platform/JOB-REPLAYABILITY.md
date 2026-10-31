@@ -47,6 +47,11 @@ passes do not enumerate unrelated posts. A
 replaced Follow generation is superseded by the relation's current state; ballot transitions
 remain separate immutable events.
 
+Inbound ActivityPub acknowledges an accepted request after its signed envelope is admitted to
+GlideMQ. PostgreSQL does not retain a second copy for recovery: Valkey loss can therefore lose an
+accepted delivery. Exhausting a job's retries also drops its sensitive envelope after acceptance,
+and remote senders are not expected to retry after `202`.
+
 See also the [backend queue reference](../../overview/architecture/queues/README.md).
 
 Moderation-history cleanup checkpoints each bounded record-family page in PostgreSQL. Its queue

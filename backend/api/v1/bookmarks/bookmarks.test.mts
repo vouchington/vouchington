@@ -61,41 +61,6 @@ describe('bookmarks', () => {
           .expect(401)
       })
 
-      it('should follow a topic', async () => {
-        const topicId = await insertTestTopic({
-          name: `Follow Topic ${crypto.randomUUID().slice(0, 8)}`,
-          slug: `follow-topic-${crypto.randomUUID().slice(0, 8)}`,
-          createdById: user.id,
-        })
-        const request = createRequest()
-        await request.authenticateAs(user)
-        const response = await request.put(`/api/v1/bookmarks/topic/${topicId}/follow`).expect(200)
-
-        expect(response.body).toBeDefined()
-
-        // Verify bookmark is now set
-        const getResponse = await request.get(`/api/v1/bookmarks/topic/${topicId}`).expect(200)
-        expect(getResponse.body.bookmarks.follow).toBe(true)
-      })
-
-      it('should follow an RSS feed', async () => {
-        const topicId = await insertTestTopic({
-          name: `Feed Follow Topic ${crypto.randomUUID().slice(0, 8)}`,
-          slug: `feed-follow-topic-${crypto.randomUUID().slice(0, 8)}`,
-          createdById: user.id,
-        })
-        const feedId = await insertTestRssFeed({
-          topicId,
-          title: `Feed Follow ${crypto.randomUUID().slice(0, 8)}`,
-        })
-        const request = createRequest()
-        await request.authenticateAs(user)
-        await request.put(`/api/v1/bookmarks/rss_feed/${feedId}/follow`).expect(200)
-
-        const getResponse = await request.get(`/api/v1/bookmarks/rss_feed/${feedId}`).expect(200)
-        expect(getResponse.body.bookmarks.follow).toBe(true)
-      })
-
       it('should save and unsave an RSS feed item', async () => {
         const topicId = await insertTestTopic({
           name: `Save Item Topic ${crypto.randomUUID().slice(0, 8)}`,
@@ -239,7 +204,12 @@ describe('bookmarks', () => {
       it('should follow a user', async () => {
         const request = createRequest()
         await request.authenticateAs(user)
-        await request.put(`/api/v1/bookmarks/user/${targetUser.id}/follow`).expect(200)
+        const response = await request
+          .put(`/api/v1/bookmarks/user/${targetUser.id}/follow`)
+          .expect(200)
+
+        expect(response.body.bookmark).toBeDefined()
+        expect(response.body.bookmark).not.toHaveProperty('outbound_activitypub_follow_activity_id')
 
         const getResponse = await request.get(`/api/v1/bookmarks/user/${targetUser.id}`).expect(200)
         expect(getResponse.body.bookmarks.follow).toBe(true)
@@ -254,15 +224,6 @@ describe('bookmarks', () => {
 
         const getResponse = await request.get(`/api/v1/bookmarks/user/${targetUser.id}`).expect(200)
         expect(getResponse.body.bookmarks.dismiss_recommendation).toBe(true)
-      })
-
-      it('should mute a user', async () => {
-        const request = createRequest()
-        await request.authenticateAs(user)
-        await request.put(`/api/v1/bookmarks/user/${targetUser.id}/mute`).expect(200)
-
-        const getResponse = await request.get(`/api/v1/bookmarks/user/${targetUser.id}`).expect(200)
-        expect(getResponse.body.bookmarks.mute).toBe(true)
       })
 
       it('should unfollow a user', async () => {

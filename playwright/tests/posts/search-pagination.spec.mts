@@ -11,17 +11,6 @@ test.describe('Post search and pagination', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.describe('search', () => {
-    test('search input submits and updates URL with q param', async ({ page }) => {
-      await navigateTo(page, '/posts')
-      await waitForBelowFoldHydration(page)
-
-      const searchInput = page.getByTestId('list-filters-search-input')
-      await searchInput.pressSequentially('voucha')
-      await searchInput.press('Enter')
-
-      await expect(page).toHaveURL(/q=voucha/)
-    })
-
     test('search on /articles keeps post type in URL', async ({ page }) => {
       await navigateTo(page, '/articles')
       await waitForBelowFoldHydration(page)

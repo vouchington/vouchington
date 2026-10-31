@@ -14,23 +14,10 @@ const TOPIC_SLUGS = [
   'topic',
 ] as const
 
+// Pages that export generateMetadata already assert the file exists.
 const TOPIC_SUBPAGES = [
-  'page.tsx',
   'layout.tsx',
-  'data-points/page.tsx',
   'discussions/page.ts', // .ts, not .tsx — no JSX in this redirect stub
-  'latest/page.tsx',
-  'news/page.tsx',
-  'posts/page.tsx',
-  'referral-links/page.tsx',
-  'reviews/page.tsx',
-  'settings/page.tsx',
-  'settings/about/page.tsx',
-  'settings/aliases/page.tsx',
-  'settings/behavior/page.tsx',
-  'settings/domains/page.tsx',
-  'settings/merge/page.tsx',
-  'settings/source/page.tsx',
   'tags/[objectType]/page.tsx',
 ] as const
 
@@ -108,11 +95,6 @@ describe.each(TOPIC_SLUGS)('(topics)/%s generateMetadata exports', slug => {
 })
 
 describe('(topics)/referral-program admin route completeness', () => {
-  it.each(REFERRAL_PROGRAM_ADMIN_SUBPAGES)('[id]/%s exists', subpage => {
-    const path = join(WEB_APP, '(topics)', 'referral-program', '[id]', subpage)
-    assert(existsSync(path), `missing: web/app/(topics)/referral-program/[id]/${subpage}`)
-  })
-
   it.each(REFERRAL_PROGRAM_ADMIN_SUBPAGES)('[id]/%s exports generateMetadata', subpage => {
     const path = join(WEB_APP, '(topics)', 'referral-program', '[id]', subpage)
     assert(existsSync(path), `missing: web/app/(topics)/referral-program/[id]/${subpage}`)

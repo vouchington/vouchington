@@ -1,34 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
 import { APIError, RateLimitError } from 'openai'
-import {
-  deferJobForOpenAIRateLimit,
-  getOpenAIRateLimitDelayMs,
-  handleOpenAIRateLimit,
-} from './rate-limit.mts'
+import { deferJobForOpenAIRateLimit, handleOpenAIRateLimit } from './rate-limit.mts'
 
 function rateLimited(headers: Record<string, string> = {}) {
   return new RateLimitError(429, {}, 'Rate limit exceeded', new Headers(headers))
 }
 
-describe('getOpenAIRateLimitDelayMs', () => {
+describe('handleOpenAIRateLimit', () => {
   it.each([
     [{ 'retry-after': '30' }, 30_000],
     [{ 'retry-after': '0' }, 1_000],
     [{ 'retry-after': '86400' }, 900_000],
     [{}, 60_000],
     [{ 'retry-after': 'soon' }, 60_000],
-  ])('turns %j into %s ms', (headers, expectedMs) => {
-    expect(getOpenAIRateLimitDelayMs(rateLimited(headers))).toBe(expectedMs)
-  })
-})
-
-describe('handleOpenAIRateLimit', () => {
-  it('requeues the job for the Retry-After carried on the signal itself', async () => {
-    const error = rateLimited({ 'retry-after': '30' })
+  ])('requeues %j after %s ms', async (headers, expectedMs) => {
+    const error = rateLimited(headers)
 
     await expect(handleOpenAIRateLimit(error)).rejects.toMatchObject({
       name: 'RateLimitError',
-      delayMs: 30_000,
+      delayMs: expectedMs,
       cause: error,
     })
   })

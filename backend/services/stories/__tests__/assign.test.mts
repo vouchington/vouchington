@@ -46,13 +46,6 @@ describe('adminAssignItemToStory', () => {
     })
   }
 
-  it('assigns an item to a story and returns the item id', async () => {
-    const story = await insertTestStory({ title: 'Assign Target Story' })
-    const itemId = await makeItem()
-    const result = await adminAssignItemToStory((await createTestUserDirect()).id, story.id, itemId)
-    expect(result).toBe(itemId)
-  })
-
   it('reports post-commit relation delivery failures and continues assignment delivery', async () => {
     const story = await insertTestStory({ title: 'Assignment delivery failure' })
     const storyItemIds = await Promise.all([makeItem(), makeItem()])
@@ -107,38 +100,6 @@ describe('adminAssignItemToStory', () => {
 })
 
 describe('adminRemoveItemFromStory', () => {
-  let feedId: string
-  let urlId: string
-
-  beforeAll(async () => {
-    const [feed, testUrlId] = await Promise.all([
-      createTestRssFeed({}),
-      createTestUrlWithHostname(),
-    ])
-    feedId = feed.id
-    urlId = testUrlId
-  })
-
-  async function makeItem() {
-    const random = Math.random().toString(36).slice(2, 10)
-    const itemData = { title: `Remove Test Item ${random}`, link: `https://example.com/${random}` }
-    return insertTestRssFeedItem({
-      rssFeedId: feedId,
-      urlId,
-      guid: `remove-test-${random}`,
-      itemData,
-      contentSha256: sha256(itemData),
-    })
-  }
-
-  it('removes an item from its story and returns the item id', async () => {
-    const story = await insertTestStory({ title: 'Remove Target Story' })
-    const itemId = await makeItem()
-    await adminAssignItemToStory((await createTestUserDirect()).id, story.id, itemId)
-    const result = await adminRemoveItemFromStory((await createTestUserDirect()).id, itemId)
-    expect(result).toBe(itemId)
-  })
-
   it('returns null when item does not exist', async () => {
     const result = await adminRemoveItemFromStory(
       (await createTestUserDirect()).id,

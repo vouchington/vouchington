@@ -1,4 +1,7 @@
-import type { ModerationRecordCleanupKind } from '@voucha/types/entities/moderation-retention'
+import type {
+  ModerationRecordCleanupKind,
+  PostModerationRetentionKind,
+} from '@voucha/types/entities/moderation-retention'
 
 export type PsqlJobs =
   | 'runMigrations'
@@ -13,6 +16,7 @@ export type PsqlJobs =
   | 'continueVoteRetentionCleanup'
   | 'cleanupDeletedConversations'
   | 'cleanupOperationalTombstones'
+  | 'continueAgentModerationRetentionCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -22,7 +26,7 @@ export const PSQL_MANUAL_ONLY_ADMIN_JOB_TYPES = [
   'runConfigDriven',
 ] as const satisfies readonly PsqlJobs[]
 
-export const PSQL_SCHEDULED_ADMIN_JOB_TYPES = [
+const PSQL_SCHEDULED_ADMIN_JOB_TYPES = [
   'createPartitions',
   'cleanupPartitions',
 ] as const satisfies readonly PsqlJobs[]
@@ -111,8 +115,22 @@ export type PsqlRetentionJobData = {
     activeMembershipFamilies: string[]
     /** A copyright continuation runs only these pending families, without another daily sweep. */
     copyrightFamilies?: CopyrightRetentionFamily[]
+    activePostModerationKinds: PostModerationRetentionKind[]
     /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
     userPurge?: { userId: string; communityId: string; afterModeratorId: string }
+    activeAiUsage?: boolean
+  }
+}
+
+export type AgentModerationRetentionContinuationData = {
+  runId: string
+  step: number
+  agentModerationRetention: {
+    afterDueAt: string
+    afterId: string
+    afterPostId: string
+    upperBoundDueAt: string
+    upperBoundId: string
   }
 }
 

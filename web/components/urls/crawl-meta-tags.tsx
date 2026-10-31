@@ -69,6 +69,7 @@ export function CrawlMetaTags({
               preview={preview}
               showPlayer
               className='mb-6'
+              lang={lang}
             />
           )}
           <dl className='grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2'>

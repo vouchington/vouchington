@@ -6,7 +6,7 @@ import { createPsql, type Psql } from '@vouchington/postgres'
 import { resolveDatabaseConnectionString } from './connection-string-env.mts'
 import { withLibpqCompat } from './connection-string-utils.mts'
 import { getPsqlPoolConfiguration } from './pool-config.mts'
-import { startConfiguredPoolStatsSampler } from './pool-stats-sampler.mts'
+import { createPoolStatsSampler } from './pool-stats-sampler.mts'
 import { maybeCaptureQuery, runWithSingleQueryCapture } from './query-capture.mts'
 import { recordQueryTiming } from './query-timing.mts'
 import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
@@ -29,7 +29,7 @@ const vouchaMigrationExtensions = [
   'unaccent',
 ] as const
 
-export const psql: Psql = await createPsql({
+export const psql: Psql = createPsql({
   connectionString,
   readConnectionString,
   databaseName,
@@ -74,7 +74,10 @@ export const close: Psql['close'] = async () => {
   await Promise.all([psql.close(), jobSerializationPool.end()])
 }
 
-startConfiguredPoolStatsSampler(
+// One sampler, created when this module loads and started with the same arguments
+// as the previous module singleton.
+const poolStatsSampler = createPoolStatsSampler()
+poolStatsSampler.startConfiguredPoolStatsSampler(
   { ...psql, jobSerializationPool },
   poolConfiguration,
   Boolean(process.env.NODE_PREWARM),

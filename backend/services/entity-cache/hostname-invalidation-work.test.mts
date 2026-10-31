@@ -3,8 +3,10 @@ import { beginTransaction } from '@voucha/test-helpers'
 import {
   ageHostnameCacheInvalidationWorkForTest,
   expireHostnameCacheInvalidationLeaseForTest,
+  getHostnameCacheInvalidationDatabaseNowForTest,
   getHostnameCacheInvalidationWorkForTest,
   makeHostnameCacheInvalidationAvailableForTest,
+  setHostnameCacheInvalidationAttemptsForTest,
 } from '@voucha/test-helpers/hostname-cache-invalidation'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
@@ -63,6 +65,41 @@ describe('durable hostname cache invalidation', () => {
     expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [id] })).toBe(1)
     expect(await getHostnameCacheInvalidationWorkForTest(id)).toBeNull()
   })
+
+  it.each([
+    { ceiling: 300, priorAttempts: 8, expectedSeconds: 300 },
+    { ceiling: 3600, priorAttempts: 11, expectedSeconds: 3600 },
+    { ceiling: 3600, priorAttempts: 1_000_000, expectedSeconds: 3600 },
+  ])(
+    'defers failed work for $expectedSeconds seconds after $priorAttempts attempts',
+    async ({ ceiling, priorAttempts, expectedSeconds }) => {
+      const { id } = await ownHostname()
+      await enqueue(id)
+      await setHostnameCacheInvalidationAttemptsForTest(id, priorAttempts)
+      const restore = overrideDynamicConfigFieldsForTest(entityCacheWorkConfig, {
+        hostname_invalidation_retry_ceiling_seconds: ceiling,
+      })
+      try {
+        const before = await getHostnameCacheInvalidationDatabaseNowForTest()
+        await expect(
+          drainHostnameCacheInvalidationWork({
+            hostnameIds: [id],
+            evict: async () => {
+              throw new Error('owned cache failure')
+            },
+          }),
+        ).rejects.toThrow('owned cache failure')
+        const after = await getHostnameCacheInvalidationDatabaseNowForTest()
+        const failed = await getHostnameCacheInvalidationWorkForTest(id)
+        expect(failed?.attempt_count).toBe(priorAttempts + 1)
+        const availableAt = failed?.available_at.getTime()
+        expect(availableAt).toBeGreaterThanOrEqual(before.getTime() + expectedSeconds * 1000)
+        expect(availableAt).toBeLessThanOrEqual(after.getTime() + expectedSeconds * 1000)
+      } finally {
+        restore()
+      }
+    },
+  )
 
   it('does not let an old lease acknowledge a newer generation', async () => {
     const { id } = await ownHostname()

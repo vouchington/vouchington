@@ -35,9 +35,11 @@ jobs:
       shard-matrix: ${{ steps.shards.outputs.shard-matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        timeout-minutes: 3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Compute Playwright shards
         id: shards
         timeout-minutes: 1
@@ -94,7 +96,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - name: Set service ports
@@ -211,13 +213,18 @@ jobs:
         run: |
           set -euo pipefail
           if [ -r /proc/meminfo ]; then
-            # sleep gets no inherited output pipes, so stopping the sampler never waits on it.
+            # sleep's output is discarded so the trap never waits on a pipe.
+            # Monitor mode puts the loop in its own process group: killing only
+            # the subshell leaves sleep behind, and the runner's orphan cleanup
+            # can sit on "Terminate orphan process: (sleep)" until the job cap
+            # cancels a shard whose tests already passed.
+            set -m
             (while sleep 30 >/dev/null 2>&1; do
               awk '/^(MemAvailable|SwapFree):/ { printf "%s %d MiB ", $1, $2 / 1024 } END { print "" }' /proc/meminfo
               ps -eo rss=,comm= --sort=-rss | head -3 | awk '{ printf "  %d MiB %s\n", $1 / 1024, $2 }'
             done) &
             sampler=$!
-            trap 'kill "$sampler" 2>/dev/null || true' EXIT
+            trap 'status=$?; kill -KILL -- -"$sampler" 2>/dev/null || kill -KILL "$sampler" 2>/dev/null || true; exit "$status"' EXIT
           fi
           python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 480 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
           # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a

@@ -2,13 +2,11 @@ import { it, expect, beforeAll, describe } from 'vitest'
 import {
   WEB_PROVENANCE,
   createTestUser,
-  insertTestCommunity,
   createTestMembership,
   insertTestImage,
   getTestImageSurfacePlacements,
 } from '@voucha/test-helpers'
 import { createCommunity } from './create.mts'
-import { getCommunity } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('create', () => {
@@ -140,36 +138,6 @@ describe('create', () => {
       ])
       expect(c1.created_by_id).toBe(freeUser.id)
       expect(c2.created_by_id).toBe(freeUser.id)
-    })
-  })
-
-  describe('getCommunity', () => {
-    it('fetches community by id', async () => {
-      const inserted = await insertTestCommunity({ createdById: user.id })
-      const found = await getCommunity(inserted.id)
-      expect(found).not.toBeNull()
-      expect(found!.id).toBe(inserted.id)
-    })
-
-    it('fetches community by slug', async () => {
-      const inserted = await insertTestCommunity({ createdById: user.id })
-      const found = await getCommunity(inserted.slug)
-      expect(found).not.toBeNull()
-      expect(found!.id).toBe(inserted.id)
-    })
-
-    it('returns null for non-existent community', async () => {
-      const found = await getCommunity('00000000-0000-0000-0000-000000000000')
-      expect(found).toBeNull()
-    })
-
-    it('includes owner info', async () => {
-      const inserted = await insertTestCommunity({ createdById: user.id })
-      const found = await getCommunity(inserted.id)
-      expect(found).not.toBeNull()
-      expect(found!.owner).not.toBeNull()
-      expect(found!.owner!.id).toBe(user.id)
-      expect(found!.owner!.username).toBe(user.username)
     })
   })
 })

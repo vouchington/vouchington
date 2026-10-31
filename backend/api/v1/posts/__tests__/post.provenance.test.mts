@@ -70,11 +70,6 @@ describe('post provenance', () => {
 
   describe('post provenance on read routes', () => {
     describe('GET /api/v1/posts/:idOrSlug', () => {
-      it('labels api and mcp posts for signed-out readers', async () => {
-        expect((await detail('mcp')).provenance).toEqual(verifiedLabel())
-        expect((await detail('api')).provenance).toEqual({ via: 'api', app: null })
-      })
-
       it.each(['web', 'swift', 'dotnet', 'system'])('has no label on %s posts', async channel => {
         const post = await detail(channel)
         expect(post).not.toHaveProperty('provenance')
@@ -82,6 +77,7 @@ describe('post provenance', () => {
       })
 
       it('never exposes the raw client or channel to signed-out, regular or author viewers', async () => {
+        expect((await detail('api')).provenance).toEqual({ via: 'api', app: null })
         for (const viewer of [undefined, reader, author]) {
           const post = await detail('mcp', viewer)
           expect(post).not.toHaveProperty('staff_provenance')

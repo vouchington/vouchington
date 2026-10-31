@@ -14,7 +14,7 @@ import {
   claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,
 } from '../../../services/copyright-notices/delivery-intents.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../../../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '../../copyright-email-intake-link.mts'
 import { insertEncryptedCopyrightHoldSubmission } from '../../data-stores/psql/copyright-hold-submission.mts'
 import { insertCopyrightEvidenceArtifact } from '../../data-stores/psql/copyright-evidence-artifacts.mts'
 import {

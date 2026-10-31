@@ -9,6 +9,8 @@ import {
   setPostElectionUpvoteStats,
 } from '@voucha/test-helpers'
 import { reconcilePostVoteDrift } from './vote-drift.mts'
+import { electionsVotesWorkConfig } from '../work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
 
 describe('reconcilePostVoteDrift', () => {
@@ -20,6 +22,32 @@ describe('reconcilePostVoteDrift', () => {
       username: `test-vd-${randomBytes(4).toString('hex')}`,
     })
   }, 30_000)
+
+  it('reads the runtime sample limit while preserving an explicit caller limit', async () => {
+    const postIds = await Promise.all(
+      [0, 1].map(index =>
+        insertTestPost({
+          title: `Configured vote drift sample ${index}`,
+          slug: `vote-drift-limit-${randomBytes(6).toString('hex')}`,
+          createdById: creatorUser.id,
+          markdown: 'test',
+        }),
+      ),
+    )
+    const restore = overrideDynamicConfigFieldsForTest(electionsVotesWorkConfig, {
+      vote_drift_sample_size: 1,
+    })
+    try {
+      expect(await reconcilePostVoteDrift(undefined, { samplePostIds: postIds })).toMatchObject({
+        sampled: 1,
+      })
+      expect(await reconcilePostVoteDrift(2, { samplePostIds: postIds })).toMatchObject({
+        sampled: 2,
+      })
+    } finally {
+      restore()
+    }
+  })
 
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('returns a vote-drift result for the posts table without throwing', async () => {

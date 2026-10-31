@@ -2,6 +2,7 @@ import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
 } from '../../backend/types/entities/entity-relations-metadata.mts'
+import { REVIEWED_RETENTION_CURSOR_IDS } from './relational-storage-retention-cursors.mts'
 
 const electedVoteTables = entityRelationMetadatum.flatMap(metadata =>
   metadata.election ? [getEntityRelationVoteTableName(metadata)] : [],
@@ -17,23 +18,9 @@ type ReviewedIds = [string, string][]
 function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
   return keys.map(key => [key, reason])
 }
-
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
-  ...reviewed(
-    'Deletion-stable retention keyset coordinate or frozen sweep bound; the swept source row may no longer exist.',
-    [
-      'import_retention_cursors.cursor_row_id',
-      'import_retention_cursors.cursor_discovery_url_id',
-      'user_data_request_attempt_retention_cursors.cursor_request_id',
-      'user_data_request_attempt_retention_cursors.cursor_processing_attempt_id',
-      'user_data_request_attempt_retention_cursors.cursor_upper_id',
-      'vote_ballot_cleanup_cursors.cursor_vote_id',
-      'vote_ballot_cleanup_cursors.sweep_cutoff_id',
-      'vote_integrity_flag_detail_cleanup_cursors.cursor_flag_id',
-      'vote_integrity_flag_detail_cleanup_cursors.sweep_cutoff_id',
-    ],
-  ),
+  ...REVIEWED_RETENTION_CURSOR_IDS,
   ...reviewed(
     'Persisted retention keyset bound; the referenced row can be deleted before the next page and must not be a foreign key.',
     [

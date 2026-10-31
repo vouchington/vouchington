@@ -1,16 +1,19 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
-import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
-import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
+import {
+  backfillTopicTextItemPage,
+  backfillTopicTextFeedPage,
+} from '@services/rss-feeds/topic-text-category-backfill'
 import { reconcileRssFeedItemCategorySnapshots } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import {
   enqueueContinueRssFeedItemCategorySnapshotReconciliation,
   enqueueBackfillCategoriesForTopicAliases,
   enqueueBackfillRssFeedCategoriesForTopicAlias,
 } from '@queues/rss-feed-maintenance/enqueues/item-categories'
+import type { TopicTextCategoryJob } from '@queues/rss-feed-maintenance/types'
 
 type RssFeedItemCategoryDependencies = {
-  backfillCategoriesForTopicAlias: typeof backfillCategoriesForTopicAlias
-  backfillCategoriesForTopicAliases: typeof backfillCategoriesForTopicAliases
+  backfillTopicTextItemPage: typeof backfillTopicTextItemPage
+  backfillTopicTextFeedPage: typeof backfillTopicTextFeedPage
   reconcileRssFeedItemCategorySnapshots: typeof reconcileRssFeedItemCategorySnapshots
   enqueueContinueRssFeedItemCategorySnapshotReconciliation: typeof enqueueContinueRssFeedItemCategorySnapshotReconciliation
 }
@@ -40,13 +43,12 @@ export const processReconcileRssFeedItemCategorySnapshots = async (
  * This matches all categories with text matching the topic's aliases
  */
 export const processBackfillCategoriesForTopicAliases = async (
-  { topicId }: { topicId: string },
+  { topicId, cursor }: TopicTextCategoryJob,
   dependencies?: Partial<RssFeedItemCategoryDependencies>,
 ) => {
-  const backfill =
-    dependencies?.backfillCategoriesForTopicAliases ?? backfillCategoriesForTopicAliases
-  const result = await backfill(topicId)
-  if (result.hasMore) await enqueueBackfillCategoriesForTopicAliases(topicId)
+  const backfill = dependencies?.backfillTopicTextItemPage ?? backfillTopicTextItemPage
+  const result = await backfill(topicId, cursor)
+  if (result.hasMore) await enqueueBackfillCategoriesForTopicAliases(topicId, result.cursor)
   return result
 }
 
@@ -54,11 +56,11 @@ export const processBackfillCategoriesForTopicAliases = async (
  * Backfill topic_id for feed-level categories when a topic's aliases/name/slug change.
  */
 export const processBackfillRssFeedCategoriesForTopicAlias = async (
-  { topicId }: { topicId: string },
+  { topicId, cursor }: TopicTextCategoryJob,
   dependencies?: Partial<RssFeedItemCategoryDependencies>,
 ) => {
-  const backfill = dependencies?.backfillCategoriesForTopicAlias ?? backfillCategoriesForTopicAlias
-  const result = await backfill(topicId)
-  if (result.hasMore) await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId)
+  const backfill = dependencies?.backfillTopicTextFeedPage ?? backfillTopicTextFeedPage
+  const result = await backfill(topicId, cursor)
+  if (result.hasMore) await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId, result.cursor)
   return result
 }

@@ -9,7 +9,6 @@ import { REPO_ROOT } from './compile-source-rewrites.mts'
 // are imported by path (fixed and config-driven migrations), so each is bundled on its own.
 const RUNTIME_FILE_GLOBS = [
   'backend/**/scripts/*.lua',
-  'node_modules/.pnpm/valkyries@*/node_modules/valkyries/dist/scripts/*.lua',
   'backend/data-stores/psql/migrations/*.{sql,mts}',
   'backend/data-stores/psql/views/*.sql',
   'backend/data-stores/psql/config-driven/*.{sql,mts}',

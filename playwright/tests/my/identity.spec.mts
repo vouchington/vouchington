@@ -26,10 +26,6 @@ test.describe('My Identity Page', () => {
     await expect(page).toHaveURL('/login')
   })
 
-  test('displays identity page heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Identity')
-  })
-
   test('displays username section with input', async ({ page }) => {
     await expect(page.getByTestId('identity-username-heading')).toBeVisible()
     await expect(page.getByTestId('identity-username-input')).toBeVisible()

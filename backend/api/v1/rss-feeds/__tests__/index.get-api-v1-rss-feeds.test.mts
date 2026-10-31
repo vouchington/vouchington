@@ -48,6 +48,10 @@ describe('index', () => {
         expect(
           response.body.results.find((feed: { id: string }) => feed.id === feedId),
         ).toBeDefined()
+        expect(response.body.page_info).toBeDefined()
+        expect(typeof response.body.page_info.has_next_page).toBe('boolean')
+        expect('end_cursor' in response.body.page_info).toBe(true)
+        expect('start_cursor' in response.body.page_info).toBe(true)
         expect(response.headers['cache-control']).toContain('public')
         expect(response.headers['cache-control']).toContain(
           `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
@@ -178,21 +182,6 @@ describe('index', () => {
         expect(response.body.election_votes[topicId]).toBeDefined()
         expect(response.body.election_votes[topicId].choice).toBe('like')
         expect(response.body.election_votes[topicId].entity_id).toBe(topicId)
-      })
-
-      it('should return page_info with cursor pagination fields', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Cursor Page Info Topic ${random}`,
-          slug: `cursor-page-info-topic-${random}`,
-          createdById: user.id,
-        })
-        await insertTestRssFeed({ topicId, title: `Cursor Feed ${random}` })
-        const response = await createRequest().get(`/api/v1/rss-feeds?topic=${topicId}`).expect(200)
-        expect(response.body.page_info).toBeDefined()
-        expect(typeof response.body.page_info.has_next_page).toBe('boolean')
-        expect('end_cursor' in response.body.page_info).toBe(true)
-        expect('start_cursor' in response.body.page_info).toBe(true)
       })
 
       it('should paginate with after cursor across two pages', async () => {

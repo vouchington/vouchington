@@ -10,20 +10,34 @@ vi.resetModules()
 
 const captureException = sentryCaptureExceptionMock
 
-const { DEFAULT_USER_IMPORT_EXPORT_CONFIG, getUserImportExportConfig, userImportExportConfig } =
-  await import('./config.mts')
+const { getUserImportExportConfig, userImportExportConfig } = await import('./config.mts')
+
+const clearFields = () =>
+  deleteDynamicConfigFieldsForTest(
+    userImportExportConfig,
+    Object.keys(userImportExportConfig.fieldTypes),
+  )
+
+const DEFAULTS = {
+  sync_export_max_items: 1_000,
+  import_max_body_bytes: 2 * 1024 * 1024,
+  import_dispatch_page_size: 100,
+  import_insert_chunk_size: 1_000,
+  import_recovery_batch_size: 100,
+  import_status_page_size: 100,
+  rss_feed_import_budget_ms: 15_000,
+  export_cursor_batch_size: 1_000,
+  topic_import_attempt_prune_batch_size: 100,
+}
 
 describe('getUserImportExportConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    deleteDynamicConfigFieldsForTest(
-      userImportExportConfig,
-      Object.keys(userImportExportConfig.fieldTypes),
-    )
+    clearFields()
   })
 
   it('returns defaults when no fields are set', () => {
-    expect(getUserImportExportConfig()).toEqual(DEFAULT_USER_IMPORT_EXPORT_CONFIG)
+    expect(getUserImportExportConfig()).toEqual(DEFAULTS)
     expect(captureException).not.toHaveBeenCalled()
   })
 
@@ -31,7 +45,7 @@ describe('getUserImportExportConfig', () => {
     overrideDynamicConfigFieldsForTest(userImportExportConfig, { sync_export_max_items: 250 })
 
     expect(getUserImportExportConfig()).toEqual({
-      ...DEFAULT_USER_IMPORT_EXPORT_CONFIG,
+      ...DEFAULTS,
       sync_export_max_items: 250,
     })
     expect(captureException).not.toHaveBeenCalled()
@@ -46,7 +60,7 @@ describe('getUserImportExportConfig', () => {
     })
 
     expect(getUserImportExportConfig()).toEqual({
-      ...DEFAULT_USER_IMPORT_EXPORT_CONFIG,
+      ...DEFAULTS,
       import_max_body_bytes: 4_096,
       import_dispatch_page_size: 3,
       import_insert_chunk_size: 7,
@@ -59,14 +73,14 @@ describe('getUserImportExportConfig', () => {
       rss_feed_import_budget_ms: 60_000,
     })
 
-    expect(getUserImportExportConfig()).toEqual(DEFAULT_USER_IMPORT_EXPORT_CONFIG)
+    expect(getUserImportExportConfig()).toEqual(DEFAULTS)
     expect(captureException).toHaveBeenCalledOnce()
   })
 
   it('keeps the default and reports invalid sync export max values', () => {
     overrideDynamicConfigFieldsForTest(userImportExportConfig, { sync_export_max_items: 0 })
 
-    expect(getUserImportExportConfig()).toEqual(DEFAULT_USER_IMPORT_EXPORT_CONFIG)
+    expect(getUserImportExportConfig()).toEqual(DEFAULTS)
     expect(captureException).toHaveBeenCalledOnce()
   })
 })

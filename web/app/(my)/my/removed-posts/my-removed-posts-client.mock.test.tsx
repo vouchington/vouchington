@@ -91,11 +91,6 @@ describe('MyRemovedPostsClient', () => {
     expect(link).toHaveAttribute('href', '/communities/credit-cards')
   })
 
-  it('shows post title when post_title is set', () => {
-    render(<MyRemovedPostsClient initialData={dataWithPost} />)
-    expect(screen.getByText('My great post')).toBeVisible()
-  })
-
   it('renders unpublished_at date for each post', () => {
     render(<MyRemovedPostsClient initialData={dataWithPost} />)
     expect(screen.getByTestId('time-ago')).toBeInTheDocument()

@@ -1,10 +1,11 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser, createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { BasicUser } from '@voucha/types/entities/user'
-import { createTopicRecommendation } from '../create-topic-recommendation.mts'
+import { prepareTopicRecommendation } from '../create-topic-recommendation.mts'
 import { DUPLICATE_RECOMMENDATION, DUPLICATE_TOPIC } from '@modules/on-error/error-codes'
 
-describe('createTopicRecommendation duplicate detection', () => {
+describe('topic recommendation creation duplicate detection', () => {
   let user: BasicUser
 
   beforeAll(async () => {
@@ -16,7 +17,8 @@ describe('createTopicRecommendation duplicate detection', () => {
     const topicSlug = `dup-rec-topic-${random}`
 
     // Create the first recommendation successfully
-    await createTopicRecommendation(
+    await createTestTopicRecommendation(
+      prepareTopicRecommendation,
       user,
       WEB_PROVENANCE,
       {
@@ -30,7 +32,8 @@ describe('createTopicRecommendation duplicate detection', () => {
 
     // Attempting to create a second recommendation with the same slug must throw
     await expect(
-      createTopicRecommendation(
+      createTestTopicRecommendation(
+        prepareTopicRecommendation,
         user,
         WEB_PROVENANCE,
         {
@@ -51,7 +54,8 @@ describe('createTopicRecommendation duplicate detection', () => {
     const topic = await createTestTopic()
 
     await expect(
-      createTopicRecommendation(
+      createTestTopicRecommendation(
+        prepareTopicRecommendation,
         user,
         WEB_PROVENANCE,
         {

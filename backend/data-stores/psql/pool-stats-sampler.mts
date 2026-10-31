@@ -76,12 +76,8 @@ export function createPoolStatsSampler(schedule: PoolStatsScheduler = schedulePo
   }
 }
 
-const poolStatsSampler = createPoolStatsSampler()
-
-export const { startConfiguredPoolStatsSampler } = poolStatsSampler
-
-/** Emit one gauge record per pool. Exported for direct, deterministic testing. */
-export function emitPoolStats(pools: SampledPools): void {
+/** Emit one gauge record per pool. */
+function emitPoolStats(pools: SampledPools): void {
   const now = new Date()
   emitAnalytics('pg_pool_stats', {
     ...baseRecord(now),

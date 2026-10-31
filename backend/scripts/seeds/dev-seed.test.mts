@@ -1,29 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { assertNotProdOrStaging } from './dev-seed.mts'
+import { devSeedAllowed } from './dev-seed-guard.mts'
 
-describe('assertNotProdOrStaging', () => {
+describe('dev seed entry', () => {
   afterEach(() => {
+    vi.unstubAllEnvs()
     vi.restoreAllMocks()
+    vi.resetModules()
   })
 
-  it('returns false and writes error to stderr for production', () => {
+  it('writes the production refusal when the entry loads', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.resetModules()
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
 
-    const result = assertNotProdOrStaging('production')
+    await import('./dev-seed.mts')
 
-    expect(result).toBe(false)
     expect(stderrSpy).toHaveBeenCalledWith(
       expect.stringContaining('db:seed must not run in production'),
       expect.any(Function),
     )
   })
 
-  it('returns false and writes error to stderr for staging', () => {
+  it('writes the staging refusal when the entry loads', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'staging')
+    vi.resetModules()
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
 
-    const result = assertNotProdOrStaging('staging')
+    await import('./dev-seed.mts')
 
-    expect(result).toBe(false)
     expect(stderrSpy).toHaveBeenCalledWith(
       expect.stringContaining('db:seed must not run in staging'),
       expect.any(Function),
@@ -31,10 +37,10 @@ describe('assertNotProdOrStaging', () => {
   })
 
   it('returns true for development', () => {
-    expect(assertNotProdOrStaging('development')).toBe(true)
+    expect(devSeedAllowed('development')).toBe(true)
   })
 
   it('returns true when env is undefined', () => {
-    expect(assertNotProdOrStaging(undefined)).toBe(true)
+    expect(devSeedAllowed(undefined)).toBe(true)
   })
 })

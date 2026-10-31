@@ -3,10 +3,9 @@
 /**
  * Manages the debounced search effect for CommandSearch.
  *
- * Three paths, chosen per keystroke:
- *   combinedSearch ON  → single /api/v1/search request
- *   flag OFF + "all"   → progressive fan-out: fast verticals render first
- *   flag OFF + tab     → single per-entity endpoint
+ * Two paths, chosen per keystroke:
+ *   "all" tab → single /api/v1/search request
+ *   other tab → single per-entity endpoint
  */
 
 import { useEffect } from 'react'
@@ -16,14 +15,12 @@ import {
   type SearchResults,
   type SearchTab,
 } from '../command-search-data'
-import { searchAllProgressive } from '../command-search-data-search'
 import { fetchCombinedSearch } from '@/lib/api/client/search'
 import { fetchFediverseSearch } from '@/lib/api/client/fediverse'
 
 export function useSearchEffect(
   query: string,
   activeTab: SearchTab,
-  combinedSearchEnabled: boolean,
   fediverseEnabled: boolean,
   setResults: (results: SearchResults | ((prev: SearchResults) => SearchResults)) => void,
   setLoading: (loading: boolean) => void,
@@ -42,7 +39,7 @@ export function useSearchEffect(
     const signal = abortController.signal
 
     const timer = setTimeout(async () => {
-      if (combinedSearchEnabled && activeTab === 'all') {
+      if (activeTab === 'all') {
         try {
           const nextResults = await fetchCombinedSearch(query, signal)
           if (!signal.aborted) {
@@ -66,26 +63,6 @@ export function useSearchEffect(
             setLoading(false)
           }
         }
-      } else if (activeTab === 'all') {
-        if (!signal.aborted) setResults(EMPTY_RESULTS)
-        try {
-          await searchAllProgressive(query, signal, partial => {
-            if (!signal.aborted) setResults(prev => ({ ...prev, ...partial }))
-          })
-          if (fediverseEnabled) {
-            const fediverse = await fetchFediverseSearch({ q: query, limit: 3, signal }).catch(
-              () => ({ buckets: [] }),
-            )
-            if (!signal.aborted) {
-              setResults(prev => ({
-                ...prev,
-                fediverse: fediverse.buckets.flatMap(bucket => bucket.items),
-              }))
-            }
-          }
-        } finally {
-          if (!signal.aborted) setLoading(false)
-        }
       } else {
         try {
           const nextResults = await searchByTab(query, activeTab, signal)
@@ -106,5 +83,5 @@ export function useSearchEffect(
       clearTimeout(timer)
       abortController.abort()
     }
-  }, [query, activeTab, combinedSearchEnabled, fediverseEnabled, setResults, setLoading])
+  }, [query, activeTab, fediverseEnabled, setResults, setLoading])
 }

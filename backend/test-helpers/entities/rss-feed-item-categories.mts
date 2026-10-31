@@ -34,3 +34,16 @@ export async function getTestRssFeedItemCategories(rssFeedItemId: string) {
   )
   return rows
 }
+
+export async function countTestRssFeedItemAliasCategoryBindings(
+  aliasId: string,
+  itemIds: string[],
+): Promise<number> {
+  const { rows } = await read<{ count: string }>(
+    `/* countTestRssFeedItemAliasCategoryBindings */
+     SELECT COUNT(*)::text AS count FROM rss_feed_item_categories
+     WHERE topic_alias_id = $1::uuid AND rss_feed_item_id = ANY($2::uuid[])`,
+    [aliasId, itemIds],
+  )
+  return Number(rows[0]?.count ?? 0)
+}

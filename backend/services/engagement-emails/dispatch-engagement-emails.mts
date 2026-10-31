@@ -252,7 +252,7 @@ async function readEngagementRecipients(
   return rows as EngagementRecipientRow[]
 }
 
-async function getFollowTopicsRecipients(
+export async function getFollowTopicsRecipients(
   userIds?: readonly string[],
 ): Promise<EngagementRecipientRow[]> {
   return readEngagementRecipients(
@@ -268,7 +268,7 @@ async function getFollowTopicsRecipients(
   )
 }
 
-async function getPostReferralLinkRecipients(
+export async function getPostReferralLinkRecipients(
   dispatchStartedAt: Date,
   userIds?: readonly string[],
 ): Promise<EngagementRecipientRow[]> {
@@ -293,7 +293,7 @@ async function getPostReferralLinkRecipients(
   )
 }
 
-async function getFollowNewsSourcesRecipients(
+export async function getFollowNewsSourcesRecipients(
   dispatchStartedAt: Date,
   userIds?: readonly string[],
 ): Promise<EngagementRecipientRow[]> {

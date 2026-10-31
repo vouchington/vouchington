@@ -26,7 +26,7 @@ type ReportReasonContentPolicyCoverage =
       guidance: string
     }
 
-export const REPORT_REASON_CONTENT_POLICY_COVERAGE: Readonly<
+const REPORT_REASON_CONTENT_POLICY_COVERAGE: Readonly<
   Record<ModerationReportReason, ReportReasonContentPolicyCoverage>
 > = Object.fromEntries(
   MODERATION_POLICY.reduce<[ModerationReportReason, ReportReasonContentPolicyCoverage][]>(

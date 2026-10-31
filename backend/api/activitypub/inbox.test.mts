@@ -6,7 +6,6 @@ import {
   signInboxRequest,
   signInboxRequestWithContentType,
 } from '@voucha/test-helpers/activitypub-inbox-api-requests'
-import { getEntityRelations } from '@services/entity-relations'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -20,7 +19,6 @@ import {
   createRemoteActorFixture,
   randomSuffix,
 } from '@voucha/test-helpers/api/activitypub/inbox.fixtures'
-import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('POST /ap/inbox', () => {
   it('does not charge an invalid signature against the sender allowance', async () => {
@@ -155,8 +153,8 @@ describe('POST /ap/inbox', () => {
       .expect(401)
   })
 
-  it('accepts a validly signed Follow and creates the follow relation (202)', async () => {
-    const { actorUri, keyId, privateKeyPem, remoteActor } = await createRemoteActorFixture()
+  it('accepts a validly signed Follow for queued processing (202)', async () => {
+    const { actorUri, keyId, privateKeyPem } = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const body = JSON.stringify({
       id: `${actorUri}/activities/${randomSuffix()}`,
@@ -170,10 +168,6 @@ describe('POST /ap/inbox', () => {
       .expect(202)
 
     expect(response.body).toEqual({ received: true })
-    const relations = await getEntityRelations('remote_actor', remoteActor!.id, 'follow', 'user', {
-      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
-    })
-    expect(relations.some(relation => relation.object_id === user.id)).toBe(true)
   })
 
   it('accepts a Follow whose signature additionally covers content-type (Mastodon-style)', async () => {
@@ -196,7 +190,7 @@ describe('POST /ap/inbox', () => {
     expect(response.body).toEqual({ received: true })
   })
 
-  it('returns 200 with duplicate:true on a replayed activity id', async () => {
+  it('acknowledges a replayed signed request without creating a second job', async () => {
     const { actorUri, keyId, privateKeyPem } = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const body = JSON.stringify({
@@ -208,9 +202,9 @@ describe('POST /ap/inbox', () => {
     const signature = signInboxRequest(body, keyId, privateKeyPem)
 
     await postInbox(signature).send(body).expect(202)
-    const replay = await postInbox(signature).send(body).expect(200)
+    const replay = await postInbox(signature).send(body).expect(202)
 
-    expect(replay.body).toEqual({ received: true, duplicate: true })
+    expect(replay.body).toEqual({ received: true })
   })
 
   it('accepts activities of an unrecognized type as a silent no-op (202)', async () => {

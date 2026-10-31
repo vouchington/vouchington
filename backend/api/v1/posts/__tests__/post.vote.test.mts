@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -9,7 +10,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { createTopicRecommendation } from '@services/topic-recommendations'
+import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import { getPostElectionVote } from '@services/elections-votes/post'
 
 describe('post.vote', () => {
@@ -21,24 +22,20 @@ describe('post.vote', () => {
 
   describe('Post Vote Routes', () => {
     describe('PUT /api/v1/posts/:id/vote', () => {
-      it('allows authenticated users to vote on a post', async () => {
-        const post = await createTestPost({ user })
-
-        const request = createRequest()
-        await request.authenticateAs(user)
-
-        await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-      })
-
       it('returns Support, rather than the sentiment Like alias, for a topic recommendation', async () => {
         const creator = await createTestUser()
         const voter = await createTestUser()
         const random = Date.now()
-        const rec = await createTopicRecommendation(creator, WEB_PROVENANCE, {
-          markdown: 'Regression test for topic recommendation voting.',
-          topic_title: `Vote Regression Topic ${random}`,
-          topic_slug: `vote-regression-topic-${random}`,
-        })
+        const rec = await createTestTopicRecommendation(
+          prepareTopicRecommendation,
+          creator,
+          WEB_PROVENANCE,
+          {
+            markdown: 'Regression test for topic recommendation voting.',
+            topic_title: `Vote Regression Topic ${random}`,
+            topic_slug: `vote-regression-topic-${random}`,
+          },
+        )
 
         const request = createRequest()
         await request.authenticateAs(voter)
@@ -60,11 +57,16 @@ describe('post.vote', () => {
       })
 
       it('uses sentiment for a comment beneath a topic recommendation', async () => {
-        const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
-          markdown: 'A recommendation with a comment-specific vote policy.',
-          topic_title: `Comment vote policy ${crypto.randomUUID()}`,
-          topic_slug: `comment-vote-policy-${crypto.randomUUID()}`,
-        })
+        const recommendation = await createTestTopicRecommendation(
+          prepareTopicRecommendation,
+          user,
+          WEB_PROVENANCE,
+          {
+            markdown: 'A recommendation with a comment-specific vote policy.',
+            topic_title: `Comment vote policy ${crypto.randomUUID()}`,
+            topic_slug: `comment-vote-policy-${crypto.randomUUID()}`,
+          },
+        )
         const commentId = await insertTestPost({
           title: '',
           slug: `comment-on-recommendation-${crypto.randomUUID()}`,

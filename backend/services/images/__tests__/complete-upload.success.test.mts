@@ -42,29 +42,6 @@ describe('completeImageUpload - success path', () => {
     )
   })
 
-  it('persists the immutable digest key before enqueueing metadata', async () => {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/jpeg',
-      contentLength: 1024,
-    })
-    const bytes = Buffer.from(`digest key ${randomBytes(16).toString('hex')}`)
-    const digestKey = createHash('sha256').update(bytes).digest('hex')
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([bytes]),
-      ContentType: 'image/jpeg',
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-
-    const result = await completeImageUpload(user, image_id)
-
-    expect(result.s3_key).toBe(digestKey)
-    expect(s3Module.ensureImageDeliveryAliasInS3).toHaveBeenCalledWith(
-      image_id,
-      expect.objectContaining({ sha256: expect.any(Buffer) }),
-    )
-    const [job] = await imageUploadsQueue.searchJobs({ data: { id: image_id } })
-    expect(job?.data).toEqual({ id: image_id })
-  })
-
   it('keeps deletion evidence null when staging-source deletion fails after promotion', async () => {
     const { image_id } = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
@@ -187,6 +164,11 @@ describe('completeImageUpload - success path', () => {
     expect(result.id).toBe(image_id)
     expect(deriveUploadStatus(result)).toBe('processing')
     expect(result.sha_256).toEqual(mockHash)
+    expect(result.s3_key).toBe(mockHash.toString('hex'))
+    expect(s3Module.ensureImageDeliveryAliasInS3).toHaveBeenCalledWith(
+      image_id,
+      expect.objectContaining({ sha256: expect.any(Buffer) }),
+    )
 
     // Verify S3 was called
     expect(getFromS3Spy).toHaveBeenCalledWith(
@@ -196,6 +178,7 @@ describe('completeImageUpload - success path', () => {
     // Verify metadata extraction was enqueued for the worker using the production options. There
     // is deliberately no custom jobId: it would outlive the job and block the hourly recovery.
     const [queuedJob] = await imageUploadsQueue.searchJobs({ data: { id: image_id } })
+    expect(queuedJob?.data).toEqual({ id: image_id })
     expect(queuedJob).toMatchObject({
       name: 'extract-metadata',
       data: { id: image_id },

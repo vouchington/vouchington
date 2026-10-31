@@ -2,7 +2,6 @@ import { getRssFeedsWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { chunkArray } from '@services/rss-feed-items/processing-limits'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 import { upsertRssFeedCategoriesChunk } from './category-upsert-chunk.mts'
 
 /**
@@ -65,82 +64,6 @@ export async function deleteRssFeedCategories(rssFeedId: string): Promise<void> 
       DELETE FROM rss_feed_categories WHERE rss_feed_id = ${rssFeedId}
     `,
   )
-}
-
-/**
- * Backfills topic_id for existing rss_feed_categories rows when a topic alias
- * is added or a topic name/slug changes.
- */
-export async function backfillCategoriesForTopicAlias(
-  topicId: string,
-): Promise<{ updated: number; hasMore: boolean }> {
-  const RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE = getRssFeedsWorkLimit('category_backfill_batch_size')
-  const { rows: priorMappings } = await write<{
-    topic_id: string | null
-  }>(sql`/* backfillCategoriesForTopicAlias:priorMappings */
-    SELECT category.topic_id
-    FROM rss_feed_categories category
-    JOIN rss_category_identities identity ON identity.id = category.category_identity_id
-    WHERE identity.category_text IN (SELECT alias FROM topic_aliases WHERE topic_id = ${topicId})
-      AND category.topic_id IS DISTINCT FROM ${topicId}::uuid
-    ORDER BY category.rss_feed_id, category.category_identity_id
-    LIMIT ${RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE}
-  `)
-  const lockedOldIds = [
-    ...new Set(priorMappings.flatMap(row => (row.topic_id ? [row.topic_id] : []))),
-  ]
-  const { rowCount } = await withTopicReferenceAttachmentFences(
-    [topicId, ...lockedOldIds],
-    {},
-    query =>
-      write(
-        sql`/* backfillCategoriesForTopicAlias */
-        WITH candidates AS (
-          SELECT category.rss_feed_id, category.category_identity_id
-          FROM rss_feed_categories category
-          JOIN rss_category_identities identity
-            ON identity.id = category.category_identity_id
-          WHERE
-            (category.topic_id IS NULL OR category.topic_id = ANY(${lockedOldIds}::uuid[]))
-            AND (
-            (
-              identity.category_text IN (SELECT alias FROM topic_aliases WHERE topic_id = ${topicId})
-              AND (category.topic_id IS NULL OR category.topic_id != ${topicId})
-            )
-            OR (
-              category.topic_id IS NULL
-              AND identity.category_text = (
-                SELECT LOWER(name) FROM topics
-                WHERE id = ${topicId}
-                  AND deleted_at IS NULL
-                  AND merged_into_topic_id IS NULL
-              )
-            )
-            OR (
-              category.topic_id IS NULL
-              AND identity.category_text = (
-                SELECT slug FROM topics
-                WHERE id = ${topicId}
-                  AND deleted_at IS NULL
-                  AND merged_into_topic_id IS NULL
-              )
-            )
-            )
-          ORDER BY category.rss_feed_id, category.category_identity_id
-          LIMIT ${RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE}
-          FOR UPDATE OF category
-        )
-        UPDATE rss_feed_categories target
-        SET topic_id = ${topicId}
-        FROM candidates
-        WHERE target.rss_feed_id = candidates.rss_feed_id
-          AND target.category_identity_id = candidates.category_identity_id
-      `,
-        { query },
-      ),
-  )
-  const batchUpdated = rowCount ?? 0
-  return { updated: batchUpdated, hasMore: batchUpdated === RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE }
 }
 
 /**

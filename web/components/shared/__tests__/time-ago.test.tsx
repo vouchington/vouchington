@@ -19,10 +19,6 @@ describe('formatAbsolute', () => {
     expect(formatAbsolute(Date.UTC(2026, 3, 10))).toBe('Apr 10, 2026')
   })
 
-  it('formats single-digit days without padding', () => {
-    expect(formatAbsolute(Date.UTC(2026, 0, 1))).toBe('Jan 1, 2026')
-  })
-
   it.each([
     { instant: '2026-01-01T00:00:00.000Z', label: 'Jan 1, 2026' },
     { instant: '2026-04-10T23:59:59.999Z', label: 'Apr 10, 2026' },

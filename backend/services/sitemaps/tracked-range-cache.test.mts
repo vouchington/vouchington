@@ -7,7 +7,6 @@ import {
 } from '@aws-sdk/client-s3'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
-import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import { S3Buckets } from '@modules/aws'
 import {
   getTrackedDayRangeFromCache,
@@ -80,32 +79,6 @@ describe('tracked-range-cache', () => {
       await expect(markTrackedDay('2026-05-10')).resolves.toEqual(currentRange)
 
       expectTrackedRangeRequests(getSpy.mock.calls, scriptSpy.mock.calls)
-    })
-
-    it('ignores other cache keys but rejects a second tracked-range script request', async () => {
-      const currentRange = { earliestDay: '2026-05-08', latestDay: '2026-05-12' }
-      const unrelatedKey = `sitemap-request-control:${randomUUID()}`
-      onTestFinished(async () => {
-        await cacheValkeyClient.unlink([unrelatedKey])
-      })
-      const script = registerScript(loadScript('upsert-tracked-day-range.lua', import.meta.url))
-      await setTrackedDayRangeCache(currentRange)
-      const getSpy = vi.spyOn(cacheValkeyClient, 'get')
-      const scriptSpy = vi.spyOn(cacheValkeyClient, 'invokeScript')
-
-      await cacheValkeyClient.invokeScript(script, {
-        keys: [unrelatedKey],
-        args: ['2026-05-10', JSON.stringify(currentRange)],
-      })
-      const unrelatedRange = await cacheValkeyClient.get(unrelatedKey)
-      expect(JSON.parse(String(unrelatedRange))).toEqual(currentRange)
-      await expect(markTrackedDay('2026-05-10')).resolves.toEqual(currentRange)
-      expectTrackedRangeRequests(getSpy.mock.calls, scriptSpy.mock.calls)
-
-      await expect(markTrackedDay('2026-05-10')).resolves.toEqual(currentRange)
-      expect(() => expectTrackedRangeRequests(getSpy.mock.calls, scriptSpy.mock.calls)).toThrow(
-        /length of 1/,
-      )
     })
 
     it('restores the merged durable tracked range to an empty cache', async () => {

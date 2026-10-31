@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import {
   countAiUsageRecordsForAgent,
-  createTestFutureUtcDay,
+  acquireTestAiUsageDateReservation,
   createTestPost,
   createTestUser,
   findAiUsageRecordForPost,
+  insertTestAiUsageRecord,
   insertTestCommunity,
   listAiUsageRecordsForClassifierRun,
 } from '@voucha/test-helpers'
@@ -120,6 +121,8 @@ describe('recordAiUsage', () => {
   })
 
   it('records unknown pricing without treating it as zero-cost priced usage', async () => {
+    const reservation = await acquireTestAiUsageDateReservation()
+    onTestFinished(() => reservation.release())
     const community = await insertTestCommunity({
       createdById: user.id,
       slug: `ai-usage-unpriced-test-${randomUUID().slice(0, 8)}`,
@@ -134,7 +137,7 @@ describe('recordAiUsage', () => {
       serviceTier: 'default',
       usage: usage(10, 5),
       // Keep the fixture outside the current spend window so this totals test stays isolated.
-      createdAt: new Date(`${createTestFutureUtcDay()}T12:00:00.000Z`),
+      createdAt: new Date(`${reservation.day}T12:00:00.000Z`),
     })
     // getCommunityAiCostTotals orders DESC by cost, so a zero-cost community ties with every other
     // zero-cost community from ambient DB pollution and can sort past any fixed-size page. Walk the
@@ -252,5 +255,19 @@ describe('recordAiUsage', () => {
     await expect(
       countAiUsageRecordsForAgent(agentSlug, { inputTokens: 13, outputTokens: 9 }),
     ).resolves.toBe(1)
+  })
+  it('requires a complete USD priced tuple while accepting zero cost', async () => {
+    await expect(
+      insertTestAiUsageRecord({ costMicrounits: 1, currencyCode: 'eur' }),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      insertTestAiUsageRecord({ costMicrounits: 0, currencyCode: null }),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      insertTestAiUsageRecord({ costMicrounits: null, currencyCode: 'usd' }),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      insertTestAiUsageRecord({ costMicrounits: 0, currencyCode: 'usd' }),
+    ).resolves.toEqual(expect.any(String))
   })
 })

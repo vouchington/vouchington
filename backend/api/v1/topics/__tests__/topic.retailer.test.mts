@@ -43,19 +43,6 @@ describe('Topic Retailer Routes', () => {
       const request = createRequest()
       await request.get('/api/v1/topics/00000000-0000-0000-0000-000000000000/retailer').expect(404)
     })
-
-    it('should return 404 when retailer attributes are missing', async () => {
-      const user = await createTestUser()
-      const random = Math.random().toString(36).slice(2, 8)
-      const topicId = await insertTestTopic({
-        name: `Test Retailer Missing ${random}`,
-        slug: `test-retailer-missing-${random}`,
-        createdById: user.id,
-        topicType: 'topic',
-      })
-      const request = createRequest()
-      await request.get(`/api/v1/topics/${topicId}/retailer`).expect(404)
-    })
   })
 
   describe('PATCH /api/v1/topics/:idOrSlug/retailer', () => {

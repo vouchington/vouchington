@@ -1,4 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto'
+import { TimeUnit } from '@valkey/valkey-glide'
 import { upsertValkeyClientByUrl } from 'valkyries'
 import { unlinkIfValueMatches } from 'valkyries/conditional'
 import { config } from '@data-stores/valkey-core/config'
@@ -8,7 +9,7 @@ import {
   MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
 } from '../config.mts'
 
-export const membershipVerificationLeaseNamespace = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
+const membershipVerificationLeaseNamespace = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
 
 type LeaseClient = Awaited<ReturnType<typeof upsertValkeyClientByUrl>>
 let leaseClientPromise: Promise<LeaseClient> | undefined
@@ -70,5 +71,5 @@ export async function releaseMembershipVerificationExecutionLease(
 }
 
 function milliseconds(count: number): SetExpiry {
-  return { type: 'PX', count } as SetExpiry
+  return { type: TimeUnit.Milliseconds, count }
 }

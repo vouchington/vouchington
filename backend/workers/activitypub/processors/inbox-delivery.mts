@@ -1,34 +1,29 @@
 import { DelayedError, type Job } from 'glide-mq'
-import {
-  activityPubInboxDeliveryTransitions,
-  processDurableActivityPubInboxDelivery,
-} from '@services/ap-inbox-activities'
+import { processDurableActivityPubInboxDelivery } from '@services/ap-inbox-activities'
 import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'
 
 export async function processDelivery(
   data: ActivityPubInboxDeliveryJob,
-  options: { isFinalAttempt: boolean; moveToDelayed: Job['moveToDelayed'] },
+  options: {
+    moveToDelayed: Job['moveToDelayed']
+    updateData: Job<ActivityPubInboxDeliveryJob>['updateData']
+  },
 ): Promise<void> {
   try {
-    const result = await processDurableActivityPubInboxDelivery(data.deliveryId)
+    const result = await processDurableActivityPubInboxDelivery(data, options.updateData)
     if (result.outcome !== 'deferred') return
-
     await options.moveToDelayed(result.deferredUntil.getTime())
   } catch (err) {
     if (err instanceof DelayedError) throw err
     if (isTerminalProtocolError(err)) {
-      await activityPubInboxDeliveryTransitions.reject(data.deliveryId)
       console.info(
         JSON.stringify({
           event: 'activitypub_inbox_delivery_rejected',
-          deliveryId: data.deliveryId,
+          requestDigest: data.requestDigest,
           message: err instanceof Error ? err.message : String(err),
         }),
       )
       return
-    }
-    if (options.isFinalAttempt) {
-      await activityPubInboxDeliveryTransitions.exhaust(data.deliveryId, err)
     }
     throw err
   }

@@ -223,25 +223,4 @@ describe('InfiniteScroll', () => {
 
     expect(onLoadMore).toHaveBeenCalledOnce()
   })
-
-  it('calls onLoadMore when sentinel becomes visible', async () => {
-    const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-    render(
-      <InfiniteScroll
-        hasNextPage
-        endCursor='cursor1'
-        onLoadMore={onLoadMore}
-      >
-        <div>content</div>
-      </InfiniteScroll>,
-    )
-
-    flushRaf()
-    triggerScroll()
-    await act(async () => {
-      triggerIntersection(true)
-    })
-
-    expect(onLoadMore).toHaveBeenCalledOnce()
-  })
 })

@@ -15,11 +15,13 @@ export type UserImportExportConfig = {
   import_status_page_size: number
   /** Time one imported feed gets, from Web Risk through both protocol attempts. */
   rss_feed_import_budget_ms: number
+  export_cursor_batch_size: number
+  topic_import_attempt_prune_batch_size: number
 }
 
 export const USER_IMPORT_EXPORT_CONFIG_KEY = 'user-import-export-config'
 
-export const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
+const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
   sync_export_max_items: 1_000,
   import_max_body_bytes: 2 * 1024 * 1024,
   import_dispatch_page_size: 100,
@@ -27,6 +29,8 @@ export const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
   import_recovery_batch_size: 100,
   import_status_page_size: 100,
   rss_feed_import_budget_ms: 15_000,
+  export_cursor_batch_size: 1_000,
+  topic_import_attempt_prune_batch_size: 100,
 }
 
 export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
@@ -37,6 +41,8 @@ export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
   import_recovery_batch_size: 1,
   import_status_page_size: 1,
   rss_feed_import_budget_ms: 1_000,
+  export_cursor_batch_size: 1,
+  topic_import_attempt_prune_batch_size: 1,
 }
 
 // The budget stays below the worker's default lock, so a row that spends all of it still finishes
@@ -49,6 +55,8 @@ export const USER_IMPORT_EXPORT_MAX_VALUES: UserImportExportConfig = {
   import_recovery_batch_size: 1_000,
   import_status_page_size: 1_000,
   rss_feed_import_budget_ms: 25_000,
+  export_cursor_batch_size: 10_000,
+  topic_import_attempt_prune_batch_size: 1_000,
 }
 
 const fieldTypes: Record<keyof UserImportExportConfig, 'number'> = {
@@ -59,6 +67,8 @@ const fieldTypes: Record<keyof UserImportExportConfig, 'number'> = {
   import_recovery_batch_size: 'number',
   import_status_page_size: 'number',
   rss_feed_import_budget_ms: 'number',
+  export_cursor_batch_size: 'number',
+  topic_import_attempt_prune_batch_size: 'number',
 }
 
 export const userImportExportConfig = new DynamicConfig({

@@ -13,7 +13,6 @@ import {
 } from '../../../../backend/test-helpers/entities/totp.mts'
 
 import '../route-baseline.mts'
-import '../owner-private-route-redirects.mts'
 import '../topic-source-settings-contract.mts'
 
 import '../routes.mts'

@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -7,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 import { getFirstTestHostnameOwnershipLockKey } from '@voucha/test-helpers/hostname-ownership'
-import { createTopicRecommendation, approveTopicRecommendation } from './index.mts'
+import { prepareTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
@@ -45,19 +46,29 @@ describe('approval hostname conflicts', () => {
     const admin = await createTestUser({ administrator: true })
     const suffix = crypto.randomUUID()
     const commonHostname = `common-${suffix}.example.com`
-    const first = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'First topic with two hostnames',
-      topic_title: `First ${suffix}`,
-      topic_slug: `first-${suffix}`,
-      topic_hostnames: [`first-${suffix}.example.com`, commonHostname],
-    })
+    const first = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'First topic with two hostnames',
+        topic_title: `First ${suffix}`,
+        topic_slug: `first-${suffix}`,
+        topic_hostnames: [`first-${suffix}.example.com`, commonHostname],
+      },
+    )
     const secondSlug = `second-${suffix}`
-    const second = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'Second topic with a later conflicting hostname',
-      topic_title: `Second ${suffix}`,
-      topic_slug: secondSlug,
-      topic_hostnames: [`second-${suffix}.example.com`, commonHostname],
-    })
+    const second = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Second topic with a later conflicting hostname',
+        topic_title: `Second ${suffix}`,
+        topic_slug: secondSlug,
+        topic_hostnames: [`second-${suffix}.example.com`, commonHostname],
+      },
+    )
     const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, first)
     expect(approved.topic_slug).toBe(`first-${suffix}`)
     await expect(approveTopicRecommendation(admin, WEB_PROVENANCE, second)).rejects.toThrow(

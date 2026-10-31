@@ -1,9 +1,10 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, WEB_PROVENANCE, updateUrlHostnameBlocked } from '@voucha/test-helpers'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
-import { approveTopicRecommendation, createTopicRecommendation } from './index.mts'
+import { approveTopicRecommendation, prepareTopicRecommendation } from './index.mts'
 
 describe('approval blocked hostname', () => {
   it('rolls back the whole approval when one proposed hostname is blocked', async () => {
@@ -12,12 +13,17 @@ describe('approval blocked hostname', () => {
     const openHostname = `open-${suffix}.example.com`
     const blockedHostname = `blocked-${suffix}.example.com`
     const slug = `blocked-approval-${suffix}`
-    const recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'One of two proposed hostnames is blocked',
-      topic_title: `Blocked ${suffix}`,
-      topic_slug: slug,
-      topic_hostnames: [openHostname, blockedHostname],
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'One of two proposed hostnames is blocked',
+        topic_title: `Blocked ${suffix}`,
+        topic_slug: slug,
+        topic_hostnames: [openHostname, blockedHostname],
+      },
+    )
     const ids = await upsertUrlHostnames(admin.id, [blockedHostname])
     await updateUrlHostnameBlocked(ids.get(blockedHostname)!, true)
 

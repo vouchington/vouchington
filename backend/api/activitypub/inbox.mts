@@ -1,21 +1,35 @@
 import app from '../app.mts'
 import type { Context } from '@jongleberry/api-server'
+import { getRemoteActorByKeyId, isRemoteActorFresh } from '@services/remote-actors'
+import {
+  getRemoteActorsWorkLimit,
+  remoteActorsWorkMaxValues,
+} from '@services/remote-actors/work-limits'
+import {
+  DNS_TIMEOUT_MS,
+  FETCH_TIMEOUT_MS,
+} from '@services/remote-actors/fetch-remote-actor-document'
+import {
+  releaseActivityPubInboxDelivery,
+  reserveActivityPubInboxDelivery,
+} from '@data-stores/valkey-glide-mq/activitypub-inbox-reservations'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { background } from '@queues/background/queues'
 import onError from '@modules/on-error'
-import { getOrFetchRemoteActorByKeyId, getRemoteActorByKeyId } from '@services/remote-actors'
 import { isFediverseInstanceApprovedByHostname } from '@services/fediverse-instances'
 import { extractSignatureKeyId, verifyDigest, verifySignature } from '@modules/http-signatures'
 import { getExpectedHost } from '@modules/api-utils'
 import {
-  activityPubInboxDeliveryTransitions,
-  isAsyncActivityPubInboxDeliveryEnabled,
+  ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES,
+  createActivityPubInboxDeliveryJob,
   parseInboundActivity,
-  recordAndDispatchInboundActivity,
 } from '@services/ap-inbox-activities'
-import { enqueueActivityPubInboxDelivery } from '@queues/activitypub/enqueues/inbox'
 import {
-  rejectActivityPubInboxCapacity,
-  rejectRateLimitedActivityPubDelivery,
-} from './inbox-capacity-response.mts'
+  createActivityPubInboxDeliveryJobId,
+  enqueueActivityPubInboxDelivery,
+  getActivityPubInboxDeliveryTtlMs,
+} from '@queues/activitypub/enqueues/inbox'
+import { ACTIVITYPUB_INBOX_LIMITS } from '@services/route-rate-limits/config'
 import {
   getActivityPubInboxAttemptWindowSeconds,
   getActivityPubInboxWindowSeconds,
@@ -62,123 +76,100 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
     return
   }
 
-  const rawBody = await ctx.request.buffer('1mb')
+  const rawBody = await ctx.request.buffer(ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES)
   ctx.assert(verifyDigest(rawBody, digestHeader), 401, 'Digest verification failed')
   const contentTypeHeader = headerValue(ctx.req.headers['content-type'])
 
-  if (isAsyncActivityPubInboxDeliveryEnabled()) {
+  ctx.assert(rawBody.length <= ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES, 413, 'Payload Too Large')
+  ctx.assert(
+    /headers="[^"]+"/.test(signatureHeader) && /signature="[^"]+"/.test(signatureHeader),
+    401,
+    'Invalid signature header format',
+  )
+  ctx.assert(!Number.isNaN(new Date(dateHeader).getTime()), 401, 'Invalid date header')
+  const activity = parseInboundActivity(rawBody)
+  // Only fresh cached keys can be verified before admission. Stale or unknown actors are
+  // fetched by the I/O worker so rotated keys are checked against the current actor document.
+  const cachedActor = await getRemoteActorByKeyId(keyId)
+  let verifiedRemoteActorId: string | undefined
+  if (cachedActor && isRemoteActorFresh(cachedActor)) {
+    const verification = verifySignature(
+      ctx.req.method ?? 'POST',
+      ctx.req.url ?? '/ap/inbox',
+      hostHeader,
+      rawBody,
+      signatureHeader,
+      digestHeader,
+      dateHeader,
+      cachedActor.public_key_pem,
+      contentTypeHeader ? { additionalHeaders: { 'content-type': contentTypeHeader } } : undefined,
+    )
+    ctx.assert(verification.valid, 401, verification.error ?? 'Invalid signature')
     ctx.assert(
-      /headers="[^"]+"/.test(signatureHeader) && /signature="[^"]+"/.test(signatureHeader),
+      activity.actor === cachedActor.actor_uri,
       401,
-      'Invalid signature header format',
+      'Signing actor does not match activity actor',
     )
-    ctx.assert(!Number.isNaN(new Date(dateHeader).getTime()), 401, 'Invalid date header')
-    const activity = parseInboundActivity(rawBody)
-    // Local cache only: the API process has no IPv4 egress, so unknown actors stay unverified
-    // until the I/O worker fetches. A cached actor is a self-contained DB read, so invalid
-    // signatures are rejected before they become durable rows.
-    const cachedActor = await getRemoteActorByKeyId(keyId)
-    let verifiedRemoteActorId: string | undefined
-    if (cachedActor) {
-      const verification = verifySignature(
-        ctx.req.method ?? 'POST',
-        ctx.req.url ?? '/ap/inbox',
-        hostHeader,
-        rawBody,
-        signatureHeader,
-        digestHeader,
-        dateHeader,
-        cachedActor.public_key_pem,
-        contentTypeHeader
-          ? { additionalHeaders: { 'content-type': contentTypeHeader } }
-          : undefined,
-      )
-      ctx.assert(verification.valid, 401, verification.error ?? 'Invalid signature')
-      ctx.assert(
-        activity.actor === cachedActor.actor_uri,
-        401,
-        'Signing actor does not match activity actor',
-      )
-      if (await recordActivityPubInboxSenderDelivery(senderHostname)) {
-        rejectRateLimitedActivityPubDelivery(ctx, getActivityPubInboxWindowSeconds())
-        return
-      }
-      verifiedRemoteActorId = cachedActor.id
-    }
-    const accepted = await activityPubInboxDeliveryTransitions.accept(
-      {
-        requestMethod: ctx.req.method ?? 'POST',
-        requestTarget: ctx.req.url ?? '/ap/inbox',
-        expectedHost: hostHeader,
-        signatureHeader,
-        digestHeader,
-        dateHeader,
-        contentTypeHeader,
-        rawBody,
-        claimedActivityId: activity.id,
-        claimedActivityType: activity.type,
-        claimedActorUri: activity.actor,
-        senderHostname,
-      },
-      verifiedRemoteActorId,
-    )
-    if (accepted.outcome === 'capacity-exceeded') {
-      rejectActivityPubInboxCapacity(ctx, accepted.value)
+    if (await recordActivityPubInboxSenderDelivery(senderHostname)) {
+      rejectRateLimitedActivityPubDelivery(ctx, getActivityPubInboxWindowSeconds())
       return
     }
-    const delivery = accepted.value
-    if (accepted.wasInserted) {
-      try {
-        await enqueueActivityPubInboxDelivery(delivery)
-      } catch (err) {
-        onError(err instanceof Error ? err : new Error(String(err)))
-      }
+    verifiedRemoteActorId = cachedActor.id
+  }
+  const delivery = createActivityPubInboxDeliveryJob(
+    {
+      requestMethod: ctx.req.method ?? 'POST',
+      requestTarget: ctx.req.url ?? '/ap/inbox',
+      expectedHost: hostHeader,
+      signatureHeader,
+      digestHeader,
+      dateHeader,
+      contentTypeHeader,
+      rawBody,
+      senderHostname,
+    },
+    verifiedRemoteActorId,
+    new Date(),
+    verifiedRemoteActorId !== undefined,
+  )
+  const jobId = createActivityPubInboxDeliveryJobId(delivery.requestDigest)
+  const ttlMs = getActivityPubInboxDeliveryTtlMs(
+    ACTIVITYPUB_INBOX_LIMITS.windowSeconds.max * 1000,
+    DNS_TIMEOUT_MS,
+    FETCH_TIMEOUT_MS,
+  )
+  let reserved: boolean
+  try {
+    reserved = await reserveActivityPubInboxDelivery(
+      BACKGROUND_QUEUE_NAME,
+      jobId,
+      getRemoteActorsWorkLimit('inbound_backlog_cap'),
+      ttlMs,
+      remoteActorsWorkMaxValues.inbound_backlog_cap,
+    )
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    rejectBackedUpActivityPubDelivery(ctx)
+    return
+  }
+  if (!reserved) {
+    rejectBackedUpActivityPubDelivery(ctx)
+    return
+  }
+  try {
+    const queued = await enqueueActivityPubInboxDelivery(delivery, jobId)
+    if (queued === null) await releaseActivityPubInboxDelivery(BACKGROUND_QUEUE_NAME, jobId)
+  } catch (err) {
+    // An ambiguous enqueue failure may have persisted the job. Keep its reservation until
+    // terminal release (or TTL) if the queue read also fails.
+    try {
+      if (!(await background.getJob(jobId)))
+        await releaseActivityPubInboxDelivery(BACKGROUND_QUEUE_NAME, jobId)
+    } catch (err_) {
+      onError(err_ instanceof Error ? err_ : new Error(String(err_)))
     }
-    ctx.setStatus(202)
-    ctx.json({ received: true })
-    return
+    throw err
   }
-
-  const remoteActor = await getOrFetchRemoteActorByKeyId(keyId)
-
-  // Some senders (e.g. Mastodon) additionally sign `content-type`; verifySignature() only
-  // accepts headers it already knows how to reconstruct, so this must be threaded through
-  // `additionalHeaders` or those senders fail with "Unknown signed header: content-type".
-  const verification = verifySignature(
-    ctx.req.method ?? 'POST',
-    ctx.req.url ?? '/ap/inbox',
-    hostHeader,
-    rawBody,
-    signatureHeader,
-    digestHeader,
-    dateHeader,
-    remoteActor.public_key_pem,
-    contentTypeHeader ? { additionalHeaders: { 'content-type': contentTypeHeader } } : undefined,
-  )
-  ctx.assert(verification.valid, 401, verification.error ?? 'Invalid signature')
-
-  if (await recordActivityPubInboxSenderDelivery(senderHostname)) {
-    rejectRateLimitedActivityPubDelivery(ctx, getActivityPubInboxWindowSeconds())
-    return
-  }
-
-  const activity = parseInboundActivity(rawBody)
-  // The activity's claimed actor must match the verified signing actor.
-  ctx.assert(
-    activity.actor === remoteActor.actor_uri,
-    401,
-    'Signing actor does not match activity actor',
-  )
-
-  const { duplicate } = await recordAndDispatchInboundActivity(remoteActor, {
-    ...activity,
-    signedAt: new Date(dateHeader),
-  })
-  if (duplicate) {
-    ctx.json({ received: true, duplicate: true })
-    return
-  }
-
   ctx.setStatus(202)
   ctx.json({ received: true })
 })
@@ -193,4 +184,14 @@ function parseHostname(uri: string): string | undefined {
   } catch {
     return undefined
   }
+}
+
+function rejectRateLimitedActivityPubDelivery(ctx: Context, retryAfterSeconds: number): never {
+  ctx.set('Retry-After', String(retryAfterSeconds))
+  ctx.throw(429, 'Too Many Requests')
+}
+
+function rejectBackedUpActivityPubDelivery(ctx: Context): never {
+  ctx.set('Retry-After', '60')
+  ctx.throw(503, 'Inbox temporarily unavailable')
 }

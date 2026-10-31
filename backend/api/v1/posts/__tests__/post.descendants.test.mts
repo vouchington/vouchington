@@ -235,31 +235,6 @@ describe('post.descendants', () => {
       expect(second.body.results[0].id).not.toBe(first.body.results[0].id)
     })
 
-    it('returns all descendants', async () => {
-      const rootPostId = await insertTestPost({
-        title: 'Root',
-        slug: `root-${Date.now()}`,
-        createdById: creator.id,
-        markdown: 'Root',
-      })
-      const childId = await insertTestPost({
-        title: '',
-        slug: `child-${Date.now()}`,
-        createdById: creator.id,
-        markdown: 'Child',
-        postType: 'comment',
-        rootId: rootPostId,
-        parentId: rootPostId,
-      })
-      const request = createRequest()
-      const response = await request.get(`/api/v1/posts/${rootPostId}/descendants`).expect(200)
-
-      expect(Array.isArray(response.body.results)).toBe(true)
-      const resultIds = response.body.results.map((r: { id: string }) => r.id)
-
-      expect(resultIds).toContain(childId)
-    })
-
     it('returns post_elections keyed by comment id in the descendants response', async () => {
       const postId = await insertTestPost({
         title: 'Post for Elections Test',
@@ -280,6 +255,8 @@ describe('post.descendants', () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/posts/${postId}/descendants`).expect(200)
 
+      expect(Array.isArray(response.body.results)).toBe(true)
+      expect(response.body.results.map((result: { id: string }) => result.id)).toContain(commentId)
       expect(response.body.post_elections).toBeDefined()
       expect(typeof response.body.post_elections).toBe('object')
       expect(Array.isArray(response.body.post_elections)).toBe(false)

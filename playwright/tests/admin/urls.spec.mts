@@ -6,7 +6,7 @@ import {
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
-import { recentSeedCrawlId } from '../../../backend/scripts/seeds/crawl-ids.mts'
+import { recentSeedCrawlId } from '../../../backend/test-helpers/playwright-seed-crawl-ids.mts'
 import { insertTestCrawl, insertTestUrlDirect } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin URLs', () => {

@@ -71,14 +71,6 @@ describe('CreateFirstPostAside', () => {
     const result = await CreateFirstPostAside()
     render(result as ReactElement)
     expect(screen.getByText('Share your first review')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Write a review' })).toBeDefined()
-  })
-
-  it('links to /reviews/create', async () => {
-    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
-    mockHasCreatedPost.mockResolvedValue(false)
-    const result = await CreateFirstPostAside()
-    render(result as ReactElement)
     expect(screen.getByRole('link', { name: 'Write a review' }).getAttribute('href')).toBe(
       '/reviews/create',
     )

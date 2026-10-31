@@ -22,6 +22,21 @@ function createVoteSchemaSql(config: VoteSchemaConfig): string {
   parts.push(createEntityVoteComments(config))
   parts.push(createVoteDefaultPartitionSql(config.voteTable))
   parts.push(createVoteIndexesSql(config.voteTable, config.entityIdColumn))
+  if (config.voteTable === 'agent_moderation_votes') {
+    parts.push(`DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'agent_moderation_votes'::regclass
+      AND tgname = 'trigger_agent_moderation_votes__retention'
+  ) THEN
+    EXECUTE $trigger$CREATE TRIGGER trigger_agent_moderation_votes__retention
+      AFTER DELETE OR UPDATE OF post_id, agent_moderation_id
+      ON agent_moderation_votes FOR EACH ROW
+      EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('post_id', 'agent_moderation_id')$trigger$;
+  END IF;
+END $$;`)
+  }
   if (config.voteTable === 'post_votes') {
     parts.push(`CREATE INDEX IF NOT EXISTS idx_post_votes__activitypub_pending
 ON post_votes (post_id, id)

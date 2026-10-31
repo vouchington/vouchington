@@ -5,7 +5,7 @@ import {
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from '../services/copyright-notices/index.mts'
-import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-admission.mts'
 
 export async function createTestThreadedTerritorialComplaintEmail(input: {

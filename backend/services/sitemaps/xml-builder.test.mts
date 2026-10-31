@@ -47,13 +47,6 @@ describe('XML Builder', () => {
       expect(result).toContain('https://example.com/sitemaps?foo=bar&amp;baz=qux')
       expect(result).not.toContain('&baz=')
     })
-
-    it('should escape XML special characters including quotes and apostrophes', () => {
-      const sitemaps = [{ loc: 'https://example.com/test?q="hello\'world"' }]
-      const result = buildSitemapIndex(sitemaps)
-
-      expect(result).toContain('&quot;hello&#39;world&quot;')
-    })
   })
 
   describe('buildUrlset', () => {

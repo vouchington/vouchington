@@ -1,9 +1,10 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 import { createApiKey } from '@services/api-keys'
 import { createProfileLink } from '@services/my/profile-links'
 import { createFollowNotification } from '@services/notifications'
-import { createTopicRecommendation } from '@services/topic-recommendations'
+import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import type { PrivateUser } from '@services/users/types'
 import {
   createRandomString,
@@ -97,11 +98,16 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
       link_type: 'url',
       url: 'https://example.com/me',
     })
-    const recommendation = await createTopicRecommendation(owner, WEB_PROVENANCE, {
-      markdown: 'Why not',
-      topic_title: `Own data ${createRandomString(6)}`,
-      topic_slug: `own-data-${createRandomString(6).toLowerCase()}`,
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      owner,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Why not',
+        topic_title: `Own data ${createRandomString(6)}`,
+        topic_slug: `own-data-${createRandomString(6).toLowerCase()}`,
+      },
+    )
     const token = await issueCredential(kind, owner, ALL)
 
     const page = await readTool(token, 'read_my_notifications', optionArgs('list', {}))

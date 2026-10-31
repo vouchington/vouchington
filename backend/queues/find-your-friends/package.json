@@ -22,6 +22,6 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.20.0",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.15.0"
   }
 }

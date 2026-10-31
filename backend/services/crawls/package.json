@@ -23,7 +23,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/client-s3": "^3.1159.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
@@ -57,7 +57,7 @@
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@queues/background": "workspace:^",

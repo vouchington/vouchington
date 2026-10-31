@@ -116,10 +116,6 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
         <CardContent className='flex flex-col gap-4'>
           <dl className='grid gap-3 text-sm sm:grid-cols-2'>
             <div>
-              <dt className='font-medium'>{t('extracted.admin.userAdminPanel.userId_7967e089')}</dt>
-              <dd className='mt-1 break-all text-muted-foreground'>{displayedUser.id}</dd>
-            </div>
-            <div>
               <dt className='font-medium'>
                 {t('extracted.admin.userAdminPanel.username_e3b89e9d')}
               </dt>

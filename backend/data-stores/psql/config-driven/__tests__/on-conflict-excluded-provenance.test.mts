@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isSafeVolatileFallback,
   volatileForm,
-} from '../../../../test-helpers/data-stores/psql/config-driven/on-conflict-excluded-provenance.mts'
+} from '../../../../../ci/generated-ddl-inserts/on-conflict-excluded-provenance.mts'
 
 describe('generated DDL EXCLUDED source provenance', () => {
   it.each([

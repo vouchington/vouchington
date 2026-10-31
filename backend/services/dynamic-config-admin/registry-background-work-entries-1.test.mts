@@ -162,15 +162,19 @@ describe('registered background work limits', () => {
       expect(Object.keys(entry.fields).toSorted()).toEqual(Object.keys(owner.maxima).toSorted())
       for (const [field, defaultValue] of Object.entries(owner.config.defaultFields)) {
         const maximum = (owner.maxima as Record<string, number>)[field]!
+        const minimum = entry.fields[field]!.minValue
+        expect(minimum).toBeDefined()
+        if (minimum === undefined) throw new Error(`Missing registry minimum for ${field}`)
+        expect(minimum).toBeGreaterThanOrEqual(1)
+        expect(defaultValue).toBeGreaterThanOrEqual(minimum)
         expect(defaultValue).toBeLessThanOrEqual(maximum)
         expect(entry.fields[field]).toMatchObject({
-          minValue: 1,
           integer: true,
           maxValue: maximum,
         })
-        const restore = overrideDynamicConfigFieldsForTest(owner.config, { [field]: 1 })
+        const restore = overrideDynamicConfigFieldsForTest(owner.config, { [field]: minimum })
         try {
-          expect(owner.read(field)).toBe(1)
+          expect(owner.read(field)).toBe(minimum)
           overrideDynamicConfigFieldsForTest(owner.config, { [field]: maximum })
           expect(owner.read(field)).toBe(maximum)
           overrideDynamicConfigFieldsForTest(owner.config, { [field]: maximum + 1 })
@@ -181,6 +185,19 @@ describe('registered background work limits', () => {
           restore()
         }
       }
+    }
+  })
+
+  it('enforces the hostname invalidation lease minimum for a previously stored short value', () => {
+    const restore = overrideDynamicConfigFieldsForTest(owner8.entityCacheWorkConfig, {
+      hostname_invalidation_lease_seconds: 1,
+    })
+    try {
+      expect(owner8.getEntityCacheWorkLimit('hostname_invalidation_lease_seconds')).toBe(
+        owner8.entityCacheWorkMinValues.hostname_invalidation_lease_seconds,
+      )
+    } finally {
+      restore()
     }
   })
 })

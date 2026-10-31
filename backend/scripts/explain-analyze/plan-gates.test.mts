@@ -1,15 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
-import {
-  assertRequiredPlanShape,
-  assertScenarioFunctionCalls,
-  SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD,
-} from './plan-gates.mts'
-import {
-  assertPlanRegistry,
-  registerScenarioContract,
-  resetScenarioContracts,
-} from './plan-expectations.mts'
 
 function result(
   scenarioId: string,
@@ -27,9 +17,20 @@ function result(
   }
 }
 
+async function loadGates() {
+  vi.resetModules()
+  const gates = await import('./plan-gates.mts')
+  const expectations = await import('./plan-expectations.mts')
+  return { ...gates, ...expectations }
+}
+
 describe('plan expectation registry', () => {
-  afterEach(resetScenarioContracts)
-  it('rejects unknown scenario ids and expectation kinds', () => {
+  afterEach(() => {
+    vi.resetModules()
+  })
+
+  it('rejects unknown scenario ids and expectation kinds', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     expect(() => registerScenarioContract('invented', { expectations: [] })).toThrow(
       'Unknown EXPLAIN scenario',
     )
@@ -43,13 +44,15 @@ describe('plan expectation registry', () => {
     )
   })
 
-  it('rejects a registered scenario without any captured result', () => {
+  it('rejects a registered scenario without any captured result', async () => {
+    const { registerScenarioContract, assertPlanRegistry } = await loadGates()
     registerScenarioContract('post-search-new', { expectations: [] })
     expect(() => assertPlanRegistry(['post-search-hot'])).toThrow('has no captured result')
     expect(() => assertPlanRegistry(['post-search-new'])).not.toThrow()
   })
 
-  it('evaluates query binding, index and processed-row limits from one registry entry', () => {
+  it('evaluates query binding, index and processed-row limits from one registry entry', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     registerScenarioContract('post-metrics-batch', {
       expectations: [
         { kind: 'queryBinds', token: 'requested_posts' },
@@ -87,7 +90,8 @@ describe('plan expectation registry', () => {
     ).toThrow('posts_pkey')
   })
 
-  it('budgets bitmap index entries even when the heap returns one row', () => {
+  it('budgets bitmap index entries even when the heap returns one row', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     registerScenarioContract('topic-viewer-counts-dense', {
       expectations: [{ kind: 'maxBitmapIndexRows', max: 1_000 }],
     })
@@ -109,7 +113,8 @@ describe('plan expectation registry', () => {
     expect(() => assertRequiredPlanShape(plan)).toThrow('processed 20000 bitmap index entries')
   })
 
-  it('accepts any one of equivalent indexes when anyOf is set', () => {
+  it('accepts any one of equivalent indexes when anyOf is set', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     registerScenarioContract('post-metrics-batch', {
       expectations: [{ kind: 'usesIndexes', indexes: ['posts_a_idx', 'posts_b_idx'], anyOf: true }],
     })
@@ -128,7 +133,8 @@ describe('plan expectation registry', () => {
     )
   })
 
-  it('fails an executing unpruned parent and passes when only one leaf executes', () => {
+  it('fails an executing unpruned parent and passes when only one leaf executes', async () => {
+    const { assertRequiredPlanShape } = await loadGates()
     const scans = [
       {
         'Node Type': 'Index Scan',
@@ -149,7 +155,8 @@ describe('plan expectation registry', () => {
     expect(() => assertRequiredPlanShape(unpruned)).not.toThrow()
   })
 
-  it('accepts an explicit cross-partition reason for intentional fanout', () => {
+  it('accepts an explicit cross-partition reason for intentional fanout', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     registerScenarioContract('post-search-new', {
       expectations: [],
       crossPartition: { posts: 'This fixture deliberately reads adjacent date windows.' },
@@ -174,7 +181,8 @@ describe('plan expectation registry', () => {
     expect(() => assertRequiredPlanShape(unpruned)).not.toThrow()
   })
 
-  it('matches nested partition parents by their longest name', () => {
+  it('matches nested partition parents by their longest name', async () => {
+    const { assertRequiredPlanShape } = await loadGates()
     const scan = result('post-search-new', {
       'Node Type': 'Append',
       Plans: [
@@ -195,27 +203,30 @@ describe('plan expectation registry', () => {
     expect(() => assertRequiredPlanShape(scan)).toThrow('relation__post__category__topic__votes')
   })
 
-  it('rejects sequential scans only above the declared seeded-row threshold', () => {
+  it('rejects sequential scans only above the declared seeded-row threshold', async () => {
     const scan = result('post-search-new', {
       'Node Type': 'Seq Scan',
       'Relation Name': 'posts__default',
       'Actual Rows': 1,
       'Actual Loops': 1,
     })
-    registerScenarioContract('post-search-new', {
+    const above = await loadGates()
+    above.registerScenarioContract('post-search-new', {
       expectations: [],
-      seededRows: { posts: SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD + 1 },
+      seededRows: { posts: 150_000 + 1 },
     })
-    expect(() => assertRequiredPlanShape(scan)).toThrow('sequentially scanned posts')
-    resetScenarioContracts()
-    registerScenarioContract('post-search-new', {
+    expect(() => above.assertRequiredPlanShape(scan)).toThrow('sequentially scanned posts')
+
+    const atThreshold = await loadGates()
+    atThreshold.registerScenarioContract('post-search-new', {
       expectations: [],
-      seededRows: { posts: SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD },
+      seededRows: { posts: 150_000 },
     })
-    expect(() => assertRequiredPlanShape(scan)).not.toThrow()
+    expect(() => atThreshold.assertRequiredPlanShape(scan)).not.toThrow()
   })
 
-  it('requires a seeded-row declaration for a nonempty unbounded sequential scan', () => {
+  it('requires a seeded-row declaration for a nonempty unbounded sequential scan', async () => {
+    const { assertRequiredPlanShape } = await loadGates()
     const scan = result('post-search-new', {
       'Node Type': 'Seq Scan',
       'Relation Name': 'web_push_endpoint_owners',
@@ -232,7 +243,9 @@ describe('plan expectation registry', () => {
     expect(() => assertRequiredPlanShape(empty)).not.toThrow()
   })
 
-  it('caps actual function calls and rejects a cap no captured query exercises', () => {
+  it('caps actual function calls and rejects a cap no captured query exercises', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape, assertScenarioFunctionCalls } =
+      await loadGates()
     registerScenarioContract('post-search-new', {
       expectations: [{ kind: 'maxFunctionCalls', function: 'fn_image_policy', max: 2 }],
     })
@@ -250,7 +263,8 @@ describe('plan expectation registry', () => {
     )
   })
 
-  it('rejects a function-call cap when launched parallel workers make leader counts incomplete', () => {
+  it('rejects a function-call cap when launched parallel workers make leader counts incomplete', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     registerScenarioContract('post-search-new', {
       expectations: [{ kind: 'maxFunctionCalls', function: 'fn_image_policy', max: 2 }],
     })

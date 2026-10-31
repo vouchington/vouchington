@@ -39,43 +39,63 @@ export async function getCommunityAiCostTotals(
     ? decodeUuidCursor(options.after, isCommunityAiCostTotalCursor, 'Invalid AI cost totals cursor')
     : null
   const query = sql`/* getCommunityAiCostTotals */
+    WITH usage_totals AS (
+      -- The recent tail and folded pages are disjoint because each page folds and deletes in one
+      -- transaction. Old and recent calls can therefore share the same calendar month.
+      SELECT community_id, COUNT(*)::numeric AS request_count,
+        SUM(input_tokens)::numeric AS total_input_tokens,
+        SUM(output_tokens)::numeric AS total_output_tokens,
+        COUNT(*) FILTER (WHERE pricing_status = 'unpriced')::numeric AS unpriced_request_count,
+        COALESCE(SUM(cost_microunits), 0)::numeric AS total_cost_microunits
+      -- no-mistakes-disable-next-line postgres-required-predicates: ranking all live communities requires the retained raw tail
+      FROM ai_usage_records
+      WHERE community_id IS NOT NULL
+      GROUP BY community_id
+      UNION ALL
+      SELECT community_id, SUM(request_count), SUM(input_tokens), SUM(output_tokens),
+        SUM(unpriced_request_count), SUM(cost_microunits)
+      FROM ai_usage_community_monthly_rollups
+      GROUP BY community_id
+    ), totals AS (
+      SELECT community_id, SUM(request_count) AS request_count,
+        SUM(total_input_tokens) AS total_input_tokens,
+        SUM(total_output_tokens) AS total_output_tokens,
+        SUM(unpriced_request_count) AS unpriced_request_count,
+        SUM(total_cost_microunits) AS total_cost_microunits
+      FROM usage_totals GROUP BY community_id
+    )
     SELECT
       c.id AS community_id,
       c.slug AS community_slug,
-      COUNT(*)::INT AS request_count,
-      COALESCE(SUM(aul.input_tokens), 0)::BIGINT AS total_input_tokens,
-      COALESCE(SUM(aul.output_tokens), 0)::BIGINT AS total_output_tokens,
-      COUNT(*) FILTER (WHERE aul.pricing_status = 'unpriced')::INT AS unpriced_request_count,
-      COALESCE(SUM(aul.cost_microunits), 0)::TEXT AS total_cost_microunits
-    -- no-mistakes-disable-next-line postgres-required-predicates: all-time community cost totals rank usage from every retained ID partition
-    FROM ai_usage_records aul
-    JOIN communities c ON c.id = aul.community_id
+      totals.request_count::text AS request_count,
+      totals.total_input_tokens::text AS total_input_tokens,
+      totals.total_output_tokens::text AS total_output_tokens,
+      totals.unpriced_request_count::text AS unpriced_request_count,
+      totals.total_cost_microunits::text AS total_cost_microunits
+    FROM totals JOIN communities c ON c.id = totals.community_id
   `
-  query.append(sql` GROUP BY c.id, c.slug`)
   if (cursor) {
     query.append(sql`
-      HAVING
-        COALESCE(SUM(aul.cost_microunits), 0) <
-          ${cursor.total_cost_microunits}::NUMERIC
+      WHERE
+        totals.total_cost_microunits < ${cursor.total_cost_microunits}::NUMERIC
         OR (
-          COALESCE(SUM(aul.cost_microunits), 0) =
-            ${cursor.total_cost_microunits}::NUMERIC
+          totals.total_cost_microunits = ${cursor.total_cost_microunits}::NUMERIC
           AND c.id > ${cursor.id}::UUID
         )
     `)
   }
   query.append(sql`
-    ORDER BY COALESCE(SUM(aul.cost_microunits), 0) DESC, c.id ASC
+    ORDER BY totals.total_cost_microunits DESC, c.id ASC
     LIMIT ${limit + 1}
   `)
 
   const { rows } = await read<{
     community_id: string
     community_slug: string
-    request_count: number
+    request_count: string
     total_input_tokens: string
     total_output_tokens: string
-    unpriced_request_count: number
+    unpriced_request_count: string
     total_cost_microunits: string
   }>(query)
   const hasNextPage = rows.length > limit
@@ -83,10 +103,10 @@ export async function getCommunityAiCostTotals(
   const results: CommunityAiCostTotal[] = pageRows.map(row => ({
     community_id: row.community_id,
     community_slug: row.community_slug,
-    request_count: row.request_count,
+    request_count: parsePostgresMoneyAmount(row.request_count),
     total_input_tokens: parsePostgresMoneyAmount(row.total_input_tokens),
     total_output_tokens: parsePostgresMoneyAmount(row.total_output_tokens),
-    unpriced_request_count: row.unpriced_request_count,
+    unpriced_request_count: parsePostgresMoneyAmount(row.unpriced_request_count),
     total_cost: {
       amount: row.total_cost_microunits,
       currency: 'usd' as const,

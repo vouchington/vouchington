@@ -5,6 +5,7 @@ import {
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
   getAIRetentionPageLimits,
+  getAiUsageRawRetentionDays,
   getClassifierRetentionDays,
   getDataRetentionLimits,
   getPartitionStatusProbeLimit,
@@ -28,6 +29,11 @@ describe('getDataRetentionLimits', () => {
   it('never shortens classifier retention below the owner window', () => {
     overrideDynamicConfigFieldsForTest(dataRetentionConfig, { classifier_retention_days: 1 })
     expect(getClassifierRetentionDays()).toBe(90)
+  })
+
+  it('never shortens raw AI usage retention below the approved window', () => {
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { ai_usage_raw_retention_days: 1 })
+    expect(getAiUsageRawRetentionDays()).toBe(180)
   })
 
   it('returns the production defaults when no override is stored', () => {
@@ -71,6 +77,7 @@ describe('getDataRetentionLimits', () => {
   it('keeps every default finite, positive and within its hard maximum', () => {
     for (const field of [
       'batch_size',
+      'ai_usage_raw_retention_days',
       'classifier_retention_days',
       'max_batches_per_run',
       'ses_bounce_retention_days',

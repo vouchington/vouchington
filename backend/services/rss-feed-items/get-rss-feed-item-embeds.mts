@@ -16,7 +16,6 @@ export async function getRssFeedItemEmbedsByItems(
 ): Promise<Record<string, UrlEmbed>> {
   const itemIds = items.flatMap(item => (item.url ? [item.id] : []))
   if (itemIds.length === 0) return {}
-
   const { rows } = await read(
     sql`/* getRssFeedItemEmbedsByItems */
     WITH item AS (
@@ -44,7 +43,7 @@ export async function getRssFeedItemEmbedsByItems(
       JOIN urls canonical ON canonical.id = COALESCE(u.canonical_url_id, u.id)
     ),
     crawl AS (
-      SELECT DISTINCT ON (cu.rss_feed_item_id)
+      SELECT
         cu.rss_feed_item_id,
         NULLIF(TRIM(c.title), '') AS crawl_title,
         NULLIF(TRIM(c.meta_tags->>'og:image'), '') AS og_image,
@@ -58,14 +57,19 @@ export async function getRssFeedItemEmbedsByItems(
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_url ELSE NULL END AS embed_oembed_url,
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_resolved_at ELSE NULL END AS embed_oembed_resolved_at
       FROM canonical_urls cu
-      -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through joins; no bound URL ID is supplied for crawl history
-      JOIN crawls c ON c.url_id = cu.canonical_id
-      WHERE c.completed_at IS NOT NULL AND c.network_error IS NULL
-        AND c.response_status_code BETWEEN 200 AND 299
-      ORDER BY cu.rss_feed_item_id, c.id DESC
+      JOIN LATERAL (
+        SELECT c.title, c.meta_tags, c.markdown, c.embed_metadata,
+          c.embed_oembed_url, c.embed_oembed_resolved_at
+        -- no-mistakes-disable-next-line postgres-required-predicates: the canonical URL from this item keys the ordered crawl history probe
+        FROM crawls c
+        WHERE c.url_id = cu.canonical_id
+          AND c.completed_at IS NOT NULL AND c.network_error IS NULL
+          AND c.response_status_code BETWEEN 200 AND 299
+        ORDER BY c.id DESC LIMIT 1
+      ) c ON TRUE
     ),
     embed_crawl AS (
-      SELECT DISTINCT ON (cu.rss_feed_item_id)
+      SELECT
         cu.rss_feed_item_id,
         NULLIF(TRIM(c.embed_metadata #>> '{thumbnail,url}'), '') AS embed_thumbnail_url,
         NULLIF(TRIM(c.embed_metadata->>'title'), '') AS embed_title,
@@ -122,25 +126,29 @@ export async function getRssFeedItemEmbedsByItems(
         END AS display_player_height,
         (c.embed_oembed_resolved_at IS NOT NULL) AS display_embed_metadata_resolved
       FROM canonical_urls cu
-      -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through joins; no bound URL ID is supplied for crawl history
-      JOIN crawls c ON c.url_id = cu.canonical_id
-      WHERE c.completed_at IS NOT NULL AND c.network_error IS NULL
-        AND c.response_status_code BETWEEN 200 AND 299
-        AND (
-          c.embed_metadata IS NOT NULL
-          OR EXISTS (
-            SELECT 1
-            FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-            WHERE LOWER(tag.key) IN (
-              'og:image', 'twitter:image', 'og:audio', 'og:title', 'twitter:title',
-              'og:description', 'twitter:description', 'og:site_name'
+      JOIN LATERAL (
+        SELECT c.embed_metadata, c.meta_tags, c.embed_oembed_resolved_at
+        -- no-mistakes-disable-next-line postgres-required-predicates: the canonical URL from this item keys the ordered crawl history probe
+        FROM crawls c
+        WHERE c.url_id = cu.canonical_id
+          AND c.completed_at IS NOT NULL AND c.network_error IS NULL
+          AND c.response_status_code BETWEEN 200 AND 299
+          AND (
+            c.embed_metadata IS NOT NULL
+            OR EXISTS (
+              SELECT 1
+              FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
+              WHERE LOWER(tag.key) IN (
+                'og:image', 'twitter:image', 'og:audio', 'og:title', 'twitter:title',
+                'og:description', 'twitter:description', 'og:site_name'
+              )
+                AND jsonb_typeof(tag.value) = 'string'
+                AND NULLIF(TRIM(tag.value #>> '{}'), '') IS NOT NULL
             )
-              AND jsonb_typeof(tag.value) = 'string'
-              AND NULLIF(TRIM(tag.value #>> '{}'), '') IS NOT NULL
+            OR c.embed_oembed_resolved_at IS NOT NULL
           )
-          OR c.embed_oembed_resolved_at IS NOT NULL
-        )
-      ORDER BY cu.rss_feed_item_id, c.id DESC
+        ORDER BY c.id DESC LIMIT 1
+      ) c ON TRUE
     )
     SELECT
       i.rss_feed_item_id, cu.source_url, i.media_type,
@@ -184,7 +192,6 @@ export async function getRssFeedItemEmbedsByItems(
   `,
     options,
   )
-
   const result: Record<string, UrlEmbed> = {}
   for (const row of rows as RawEmbedRow[]) {
     result[row.rss_feed_item_id!] = buildEmbed(row, access)

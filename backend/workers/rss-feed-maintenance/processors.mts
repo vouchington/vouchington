@@ -12,6 +12,7 @@ import * as topicAliases from './processors/topic-aliases.mts'
 import * as hardDelete from './processors/hard-delete.mts'
 import { processEvaluateRssFeedDiscoverability } from './processors/discoverability.mts'
 import { processRecoverRssFeedHardDeletes } from '@services/rss-feeds/hard-delete-recovery'
+import { clearTopicAliasUnlinkCategoryPage } from '@services/rss-feed-items/clear-unlinked-topic-alias-categories'
 
 export function processRssFeedMaintenanceJob(job: Job) {
   switch (job.name) {
@@ -47,7 +48,9 @@ export function processRssFeedMaintenanceJob(job: Job) {
     }
     case 'processUnlinkTopicAliasPage': {
       if (!job.data) throw new Error('Topic alias job .data is required')
-      return applyTopicAliasUnlinkPage(job.data as TopicAliasUnlinkPage)
+      return applyTopicAliasUnlinkPage(job.data as TopicAliasUnlinkPage, {
+        clearItemCategoryPage: clearTopicAliasUnlinkCategoryPage,
+      })
     }
     case 'processRecoverTopicAliasUnlinks': {
       if (!job.data) throw new Error('Topic alias job .data is required')

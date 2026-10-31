@@ -102,14 +102,6 @@ describe('initialize mode parsing', () => {
       expect(output).toContain('rerun ./dev/initialize web without sandboxing')
     })
 
-    it('records monorepo capability after fresh monorepo initialization', async () => {
-      const cwd = await makeWorktreeDir('feature-marker-monorepo')
-
-      await runHelper({ cwd, script: `persist_initialization_capability monorepo "$PWD"` })
-
-      expect((await readFile(join(cwd, '.initialized'), 'utf8')).trim()).toBe('monorepo')
-    })
-
     it('records web capability after fresh web initialization', async () => {
       const cwd = await makeWorktreeDir('feature-marker-web')
 
@@ -269,6 +261,7 @@ describe('initialize mode parsing', () => {
       })
 
       expect(await fileExists(join(cwd, '.initialized'))).toBe(true)
+      expect((await readFile(join(cwd, '.initialized'), 'utf8')).trim()).toBe('monorepo')
       expect(await fileExists(join(cwd, '.env'))).toBe(false)
       expect(await fileExists(join(cwd, '.valkey-port'))).toBe(false)
     })

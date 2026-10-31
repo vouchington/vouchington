@@ -29,10 +29,8 @@ import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/co
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 import { recordCopyrightEmailParse } from './email-intake-parses.mts'
-import {
-  linkCopyrightEmailIntakeToNotice,
-  recordCopyrightEmailThreadReferences,
-} from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
+import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { sweepCopyrightOperationalRetention } from './operational-retention.mts'
 import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
 

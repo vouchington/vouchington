@@ -127,16 +127,6 @@ describe('callMcpTool', () => {
     })
   })
 
-  it('throws McpError when tool is not MCP-eligible (curried)', async () => {
-    // Curried tools are not exposed via MCP surface so they won't appear in mcp list
-    // If we call with a non-existent name we get MethodNotFound
-    await expect(
-      callMcpTool('__bad_tool__', {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
-    ).rejects.toMatchObject({
-      message: expect.stringContaining('Tool not found'),
-    })
-  })
-
   it('rejects invalid registered tool arguments before invoking the tool', async () => {
     const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'discover_topics')
     if (!tool) throw new Error('Expected discover_topics tool')

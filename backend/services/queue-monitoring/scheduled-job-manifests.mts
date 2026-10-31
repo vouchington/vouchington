@@ -13,7 +13,6 @@ import { scheduledJobManifest as entityListeners } from '@queues/entity-listener
 import { scheduledJobManifest as findYourFriends } from '@queues/find-your-friends/enqueues/schedules'
 import { scheduledJobManifest as heartbeat } from '@queues/heartbeat/enqueues/schedules'
 import { scheduledJobManifest as contentAnalysis } from '@queues/content-analysis/enqueues/schedules'
-import { scheduledJobManifest as kagiSmallweb } from '@queues/kagi-smallweb/enqueues/schedules'
 import { scheduledJobManifest as memberships } from '@queues/memberships/enqueues/schedules'
 import { scheduledJobManifest as notifications } from '@queues/notifications/enqueues/schedules'
 import { scheduledJobManifest as openaiModeration } from '@queues/openai-moderation/enqueues/schedules'
@@ -45,7 +44,6 @@ const background = combineBackgroundManifests([
   rssFeeds,
   urlsDomainsBlacklist,
   sitemaps,
-  kagiSmallweb,
   emailDigests,
   userRssFeedImports,
   hostnameBlocking,

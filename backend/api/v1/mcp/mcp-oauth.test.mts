@@ -85,13 +85,6 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
     expect(response.headers['www-authenticate']).toBe(INVALID_TOKEN_CHALLENGE)
   })
 
-  it('lists tools for a user-resource token', async () => {
-    const response = await postMcp(userTokens.access_token, MCP_LIST_BODY).expect(200)
-
-    const body = response.body as JsonRpcResponse
-    expect(body.result?.tools?.length).toBeGreaterThan(0)
-  })
-
   it('asks the client to step up when a single tool call lacks a scope', async () => {
     const response = await postMcp(
       topicsOnlyTokens.access_token,
@@ -134,6 +127,7 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
   it('hides and refuses financial reads for an umbrella-only credential', async () => {
     const listing = await postMcp(userTokens.access_token, MCP_LIST_BODY).expect(200)
     const tools = (listing.body as { result: { tools: Array<{ name: string }> } }).result.tools
+    expect(tools.length).toBeGreaterThan(0)
     expect(tools.map(tool => tool.name)).not.toContain('get_my_financial_profile')
     const denied = await postMcp(
       userTokens.access_token,

@@ -3,6 +3,7 @@ import {
   disableQueryCapture,
   getCapturedQueries,
   runWithCapturedQueries,
+  write,
 } from '@data-stores/psql'
 
 export { enableQueryCapture } from '@data-stores/psql'
@@ -52,6 +53,13 @@ export async function withCapturedTestQueries<Result>(
       timestamp: query.timestamp,
     })),
   }
+}
+
+/** Executes caller SQL, which must carry an operation annotation, while EXPLAIN capture is on. */
+export function executeCapturedStatement(text: string): ReturnType<typeof write> {
+  if (!text.includes('/* '))
+    throw new Error('EXPLAIN capture statement needs an operation annotation')
+  return write(text)
 }
 
 export function countCapturedQueriesByAnnotation(

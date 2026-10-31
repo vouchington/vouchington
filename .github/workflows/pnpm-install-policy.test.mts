@@ -79,20 +79,52 @@ function hasExplicitCredential(step: Step) {
   )
 }
 
+const setupNodePnpmInputs = new Set(['deadline-seconds', 'install-scripts'])
+
+function isSetupNodePnpm(step: { uses?: string }) {
+  return (
+    step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@') ===
+    true
+  )
+}
+
+function deadlineSeconds(step: Step): number | undefined {
+  const value = step.with?.['deadline-seconds']
+  if (value === undefined) return undefined
+  const seconds = typeof value === 'string' ? Number(value) : value
+  return typeof seconds === 'number' && Number.isInteger(seconds) ? seconds : Number.NaN
+}
+
+function stepCapMinutes(step: Step): number | undefined {
+  const timeout = (step as { 'timeout-minutes'?: unknown })['timeout-minutes']
+  return typeof timeout === 'number' ? timeout : undefined
+}
+
 describe('pnpm install workflow policy', () => {
-  it('passes setup-node-pnpm only install-scripts and setup-backend no inputs', () => {
+  it('passes setup-node-pnpm only install-scripts and deadline-seconds', () => {
     expect(setupSteps.some(({ owner }) => owner.startsWith('.github/actions/'))).toBe(true)
     const unexpected = setupSteps.flatMap(({ owner, step }) =>
       Object.keys(step.with ?? {})
-        .filter(
-          input =>
-            !step.uses?.startsWith(
-              'vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
-            ) || input !== 'install-scripts',
-        )
+        .filter(input => !isSetupNodePnpm(step) || !setupNodePnpmInputs.has(input))
         .map(input => `${owner}: ${input}`),
     )
     expect(unexpected).toEqual([])
+  })
+
+  it('sets deadline-seconds below a calling step cap of five minutes or less', () => {
+    const violations = setupSteps.flatMap(({ owner, step }) => {
+      if (!isSetupNodePnpm(step)) return []
+      const cap = stepCapMinutes(step)
+      const deadline = deadlineSeconds(step)
+      const shortCap = cap !== undefined && cap <= 5
+      if (!shortCap) {
+        return deadline === undefined ? [] : [`${owner}: deadline without a short step cap`]
+      }
+      return deadline !== undefined && deadline > 0 && deadline < cap * 60
+        ? []
+        : [`${owner}: deadline is not below the step cap`]
+    })
+    expect(violations).toEqual([])
   })
 
   it('keeps dependency setup ahead of explicit credential-bearing steps', () => {

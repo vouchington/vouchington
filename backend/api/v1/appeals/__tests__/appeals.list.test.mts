@@ -98,6 +98,8 @@ describe('GET /api/v1/appeals — list behavior', () => {
       },
     })
     expect(enrichedAppeal.target_context.created_at).toEqual(expect.any(String))
+    expect(response.body.page_info).toBeDefined()
+    expect(typeof response.body.page_info.has_next_page).toBe('boolean')
   })
 
   it('non-staff member only sees own appeals (redacted — no appellant_user_id field)', async () => {
@@ -187,14 +189,6 @@ describe('GET /api/v1/appeals — list behavior', () => {
     for (const appeal of response.body.appeals) {
       expect(appeal.appellant_user_id).toBe(staff.id)
     }
-  })
-
-  it('returns page_info structure', async () => {
-    const request = createRequest()
-    await request.authenticateAs(staff)
-    const response = await request.get('/api/v1/appeals').expect(200)
-    expect(response.body.page_info).toBeDefined()
-    expect(typeof response.body.page_info.has_next_page).toBe('boolean')
   })
 
   it('respects limit query param', async () => {

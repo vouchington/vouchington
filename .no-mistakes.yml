@@ -564,23 +564,6 @@ tests:
           - /rewards-program-status/:id/settings/source
           - /rewards-program/:id/settings/source
           - /topic/:id/settings/source
-          - /user/:idOrUsername/communities/proxy-following
-          - /user/:idOrUsername/communities/proxy-muted
-          - /user/:idOrUsername/communities/saved
-          - /user/:idOrUsername/domains/blocked
-          - /user/:idOrUsername/domains/muted
-          - /user/:idOrUsername/posts/following
-          - /user/:idOrUsername/posts/hidden
-          - /user/:idOrUsername/posts/saved
-          - /user/:idOrUsername/rss-feed-items/hidden
-          - /user/:idOrUsername/rss-feed-items/saved
-          - /user/:idOrUsername/rss-feed-items/viewed
-          - /user/:idOrUsername/rss-feeds/muted
-          - /user/:idOrUsername/topics/blocked
-          - /user/:idOrUsername/topics/dismissed-recommendations
-          - /user/:idOrUsername/topics/muted
-          - /user/:idOrUsername/topics/viewed
-          - /user/:idOrUsername/users/dismissed-recommendations
         helpers:
           - module: integration-tests/web/helpers/client.mts
             export: WebIntegrationClient
@@ -1002,14 +985,6 @@ rules:
         - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
         - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
         - {
-            file: backend/scripts/seeds/playwright-seed-assertions.mts,
-            callee: 'seedAssertionExists',
-          }
-        - {
-            file: backend/scripts/seeds/playwright-test-data/post-account-labels.mts,
-            callee: 'query',
-          }
-        - {
             file: backend/services/account-data-requests/recovery.mts,
             callee: 'lockActiveDataRequestUser',
           }
@@ -1269,7 +1244,6 @@ rules:
             callee: 'resetPostClearance',
           }
         - { file: backend/services/images/placements.mts, callee: 'query' }
-        - { file: backend/services/kagi-smallweb/get-existing-feed-urls.mts, callee: 'read' }
         - {
             file: backend/services/media-delivery-safety/delivery-denials.mts,
             callee: 'prepublishImagePlacementDenial',
@@ -2279,7 +2253,6 @@ rules:
       - '**/__tests__/**'
       - '**/__snapshots__/**'
       - backend/test-helpers/**
-      - backend/scripts/seeds/playwright-test-data/**
       - web/test-helpers/**
       - test-helpers/**
       - integration-tests/**
@@ -2630,6 +2603,7 @@ rules:
         - monitors
         - playwright
         - seed
+        - scripts
         - static-code-analysis
         - test-helpers
         - ts-shared
@@ -3165,6 +3139,7 @@ rules:
         backend-data-stores: [backend]
         backend-partition-retirement: [backend]
         backend-post-revision-retirement: [backend]
+        backend-ai-usage-monthly-ddl: [backend]
         backend-platform-stats-cache: [backend]
         backend-activitypub-capacity: [backend, postgres-schema]
         backend-mocks: [backend]
@@ -4928,8 +4903,6 @@ rules:
           reason: 'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.'
         - object: 'column:activitypub_inbox_activities.actor_uri'
           reason: "Decision 13 allowed URL group: The activity's `actor` field (the sending remote actor's ActivityPub id), recorded for operational visibility."
-        - object: 'column:activitypub_inbox_envelopes.claimed_actor_uri'
-          reason: 'Decision 13 allowed URL group: Untrusted activity actor URI parsed during the network-free request preflight.'
         - object: 'column:bluesky_follow_records.record_uri'
           reason: "Decision 13 allowed URL group: The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly."
         - object: 'column:copyright_notice_targets.hosted_use_url'
@@ -5050,8 +5023,6 @@ rules:
       namePatterns: ['(^|_)(status|state|kind|type|source|category|mode|channel)$']
       allow:
         - object: 'column:activitypub_inbox_activities.activity_type'
-          reason: 'ActivityPub sender-defined activity type; see decision 8.'
-        - object: 'column:activitypub_inbox_envelopes.claimed_activity_type'
           reason: 'ActivityPub sender-defined activity type; see decision 8.'
         - object: 'column:oauth_authorization_requests.client_state'
           reason: 'OAuth client opaque state is replayed exactly; see decision 8.'
@@ -5227,6 +5198,12 @@ rules:
         - pattern: _(history|change_logs|audit_logs)$
           message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
       allow:
+        - object: table:post_moderation_retention_post_work_items
+          reason: >-
+            This per-post idempotent database-only recheck is serialized by the post row and its
+            work item transaction lock; it needs no lease or attempt fence and is deleted on completion.
+        - object: table:agent_moderation_retention_post_work_items
+          reason: Post-locked database-only reconciliation commits its cursor with moderation rows; no external work or lease survives the transaction.
         - object: table:oauth_authorization_server_events
           reason: >-
             Consent and revocation events reject every UPDATE and ordinary DELETE. Their
@@ -5535,3 +5512,92 @@ rules:
       rulePrefixes: [react-hooks-js/]
       # A blanket disable would also hide the React compiler and hook rules.
       banBlanketDisable: true
+
+  # NODE_V8_COVERAGE launches these callables (#3593). The callback tables in the
+  # native-mv and EXPLAIN runners hide their callees, so each contract is listed too.
+  # External I/O and default-import assert calls stay advisories; a producer whose
+  # graph is resolved and reaches no assertion owner still fails. No file baseline.
+  - name: coverage producers reach an assertion owner
+    rule: coverage-producer-assertion-owner
+    scope: repository
+    severity: error
+    options:
+      unanalyzable: advise
+      producers:
+        - { file: backend/scripts/native-mv-contracts/run.mts, symbol: main }
+        - {
+            file: backend/scripts/native-mv-contracts/trending-http.mts,
+            symbol: checkTrendingHttpContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/trending-service.mts,
+            symbol: checkTrendingServiceContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker-paged.mts,
+            symbol: checkRssWorkerPagedContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker-sparse.mts,
+            symbol: checkRssWorkerSparseLane,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker.mts,
+            symbol: checkRssWorkerContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/crawl-tiers.mts,
+            symbol: checkCrawlTierContracts,
+          }
+        - { file: backend/scripts/native-mv-contracts/revenue.mts, symbol: checkRevenueContracts }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-author-deletion.mts,
+            symbol: checkHashtagAuthorDeletionContract,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-community.mts,
+            symbol: checkHashtagCommunityContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            symbol: checkHashtagEligibilityContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-root-visibility.mts,
+            symbol: checkHashtagRootVisibilityContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-ranking.mts,
+            symbol: checkHashtagSearchRankingContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            symbol: checkHashtagSearchRssContracts,
+          }
+        - { file: backend/scripts/check-rss-feed-crawl-tiers.mts, symbol: main }
+        - { file: backend/scripts/rss-crawl-tier-contract.mts, symbol: checkTieredContract }
+        - { file: backend/scripts/explain-analyze/run.mts, symbol: run }
+        - { file: backend/scripts/explain-analyze/pruning/run.mts, symbol: runPruningProof }
+        - {
+            file: backend/scripts/explain-analyze/pruning/run.mts,
+            symbol: relayWithoutLibpqOverrides,
+          }
+      assertions:
+        - { module: 'node:assert/strict', export: equal }
+        - { module: 'node:assert/strict', export: notEqual }
+        - { module: 'node:assert/strict', export: deepEqual }
+        - { module: 'node:assert/strict', export: notDeepEqual }
+        - { module: 'node:assert/strict', export: strictEqual }
+        - { module: 'node:assert/strict', export: deepStrictEqual }
+        - { module: 'node:assert/strict', export: notStrictEqual }
+        - { module: 'node:assert/strict', export: notDeepStrictEqual }
+        - { module: 'node:assert/strict', export: partialDeepStrictEqual }
+        - { module: 'node:assert/strict', export: ok }
+        - { module: 'node:assert/strict', export: match }
+        - { module: 'node:assert/strict', export: doesNotMatch }
+        - { module: 'node:assert/strict', export: throws }
+        - { module: 'node:assert/strict', export: doesNotThrow }
+        - { module: 'node:assert/strict', export: rejects }
+        - { module: 'node:assert/strict', export: doesNotReject }
+        - { module: 'node:assert/strict', export: ifError }
+        - { module: 'node:assert/strict', export: fail }

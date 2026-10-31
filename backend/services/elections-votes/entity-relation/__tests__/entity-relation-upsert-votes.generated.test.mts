@@ -31,29 +31,6 @@ describe('upsert.generated (votes)', () => {
     ).rejects.toThrow(`Entity relation ${metadata.table_name} does not support election votes`)
   })
 
-  it('upsertEntityRelation automatically votes when relation has election (default behavior)', async () => {
-    const user = await createTestUser()
-    const topic = await createTestTopic()
-    const post = await createTestPost()
-
-    const metadata = entityRelationMetadatum.find(
-      m => m.subject_type === 'topic' && m.object_type === 'post' && m.predicate === 'related',
-    )!
-    expect(metadata.election).toBe(true) // Verify this relation has election enabled
-
-    const relations = await upsertEntityRelation(user!, metadata, topic, [post])
-
-    expect(relations.length).toBe(1)
-    expect(relations[0].id).toBeDefined()
-
-    // Verify vote was created
-    const vote = await getEntityRelationElectionVote(user!.id, relations[0].id!)
-    expect(vote).not.toBeNull()
-    expect(vote!.user_id).toBe(user!.id)
-    expect(vote!.entity_id).toBe(relations[0].id)
-    expect(vote!.choice).toBe('confirm')
-  })
-
   it('re-enqueues aggregate repair for an idempotent internal auto-vote', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user })
@@ -174,6 +151,8 @@ describe('upsert.generated (votes)', () => {
     for (const electionId of electionIds) {
       const vote = await getEntityRelationElectionVote(user!.id, electionId)
       expect(vote).not.toBeNull()
+      expect(vote!.user_id).toBe(user!.id)
+      expect(vote!.entity_id).toBe(electionId)
       expect(vote!.choice).toBe('confirm')
     }
   })

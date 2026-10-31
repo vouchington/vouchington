@@ -25,13 +25,13 @@
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.1.2",
+    "@vouchington/postgres": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudfront": "^3.1156.0",
-    "@aws-sdk/client-dynamodb": "^3.1156.0",
+    "@aws-sdk/client-cloudfront": "^3.1159.0",
+    "@aws-sdk/client-dynamodb": "^3.1159.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -9,7 +9,7 @@ import {
   insertTestCommunityPostReview,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { withLiveAiUsageCapBreach } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import * as communityModeration from '@agents/community-moderation'
 
 describe('POST /api/v1/communities/:slug/automod/simulate', () => {
@@ -145,44 +145,44 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   })
 
   it('returns 429 and does not call the agent when the daily spend cap is breached', async () => {
-    const owner = await createTestUser()
-    const request = createRequest()
-    await request.authenticateAs(owner)
-    const community = await insertTestCommunity({
-      createdById: owner.id,
-      slug: `automod-sim-429-${createRandomString(8)}`,
-    })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: owner.id,
-      role: 'owner',
-    })
-    const prompt = await insertTestCommunityAgentPrompt({
-      communityId: community.id,
-      createdById: owner.id,
-      slotAllocated: false,
-    })
-    // The cap check only guards requests that would actually call OpenAI (#9348 review round 10):
-    // a matching post is required here so this test still exercises the breach path.
-    const postId = await insertTestPost({
-      title: `Automod cap check ${createRandomString(8)}`,
-      slug: `automod-sim-429-post-${createRandomString(8)}`,
-      markdown: 'Post body for spend-cap breach simulation',
-      createdById: owner.id,
-      communityId: community.id,
-    })
-    await insertTestCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: owner.id,
-    })
-
-    await withReservedAiUsageDay(0, async () => {
-      // The reserved day has known priced spend above the zero cap.
+    await withLiveAiUsageCapBreach(async () => {
+      // Exact owned rows put known priced spend above the zero cap on the live UTC day.
       const simulateSpy = vi
         .spyOn(communityModeration, 'simulateCommunityPromptOnPosts')
         .mockResolvedValue([])
       try {
+        const owner = await createTestUser()
+        const community = await insertTestCommunity({
+          createdById: owner.id,
+          slug: `automod-sim-429-${createRandomString(8)}`,
+        })
+        await insertTestCommunityMember({
+          communityId: community.id,
+          userId: owner.id,
+          role: 'owner',
+        })
+        const prompt = await insertTestCommunityAgentPrompt({
+          communityId: community.id,
+          createdById: owner.id,
+          slotAllocated: false,
+        })
+        // The cap check only guards requests that would actually call OpenAI (#9348 review round 10):
+        // a matching post is required here so this test still exercises the breach path.
+        const postId = await insertTestPost({
+          title: `Automod cap check ${createRandomString(8)}`,
+          slug: `automod-sim-429-post-${createRandomString(8)}`,
+          markdown: 'Post body for spend-cap breach simulation',
+          createdById: owner.id,
+          communityId: community.id,
+        })
+        await insertTestCommunityPostReview({
+          communityId: community.id,
+          postId,
+          submittedById: owner.id,
+        })
+
+        const request = createRequest()
+        await request.authenticateAs(owner)
         await request
           .post(`/api/v1/communities/${community.slug}/automod/simulate`)
           .set('Content-Type', 'application/json')
@@ -197,28 +197,28 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   })
 
   it('returns 200 for an empty simulation even when the daily spend cap is breached', async () => {
-    const owner = await createTestUser()
-    const request = createRequest()
-    await request.authenticateAs(owner)
     // No posts means simulateCommunityPromptOnPosts() never calls OpenAI (simulate.mts:54), so the
     // cap check must be skipped entirely -- a breached cap must not 429 a request that would never
     // have incurred any spend.
-    const community = await insertTestCommunity({
-      createdById: owner.id,
-      slug: `automod-sim-empty-cap-${createRandomString(8)}`,
-    })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: owner.id,
-      role: 'owner',
-    })
-    const prompt = await insertTestCommunityAgentPrompt({
-      communityId: community.id,
-      createdById: owner.id,
-      slotAllocated: false,
-    })
+    await withLiveAiUsageCapBreach(async () => {
+      const owner = await createTestUser()
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `automod-sim-empty-cap-${createRandomString(8)}`,
+      })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: owner.id,
+        role: 'owner',
+      })
+      const prompt = await insertTestCommunityAgentPrompt({
+        communityId: community.id,
+        createdById: owner.id,
+        slotAllocated: false,
+      })
 
-    await withReservedAiUsageDay(0, async () => {
+      const request = createRequest()
+      await request.authenticateAs(owner)
       const res = await request
         .post(`/api/v1/communities/${community.slug}/automod/simulate`)
         .set('Content-Type', 'application/json')

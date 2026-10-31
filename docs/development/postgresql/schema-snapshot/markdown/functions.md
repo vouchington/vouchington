@@ -133,6 +133,30 @@ CREATE OR REPLACE FUNCTION public.fn_create_oauth_authorization_exchange_transit
  LANGUAGE plpgsql
 ```
 
+## `fn_create_post_moderation_disposition_retention_due`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_disposition_retention_due()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_create_post_moderation_retention_post_hash_work_item`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_hash_work_item()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_create_post_moderation_retention_post_work_item(p_post_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_item(p_post_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_user_individual_household`
 
 ```sql
@@ -337,38 +361,6 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_active_user_data_request_claim()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_retention`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_retention()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_storage_after_delete`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_delete()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_storage_after_insert`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_insert()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_activitypub_inbox_delivery_storage_after_update`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_update()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -617,6 +609,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_agent_moderation_retention_post_hash`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_agent_moderation_retention_post_hash()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1447,6 +1447,22 @@ CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)
  IMMUTABLE
 ```
 
+## `fn_update_agent_moderation_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_agent_moderation_retention_reference`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention_reference()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_agent_moderation_transparency`
 
 ```sql
@@ -1647,6 +1663,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_post_moderation_version_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_post_moderation_version_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_posts_search_vector`
 
 ```sql
@@ -1740,6 +1764,14 @@ CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(conte
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)
  RETURNS boolean
+ LANGUAGE plpgsql
+```
+
+## `fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)
+ RETURNS void
  LANGUAGE plpgsql
 ```
 

@@ -26,8 +26,12 @@ export function createCrawlerPathname(crawler: string | IdInput, suffix = ''): s
   return `/crawler/${idOrValue(crawler)}${suffix}`
 }
 
+export function userPathSegment(user: UserHrefInput): string {
+  return user.username ?? user.id
+}
+
 export function createUserPathname(user: string | UserHrefInput, suffix = ''): string {
-  const idOrUsername = typeof user === 'string' ? user : (user.username ?? user.id)
+  const idOrUsername = typeof user === 'string' ? user : userPathSegment(user)
   return `/user/${idOrUsername}${suffix}`
 }
 

@@ -1,4 +1,5 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import assert from 'node:assert/strict'
 import { createDeterministicCopyrightCorrespondencesInTransaction } from '@services/copyright-notices/correspondence'
 import {
   createCopyrightDeliveryIntents,
@@ -8,6 +9,8 @@ import { createCopyrightStatementDeliveriesInTransaction } from '@services/copyr
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { runCopyrightReadBatchScenarios } from './copyright-read-batches.mts'
+import { readCopyrightReviewTargetBreaches } from '@services/copyright-notices/review-target-breaches'
+import { seedReviewTargetBreaches } from '../seed-data/review-target-breaches.mts'
 
 const LISTED = 10
 
@@ -31,6 +34,39 @@ export async function runCopyrightDeliveryBatchScenarios(): Promise<void> {
       'The copyright delivery batch scenarios need the development seed notice; run backend/scripts/seeds/dev-seed.mts before the EXPLAIN seed',
     )
   await runCopyrightReadBatchScenarios({ noticeId: seeded.notice_id, targetId: seeded.target_id })
+  await seedReviewTargetBreaches(seeded.notice_id)
+  const reviewNow = new Date()
+  await write(`/* seedExplainReviewTargetBreaches:analyze */
+    ANALYZE copyright_notice_submissions, copyright_notice_submission_assessments,
+      copyright_notice_deadlines,
+      copyright_notice_email_intakes`)
+  registerScenarioContract('copyright-review-target-breaches', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_deadlines', max: 25 },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_submissions', max: 50 },
+    ],
+    seededRows: {
+      copyright_notice_delivery_work_items: 1_100,
+      copyright_notice_email_intakes: 1_000,
+      copyright_notice_email_intake_receipts: 1_000,
+      copyright_notice_submissions: 1,
+    },
+  })
+  await runAndCapture(
+    'copyright-review-target-breaches',
+    async () => {
+      const result = await readCopyrightReviewTargetBreaches({
+        now: reviewNow,
+        reviewTargetMinutes: 60,
+      })
+      assert.ok(result.waitingPastTarget.count > 0)
+      assert.ok(result.missedEscalation.count > 0)
+      assert.ok(result.missedRestorationDeadline.count > 0)
+      assert.ok(result.emailIntakesWaitingPastTarget.count > 0)
+    },
+    undefined,
+    'readCopyrightReviewTargetBreaches',
+  )
   await runDeliveryWrites(seeded.notice_id)
   await runDeliveryRecipients(seeded.notice_id)
   await runDeliveryRecipientEmails()

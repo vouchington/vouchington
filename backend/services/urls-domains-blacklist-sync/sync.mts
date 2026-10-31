@@ -19,7 +19,6 @@ import {
 import { syncDomainsWithDatabase } from './sync-db.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import { ReplicaBehindError } from './replica-freshness.mts'
-export type { SyncBlacklistSourceResult } from './sync-types.mts'
 
 type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
 
@@ -61,7 +60,7 @@ export async function syncBlacklistSourceById(
   }
 }
 
-export async function syncBlacklistSource(
+async function syncBlacklistSource(
   sourceId: DomainBlacklistSourceId,
   url: string,
   sourceType: 'url' | 'email' = 'url',
@@ -112,9 +111,7 @@ async function fetchBlacklist(
   })
 }
 
-export function createBlacklistFetchHeaders(
-  cache: SourceCacheHeaders | null,
-): Record<string, string> {
+function createBlacklistFetchHeaders(cache: SourceCacheHeaders | null): Record<string, string> {
   const headers: Record<string, string> = {
     'Accept-Encoding': 'gzip, deflate, br',
   }

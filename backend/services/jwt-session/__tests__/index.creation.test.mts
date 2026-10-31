@@ -14,21 +14,6 @@ describe('index.creation', () => {
   const SESSION_TOKEN_EXPIRATION_SECONDS = 10 * 60 // web access lifetime
   const ATTESTED_SESSION_TOKEN_EXPIRATION_SECONDS = 30 * 24 * 60 * 60 // matches ATTESTED_SESSION_EXPIRATION_STRING
 
-  it('createDeviceAndSessionTokens creates a valid device token', async () => {
-    const did = v7()
-    const result = await createDeviceAndSessionTokens({ did })
-
-    expect(result.deviceToken.token).toBeTruthy()
-    expect(result.deviceToken.payload.did).toBe(did)
-
-    const verified = await verifyDeviceAndSessionTokens({
-      deviceToken: result.deviceToken.token,
-      sessionToken: result.sessionToken.token,
-    })
-    expect(verified).not.toBe(false)
-    expect((verified as Exclude<typeof verified, false>).did).toBe(did)
-  })
-
   it('createDeviceAndSessionTokens rejects invalid device id', async () => {
     await expect(createDeviceAndSessionTokens({ did: 'not-a-uuid' })).rejects.toThrow(
       'Invalid UUIDv7',
@@ -39,10 +24,19 @@ describe('index.creation', () => {
     const did = v7()
     const result = await createDeviceAndSessionTokens({ did })
 
+    expect(result.deviceToken.token).toBeTruthy()
+    expect(result.deviceToken.payload.did).toBe(did)
+    expect(result.deviceToken.payload.dc).toBeUndefined()
+    expect(jose.decodeJwt(result.deviceToken.token).dc).toBeUndefined()
     expect(result.sessionToken.token).toBeTruthy()
     expect(result.sessionToken.payload.did).toBe(did)
     expect(result.sessionToken.payload.sid).toBeTruthy()
     expect(result.sessionToken.payload.uid).toBeNull()
+    expect(result.sessionToken.payload.rol).toBeUndefined()
+    expect(result.sessionToken.payload.mpl).toBeUndefined()
+    expect(result.sessionToken.payload.tt).toBeUndefined()
+    expect(result.sessionToken.payload.rca).toBeUndefined()
+    expect(result.sessionToken.payload.sca).toBeUndefined()
 
     const verified = await verifyDeviceAndSessionTokens({
       deviceToken: result.deviceToken.token,
@@ -53,51 +47,6 @@ describe('index.creation', () => {
     expect(v2.did).toBe(did)
     expect(v2.sid).toBe(result.sessionToken.payload.sid)
     expect(v2.uid).toBeNull()
-  })
-
-  it('createDeviceAndSessionTokens sets issuer and expiration claims on both tokens', async () => {
-    const did = v7()
-    const user = await createTestUserDirect()
-    const uid = user.id
-    const result = await createDeviceAndSessionTokens({ did, uid })
-
-    const decodedDevice = jose.decodeJwt(result.deviceToken.token)
-    const decodedSession = jose.decodeJwt(result.sessionToken.token)
-
-    expect(decodedDevice.iss).toBe('voucha.ai')
-    expect(decodedSession.iss).toBe('voucha.ai')
-    expect(typeof decodedDevice.iat).toBe('number')
-    expect(typeof decodedDevice.exp).toBe('number')
-    expect(typeof decodedSession.iat).toBe('number')
-    expect(typeof decodedSession.exp).toBe('number')
-    const deviceLifetime = (decodedDevice.exp as number) - (decodedDevice.iat as number)
-    // Allow ±1s tolerance to avoid flakiness from clock boundaries
-    expect(deviceLifetime).toBeGreaterThanOrEqual(DEVICE_TOKEN_EXPIRATION_SECONDS - 1)
-    expect(deviceLifetime).toBeLessThanOrEqual(DEVICE_TOKEN_EXPIRATION_SECONDS + 1)
-    const sessionLifetime = (decodedSession.exp as number) - (decodedSession.iat as number)
-    // Allow ±1s tolerance to avoid flakiness from clock boundaries
-    expect(sessionLifetime).toBeGreaterThanOrEqual(SESSION_TOKEN_EXPIRATION_SECONDS - 1)
-    expect(sessionLifetime).toBeLessThanOrEqual(SESSION_TOKEN_EXPIRATION_SECONDS + 1)
-    expect(decodedDevice.did).toBe(did)
-    expect(decodedSession.did).toBe(did)
-    expect(decodedSession.sid).toBe(result.sessionToken.payload.sid)
-    expect(decodedSession.uid).toBe(uid)
-  })
-
-  it('createDeviceAndSessionTokens with uid creates session with user', async () => {
-    const did = v7()
-    const user = await createTestUserDirect()
-    const uid = user.id
-    const result = await createDeviceAndSessionTokens({ did, uid })
-
-    expect(result.sessionToken.payload.uid).toBe(uid)
-
-    const verified = await verifyDeviceAndSessionTokens({
-      deviceToken: result.deviceToken.token,
-      sessionToken: result.sessionToken.token,
-    })
-    expect(verified).not.toBe(false)
-    expect((verified as Exclude<typeof verified, false>).uid).toBe(uid)
   })
 
   it('createDeviceAndSessionTokens with custom sid uses provided sid', async () => {
@@ -152,6 +101,25 @@ describe('index.creation', () => {
     expect(result.sessionToken.payload.did).toBe(did)
     expect(result.sessionToken.payload.uid).toBe(uid)
 
+    const decodedDevice = jose.decodeJwt(result.deviceToken.token)
+    const decodedSession = jose.decodeJwt(result.sessionToken.token)
+    expect(decodedDevice.iss).toBe('voucha.ai')
+    expect(decodedSession.iss).toBe('voucha.ai')
+    expect(typeof decodedDevice.iat).toBe('number')
+    expect(typeof decodedDevice.exp).toBe('number')
+    expect(typeof decodedSession.iat).toBe('number')
+    expect(typeof decodedSession.exp).toBe('number')
+    expect(decodedDevice.did).toBe(did)
+    expect(decodedSession.did).toBe(did)
+    expect(decodedSession.sid).toBe(result.sessionToken.payload.sid)
+    expect(decodedSession.uid).toBe(uid)
+    const deviceLifetime = (decodedDevice.exp as number) - (decodedDevice.iat as number)
+    expect(deviceLifetime).toBeGreaterThanOrEqual(DEVICE_TOKEN_EXPIRATION_SECONDS - 1)
+    expect(deviceLifetime).toBeLessThanOrEqual(DEVICE_TOKEN_EXPIRATION_SECONDS + 1)
+    const sessionLifetime = (decodedSession.exp as number) - (decodedSession.iat as number)
+    expect(sessionLifetime).toBeGreaterThanOrEqual(SESSION_TOKEN_EXPIRATION_SECONDS - 1)
+    expect(sessionLifetime).toBeLessThanOrEqual(SESSION_TOKEN_EXPIRATION_SECONDS + 1)
+
     const verified = await verifyDeviceAndSessionTokens({
       deviceToken: result.deviceToken.token,
       sessionToken: result.sessionToken.token,
@@ -180,26 +148,6 @@ describe('index.creation', () => {
     expect(result.sessionToken.payload.tt).toBe(3)
     expect(typeof result.sessionToken.payload.rca).toBe('number')
     expect(typeof result.sessionToken.payload.sca).toBe('number')
-  })
-
-  it('createDeviceAndSessionTokens without uid omits enrichment fields', async () => {
-    const did = v7()
-    const result = await createDeviceAndSessionTokens({ did })
-
-    expect(result.sessionToken.payload.rol).toBeUndefined()
-    expect(result.sessionToken.payload.mpl).toBeUndefined()
-    expect(result.sessionToken.payload.tt).toBeUndefined()
-    expect(result.sessionToken.payload.rca).toBeUndefined()
-    expect(result.sessionToken.payload.sca).toBeUndefined()
-  })
-
-  it('createDeviceAndSessionTokens without deviceClass omits dc from the device token', async () => {
-    const did = v7()
-    const result = await createDeviceAndSessionTokens({ did })
-
-    expect(result.deviceToken.payload.dc).toBeUndefined()
-    const decodedDevice = jose.decodeJwt(result.deviceToken.token)
-    expect(decodedDevice.dc).toBeUndefined()
   })
 
   it('createDeviceAndSessionTokens with deviceClass:attested bakes dc into dt and extends st to 30 days', async () => {

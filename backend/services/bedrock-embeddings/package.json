@@ -28,7 +28,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.1156.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1159.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
@@ -44,7 +44,7 @@
     "pg-copy-streams": "^7.0.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.13.0"
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@types/pg-copy-streams": "^1.2.5",

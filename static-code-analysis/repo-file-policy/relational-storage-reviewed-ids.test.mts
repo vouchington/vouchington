@@ -43,6 +43,19 @@ function snapshot(tableName: string, columns: Record<string, ReturnType<typeof c
 const noFreshness = { enforceCatalogFreshness: false }
 
 describe('reviewed token and audit snapshot identifiers', () => {
+  it('keeps AI usage deletion cursors without FKs while rejecting the same names elsewhere', () => {
+    const columns = { cursor_id: column('uuid'), sweep_upper_bound_id: column('uuid') }
+    expect(
+      checkRelationalStorage(snapshot('ai_usage_retention_cursors', columns), noFreshness),
+    ).toEqual([])
+    expect(checkRelationalStorage(snapshot('new_cursors', columns), noFreshness)).toEqual([
+      expect.stringContaining('new_cursors.cursor_id: UUID reference without a target foreign key'),
+      expect.stringContaining(
+        'new_cursors.sweep_upper_bound_id: UUID reference without a target foreign key',
+      ),
+    ])
+  })
+
   it('keeps classifier keyset positions without FKs while rejecting the same names elsewhere', () => {
     const columns = { cursor_id: column('uuid'), cursor_child_id: column('uuid') }
     expect(
@@ -157,6 +170,23 @@ describe('reviewed token and audit snapshot identifiers', () => {
       'user_data_request_attempt_retention_cursors',
       'cursor_upper_id',
       'token, cursor or protocol identifier',
+    ],
+    ['topic_alias_category_mapping_reconciliations', 'cursor_item_id', 'nonrelationship UUID'],
+    [
+      'topic_alias_category_mapping_reconciliations',
+      'cursor_category_identity_id',
+      'nonrelationship UUID',
+    ],
+    ['topic_alias_category_mapping_reconciliations', 'cursor_feed_id', 'nonrelationship UUID'],
+    [
+      'topic_alias_category_mapping_reconciliations',
+      'sweep_upper_bound_item_id',
+      'nonrelationship UUID',
+    ],
+    [
+      'topic_alias_category_mapping_reconciliations',
+      'sweep_upper_bound_feed_id',
+      'nonrelationship UUID',
     ],
     ['post_votes', 'device_id', 'token, cursor or protocol identifier'],
     ['oauth_authorization_server_events', 'client_id', 'audit snapshot identifier'],

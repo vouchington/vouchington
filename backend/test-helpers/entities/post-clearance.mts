@@ -1,6 +1,6 @@
 import { assertNever } from '@modules/utils/assert-never'
 /* oxlint-disable max-lines -- Clearance fixtures include ledger-backed completion setup. */
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import sql from 'sql-template-strings'
 import { recordTestPostModerationDisposition } from './post-moderation.mts'
@@ -88,29 +88,49 @@ export async function setTestPostClearanceStatus(
 ): Promise<{ id: string; community_id: string | null } | null> {
   const changeType = clearanceChangeType(status)
   const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
-  const { rows } = await write<{ id: string; community_id: string | null }>(sql`
+  await using transaction = await beginTransaction()
+  // History before RowExclusive on posts. Holding the post first deadlocks a session that
+  // already has post_clearance_changes and then needs ShareRowExclusive on posts.
+  const { rows: insertedRows } = await transaction<{
+    id: string
+    change_type: string
+    created_at: Date
+    changed_by_id: string | null
+    public_reason_code: string | null
+    is_platform_override: boolean
+  }>(sql`
     /* setTestPostClearanceStatus */
-    WITH inserted_change AS (
-      INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id)
-      VALUES (COALESCE(${changeId}::uuid, uuidv7()), ${postId}, ${changeType}, ${updatedById ?? null})
-      RETURNING id, post_id, change_type, created_at, changed_by_id, public_reason_code, is_platform_override
-    )
+    INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id)
+    SELECT COALESCE(${changeId}::uuid, uuidv7()), post.id, ${changeType}, ${updatedById ?? null}
+    FROM posts post
+    WHERE post.id = ${postId}
+    RETURNING id, change_type, created_at, changed_by_id, public_reason_code, is_platform_override
+  `)
+  const inserted = insertedRows[0]
+  if (!inserted) {
+    await transaction.commit()
+    return null
+  }
+  const { rows } = await transaction<{ community_id: string | null }>(sql`
+    /* setTestPostClearanceStatus:projectPost */
     UPDATE posts
     SET
       clearance_version = posts.clearance_version + 1,
-      clearance_changed_at = inserted_change.created_at,
-      clearance_changed_by_id = inserted_change.changed_by_id,
-      clearance_public_reason_code = inserted_change.public_reason_code,
-      clearance_is_platform_override = inserted_change.is_platform_override,
-      approved_at = CASE WHEN inserted_change.change_type = 'approve' THEN inserted_change.created_at ELSE NULL END,
-      rejected_at = CASE WHEN inserted_change.change_type = 'reject' THEN inserted_change.created_at ELSE NULL END,
-      in_review_at = CASE WHEN inserted_change.change_type = 'mark_in_review' THEN inserted_change.created_at ELSE NULL END,
+      clearance_changed_at = ${inserted.created_at}::timestamptz,
+      clearance_changed_by_id = ${inserted.changed_by_id}::uuid,
+      clearance_public_reason_code = ${inserted.public_reason_code},
+      clearance_is_platform_override = ${inserted.is_platform_override}::boolean,
+      approved_at = CASE WHEN ${inserted.change_type} = 'approve' THEN ${inserted.created_at}::timestamptz ELSE NULL END,
+      rejected_at = CASE WHEN ${inserted.change_type} = 'reject' THEN ${inserted.created_at}::timestamptz ELSE NULL END,
+      in_review_at = CASE WHEN ${inserted.change_type} = 'mark_in_review' THEN ${inserted.created_at}::timestamptz ELSE NULL END,
       updated_by_id = COALESCE(${updatedById ?? null}, updated_by_id)
-    FROM inserted_change
-    WHERE posts.id = inserted_change.post_id
-    RETURNING inserted_change.id, posts.community_id
+    WHERE id = ${postId}
+    RETURNING community_id
   `)
-  return rows[0] ?? null
+  const projected = rows[0]
+  if (!projected) return null
+  await transaction.commit()
+  return { id: inserted.id, community_id: projected.community_id }
 }
 
 export async function approveTestPost(postId: string): Promise<void> {

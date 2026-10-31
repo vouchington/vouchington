@@ -119,7 +119,12 @@ describe('validateUsername', () => {
   })
 
   it('should require at least 3 characters', () => {
-    expect(() => validateUsername('ab')).toThrow('at least 3 characters')
+    expect(() => validateUsername('ab')).toThrow(
+      expect.objectContaining({
+        status: 422,
+        message: expect.stringContaining('at least 3 characters'),
+      }),
+    )
     expect(() => validateUsername('')).toThrow('at least 3 characters')
   })
 
@@ -146,17 +151,6 @@ describe('validateUsername', () => {
   it('should be case-insensitive', () => {
     expect(validateUsername('User')).toBe('User')
     expect(validateUsername('USER')).toBe('USER')
-  })
-
-  it('should throw with 422 status code', () => {
-    expect(() => validateUsername('ab')).toThrow(Error)
-    let caughtError: any
-    try {
-      validateUsername('ab')
-    } catch (err: any) {
-      caughtError = err
-    }
-    expect(caughtError?.status).toBe(422)
   })
 })
 

@@ -52,10 +52,6 @@ export const PLANS: Record<GenericFamily, Plan> = {
       AND NOT EXISTS (
         SELECT 1 FROM activitypub_post_likes like_row
         WHERE like_row.remote_actor_id = source.id
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM activitypub_inbox_envelopes envelope
-        WHERE envelope.remote_actor_id = source.id
       )`,
     retentionDays: 90,
   },

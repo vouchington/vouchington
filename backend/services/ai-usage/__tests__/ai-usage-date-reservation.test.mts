@@ -4,7 +4,10 @@ import { createAuthenticatedTestSession } from '@voucha/test-helpers/authenticat
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
-import { acquireTestAiUsageDateReservationControlSlot } from '@voucha/test-helpers/entities/ai-usage-date-reservation'
+import {
+  acquireTestAiUsageDateReservationControlSlot,
+  getTestAiUsageSlotGridForDate,
+} from '@voucha/test-helpers/entities/ai-usage-date-reservation'
 import {
   getDailyAiCostTotalMicrounits,
   refreshDailyAiCostTotalMicrounits,
@@ -13,6 +16,30 @@ import {
 describe('acquireTestAiUsageDateReservation', () => {
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('uses stable absolute slot identities across adjacent process start months', () => {
+    const earlier = getTestAiUsageSlotGridForDate(new Date('2026-10-31T23:59:00Z'))
+    const later = getTestAiUsageSlotGridForDate(new Date('2026-11-01T00:01:00Z'))
+    expect(
+      earlier.ordinarySlots.filter(slot => later.ordinarySlots.includes(slot)).length,
+    ).toBeGreaterThan(0)
+    expect(earlier.ordinarySlots).not.toContain(later.controlSlot)
+    expect(later.ordinarySlots).not.toContain(earlier.controlSlot)
+  })
+
+  it('recycles released slots after more than two full ordinary pools', async () => {
+    const poolSize = getTestAiUsageSlotGridForDate(new Date()).ordinarySlots.length
+    const days = new Set<string>()
+    for (let attempt = 0; attempt < poolSize * 2 + 1; attempt++) {
+      const reservation = await acquireTestAiUsageDateReservation()
+      try {
+        days.add(reservation.day)
+      } finally {
+        await reservation.release()
+      }
+    }
+    expect(days.size).toBeLessThan(poolSize * 2 + 1)
   })
 
   it('gives concurrent callers distinct owned days', async () => {
@@ -55,10 +82,19 @@ describe('acquireTestAiUsageDateReservation', () => {
     })
     await expect(getDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 321 })
     await first.release()
+    // Slot choice follows Date. Acquiring again while the clock sits inside the reserved day
+    // drops every slot that reaches that day, and the earliest day then has none left.
+    vi.useRealTimers()
 
     const second = await acquireTestAiUsageDateReservation()
     onTestFinished(() => second.release())
     expect(second.day).not.toBe(first.day)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${first.day}T12:00:00.000Z`))
+    await expect(getDailyAiCostTotalMicrounits(second.day)).resolves.toEqual({
+      totalMicrounits: 0,
+      day: second.day,
+    })
     vi.setSystemTime(new Date(`${second.day}T12:00:00.000Z`))
     await expect(getDailyAiCostTotalMicrounits()).resolves.toEqual({
       totalMicrounits: 0,
@@ -66,16 +102,15 @@ describe('acquireTestAiUsageDateReservation', () => {
     })
   })
 
-  it('cleans polluted rows before acquisition, again on release, and when its control slot is reused', async () => {
+  it('cleans owned rows on release and starts a reused control month empty', async () => {
     const initial = await acquireTestAiUsageDateReservationControlSlot()
     onTestFinished(() => initial.release())
     const dayStartMs = Date.parse(`${initial.day}T00:00:00.000Z`)
-    await initial.release()
-
     await insertTestAiUsageRecord({
       id: timestampToUuidv7LowerBound(dayStartMs),
       costMicrounits: 999,
     })
+    await initial.release()
 
     const reservation = await acquireTestAiUsageDateReservationControlSlot()
     onTestFinished(() => reservation.release())

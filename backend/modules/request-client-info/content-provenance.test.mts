@@ -38,11 +38,6 @@ describe('getRequestContentProvenance origin mapping', () => {
       { createdVia: 'mcp', oauthClientId: null },
     ],
     [
-      'MCP OAuth',
-      { interface: 'mcp', credential: 'oauth', client: null, oauthClientId: 'client-id' },
-      { createdVia: 'mcp', oauthClientId: 'client-id' },
-    ],
-    [
       'REST API key',
       { interface: 'rest', credential: 'api_key', client: null, oauthClientId: null },
       { createdVia: 'api', oauthClientId: null },
@@ -80,12 +75,6 @@ describe('getRequestContentProvenance', () => {
       createdVia: 'mcp',
       oauthClientId: 'client-id',
     })
-  })
-
-  it('rejects content from a session request without client information', () => {
-    expect(() => runWithSessionRequestContext(null, getRequestContentProvenance)).toThrow(
-      expect.objectContaining({ status: 400, code: 'INVALID_CLIENT_INFO' }),
-    )
   })
 
   it('treats a read outside a request as a programming error', () => {

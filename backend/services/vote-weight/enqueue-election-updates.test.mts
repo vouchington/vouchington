@@ -14,13 +14,22 @@ import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   enqueueElectionUpdatePageForUser,
   enqueueElectionUpdatesForUser,
-  getBulkEnqueuedJobIds,
 } from './enqueue-election-updates.mts'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 
 type ElectionUpdatePage = Awaited<ReturnType<typeof enqueueElectionUpdatePageForUser>>
 
 const ELECTION_JOB_NAME = 'vote-aggregation.processUpdateElectionVoteStats'
+
+function electionJobs(result: unknown): { id: string }[] {
+  if (!Array.isArray(result)) throw new Error('Expected election jobs')
+  return result.flatMap(job =>
+    typeof job === 'object' && job !== null && 'id' in job && typeof job.id === 'string'
+      ? [{ id: job.id }]
+      : [],
+  )
+}
+
 const randomHex = () => randomBytes(4).toString('hex')
 const randomUsername = () => `test-vw-enqueue-${randomHex()}`
 
@@ -34,22 +43,6 @@ async function createPost(createdById: string): Promise<string> {
 }
 
 describe('enqueueElectionUpdatesForUser', () => {
-  it('extracts persisted bulk job ids and rejects unexpected enqueue result shapes', () => {
-    expect(getBulkEnqueuedJobIds([])).toEqual([])
-    expect(getBulkEnqueuedJobIds([{ id: 'job-1' }, { id: 'job-2' }])).toEqual(['job-1', 'job-2'])
-    expect(() => getBulkEnqueuedJobIds(undefined)).toThrow('Expected election bulk enqueue')
-    expect(() => getBulkEnqueuedJobIds({ id: 'job-1' })).toThrow('Expected election bulk enqueue')
-    expect(() => getBulkEnqueuedJobIds([null])).toThrow(
-      'Expected election bulk enqueue to return jobs with string ids',
-    )
-    expect(() => getBulkEnqueuedJobIds([1])).toThrow(
-      'Expected election bulk enqueue to return jobs with string ids',
-    )
-    expect(() => getBulkEnqueuedJobIds([{ id: 1 }])).toThrow(
-      'Expected election bulk enqueue to return jobs with string ids',
-    )
-  })
-
   it('enqueues the whole short history in one page without a continuation', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const postId = await createPost(user!.id)
@@ -157,14 +150,27 @@ describe('enqueueElectionUpdatePageForUser', () => {
 
     const [page, unrelatedJobs] = await Promise.all([
       enqueueElectionUpdatePageForUser(user!.id, null),
-      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]),
+      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]).then(electionJobs),
     ])
     expect(page).toEqual({ jobIds: [], nextCursor: null })
 
-    const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
-    if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
-    const unrelatedJob = await voteAggregation.getJob(unrelatedJobId)
+    const unrelatedJob = await voteAggregation.getJob(unrelatedJobs[0]!.id)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
+  })
+
+  it('returns the persisted ids of the election jobs the page enqueued', async () => {
+    const user = await createTestUserDirect({ username: randomUsername() })
+    const postIds = await Promise.all([1, 2].map(() => createPost(user!.id)))
+    for (const postId of postIds) await insertPostElectionVote(user!.id, postId, 1)
+
+    const page = await enqueueElectionUpdatePageForUser(user!.id, null)
+    expect(page.jobIds).toHaveLength(2)
+    const jobs = await Promise.all(page.jobIds.map(jobId => voteAggregation.getJob(jobId)))
+    const foundElectionIds = jobs.map(job => {
+      if (!job) throw new Error('Expected a persisted election job')
+      return (job.data as { electionId: string }).electionId
+    })
+    expect(new Set(foundElectionIds)).toEqual(new Set(postIds))
   })
 
   it('enqueues a post election update for the voted post id', async () => {
@@ -219,13 +225,11 @@ describe('enqueueElectionUpdatePageForUser', () => {
 
     const [page, unrelatedJobs] = await Promise.all([
       enqueueElectionUpdatePageForUser(fakeId, null),
-      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]),
+      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]).then(electionJobs),
     ])
     expect(page.jobIds).toEqual([])
 
-    const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
-    if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
-    const unrelatedJob = await voteAggregation.getJob(unrelatedJobId)
+    const unrelatedJob = await voteAggregation.getJob(unrelatedJobs[0]!.id)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 

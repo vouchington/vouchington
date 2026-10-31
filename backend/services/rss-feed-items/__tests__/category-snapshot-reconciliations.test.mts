@@ -10,7 +10,6 @@ import {
   replaceTestRssFeedItemCategorySnapshotReconciliation,
 } from '@voucha/test-helpers'
 import {
-  acknowledgeRssFeedItemCategorySnapshot,
   markRssFeedCategorySnapshotsForReconciliation,
   markRssFeedItemCategorySnapshotsForReconciliation,
   reconcileRssFeedItemCategorySnapshots,
@@ -39,7 +38,7 @@ describe('RSS feed item category snapshot reconciliation', () => {
       const feed = await insertTestRssFeedDirect({})
       const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [])])
       const original = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
-      await acknowledgeRssFeedItemCategorySnapshot({ ...original!, categories: [] })
+      await reconcileOwned([item!.id])
       const mark = async () => {
         await using query = await beginTransaction()
         if (kind === 'item')
@@ -207,36 +206,6 @@ describe('RSS feed item category snapshot reconciliation', () => {
     await expect(
       listTestRssFeedItemCategorySnapshotReconciliations([first!.id, second!.id]),
     ).resolves.toEqual([])
-  })
-
-  it('does not let a stale acknowledgement delete a newer generation', async () => {
-    const suffix = Math.random().toString(36).slice(2, 12)
-    const feed = await insertTestRssFeedDirect({})
-    const firstCategory = `first-${suffix}`
-    const secondCategory = `second-${suffix}`
-    const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [firstCategory])])
-    const first = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
-
-    await upsertRssFeedItems(feed.id, [itemInput(suffix, [secondCategory], 'Changed title')])
-    const second = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
-    expect(Number(second!.generation)).toBe(Number(first!.generation) + 1)
-    expect(second!.change_id).not.toBe(first!.change_id)
-
-    const staleSnapshot: Parameters<typeof acknowledgeRssFeedItemCategorySnapshot>[0] = {
-      rss_feed_item_id: item!.id,
-      categories: first!.categories as string[],
-      generation: first!.generation,
-      change_id: first!.change_id,
-    }
-    await acknowledgeRssFeedItemCategorySnapshot(staleSnapshot)
-    await expect(getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).resolves.toMatchObject(
-      { categories: [secondCategory], generation: second!.generation },
-    )
-
-    await reconcileOwned([item!.id])
-    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
-      expect.objectContaining({ category_text: secondCategory }),
-    ])
   })
 
   it('drains only the oldest bounded batch', async () => {

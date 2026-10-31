@@ -29,38 +29,28 @@ describe('getPostModerationContextBatch', () => {
     expect(result.size).toBe(0)
   })
 
-  it('returns a context entry for each requested post id', async () => {
+  it('returns null platform_moderation when no moderation data exists', async () => {
     const postId1 = await insertTestPost({
       createdById: author.id,
-      slug: `mod-ctx-batch-1-${crypto.randomUUID().slice(0, 8)}`,
-      title: `Mod Ctx Batch Post 1 ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `mod-ctx-no-mod-1-${crypto.randomUUID().slice(0, 8)}`,
+      title: `Mod Ctx No Moderation Post 1 ${crypto.randomUUID().slice(0, 8)}`,
       markdown: 'body 1',
     })
     const postId2 = await insertTestPost({
       createdById: author.id,
-      slug: `mod-ctx-batch-2-${crypto.randomUUID().slice(0, 8)}`,
-      title: `Mod Ctx Batch Post 2 ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `mod-ctx-no-mod-2-${crypto.randomUUID().slice(0, 8)}`,
+      title: `Mod Ctx No Moderation Post 2 ${crypto.randomUUID().slice(0, 8)}`,
       markdown: 'body 2',
     })
     const result = await getPostModerationContextBatch([postId1, postId2])
     expect(result.size).toBeGreaterThanOrEqual(2)
-    expect(result.has(postId1)).toBe(true)
-    expect(result.has(postId2)).toBe(true)
-  })
-
-  it('returns null platform_moderation when no moderation data exists', async () => {
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `mod-ctx-no-mod-${crypto.randomUUID().slice(0, 8)}`,
-      title: `Mod Ctx No Moderation Post ${crypto.randomUUID().slice(0, 8)}`,
-      markdown: 'body',
-    })
-    const result = await getPostModerationContextBatch([postId])
-    const ctx = result.get(postId)
-    expect(ctx).toBeDefined()
-    expect(ctx!.platform_moderation).toBeNull()
-    expect(ctx!.agent_moderations).toEqual([])
-    expect(ctx!.agent_added_tags).toEqual([])
+    for (const postId of [postId1, postId2]) {
+      const ctx = result.get(postId)
+      expect(ctx).toBeDefined()
+      expect(ctx!.platform_moderation).toBeNull()
+      expect(ctx!.agent_moderations).toEqual([])
+      expect(ctx!.agent_added_tags).toEqual([])
+    }
   })
 
   it('includes an entry for a non-existent post id with null moderation', async () => {
@@ -81,20 +71,6 @@ describe('getPostModerationContextBatch', () => {
       markdown: 'body',
     })
     const result = await getPostModerationContextBatch([postId], 'staff')
-    const ctx = result.get(postId)
-    expect(ctx).toBeDefined()
-    expect(ctx!.platform_moderation).toBeNull()
-    expect(Array.isArray(ctx!.agent_added_tags)).toBe(true)
-  })
-
-  it('returns public-tier context for a fresh post (no moderation row)', async () => {
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `mod-ctx-public-${crypto.randomUUID().slice(0, 8)}`,
-      title: `Mod Ctx Public Tier Post ${crypto.randomUUID().slice(0, 8)}`,
-      markdown: 'body',
-    })
-    const result = await getPostModerationContextBatch([postId], 'public')
     const ctx = result.get(postId)
     expect(ctx).toBeDefined()
     expect(ctx!.platform_moderation).toBeNull()

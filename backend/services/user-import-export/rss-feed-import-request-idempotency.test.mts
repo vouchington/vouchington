@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
+  WEB_PROVENANCE,
   getRssFeedImportRequestCountForRowForTest,
   getRssFeedImportRequestForTest,
   insertTestRssFeedDirect,
@@ -10,23 +11,28 @@ import {
   createRssFeedImportRowForTest,
   deleteOwnedRssFeedImportRowForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
-import { recordRssFeedImportRequest } from './import-rss-feeds.mts'
+import type { PrivateUser } from '@services/users/types'
+import { importSingleRssFeed } from './import-rss-feeds.mts'
+
+const importFeed = (user: PrivateUser, url: string, importRowId: string) =>
+  importSingleRssFeed(user, WEB_PROVENANCE, url, { importRowId })
 
 describe('RSS feed import request idempotency', () => {
   it('records one audit for a replayed row while preserving distinct submissions', async () => {
     const currentUser = await createTestUser()
+    const otherUser = await createTestUser()
     const rssFeedUrl = `https://audit-replay-${randomUUID()}.example.com/feed.xml`
-    const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl })
+    await insertTestRssFeedDirect({ rssFeedUrl })
     const [firstRowId, secondRowId] = await Promise.all([
       createRssFeedImportRowForTest(currentUser.id, rssFeedUrl),
-      createRssFeedImportRowForTest(currentUser.id, rssFeedUrl),
+      createRssFeedImportRowForTest(otherUser.id, rssFeedUrl),
     ])
 
     await Promise.all([
-      recordRssFeedImportRequest(currentUser.id, rssFeedUrl, rssFeed.id, firstRowId),
-      recordRssFeedImportRequest(currentUser.id, rssFeedUrl, rssFeed.id, firstRowId),
+      importFeed(currentUser, rssFeedUrl, firstRowId),
+      importFeed(currentUser, rssFeedUrl, firstRowId),
     ])
-    await recordRssFeedImportRequest(currentUser.id, rssFeedUrl, rssFeed.id, secondRowId)
+    await importFeed(otherUser, rssFeedUrl, secondRowId)
 
     expect(await getRssFeedImportRequestCountForRowForTest(firstRowId)).toBe(1)
     expect(await getRssFeedImportRequestCountForRowForTest(secondRowId)).toBe(1)
@@ -38,7 +44,7 @@ describe('RSS feed import request idempotency', () => {
     const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl })
     const rowId = await createRssFeedImportRowForTest(currentUser.id, rssFeedUrl)
 
-    await recordRssFeedImportRequest(currentUser.id, rssFeedUrl, rssFeed.id, rowId)
+    await importFeed(currentUser, rssFeedUrl, rowId)
     const before = await getRssFeedImportRequestForTest(currentUser.id, rssFeed.id)
     expect(before).toMatchObject({ rss_feed_import_row_id: rowId })
 

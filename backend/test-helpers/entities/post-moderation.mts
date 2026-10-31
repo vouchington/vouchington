@@ -1,9 +1,14 @@
 /* oxlint-disable max-lines -- Ledger fixture readers and writers retain one coherent test boundary. */
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
 
 type TestModerationSource = 'openai_omni' | 'spam_detection'
 type TestModerationDisposition = 'pass' | 'review' | 'reject' | 'incomplete'
+
+export function acquirePostModerationLedgerRetentionTestLock() {
+  return acquireTestPostgresAdvisoryLock({ namespace: 1_447_904_068, key: 4395, timeout: '25s' })
+}
 
 export async function recordTestPostModerationDisposition(input: {
   postId: string
@@ -257,4 +262,72 @@ function extractFlaggedCategories(results: unknown): string[] {
       if (flagged === true) categories.add(category)
   }
   return [...categories]
+}
+
+export async function insertTestPostModerationVersionAt(input: {
+  id: string
+  postId: string
+  contentSha256: Buffer
+  policyRevision: string
+}): Promise<void> {
+  await write(sql`/* insertTestPostModerationVersionAt */
+    INSERT INTO post_moderation_versions (id, post_id, content_sha256, policy_revision)
+    VALUES (${input.id}, ${input.postId}, ${input.contentSha256}, ${input.policyRevision})`)
+}
+
+export async function insertTestPostModerationDispositionAt(input: {
+  id: string
+  versionId: string
+  source: TestModerationSource | 'staff'
+  disposition: TestModerationDisposition
+  evidence: Record<string, unknown>
+  attemptId?: string
+  actorUserId?: string
+}): Promise<void> {
+  await write(sql`/* insertTestPostModerationDispositionAt */
+    INSERT INTO post_moderation_dispositions
+      (id, version_id, source, disposition, reason_code, evidence, attempt_id, actor_user_id)
+    VALUES (${input.id}, ${input.versionId}, ${input.source}::post_moderation_sources,
+      ${input.disposition}::post_moderation_disposition_types, 'test_reason',
+      ${JSON.stringify(input.evidence)}::jsonb, ${input.attemptId ?? null}::uuid,
+      ${input.actorUserId ?? null}::uuid)`)
+}
+
+export async function insertTestPostModerationAttemptAt(input: {
+  id: string
+  versionId: string
+  source: TestModerationSource
+}): Promise<void> {
+  await write(sql`/* insertTestPostModerationAttemptAt */
+    INSERT INTO post_moderation_attempts (id, version_id, source, attempt_number)
+    VALUES (${input.id}, ${input.versionId}, ${input.source}::post_moderation_sources, 1)`)
+}
+
+export async function getTestPostModerationRetentionState(input: {
+  versionIds: string[]
+  dispositionIds: string[]
+  attemptIds?: string[]
+}): Promise<{
+  versions: string[]
+  attempts: string[]
+  dispositions: { id: string; disposition: TestModerationDisposition; evidence: unknown }[]
+}> {
+  const [versions, attempts, dispositions] = await Promise.all([
+    write<{ id: string }>(sql`/* getTestPostModerationRetentionState.versions */
+      SELECT id FROM post_moderation_versions WHERE id = ANY(${input.versionIds}::uuid[]) ORDER BY id`),
+    write<{ id: string }>(sql`/* getTestPostModerationRetentionState.attempts */
+      SELECT id FROM post_moderation_attempts WHERE id = ANY(${input.attemptIds ?? []}::uuid[]) ORDER BY id`),
+    write<{
+      id: string
+      disposition: TestModerationDisposition
+      evidence: unknown
+    }>(sql`/* getTestPostModerationRetentionState.dispositions */
+      SELECT id, disposition, evidence FROM post_moderation_dispositions
+      WHERE id = ANY(${input.dispositionIds}::uuid[]) ORDER BY id`),
+  ])
+  return {
+    versions: versions.rows.map(row => row.id),
+    attempts: attempts.rows.map(row => row.id),
+    dispositions: dispositions.rows,
+  }
 }

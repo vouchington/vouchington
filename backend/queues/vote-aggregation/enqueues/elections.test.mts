@@ -12,11 +12,25 @@ import {
 } from './elections.mts'
 import { ELECTIONS_DEFAULTS } from '../config.mts'
 import {
-  ELECTION_LANES,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
+  type ElectionLane,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '../queues.mts'
 import type { EntityRelationElectionTable } from './types-elections.mts'
+
+/** Every production lane, so a new ElectionLane fails this file at typecheck. */
+function electionLanes(): ElectionLane[] {
+  const lanes = {
+    topic: true,
+    hostname: true,
+    agent_moderation: true,
+    post: true,
+    entity_relation: true,
+    rss_feed_item: true,
+    user_vouch: true,
+  } as const satisfies Record<ElectionLane, true>
+  return Object.keys(lanes) as ElectionLane[]
+}
 
 describe('election enqueue options', () => {
   async function admittedPostOptions() {
@@ -57,7 +71,7 @@ describe('election enqueue options', () => {
     })
   })
 
-  it.each(ELECTION_LANES)('leaves the %s lane to the domain-wide group', async orderingKey => {
+  it.each(electionLanes())('leaves the %s lane to the domain-wide group', async orderingKey => {
     const electionId = randomUUID()
     switch (orderingKey) {
       case 'post':

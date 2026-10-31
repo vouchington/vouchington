@@ -9,6 +9,14 @@ const enqueueDataRetentionContinuation =
 const emptyCleanupResult = {
   classifierRecords: { runs: { hasMore: false } },
   softDeletedUsers: { hasMore: false },
+  postModerationLedger: {
+    deletedVersions: 0,
+    clearedPassEvidence: 0,
+    hasMore: false,
+    remainingKinds: [],
+  },
+  agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
+  aiUsageRecords: { hasMore: false },
   textEmbeddingCache: { hasMore: false },
   terminalEmbeddingBatches: { hasMore: false },
   oldMediaDeliveryChanges: { hasMore: false },

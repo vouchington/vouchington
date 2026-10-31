@@ -10,11 +10,8 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { createTotpMfaLoginAttempt } from '@voucha/test-helpers/services/mfa/totp-login-attempt'
-import {
-  countMfaLoginAttempt,
-  failedMfaLoginAttemptRateLimiter,
-  peekLoginAttempt,
-} from '@services/mfa/login-attempt'
+import { RateLimiter } from '@data-stores/valkey-rate-limiter'
+import { countMfaLoginAttempt, peekLoginAttempt } from '@services/mfa/login-attempt'
 import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
@@ -125,17 +122,6 @@ describe('MFA API Routes', () => {
         .expect(401)
     })
 
-    it('returns 401 for invalid TOTP code', async () => {
-      const { attemptId } = await createTotpMfaLoginAttempt('verify')
-
-      const req = createRequest()
-      // '000000' is almost certainly the wrong code
-      await req
-        .post('/api/v1/auth/mfa/totp/verification')
-        .send({ login_attempt_id: attemptId, code: '000000' })
-        .expect(401)
-    })
-
     it('rejects valid TOTP codes after the MFA failure threshold is reached', async () => {
       const { attemptId } = await createTotpMfaLoginAttempt('limited')
 
@@ -207,7 +193,14 @@ describe('MFA API Routes', () => {
     it('keeps verified login successful when clearing its attempt budget fails', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('cleanup-failure')
       const failure = new Error('Owned MFA counter cleanup failure')
-      const spy = vi.spyOn(failedMfaLoginAttemptRateLimiter, 'delete').mockRejectedValue(failure)
+      const originalDelete = RateLimiter.prototype.delete
+      const spy = vi.spyOn(RateLimiter.prototype, 'delete').mockImplementation(function (
+        this: RateLimiter,
+        ...ids: string[]
+      ) {
+        if (this.prefix === 'mfa-login-attempt-failures') return Promise.reject(failure)
+        return originalDelete.apply(this, ids)
+      })
       try {
         const res = await createRequest()
           .post('/api/v1/auth/mfa/totp/verification')

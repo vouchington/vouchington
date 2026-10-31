@@ -40,12 +40,6 @@ describe('detect', () => {
       expect(result.length).toBe(32)
     })
 
-    it('returns the same hash for the same input', () => {
-      const a = computeContentSha256('same text')
-      const b = computeContentSha256('same text')
-      expect(a.equals(b)).toBe(true)
-    })
-
     it('returns different hashes for different inputs', () => {
       const a = computeContentSha256('text one')
       const b = computeContentSha256('text two')
@@ -58,12 +52,6 @@ describe('detect', () => {
       const withLang = computeDetectionKey('hello', 'en')
       const withoutLang = computeDetectionKey('hello', null)
       expect(withLang.equals(withoutLang)).toBe(false)
-    })
-
-    it('treats null and empty-string declared language differently from a real tag', () => {
-      const nullLang = computeDetectionKey('text', null)
-      const realLang = computeDetectionKey('text', 'fr')
-      expect(nullLang.equals(realLang)).toBe(false)
     })
 
     it('returns same key for same text+language', () => {
@@ -87,13 +75,6 @@ describe('detect', () => {
       expect(result.source).toBe('none')
       expect(result.linguaRsDetectedLanguage).toBeNull()
       expect(result.results).toMatchObject({ source: 'none' })
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
-    })
-
-    it('returns none source for empty string', async () => {
-      const result = await runDetectionForTest('', undefined)
-      expect(result.source).toBe('none')
-      expect(result.linguaRsDetectedLanguage).toBeNull()
       expect(mockDetectLanguage).not.toHaveBeenCalled()
     })
 

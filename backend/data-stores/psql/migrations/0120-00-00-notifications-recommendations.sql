@@ -2,6 +2,7 @@
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added user_warning entity type and user_warning_id column
 -- edited-in-place: added direct_message and modmail notification entity types and conversation_id FK
+-- edited-in-place: removed drops of event_key constraints no migration creates
 -- edited-in-place: added moderation_appeal_id and community_ban_id columns (FK wired in 0450-00-00)
 -- edited-in-place: added critical_moderation_alert entity type
 -- edited-in-place: community navigation is community_id; target_entity is derived, not stored
@@ -307,10 +308,6 @@ CREATE TABLE IF NOT EXISTS notifications (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (user_id);
 
-ALTER TABLE notifications
-  DROP CONSTRAINT IF EXISTS notifications_event_key_check;
-ALTER TABLE notifications
-  DROP CONSTRAINT IF EXISTS chk_notifications__event_key;
 ALTER TABLE notifications
   ADD CONSTRAINT chk_notifications__event_key
   CHECK (event_key IS NULL OR length(event_key) BETWEEN 1 AND 300)

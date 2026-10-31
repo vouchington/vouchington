@@ -15,11 +15,7 @@ import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
 import { continuingAfterFailure } from './scenario-failures.mts'
-import {
-  captureScenarioTwice,
-  resetRepeatedResults,
-  writeSecondPassResults,
-} from './capture-passes.mts'
+import { captureScenarioTwice, writeSecondPassResults } from './capture-passes.mts'
 
 export const SEED_PREFIX = '019e0000'
 export const OUTPUT_DIR = join(import.meta.dirname, 'output')
@@ -51,7 +47,7 @@ export const seedHostnameIds = [
 const results: ExplainResult[] = []
 const completedScenarioIds: string[] = []
 
-export function collectAndGate(result: ExplainResult): void {
+function collectAndGate(result: ExplainResult): void {
   results.push(result)
   assertRequiredPlanShape(result)
 }
@@ -60,12 +56,7 @@ export function getResults(): readonly ExplainResult[] {
   return results
 }
 
-export function resetResults(): void {
-  results.length = 0
-  resetRepeatedResults()
-}
-
-export function assertCapturedQueries(
+function assertCapturedQueries(
   label: string,
   captured: readonly { text: string; values: readonly unknown[] }[],
 ): void {
@@ -94,9 +85,8 @@ export function getCompletedScenarioIds(): readonly string[] {
   return completedScenarioIds
 }
 
-export function getExplainPlanCacheModes(
-  mode: string | undefined = process.env.EXPLAIN_PLAN_CACHE_MODE,
-): ExplainPlanCacheMode[] {
+function getExplainPlanCacheModes(): ExplainPlanCacheMode[] {
+  const mode = process.env.EXPLAIN_PLAN_CACHE_MODE
   if (mode === undefined || mode === '' || mode === 'auto') return ['auto']
   if (mode === 'compare') return ['force_custom_plan', 'force_generic_plan']
   if (mode === 'force_custom_plan' || mode === 'force_generic_plan') return [mode]
@@ -146,9 +136,10 @@ async function captureScenario(
   )
   assertCapturedQueries(label, captured)
 
+  const modes = getExplainPlanCacheModes()
   const inputs = captured.flatMap((cq, captureIndex) => {
     const baseName = extractQueryName(cq.text) ?? label
-    return getExplainPlanCacheModes().map(planCacheMode => {
+    return modes.map(planCacheMode => {
       const suffixes = [nameSuffix, planCacheMode === 'auto' ? undefined : planCacheMode].filter(
         Boolean,
       )

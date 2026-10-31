@@ -27,15 +27,12 @@ describe('background registry', () => {
     }
   })
 
-  it('reserves independent ActivityPub dispatch, recovery, delivery, and cleanup lanes', () => {
+  it('reserves independent ActivityPub dispatch, recovery, and delivery lanes', () => {
     const key = (name: string) => getBackgroundJob(`activitypub.${name}`)?.options.ordering?.key
     expect(key('distributeActivity')).toBe('activitypub:outbound-dispatch')
     expect(key('recoverOutboundDistribution')).toBe('activitypub:outbound-recovery')
     expect(key('deliverActivity')).toBe('activitypub:outbound')
     expect(key('processDelivery')).toBe('activitypub:inbound')
-    expect(key('recoverDeliveries')).toBe('activitypub:inbound-recovery')
-    expect(key('rearmFailedDeliveries')).toBe('activitypub:inbound-recovery')
-    expect(key('cleanupExpiredDeliveries')).toBe('activitypub:cleanup')
   })
 
   it('keeps mark-all continuation off the notification delivery lane', () => {
@@ -69,7 +66,7 @@ describe('background registry', () => {
         BACKGROUND_JOBS.filter(job => job.domain === domain).map(job => job.name),
       )
     }
-    expect(getBackgroundWorkerBaseline()).toBe(123)
+    expect(getBackgroundWorkerBaseline()).toBe(118)
     expect(isBackgroundDomain('ses-inbound')).toBe(true)
     expect(isBackgroundDomain('emails')).toBe(false)
   })

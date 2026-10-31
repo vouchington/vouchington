@@ -10,36 +10,19 @@ import { getTopicByAny } from '@services/topics/get'
 
 describe('topic.vote', () => {
   let user: PrivateUser
-  let putTopicId: string
   let getTopicId: string
 
   beforeAll(async () => {
     user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    ;[putTopicId, getTopicId] = await Promise.all([
-      insertTestTopic({
-        name: `Topic Vote Put ${Date.now()}`,
-        slug: `topic-vote-put-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        createdById: user.id,
-      }),
-      insertTestTopic({
-        name: `Topic Vote Get ${Date.now()}`,
-        slug: `topic-vote-get-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        createdById: user.id,
-      }),
-    ])
+    getTopicId = await insertTestTopic({
+      name: `Topic Vote Get ${Date.now()}`,
+      slug: `topic-vote-get-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdById: user.id,
+    })
   })
 
   describe('Topic Vote Routes', () => {
     describe('PUT /api/v1/topics/:id/vote', () => {
-      it('allows authenticated users to vote on a topic', async () => {
-        const topic = await getTopicByAny(putTopicId)
-
-        const request = createRequest()
-        await request.authenticateAs(user)
-
-        await request.put(`/api/v1/topics/${topic!.id}/vote`).send({ choice: 'like' }).expect(204)
-      })
-
       it('rejects an extra body field without recording a vote', async () => {
         const topicId = await insertTestTopic({
           name: `Invalid Vote ${crypto.randomUUID()}`,

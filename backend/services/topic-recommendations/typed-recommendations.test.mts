@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
@@ -7,19 +8,22 @@ import { ensureTestReconciliationBloomFilters } from '@voucha/test-helpers/bloom
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
-import { getUrlByAny } from '@services/urls'
+import { getUrlByAnyCached } from '@services/urls'
 import { getReferralProgramAttributes } from '@services/topics/referral-programs'
 import { getCardAttributes } from '@services/topics/cards'
 import { ENTITY_LISTENERS_URL_CREATED_JOB } from '../../queues/background/enqueues/entity-listeners-jobs.mts'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import type { Topic } from '@services/topics/types'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { approveTopicRecommendation, createTopicRecommendation } from './index.mts'
+import { approveTopicRecommendation, prepareTopicRecommendation } from './index.mts'
 import {
   getRegisteredRecommendationApprovedHandler,
   registerRecommendationApprovedHandler,
 } from './recommendation-approved-handler-registry.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
+
+const createRecommendation = (...args: Parameters<typeof prepareTopicRecommendation>) =>
+  createTestTopicRecommendation(prepareTopicRecommendation, ...args)
 
 describe('typed-recommendations', () => {
   let user: PrivateUser
@@ -35,7 +39,7 @@ describe('typed-recommendations', () => {
     it('creates a referral_program recommendation with example_referral_link', async () => {
       await ensureTestReconciliationBloomFilters()
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Referral program recommendation ${random}`,
         topic_title: `Referral Program Topic ${random}`,
         topic_slug: `referral-program-topic-${Date.now()}-${random}`,
@@ -61,7 +65,7 @@ describe('typed-recommendations', () => {
     it('rejects referral_program recommendation without example_referral_link with 422', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       await expect(
-        createTopicRecommendation(user, WEB_PROVENANCE, {
+        createRecommendation(user, WEB_PROVENANCE, {
           markdown: `Missing referral link ${random}`,
           topic_title: `Missing Referral Link Topic ${random}`,
           topic_slug: `missing-referral-link-topic-${Date.now()}-${random}`,
@@ -72,7 +76,7 @@ describe('typed-recommendations', () => {
 
     it('approving a referral_program recommendation creates referral_program_topics extension row', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Approve referral program ${random}`,
         topic_title: `Approvable Referral Program ${random}`,
         topic_slug: `approvable-referral-program-${Date.now()}-${random}`,
@@ -95,7 +99,7 @@ describe('typed-recommendations', () => {
   describe('card recommendations', () => {
     it('creates a card recommendation with landing_page_urls', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Card recommendation ${random}`,
         topic_title: `Card Topic ${random}`,
         topic_slug: `card-topic-${Date.now()}-${random}`,
@@ -120,7 +124,7 @@ describe('typed-recommendations', () => {
     it('rejects card recommendation without landing_page_urls with 422', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       await expect(
-        createTopicRecommendation(user, WEB_PROVENANCE, {
+        createRecommendation(user, WEB_PROVENANCE, {
           markdown: `Missing landing pages ${random}`,
           topic_title: `Missing Landing Pages Topic ${random}`,
           topic_slug: `missing-landing-pages-topic-${Date.now()}-${random}`,
@@ -132,7 +136,7 @@ describe('typed-recommendations', () => {
     it('rejects card recommendation with empty landing_page_urls with 422', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       await expect(
-        createTopicRecommendation(user, WEB_PROVENANCE, {
+        createRecommendation(user, WEB_PROVENANCE, {
           markdown: `Empty landing pages ${random}`,
           topic_title: `Empty Landing Pages Topic ${random}`,
           topic_slug: `empty-landing-pages-topic-${Date.now()}-${random}`,
@@ -144,7 +148,7 @@ describe('typed-recommendations', () => {
 
     it('approving a card recommendation creates card_topics extension row', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Approve card ${random}`,
         topic_title: `Approvable Card Topic ${random}`,
         topic_slug: `approvable-card-topic-${Date.now()}-${random}`,
@@ -165,7 +169,7 @@ describe('typed-recommendations', () => {
     it('waits for URL-created bulk admission after recommendation approval commits', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       const landingPageUrl = `https://admission-${random}.example.com/cards`
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Admission boundary ${random}`,
         topic_title: `Admission Boundary ${random}`,
         topic_slug: `admission-boundary-${Date.now()}-${random}`,
@@ -203,7 +207,7 @@ describe('typed-recommendations', () => {
 
         const committed = await getPostByAny(recommendation.id)
         expect(committed?.topic_recommendation?.status).toBe('approved')
-        const persistedUrl = await getUrlByAny(landingPageUrl)
+        const persistedUrl = await getUrlByAnyCached(landingPageUrl)
         expect(persistedUrl).not.toBeNull()
         expect(approvedHandlerCalled).toBe(true)
         expect(settled).toBe(false)
@@ -243,7 +247,7 @@ describe('typed-recommendations', () => {
   describe('generic topic recommendations (default)', () => {
     it('defaults topic_type to topic when not specified', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `Generic topic recommendation ${random}`,
         topic_title: `Generic Topic ${random}`,
         topic_slug: `generic-topic-${Date.now()}-${random}`,
@@ -256,7 +260,7 @@ describe('typed-recommendations', () => {
 
     it('stores the post from DB with topic_type field', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+      const recommendation = await createRecommendation(user, WEB_PROVENANCE, {
         markdown: `DB field check ${random}`,
         topic_title: `DB Field Check Topic ${random}`,
         topic_slug: `db-field-check-topic-${Date.now()}-${random}`,

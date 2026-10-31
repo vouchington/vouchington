@@ -238,17 +238,6 @@ describe('follow-button', () => {
         expect(link.getAttribute('href')).toBe('/login?next=%2Ftopics%2Ftopic-1&intent=follow')
       })
 
-      it('renders a login link with text "Follow" when currentUserId is null', () => {
-        render(
-          <FollowButton
-            entityType='topic'
-            entityId='topic-1'
-          />,
-        )
-        const link = screen.getByRole('link', { name: /Follow — sign in to follow/i })
-        expect(link.getAttribute('href')).toBe('/login?next=%2Ftopics%2Ftopic-1&intent=follow')
-      })
-
       it('preserves the current query string in the login return link', () => {
         window.history.pushState(null, '', '/topics/topic-1?tab=posts')
         mockNav.setPathname('/topics/topic-1')

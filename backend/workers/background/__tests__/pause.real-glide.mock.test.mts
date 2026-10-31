@@ -11,8 +11,11 @@ import { createBackgroundProcessor } from '../processors.mts'
 import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { backgroundQueueConfig } from '@queues/background/config'
-import { pauseQueueDomain, resumeQueueDomain } from '@services/queue-domain-controls'
-import { invalidateQueueDomainPause } from '@services/queue-domain-controls/pause-cache'
+import {
+  pauseQueueDomain,
+  resumeQueueDomain,
+  watchQueueDomainControls,
+} from '@services/queue-domain-controls'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -23,6 +26,14 @@ describe('domain pause through real GlideMQ and PostgreSQL', () => {
   let userId: string
   let restoreConfig: () => void
   let harness: BackgroundHarness | undefined
+  let watcher: { close(): Promise<void> }
+  const pauseWaiters: Array<() => void> = []
+
+  function nextPauseChange(): Promise<void> {
+    return new Promise(resolve => {
+      pauseWaiters.push(resolve)
+    })
+  }
 
   beforeAll(async () => {
     userId = (await createTestUser()).id
@@ -31,16 +42,24 @@ describe('domain pause through real GlideMQ and PostgreSQL', () => {
       pause_cache_ms: 1,
       pause_recheck_ms: 50,
     })
+    watcher = await watchQueueDomainControls(domain => {
+      if (domain !== PAUSED_DOMAIN) return
+      for (const resolve of pauseWaiters.splice(0)) resolve()
+    })
   })
 
   afterEach(async () => {
+    const resumed = nextPauseChange()
     await resumeQueueDomain(PAUSED_DOMAIN)
-    invalidateQueueDomainPause(PAUSED_DOMAIN)
+    await resumed
     await harness?.close()
     harness = undefined
   })
 
-  afterAll(() => restoreConfig())
+  afterAll(async () => {
+    restoreConfig()
+    await watcher.close()
+  })
 
   it.each([
     ['a job in its domain-wide group', {}],
@@ -54,8 +73,9 @@ describe('domain pause through real GlideMQ and PostgreSQL', () => {
         createProcessor: createBackgroundProcessor,
         bodies: { [OPENAI_MODERATION_POST_JOB.name]: () => moderationRan.resolve() },
       })
+      const paused = nextPauseChange()
       await pauseQueueDomain(PAUSED_DOMAIN, { userId, reason: 'test pause' })
-      invalidateQueueDomainPause(PAUSED_DOMAIN)
+      await paused
       const parked = await harness.add(
         OPENAI_MODERATION_POST_JOB,
         { versionId: randomUUID() },

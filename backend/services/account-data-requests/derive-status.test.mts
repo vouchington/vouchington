@@ -28,12 +28,12 @@ describe('derived request status', () => {
   })
 
   it('returns processing when processing_started_at is set but not completed/failed', () => {
-    expect(
-      statusOf({
-        ...baseRow,
-        processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
-      }),
-    ).toBe('processing')
+    const result = attachDerivedStatus({
+      ...baseRow,
+      processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
+    })
+    expect(result.status).toBe('processing')
+    expect(result.id).toBe(baseRow.id)
   })
 
   it.each([
@@ -108,17 +108,6 @@ describe('derived request status', () => {
         failed_at: new Date('2026-02-22T00:01:00.000Z'),
       }),
     ).toBe('failed')
-  })
-})
-
-describe('attachDerivedStatus', () => {
-  it('returns the row with the derived status field', () => {
-    const result = attachDerivedStatus({
-      ...baseRow,
-      processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
-    })
-    expect(result.status).toBe('processing')
-    expect(result.id).toBe(baseRow.id)
   })
 })
 

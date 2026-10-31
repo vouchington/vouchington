@@ -2,7 +2,7 @@ import { test, expect, type Locator } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
-// Seeded by backend/scripts/seeds/playwright-test-data/post-account-labels.mts: one discussion,
+// Seeded by backend/test-helpers/playwright-seed-account-labels.mts: one discussion,
 // one comment and one share per account. Every comment and share targets the member's
 // discussion, and the viewer follows every author.
 const VIEWER_ID = '019d0000-0000-7000-8000-0000000001a2'

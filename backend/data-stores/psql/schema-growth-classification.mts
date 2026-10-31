@@ -2,6 +2,7 @@ import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations
 import { buildUnboundedUnpartitionedTables as buildPlatformUnboundedTables } from '@vouchington/utils/schema-growth'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
 import { RETAINED_RELATION_GROWTH_POLICIES } from './schema-growth-retained-identities.mts'
+import { AI_USAGE_GROWTH_POLICIES } from './schema-growth-ai-usage.mts'
 import { COPYRIGHT_RETENTION_UNBOUNDED_TABLES } from './schema-growth-classification-copyright.mts'
 const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'communities',
@@ -167,13 +168,10 @@ export function buildUnboundedUnpartitionedTables(
         'activitypub_remote_follow_activities',
         'Active Follow cycles track live domain edges; replaced and undone cycles expire in bounded indexed pages from their terminal timestamp beyond the supported replay age.',
       ],
+      ...AI_USAGE_GROWTH_POLICIES,
       [
         'community_search_counts',
         'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
-      ],
-      [
-        'activitypub_inbox_envelopes',
-        'Bounded signed ActivityPub envelope storage (maximum envelopes exceed GlideMQ job data): terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
       ],
       [
         'classifier_run_requests',

@@ -93,16 +93,28 @@ export async function getModerationResolverForeignKeys(
   tableNames: string[],
 ): Promise<ResolverForeignKey[]> {
   const { rows } = await read<ResolverForeignKey>(
-    `/* getModerationResolverForeignKeys */
-      SELECT tc.table_name, rc.delete_rule
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON kcu.constraint_schema = tc.constraint_schema AND kcu.constraint_name = tc.constraint_name
-      JOIN information_schema.referential_constraints rc
-        ON rc.constraint_schema = tc.constraint_schema AND rc.constraint_name = tc.constraint_name
-      WHERE tc.constraint_schema = 'public' AND tc.constraint_type = 'FOREIGN KEY'
-        AND kcu.column_name = 'resolved_by_id' AND tc.table_name = ANY($1)
-      ORDER BY tc.table_name`,
+    `/* getModerationResolverForeignKeys
+        information_schema privilege views can exceed the schema-test deadline. */
+      SELECT source.relname::text AS table_name,
+        CASE foreign_key.confdeltype
+          WHEN 'a' THEN 'NO ACTION'
+          WHEN 'r' THEN 'RESTRICT'
+          WHEN 'c' THEN 'CASCADE'
+          WHEN 'n' THEN 'SET NULL'
+          WHEN 'd' THEN 'SET DEFAULT'
+        END AS delete_rule
+      FROM pg_constraint foreign_key
+      JOIN pg_class source ON source.oid = foreign_key.conrelid
+      JOIN pg_namespace namespace ON namespace.oid = source.relnamespace
+      JOIN pg_attribute column_definition
+        ON column_definition.attrelid = foreign_key.conrelid
+       AND column_definition.attnum = ANY (foreign_key.conkey)
+      WHERE namespace.nspname = 'public'
+        AND foreign_key.contype = 'f'
+        AND NOT column_definition.attisdropped
+        AND column_definition.attname = 'resolved_by_id'
+        AND source.relname = ANY($1)
+      ORDER BY source.relname`,
     [tableNames],
   )
   return rows

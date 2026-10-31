@@ -66,6 +66,7 @@ describe('dev/cleanup worktree reclaim', () => {
     const out = await runCleanup(dir, bin, [])
 
     expect(out).toContain('reclaim-args: worktree reclaim\n')
+    expect(out).toContain('reclaim-lock: free\n')
   })
 
   it('passes --yes through and reclaims before the orphan scans', async () => {
@@ -142,13 +143,6 @@ printf "Scan incomplete; resume with --after '/tmp/next path'\\n"
     await expect(
       lstat(join(dir, '.voucha', 'worktree-resource-operations', 'lock')),
     ).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it('does not take the lock for a dry run', async () => {
-    const { dir, bin } = await makeRepo({ withCli: true })
-    const out = await runCleanup(dir, bin, [])
-
-    expect(out).toContain('reclaim-lock: free\n')
   })
 
   describe('with another operation holding the lock', () => {

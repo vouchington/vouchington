@@ -27,8 +27,6 @@ const backendCoreProjects = [
   ...dockerBackedBackendProjects,
 ] as const
 
-const SERIAL_VITEST_PROJECT = 'backend-activitypub-capacity'
-
 // Each credentialed project gets its own group named after it (`backend-aws` -> ['backend-aws']),
 // so a project added to the shared list is runnable as a group with no edit here.
 const credentialedProjectGroups: Record<string, readonly string[]> = Object.fromEntries(
@@ -49,7 +47,7 @@ export const VITEST_PROJECT_GROUPS = {
   ...credentialedProjectGroups,
   // Dispatch-only evals are never part of the `backend` group; see backend-evals-projects.mts.
   evals: backendEvalProjectNames,
-  'backend-postgres-schema': ['backend-postgres-schema', 'backend-activitypub-capacity'],
+  'backend-postgres-schema': ['backend-postgres-schema'],
   'email-templates': ['backend-email-templates'],
   'ts-shared': ['ts-shared'],
   tooling: toolingTestProjectNames,
@@ -104,7 +102,6 @@ export function vitestProjectGroupCommand(
       'run',
       ...projectsForVitestGroup(group).flatMap(project => ['--project', project]),
       ...args,
-      ...(vitestProjectGroupRequiresSerialExecution(group) ? ['--no-file-parallelism'] : []),
     ],
   }
 }
@@ -121,11 +118,8 @@ export async function runVitestProjectGroup(
 ): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
   const { command, args } = vitestProjectGroupCommand(group, forwardedArgs)
   const inheritedEnv = dependencies.env ?? process.env
-  const env = vitestProjectGroupRequiresSerialExecution(group)
-    ? { ...inheritedEnv, VITEST_MAX_WORKERS: '1' }
-    : inheritedEnv
   const child = (dependencies.spawn ?? spawn)(command, args, {
-    env,
+    env: inheritedEnv,
     stdio: 'inherit',
   })
 
@@ -133,10 +127,6 @@ export async function runVitestProjectGroup(
     child.once('error', reject)
     child.once('close', (code, signal) => resolveResult({ code, signal }))
   })
-}
-
-function vitestProjectGroupRequiresSerialExecution(group: string): boolean {
-  return projectsForVitestGroup(group).some(project => project === SERIAL_VITEST_PROJECT)
 }
 
 interface ChildCompletionDependencies {

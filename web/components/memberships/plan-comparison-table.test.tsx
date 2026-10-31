@@ -134,12 +134,6 @@ describe('PlanComparisonTable', () => {
     expect(screen.getByText('Pro')).toBeInTheDocument()
   })
 
-  it('renders tooltip row labels as buttons for keyboard access', () => {
-    renderTable()
-
-    expect(screen.getByRole('button', { name: 'Contribution capacity' })).toBeInTheDocument()
-  })
-
   it('renders a table element', () => {
     const { container } = renderTable()
     expect(container.querySelector('table')).not.toBeNull()

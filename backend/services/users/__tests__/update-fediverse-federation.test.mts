@@ -5,11 +5,6 @@ import { getPrivateUserByAny } from '../get.mts'
 import { updateUserFields } from '../update-fields.mts'
 
 describe('updateUserFields fediverse federation opt-in', () => {
-  it('defaults to false for a newly created user', async () => {
-    const testUser = await createTestUser()
-    assert.strictEqual(testUser.is_fediverse_federation_enabled, false)
-  })
-
   it('opts a user in to federation', async () => {
     const testUser = await createTestUser()
     await updateUserFields(testUser.id, { is_fediverse_federation_enabled: true })

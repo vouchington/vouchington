@@ -31,8 +31,6 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: postsWorkMaxValues,
     descriptions: {
       semantic_post_candidate_limit: 'Maximum post candidates in a semantic search window.',
-      review_succession_history_audit_page_size:
-        'Review succession history audit page size for posts processing.',
       review_succession_candidate_page_size:
         'Review succession candidate page size for posts processing.',
     },
@@ -44,6 +42,7 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: remoteActorsWorkMaxValues,
     descriptions: {
       follower_inbox_batch_size: 'Follower inbox batch size for remote actors processing.',
+      inbound_backlog_cap: 'Maximum pending inbound ActivityPub delivery envelopes.',
     },
   }),
   'stories-work-config': defineBoundedWorkNamespace({

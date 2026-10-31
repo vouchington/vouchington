@@ -74,6 +74,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     projects: noCredential([
       'backend/analytics-integration',
       'backend-data-stores',
+      'backend-ai-usage-monthly-ddl',
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-migration-initializers',
@@ -85,7 +86,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     workflow: 'tests-postgres-schema.yml',
     jobLabel: 'postgres-schema-tests',
     invocation: 'literal',
-    projects: noCredential(['backend-postgres-schema', 'backend-activitypub-capacity']),
+    projects: noCredential(['backend-postgres-schema']),
   },
   {
     orchestratorJob: 'test-backend-credentialed',

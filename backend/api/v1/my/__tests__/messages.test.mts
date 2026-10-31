@@ -32,6 +32,8 @@ describe('messages API', () => {
       const response = await request.get('/api/v1/my/messages').expect(200)
       expect(response.body).toHaveProperty('results')
       expect(Array.isArray(response.body.results)).toBe(true)
+      expect(response.body.page_info).toHaveProperty('has_next_page')
+      expect(response.body.page_info).toHaveProperty('end_cursor')
     })
 
     it('returns the participant add policy for each conversation', async () => {
@@ -47,14 +49,6 @@ describe('messages API', () => {
         (result: { id: string }) => result.id === created.body.conversation.id,
       )
       expect(conversation).toMatchObject({ participant_add_policy: 'owner_only' })
-    })
-
-    it('returns page_info with cursor pagination', async () => {
-      const request = createRequest()
-      await request.authenticateAs(user)
-      const response = await request.get('/api/v1/my/messages').expect(200)
-      expect(response.body.page_info).toHaveProperty('has_next_page')
-      expect(response.body.page_info).toHaveProperty('end_cursor')
     })
 
     it('returns 400 for an invalid after cursor', async () => {

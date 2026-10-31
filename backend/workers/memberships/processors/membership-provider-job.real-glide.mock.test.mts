@@ -8,7 +8,6 @@ import { membershipVerificationQueueConfig } from '@queues/memberships/config'
 import { buildGooglePlayNotificationJob } from '@queues/memberships/enqueues/google-play-jobs'
 import {
   acquireMembershipVerificationExecutionLease,
-  membershipVerificationLeaseNamespace,
   releaseMembershipVerificationExecutionLease,
   renewMembershipVerificationExecutionLease,
   type MembershipVerificationExecutionLease,
@@ -22,7 +21,6 @@ import {
 } from '@voucha/test-helpers/google-play-deferral-fixtures'
 import { stubGooglePlayProvider } from '@voucha/test-helpers/google-play-provider-stub'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
-import { deleteMembershipVerificationLeaseSlots } from '@voucha/test-helpers/membership-verification-lease'
 import {
   addVerificationJob,
   expectCanonicalDelay,
@@ -41,17 +39,18 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('membership verification execution lease with real Valkey', () => {
   it('bounds contention and fences renewal and release by owner token', async () => {
-    const keys = [0, 1].map(slot => `${membershipVerificationLeaseNamespace}:slot:${slot}`)
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 2,
     })
+    const held: MembershipVerificationExecutionLease[] = []
     try {
       const first = await acquireMembershipVerificationExecutionLease()
+      if (first) held.push(first)
       const second = await acquireMembershipVerificationExecutionLease()
+      if (second) held.push(second)
       if (!first || !second) throw new Error('Expected two verification execution leases')
-      expect(new Set([first.key, second.key])).toEqual(new Set(keys))
+      expect(first.key).not.toBe(second.key)
       await expect(acquireMembershipVerificationExecutionLease()).resolves.toBeNull()
-
       const forged: MembershipVerificationExecutionLease = {
         key: first.key,
         token: randomUUID(),
@@ -59,7 +58,6 @@ describe('membership verification execution lease with real Valkey', () => {
       await expect(renewMembershipVerificationExecutionLease(forged)).resolves.toBe(false)
       await expect(releaseMembershipVerificationExecutionLease(forged)).resolves.toBe(false)
       await expect(workerQueueCommandClient.get(first.key)).resolves.toBe(first.token)
-
       await expect(renewMembershipVerificationExecutionLease(first)).resolves.toBe(true)
       const ttl = await workerQueueCommandClient.pttl(first.key)
       expect(ttl).toBeGreaterThan(50_000)
@@ -67,7 +65,6 @@ describe('membership verification execution lease with real Valkey', () => {
       await expect(
         runWithMembershipVerificationLeaseRenewal(first, async () => 'renewed'),
       ).resolves.toBe('renewed')
-
       await expect(releaseMembershipVerificationExecutionLease(first)).resolves.toBe(true)
       const operation = vi.fn<() => Promise<void>>(async () => undefined)
       await expect(runWithMembershipVerificationLeaseRenewal(first, operation)).rejects.toThrow(
@@ -78,7 +75,7 @@ describe('membership verification execution lease with real Valkey', () => {
       await expect(workerQueueCommandClient.get(second.key)).resolves.toBeNull()
     } finally {
       restoreConfig()
-      await workerQueueCommandClient.unlink(keys)
+      await Promise.all(held.map(lease => releaseMembershipVerificationExecutionLease(lease)))
     }
   })
 })
@@ -171,10 +168,13 @@ describe('membership provider job when the execution lease is lost before releas
     restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 1,
     })
+    const probe = await acquireMembershipVerificationExecutionLease()
+    if (!probe) throw new Error('Expected the verification execution slot')
+    if (!(await releaseMembershipVerificationExecutionLease(probe)))
+      await workerQueueCommandClient.unlink([probe.key])
     const moveToDelayed = vi.fn<Job['moveToDelayed']>()
     const outcome = processMembershipProviderJob({ moveToDelayed } as unknown as Job, async () => {
-      // Expiry or a takeover removes the slot while the provider call is still running.
-      await deleteMembershipVerificationLeaseSlots(1)
+      await workerQueueCommandClient.unlink([probe.key])
       if (failure) throw failure()
     })
     return { outcome, moveToDelayed }

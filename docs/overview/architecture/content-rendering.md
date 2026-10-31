@@ -240,6 +240,13 @@ language on the news card, the item modal, command search, and the similarity pa
 title keeps its UI fallback unmarked. `web-rss-feed-item-title-requires-language` rejects a call
 that omits `detectedLanguage`. It is not a post-content boundary.
 
+Third-party embed titles and descriptions use `EmbedPreviewCard`. Every call passes `lang`.
+Crawl detail passes the crawl's declared page language. Public link embeds pass null because that
+response does not include a page language; the title and description then set `dir="auto"` without
+a `lang` attribute. Publisher names, source links, and player chrome stay unmarked.
+`web-embed-preview-card-requires-lang` rejects a call that omits `lang`. It is not a
+post-content boundary.
+
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
 fragments travel separately as `target_content`; comment prefixes and deleted/private fallbacks
 stay outside the authored boundary. Inputs, ARIA interpolation, metadata/routes, image alt text,

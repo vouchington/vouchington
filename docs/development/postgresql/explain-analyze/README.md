@@ -11,6 +11,9 @@ inline, after running the dev seed (the copyright scenarios need its notice and 
 A small functional fixture cannot establish a selective large-table plan. Dispatch scenarios keep
 realistic noise in this standalone runner while unit tests cross bounded page boundaries, so plan
 regressions remain distinguishable from batching and cursor failures.
+The manifest establishes representative plan evidence for named production selectors; it is not a
+function-coverage inventory for every stage of a daily cleanup. Add a separate captured selector
+and realistic eligible and ineligible rows when a stage has a distinct access path.
 
 ## How it works
 

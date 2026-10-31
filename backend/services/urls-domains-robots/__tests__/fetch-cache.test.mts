@@ -1,6 +1,7 @@
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { describe, expect, it, vi } from 'vitest'
+import { sentryCaptureExceptionMock as captureException } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { fetchRobotsTxtCached } from '../index.mts'
 
 const ALLOW_ROBOTS_TXT = 'User-agent: *\nAllow: /'
@@ -91,6 +92,67 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
       await fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple))
       expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
     } finally {
+      await rules.delete(domain)
+      await unreachable.delete(domain)
+    }
+  })
+
+  it('reads a cached unreachable marker together with the rules key', async () => {
+    const domain = randomDomain()
+    const { rules, unreachable } = robotsCachePair()
+    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
+      status: 503,
+      statusText: 'Service Unavailable',
+      body: { cancel: () => Promise.resolve() },
+    })
+    const dependencies = cachedFetchDependencies(fetchWithTimeoutSimple)
+    const mget = vi.spyOn(cacheValkeyClient, 'mget')
+
+    try {
+      await fetchRobotsTxtCached(domain, dependencies)
+      fetchWithTimeoutSimple.mockClear()
+      mget.mockClear()
+
+      await expect(fetchRobotsTxtCached(domain, dependencies)).resolves.toBe(DISALLOW_ROBOTS_TXT)
+      expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
+      expect(mget).toHaveBeenCalledOnce()
+      expect(mget.mock.calls[0]?.[0]).toEqual([rules.getKey(domain), unreachable.getKey(domain)])
+    } finally {
+      mget.mockRestore()
+      await rules.delete(domain)
+      await unreachable.delete(domain)
+    }
+  })
+
+  it('fetches robots.txt when the combined cache read fails', async () => {
+    const domain = randomDomain()
+    const { rules, unreachable } = robotsCachePair()
+    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
+      status: 404,
+      statusText: 'Not Found',
+      body: { cancel: () => Promise.resolve() },
+    })
+    const cacheError = new Error(`robots cache unavailable ${domain}`)
+    const rulesKey = rules.getKey(domain)
+    const unreachableKey = unreachable.getKey(domain)
+    const originalMget = cacheValkeyClient.mget
+    const mget = vi.spyOn(cacheValkeyClient, 'mget').mockImplementation((keys, options) => {
+      if (Array.isArray(keys) && keys.some(key => key === rulesKey || key === unreachableKey)) {
+        return Promise.reject(cacheError)
+      }
+      return originalMget.call(cacheValkeyClient, keys, options)
+    })
+
+    try {
+      await expect(
+        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple)),
+      ).resolves.toBe(ALLOW_ROBOTS_TXT)
+      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
+      expect(await rules.get(domain)).toBe(ALLOW_ROBOTS_TXT)
+      expect(await unreachable.get(domain)).toBeNull()
+      expect(captureException.mock.calls.some(([error]) => error === cacheError)).toBe(true)
+    } finally {
+      mget.mockRestore()
       await rules.delete(domain)
       await unreachable.delete(domain)
     }

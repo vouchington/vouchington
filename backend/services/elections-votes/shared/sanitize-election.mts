@@ -21,7 +21,7 @@ function canSeeDownvotes(currentUser: PrivateUser | null): boolean {
  * Strips downvote data from a single election for non-paid users.
  * Hides the restricted negative voter count while preserving the aggregate net score.
  */
-export function sanitizeElectionForFreeUser<T extends ViewBaseElection>(election: T): T {
+function sanitizeElectionForFreeUser<T extends ViewBaseElection>(election: T): T {
   return {
     ...election,
     votes_count_down: 0,
@@ -31,7 +31,7 @@ export function sanitizeElectionForFreeUser<T extends ViewBaseElection>(election
 /**
  * Strips downvote data from a record of elections for non-paid users.
  */
-export function sanitizeElectionsRecordForFreeUser<T extends ViewBaseElection>(
+function sanitizeElectionsRecordForFreeUser<T extends ViewBaseElection>(
   elections: Record<string, T>,
 ): Record<string, T> {
   const result: Record<string, T> = {}

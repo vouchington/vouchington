@@ -28,7 +28,7 @@ type CreateTopicRecommendationOptions = QueryOptions & {
   skipCreatedEvents?: boolean
 }
 
-export async function createTopicRecommendation(
+async function createTopicRecommendation(
   currentUser: BasicUser,
   provenance: ContentProvenance,
   input: CreateTopicRecommendationInput,

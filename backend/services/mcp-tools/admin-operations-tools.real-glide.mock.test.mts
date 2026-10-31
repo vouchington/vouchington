@@ -54,7 +54,7 @@ describe('registered operational writes on disposable CI boundaries', () => {
     expect(workerQueuePrefix).toBe(prefix)
     const admin = await createTestUserDirect({ administrator: true })
     // Only enqueued here; the domain's provider worker is not running in the data-store project.
-    const domain = 'kagi-smallweb'
+    const domain = 'article-sync'
     try {
       // `list_queues` is the `queues` option of the merged `read_queue_catalog` tool.
       const listed = await invoke(admin, 'read_queue_catalog', {
@@ -108,7 +108,7 @@ describe('registered operational writes on disposable CI boundaries', () => {
     },
   )
   it.each([
-    ['scheduled', 'kagi-smallweb-sync', 'scheduled_job_run'],
+    ['scheduled', 'imports-recover-stalled', 'scheduled_job_run'],
     ['backfill', 'backfill_report_judgements', 'backfill_run'],
   ] as const)(
     'enqueues run_operational_job %s and records requested/finished history',
@@ -134,34 +134,36 @@ describe('registered operational writes on disposable CI boundaries', () => {
   it('updates configuration with its own actor history, no-op semantics and validation guard', async () => {
     expect(workerQueuePrefix).toBe(prefix)
     const admin = await createTestUserDirect({ administrator: true })
-    const namespace = 'kagi-smallweb-config'
+    const namespace = 'app-attestation-config'
     const current = await getDynamicConfigNamespace(admin, namespace)
     expect(current).not.toBeNull()
-    const previous = current!.config.enabled
+    const previous = current!.config.allow_development_attestation
     const next = !previous
     try {
       expect(
         (
           await invoke(admin, 'update_dynamic_config_namespace', {
             namespace,
-            config: { enabled: next },
+            config: { allow_development_attestation: next },
           })
         ).isError,
       ).not.toBe(true)
-      expect((await getDynamicConfigNamespace(admin, namespace))?.config.enabled).toBe(next)
+      expect(
+        (await getDynamicConfigNamespace(admin, namespace))?.config.allow_development_attestation,
+      ).toBe(next)
       const history = (await listDynamicConfigNamespaceHistory(admin, namespace))!.filter(
         row => row.changed_by?.id === admin.id,
       )
       expect(history).toHaveLength(1)
       expect(history[0]).toMatchObject({
-        previous_fields: { enabled: previous },
-        next_fields: { enabled: next },
+        previous_fields: { allow_development_attestation: previous },
+        next_fields: { allow_development_attestation: next },
       })
       expect(
         (
           await invoke(admin, 'update_dynamic_config_namespace', {
             namespace,
-            config: { enabled: next },
+            config: { allow_development_attestation: next },
           })
         ).isError,
       ).not.toBe(true)
@@ -169,7 +171,7 @@ describe('registered operational writes on disposable CI boundaries', () => {
         (
           await invoke(admin, 'update_dynamic_config_namespace', {
             namespace,
-            config: { enabled: 'invalid' },
+            config: { allow_development_attestation: 'invalid' },
           })
         ).isError,
       ).toBe(true)
@@ -181,7 +183,7 @@ describe('registered operational writes on disposable CI boundaries', () => {
     } finally {
       await invoke(admin, 'update_dynamic_config_namespace', {
         namespace,
-        config: { enabled: previous },
+        config: { allow_development_attestation: previous },
       })
     }
   })

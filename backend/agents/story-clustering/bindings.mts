@@ -18,13 +18,13 @@ import type { StoryRunCandidate } from '@services/classifier-runs'
 import type { ViewRssFeedItem } from '@services/rss-feed-items/types'
 
 /** The single Choice question one story-clustering decision asks: one call, one question. */
-export const STORY_CLUSTERING_QUESTION_ID = 'story-clustering'
+const STORY_CLUSTERING_QUESTION_ID = 'story-clustering'
 
 /**
  * The criterion for "belongs to none of the labeled candidates". It is never bound to a candidate
  * and never produces a result row, so the selection infers it by the absence of a qualifying one.
  */
-export const STORY_CLUSTERING_NONE_KEY = classifierChoiceKey('none')
+const STORY_CLUSTERING_NONE_KEY = classifierChoiceKey('none')
 
 /** One reserved candidate and the item whose content stands in for it in the prompt. */
 type StoryClusteringPromptCandidate = {

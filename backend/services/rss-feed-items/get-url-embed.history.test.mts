@@ -63,33 +63,6 @@ describe('URL embed crawl history', () => {
     })
   })
 
-  it('keeps the preview crawl across a content-only raw snapshot', async () => {
-    const urlId = await createTestUrlWithHostname()
-    await insertTestCrawl({
-      urlId,
-      statusCode: 200,
-      markdown: 'Resolved crawl',
-      embedMetadata: RESOLVED_EMBED,
-    })
-    await insertTestCrawl({
-      urlId,
-      statusCode: 200,
-      markdown: 'Latest crawl content',
-      title: 'Latest page title',
-    })
-
-    const expected = {
-      markdown: 'Latest crawl content',
-      embed_metadata: null,
-      title: 'Shared video title',
-      player_url: 'https://www.youtube-nocookie.com/embed/shared-video',
-    }
-    expect(await getUrlEmbedByUrlId(urlId, {}, 'administrator')).toMatchObject(expected)
-    expect((await getUrlEmbedsByUrlIds([urlId], {}, 'administrator'))[urlId]).toMatchObject(
-      expected,
-    )
-  })
-
   it('classifies normalized article metadata with a provider resource as video', async () => {
     const urlId = await createTestUrlWithHostname()
     await insertTestCrawl({

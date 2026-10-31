@@ -412,12 +412,6 @@ WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id
 ON rss_feed_items (url_id);
 
--- RI-usable index for the story_id FK
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__ri
-ON rss_feed_items (story_id)
-WHERE story_id IS NOT NULL;
-
 -- find rss feed items pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__lingua_rs_pending
@@ -534,7 +528,7 @@ WHERE topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__topic_alias_id
-ON rss_feed_item_categories (topic_alias_id, rss_feed_item_id DESC)
+ON rss_feed_item_categories (topic_alias_id, rss_feed_item_id DESC, category_identity_id DESC)
 WHERE topic_alias_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

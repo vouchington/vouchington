@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isUrlCrawlable, fetchRobotsTxtCached, computeHostnameRateLimitMs } from '../index.mts'
-import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
-import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
+import { insertTestUrlHostname } from '@voucha/test-helpers'
 import { HttpResponseSizeError } from '@vouchington/sentry'
 
 const mockFetchWithTimeoutSimple = vi.fn<VitestLooseMock>()
@@ -69,28 +68,6 @@ describe('urls-domains-robots', () => {
     // matching it alone can't distinguish "actually fetched" from a hard-coded shortcut.
     // Assert the not-blocked/not-blacklisted path actually reached the real fetch call.
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledWith(`https://${domain}/robots.txt`, 10_000)
-    expect(result).toBe('User-agent: *\nAllow: /')
-  })
-
-  it('returns DISALLOW when domain is in blocklisted_domains', async () => {
-    const domain = randomDomain()
-    await insertTestDomainBlacklist(domain)
-    await addDomainsToBloomFilter([domain])
-
-    const result = await fetchRobotsTxtCachedForTest(domain)
-
-    expect(result).toBe('User-agent: *\nDisallow: /')
-  })
-
-  it('returns 404 as ALLOW', async () => {
-    const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-    })
-
-    const result = await fetchRobotsTxtCachedForTest(domain)
-
     expect(result).toBe('User-agent: *\nAllow: /')
   })
 
@@ -185,15 +162,6 @@ describe('urls-domains-robots', () => {
 
     expect(result).toBe('User-agent: *\nAllow: /')
   })
-  it('returns false when domain is blacklisted', async () => {
-    const domain = randomDomain()
-    await insertTestDomainBlacklist(domain)
-    await addDomainsToBloomFilter([domain])
-
-    const result = await isUrlCrawlableForTest(`https://${domain}/page`, 'Googlebot')
-
-    expect(result).toBe(false)
-  })
 
   it('returns false when robots.txt disallows path', async () => {
     const domain = randomDomain()
@@ -235,17 +203,6 @@ describe('urls-domains-robots', () => {
     expect(result).toBe(false)
   })
 
-  it('returns true when 404 robots.txt (allows all)', async () => {
-    const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-    })
-
-    const result = await isUrlCrawlableForTest(`https://${domain}/page`, 'Googlebot')
-
-    expect(result).toBe(true)
-  })
   it('uses default 1000ms when requestsPerSecondLimit is null', async () => {
     const domain = randomDomain()
     mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())

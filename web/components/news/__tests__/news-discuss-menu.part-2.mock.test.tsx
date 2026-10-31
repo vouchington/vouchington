@@ -154,18 +154,6 @@ describe('NewsDiscussMenu part 2', () => {
     expect(screen.queryByTestId('community-discussion-action')).toBeNull()
   })
 
-  it('community item shown when viewerHasCommunity=true', () => {
-    mockUseViewerHasCommunity.mockReturnValue(true)
-    render(
-      <NewsDiscussMenu
-        relatedPosts={[]}
-        relatedUrlId='url-1'
-        communityDiscussionUrls={EMPTY_URLS}
-      />,
-    )
-    expect(screen.getByTestId('community-discussion-action')).toBeDefined()
-  })
-
   it('community item shown when communityDiscussionTarget provided (viewerHasCommunity=false)', () => {
     mockUseViewerHasCommunity.mockReturnValue(false)
     render(
@@ -194,18 +182,6 @@ describe('NewsDiscussMenu part 2', () => {
       />,
     )
     expect(container.querySelector('[data-pw="news-discuss-button"]')).not.toBeNull()
-  })
-
-  it('data-pw="news-discuss-create-item" on the create action item in dropdown', () => {
-    mockUseViewerHasCommunity.mockReturnValue(true)
-    const { container } = render(
-      <NewsDiscussMenu
-        relatedPosts={[]}
-        relatedUrlId='url-1'
-        communityDiscussionUrls={EMPTY_URLS}
-      />,
-    )
-    expect(container.querySelector('[data-pw="news-discuss-create-item"]')).not.toBeNull()
   })
 
   it('shows community item in dropdown when viewerHasCommunity=true alongside canDiscuss', () => {

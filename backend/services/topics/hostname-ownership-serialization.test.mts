@@ -1,3 +1,4 @@
+import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -15,7 +16,7 @@ import {
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { blockHostnameInTransaction } from '../hostname-blocking/block-hostname.mts'
-import { createTopicRecommendation } from '../topic-recommendations/create-topic-recommendation.mts'
+import { prepareTopicRecommendation } from '../topic-recommendations/create-topic-recommendation.mts'
 import { approveTopicRecommendationInTransaction } from '../topic-recommendations/approve-topic-recommendation.mts'
 import { disableAndHideSource } from '../rss-feeds/disable-and-hide-source.mts'
 import { setTopicHostnameLink, linkHostnameToSourceTopic } from './hostname-link.mts'
@@ -103,12 +104,17 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
     const parent = `blocked-parent-${suffix}.example.com`
     const child = `blog.${parent}`
     const hostnames = await upsertUrlHostnames(admin.id, [parent, child])
-    const recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'Parent block race',
-      topic_title: `Parent ${suffix}`,
-      topic_slug: `parent-${suffix}`,
-      topic_hostnames: [child],
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Parent block race',
+        topic_title: `Parent ${suffix}`,
+        topic_slug: `parent-${suffix}`,
+        topic_hostnames: [child],
+      },
+    )
     await using holder = await beginTransaction()
     await blockHostnameInTransaction(admin.id, hostnames.get(parent)!, holder, {
       penalizeCreators: false,
@@ -158,12 +164,17 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
       rssFeedUrl: `https://${hostname}/feed.xml`,
     })
     const hostnameId = (await getUrlHostnameByAny(hostname))!.id
-    const recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
-      markdown: 'Source hide race',
-      topic_title: `Hide ${suffix}`,
-      topic_slug: `hide-${suffix}`,
-      topic_hostnames: [hostname],
-    })
+    const recommendation = await createTestTopicRecommendation(
+      prepareTopicRecommendation,
+      admin,
+      WEB_PROVENANCE,
+      {
+        markdown: 'Source hide race',
+        topic_title: `Hide ${suffix}`,
+        topic_slug: `hide-${suffix}`,
+        topic_hostnames: [hostname],
+      },
+    )
     await using holder = await beginTransaction()
     const approved = await approveTopicRecommendationInTransaction(
       admin,

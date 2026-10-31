@@ -6,7 +6,7 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils'
-import { getGrowthMetrics, getRangeStart } from './get-growth-metrics.mts'
+import { getGrowthMetrics } from './get-growth-metrics.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
 import { getEngagement } from './get-engagement.mts'
@@ -14,33 +14,6 @@ import { getNetworkEffects } from './get-network-effects.mts'
 import { getRevenue } from './get-revenue.mts'
 import { getInfrastructureMetrics } from './get-infrastructure-metrics.mts'
 import type { GrowthMetrics, GrowthRange } from './types.mts'
-
-describe('getRangeStart', () => {
-  it.each([
-    { now: '2024-06-15T14:30:00.000Z', expected: '2024-06-15T00:00:00.000Z' },
-    { now: '2024-06-30T23:59:59.999Z', expected: '2024-06-30T00:00:00.000Z' },
-    { now: '2024-07-01T00:00:00.001Z', expected: '2024-07-01T00:00:00.000Z' },
-  ])('returns start of today for "today" at $now', ({ now, expected }) => {
-    expect(getRangeStart('today', new Date(now)).toISOString()).toBe(expected)
-  })
-
-  it.each([
-    { range: '7d', now: '2024-03-01T00:00:00.001Z', expected: '2024-02-23T00:00:00.001Z' },
-    { range: '30d', now: '2024-03-31T23:59:59.999Z', expected: '2024-03-01T23:59:59.999Z' },
-    { range: '90d', now: '2024-01-01T00:00:00.001Z', expected: '2023-10-03T00:00:00.001Z' },
-  ] satisfies Array<{ range: GrowthRange; now: string; expected: string }>)(
-    'returns $range across calendar rollover from $now',
-    ({ range, now, expected }) => {
-      expect(getRangeStart(range, new Date(now)).toISOString()).toBe(expected)
-    },
-  )
-
-  it('returns epoch for "all"', () => {
-    const now = new Date()
-    const start = getRangeStart('all', now)
-    expect(start.getTime()).toBe(0)
-  })
-})
 
 describe('getUserGrowth', () => {
   it('returns expected shape with non-negative numbers', async () => {
@@ -279,6 +252,34 @@ describe('getGrowthMetrics', () => {
       expect(metrics.range).toBe(range)
     }
   })
+})
+
+// Runs last: each case fakes a far-future clock, and getGrowthMetrics caches by range until
+// `now + 10s`, so these entries must not be visible to the real-clock cases above and cases
+// sharing a range are at least 10s apart.
+describe('getGrowthMetrics period_start', () => {
+  it.each([
+    { range: 'today', now: '2124-06-15T14:30:00.000Z', expected: '2124-06-15T00:00:00.000Z' },
+    { range: 'today', now: '2124-06-30T23:59:59.999Z', expected: '2124-06-30T00:00:00.000Z' },
+    { range: 'today', now: '2124-07-01T00:00:10.001Z', expected: '2124-07-01T00:00:00.000Z' },
+    { range: '7d', now: '2124-03-01T00:00:00.001Z', expected: '2124-02-23T00:00:00.001Z' },
+    { range: '30d', now: '2124-03-31T23:59:59.999Z', expected: '2124-03-01T23:59:59.999Z' },
+    { range: '90d', now: '2124-01-01T00:00:00.001Z', expected: '2123-10-03T00:00:00.001Z' },
+    { range: 'all', now: '2124-05-01T12:00:00.000Z', expected: '1970-01-01T00:00:00.000Z' },
+  ] satisfies Array<{ range: GrowthRange; now: string; expected: string }>)(
+    'starts $range at $expected for a clock of $now',
+    async ({ range, now, expected }) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      try {
+        vi.setSystemTime(new Date(now))
+        const metrics = await getGrowthMetrics(range)
+        expect(metrics.period_start).toBe(expected)
+        expect(metrics.period_end).toBe(now)
+      } finally {
+        vi.useRealTimers()
+      }
+    },
+  )
 })
 
 async function expectSharedLoad(first: Promise<GrowthMetrics>, second: Promise<GrowthMetrics>) {

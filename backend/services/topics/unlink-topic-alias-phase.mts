@@ -147,21 +147,12 @@ async function clearRssItemCategories(
   await query(
     `/* clearRssItemCategories clear */
     UPDATE rss_feed_item_categories AS category
-    SET topic_alias_id = NULL,
-        topic_id = CASE
-          WHEN category.topic_id = $2::uuid THEN NULL
-          ELSE category.topic_id
-        END
-    FROM unnest($3::uuid[], $4::uuid[]) AS locked(rss_feed_item_id, category_identity_id)
+    SET topic_alias_id = NULL
+    FROM unnest($2::uuid[], $3::uuid[]) AS locked(rss_feed_item_id, category_identity_id)
     WHERE category.topic_alias_id = $1::uuid
       AND category.rss_feed_item_id = locked.rss_feed_item_id
       AND category.category_identity_id = locked.category_identity_id`,
-    [
-      alias.id,
-      alias.unlink_topic_id,
-      rows.map(row => row.rss_feed_item_id),
-      rows.map(row => row.category_identity_id),
-    ],
+    [alias.id, rows.map(row => row.rss_feed_item_id), rows.map(row => row.category_identity_id)],
   )
   return { postIds: [], rssFeedItemIds: rows.map(row => row.rss_feed_item_id) }
 }

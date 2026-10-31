@@ -5,15 +5,6 @@ import type { CommentTreeOptions } from './types.mts'
 const rootId = '123e4567-e89b-12d3-a456-426614174000'
 
 describe('query-builder.generated', () => {
-  it('buildCommentTreeQuery uses posts.votes_score_sort directly for best sort root selection', () => {
-    const rootId = '123e4567-e89b-12d3-a456-426614174000'
-    const query = buildCommentTreeQuery(rootId, { sort: 'best' })
-
-    expect(query.sql).not.toContain('post_elections')
-    expect(query.sql).not.toContain('election_id')
-    expect(query.sql).toContain('votes_score_sort')
-  })
-
   it('buildCommentTreeQuery best sort retains vote score ordering and pagination', () => {
     const rootId = '123e4567-e89b-12d3-a456-426614174000'
     const query = buildCommentTreeQuery(rootId, {
@@ -39,6 +30,8 @@ describe('query-builder.generated', () => {
 
     expect(sql).toContain('ORDER BY posts.votes_score_sort DESC, posts.id DESC')
     expect(sql).toContain('comment_tree.votes_score_sort AS vote_score')
+    expect(sql).not.toContain('post_elections')
+    expect(sql).not.toContain('election_id')
   })
 
   it('rejects an unexpected runtime comment sort', () => {

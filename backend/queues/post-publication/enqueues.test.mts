@@ -1,17 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import {
-  POST_PUBLICATION_EFFECTS_JOB,
-  POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
-} from '@queues/background/enqueues/post-publication-jobs'
+import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
 import { hashCapturedPublicationKeys } from '../../services/post-publication/captured-keys.mts'
 import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
-import {
-  enqueueAuditReviewSuccessionHistory,
-  enqueueContinueAuditReviewSuccessionHistory,
-  enqueuePostPublicationEffects,
-} from './enqueues.mts'
+import { enqueuePostPublicationEffects } from './enqueues.mts'
 import { backgroundQueue as postPublicationQueue } from '../../test-helpers/shared-background-queue.mts'
 
 describe('post-publication direct enqueues', () => {
@@ -46,27 +39,5 @@ describe('post-publication direct enqueues', () => {
       },
     })
     await expect(enqueuePostPublicationEffects(data)).resolves.toBeNull()
-  })
-
-  it('retains the independent review-history audit cursor in its continuation', async () => {
-    const cursor = randomUUID()
-    const cutoffArchivedAt = '2026-09-09T00:00:00.000Z'
-    const [initial, continuation] = await Promise.all([
-      enqueueAuditReviewSuccessionHistory(),
-      enqueueContinueAuditReviewSuccessionHistory(cursor, cutoffArchivedAt),
-    ])
-    const initialJob = await readEnqueuedJob(postPublicationQueue, initial)
-    const continuationJob = await readEnqueuedJob(postPublicationQueue, continuation)
-    onTestFinished(async () => {
-      await Promise.all([initialJob, continuationJob].map(job => job.remove()))
-    })
-    expect(initialJob).toMatchObject({
-      name: POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB.name,
-      data: { cursor: null, cutoffArchivedAt: null },
-    })
-    expect(continuationJob).toMatchObject({
-      name: POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB.name,
-      data: { cursor, cutoffArchivedAt },
-    })
   })
 })

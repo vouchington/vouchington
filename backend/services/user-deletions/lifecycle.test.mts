@@ -6,11 +6,7 @@ import {
   addUserDeletionExternalWorks,
   completeUserDeletionExternalWorks,
 } from './external-work.mts'
-import {
-  claimRecoverableUserDeletions,
-  claimUserDeletionAttempt,
-  processUserDeletionBatch,
-} from './lifecycle.mts'
+import { claimRecoverableUserDeletions, processUserDeletionBatch } from './lifecycle.mts'
 import {
   addUserDeletionRelationImpactForTest,
   completeUserDeletionRelationImpactForTest,
@@ -19,7 +15,8 @@ import {
   getUserDeletionRelationImpactIdsForTest,
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
-} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+  markUserDeletionAttemptStartedForTest,
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 
 describe('user deletion lifecycle', () => {
   it('creates a durable fenced request', async () => {
@@ -33,17 +30,6 @@ describe('user deletion lifecycle', () => {
   })
 
   it('claims exactly one processing attempt token', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-
-    const [first, second] = await Promise.all([
-      claimUserDeletionAttempt(request.id, request.processingAttemptId),
-      claimUserDeletionAttempt(request.id, request.processingAttemptId),
-    ])
-    expect([first, second].filter(Boolean)).toHaveLength(1)
-  })
-
-  it('runs a fenced attempt at most once under concurrent delivery', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     const processPhaseBatch = vi.fn<() => Promise<{ hasMore: boolean }>>(async () => ({
@@ -69,7 +55,8 @@ describe('user deletion lifecycle', () => {
     expect(unstarted?.processingAttemptId).toBe(request.processingAttemptId)
     if (!unstarted) throw new Error('Expected recovered request')
 
-    expect(await claimUserDeletionAttempt(request.id, request.processingAttemptId)).not.toBeNull()
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
+    expect((await getUserDeletionRequestForTest(request.id))?.processingStartedAt).not.toBeNull()
     await makeUserDeletionRecoverableForTest(request.id, 'stale')
     const stale = (await claimRecoverableUserDeletions()).find(
       candidate => candidate.requestId === request.id,

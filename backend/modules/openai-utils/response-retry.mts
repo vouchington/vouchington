@@ -82,7 +82,7 @@ export async function waitForOpenAIResponseRetry(
   await delay(getOpenAIResponseRetryDelayMs(error, retryIndex), undefined, { signal })
 }
 
-export function getOpenAIResponseRetryDelayMs(error: unknown, retryIndex: number): number {
+function getOpenAIResponseRetryDelayMs(error: unknown, retryIndex: number): number {
   const retryAfterMs = getRetryAfterMs(error)
   if (retryAfterMs !== null) return Math.min(retryAfterMs, MAX_RETRY_DELAY_MS)
   const exponential = Math.min(INITIAL_RETRY_DELAY_MS * 2 ** retryIndex, MAX_RETRY_DELAY_MS)

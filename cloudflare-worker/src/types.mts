@@ -114,8 +114,8 @@ export interface Env {
   /**
    * Pre-cache limiter for Server Action POSTs (requests carrying `next-action` header).
    * Stricter bucket containing blast radius of any future RSC deserialize-DoS / RCE bug
-   * (see CVE-2025-55184, CVE-2025-67779, CVE-2025-66478 React2Shell). Falls back to
-   * the mutating bucket if unset.
+   * (see CVE-2025-55184, CVE-2025-67779, CVE-2025-66478 React2Shell). Checked in addition
+   * to the generic mutating bucket; skipped when unset.
    */
   RATE_LIMITER_SERVER_ACTION?: RateLimiterBinding
   /**

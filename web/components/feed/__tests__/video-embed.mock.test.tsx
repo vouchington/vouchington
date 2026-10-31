@@ -40,18 +40,6 @@ describe('VideoEmbed', () => {
     const sandbox = iframe.getAttribute('sandbox') ?? ''
     expect(sandbox).toContain('allow-same-origin')
     expect(sandbox).toContain('allow-scripts')
-  })
-
-  it('embeds the correct youtube-nocookie URL', () => {
-    const { getByRole, getByTitle } = render(
-      <VideoEmbed
-        platform='youtube'
-        playerUrl='https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ'
-        title='Test Video'
-      />,
-    )
-    fireEvent.click(getByRole('button', { name: /play test video/i }))
-    const iframe = getByTitle('Test Video') as HTMLIFrameElement
     expect(iframe.getAttribute('src')).toBe('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ')
   })
 

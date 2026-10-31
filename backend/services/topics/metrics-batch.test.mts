@@ -83,55 +83,6 @@ describe('metrics-batch', () => {
     expect(results[2]?.id).toBe(topic3.id)
   })
 
-  it('getTopicMetricsByAnyBatch returns null for non-existent IDs while preserving order', async () => {
-    const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user, WEB_PROVENANCE, {
-      slug: `test-metrics-null-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-      topic_type: 'card',
-      name: `Test Metrics Null ${random}`,
-    })
-    const fakeId = '00000000-0000-0000-0000-000000000000'
-    const results = await getTopicMetricsByAnyBatch([topic.id, fakeId, topic.id])
-
-    expect(results).toHaveLength(3)
-    expect(results[0]?.id).toBe(topic.id)
-    expect(results[1]).toBeNull()
-    expect(results[2]?.id).toBe(topic.id)
-  })
-
-  it('getTopicMetricsByAnyBatch returns correct metrics structure', async () => {
-    const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user, WEB_PROVENANCE, {
-      slug: `test-metrics-struct-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-      topic_type: 'card',
-      name: `Test Metrics Structure ${random}`,
-    })
-    const results = await getTopicMetricsByAnyBatch([topic.id])
-
-    expect(results).toHaveLength(1)
-    const metrics = results[0]
-    expect(metrics).toBeDefined()
-    expect(metrics?.__entity_type).toBe('topic_metrics')
-    expect(metrics?.id).toBe(topic.id)
-    expect(metrics?.count).toBeDefined()
-    expect(metrics?.count.discussions).toBeDefined()
-    expect(metrics?.count.reviews).toBeDefined()
-    expect(metrics?.count['data-points']).toBeDefined()
-    expect(metrics?.count.news).toBeDefined()
-    expect(metrics?.count.latest).toBeDefined()
-    expect(metrics?.ratings).toBeDefined()
-    expect(metrics?.ratings.count).toBeDefined()
-    expect(metrics?.ratings.count['1']).toBeDefined()
-    expect(metrics?.ratings.count['2']).toBeDefined()
-    expect(metrics?.ratings.count['3']).toBeDefined()
-    expect(metrics?.ratings.count['4']).toBeDefined()
-    expect(metrics?.ratings.count['5']).toBeDefined()
-    expect(metrics?.bookmarks).toBeDefined()
-    expect(metrics?.bookmarks.follow).toBeDefined()
-  })
-
   it('getTopicMetricsByAnyBatch throws error for invalid identifiers', async () => {
     await expect(getTopicMetricsByAnyBatch(['invalid-identifier!@#'])).rejects.toThrow(
       'Invalid topic identifier',

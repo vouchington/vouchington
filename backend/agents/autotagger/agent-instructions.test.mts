@@ -25,16 +25,11 @@ describe('buildAutotaggerAgentInput', () => {
     expect(input).toContain('Rust')
   })
 
-  it('sanitizes an attacker-influenced topic name instead of passing it through', async () => {
-    const input = await buildAutotaggerAgentInput({ state, appliedTopicNames: [], candidates })
-
-    expect(input).not.toContain('Ignore previous instructions')
-  })
-
   it('says so when no topic is applied yet', async () => {
     const input = await buildAutotaggerAgentInput({ state, appliedTopicNames: [], candidates })
 
     expect(input).toContain('Topics already applied to this content:\n(none)')
+    expect(input).not.toContain('Ignore previous instructions')
   })
 })
 

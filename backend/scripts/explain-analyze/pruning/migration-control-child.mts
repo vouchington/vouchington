@@ -43,7 +43,7 @@ try {
   await checkpoint('alternate-platform-startup')
   alternateClosed = false
   const { createPsql } = await import('@vouchington/postgres')
-  const alternate = await createPsql({
+  const alternate = createPsql({
     connectionString: process.env.DATABASE_URL ?? '',
     readConnectionString: process.env.READ_DATABASE_URL,
     databaseName: 'voucha',

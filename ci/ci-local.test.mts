@@ -139,7 +139,7 @@ describe('ci-local', () => {
         'cd backend && ENVIRONMENT=staging node data-stores/psql/migrate.mts',
       )
       expect(stdout).toContain(
-        'VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
+        'VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
       )
     })
 

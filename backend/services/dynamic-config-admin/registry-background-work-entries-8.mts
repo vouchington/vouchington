@@ -4,10 +4,6 @@ import {
   userDeletionsWorkMaxValues,
 } from '@services/user-deletions/work-limits'
 import {
-  apInboxActivitiesWorkConfig,
-  apInboxActivitiesWorkMaxValues,
-} from '@services/ap-inbox-activities/work-limits'
-import {
   engagementEmailsWorkConfig,
   engagementEmailsWorkMaxValues,
 } from '@services/engagement-emails/work-limits'
@@ -28,18 +24,6 @@ export const backgroundWorkRegistryEntries8 = {
       processing_timeout_minutes: 'Processing timeout minutes before background recovery.',
       batch_size: 'Batch size for user deletions processing.',
       lifecycle_recovery_batch_size: 'Lifecycle recovery batch size for user deletions processing.',
-    },
-  }),
-  'ap-inbox-activities-work-config': defineBoundedWorkNamespace({
-    namespace: 'ap-inbox-activities-work-config',
-    config: apInboxActivitiesWorkConfig,
-    label: 'ActivityPub inbox recovery',
-    maxValues: apInboxActivitiesWorkMaxValues,
-    descriptions: {
-      delivery_transition_recovery_batch_size:
-        'Delivery transition recovery batch size for ap inbox activities processing.',
-      cleanup_batch_size: 'Maximum inbox deliveries deleted per cleanup batch.',
-      cleanup_maximum_batches: 'Maximum nonempty batches per inbox cleanup run.',
     },
   }),
   'engagement-emails-work-config': defineBoundedWorkNamespace({

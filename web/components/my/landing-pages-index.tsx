@@ -9,6 +9,7 @@ import { createMyLandingPage } from '@/lib/api/client'
 import { landingPageHref, landingPageNamedHref, myLandingPageHref } from '@/lib/links/entity-href'
 import onError, { onSuccess } from '@/lib/on-error'
 import { LandingPagesUsernameRequired } from '@/components/my/landing-pages-manager-sections'
+import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import { CreatePageForm } from '@/components/my/landing-pages-manager/page-forms'
 import type { LandingPage } from '@/types/landing-pages'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -50,19 +51,13 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
 
   return (
     <div className='space-y-8'>
-      <div>
-        <h1
-          className='text-2xl font-bold text-foreground'
-          data-pw='landing-pages-settings-heading'
-        >
-          {t('extracted.my.landingPagesIndex.landingPages_6e8d0e5d')}
-        </h1>
-        <p className='mt-1 text-sm text-muted-foreground'>
-          {t('extracted.my.landingPagesIndex.createPublicLandingPagesForUsername_b00cca00', {
-            username,
-          })}
-        </p>
-      </div>
+      <SettingsPageHeader
+        title={t('extracted.my.landingPagesIndex.landingPages_6e8d0e5d')}
+        description={t(
+          'extracted.my.landingPagesIndex.createPublicLandingPagesForUsername_b00cca00',
+          { username },
+        )}
+      />
 
       <CreatePageForm
         loading={loading}

@@ -12,7 +12,7 @@ import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 
-const ALLOWED_EXTERNAL_SOURCES = new Set(['external:kagi-smallweb', 'external:ses-inbound-s3'])
+const ALLOWED_EXTERNAL_SOURCES = new Set(['external:ses-inbound-s3'])
 const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'crawl-hostnames-dispatch',
   'crawl-tier1-dispatch',
@@ -34,7 +34,6 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'relation-election-updates',
   'find-your-friends-dispatch',
   'oauth-authorization-exchange-dispatch',
-  'kagi-smallweb-sync',
   'topic-aliases-category-mapping-reconciliation',
 ])
 
@@ -134,18 +133,6 @@ describe('BACKFILL_REGISTRY', () => {
 
   it('has at least one entry', () => {
     expect(BACKFILL_REGISTRY.length).toBeGreaterThan(0)
-  })
-
-  it('enqueues the ActivityPub failed-delivery rearm', async () => {
-    const entry = BACKFILL_REGISTRY.find(
-      candidate => candidate.id === 'activitypub-inbox-failed-deliveries',
-    )
-    if (!entry) throw new Error('ActivityPub failed-delivery backfill missing')
-    const enqueued = await entry.trigger()
-    if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(activitypub, enqueued)).resolves.toMatchObject({
-      name: 'activitypub.rearmFailedDeliveries',
-    })
   })
 
   it.each([

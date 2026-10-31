@@ -1,3 +1,4 @@
+import { topicImportIdempotencyKeyForTest } from '@voucha/test-helpers/entities/topic-import-idempotency'
 import { describe, expect, it, vi } from 'vitest'
 import {
   CONTRIBUTING_USER_AGE_MS,
@@ -9,10 +10,7 @@ import {
   claimContributionAdmission,
   discardRejectedContributionAdmission,
 } from '@services/contribution-gating/admission-reservations'
-import {
-  admitImportedTopicRecommendation,
-  stableTopicImportIdempotencyKey,
-} from './admit-topic-recommendation.mts'
+import { admitImportedTopicRecommendation } from './admit-topic-recommendation.mts'
 import { prepareTopicInput, recordTopicImportRequests } from './import-topics-queries.mts'
 import { importTopics, TopicImportInProgressError } from './import-topics.mts'
 
@@ -36,7 +34,7 @@ describe('topic import retry', () => {
     }
     const heldClaim = await claimContributionAdmission(
       user.id,
-      stableTopicImportIdempotencyKey(user.id, importAttemptId, heldInput.slug),
+      topicImportIdempotencyKeyForTest(user.id, importAttemptId, heldInput.slug),
       heldIntent,
       {
         route: 'my.import.topics.recommendation',

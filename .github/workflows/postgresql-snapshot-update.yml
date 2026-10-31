@@ -74,7 +74,7 @@ jobs:
       NODE_ENV: test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ needs.prepare.outputs.head_sha }}
           persist-credentials: false
@@ -126,7 +126,7 @@ jobs:
             }
           '
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           path: .trusted-snapshot-tooling
@@ -162,12 +162,12 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ needs.prepare.outputs.head_sha }}
           path: candidate

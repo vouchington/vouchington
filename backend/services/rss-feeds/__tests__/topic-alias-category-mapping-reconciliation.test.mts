@@ -113,7 +113,12 @@ describe('topic alias category mapping reconciliation', () => {
     await owned.run(() => updateTestTopicAliasCategoryMappingOwner(alias!.id, topicB.id))
     await owned.run(() => updateTestTopicAliasCategoryMappingOwner(alias!.id, null))
 
-    await owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, [alias!.id]))
+    for (let page = 0; page < 4; page += 1) {
+      const result = await owned.run(() =>
+        processReconcileTopicAliasCategoryMappings(1, [alias!.id]),
+      )
+      if (!result.hasMore) break
+    }
     await expect(owned.run(() => getTestRssFeedItemCategories(item.id))).resolves.toContainEqual(
       expect.objectContaining({ category_text: `#${alias!.alias}`, topic_id: null }),
     )
@@ -172,16 +177,11 @@ describe('topic alias category mapping reconciliation', () => {
       ]),
     )
 
-    await expect(
-      owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, ids)),
-    ).resolves.toEqual({
-      reconciled: 2,
-      updated: 0,
-      hasMore: true,
-    })
+    const first = await owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, ids))
+    expect(first).toEqual({ reconciled: 0, updated: 0, hasMore: true })
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest(ids)),
-    ).resolves.toBe(1)
+    ).resolves.toBe(3)
     const orderedIds = ids.toSorted()
     await expect(
       owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(orderedIds[2]!)),
@@ -189,18 +189,22 @@ describe('topic alias category mapping reconciliation', () => {
     for (const processedId of orderedIds.slice(0, 2)) {
       await expect(
         owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(processedId)),
-      ).resolves.toBeUndefined()
+      ).resolves.toMatchObject({ topic_alias_id: processedId })
     }
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest([foreignId])),
     ).resolves.toBe(1)
+    for (let page = 0; page < 9; page += 1) {
+      const result = await owned.run(() =>
+        processReconcileTopicAliasCategoryMappings(undefined, ids),
+      )
+      expect(result.updated).toBe(0)
+      expect(result.reconciled).toBeLessThanOrEqual(2)
+      if ((await owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest(ids))) === 0) break
+    }
     await expect(
-      owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, ids)),
-    ).resolves.toEqual({
-      reconciled: 1,
-      updated: 0,
-      hasMore: false,
-    })
+      owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest(ids)),
+    ).resolves.toBe(0)
     await expect(
       owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, ids)),
     ).resolves.toEqual({
@@ -233,10 +237,16 @@ describe('topic alias category mapping reconciliation', () => {
       ]),
     )
 
-    const result = await owned.run(() =>
-      processReconcileTopicAliasCategoryMappings(2, [pendingAliasId, siblingId]),
-    )
-    expect(result).toEqual({ reconciled: 1, updated: 0, hasMore: false })
+    let reconciled = 0
+    for (let page = 0; page < 5; page += 1) {
+      const result = await owned.run(() =>
+        processReconcileTopicAliasCategoryMappings(2, [pendingAliasId, siblingId]),
+      )
+      reconciled += result.reconciled
+      expect(result.updated).toBe(0)
+      if (!result.hasMore) break
+    }
+    expect(reconciled).toBe(1)
     await expect(
       owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(pendingAliasId)),
     ).resolves.toBeDefined()

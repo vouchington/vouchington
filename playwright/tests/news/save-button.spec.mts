@@ -5,7 +5,7 @@ import { withCleanUser } from '../../helpers/auth.mts'
 import { followRssFeed } from '../../../backend/test-helpers/index.mts'
 
 // Seeded RSS feed that has items on /news and is followed by the seeded test user.
-// Source: backend/scripts/seeds/playwright-test-data/feeds.mts
+// Source: backend/test-helpers/playwright-seed-feeds.mts
 const SEEDED_RSS_FEED_ID = '019c64e6-f8c0-7000-8000-000000000001'
 
 // The /news feed batch-loads save state via the bookmarks sidecar.

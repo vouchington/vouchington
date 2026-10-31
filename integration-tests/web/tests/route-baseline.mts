@@ -29,12 +29,6 @@ describe('web route baseline tests', () => {
 
   describe('route coverage baseline', () => {
     it('covers redirect-only public routes', async () => {
-      await expectManualRedirectPath(
-        client,
-        workerOrigin,
-        '/keyboard-shortcuts',
-        '/article/keyboard-shortcuts',
-      )
       await expectManualRedirectPath(client, workerOrigin, '/notification-redirect', '/')
       await expectManualRedirectMatches(
         client,

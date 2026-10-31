@@ -48,7 +48,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
@@ -71,6 +71,8 @@ jobs:
           export S3_BUCKET_USER_EXPORTS=test-user-exports
           export S3_BUCKET_QUARANTINE=test-quarantine
           node ci/check-live-mcp-catalog.mjs
+          node ci/check-topic-merge-foreign-keys.mts
+          node ci/validate-generated-ddl-inserts.mts
           pnpm run mcp:catalog -- --check
         timeout-minutes: 8
       - name: Check canonical API snapshot git state
@@ -101,9 +103,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        timeout-minutes: 3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Next.js pages-router check
         timeout-minutes: 1
         run: |
@@ -136,9 +140,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        timeout-minutes: 3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Check lambda dependencies
         run: pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas
         timeout-minutes: 2
@@ -160,9 +166,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        timeout-minutes: 3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Smoke test Cloudflare Worker runtime
         working-directory: cloudflare-worker
         run: |

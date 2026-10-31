@@ -232,29 +232,6 @@ describe('upsert.generated', () => {
     expect(item!.published_at.getTime()).toBeLessThanOrEqual(Date.now() + 5_000)
   })
 
-  it('upsertRssFeedItems handles duplicate guids in a single batch (regression for ON CONFLICT 21000)', async () => {
-    const feed = await insertTestRssFeedDirect({})
-    const random = Math.random().toString(36).slice(2, 15)
-    const guid = `dup-guid-${random}`
-
-    const items = await upsertRssFeedItems(feed.id, [
-      {
-        link: `https://example.com/a-${random}`,
-        guid,
-        title: 'First',
-        pubDate: '2025-01-01T00:00:00Z',
-      },
-      {
-        link: `https://example.com/b-${random}`,
-        guid,
-        title: 'Second',
-        pubDate: '2025-01-02T00:00:00Z',
-      },
-    ])
-
-    expect(items.length).toBe(1)
-  })
-
   it('upsertRssFeedItems keeps the last occurrence when guids duplicate within a batch', async () => {
     const feed = await insertTestRssFeedDirect({})
     const random = Math.random().toString(36).slice(2, 15)

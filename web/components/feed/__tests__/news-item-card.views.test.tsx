@@ -35,11 +35,6 @@ const mockItem: RssFeedItem = makeRssFeedItem({
 })
 
 describe('NewsItemCard summary view (default)', () => {
-  it('renders stripped contentSnippet as excerpt', () => {
-    render(<NewsItemCard item={mockItem} />)
-    expect(screen.getByText('This is a test article excerpt.')).toBeDefined()
-  })
-
   it('falls back to description then summary for excerpt', () => {
     const item: RssFeedItem = {
       ...mockItem,
@@ -130,15 +125,6 @@ describe('NewsItemCard summary view (default)', () => {
     const img = container.querySelector('img')
     expect(img).not.toBeNull()
     expect(img?.getAttribute('src')).toBe('/sideload/abc123?w=400')
-  })
-  it('thumbnail image has width=128 and height=80 to prevent CLS', () => {
-    const { container } = render(
-      <NewsItemCard
-        item={mockItem}
-        thumbnailUrl='/sideload/abc123?w=400'
-      />,
-    )
-    const img = container.querySelector('img')
     expect(img?.getAttribute('width')).toBe('128')
     expect(img?.getAttribute('height')).toBe('80')
   })

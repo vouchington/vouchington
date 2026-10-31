@@ -25,8 +25,9 @@ import {
   createMonthlyPartitions,
   retireMonthlyDropCandidates,
   retireMonthlyPartitionCandidate,
-  type PartitionDropOutcome,
 } from './monthly-partitions.mts'
+
+type PartitionDropOutcome = Awaited<ReturnType<typeof retireMonthlyPartitionCandidate>>
 
 type Recorder = ReturnType<typeof createCopyrightPartitionRetirementRecorder>
 

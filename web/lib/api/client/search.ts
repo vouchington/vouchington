@@ -4,9 +4,7 @@
  * Combined omnisearch endpoint — single request, server fans out across all five
  * entity types and returns a lightweight merged response.
  *
- * This is the data path used when the `combinedSearch` feature flag is enabled.
- * When the flag is off the command-search dialog fans out to the five individual
- * entity endpoints instead (see command-search-data-search.ts).
+ * This is the data path for the command-search dialog's "all" tab.
  */
 
 import { clientApi } from './instance'
@@ -57,9 +55,7 @@ type CombinedSearchResponse = {
  * Fetch all five search verticals in one request and return them as a
  * SearchResults-compatible object for the command-search dialog.
  *
- * Bookmarked communities are sorted to the top (mirrors sortByBookmarked in
- * command-search-data-search.ts, which is already a no-op for all other
- * verticals at the list endpoint).
+ * Bookmarked communities are sorted to the top.
  */
 export async function fetchCombinedSearch(q: string, signal: AbortSignal): Promise<SearchResults> {
   const data = await clientApi.get<CombinedSearchResponse>('/api/v1/search', {

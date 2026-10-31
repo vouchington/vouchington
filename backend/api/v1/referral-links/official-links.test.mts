@@ -36,16 +36,6 @@ describe('official-links', () => {
         .expect(403)
     })
 
-    it('GET /api/v1/referral-programs/:id/official-referral-links returns 200 for admin', async () => {
-      const request = createRequest()
-      await request.authenticateAsMfa(adminUser!)
-
-      const res = await request
-        .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
-        .expect(200)
-      expect(Array.isArray(res.body.official_referral_links)).toBe(true)
-    })
-
     it('POST /api/v1/referral-programs/:id/official-referral-links returns 403 for regular user', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser!)
@@ -63,6 +53,7 @@ describe('official-links', () => {
       const before = await request
         .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
         .expect(200)
+      expect(Array.isArray(before.body.official_referral_links)).toBe(true)
       await request
         .post(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
         .send({ url: null, unexpected: true })

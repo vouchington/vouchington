@@ -36,16 +36,32 @@ describe('main-backend workflow', () => {
     expect(workflow).toContain("- 'ci/package.json'")
   })
 
+  it('triggers the main backend workflow when the generated INSERT guard changes', () => {
+    const guard = 'ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts'
+    expect(ciBackendFilter()).toContain('ci/generated-ddl-inserts/**')
+
+    const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on?: { push?: { paths?: string[] } }
+    }
+    const pushPaths = workflow.on?.push?.paths ?? []
+    expect(pushPaths).toContain('ci/generated-ddl-inserts/**')
+    expect(pushPaths.some(glob => picomatch.isMatch(guard, glob, { dot: true }))).toBe(true)
+  })
+
   it('triggers the main backend workflow when the live MCP catalog checker changes', () => {
     const checker = 'ci/check-live-mcp-catalog.mjs'
+    const registration = 'ci/mcp-tool-file-registration.mts'
     expect(ciBackendFilter()).toContain(checker)
+    expect(ciBackendFilter()).toContain(registration)
 
     const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
       on?: { push?: { paths?: string[] } }
     }
     const pushPaths = workflow.on?.push?.paths ?? []
     expect(pushPaths).toContain(checker)
+    expect(pushPaths).toContain(registration)
     expect(pushPaths.some(glob => picomatch.isMatch(checker, glob, { dot: true }))).toBe(true)
+    expect(pushPaths.some(glob => picomatch.isMatch(registration, glob, { dot: true }))).toBe(true)
   })
 
   it('contains only image publication selection, intent, and publication jobs', () => {

@@ -6,14 +6,17 @@ Immutable moderation generations keyed by canonical post content and policy revi
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                                            |
-| ----------------- | -------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()`                                   |          |           |           |                                                                                                    |
-| `post_id`         | `uuid`                     | no       |                                              |          |           |           | Post whose canonical content version this moderation generation evaluates.                         |
-| `content_sha256`  | `bytea`                    | no       |                                              |          |           |           | SHA-256 digest of the exact post content evaluated by this version.                                |
-| `policy_revision` | `text`                     | no       |                                              |          |           |           | Stable moderation-policy revision applied to this content version.                                 |
-| `deadline_at`     | `timestamp with time zone` | no       | `(CURRENT_TIMESTAMP + '00:30:00'::interval)` |          |           |           | Hard recovery deadline; unresolved work becomes staff review rather than publication or rejection. |
-| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                 |          | virtual   |           |                                                                                                    |
+| Column                      | Type                       | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                                              |
+| --------------------------- | -------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                     | no       | `uuidv7()`                                   |          |           |           |                                                                                                      |
+| `post_id`                   | `uuid`                     | no       |                                              |          |           |           | Post whose canonical content version this moderation generation evaluates.                           |
+| `content_sha256`            | `bytea`                    | no       |                                              |          |           |           | SHA-256 digest of the exact post content evaluated by this version.                                  |
+| `policy_revision`           | `text`                     | no       |                                              |          |           |           | Stable moderation-policy revision applied to this content version.                                   |
+| `deadline_at`               | `timestamp with time zone` | no       | `(CURRENT_TIMESTAMP + '00:30:00'::interval)` |          |           |           | Hard recovery deadline; unresolved work becomes staff review rather than publication or rejection.   |
+| `retention_successor_at`    | `timestamp with time zone` | yes      |                                              |          |           |           | UUIDv7 time of the earliest same-post successor; deletion still checks that successor under lock.    |
+| `retention_due_at`          | `timestamp with time zone` | yes      |                                              |          |           |           | Indexed successor-time candidate marker, absent while the version is dormant.                        |
+| `retention_hash_blocked_at` | `timestamp with time zone` | yes      |                                              |          |           |           | A dormant version or pass disposition needs reconsideration after the post digest or policy changes. |
+| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                 |          | virtual   |           |                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -33,8 +36,12 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_post_moderation_versions__post_id__id`: `CREATE INDEX idx_post_moderation_versions__post_id__id ON public.post_moderation_versions USING btree (post_id, id DESC)`
+- `idx_post_moderation_versions__retention_due`: `CREATE INDEX idx_post_moderation_versions__retention_due ON public.post_moderation_versions USING btree (retention_due_at, id) WHERE (retention_due_at IS NOT NULL)`
+- `idx_post_moderation_versions__retention_hash_policy`: `CREATE INDEX idx_post_moderation_versions__retention_hash_policy ON public.post_moderation_versions USING btree (id) WHERE (retention_hash_blocked_at IS NOT NULL)`
+- `idx_post_moderation_versions__retention_hash_post`: `CREATE INDEX idx_post_moderation_versions__retention_hash_post ON public.post_moderation_versions USING btree (post_id, id) WHERE (retention_hash_blocked_at IS NOT NULL)`
 - `post_moderation_versions_pkey`: `CREATE UNIQUE INDEX post_moderation_versions_pkey ON public.post_moderation_versions USING btree (id)`
 - `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `CREATE UNIQUE INDEX uq_post_modera_versio__post_id__content_sha256__policy_revision ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision)`
 
 **Triggers:**
-_none_
+
+- `trigger_post_moderation_versions_retention`: `CREATE TRIGGER trigger_post_moderation_versions_retention AFTER INSERT OR DELETE ON public.post_moderation_versions FOR EACH ROW EXECUTE FUNCTION fn_update_post_moderation_version_retention()`

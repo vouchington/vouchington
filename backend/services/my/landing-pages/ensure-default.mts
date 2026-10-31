@@ -3,7 +3,7 @@ import { getUserDisplayName } from '@services/users/display-name'
 import { listLandingPagesForUser } from './list.mts'
 import { createMyLandingPage } from './create.mts'
 
-export function deriveSlugFromUsername(username: string): string {
+function deriveSlugFromUsername(username: string): string {
   return username.toLowerCase().replace(/_/g, '-')
 }
 

@@ -27,16 +27,6 @@ describe('createPostSchema', () => {
     expect(schema['discussionUrl']).toBe(schema['url'])
   })
 
-  it('populates dateModified from updatedAt', () => {
-    const schema = createPostSchema({
-      ...baseArgs,
-      kind: 'article',
-      updatedAt: '2026-04-15T12:00:00.000Z',
-    })
-
-    expect(schema['dateModified']).toBe('2026-04-15T12:00:00.000Z')
-  })
-
   it('dateModified differs from datePublished when updatedAt differs from createdAt', () => {
     const schema = createPostSchema({
       ...baseArgs,

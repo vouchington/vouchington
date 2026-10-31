@@ -1,12 +1,7 @@
-import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
+import { PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { POST_PUBLICATION_EFFECTS_ORDERING_KEY } from './ordering-caps.mts'
-
-export type ReviewSuccessionHistoryAuditJobData = {
-  cursor: string | null
-  cutoffArchivedAt: string | null
-}
 
 export const POST_PUBLICATION_DOMAIN = defineBackgroundDomain({
   domain: 'post-publication',
@@ -26,13 +21,4 @@ export const POST_PUBLICATION_EFFECTS_JOB = defineBackgroundJob<PostPublicationE
   },
 )
 
-export const POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB =
-  defineBackgroundJob<ReviewSuccessionHistoryAuditJobData>(POST_PUBLICATION_DOMAIN, {
-    name: 'audit-review-succession-history',
-    priority: PRIORITY_DISPATCH,
-  })
-
-export const POST_PUBLICATION_JOBS = [
-  POST_PUBLICATION_EFFECTS_JOB,
-  POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
-] as const
+export const POST_PUBLICATION_JOBS = [POST_PUBLICATION_EFFECTS_JOB] as const

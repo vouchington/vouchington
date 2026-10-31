@@ -20,6 +20,7 @@ describe('create-referral-signup-notification', () => {
     expect(notification?.actor_user_id).toBe(newUser.id)
     expect(notification?.title).toBe(`@${username} signed up through your referral!`)
     expect(notification?.target_path).toBe(`/user/${username}`)
+    expect(notification?.body).toMatch(/You now have \d+ referral/)
   })
 
   it('creates referral signup notification with null username', async () => {
@@ -37,22 +38,5 @@ describe('create-referral-signup-notification', () => {
     expect(notification?.actor_user_id).toBe(newUser.id)
     expect(notification?.title).toBe('Someone signed up through your referral!')
     expect(notification?.target_path).toBe('/')
-  })
-
-  it('includes referral count in notification body', async () => {
-    const referrer = await createTestUserDirect()
-    const newUser = await createTestUserDirect()
-
-    const result = await createReferralSignupNotification(
-      referrer.id,
-      newUser.id,
-      newUser.username ?? null,
-    )
-
-    expect(result).toHaveLength(1)
-
-    const { notifications } = await listNotifications(referrer.id)
-    const notification = notifications[result[0]!.id]
-    expect(notification?.body).toMatch(/You now have \d+ referral/)
   })
 })

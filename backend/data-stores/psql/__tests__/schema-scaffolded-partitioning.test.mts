@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { onGracefulShutdown } from '../index.mts'
 import { getPartitionRows } from '../../../test-helpers/data-stores/psql/election-schema.mts'
 
-const DEFERRED_RANGE_LEDGER_TABLES = ['ai_usage_records', 'mcp_call_audit_events']
+const DEFERRED_RANGE_LEDGER_TABLES = ['mcp_call_audit_events']
 const MONTHLY_DECISION_HISTORY_TABLES = ['community_post_review_changes', 'post_clearance_changes']
 const USER_KEY_RANGE_TABLES = [
   ['conversation_messages', 'conversation_id'],
@@ -52,6 +52,14 @@ describe('deferred-partition scaffolding', () => {
       }
       expect(children.some(child => child.child_name === `${table}__default`)).toBe(false)
     }
+  })
+
+  it('routes raw AI usage through explicit monthly id ranges without a DEFAULT child', async () => {
+    const rows = await getPartitionRows(['ai_usage_records'])
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.every(row => row.partition_key === 'RANGE (id)')).toBe(true)
+    expect(rows.every(row => /^ai_usage_records__p_\d{4}_\d{2}$/u.test(row.child_name))).toBe(true)
+    expect(rows.every(row => row.child_bound !== 'DEFAULT')).toBe(true)
   })
 
   it('range-partitions each user-key growth table with one DEFAULT child', async () => {

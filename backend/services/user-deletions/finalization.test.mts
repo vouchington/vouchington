@@ -18,7 +18,7 @@ import {
   getUserDeletionCompletionAuditForTest,
   getUserDeletionRelationImpactIdsForTest,
   getUserDeletionRequestForTest,
-} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 
 describe('user deletion finalization', () => {
   it('removes a late Bluesky follow receipt and completes', async () => {

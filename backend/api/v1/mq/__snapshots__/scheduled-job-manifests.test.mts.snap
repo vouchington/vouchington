@@ -960,80 +960,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Recover abandoned durable ActivityPub inbox envelopes",
-        "id": "activitypub-inbox-recovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "background",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "activitypub-inbox-recovery",
-    "template": {
-      "data": {},
-      "name": "activitypub.recoverDeliveries",
-      "opts": {
-        "attempts": 5,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "activitypub:inbound-recovery",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Delete expired durable ActivityPub inbox envelopes",
-        "id": "activitypub-inbox-cleanup",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "background",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "activitypub-inbox-cleanup",
-    "template": {
-      "data": {},
-      "name": "activitypub.cleanupExpiredDeliveries",
-      "opts": {
-        "attempts": 5,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "activitypub:cleanup",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Dispatch RSS feed fetching",
         "id": "dispatchRssFeeds",
         "kind": "scheduled-jobs",
@@ -1247,45 +1173,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         },
         "ordering": {
           "key": "sitemaps:dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Sync Kagi Small Web data",
-        "id": "kagi-smallweb-sync",
-        "kind": "scheduled-jobs",
-        "schedule": "0 5 * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "kagi-smallweb-sync",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "background",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 5 * * *",
-    },
-    "schedulerId": "kagi-smallweb-sync",
-    "template": {
-      "data": {},
-      "name": "kagi-smallweb.sync",
-      "opts": {
-        "attempts": 2147483647,
-        "backoff": {
-          "delay": 1000,
-          "type": "paged-dispatch-kagi",
-        },
-        "ordering": {
-          "key": "kagi-smallweb:dispatcher",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -3301,22 +3188,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "trigger",
   },
   {
-    "description": "Recover abandoned durable ActivityPub inbox envelopes",
-    "id": "activitypub-inbox-recovery",
-    "job_name": "activitypub.recoverDeliveries",
-    "queue_name": "background",
-    "schedule": "every 5m",
-    "triggerName": "enqueueRecoverActivityPubInboxDeliveries",
-  },
-  {
-    "description": "Delete expired durable ActivityPub inbox envelopes",
-    "id": "activitypub-inbox-cleanup",
-    "job_name": "activitypub.cleanupExpiredDeliveries",
-    "queue_name": "background",
-    "schedule": "every 5m",
-    "triggerName": "enqueueCleanupExpiredActivityPubInboxDeliveries",
-  },
-  {
     "description": "Recover copyright intake emails still present in S3",
     "id": "ses-inbound-reconciliation",
     "job_name": "ses-inbound.reconcile",
@@ -3547,14 +3418,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "psql",
     "schedule": "0 6 * * *",
     "triggerName": "[anonymous]",
-  },
-  {
-    "description": "Sync Kagi Small Web data",
-    "id": "kagi-smallweb-sync",
-    "job_name": "kagi-smallweb.sync",
-    "queue_name": "background",
-    "schedule": "0 5 * * *",
-    "triggerName": "enqueueKagiSmallWebSync",
   },
   {
     "description": "Re-dispatch imports whose dispatcher failed",

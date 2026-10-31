@@ -2,10 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import type { AIAgentJobData, SpendCapRecheckJobData } from '@queues/ai-agents/types'
-import {
-  enqueueSpendCapRecheck,
-  spendCapRecheckDeduplicationId,
-} from '@queues/ai-agents/enqueues/spend-cap-recheck'
+import { enqueueSpendCapRecheck } from '@queues/ai-agents/enqueues/spend-cap-recheck'
 import { registerSpendCapDelayedJob as registerDelayedJob } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import { processAIAgentWorkerJob } from './core.mts'
@@ -256,11 +253,5 @@ describe('AI spend-cap coordinated rechecks', () => {
     expect(dependencies.beginSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
     expect(dependencies.completeSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
     expect(job.moveToDelayed).not.toHaveBeenCalled()
-  })
-
-  it('uses generation-scoped deduplication', () => {
-    expect(spendCapRecheckDeduplicationId('2026-08-16', 'a')).not.toBe(
-      spendCapRecheckDeduplicationId('2026-08-16', 'b'),
-    )
   })
 })

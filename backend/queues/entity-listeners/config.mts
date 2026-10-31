@@ -1,4 +1,4 @@
-export const DEFAULT_RECONCILIATION_INTERVAL_SECONDS = 3600
+const DEFAULT_RECONCILIATION_INTERVAL_SECONDS = 3600
 export function getEntityListenerReconciliationIntervalSeconds(): number {
   const raw = process.env.ENTITY_LISTENER_RECONCILIATION_INTERVAL_SECONDS
   if (!raw) return DEFAULT_RECONCILIATION_INTERVAL_SECONDS

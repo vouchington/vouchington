@@ -16,12 +16,11 @@ export async function reportApiEgressProxyConfig(): Promise<void> {
 }
 
 // Evidence for A4: the ActivityPub AAAA ordering gate
-// (vouchington-infra/opentofu/reference-human_checklist-phase-4-populate-ssm-parameter-store.md) requires every
-// *approved* fediverse_instance actor host to resolve AAAA before api's public IPv4 is removed,
-// since `POST /ap/inbox` fetches remote actor documents directly when
-// asynchronous inbox delivery is disabled. Aurora is only reachable from inside the VPC, hence
-// this ECS task; the actual AAAA lookup happens against this output, not inline here, so the same
-// per-host resolver/failure semantics as `resolveRecords` apply.
+// (vouchington-infra/opentofu/reference-human_checklist-phase-4-populate-ssm-parameter-store.md)
+// checks approved fediverse_instance actor hosts before api's public IPv4 is removed.
+// `POST /ap/inbox` queues unknown actors for the I/O worker; this VPC task reports the approved
+// hostnames from Aurora for the external AAAA check. The actual lookup happens against this output,
+// not inline here, so the same per-host resolver/failure semantics as `resolveRecords` apply.
 export async function reportApprovedFediverseInstanceHosts(): Promise<void> {
   const approved = await listApprovedFediverseInstanceHostnames()
   const hosts = approved.map(instance => instance.hostname)

@@ -1,15 +1,19 @@
+'use client'
+
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 import { TopicLabel } from '@/components/topics/topic-label'
 import { CategoryChips } from '@/components/feed/category-chips'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 
 interface NewsItemHeaderProps {
   item: Pick<RssFeedItem, 'published_at' | 'rss_feed' | 'categories'>
 }
 
 export function NewsItemHeader({ item }: NewsItemHeaderProps) {
+  const uiLocale = useUiLocale()
   const sourceName = item.rss_feed.title
-  const publishedAt = formatUtcDate(item.published_at)
+  const publishedAt = formatUtcDate(item.published_at, uiLocale)
   const sourceTopic = item.rss_feed.topic
 
   return (

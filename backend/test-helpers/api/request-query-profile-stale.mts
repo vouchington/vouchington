@@ -1,6 +1,6 @@
 // Report-only: lists baseline scopes not observed in complete local or CI profile logs.
 // Usage: node backend/test-helpers/api/request-query-profile-stale.mts <complete-run-log>...
-// Include all backend-unit shard output and the activitypub-capacity project output in each log.
+// Include all backend-unit shard output from the complete run in each log.
 // A scope is considered absent only when its matching diagnostic kind was present in the logs.
 import { readFileSync } from 'node:fs'
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'

@@ -38,21 +38,6 @@ describe('GET /api/v1/my/contribution-status', () => {
     await request.get('/api/v1/my/contribution-status').expect(401)
   })
 
-  it('returns contribution_status and daily_quota for authenticated user', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get('/api/v1/my/contribution-status').expect(200)
-
-    expect(response.body.contribution_status).toBeDefined()
-    expect(typeof response.body.contribution_status.allowed).toBe('boolean')
-
-    expect(response.body.daily_quota).toBeDefined()
-    expect(typeof response.body.daily_quota.limit).toBe('number')
-    expect(typeof response.body.daily_quota.used).toBe('number')
-    expect(response.body).not.toHaveProperty('action_limit')
-  })
-
   it('gates newly created free accounts', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -63,16 +48,9 @@ describe('GET /api/v1/my/contribution-status', () => {
     expect(response.body.contribution_status.allowed).toBe(false)
     expect(response.body.contribution_status.reason).toBe('account_too_new')
     expect(response.body.contribution_status.gated_until).toBeDefined()
-  })
-
-  it('returns free quota limit (10) for free users', async () => {
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get('/api/v1/my/contribution-status').expect(200)
-
     expect(response.body.daily_quota.limit).toBe(10)
     expect(response.body.daily_quota.used).toBeGreaterThanOrEqual(0)
+    expect(response.body).not.toHaveProperty('action_limit')
   })
 
   it('returns action-specific limits when action is provided', async () => {

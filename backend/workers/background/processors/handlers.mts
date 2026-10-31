@@ -16,7 +16,6 @@ import { blueskyFollowPropagationHandlers } from '@workers/bluesky-follow-propag
 import { entityListenersHandlers } from '@workers/entity-listeners/workers'
 import { followerDistributionsHandlers } from '@workers/follower-distributions/workers'
 import { emailDigestsHandlers } from '@workers/email-digests/workers'
-import { kagiSmallWebHandlers } from '@workers/kagi-smallweb/workers'
 import { moderationSignalsHandlers } from '@workers/moderation-signals/workers'
 import { hostnameBlockingHandlers } from './hostname-blocking.mts'
 import { notificationsHandlers } from '@workers/notifications/workers'
@@ -63,7 +62,6 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...urlsDomainsBlacklistHandlers,
   ...sitemapsHandlers,
   ...cachePurgeHandlers,
-  ...kagiSmallWebHandlers,
   ...emailDigestsHandlers,
   ...adminImportsHandlers,
   ...userRssFeedImportsHandlers,

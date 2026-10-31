@@ -68,20 +68,10 @@ describe('RecommendedTopicsAsideContent', () => {
         initialBookmarks={{}}
       />,
     )
-    expect(screen.getByRole('link', { name: 'Visa Platinum' })).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeDefined()
-  })
-
-  it('links to the topic page', () => {
-    render(
-      <RecommendedTopicsAsideContent
-        topics={topics as never}
-        initialBookmarks={{}}
-      />,
-    )
     expect(screen.getByRole('link', { name: 'Visa Platinum' }).getAttribute('href')).toBe(
       '/topics/visa-platinum',
     )
+    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeDefined()
   })
 
   it('renders a link to /my/topics/dismissed-recommendations', () => {

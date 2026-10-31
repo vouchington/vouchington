@@ -65,7 +65,18 @@ const refinedRuntimeFilters = [
 
 describe('Area CI triggers', () => {
   it('runs backend validation when the live MCP catalog checker changes', () => {
-    expectFilterMatches('backend', ['ci/check-live-mcp-catalog.mjs'])
+    expectFilterMatches('backend', [
+      'ci/check-live-mcp-catalog.mjs',
+      'ci/mcp-tool-file-registration.mts',
+    ])
+  })
+
+  it('runs backend validation when the generated INSERT guard changes', () => {
+    expectFilterMatches('backend', [
+      'ci/validate-generated-ddl-inserts.mts',
+      'ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts',
+      'ci/generated-ddl-inserts/load-generated-config-driven-sql.mts',
+    ])
   })
 
   it('selects backend tests for the deployed Valkey admin entrypoint without the deleted script path', () => {

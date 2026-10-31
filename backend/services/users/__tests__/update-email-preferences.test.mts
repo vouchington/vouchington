@@ -5,14 +5,6 @@ import { getPrivateUserByAny } from '../get.mts'
 import { updateUserFields } from '../update-fields.mts'
 
 describe('updateUserFields email preferences', () => {
-  it('updates engagement emails enabled to false', async () => {
-    const testUser = await createTestUser()
-    await updateUserFields(testUser.id, { is_engagement_emails_enabled: false })
-    const updated = await getPrivateUserByAny(testUser.id)
-    assert(updated)
-    assert.strictEqual(updated.is_engagement_emails_enabled, false)
-  })
-
   it('updates moderation email preferences', async () => {
     const testUser = await createTestUser()
     await updateUserFields(testUser.id, {

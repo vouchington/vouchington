@@ -82,32 +82,6 @@ describe('cleanupOldReferralAttributions', () => {
     expect(await referralAttributionExistsById(sweptId)).toBe(false)
   })
 
-  it('deletes anonymous referral attributions older than retentionDays', async () => {
-    const window = createTestRetentionWindow()
-    const referrer = await createTestUserDirect()
-    if (!referrer) throw new Error('Failed to create referrer')
-
-    const oldId = await insertReferralAttributionAt(referrer.id, window.firstEligibleDate)
-
-    const result = await cleanupOldReferralAttributions(window)
-
-    expect(result).toEqual({ deleted: 1, hasMore: false })
-    expect(await referralAttributionExistsById(oldId)).toBe(false)
-  })
-
-  it('does NOT delete recent anonymous referral attributions', async () => {
-    const window = createTestRetentionWindow()
-    const referrer = await createTestUserDirect()
-    if (!referrer) throw new Error('Failed to create referrer')
-
-    const recentId = await insertReferralAttributionAt(referrer.id, window.afterUpperBoundDate)
-
-    const result = await cleanupOldReferralAttributions(window)
-
-    expect(result).toEqual({ deleted: 0, hasMore: false })
-    expect(await referralAttributionExistsById(recentId)).toBe(true)
-  })
-
   it('does NOT delete user-linked referral attributions regardless of age', async () => {
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()

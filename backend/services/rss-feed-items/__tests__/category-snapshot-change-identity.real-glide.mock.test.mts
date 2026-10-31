@@ -1,31 +1,29 @@
-import { randomUUID } from 'node:crypto'
 import '@services/elections-votes'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import {
   getTestRssFeedItemCategorySnapshotReconciliation,
   insertTestRssFeedDirect,
-  listTestRssFeedItemCategorySnapshotReconciliations,
 } from '@voucha/test-helpers'
-import {
-  acknowledgeRssFeedItemCategorySnapshot,
-  reconcileRssFeedItemCategorySnapshotRows,
-} from '../category-snapshot-reconciliations.mts'
+import { reconcileRssFeedItemCategorySnapshots } from '../category-snapshot-reconciliations.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
+function itemInput(suffix: string, categories: string[], title = 'Initial title') {
+  return {
+    categories,
+    guid: `category-snapshot-change-${suffix}`,
+    link: `https://category-snapshot-change-${suffix}.example.com/item`,
+    title,
+  }
+}
+
 describe('RSS category snapshot notification identity', () => {
-  it('admits a fresh notification change after an acknowledged generation is recreated', async () => {
-    const suffix = randomUUID()
+  it('admits one new notification job when a recreated generation has a new change id', async () => {
+    const suffix = Math.random().toString(36).slice(2, 12)
     const feed = await insertTestRssFeedDirect({})
-    const input = {
-      categories: [`first-${suffix}`],
-      guid: suffix,
-      link: `https://snapshot-${suffix}.example.com/item`,
-      title: 'First snapshot',
-    }
-    const [item] = await upsertRssFeedItems(feed.id, [input])
+    const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [`first-${suffix}`])])
     const jobs = () =>
       notifications.searchJobs({
         name: 'notifications.processReconcileRssFeedItemNotifications',
@@ -34,16 +32,14 @@ describe('RSS category snapshot notification identity', () => {
     onTestFinished(async () => {
       await Promise.all((await jobs()).map(job => job.remove()))
     })
-    const [first] = (await listTestRssFeedItemCategorySnapshotReconciliations([item!.id])) as Array<
-      Parameters<typeof acknowledgeRssFeedItemCategorySnapshot>[0]
-    >
-    expect(first!.generation).toBe('1')
+    const first = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
+    expect(first).toMatchObject({ generation: '1' })
     expect(first!.change_id).toMatch(
       /^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/,
     )
     const beforeFirst = new Set((await jobs()).map(job => job.id))
 
-    await expect(reconcileRssFeedItemCategorySnapshotRows([first!])).resolves.toEqual({
+    await expect(reconcileRssFeedItemCategorySnapshots(undefined, [item!.id])).resolves.toEqual({
       reconciled: 1,
     })
     const firstAdmissions = (await jobs()).filter(job => !beforeFirst.has(job.id))
@@ -53,22 +49,15 @@ describe('RSS category snapshot notification identity', () => {
       getTestRssFeedItemCategorySnapshotReconciliation(item!.id),
     ).resolves.toBeUndefined()
 
-    // Retain the first queued chain and replay its selected row with the original identity.
-    const afterFirst = (await jobs()).map(job => job.id).toSorted()
-    await reconcileRssFeedItemCategorySnapshotRows([first!])
-    expect((await jobs()).map(job => job.id).toSorted()).toEqual(afterFirst)
-
-    await upsertRssFeedItems(feed.id, [
-      { ...input, categories: [`second-${suffix}`], title: 'Second snapshot' },
-    ])
-    const [second] = (await listTestRssFeedItemCategorySnapshotReconciliations([
-      item!.id,
-    ])) as Array<Parameters<typeof acknowledgeRssFeedItemCategorySnapshot>[0]>
-    expect(second!.generation).toBe('1')
+    await upsertRssFeedItems(feed.id, [itemInput(suffix, [`second-${suffix}`], 'Second snapshot')])
+    const second = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
+    expect(second).toMatchObject({ generation: '1' })
     expect(second!.change_id).not.toBe(first!.change_id)
     const beforeSecond = new Set((await jobs()).map(job => job.id))
-    await reconcileRssFeedItemCategorySnapshotRows([second!])
 
+    await expect(reconcileRssFeedItemCategorySnapshots(undefined, [item!.id])).resolves.toEqual({
+      reconciled: 1,
+    })
     const secondAdmissions = (await jobs()).filter(job => !beforeSecond.has(job.id))
     expect(secondAdmissions).toHaveLength(1)
     expect(secondAdmissions[0]!.data).toMatchObject({ changeId: second!.change_id })

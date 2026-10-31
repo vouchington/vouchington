@@ -21,7 +21,7 @@ import { associateCopyrightEmailIntakeWithNotice } from './email-manual-associat
 import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 async function createManualReply(): Promise<{ id: string }> {
   const reply = await recordThreadedCopyrightEmail({

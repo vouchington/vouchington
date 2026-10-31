@@ -80,13 +80,6 @@ describe('ConnectSocialAside', () => {
     const result = await ConnectSocialAside()
     render(result as ReactElement)
     expect(screen.getByText('Connect your accounts')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Connect accounts' })).toBeDefined()
-  })
-
-  it('links to /my/identity', async () => {
-    mockGetCurrentUser.mockResolvedValue(baseUser)
-    const result = await ConnectSocialAside()
-    render(result as ReactElement)
     expect(screen.getByRole('link', { name: 'Connect accounts' }).getAttribute('href')).toBe(
       '/my/identity',
     )

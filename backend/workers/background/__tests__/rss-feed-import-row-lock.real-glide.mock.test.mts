@@ -1,13 +1,11 @@
+import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { once } from 'node:events'
 import { QueueEvents, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { backgroundQueueConfig } from '@queues/background/config'
 import { IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB } from '@queues/background/enqueues/imports-jobs'
-import {
-  getRssFeedImport,
-  submitRssFeedImport,
-} from '@services/user-import-export/rss-feed-imports'
+import { getRssFeedImport } from '@services/user-import-export/rss-feed-imports'
 import { withRssFeedImportRowLock } from '@services/user-import-export/rss-feed-import-row-lock'
 import { userRssFeedImportsHandlers } from '@workers/user-rss-feed-imports/workers'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -26,7 +24,9 @@ describe('RSS feed import row contention on real GlideMQ', () => {
       overrideDynamicConfigFieldsForTest(backgroundQueueConfig, { pause_recheck_ms: 1_000 }),
     )
     const user = await createTestUser()
-    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, ['not-a-feed-url'])
+    const submitted = await createRssFeedImportBatchForTest(user, WEB_PROVENANCE, [
+      'not-a-feed-url',
+    ])
     const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
     const handler = userRssFeedImportsHandlers.find(
       candidate => candidate.job.name === IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB.name,

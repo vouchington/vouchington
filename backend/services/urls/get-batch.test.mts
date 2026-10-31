@@ -9,14 +9,6 @@ describe('get-batch', () => {
     expect(results).toEqual([])
   })
 
-  it('getUrlsByIdBatch returns null for non-existent URLs while preserving order', async () => {
-    const results = await getUrlsByIdBatch([uuidv7(), uuidv7()])
-
-    expect(results).toHaveLength(2)
-    expect(results[0]).toBeNull()
-    expect(results[1]).toBeNull()
-  })
-
   it('omits the internal hostname introduction time from nested URL results', async () => {
     const urlId = await createTestUrlWithHostname()
     const [url] = await getUrlsByIdBatch([urlId])

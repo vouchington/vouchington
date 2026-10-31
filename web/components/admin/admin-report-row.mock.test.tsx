@@ -95,25 +95,6 @@ describe('AdminReportRow', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
-  it('does NOT render warn button when target_user_id is absent', () => {
-    const { container } = render(
-      <table>
-        <tbody>
-          <AdminReportRow
-            active={false}
-            disabled={false}
-            onActiveChange={vi.fn<VitestLooseMock>()}
-            onResolve={vi.fn<VitestLooseMock>()}
-            onRerun={vi.fn<VitestLooseMock>()}
-            onSelectionToggle={vi.fn<VitestLooseMock>()}
-            report={baseReport}
-            selected={false}
-          />
-        </tbody>
-      </table>,
-    )
-    expect(container.querySelector('[data-pw="report-row-warn-button"]')).toBeNull()
-  })
   it('renders warn button when target_user_id is set', () => {
     const report: AdminModerationReport = { ...baseReport, target_user_id: 'user-99' }
     const { container } = render(
@@ -180,6 +161,7 @@ describe('AdminReportRow', () => {
     )
     expect(screen.getByText('Test post')).toBeInTheDocument()
     expect(screen.getByText('spam')).toBeInTheDocument()
+    expect(document.querySelector('[data-pw="report-row-warn-button"]')).toBeNull()
   })
   const banEvasionReport: AdminModerationReport = {
     ...baseReport,

@@ -9,11 +9,11 @@ import {
 } from '@voucha/test-helpers'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import {
+  hashAdmissionIntent,
   pruneExpiredContributionAdmissions,
   resolveAdmissionIdentity,
   runContributionAdmission,
 } from './admission.mts'
-import { canonicalizeAdmissionIntent } from './admission-intent.mts'
 import { executePreparedContribution } from './prepared-contribution.mts'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from './config.mts'
 import type { ContributionPolicy } from './policy.mts'
@@ -40,9 +40,9 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 }
 
 describe('contribution admission identity', () => {
-  it('canonicalizes equivalent object intents identically', () => {
-    expect(canonicalizeAdmissionIntent({ title: 'hello', tags: ['a', 'b'] })).toBe(
-      canonicalizeAdmissionIntent({ tags: ['a', 'b'], title: 'hello' }),
+  it('hashes equivalent object intents identically', () => {
+    expect(hashAdmissionIntent({ title: 'hello', tags: ['a', 'b'] })).toBe(
+      hashAdmissionIntent({ tags: ['a', 'b'], title: 'hello' }),
     )
   })
 

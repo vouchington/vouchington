@@ -5,9 +5,11 @@ import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
-import { emitPoolStats, createPoolStatsSampler } from './pool-stats-sampler.mts'
+import { createPoolStatsSampler } from './pool-stats-sampler.mts'
 
-type SampledPools = Parameters<typeof emitPoolStats>[0]
+type SampledPools = Parameters<
+  ReturnType<typeof createPoolStatsSampler>['startPoolStatsSampler']
+>[0]
 
 function fakePool(total: number, idle: number, waiting: number): SampledPools['write'] {
   return {
@@ -89,7 +91,8 @@ describe('pool-stats-sampler', () => {
       jobSerializationMax: 4,
     }
     const emitted = whenPoolRowsEmitted(sentinel)
-    emitPoolStats(pools)
+    sampler.startPoolStatsSampler(pools)
+    clock.fire()
     await emitted
     const rows = await readPoolRows(sentinel)
     expect(rows).toHaveLength(4)

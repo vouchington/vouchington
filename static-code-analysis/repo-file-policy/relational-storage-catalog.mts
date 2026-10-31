@@ -53,6 +53,17 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'copyright_notice_operational_retention_cursors.cursor_edge_id',
   'copyright_notice_operational_retention_cursors.cursor_legal_child_id',
   'copyright_notice_operational_retention_cursors.cursor_blocker_child_id',
+  // Deletion-stable post hash-change keyset position, not a source-row reference.
+  'agent_moderation_retention_post_work_items.cursor_moderation_record_id',
+  // AI usage keyset positions survive deletion of their source rows; the upper bound is a UUIDv7 time fence.
+  'ai_usage_retention_cursors.cursor_id',
+  'ai_usage_retention_cursors.sweep_upper_bound_id',
+  // Frozen alias scan bounds and positions survive deletion of scanned items, feeds or identities.
+  'topic_alias_category_mapping_reconciliations.cursor_item_id',
+  'topic_alias_category_mapping_reconciliations.cursor_category_identity_id',
+  'topic_alias_category_mapping_reconciliations.cursor_feed_id',
+  'topic_alias_category_mapping_reconciliations.sweep_upper_bound_item_id',
+  'topic_alias_category_mapping_reconciliations.sweep_upper_bound_feed_id',
   // Cleanup positions survive deletion of the scanned auth or subscription row.
   'auth_session_retention_cleanup_cursors.cursor_id',
   // History checkpoints may outlive deletion of their raw candidate rows.

@@ -44,9 +44,6 @@ describe('getFeatureFlags', () => {
   it('returns boolean fields from config', () => {
     const flags = getFeatureFlags()
     expect(typeof flags.memberships).toBe('boolean')
-    expect(flags.membershipAppleBilling).toBe(false)
-    expect(flags.membershipGoogleBilling).toBe(false)
-    expect(flags.membershipMicrosoftBilling).toBe(false)
     expect(flags.fediverse).toBe(false)
   })
 })

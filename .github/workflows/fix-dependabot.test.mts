@@ -26,8 +26,8 @@ describe('fix-dependabot workflow', () => {
     const renderSetup = renderJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
 
     expect(dispatchJob?.with?.['install-workspace-dependencies']).toBeUndefined()
-    expect(triageSetup?.with).toBeUndefined()
-    expect(renderSetup?.with).toBeUndefined()
+    expect(triageSetup?.with).toEqual({ 'deadline-seconds': '270' })
+    expect(renderSetup?.with).toEqual({ 'deadline-seconds': '270' })
   })
 
   it('checks for existing automated commits on the Dependabot branch before dispatching', () => {
@@ -82,21 +82,6 @@ describe('fix-dependabot workflow', () => {
 
     expect(on.workflow_run?.workflows).toEqual(nightlyAreaWorkflowNames)
     expect(on.workflow_run?.types).toEqual(['completed'])
-  })
-
-  it('coalesces completions per source workflow and Dependabot branch, not per commit', () => {
-    // Dispatch checks out whatever the dependabot/* branch tip is at checkout time. Keying
-    // concurrency on head_sha would let a rebase (new SHA, same
-    // branch) open a fresh group and race a still-running triage for the same branch; keying on
-    // branch and workflow_id serialize the same source without cross-source collisions.
-    expect(parsed.concurrency?.group).toBe(
-      'fix-dependabot-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.workflow_id }}',
-    )
-    expect(parsed.concurrency?.['cancel-in-progress']).toBe(false)
-  })
-
-  it('uses default same-source pending coalescing', () => {
-    expect(parsed.concurrency).not.toHaveProperty('queue')
   })
 
   it('grants checks read permission for transient retry annotation rules', () => {

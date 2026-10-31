@@ -50,20 +50,13 @@ describe('CreateCommunityForm', () => {
     expect(screen.getByRole('button', { name: 'Create Community' })).toBeDisabled()
   })
 
-  it('submit button is disabled when name has fewer than 3 words', () => {
-    render(<CreateCommunityForm />)
-    fireEvent.change(screen.getByLabelText('Community Name'), {
-      target: { value: 'Only Two' },
-    })
-    expect(screen.getByRole('button', { name: 'Create Community' })).toBeDisabled()
-  })
-
   it('announces a short community name on the name field', async () => {
     render(<CreateCommunityForm />)
     const nameInput = screen.getByLabelText('Community Name')
     fireEvent.change(nameInput, {
       target: { value: 'Only Two' },
     })
+    expect(screen.getByRole('button', { name: 'Create Community' })).toBeDisabled()
     const nameError = await screen.findByRole('alert')
     expect(nameError).toHaveTextContent('Community name must have at least 3 words')
     expect(nameError).toHaveAttribute('id', 'create-community-name-error')
