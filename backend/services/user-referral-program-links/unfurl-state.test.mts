@@ -113,7 +113,7 @@ describe('unfurl-state', () => {
 
     it('truncates an error message over 1000 characters', async () => {
       const linkId = await createLink()
-      const longMessage = 'x'.repeat(1500)
+      const longMessage = 'x'.repeat(1_001)
 
       await markReferralLinkUnfurlFailed(linkId, longMessage)
 
