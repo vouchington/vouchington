@@ -7,7 +7,7 @@ import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-
 import { testBlockedBackendHoldsRelation } from '@voucha/test-helpers/postgres-lock-wait'
 
 describe('setTestPostClearanceStatus lock order', () => {
-  it('writes clearance history before it waits on the post row', async () => {
+  it('locks the post before post_clearance_changes', async () => {
     const user = await createTestUser()
     const suffix = randomUUID()
     const postId = await insertTestPost({
@@ -34,7 +34,7 @@ describe('setTestPostClearanceStatus lock order', () => {
         await waitForLock(writing)
         expect(
           await testBlockedBackendHoldsRelation(holder.holderProcessId, 'post_clearance_changes'),
-        ).toBe(true)
+        ).toBe(false)
         holder.release()
         await holder.completed
         await writing
