@@ -35,6 +35,7 @@ CREATE TABLE copyright_notice_submission_requests (
   request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
+  CONSTRAINT uq_copyr_notic_submi_reques__requester_user_id__idempotency_key UNIQUE (requester_user_id, idempotency_key),
   CONSTRAINT uq_copyright_submission_requests__requester__key_digest UNIQUE (requester_user_id, idempotency_key_sha256)
 );
 CREATE INDEX idx_copyright_notice_submission_requests__uncleared_key_age
