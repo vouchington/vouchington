@@ -44,4 +44,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_stripe_events_reject_mutation`: `CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE DELETE OR UPDATE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_stripe_events_reject_mutation`: `CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE DELETE OR UPDATE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_stripe_event_mutation()`
