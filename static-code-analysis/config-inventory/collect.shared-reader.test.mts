@@ -30,7 +30,15 @@ describe('collectConfigInventory shared reader', () => {
 
     const inventory = await collectConfigInventory(fixture.ctx)
 
-    expect(inventory.envVars).toEqual([expect.objectContaining({ name: 'SHARED_READER_ENV' })])
+    expect(inventory.envVars.filter(row => row.contractKey === null)).toEqual([
+      expect.objectContaining({ name: 'SHARED_READER_ENV' }),
+    ])
+    expect(inventory.envVars).not.toContainEqual(
+      expect.objectContaining({ name: 'GENERATED_ARTIFACT_ENV' }),
+    )
+    expect(inventory.envVars).not.toContainEqual(
+      expect.objectContaining({ name: 'GENERATED_CATALOG_ENV' }),
+    )
     expect(fixture.ctx.readTrackedFile).toHaveBeenCalledTimes(2)
   })
 
@@ -58,7 +66,11 @@ describe('collectConfigInventory shared reader', () => {
     })
     testDirs.push(fixture.dir)
     fixture.ctx.readTrackedFile = () => null
-    expect((await collectConfigInventory(fixture.ctx)).envVars).toEqual([])
+    const inventory = await collectConfigInventory(fixture.ctx)
+    expect(inventory.envVars.length).toBeGreaterThan(0)
+    expect(
+      inventory.envVars.every(row => row.contractKey !== null && row.name !== 'HIDDEN_SOURCE_ENV'),
+    ).toBe(true)
   })
 
   it('retains typed metadata, constructor carriers and action-versus-workflow routing with finite sources', async () => {
@@ -68,7 +80,6 @@ new DynamicConfig({ key: "fixture-double", })
 new DynamicConfig({ key: LOCAL_KEY, })
 new DynamicConfig({ key: UNRESOLVED_KEY, })
 process.env.NEXT_PUBLIC_FIXTURE`,
-      'ts-shared/env-contract/index.mts': `export const ENV_VAR_CONTRACT = [{ name: 'METADATA_FIXTURE', key: 'fixture-key', source: 'fixture-owner', surfaces: ['worker'] }]`,
       '.github/actions/fixture/action.yml':
         'runs:\n  using: composite\n  steps:\n    - env:\n        ACTION_ONLY_ENV: fixture\n',
     })
@@ -80,10 +91,11 @@ process.env.NEXT_PUBLIC_FIXTURE`,
     ])
     expect(inventory.envVars).toContainEqual(
       expect.objectContaining({
-        name: 'METADATA_FIXTURE',
-        contractKey: 'fixture-key',
-        sourceOfTruth: 'fixture-owner',
-        runtimeSurfaces: ['worker'],
+        name: 'STRIPE_SECRET_KEY',
+        contractKey: 'vouchington-infra:ecs-backend-secret+ecs-worker-secret:STRIPE_SECRET_KEY',
+        sourceOfTruth: 'vouchington-infra',
+        sensitivity: 'secret',
+        runtimeSurfaces: ['ecs-backend-secret', 'ecs-worker-secret'],
       }),
     )
     expect(inventory.envVars).toContainEqual(
