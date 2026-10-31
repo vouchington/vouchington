@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
@@ -27,6 +27,7 @@ export async function readDsaCopyrightComplaintFigures(
   periodStartedAt: Date,
   periodEndedAt: Date,
   noticeIds?: readonly string[],
+  queryExecutor: QueryExecutor = read,
 ): Promise<DsaCopyrightComplaintFigures> {
   if (noticeIds?.length === 0) return emptyDsaCopyrightComplaintFigures()
   const query = sql`/* readDsaCopyrightComplaintFigures */
@@ -87,7 +88,7 @@ export async function readDsaCopyrightComplaintFigures(
         'reversed', reversed, 'median_hours', median_hours)) FROM metrics)
         AS by_decision_type
   `)
-  const { rows } = await read<ComplaintFigureRow>(query)
+  const { rows } = await queryExecutor<ComplaintFigureRow>(query)
   const row = rows[0]
   assert(row, 500, 'Failed to count DSA copyright complaints')
   return {

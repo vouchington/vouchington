@@ -455,12 +455,17 @@ CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   redress_decision_count integer NOT NULL,
   supervised_complaint_count integer NOT NULL,
   escalation_count integer NOT NULL,
+  figures_snapshot jsonb NOT NULL,
+  method_snapshot jsonb NOT NULL,
   reported_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   reported_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT chk_copyright_eu_transparency_reports__jurisdiction CHECK (jurisdiction = 'eu_dsa'),
-  CONSTRAINT chk_copyright_eu_transparency_reports__period CHECK (period_started_at < period_ended_at),
+  CONSTRAINT uq_copyright_eu_transparency_reports__period UNIQUE (period_started_at, period_ended_at),
+  CONSTRAINT chk_copyright_eu_transparency_reports__period CHECK (
+    period_started_at < period_ended_at AND period_ended_at <= reported_at
+  ),
   CONSTRAINT chk_copyright_eu_transparency_reports__counts CHECK (
     receipt_count >= 0
     AND statement_of_reasons_count >= 0
@@ -658,13 +663,13 @@ COMMENT ON COLUMN copyright_territorial_escalations.escalated_at IS
   'When the escalation was recorded.';
 
 COMMENT ON TABLE copyright_eu_transparency_reports IS
-  'Counts of stored EU copyright facts for a caller-supplied period. EU only. The period is not a statutory clock.';
+  'Immutable global EU copyright counts and method for a completed reporting period.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.jurisdiction IS
   'Always eu_dsa.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.period_started_at IS
   'Start of the caller-supplied reporting period. Not a statutory clock.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.period_ended_at IS
-  'End of the caller-supplied reporting period. Must be after period_started_at.';
+  'Exclusive end of the completed reporting period.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.receipt_count IS
   'Count of stored EU notice receipts in the period.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.statement_of_reasons_count IS
@@ -677,6 +682,10 @@ COMMENT ON COLUMN copyright_eu_transparency_reports.supervised_complaint_count I
   'Count of stored EU supervised complaints in the period.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.escalation_count IS
   'Count of stored EU escalations in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.method_snapshot IS
+  'Non-personal description of the sources and time boundaries used to compile the report.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.figures_snapshot IS
+  'Non-personal aggregate export figures retained after source cases are deleted.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.reported_at IS
   'When this transparency report was recorded.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.reported_by_id IS

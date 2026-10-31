@@ -11,3 +11,20 @@ export async function countEuTransparencyReportsBy(reporterId: string): Promise<
   `)
   return rows[0]?.count ?? 0
 }
+
+export async function readEuTransparencyReportMethod(reportId: string): Promise<{
+  method_snapshot: { scope: string; sources: Record<string, string> }
+  figures_snapshot: { receipt_count: number; notices_received_count: number }
+  reported_at: Date
+  period_ended_at: Date
+} | null> {
+  const { rows } = await read<{
+    method_snapshot: { scope: string; sources: Record<string, string> }
+    figures_snapshot: { receipt_count: number; notices_received_count: number }
+    reported_at: Date
+    period_ended_at: Date
+  }>(sql`/* readEuTransparencyReportMethod */
+    SELECT method_snapshot, figures_snapshot, reported_at, period_ended_at
+    FROM copyright_eu_transparency_reports WHERE id = ${reportId}::uuid`)
+  return rows[0] ?? null
+}
