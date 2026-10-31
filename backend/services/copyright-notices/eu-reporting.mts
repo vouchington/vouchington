@@ -87,20 +87,17 @@ export async function compileEuCopyrightTransparencyReport(
   // the count-source locks below do not themselves fence.
   await transaction(sql`/* consistentEuCopyrightTransparencySnapshot */
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`)
-  // Notice receipt and restriction imposition feed the global figures snapshot. Their writers
-  // acquire the notice before writing these facts, so fence them before the identity/fact locks.
-  // This also prevents a Node-allocated notice or restriction ID from predating this report
-  // while its row commits after the snapshot.
-  await transaction(sql`/* lockEuCopyrightTransparencyFigureSources */
-    LOCK TABLE copyright_notices, copyright_restrictions IN SHARE MODE`)
-  // Wait for in-flight legal fact writes and hold new ones until the counts are durable.
+  // The global figures also read notices and restrictions. Source writers can reach these
+  // tables in either order, so acquire all report locks without waiting; a busy source leaves
+  // this report unpublished for a later request instead of deadlocking a legal decision.
   await transaction(sql`/* lockEuCopyrightTransparencySources */
-    LOCK TABLE copyright_territorial_decision_identities,
+    LOCK TABLE copyright_notices, copyright_restrictions,
+      copyright_territorial_decision_identities,
       copyright_territorial_redress_decision_identities,
       copyright_territorial_notice_receipts,
       copyright_territorial_decisions, copyright_territorial_redress_requests,
       copyright_territorial_redress_decisions, copyright_eu_supervised_complaints,
-      copyright_territorial_escalations IN SHARE MODE`)
+      copyright_territorial_escalations IN SHARE MODE NOWAIT`)
   const counts = await readExistingEuCounts(periodStartedAt, periodEndedAt, undefined, transaction)
   const noticeFigures = await readDsaCopyrightNoticeFigures(
     periodStartedAt,
