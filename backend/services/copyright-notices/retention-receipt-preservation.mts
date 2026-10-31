@@ -43,7 +43,15 @@ export async function placeCopyrightEmailReceiptPreservationHold(
   // Fresh statement after the owner lock: an association admitted before that lock is visible.
   const { rows: links } = await query(sql`/* requireStandaloneCopyrightReceiptPreservation */
     SELECT 1 FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_receipt_id = ${receiptId} LIMIT 1`)
+    WHERE copyright_notice_email_intake_receipt_id = ${receiptId}
+    UNION ALL
+    SELECT 1 FROM copyright_notice_email_intake_reviews
+    WHERE copyright_notice_email_intake_receipt_id = ${receiptId}
+      AND promoted_copyright_notice_id IS NOT NULL
+    UNION ALL
+    SELECT 1 FROM copyright_notice_correspondence_messages
+    WHERE copyright_notice_email_intake_id = ${receiptId}
+    LIMIT 1`)
   assert(links.length === 0, 409, 'Linked email receipts use case preservation holds')
   assert(receipt.has_final_explanation, 410, 'Copyright email receipt review has expired')
   assert(

@@ -36,6 +36,7 @@ export async function eraseIntakePage(
     state.is_linked ||
     state.has_promoted_review ||
     state.has_pending_delivery ||
+    state.has_preservation_hold ||
     (state.erased_at === null && state.last_activity_at > cutoff)
   ) {
     return { complete: true, erased: false }

@@ -146,6 +146,11 @@ BEGIN
       AND OLD.review_decision IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
         WHERE link.copyright_notice_email_intake_receipt_id = OLD.id)
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
+        WHERE review.copyright_notice_email_intake_receipt_id = OLD.id
+          AND review.promoted_copyright_notice_id IS NOT NULL)
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_correspondence_messages correspondence
+        WHERE correspondence.copyright_notice_email_intake_id = OLD.id)
       AND NEW.last_preservation_hold_released_at IS NOT DISTINCT FROM OLD.last_preservation_hold_released_at
       AND NEW.preservation_hold_released_at IS NULL AND NEW.preservation_hold_released_by_id IS NULL THEN RETURN NEW; END IF;
     IF OLD.current_preservation_hold_token IS NOT NULL AND NEW.current_preservation_hold_token IS NULL

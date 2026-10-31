@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import {
   waitForCopyrightEmailMarkerBeforeWriter,
@@ -23,6 +24,7 @@ import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/servi
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
+import { placeCopyrightEmailReceiptPreservationHold } from './retention-receipt-preservation.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 const future = (days: number) => new Date(Date.now() + days * DAY_MS)
@@ -30,6 +32,24 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 describe('copyright operational email intake retention', () => {
   useCopyrightOperationalCursorReservation()
   const bucket = useFakeCopyrightEvidenceBucket()
+  it('preserves private intake evidence while its standalone final review is held', async () => {
+    const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
+    const intake = await createRetentionParsedEmail('held-standalone-receipt')
+    await seedCopyrightIntakeAuditReview(intake.id)
+    await placeCopyrightEmailReceiptPreservationHold(reviewer, intake.id, 'court_request')
+    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    await sweepUnlinkedCopyrightEmailIntakes({
+      now: future(91),
+      retentionDays: 90,
+      childLimit: 2,
+      maxBatches: 1,
+    })
+    expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
+      intakeExists: true,
+      receiptExists: true,
+      hasRawObject: true,
+    })
+  })
   it('commits a concurrent source write before marking its intake erased', async () => {
     const intake = await createRetentionParsedEmail('concurrent-retention-lock-order')
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
