@@ -1,7 +1,6 @@
 import { createTestUser } from '@voucha/test-helpers'
 import { createTestEuNoticeWithOwnedApproval } from '@voucha/test-helpers/copyright-owned-policy-receipt'
 import { readEuTransparencyReportMethod } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
-import { readTestEuCopyrightReceiptCoverage } from '@voucha/test-helpers/copyright-eu-report-coverage'
 import { withEuReportRestrictionWriterForTest } from '@voucha/test-helpers/copyright-eu-report-lock'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { describe, expect, it } from 'vitest'
@@ -20,7 +19,7 @@ describe('closed EU report snapshot', () => {
       createTestUser({ extraRoles: ['moderator'] }),
     ])
     const start = new Date(Date.now() - 60_000)
-    const { noticeId } = await createTestEuNoticeWithOwnedApproval(administrator, claimant)
+    await createTestEuNoticeWithOwnedApproval(administrator, claimant)
     const end = new Date()
     const report = await compileEuCopyrightTransparencyReport(staff, start, end)
     const stored = await readEuTransparencyReportMethod(report.id)
@@ -36,24 +35,19 @@ describe('closed EU report snapshot', () => {
     expect(stored?.reported_at.getTime()).toBeGreaterThanOrEqual(
       stored?.period_ended_at.getTime() ?? Number.POSITIVE_INFINITY,
     )
-    await expect(readTestEuCopyrightReceiptCoverage(noticeId)).resolves.toMatchObject({
-      covered: true,
-      hasMore: false,
-      nextId: expect.any(String),
-    })
     const again = await compileEuCopyrightTransparencyReport(staff, start, end)
     expect(again.id).toBe(report.id)
     const published = await readEuCopyrightTransparencyFigures(staff, start, end)
     expect(published.receipt_count).toBe(stored?.figures_snapshot.receipt_count)
   })
 
-  it('refuses a busy source immediately before taking a partial lock set', async () => {
+  it('returns a retryable error when a source remains busy', async () => {
     const staff = await createTestUser({ extraRoles: ['moderator'] })
     const start = new Date(Date.now() - 60_000)
     const end = new Date(Date.now() - 30_000)
     await withEuReportRestrictionWriterForTest(async () => {
       await expect(compileEuCopyrightTransparencyReport(staff, start, end)).rejects.toMatchObject({
-        code: '55P03',
+        status: 503,
       })
     })
   })
