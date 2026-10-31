@@ -82,6 +82,8 @@ BEGIN
           AND review.promoted_copyright_notice_id IS NOT NULL)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_correspondence_messages correspondence
         WHERE correspondence.copyright_notice_email_intake_id = receipt.id)
+      AND NOT EXISTS (SELECT 1 FROM copyright_decision_rationales rationale
+        WHERE rationale.copyright_notice_email_intake_receipt_id = receipt.id)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
         WHERE delivery.copyright_notice_email_intake_receipt_id = receipt.id
           AND delivery.state IN ('pending', 'claimed')));

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 
@@ -54,4 +54,26 @@ export async function attemptCopyrightReceiptReviewMutation(id: string) {
     SET review_decision = NULL, reviewed_at = NULL, reviewed_by_id = NULL,
       review_rationale_ciphertext = NULL
     WHERE id = ${id}`)
+}
+
+export async function seedOldCopyrightReceiptRationale(receiptId: string, reviewerId: string) {
+  const id = v7({ msecs: new Date('2002-01-01T00:00:00.000Z').getTime() })
+  await write(sql`/* seedOldCopyrightReceiptRationale */
+    INSERT INTO copyright_decision_rationales
+      (id, copyright_notice_email_intake_receipt_id, recorded_by_id, tool_name, rationale_ciphertext)
+    VALUES (${id}, ${receiptId}, ${reviewerId}, 'review_copyright_email_intake', 'v1:attempt')`)
+  return id
+}
+
+export async function retireOldCopyrightReceiptRationale(id: string) {
+  const cutoff = new Date('2010-01-01T00:00:00.000Z')
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* authorizeOldCopyrightReceiptRationaleRetirement */
+    SELECT set_config('app.copyright_rationale_retention_cutoff', ${cutoff.toISOString()}, true)`)
+  const result = await transaction(sql`/* retireOldCopyrightReceiptRationale */
+    DELETE FROM copyright_decision_rationales target
+    WHERE target.id = ${id}
+      AND fn_copyright_decision_rationale_retention_eligible(target, ${cutoff})`)
+  await transaction.commit()
+  return result.rowCount ?? 0
 }

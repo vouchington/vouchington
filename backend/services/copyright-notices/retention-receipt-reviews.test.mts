@@ -6,7 +6,9 @@ import {
   attemptCopyrightReceiptReviewMutation,
   insertPendingCopyrightReceiptDelivery,
   readCopyrightReceiptReview,
+  retireOldCopyrightReceiptRationale,
   seedCopyrightReceiptReview,
+  seedOldCopyrightReceiptRationale,
 } from '@voucha/test-helpers/copyright-receipt-review-retirement'
 import {
   placeCopyrightEmailReceiptPreservationHold,
@@ -93,6 +95,27 @@ describe('standalone copyright receipt review expiry', () => {
       review_decision: 'rejected',
       current_preservation_hold_token: null,
       last_preservation_hold_released_at: expect.any(Date),
+    })
+  })
+
+  it('waits for a dependent attempted rationale to retire first', async () => {
+    const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
+    const receipt = await seedCopyrightReceiptReview({
+      reviewerId: reviewer.id,
+      reviewedAt: oldReview,
+    })
+    const rationaleId = await seedOldCopyrightReceiptRationale(receipt.id, reviewer.id)
+    await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1 })
+    expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBe('rejected')
+    expect(await retireOldCopyrightReceiptRationale(rationaleId)).toBe(1)
+    await sweepCopyrightReceiptReviews({
+      batchSize: 10,
+      maxBatches: 1,
+      now: new Date(Date.now() + 2 * 86_400_000),
+    })
+    expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
+      review_decision: null,
+      review_rationale_ciphertext: null,
     })
   })
 })

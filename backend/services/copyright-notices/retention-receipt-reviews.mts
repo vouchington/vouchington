@@ -5,6 +5,7 @@ import sql from 'sql-template-strings'
 export async function sweepCopyrightReceiptReviews(options: {
   batchSize: number
   maxBatches: number
+  now?: Date
 }): Promise<{ scanned: number; retired: number; hasMore: boolean }> {
   if (!Number.isInteger(options.batchSize) || options.batchSize < 1 || options.batchSize > 5_000)
     throw new RangeError('Receipt review page size must be between 1 and 5,000')
@@ -13,9 +14,10 @@ export async function sweepCopyrightReceiptReviews(options: {
   let scanned = 0
   let retired = 0
   let hasMore = false
+  const candidateBefore = options.now ?? new Date()
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each raw page commits before the next bounded tick.
-    const page = await sweepReceiptReviewPage(options.batchSize)
+    const page = await sweepReceiptReviewPage(options.batchSize, candidateBefore)
     scanned += page.scanned
     retired += page.retired
     hasMore = page.scanned === options.batchSize
@@ -26,6 +28,7 @@ export async function sweepCopyrightReceiptReviews(options: {
 
 async function sweepReceiptReviewPage(
   batchSize: number,
+  candidateBefore: Date,
 ): Promise<{ scanned: number; retired: number }> {
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
@@ -36,7 +39,7 @@ async function sweepReceiptReviewPage(
   }>(sql`/* pageCopyrightReceiptReviewRetirement */
     SELECT id FROM copyright_notice_email_intake_receipts
     WHERE review_decision IS NOT NULL
-      AND review_retirement_check_after <= CURRENT_TIMESTAMP
+      AND review_retirement_check_after <= ${candidateBefore}
       AND reviewed_at <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
     ORDER BY review_retirement_check_after, reviewed_at, id
     LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`)
