@@ -32,6 +32,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'community_post_reviews',
   'community_restrictions',
   'community_saved_replies',
+  'copyright_case_preservation_holds',
   'copyright_automatic_withholding_refusals',
   'copyright_claimant_misuse_events',
   'copyright_claimant_suspension_reversals',
