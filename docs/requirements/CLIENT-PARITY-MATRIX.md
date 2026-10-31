@@ -130,6 +130,11 @@ fixtures also cover recognizable uploader and inspectable-image context for poss
 including unavailable or deleted content. Native adoption and UI evidence are dependent work under
 [clients #527](https://github.com/vouchington/vouchington-clients/issues/527).
 
+Staff can preserve an unlinked copyright email receipt after its private intake is erased and
+release that hold using its exact placement token. The API producer lands before staff web or
+native controls; client adoption and UI evidence remain tracked under
+[clients #1229](https://github.com/vouchington/vouchington-clients/issues/1229).
+
 ## Classifier partition operations
 
 The staff engineering `POST /api/v1/psql/jobs` contract accepts an optional

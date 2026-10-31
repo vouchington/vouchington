@@ -172,6 +172,9 @@ encrypted explanation for six years from the latest receipt, review, delivery, o
 release activity. An active legal preservation hold, a linked case, live private intake, or pending
 delivery blocks that erasure. The receipt then keeps only its SES identity and original replay checks.
 Any dependent attempted-rationale legal record retires first so its review context remains intact.
+Staff may place a hold while the standalone final review still exists, even after the private
+intake is erased. Releasing the hold requires the exact authority returned on placement, so a
+stale release cannot clear a later hold. Release restarts the legal-record window.
 Final case and redress outcomes remain on their owners while those owners exist. The six-year policy includes EU and UK lifecycle and staff-review history and
 records advisor review with owner approval.
 Detailed lifecycle, assessment, recommendation, and review history expires through guarded monthly partition
