@@ -6,7 +6,6 @@ import {
 } from '@voucha/test-helpers'
 import {
   createIndividualRewardsProgramStatus,
-  getIndividualRewardsProgramStatusById,
   getIndividualRewardsProgramStatuses,
   updateIndividualRewardsProgramStatusById,
 } from './rewards-program-statuses.mts'
@@ -88,7 +87,9 @@ describe('rewards program status database failures', () => {
     ).rejects.toMatchObject({ code: '22P02' })
 
     expect(
-      await getIndividualRewardsProgramStatusById(user, user, created.id, { readOnly: false }),
+      (await getIndividualRewardsProgramStatuses(user, user, { limit: 100 })).results.find(
+        status => status.id === created.id,
+      ),
     ).toEqual(existing)
   })
 })
