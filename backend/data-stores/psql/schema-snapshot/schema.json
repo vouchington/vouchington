@@ -38653,10 +38653,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_submission_requests__uncleared_key_age": {
+        "idx_copyright_notice_submission_requests__uncleared_key_age": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_submission_requests__uncleared_key_age ON public.copyright_notice_submission_requests USING btree (id) WHERE (idempotency_key IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_submission_requests__uncleared_key_age ON public.copyright_notice_submission_requests USING btree (id) WHERE (idempotency_key IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
