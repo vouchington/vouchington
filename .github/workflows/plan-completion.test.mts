@@ -30,14 +30,6 @@ function numberField(value: unknown, label: string): number {
   return value
 }
 
-function inputField(value: unknown, key: string): unknown {
-  if (typeof value !== 'object' || value === null) return undefined
-  for (const [entryKey, entryValue] of Object.entries(value)) {
-    if (entryKey === key) return entryValue
-  }
-  return undefined
-}
-
 describe('plan completion advisory workflow', () => {
   it('runs one trusted snapshot on every main push with a retained global lock', () => {
     expect(workflowTriggerNames(workflow.on)).toEqual(['push'])
@@ -95,13 +87,9 @@ describe('plan completion advisory workflow', () => {
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
     expect(setupNodeIndex).toBeGreaterThan(checkoutIndex)
     expect(auditScriptIndex).toBeGreaterThan(setupNodeIndex)
-    const setupInputs = steps[setupNodeIndex]?.with
-    expect(inputField(setupInputs, 'install-scripts')).toBe('false')
-    expect(inputField(setupInputs, 'deadline-seconds')).toEqual(expect.any(String))
-    expect(
-      typeof setupInputs === 'object' && setupInputs !== null
-        ? Object.keys(setupInputs).toSorted()
-        : [],
-    ).toEqual(['deadline-seconds', 'install-scripts'])
+    expect(steps[setupNodeIndex]?.with).toEqual({
+      'install-scripts': 'false',
+      'deadline-seconds': '270',
+    })
   })
 })

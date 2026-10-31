@@ -131,9 +131,7 @@ describe('shepherd workflow', () => {
     expect(gateJob?.permissions?.['pull-requests']).toBe('write')
     expect(setupNodeIndex).toBeGreaterThan(-1)
     expect(setupNodeIndex).toBeLessThan(checkpointIndex)
-    expect(Object.keys(steps[setupNodeIndex]?.with ?? {})).toEqual(
-      steps[setupNodeIndex]?.with ? ['deadline-seconds'] : [],
-    )
+    expect(steps[setupNodeIndex]?.with).toEqual({ 'deadline-seconds': '270' })
     expect(checkpointStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
     expect(checkpointStep?.run).toContain('github-actions[bot]')
     expect(checkpointStep?.run).toContain('shepherd-checkpoint-cli.mts select')
@@ -259,9 +257,7 @@ describe('shepherd workflow', () => {
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
     expect(setupNodeIndex).toBeGreaterThan(checkoutIndex)
     expect(checkpointCliIndex).toBeGreaterThan(setupNodeIndex)
-    expect(Object.keys(steps[setupNodeIndex]?.with ?? {})).toEqual(
-      steps[setupNodeIndex]?.with ? ['deadline-seconds'] : [],
-    )
+    expect(steps[setupNodeIndex]?.with).toEqual({ 'deadline-seconds': '270' })
   })
 
   it('comments on the PR for immediate dispatch failures', () => {
