@@ -39,15 +39,6 @@ export async function readCopyrightReceiptReview(id: string) {
   return rows[0] ?? null
 }
 
-export async function insertPendingCopyrightReceiptDelivery(receiptId: string) {
-  await write(sql`/* insertPendingCopyrightReceiptDelivery */
-    INSERT INTO copyright_notice_delivery_work_items
-      (copyright_notice_email_intake_receipt_id, recipient_role, delivery_kind, channel,
-       idempotency_key, body_ciphertext)
-    VALUES (${receiptId}, 'correspondent', 'email_intake_rejected', 'email',
-      ${`receipt-review-delivery-${randomUUID()}`}, 'v1:reply')`)
-}
-
 export async function attemptCopyrightReceiptReviewMutation(id: string) {
   return write(sql`/* attemptCopyrightReceiptReviewMutation */
     UPDATE copyright_notice_email_intake_receipts

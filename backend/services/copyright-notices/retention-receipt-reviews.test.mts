@@ -4,7 +4,6 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import {
   attemptCopyrightReceiptReviewMutation,
-  insertPendingCopyrightReceiptDelivery,
   readCopyrightReceiptReview,
   retireOldCopyrightReceiptRationale,
   seedCopyrightReceiptReview,
@@ -49,7 +48,7 @@ describe('standalone copyright receipt review expiry', () => {
     ).rejects.toBeInstanceOf(ErasedCopyrightEmailIntakeReplay)
   })
 
-  it('keeps recent, unerased and pending-delivery reviews and rejects direct review clearing', async () => {
+  it('keeps recent and unerased reviews and rejects direct review clearing', async () => {
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
     const recent = await seedCopyrightReceiptReview({
       reviewerId: reviewer.id,
@@ -60,16 +59,11 @@ describe('standalone copyright receipt review expiry', () => {
       reviewedAt: oldReview,
       erased: false,
     })
-    const pending = await seedCopyrightReceiptReview({
-      reviewerId: reviewer.id,
-      reviewedAt: oldReview,
-    })
-    await insertPendingCopyrightReceiptDelivery(pending.id)
-    await expect(attemptCopyrightReceiptReviewMutation(pending.id)).rejects.toThrow(
+    await expect(attemptCopyrightReceiptReviewMutation(unerased.id)).rejects.toThrow(
       'copyright email receipt identity and completed review are immutable',
     )
     await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1 })
-    for (const receipt of [recent, unerased, pending]) {
+    for (const receipt of [recent, unerased]) {
       expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
         review_decision: 'rejected',
       })

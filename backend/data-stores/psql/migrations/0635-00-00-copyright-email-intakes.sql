@@ -79,7 +79,7 @@ BEGIN
         <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intakes intake WHERE intake.id = receipt.id)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_receipt_id = receipt.id)
+        WHERE link.copyright_notice_email_intake_id = receipt.id)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
         WHERE review.copyright_notice_email_intake_receipt_id = receipt.id
           AND review.promoted_copyright_notice_id IS NOT NULL)
@@ -150,7 +150,7 @@ BEGIN
     IF OLD.current_preservation_hold_token IS NULL AND NEW.current_preservation_hold_token IS NOT NULL
       AND OLD.review_decision IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_receipt_id = OLD.id)
+        WHERE link.copyright_notice_email_intake_id = OLD.id)
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
         WHERE review.copyright_notice_email_intake_receipt_id = OLD.id
           AND review.promoted_copyright_notice_id IS NOT NULL)

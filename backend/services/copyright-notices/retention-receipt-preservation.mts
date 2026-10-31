@@ -43,7 +43,7 @@ export async function placeCopyrightEmailReceiptPreservationHold(
   // Fresh statement after the owner lock: an association admitted before that lock is visible.
   const { rows: links } = await query(sql`/* requireStandaloneCopyrightReceiptPreservation */
     SELECT 1 FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_receipt_id = ${receiptId}
+    WHERE copyright_notice_email_intake_id = ${receiptId}
     UNION ALL
     SELECT 1 FROM copyright_notice_email_intake_reviews
     WHERE copyright_notice_email_intake_receipt_id = ${receiptId}
