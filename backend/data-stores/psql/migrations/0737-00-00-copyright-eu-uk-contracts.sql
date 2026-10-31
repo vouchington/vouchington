@@ -398,7 +398,6 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
 );
 
 -- Explicit case preservation remains available after evidence erasure and allows overlapping matters.
-CREATE TYPE copyright_case_preservation_kinds AS ENUM ('litigation_threat', 'regulator_request', 'court_request');
 CREATE TABLE copyright_case_preservation_holds (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
