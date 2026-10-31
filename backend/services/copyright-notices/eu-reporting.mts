@@ -90,6 +90,7 @@ export async function compileEuCopyrightTransparencyReport(
   // The global figures also read notices and restrictions. Source writers can reach these
   // tables in either order, so acquire all report locks without waiting; a busy source leaves
   // this report unpublished for a later request instead of deadlocking a legal decision.
+  // ast-grep-ignore: no-three-sequential-awaits -- the source locks must precede the first read that fixes the repeatable-read snapshot; queries on one transaction client then execute in order.
   await transaction(sql`/* lockEuCopyrightTransparencySources */
     LOCK TABLE copyright_notices, copyright_restrictions,
       copyright_territorial_decision_identities,
