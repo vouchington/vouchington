@@ -8,8 +8,7 @@ import {
   softDeleteUserAt,
 } from '@voucha/test-helpers'
 import { CONFLICT } from '@modules/on-error/error-codes'
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { readTestRetainedUserLegalClocks } from '@voucha/test-helpers/entities/retained-user-legal-clocks'
 import { deleteUser } from './delete.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
@@ -198,11 +197,8 @@ describe('user preservation holds', () => {
         released_by_id: releaser.id,
       })
       expect(released.released_at).toBeInstanceOf(Date)
-      const { rows: retained } = await read<{ last_legal_preservation_hold_released_at: Date }>(sql`
-        /* readReleasedPreservationClockForTest */
-        SELECT last_legal_preservation_hold_released_at FROM retained_user_identities
-        WHERE id = ${user.id}`)
-      expect(retained[0]?.last_legal_preservation_hold_released_at).toEqual(released.released_at)
+      const retained = await readTestRetainedUserLegalClocks(user.id)
+      expect(retained?.last_legal_preservation_hold_released_at).toEqual(released.released_at)
       await expect(listUserPreservationHolds(admin, user.id)).resolves.toEqual([released])
       const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
       expect(audit.map(row => [row.action_type, row.actor_user_id, row.reason])).toEqual([
