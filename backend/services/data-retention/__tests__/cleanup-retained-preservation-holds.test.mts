@@ -11,6 +11,8 @@ import { placeUserPreservationHold, releaseUserPreservationHold } from '@service
 import { cleanupSoftDeletedUsers } from '../cleanup.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
+import { read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 
 describe('legal preservation holds and final user purge', () => {
   beforeEach(() => {
@@ -71,6 +73,10 @@ describe('legal preservation holds and final user purge', () => {
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await hasTestRetainedIdentityRoot('user', user.id)).toBe(true)
+    const { rows: retained } = await read<{ purged_at: Date }>(sql`
+      /* readFinalAccountPurgeClockForTest */
+      SELECT purged_at FROM retained_user_identities WHERE id = ${user.id}`)
+    expect(retained[0]?.purged_at).toBeInstanceOf(Date)
     expect(await readPreservationHoldsForTest(user.id)).toEqual([
       expect.objectContaining({
         account_user_id: user.id,

@@ -8,6 +8,8 @@ import {
   softDeleteUserAt,
 } from '@voucha/test-helpers'
 import { CONFLICT } from '@modules/on-error/error-codes'
+import { read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { deleteUser } from './delete.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
@@ -35,7 +37,6 @@ describe('user preservation holds', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
-
   describe('account deletion while a preservation hold is open', () => {
     it('refuses self-service deletion with the existing 409 and changes nothing', async () => {
       const admin = await createTestUser({ administrator: true })
@@ -50,7 +51,6 @@ describe('user preservation holds', () => {
       expect(await getPrivateUserByAny(user.id)).not.toBeNull()
       expect(await countUserDeletionRequestsForTest(user.id)).toBe(0)
     })
-
     it('refuses administrator deletion of the held account too', async () => {
       const admin = await createTestUser({ administrator: true })
       const user = await createTestUser({ username: safeUsername('hold-admin-delete') })
@@ -59,7 +59,6 @@ describe('user preservation holds', () => {
       await expect(deleteUser(admin, user)).rejects.toMatchObject({ status: 409 })
       expect(await countUserDeletionRequestsForTest(user.id)).toBe(0)
     })
-
     it('allows deletion once the hold is released', async () => {
       const admin = await createTestUser({ administrator: true })
       const user = await createTestUser({ username: safeUsername('hold-released') })
@@ -73,7 +72,6 @@ describe('user preservation holds', () => {
       )
       expect(await countUserDeletionRequestsForTest(user.id)).toBe(1)
     })
-
     it('does not affect accounts without a hold', async () => {
       const admin = await createTestUser({ administrator: true })
       const held = await createTestUser({ username: safeUsername('hold-other-held') })
@@ -84,7 +82,6 @@ describe('user preservation holds', () => {
         expect.objectContaining({ requestId: expect.any(String) }),
       )
     })
-
     it('places and releases a hold after the account is soft-deleted', async () => {
       const admin = await createTestUser({ administrator: true })
       const user = await createTestUser({ username: safeUsername('hold-deleted') })
@@ -102,7 +99,6 @@ describe('user preservation holds', () => {
       ])
     })
   })
-
   describe('placeUserPreservationHold', () => {
     it('records who placed it, when, and the reference, and audits the action', async () => {
       const admin = await createTestUser({ administrator: true })
@@ -186,7 +182,6 @@ describe('user preservation holds', () => {
       })
     })
   })
-
   describe('releaseUserPreservationHold', () => {
     it('stamps who released it and when, keeps the row, and audits the action', async () => {
       const admin = await createTestUser({ administrator: true })
@@ -203,6 +198,11 @@ describe('user preservation holds', () => {
         released_by_id: releaser.id,
       })
       expect(released.released_at).toBeInstanceOf(Date)
+      const { rows: retained } = await read<{ last_legal_preservation_hold_released_at: Date }>(sql`
+        /* readReleasedPreservationClockForTest */
+        SELECT last_legal_preservation_hold_released_at FROM retained_user_identities
+        WHERE id = ${user.id}`)
+      expect(retained[0]?.last_legal_preservation_hold_released_at).toEqual(released.released_at)
       await expect(listUserPreservationHolds(admin, user.id)).resolves.toEqual([released])
       const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
       expect(audit.map(row => [row.action_type, row.actor_user_id, row.reason])).toEqual([
