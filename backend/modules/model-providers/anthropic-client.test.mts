@@ -1,3 +1,4 @@
+import { ModelProviderError } from '@vouchington/ai/providers'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getAnthropicClient } from './anthropic-client.mts'
 
@@ -23,9 +24,18 @@ describe('getAnthropicClient', () => {
     expect(second.apiKey).toBeNull()
   })
 
+  it('uses the federated token when the API key is unset', () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', undefined)
+    vi.stubEnv('ANTHROPIC_AUTH_TOKEN', 'token')
+    const client = getAnthropicClient()
+    expect(client.apiKey).toBeNull()
+    expect(client.authToken).toBe('token')
+  })
+
   it('throws the client-unavailable failure when no credential is set', () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '')
     vi.stubEnv('ANTHROPIC_AUTH_TOKEN', '')
+    expect(() => getAnthropicClient()).toThrow(ModelProviderError)
     expect(() => getAnthropicClient()).toThrow(
       expect.objectContaining({ code: 'client-unavailable', retryClass: 'permanent' }),
     )
