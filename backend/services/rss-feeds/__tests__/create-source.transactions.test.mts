@@ -3,18 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, getTopicAliasIdForTest, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getTopicBySlug } from '@services/topics/get'
 import { createSourceWithRetry } from '../create-source-helpers.mts'
-import { generateSourceDetails } from '../generate-source-details.mts'
 
 describe('RSS source creation transaction failures', () => {
   it('rolls back the topic and alias when its hostname reference does not exist', async () => {
     const user = await createTestUser()
-    const feedUrl = `https://missing-source-hostname-${randomUUID()}.example.com/feed.xml`
-    const slug = generateSourceDetails(
-      'Missing source hostname',
-      'Missing source hostname',
-      feedUrl,
-      0,
-    ).slug
+    const id = randomUUID()
+    const feedUrl = `https://missing-source-hostname-${id}.example.com/feed.xml`
+    const slug = `missing-source-hostname-missing-source-hostname-${id}-example-com-feed-xml`
 
     await expect(
       createSourceWithRetry({

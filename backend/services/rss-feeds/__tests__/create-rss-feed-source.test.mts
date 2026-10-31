@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createSourceWithRetry } from '../create-source-helpers.mts'
-import { generateSourceDetails } from '../generate-source-details.mts'
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
@@ -78,7 +77,7 @@ describe('createRssFeedSource', () => {
     const ids = await makeSourceArgs(hostname, feedUrl)
     const user = await createTestUserDirect()
     if (!user) throw new Error('createTestUserDirect returned null')
-    const { slug } = generateSourceDetails(hostname, hostname, feedUrl, 0)
+    const slug = `rss-src-alias-${suffix}examplecom-rss-src-alias-${suffix}-example-com-feed-xml`
 
     const result = await createOwnedSource(user, hostname, feedUrl, ids)
 
@@ -112,7 +111,7 @@ describe('createRssFeedSource', () => {
     const ids = await makeSourceArgs(hostname, feedUrl)
     const user = await createTestUserDirect()
     if (!user) throw new Error('createTestUserDirect returned null')
-    const { slug } = generateSourceDetails(hostname, hostname, feedUrl, 0)
+    const slug = `rss-src-bloom-${suffix}examplecom-rss-src-bloom-${suffix}-example-com-feed-xml`
 
     const originalBloomFilter = entityCacheBloomFilters.topics
     const originalConfig = originalBloomFilter.getConfig()
