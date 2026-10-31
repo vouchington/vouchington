@@ -5,15 +5,12 @@ export type BloomFilterProcessorJobs =
   | 'processDeleteUserBookmarkBloomFilter'
   | 'processRebuildEmbeddingBloomFilter'
 
-const BLOOM_FILTER_REBUILD_INPUTS = [
-  'url-blocklist',
-  'email-blocklist',
-  'embedding',
-  'entity-cache',
-  'api-keys',
-] as const
-
-export type BloomFilterRebuildInput = (typeof BLOOM_FILTER_REBUILD_INPUTS)[number]
+export type BloomFilterRebuildInput =
+  | 'url-blocklist'
+  | 'email-blocklist'
+  | 'embedding'
+  | 'entity-cache'
+  | 'api-keys'
 
 export type RebuildBloomFilterData = {
   filter: Exclude<BloomFilterRebuildInput, 'entity-cache'>
