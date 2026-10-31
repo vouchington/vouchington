@@ -67,10 +67,16 @@ describe('collectConfigInventory shared reader', () => {
     testDirs.push(fixture.dir)
     fixture.ctx.readTrackedFile = () => null
     const inventory = await collectConfigInventory(fixture.ctx)
-    expect(inventory.envVars.length).toBeGreaterThan(0)
-    expect(
-      inventory.envVars.every(row => row.contractKey !== null && row.name !== 'HIDDEN_SOURCE_ENV'),
-    ).toBe(true)
+    expect(inventory.envVars.filter(row => row.contractKey === null)).toEqual([])
+    expect(inventory.envVars).not.toContainEqual(
+      expect.objectContaining({ name: 'HIDDEN_SOURCE_ENV' }),
+    )
+    expect(inventory.envVars).toContainEqual(
+      expect.objectContaining({
+        name: 'STRIPE_SECRET_KEY',
+        contractKey: 'vouchington-infra:ecs-backend-secret+ecs-worker-secret:STRIPE_SECRET_KEY',
+      }),
+    )
   })
 
   it('retains typed metadata, constructor carriers and action-versus-workflow routing with finite sources', async () => {
