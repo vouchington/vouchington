@@ -5,7 +5,6 @@ import { createTestMembership } from '@voucha/test-helpers/entities/memberships'
 import type { PrivateUser } from '@services/users/types'
 import {
   buildMembershipBenefitCatalog,
-  MEMBERSHIP_BENEFIT_CATALOG_VERSION,
   membershipBenefitCatalog,
   type MembershipBenefitCatalog,
 } from '@ts-shared/utils/membership-benefit-catalog'
@@ -46,7 +45,7 @@ describe('index', () => {
 
     it('rejects catalog entries that do not have live service-boundary enforcement', () => {
       const catalog = {
-        version: MEMBERSHIP_BENEFIT_CATALOG_VERSION,
+        version: 1,
         groups: [{ id: 'research', benefits: [{ id: 'future_unenforced_benefit' }] }],
       } as unknown as MembershipBenefitCatalog
 
@@ -57,7 +56,7 @@ describe('index', () => {
 
     it('rejects duplicate groups through the package catalog validation', () => {
       const catalog = {
-        version: MEMBERSHIP_BENEFIT_CATALOG_VERSION,
+        version: 1,
         groups: [
           { id: 'research', benefits: [] },
           { id: 'research', benefits: [] },
