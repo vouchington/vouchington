@@ -117254,6 +117254,28 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "last_legal_preservation_hold_released_at": {
+          "collation": null,
+          "comment": "Latest released account legal hold, retained after bounded deletion of its audit row so case retention still waits its full legal period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "purged_at": {
+          "collation": null,
+          "comment": "Final hard deletion time of the account, retained for the legal clock of copyright cases naming this party.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.",

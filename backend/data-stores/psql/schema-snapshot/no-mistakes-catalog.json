@@ -123624,6 +123624,26 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
+        },
+        "last_legal_preservation_hold_released_at": {
+          "comment": "Latest released account legal hold, retained after bounded deletion of its audit row so case retention still waits its full legal period.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "purged_at": {
+          "comment": "Final hard deletion time of the account, retained for the legal clock of copyright cases naming this party.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         }
       },
       "comment": "Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.",
