@@ -34,7 +34,7 @@ describe('queue domain pause cache', () => {
     }
   })
 
-  it('clears a cached answer when a queue domain change is published', async () => {
+  it('does not cache an answer that a published change overtook while it was being read', async () => {
     const domain = newDomain()
     const user = await createTestUser()
     const restore = overrideDynamicConfigFieldsForTest(backgroundQueueConfig, {
@@ -45,11 +45,11 @@ describe('queue domain pause cache', () => {
       if (changed === domain) invalidated.resolve(changed)
     })
     try {
-      await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
-
+      const first = isQueueDomainPaused(domain)
       await pauseQueueDomain(domain, { userId: user.id })
       await expect(invalidated.promise).resolves.toBe(domain)
-      await expect(isQueueDomainPaused(domain)).resolves.toBe(true)
+      await first
+      expect(await isQueueDomainPaused(domain)).toBe(true)
     } finally {
       await watcher.close()
       restore()
