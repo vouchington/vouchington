@@ -5512,3 +5512,92 @@ rules:
       rulePrefixes: [react-hooks-js/]
       # A blanket disable would also hide the React compiler and hook rules.
       banBlanketDisable: true
+
+  # NODE_V8_COVERAGE launches these callables (#3593). The callback tables in the
+  # native-mv and EXPLAIN runners hide their callees, so each contract is listed too.
+  # External I/O and default-import assert calls stay advisories; a producer whose
+  # graph is resolved and reaches no assertion owner still fails. No file baseline.
+  - name: coverage producers reach an assertion owner
+    rule: coverage-producer-assertion-owner
+    scope: repository
+    severity: error
+    options:
+      unanalyzable: advise
+      producers:
+        - { file: backend/scripts/native-mv-contracts/run.mts, symbol: main }
+        - {
+            file: backend/scripts/native-mv-contracts/trending-http.mts,
+            symbol: checkTrendingHttpContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/trending-service.mts,
+            symbol: checkTrendingServiceContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker-paged.mts,
+            symbol: checkRssWorkerPagedContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker-sparse.mts,
+            symbol: checkRssWorkerSparseLane,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker.mts,
+            symbol: checkRssWorkerContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/crawl-tiers.mts,
+            symbol: checkCrawlTierContracts,
+          }
+        - { file: backend/scripts/native-mv-contracts/revenue.mts, symbol: checkRevenueContracts }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-author-deletion.mts,
+            symbol: checkHashtagAuthorDeletionContract,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-community.mts,
+            symbol: checkHashtagCommunityContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            symbol: checkHashtagEligibilityContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-root-visibility.mts,
+            symbol: checkHashtagRootVisibilityContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-ranking.mts,
+            symbol: checkHashtagSearchRankingContracts,
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            symbol: checkHashtagSearchRssContracts,
+          }
+        - { file: backend/scripts/check-rss-feed-crawl-tiers.mts, symbol: main }
+        - { file: backend/scripts/rss-crawl-tier-contract.mts, symbol: checkTieredContract }
+        - { file: backend/scripts/explain-analyze/run.mts, symbol: run }
+        - { file: backend/scripts/explain-analyze/pruning/run.mts, symbol: runPruningProof }
+        - {
+            file: backend/scripts/explain-analyze/pruning/run.mts,
+            symbol: relayWithoutLibpqOverrides,
+          }
+      assertions:
+        - { module: 'node:assert/strict', export: equal }
+        - { module: 'node:assert/strict', export: notEqual }
+        - { module: 'node:assert/strict', export: deepEqual }
+        - { module: 'node:assert/strict', export: notDeepEqual }
+        - { module: 'node:assert/strict', export: strictEqual }
+        - { module: 'node:assert/strict', export: deepStrictEqual }
+        - { module: 'node:assert/strict', export: notStrictEqual }
+        - { module: 'node:assert/strict', export: notDeepStrictEqual }
+        - { module: 'node:assert/strict', export: partialDeepStrictEqual }
+        - { module: 'node:assert/strict', export: ok }
+        - { module: 'node:assert/strict', export: match }
+        - { module: 'node:assert/strict', export: doesNotMatch }
+        - { module: 'node:assert/strict', export: throws }
+        - { module: 'node:assert/strict', export: doesNotThrow }
+        - { module: 'node:assert/strict', export: rejects }
+        - { module: 'node:assert/strict', export: doesNotReject }
+        - { module: 'node:assert/strict', export: ifError }
+        - { module: 'node:assert/strict', export: fail }
