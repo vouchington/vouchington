@@ -4,7 +4,7 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { addRssFeedTopicPublisherType } from '../../../backend/test-helpers/entities/rss-feeds.mts'
 import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'
-import { seedPlaywrightPublisherTypeTopics } from '../../../backend/scripts/seeds/playwright-test-data/core-publisher-type-topics.mts'
+import { seedPlaywrightPublisherTypeTopics } from '../../../backend/test-helpers/playwright-seed-publisher-type-topics.mts'
 import { getPublisherTypeTopics } from '../../../backend/services/topics/publisher-type-topics.mts'
 import { voteBinaryChoice } from '../../helpers/semantic-vote.mts'
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { recordMediaReveal } from '../record.mts'
+import { recordMediaRevealAndGetExposureState } from '../record.mts'
 import { getExposureState } from '../get.mts'
 import { EXPOSURE_BREAK_THRESHOLD } from '../config.mts'
 
@@ -38,8 +38,8 @@ describe('getExposureState - DISTINCT entity deduplication', () => {
       markdown: 'body',
     })
 
-    await recordMediaReveal(moderator.id, { postId, surface: 'mod_queue' })
-    await recordMediaReveal(moderator.id, { postId, surface: 'post_page' })
+    await recordMediaRevealAndGetExposureState(moderator.id, { postId, surface: 'mod_queue' })
+    await recordMediaRevealAndGetExposureState(moderator.id, { postId, surface: 'post_page' })
 
     const state = await getExposureState(moderator.id)
     expect(state.count).toBe(1)
@@ -60,8 +60,14 @@ describe('getExposureState - DISTINCT entity deduplication', () => {
     })
 
     const before = await getExposureState(moderator.id)
-    await recordMediaReveal(moderator.id, { postId: postId1, surface: 'mod_queue' })
-    await recordMediaReveal(moderator.id, { postId: postId2, surface: 'mod_queue' })
+    await recordMediaRevealAndGetExposureState(moderator.id, {
+      postId: postId1,
+      surface: 'mod_queue',
+    })
+    await recordMediaRevealAndGetExposureState(moderator.id, {
+      postId: postId2,
+      surface: 'mod_queue',
+    })
 
     const after = await getExposureState(moderator.id)
     expect(after.count).toBe(before.count + 2)
@@ -76,7 +82,7 @@ describe('getExposureState - cooldown at threshold', () => {
     // Insert exactly EXPOSURE_BREAK_THRESHOLD reveals with null postId/reportId
     // so each row uses its own UUID as the entity key — all distinct.
     for (let i = 0; i < EXPOSURE_BREAK_THRESHOLD; i++) {
-      await recordMediaReveal(moderator.id, { surface: 'mod_queue' })
+      await recordMediaRevealAndGetExposureState(moderator.id, { surface: 'mod_queue' })
     }
   })
 
@@ -102,7 +108,7 @@ describe('getExposureState - isolated per moderator', () => {
   beforeAll(async () => {
     mod1 = await createTestUser()
     mod2 = await createTestUser()
-    await recordMediaReveal(mod1.id, { surface: 'review_queue' })
+    await recordMediaRevealAndGetExposureState(mod1.id, { surface: 'review_queue' })
   })
 
   it("does not count another moderator's reveals toward the state", async () => {

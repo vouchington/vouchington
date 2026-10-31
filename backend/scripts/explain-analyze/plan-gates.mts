@@ -16,7 +16,7 @@ import { assertFunctionCallCap } from './plan-function-calls.mts'
 export { assertScenarioFunctionCalls } from './plan-function-calls.mts'
 
 /** Above the current ~102k-post fixture; larger unbounded fixtures must use indexes. */
-export const SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD = 150_000
+const SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD = 150_000
 
 export function assertRequiredPlanShape(result: ExplainResult): void {
   const scenarioId = result.scenario_id

@@ -1,4 +1,4 @@
-export class EmailValidationError extends Error {
+class EmailValidationError extends Error {
   code: string
   status: number
 

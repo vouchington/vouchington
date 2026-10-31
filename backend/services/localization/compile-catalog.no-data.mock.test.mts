@@ -21,7 +21,7 @@ vi.mock<typeof import('@vouchington/localization-compiler')>(
   }),
 )
 
-import { compileCatalogDirectory, runCompileCli } from './compile-catalog.mts'
+import { runCompileCli } from './compile-catalog.mts'
 
 const TEST_CATALOG = { copies: [], aliases: [], translations: {} } satisfies LocalizationCatalog
 const TEST_CATALOG_LOAD = { catalog: TEST_CATALOG, messages: [], tags: {} }
@@ -29,7 +29,7 @@ const TEST_COMPILER_REVISION = 'owned-compiler-revision'
 
 const ORIGINAL_TMPDIR = process.env.TMPDIR
 
-describe('compileCatalogDirectory', () => {
+describe('runCompileCli', () => {
   beforeEach(() => {
     localizationCompiler.loadCatalogDirectory.mockReset()
     localizationCompiler.loadCatalogDirectory.mockResolvedValue(TEST_CATALOG_LOAD)
@@ -62,29 +62,21 @@ describe('compileCatalogDirectory', () => {
       return TEST_COMPILER_REVISION
     })
 
-    await expect(compileCatalogDirectory(source, output)).resolves.toBe(TEST_COMPILER_REVISION)
+    await expect(runCompileCli(['--source', source, '--output', output])).resolves.toBe(
+      TEST_COMPILER_REVISION,
+    )
     expect(existsSync(dirname(resolve(output)))).toBe(true)
+    expect(localizationCompiler.loadCatalogDirectory).toHaveBeenCalledTimes(1)
     expect(localizationCompiler.loadCatalogDirectory).toHaveBeenNthCalledWith(1, resolve(source))
+    expect(localizationCompiler.compileLocalizationSqlite).toHaveBeenCalledTimes(1)
     expect(localizationCompiler.compileLocalizationSqlite).toHaveBeenNthCalledWith(
       1,
       TEST_CATALOG,
       resolve(output),
     )
     expect(observedTmpdirs).toEqual([dirname(resolve(output))])
-    await expect(runCompileCli(['--source', source, '--output', output])).resolves.toBe(
-      TEST_COMPILER_REVISION,
-    )
     await expect(runCompileCli(['--source'])).rejects.toThrow(/Missing value/)
     await expect(runCompileCli(['--output', ''])).rejects.toThrow(/Missing value/)
-    expect(localizationCompiler.loadCatalogDirectory).toHaveBeenCalledTimes(2)
-    expect(localizationCompiler.loadCatalogDirectory).toHaveBeenNthCalledWith(2, resolve(source))
-    expect(localizationCompiler.compileLocalizationSqlite).toHaveBeenCalledTimes(2)
-    expect(localizationCompiler.compileLocalizationSqlite).toHaveBeenNthCalledWith(
-      2,
-      TEST_CATALOG,
-      resolve(output),
-    )
-    expect(observedTmpdirs).toEqual([dirname(resolve(output)), dirname(resolve(output))])
     expect(process.env.TMPDIR).toBe(ORIGINAL_TMPDIR)
   })
 
@@ -100,7 +92,7 @@ describe('compileCatalogDirectory', () => {
       throw failure
     })
 
-    await expect(compileCatalogDirectory(source, output)).rejects.toBe(failure)
+    await expect(runCompileCli(['--source', source, '--output', output])).rejects.toBe(failure)
     expect(process.env.TMPDIR).toBe(originalTmpdir)
   })
 
@@ -108,7 +100,7 @@ describe('compileCatalogDirectory', () => {
     delete process.env.TMPDIR
     const source = mkdtempSync(join(tmpdir(), 'catalog-src-'))
     const output = join(mkdtempSync(join(tmpdir(), 'compiled-')), 'catalog.sqlite')
-    await compileCatalogDirectory(source, output)
+    await runCompileCli(['--source', source, '--output', output])
     expect(process.env.TMPDIR).toBeUndefined()
   })
 
@@ -117,7 +109,7 @@ describe('compileCatalogDirectory', () => {
     process.env.TMPDIR = previous
     const source = mkdtempSync(join(tmpdir(), 'catalog-src-'))
     const output = join(mkdtempSync(join(tmpdir(), 'compiled-')), 'catalog.sqlite')
-    await compileCatalogDirectory(source, output)
+    await runCompileCli(['--source', source, '--output', output])
     expect(process.env.TMPDIR).toBe(previous)
   })
 })

@@ -36,7 +36,7 @@ REFERENCES retained_image_placement_bindings (placement_id, image_id, binding_fa
 ON DELETE RESTRICT NOT VALID;
 ALTER TABLE image_placements VALIDATE CONSTRAINT fk_image_placements__retained_image_binding;
 
-CREATE INDEX idx_image_placements__image ON image_placements (image_id);
+CREATE INDEX idx_image_placements__image ON image_placements (image_id, placement_id);
 
 CREATE OR REPLACE FUNCTION fn_reject_media_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$

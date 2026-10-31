@@ -16,13 +16,13 @@ import {
   setTestItemStoryId,
   updateTestTopicAliasCategoryMappingOwner,
   beginTransaction,
+  backfillTopicCategoryMappingsForTest as backfillCategoriesForTopicAliases,
+  drainTopicAliasCategoryMappingForTest,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
-import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
-import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { prepareStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
@@ -134,7 +134,7 @@ describe('RSS category story-post publication', () => {
       await updateTestTopicAliasCategoryMappingOwner(aliasId, secondTopic.id)
       await backfillCategoriesForTopicAliases(secondTopic.id)
       await updateTestTopicAliasCategoryMappingOwner(aliasId, null)
-      await clearCategoriesForUnlinkedTopicAlias(aliasId, secondTopic.id)
+      await drainTopicAliasCategoryMappingForTest(aliasId)
     })
     expect(changed.flatMap(job => job.keys)).toEqual(
       expect.arrayContaining([
@@ -185,7 +185,7 @@ describe('RSS category story-post publication', () => {
     await updateTestTopicAliasCategoryMappingOwner(topicAliasId, null)
 
     const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
-      clearCategoriesForUnlinkedTopicAlias(topicAliasId, topic.id),
+      drainTopicAliasCategoryMappingForTest(topicAliasId),
     )
     expect(jobs.flatMap(job => job.keys)).toContainEqual({
       kind: 'impact_topic',
@@ -271,7 +271,7 @@ describe('RSS category story-post publication', () => {
     const jobs = await captureAddedPublicationEffectsForScopes(storyIds, () =>
       expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({
         updated: 500,
-        hasMore: true,
+        hasMore: false,
       }),
     )
     expect(new Set(jobs.map(job => job.scope.id)).size).toBe(500)

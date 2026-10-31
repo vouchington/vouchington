@@ -88,56 +88,6 @@ describe('buildWebCsp', () => {
     expect(csp).toContain("default-src 'self'")
   })
 
-  it('includes GTM origin in script-src, frame-src, and connect-src', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/script-src [^;]*https:\/\/g\.voucha\.ai/)
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/g\.voucha\.ai/)
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/g\.voucha\.ai/)
-  })
-
-  it('includes Turnstile origin in script-src, frame-src, and connect-src', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/script-src [^;]*https:\/\/challenges\.cloudflare\.com/)
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/challenges\.cloudflare\.com/)
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/challenges\.cloudflare\.com/)
-  })
-
-  it('includes OAuth SDK origins in script-src and connect-src', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/script-src [^;]*https:\/\/connect\.facebook\.net/)
-    expect(csp).toMatch(/script-src [^;]*https:\/\/accounts\.google\.com/)
-    expect(csp).toMatch(/script-src [^;]*https:\/\/appleid\.cdn-apple\.com/)
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/connect\.facebook\.net/)
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/accounts\.google\.com/)
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/appleid\.cdn-apple\.com/)
-  })
-
-  it('includes Facebook Graph API and impression tracking in connect-src', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/graph\.facebook\.com/)
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/www\.facebook\.com/)
-  })
-
-  it('includes HN Algolia search in connect-src', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/hn\.algolia\.com/)
-  })
-
-  it('includes accounts.google.com in frame-src for Google One Tap iframe', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/accounts\.google\.com/)
-  })
-
-  it('includes reCAPTCHA Enterprise origins in script-src, connect-src, and frame-src', () => {
-    const csp = buildTestWebCsp()
-    // enterprise.js loads from www.google.com; static helpers from gstatic.com
-    expect(csp).toMatch(/script-src [^;]*https:\/\/www\.google\.com/)
-    expect(csp).toMatch(/script-src [^;]*https:\/\/www\.gstatic\.com/)
-    // token-minting POST and challenge iframe
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/www\.google\.com/)
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/www\.google\.com/)
-  })
-
   it('includes every registered third-party origin in its required directives', () => {
     const directives = parseDirectives(buildTestWebCsp())
 

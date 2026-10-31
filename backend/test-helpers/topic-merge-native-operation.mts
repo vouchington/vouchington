@@ -4,6 +4,7 @@ import { lockTopicMergeAdmission } from '../services/topics/merge-preflight.mts'
 export type TopicMergeNativeCheckpoint = {
   generation: number
   stage: string
+  stage_table_position: number
   alias_phase: number
   cursor_alias: string | null
   completed_at: Date | null
@@ -34,6 +35,7 @@ export async function getTopicMergeNativeCheckpoint(
 ): Promise<TopicMergeNativeCheckpoint> {
   const { rows } = await write<TopicMergeNativeCheckpoint>(
     `/* getTopicMergeNativeCheckpoint */ SELECT generation, stage::text AS stage,
+      stage_table_position,
       alias_phase, cursor_alias,
       completed_at, failed_at, updated_at FROM topic_merge_operations WHERE id = $1::uuid`,
     [operationId],

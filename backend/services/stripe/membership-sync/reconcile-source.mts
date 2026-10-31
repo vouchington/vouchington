@@ -22,7 +22,7 @@ import {
 } from './locked-source.mts'
 import type { StripeSubscriptionMembershipValues } from './subscription-values.mts'
 
-export async function reconcileStripeMembershipSource(
+async function reconcileStripeMembershipSource(
   eventId: string,
   membership: Membership | null,
   sourceIdentity: StripeMembershipSourceIdentity,

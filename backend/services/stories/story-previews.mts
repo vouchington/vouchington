@@ -12,9 +12,7 @@ type StoryPrimaryResult = {
   delivery_type?: 'direct' | 'share'
 }
 
-export function getStoryPreviewRequests(
-  results: readonly StoryPrimaryResult[],
-): StoryMemberRequest[] {
+function getStoryPreviewRequests(results: readonly StoryPrimaryResult[]): StoryMemberRequest[] {
   const selected = new Map<string, StoryMemberRequest>()
   for (const result of results) {
     if (result.delivery_type === 'share' || !result.story_id || selected.has(result.story_id))

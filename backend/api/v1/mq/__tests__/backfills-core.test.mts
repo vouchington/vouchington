@@ -36,15 +36,4 @@ describe('CORE_BACKFILLS', () => {
     })
     expect(typeof backfill?.trigger).toBe('function')
   })
-
-  it('registers the review succession history audit as a read-only operator backfill', () => {
-    const backfill = CORE_BACKFILLS.find(entry => entry.id === 'review-succession-history-dry-run')
-
-    expect(backfill).toMatchObject({
-      queue_name: 'background',
-      job_name: 'post-publication.audit-review-succession-history',
-      source_table: 'posts,post_review_topic_ratings,review_successions',
-    })
-    expect(typeof backfill?.trigger).toBe('function')
-  })
 })

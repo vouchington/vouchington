@@ -29,14 +29,13 @@ const policyInput = (call: CachePolicyBypassCall) => ({
   hasUnverifiedSessionCookies: false,
 })
 
-/** Shared bypass and negative cache-policy cases. Call from a literal `describe`. */
+/** Shared bypass cache-policy cases. Call from a literal `describe`. */
 export function registerCachePolicyBypassSignalTests(options: {
   bypassTitle: string
-  negativeTitle: string
   firstBypass: CachePolicyBypassCall
   secondBypass: CachePolicyBypassCall
 }): void {
-  const { bypassTitle, negativeTitle, firstBypass, secondBypass } = options
+  const { bypassTitle, firstBypass, secondBypass } = options
 
   // oxlint-disable-next-line vitest/valid-title, jest/valid-title -- each suite passes its own literal title
   test(bypassTitle, () => {
@@ -48,19 +47,5 @@ export function registerCachePolicyBypassSignalTests(options: {
     })
 
     expect(getCachePolicy(policyInput(secondBypass)).mode).toBe('bypass')
-  })
-
-  // oxlint-disable-next-line vitest/valid-title, jest/valid-title -- each suite passes its own literal title
-  test(negativeTitle, () => {
-    expect(
-      getCachePolicy(
-        policyInput({
-          pathname: '/blog',
-          botTier: null,
-          hasFeatureFlagOverrideCookie: false,
-          hasReferralAttributionSignal: false,
-        }),
-      ).mode,
-    ).toBe('cache')
   })
 }

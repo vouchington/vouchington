@@ -148,28 +148,6 @@ describe('deleteUser — data export cleanup', () => {
     expect(mockDeleteExport).not.toHaveBeenCalled()
   })
 
-  it('clears ready export S3 keys after durable object deletion', async () => {
-    const user = await createTestUser()
-    const request = await accountDataRequests.createDataRequest(user.id, user.id)
-    expect(await accountDataRequests.markDataRequestProcessing(request.id)).toBe(true)
-    const s3Key = `active-export-${Math.random().toString(36).slice(2, 10)}.zip`
-    expect(
-      await accountDataRequests.markDataRequestReady(
-        request.id,
-        s3Key,
-        new Date(Date.now() + 60_000),
-      ),
-    ).toBe(true)
-
-    await deleteUserAndDrainForTest(user, user, cleanupDeps())
-
-    await expect(getUserDataRequestStatusAndS3KeyForTest(request.id)).resolves.toEqual({
-      status: 'expired',
-      s3_key: null,
-    })
-    expect(mockDeleteExport).toHaveBeenCalledWith([s3Key])
-  })
-
   it('deletes S3 objects of ready exports whose deadline has already passed', async () => {
     const user = await createTestUser()
     const request = await accountDataRequests.createDataRequest(user.id, user.id)

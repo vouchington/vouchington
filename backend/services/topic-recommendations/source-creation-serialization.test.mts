@@ -14,7 +14,7 @@ import {
 import { addUrl } from '@services/urls/upsert'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getTopicByAny } from '@services/topics/get'
-import { createRssFeedSource } from '../rss-feeds/create-source-helpers.mts'
+import { createSourceWithRetry } from '../rss-feeds/create-source-helpers.mts'
 import { createInstanceInTransaction } from '../fediverse-instances/create-instance-helpers.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
 import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
@@ -62,15 +62,17 @@ describe('source creation serializes hostname ownership before aliases', () => {
         async waitForLock => {
           const creating =
             kind === 'rss'
-              ? createRssFeedSource({
+              ? createSourceWithRetry({
                   provenance: WEB_PROVENANCE,
-                  createdById: admin.id,
+                  currentUser: admin,
                   rssFeedUrlId: url!.id,
                   hostnameId,
+                  feedUrl: `https://${hostname}/feed.xml`,
                   topicName: `Source ${suffix}`,
-                  slug: `source-${suffix}`,
+                  rawTitle: `Source ${suffix}`,
                   feedTitle: null,
                   feedType: 'article',
+                  attempt: 0,
                 })
               : createInstanceInTransaction(
                   WEB_PROVENANCE,

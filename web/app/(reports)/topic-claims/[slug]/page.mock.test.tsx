@@ -117,17 +117,6 @@ describe('ClaimTopicPage', () => {
     expect(mockNav.refresh).toHaveBeenCalledOnce()
   })
 
-  it('renders the page heading when signed in with no existing claim', async () => {
-    mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
-    mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
-
-    const { container } = render(
-      await ClaimTopicPage({ params: Promise.resolve({ slug: 'topic-abc' }) }),
-    )
-
-    expect(container.querySelector('[data-pw="claim-topic-form"]')).not.toBeNull()
-  })
-
   it('renders DomainVerificationPanel when active claim exists', async () => {
     mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
     mockGetTopicClaims.mockResolvedValueOnce({

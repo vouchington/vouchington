@@ -122,13 +122,6 @@ test.describe('Post Detail Pages', () => {
     await expect(page.getByTestId('post-detail-heading')).toContainText(post.contentRegex)
   })
 
-  test('loads post detail pages without errors', async ({ page }) => {
-    const reviewId = '019c64e6-f720-7002-a002-000000000001'
-    await navigateTo(page, `/review/${reviewId}`)
-
-    await expect(page.getByTestId('post-detail-heading')).toContainText(/Great travel card/)
-  })
-
   test('comments tab shows formatted comment count below content', async ({ page }) => {
     const discussionId = '019c64e6-f720-7001-a001-000000000001'
     await navigateTo(page, `/discussion/${discussionId}`)

@@ -96,7 +96,6 @@ describe('background queue domain routes', () => {
         'hostname-blocking',
         'image-deletion',
         'imports',
-        'kagi-smallweb',
         'moderation-signals',
         'notifications',
         'oauth-authorization-exchange',

@@ -34,7 +34,7 @@ const RSS_FEED_ITEM_TOPIC_ALIAS_CATEGORY_RELATION_TABLE = getEntityRelationTable
  * constants module, no injection-guarded caller-supplied column, no 4-way "universal topic" union
  * — RSS has only 2 relation legs and 2 call sites, so those invariants don't apply here).
  */
-export function buildRssFeedItemTopicCandidateSelect(topicId: string): SQLStatement {
+function buildRssFeedItemTopicCandidateSelect(topicId: string): SQLStatement {
   return sql`
     SELECT rel.subject_id AS rss_feed_item_id
     FROM `

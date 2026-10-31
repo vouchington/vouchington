@@ -24,7 +24,7 @@ const databaseReader: StagingBootstrapReader = {
   readPublisherSlugs: (sql, values) => read<PublisherSlugRow>(sql, values),
 }
 
-export function assertStagingRssBootstrap(
+function assertStagingRssBootstrap(
   feeds: readonly StagingFeedRow[],
   cloudflarePublisherSlugs: readonly string[],
 ): void {

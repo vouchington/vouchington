@@ -40,8 +40,6 @@ export const BACKGROUND_ORDERING_CAPS = {
   'sitemaps:indexes': 1,
   'sitemaps:dispatcher': 1,
   'cache-purge': 5,
-  'kagi-smallweb': 5,
-  'kagi-smallweb:dispatcher': 1,
   'email-digests': 5,
   imports: 10,
   'moderation-signals': 10,

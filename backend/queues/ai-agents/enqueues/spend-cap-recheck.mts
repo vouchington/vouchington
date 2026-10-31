@@ -45,6 +45,6 @@ export async function enqueueSpendCapRecheckBestEffort(
   await enqueued.then(() => undefined, onError)
 }
 
-export function spendCapRecheckDeduplicationId(day: string, generation: string): string {
+function spendCapRecheckDeduplicationId(day: string, generation: string): string {
   return `ai-spend-cap:recheck:${day}:${generation}`
 }

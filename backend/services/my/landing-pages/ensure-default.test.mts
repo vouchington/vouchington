@@ -1,15 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { deriveSlugFromUsername, ensureDefaultLandingPage } from './ensure-default.mts'
+import { ensureDefaultLandingPage } from './ensure-default.mts'
 import { createMyLandingPage } from './create.mts'
 import { listLandingPagesForUser } from './list.mts'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 
-describe('deriveSlugFromUsername', () => {
-  it('lowercases and replaces underscores with hyphens', () => {
-    expect(deriveSlugFromUsername('My_User_Name')).toBe('my-user-name')
-    expect(deriveSlugFromUsername('already-lowercase')).toBe('already-lowercase')
-    expect(deriveSlugFromUsername('MixedCase123')).toBe('mixedcase123')
+describe('ensureDefaultLandingPage slug', () => {
+  it.each([
+    ['My_User_Name', 'my-user-name'],
+    ['already-lowercase', 'already-lowercase'],
+    ['MixedCase123', 'mixedcase123'],
+  ])('derives %s as %s', async (username, slug) => {
+    const user = await createTestUser()
+    await ensureDefaultLandingPage(user.id, username)
+    const pages = await listLandingPagesForUser(user.id)
+    expect(pages).toHaveLength(1)
+    expect(pages[0]!.slug).toBe(slug)
   })
 })
 
@@ -35,12 +41,12 @@ describe('ensureDefaultLandingPage', () => {
   it('creates a default landing page for a user with no pages', async () => {
     const user = await createTestUser()
 
-    await ensureDefaultLandingPage(user.id, user.username!)
+    await ensureDefaultLandingPage(user.id, 'My_User_Name')
 
     const pages = await listLandingPagesForUser(user.id)
     expect(pages).toHaveLength(1)
     expect(pages[0]!.is_default).toBe(true)
-    expect(pages[0]!.slug).toBe(deriveSlugFromUsername(user.username!))
+    expect(pages[0]!.slug).toBe('my-user-name')
   })
 
   it('skips creation when pages already exist', async () => {

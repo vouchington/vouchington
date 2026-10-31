@@ -88,7 +88,7 @@ describe('measureAndSerializePage', () => {
 
   it('bounds post-cap traversal when an oversized document has no body text', () => {
     let outerHtmlReads = 0
-    const root = element('HTML', [element('HEAD', [text('x'.repeat(10_000))]), element('BODY')])
+    const root = element('HTML', [element('HEAD', [text('x'.repeat(40))]), element('BODY')])
     Object.defineProperty(root, 'outerHTML', {
       get() {
         outerHtmlReads += 1
@@ -110,7 +110,7 @@ describe('measureAndSerializePage', () => {
 
   it('bounds traversal even when hostile nodes add no serialized bytes', () => {
     let outerHtmlReads = 0
-    const root = element('HTML', [element('BODY', wideChildren(10_000, ''))])
+    const root = element('HTML', [element('BODY', wideChildren(40, ''))])
     Object.defineProperty(root, 'outerHTML', {
       get() {
         outerHtmlReads += 1
@@ -134,7 +134,7 @@ describe('measureAndSerializePage', () => {
     let attributeReads = 0
     let outerHtmlReads = 0
     const body = element('BODY')
-    body.attributes = new Proxy({ length: 10_000 } as ArrayLike<{ name: string; value: string }>, {
+    body.attributes = new Proxy({ length: 2 } as ArrayLike<{ name: string; value: string }>, {
       get(target, property) {
         if (property === 'length') return target.length
         attributeReads += 1

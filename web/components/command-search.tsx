@@ -49,14 +49,7 @@ export function CommandSearch({
 
   const searchTabs = getSearchTabs(featureFlags)
 
-  useSearchEffect(
-    query,
-    activeTab,
-    featureFlags.combinedSearch === true,
-    featureFlags.fediverse === true,
-    setResults,
-    setLoading,
-  )
+  useSearchEffect(query, activeTab, featureFlags.fediverse === true, setResults, setLoading)
 
   // Reset query and tab when dialog closes. Focus the input when it opens.
   useEffect(() => {

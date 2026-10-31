@@ -15,7 +15,7 @@ import * as diffFiles from './diff-files.mts'
 import * as domainDiff from './sync-db-domain-diff.mts'
 import * as replicaSourceVersion from './replica-source-version.mts'
 import { ReplicaBehindError } from './replica-freshness.mts'
-import { BLOCKLIST_DIFF_DIRECTORY_PREFIX, syncDomainsWithDatabase } from './sync-db.mts'
+import { syncDomainsWithDatabase } from './sync-db.mts'
 
 const readReplicaSourceVersion = replicaSourceVersion.readReplicaSourceVersionFromClient
 const persistDomainDiff = domainDiff.persistDomainDiff
@@ -160,7 +160,7 @@ function precedingSourceVersion(version: string | null): string {
 }
 
 function diffDirectories(): string[] {
-  return readdirSync(tmpdir()).filter(name => name.startsWith(BLOCKLIST_DIFF_DIRECTORY_PREFIX))
+  return readdirSync(tmpdir()).filter(name => name.startsWith(`blocklist-diff-${process.pid}-`))
 }
 
 function sourceNameSuffix(): string {

@@ -60,7 +60,7 @@
     "backend/services/hostname-blocking/delete-url-relation-page.mts",
     "backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts",
     "backend/services/rss-feed-items/clear-unlinked-topic-alias-categories.mts",
-    "backend/services/rss-feed-items/reconcile-categories.mts"
+    "backend/services/rss-feed-items/reconcile-categories-delete.mts"
   ],
   "excluded_writers": [
     {

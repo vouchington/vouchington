@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createRssFeedSource } from '../create-source-helpers.mts'
+import { createSourceWithRetry } from '../create-source-helpers.mts'
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
@@ -16,6 +16,7 @@ import {
   softDeleteTopic,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import type { BasicUser } from '@services/users/types'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -26,23 +27,37 @@ async function makeSourceArgs(hostname: string, feedUrl: string) {
   return { hostnameId, rssFeedUrlId }
 }
 
+function createOwnedSource(
+  user: BasicUser,
+  hostname: string,
+  feedUrl: string,
+  ids: { hostnameId: string; rssFeedUrlId: string },
+  topicName = hostname,
+) {
+  return createSourceWithRetry({
+    provenance: WEB_PROVENANCE,
+    currentUser: user,
+    rssFeedUrlId: ids.rssFeedUrlId,
+    hostnameId: ids.hostnameId,
+    feedUrl,
+    topicName,
+    rawTitle: hostname,
+    feedTitle: hostname,
+    feedType: 'article',
+    attempt: 0,
+  })
+}
+
 describe('createRssFeedSource', () => {
-  it('creates topic, hostname link, and rss_feed with createdById=null (kagi path)', async () => {
+  it('creates an rss feed topic, hostname link, and feed title', async () => {
     const suffix = randomSuffix()
     const hostname = `rss-src-test-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
+    const ids = await makeSourceArgs(hostname, feedUrl)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('createTestUserDirect returned null')
 
-    const result = await createRssFeedSource({
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug: `rss-src-test-${suffix}-example-com`,
-      feedTitle: hostname,
-      feedType: 'article',
-      createdById: null,
-    })
+    const result = await createOwnedSource(user, hostname, feedUrl, ids)
 
     expect(result).not.toBeNull()
     const topic = await getTopicByAny(result!.topicId)
@@ -58,23 +73,15 @@ describe('createRssFeedSource', () => {
   it('claims the source slug as a topic alias', async () => {
     const suffix = randomSuffix()
     const hostname = `rss-src-alias-${suffix}.example.com`
-    const slug = `rss-src-alias-${suffix}-example-com`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(
-      hostname,
-      `https://${hostname}/feed.xml`,
-    )
+    const feedUrl = `https://${hostname}/feed.xml`
+    const ids = await makeSourceArgs(hostname, feedUrl)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('createTestUserDirect returned null')
+    const slug = `rss-src-alias-${suffix}examplecom-rss-src-alias-${suffix}-example-com-feed-xml`
 
-    const result = await createRssFeedSource({
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug,
-      feedTitle: hostname,
-      feedType: 'article',
-      createdById: null,
-    })
+    const result = await createOwnedSource(user, hostname, feedUrl, ids)
 
+    expect(result!.slug).toBe(slug)
     const { results } = await getTopicAliasRecords(result!.topicId)
     expect(results.map(record => record.alias)).toEqual([slug])
   })
@@ -83,26 +90,17 @@ describe('createRssFeedSource', () => {
     const suffix = randomSuffix()
     const hostname = `rss-src-idem-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
+    const ids = await makeSourceArgs(hostname, feedUrl)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('createTestUserDirect returned null')
 
-    const args = {
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug: `rss-src-idem-${suffix}-example-com`,
-      feedTitle: hostname,
-      feedType: 'article' as const,
-      createdById: null,
-    }
-
-    const first = await createRssFeedSource(args)
+    const first = await createOwnedSource(user, hostname, feedUrl, ids)
     expect(first).not.toBeNull()
 
-    const second = await createRssFeedSource(args)
+    const second = await createOwnedSource(user, hostname, feedUrl, ids)
     expect(second).toBeNull()
 
-    const existing = await findExistingFeedByUrlId(rssFeedUrlId)
+    const existing = await findExistingFeedByUrlId(ids.rssFeedUrlId)
     expect(existing?.topic_id).toBe(first!.topicId)
   })
 
@@ -110,8 +108,10 @@ describe('createRssFeedSource', () => {
     const suffix = randomSuffix()
     const hostname = `rss-src-bloom-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
-    const slug = `rss-src-bloom-${suffix}-example-com`
+    const ids = await makeSourceArgs(hostname, feedUrl)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('createTestUserDirect returned null')
+    const slug = `rss-src-bloom-${suffix}examplecom-rss-src-bloom-${suffix}-example-com-feed-xml`
 
     const originalBloomFilter = entityCacheBloomFilters.topics
     const originalConfig = originalBloomFilter.getConfig()
@@ -128,16 +128,7 @@ describe('createRssFeedSource', () => {
       await testBloomFilter.delete()
       await testBloomFilter.ensureExists()
 
-      const result = await createRssFeedSource({
-        provenance: WEB_PROVENANCE,
-        rssFeedUrlId,
-        hostnameId,
-        topicName: hostname,
-        slug,
-        feedTitle: hostname,
-        feedType: 'article',
-        createdById: null,
-      })
+      const result = await createOwnedSource(user, hostname, feedUrl, ids)
 
       expect(result).not.toBeNull()
       await Promise.all(
@@ -157,19 +148,11 @@ describe('createRssFeedSource', () => {
     const suffix = randomSuffix()
     const hostname = `rss-src-user-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
+    const ids = await makeSourceArgs(hostname, feedUrl)
     const user = await createTestUserDirect()
+    if (!user) throw new Error('createTestUserDirect returned null')
 
-    const result = await createRssFeedSource({
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug: `rss-src-user-${suffix}-example-com`,
-      feedTitle: hostname,
-      feedType: 'article',
-      createdById: user!.id,
-    })
+    const result = await createOwnedSource(user, hostname, feedUrl, ids)
 
     expect(result).not.toBeNull()
     const topic = await getTopicByAny(result!.topicId)
@@ -189,23 +172,14 @@ describe('findExistingFeed* — dedup with soft-deleted and merged owners', () =
     const suffix = randomSuffix()
     const hostname = `rss-dedup-del-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
+    const ids = await makeSourceArgs(hostname, feedUrl)
 
-    const created = await createRssFeedSource({
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug: `rss-dedup-del-${suffix}-xc`,
-      feedTitle: hostname,
-      feedType: 'article',
-      createdById: null,
-    })
+    const created = await createOwnedSource(user, hostname, feedUrl, ids)
     expect(created).not.toBeNull()
 
     await softDeleteTopic(created!.topicId, user.id)
 
-    const byUrlId = await findExistingFeedByUrlId(rssFeedUrlId)
+    const byUrlId = await findExistingFeedByUrlId(ids.rssFeedUrlId)
     expect(byUrlId).not.toBeNull()
     expect(byUrlId!.topic_id).toBe(created!.topicId)
 
@@ -220,18 +194,9 @@ describe('findExistingFeed* — dedup with soft-deleted and merged owners', () =
     const suffix = randomSuffix()
     const hostname = `rss-dedup-mrg-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
+    const ids = await makeSourceArgs(hostname, feedUrl)
 
-    const created = await createRssFeedSource({
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug: `rss-dedup-mrg-${suffix}-xc`,
-      feedTitle: hostname,
-      feedType: 'article',
-      createdById: null,
-    })
+    const created = await createOwnedSource(user, hostname, feedUrl, ids)
     expect(created).not.toBeNull()
 
     const destTopicId = await insertTestTopic({
@@ -245,7 +210,7 @@ describe('findExistingFeed* — dedup with soft-deleted and merged owners', () =
     if (!source || !destination) throw new Error('Test topics not found')
     await mergeTopicAliases(user, source, destination)
 
-    const byUrlId = await findExistingFeedByUrlId(rssFeedUrlId)
+    const byUrlId = await findExistingFeedByUrlId(ids.rssFeedUrlId)
     expect(byUrlId).not.toBeNull()
     expect(byUrlId!.topic_id).toBe(destTopicId)
 
@@ -260,18 +225,11 @@ describe('findExistingFeedByUrl', () => {
     const suffix = randomSuffix()
     const hostname = `rss-find-url-${suffix}.example.com`
     const feedUrl = `https://${hostname}/feed.xml`
-    const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
+    const ids = await makeSourceArgs(hostname, feedUrl)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('createTestUserDirect returned null')
 
-    const created = await createRssFeedSource({
-      provenance: WEB_PROVENANCE,
-      rssFeedUrlId,
-      hostnameId,
-      topicName: hostname,
-      slug: `rss-find-url-${suffix}-example-com`,
-      feedTitle: hostname,
-      feedType: 'article',
-      createdById: null,
-    })
+    const created = await createOwnedSource(user, hostname, feedUrl, ids)
 
     expect(created).not.toBeNull()
     const found = await findExistingFeedByUrl(feedUrl)

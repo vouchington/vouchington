@@ -26,7 +26,7 @@ Voucha is built around original content from people and sources with something g
 
 ## Submitting Your Own Site
 
-You can submit your own site — but only if it already has demonstrated authority. If your site is newer or smaller, we recommend adding it to [Kagi Small Web](https://github.com/kagisearch/smallweb), which Voucha also imports from.
+You can submit your own site — but only if it already has demonstrated authority. If your site is newer or smaller, we do not add it until it has that record.
 
 ## Disagreeing With a Source Being Listed
 

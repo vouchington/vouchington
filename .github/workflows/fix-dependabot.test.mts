@@ -26,8 +26,8 @@ describe('fix-dependabot workflow', () => {
     const renderSetup = renderJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
 
     expect(dispatchJob?.with?.['install-workspace-dependencies']).toBeUndefined()
-    expect(triageSetup?.with).toBeUndefined()
-    expect(renderSetup?.with).toBeUndefined()
+    expect(triageSetup?.with).toEqual({ 'deadline-seconds': '270' })
+    expect(renderSetup?.with).toEqual({ 'deadline-seconds': '270' })
   })
 
   it('checks for existing automated commits on the Dependabot branch before dispatching', () => {

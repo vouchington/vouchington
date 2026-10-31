@@ -9,12 +9,10 @@ type Credentials = { apiKey: string; authToken: null } | { apiKey: null; authTok
  * only when the key is unset. Neither set is a recorded failure, never a crash: boot does not
  * require the key, and a run that needs it ends through the caller's client-unavailable path.
  */
-export function resolveAnthropicCredentials(
-  env: Record<string, string | undefined> = process.env,
-): Credentials {
-  const apiKey = env.ANTHROPIC_API_KEY?.trim()
+function resolveAnthropicCredentials(): Credentials {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
   if (apiKey) return { apiKey, authToken: null }
-  const authToken = env.ANTHROPIC_AUTH_TOKEN?.trim()
+  const authToken = process.env.ANTHROPIC_AUTH_TOKEN?.trim()
   if (authToken) return { apiKey: null, authToken }
   throw new ModelProviderError(
     'client-unavailable',

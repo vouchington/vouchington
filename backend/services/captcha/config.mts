@@ -22,7 +22,7 @@ export const turnstileConfig = new DynamicConfig({
   defaultFields: DEFAULTS,
 })
 
-export function getTurnstileConfig(): TurnstileConfig {
+function getTurnstileConfig(): TurnstileConfig {
   const fields = turnstileConfig.getFields()
   const result: TurnstileConfig = { ...DEFAULTS }
   for (const key of Object.keys(DEFAULTS) as Array<keyof TurnstileConfig>) {

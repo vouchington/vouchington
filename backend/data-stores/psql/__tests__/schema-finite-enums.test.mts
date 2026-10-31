@@ -137,6 +137,17 @@ const existingFiniteEnumColumns = [
     ],
   },
   {
+    table: 'topic_alias_category_mapping_reconciliations',
+    column: 'phase',
+    type: 'topic_alias_category_reconciliation_phases',
+    labels: [
+      'rss_item_categories',
+      'rss_item_text_categories',
+      'rss_feed_text_categories',
+      'completed',
+    ],
+  },
+  {
     table: 'users',
     column: 'moderation_email_cadence',
     type: 'moderation_email_cadences',

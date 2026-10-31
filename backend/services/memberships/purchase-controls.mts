@@ -5,23 +5,15 @@ export const membershipBillingControls = new DynamicConfig({
   key: 'membership-billing',
   fieldTypes: {
     stripe_enabled: 'boolean',
-    stripe_automatic_collision_resolution_enabled: 'boolean',
     apple_app_store_enabled: 'boolean',
-    apple_app_store_automatic_collision_resolution_enabled: 'boolean',
     google_play_enabled: 'boolean',
-    google_play_automatic_collision_resolution_enabled: 'boolean',
     microsoft_store_enabled: 'boolean',
-    microsoft_store_automatic_collision_resolution_enabled: 'boolean',
   },
   defaultFields: {
     stripe_enabled: false,
-    stripe_automatic_collision_resolution_enabled: false,
     apple_app_store_enabled: false,
-    apple_app_store_automatic_collision_resolution_enabled: false,
     google_play_enabled: false,
-    google_play_automatic_collision_resolution_enabled: false,
     microsoft_store_enabled: false,
-    microsoft_store_automatic_collision_resolution_enabled: false,
   },
 })
 

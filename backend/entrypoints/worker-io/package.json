@@ -33,7 +33,6 @@
     "@queues/email-digests": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
-    "@queues/kagi-smallweb": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/oauth-authorization-exchange": "workspace:^",

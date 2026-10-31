@@ -35,7 +35,6 @@ const SCHEDULED_JOB_API_ORDER = [
   'data-retention-cleanup-daily',
   'moderation-retention-cleanup-daily',
   'reconcile-vote-drift',
-  'kagi-smallweb-sync',
   'imports-recover-stalled',
   'topic-merge-recover-stalled',
   'dispatchFindYourFriends',

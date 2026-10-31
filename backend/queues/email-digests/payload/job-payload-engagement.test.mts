@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { communityCountKeys } from './job-payload-engagement.mts'
 import { parseEmailDigestJob } from './job-payload.mts'
+
+const communityCountKeys = [
+  'pendingPostReviews',
+  'pendingApplications',
+  'pendingReports',
+  'escalatedItems',
+  'suspectedBanEvaders',
+  'netMemberChange',
+  'totalActiveMembers',
+  'newDiscussionPosts',
+  'newReviewPosts',
+  'newDataPointPosts',
+  'topDiscussionReplyCount',
+  'activeMemberCount',
+  'activeMemberRate',
+] as const
 
 const address = { emailAddress: 'owner@example.test' }
 const moderationInput = {

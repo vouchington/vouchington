@@ -31,7 +31,7 @@ import { createUserDeletionRequest } from '@services/user-deletions/create'
 import {
   completeUserDeletionForTest,
   getUserDeletionRequestForTest,
-} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { providerTableConfigs } from '@services/oauth/providers'
 
 import {

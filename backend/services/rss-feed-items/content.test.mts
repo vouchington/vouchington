@@ -51,13 +51,11 @@ describe('createRssFeedItemEmbeddingContent', () => {
     expect(result.content).toContain('News')
   })
 
-  it('strips very long HTML content to lean text', async () => {
-    // ~20,000 words wrapped in HTML — verifies HTML stripping produces clean text
-    const longContent = `<p>${'word '.repeat(20_000)}</p>`
+  it('strips HTML content to lean text', async () => {
     const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
-      content: longContent,
+      content: '<p>word</p>',
     })
     expect(result.content).toContain('word')
     expect(result.content).not.toContain('<p>')

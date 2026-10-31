@@ -9,7 +9,7 @@ import {
   MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
 } from '../config.mts'
 
-export const membershipVerificationLeaseNamespace = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
+const membershipVerificationLeaseNamespace = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
 
 type LeaseClient = Awaited<ReturnType<typeof upsertValkeyClientByUrl>>
 let leaseClientPromise: Promise<LeaseClient> | undefined

@@ -54,5 +54,3 @@ export async function getUserRateLimitContext(userId: string): Promise<TrustTier
   }
   return { membershipPlan: null, membershipExpiresAt: null }
 }
-
-export { rateLimitContextCache }

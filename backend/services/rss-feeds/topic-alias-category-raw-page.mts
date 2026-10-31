@@ -1,0 +1,147 @@
+import type { TransactionQuery } from '@data-stores/psql/types'
+
+const NIL_UUID = '00000000-0000-0000-0000-000000000000'
+const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+
+export type AliasCategoryPhase =
+  | 'rss_item_categories'
+  | 'rss_item_text_categories'
+  | 'rss_feed_text_categories'
+  | 'completed'
+
+const NEXT_PHASE: Record<AliasCategoryPhase, AliasCategoryPhase> = {
+  rss_item_categories: 'rss_item_text_categories',
+  rss_item_text_categories: 'rss_feed_text_categories',
+  rss_feed_text_categories: 'completed',
+  completed: 'completed',
+}
+
+export type AliasCategoryCursor = {
+  phase: AliasCategoryPhase
+  sweep_upper_bound_item_id: string | null
+  sweep_upper_bound_feed_id: string | null
+  cursor_item_id: string | null
+  cursor_category_identity_id: string | null
+  cursor_feed_id: string | null
+}
+
+export type AliasCategoryRawRow = {
+  rss_feed_item_id?: string
+  rss_feed_id?: string
+  category_identity_id: string
+}
+
+export type AliasCategoryRawPage = {
+  rows: AliasCategoryRawRow[]
+  cursor: AliasCategoryCursor
+  hasMore: boolean
+}
+
+/** Page one indexed raw stream before mapping eligibility so an unchanged prefix cannot starve work. */
+export async function readAliasCategoryRawPage(
+  query: TransactionQuery,
+  aliasId: string,
+  alias: string,
+  cursor: AliasCategoryCursor,
+  pageSize: number,
+): Promise<AliasCategoryRawPage> {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1)
+    throw new RangeError('Invalid category page size')
+  if (cursor.phase === 'completed') return { rows: [], cursor, hasMore: false }
+
+  const upperItemId =
+    cursor.sweep_upper_bound_item_id ?? (await readUpperId(query, 'rss_feed_items'))
+  const upperFeedId = cursor.sweep_upper_bound_feed_id ?? (await readUpperId(query, 'rss_feeds'))
+  let rows: AliasCategoryRawRow[]
+  const textIdentityId =
+    cursor.phase === 'rss_item_categories' ? null : await readCategoryIdentityId(query, alias)
+  if (cursor.phase === 'rss_item_categories') {
+    const result = await query<AliasCategoryRawRow>(
+      `/* readAliasCategoryRawPage authoredItems */
+       SELECT rss_feed_item_id, category_identity_id
+       FROM rss_feed_item_categories
+       WHERE topic_alias_id = $1::uuid
+         AND rss_feed_item_id <= $2::uuid
+         AND (rss_feed_item_id, category_identity_id) <
+           ($3::uuid, $4::uuid)
+       ORDER BY rss_feed_item_id DESC, category_identity_id DESC
+       LIMIT $5::integer`,
+      [
+        aliasId,
+        upperItemId,
+        cursor.cursor_item_id ?? MAX_UUID,
+        cursor.cursor_category_identity_id ?? MAX_UUID,
+        pageSize + 1,
+      ],
+    )
+    rows = result.rows
+  } else if (cursor.phase === 'rss_item_text_categories') {
+    const result = await query<AliasCategoryRawRow>(
+      `/* readAliasCategoryRawPage textItems */
+       SELECT category.rss_feed_item_id, category.category_identity_id
+       FROM rss_feed_item_categories category
+       WHERE category.category_identity_id = $1::uuid
+         AND category.rss_feed_item_id <= $2::uuid
+         AND category.rss_feed_item_id > $3::uuid
+       ORDER BY category.rss_feed_item_id
+       LIMIT $4::integer`,
+      [textIdentityId, upperItemId, cursor.cursor_item_id ?? NIL_UUID, pageSize + 1],
+    )
+    rows = result.rows
+  } else {
+    const result = await query<AliasCategoryRawRow>(
+      `/* readAliasCategoryRawPage textFeeds */
+       SELECT category.rss_feed_id, category.category_identity_id
+       FROM rss_feed_categories category
+       WHERE category.category_identity_id = $1::uuid
+         AND category.rss_feed_id <= $2::uuid
+         AND category.rss_feed_id > $3::uuid
+       ORDER BY category.rss_feed_id
+       LIMIT $4::integer`,
+      [textIdentityId, upperFeedId, cursor.cursor_feed_id ?? NIL_UUID, pageSize + 1],
+    )
+    rows = result.rows
+  }
+  const selected = rows.slice(0, pageSize)
+  const moreInPhase = rows.length > pageSize
+  const last = selected.at(-1)
+  const nextPhase = moreInPhase ? cursor.phase : NEXT_PHASE[cursor.phase]
+  return {
+    rows: selected,
+    cursor: {
+      phase: nextPhase,
+      sweep_upper_bound_item_id: upperItemId,
+      sweep_upper_bound_feed_id: upperFeedId,
+      cursor_item_id: moreInPhase ? (last?.rss_feed_item_id ?? null) : null,
+      cursor_category_identity_id:
+        moreInPhase && cursor.phase === 'rss_item_categories'
+          ? (last?.category_identity_id ?? null)
+          : null,
+      cursor_feed_id: moreInPhase ? (last?.rss_feed_id ?? null) : null,
+    },
+    hasMore: nextPhase !== 'completed',
+  }
+}
+
+async function readCategoryIdentityId(
+  query: TransactionQuery,
+  categoryText: string,
+): Promise<string | null> {
+  const { rows } = await query<{ id: string }>(
+    `/* readAliasCategoryRawPage identity */
+     SELECT id FROM rss_category_identities
+     WHERE category_text = LOWER($1::text) LIMIT 1`,
+    [categoryText],
+  )
+  return rows[0]?.id ?? null
+}
+
+async function readUpperId(
+  query: TransactionQuery,
+  relation: 'rss_feed_items' | 'rss_feeds',
+): Promise<string> {
+  const { rows } = await query<{ id: string }>(
+    `/* readAliasCategoryRawPage upper */ SELECT id FROM ${relation} ORDER BY id DESC LIMIT 1`,
+  )
+  return rows[0]?.id ?? NIL_UUID
+}

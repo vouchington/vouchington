@@ -11,7 +11,7 @@ import {
   createTestUrlWithHostname,
 } from '@voucha/test-helpers/entities/urls'
 import { getTestPostCreationSourceUrlId } from '@voucha/test-helpers/entities/post-field-queries'
-import { getUrlByAny } from '@services/urls/get'
+import { getUrlByAnyCached } from '@services/urls/get'
 import * as crawlerEnqueues from '@queues/crawler/enqueues'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 
@@ -58,7 +58,7 @@ describe('create.link-post-crawl', () => {
   it('AC#3: enqueues a crawl for the canonical URL when a redirect raw url is resolved', async () => {
     const canonicalUrlId = await createTestUrlWithHostname()
     const { urlString } = await createTestRedirectUrl({ canonicalUrlId })
-    const sourceUrlId = (await getUrlByAny(urlString))!.id
+    const sourceUrlId = (await getUrlByAnyCached(urlString))!.id
     ownedUrlIds.push(canonicalUrlId, sourceUrlId)
 
     const post = await createPost(user, WEB_PROVENANCE, {

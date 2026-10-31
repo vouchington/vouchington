@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { getUrlByAny, getUrlByAnyCached, getUrlById } from './get.mts'
+import { getUrlByAnyCached, getUrlById } from './get.mts'
 import { addUrl } from './upsert.mts'
 import {
   createTestBlacklistSource,
@@ -11,8 +11,8 @@ import { caches } from '@services/entity-cache/caches'
 import { syncDomainsWithDatabase } from '../urls-domains-blacklist-sync/sync-db.mts'
 
 describe('get.generated', () => {
-  it('getUrlByAny returns null when URL does not exist', async () => {
-    const url = await getUrlByAny('https://nonexistent.example.com/test')
+  it('getUrlByAnyCached returns null when URL does not exist', async () => {
+    const url = await getUrlByAnyCached('https://nonexistent.example.com/test')
     expect(url).toBeNull()
   })
 
@@ -25,47 +25,47 @@ describe('get.generated', () => {
     expect(url?.url).toBe(href)
   })
 
-  it('getUrlByAny returns URL by UUID', async () => {
+  it('getUrlByAnyCached returns URL by UUID', async () => {
     const createdUrl = await addUrl(null, 'https://example.com/test-uuid')
-    const url = await getUrlByAny(createdUrl!.id)
+    const url = await getUrlByAnyCached(createdUrl!.id)
     expect(url).toBeDefined()
     expect(url!.id).toBe(createdUrl!.id)
     expect(url!.url).toBe('https://example.com/test-uuid')
   })
 
-  it('getUrlByAny returns URL by URL string', async () => {
+  it('getUrlByAnyCached returns URL by URL string', async () => {
     const createdUrl = await addUrl(null, 'https://example.com/test-string')
-    const url = await getUrlByAny('https://example.com/test-string')
+    const url = await getUrlByAnyCached('https://example.com/test-string')
     expect(url).toBeDefined()
     expect(url!.id).toBe(createdUrl!.id)
     expect(url!.url).toBe('https://example.com/test-string')
   })
 
-  it('getUrlByAny resolves fragment-bearing URL strings to the stored URL row', async () => {
+  it('getUrlByAnyCached resolves fragment-bearing URL strings to the stored URL row', async () => {
     const createdUrl = await addUrl(null, 'https://example.com/test-fragment')
-    const url = await getUrlByAny('https://example.com/test-fragment#section')
+    const url = await getUrlByAnyCached('https://example.com/test-fragment#section')
     expect(url).toBeDefined()
     expect(url!.id).toBe(createdUrl!.id)
     expect(url!.url).toBe('https://example.com/test-fragment')
   })
 
-  it('getUrlByAny throws error for invalid URL ID', async () => {
-    await expect(getUrlByAny('not-a-uuid-or-url')).rejects.toThrow(
+  it('getUrlByAnyCached throws error for invalid URL ID', async () => {
+    await expect(getUrlByAnyCached('not-a-uuid-or-url')).rejects.toThrow(
       'Invalid URL identifier: must be a UUID or a valid URL',
     )
   })
 
-  it('getUrlByAny returns null for missing non-public URL hostnames', async () => {
-    await expect(getUrlByAny('https://intranet/test')).resolves.toBeNull()
+  it('getUrlByAnyCached returns null for missing non-public URL hostnames', async () => {
+    await expect(getUrlByAnyCached('https://intranet/test')).resolves.toBeNull()
   })
 
-  it('getUrlByAny resolves legacy URL rows with non-public hostnames', async () => {
+  it('getUrlByAnyCached resolves legacy URL rows with non-public hostnames', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostname = `legacy-${random}.local`
     const hostnameId = await insertTestUrlHostname({ hostname })
     const urlId = await insertTestUrl({ url: `https://${hostname}/test`, hostnameId })
 
-    const url = await getUrlByAny(`https://${hostname}/test#section`)
+    const url = await getUrlByAnyCached(`https://${hostname}/test#section`)
     expect(url).toBeDefined()
     expect(url!.id).toBe(urlId)
     expect(url!.url).toBe(`https://${hostname}/test`)
@@ -80,10 +80,10 @@ describe('get.generated', () => {
       name: `cached-url-${crypto.randomUUID().replaceAll(/[0-9]/g, 'a')}`,
       url: 'https://example.com/cached-url-policy.txt',
     })
+    const rawUrl = await getUrlById(url.id)
+    if (!rawUrl) throw new Error('Expected persisted URL fixture')
+    await caches.urls.set(url.id, rawUrl)
     try {
-      const rawUrl = await getUrlByAny(url.id)
-      if (!rawUrl) throw new Error('Expected persisted URL fixture')
-      await caches.urls.set(url.id, rawUrl)
       expect((await getUrlByAnyCached(url.id))?.hostname.is_blocked).toBe(false)
       const cachedUrl = await caches.urls.get(url.id)
       expect(cachedUrl).not.toBeNull()

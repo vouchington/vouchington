@@ -2,7 +2,7 @@ import { test, expect } from '../../helpers/test.mts'
 import { loginAsTestUser as loginAsAdmin } from '../../helpers/auth.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
-// Seeded by backend/scripts/seeds/playwright-test-data/rss-feed-categories.mts
+// Seeded by backend/test-helpers/playwright-seed-rss-categories.mts
 const PENDING_CATEGORY = 'credit-cards-pw-test'
 const REJECTED_CATEGORY = 'news-pw-test'
 

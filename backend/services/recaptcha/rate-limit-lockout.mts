@@ -14,7 +14,7 @@ export async function isRecaptchaLockedOut(): Promise<boolean> {
   return ttl > 0
 }
 
-export async function setRecaptchaLockedOut(): Promise<void> {
+async function setRecaptchaLockedOut(): Promise<void> {
   await rateLimiterValkeyClient.set(LOCKOUT_KEY, '1', {
     expiry: { type: TimeUnit.Seconds, count: secondsUntilEndOfUtcDay() },
   })
@@ -25,7 +25,7 @@ export function setRecaptchaLockedOutBackground(): void {
   setRecaptchaLockedOut().catch(onError)
 }
 
-export function secondsUntilEndOfUtcDay(now: Date = new Date()): number {
+function secondsUntilEndOfUtcDay(now = new Date()): number {
   const endOfDayMs = Date.UTC(
     now.getUTCFullYear(),
     now.getUTCMonth(),

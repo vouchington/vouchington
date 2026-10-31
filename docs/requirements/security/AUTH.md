@@ -9,18 +9,19 @@ Prerequisites:
 - Dev server running (`./dev/tmux`)
 - Test accounts for Facebook, X, GitHub, and LinkedIn
 - The provider credentials under test configured in `~/voucha.env`
-- The provider and client mode enabled under the `oauth-authorization-broker` dynamic config key;
-  every provider/mode field defaults to `false`
-- For legacy Facebook fallback testing only, `NEXT_PUBLIC_META_APP_ID` set in `web/.env.local`
+- Web uses the provider SDK/popup flow by default. To test the broker, enable the provider and client
+  mode under the `oauth-authorization-broker` dynamic config key; every provider/mode field defaults
+  to `false`
+- For Facebook web sign-in, `NEXT_PUBLIC_FACEBOOK_APP_ID` set in `web/.env.local`
 
 ---
 
 ### Login page (`/login`)
 
 - [ ] Page shows the email input and one button for each server-advertised provider
-- [ ] A broker-enabled provider does not depend on a browser SDK or runtime public client ID
-- [ ] Disabling a provider's broker field removes its broker button; Facebook may use its existing
-      SDK flow only when the legacy public configuration remains present
+- [ ] Web providers use the SDK/popup flow; a provider whose web broker field is enabled does not
+      depend on a browser SDK or runtime public client ID
+- [ ] Disabling a provider's web broker field returns that provider to its SDK/popup flow
 
 ### Brokered provider login flow
 
@@ -185,5 +186,5 @@ reconnecting permits only newly observed friendships to appear.
 - [Signed-out actions](../navigation/SIGNED_OUT_ACTIONS.md) — anonymous CTA behavior
 - [Web rules](../../../web/AGENTS.md) — auth UI and client data-loading conventions
 - [Backend rules](../../../backend/AGENTS.md) — auth service and API conventions
-- [OAuth broker rollout](../../operations/oauth-authorization-broker-rollout.md) — rollout,
-  rollback, and recovery verification
+- [OAuth broker switches](../../operations/oauth-authorization-broker-rollout.md) — per-provider
+  method switches, rollback, and recovery verification

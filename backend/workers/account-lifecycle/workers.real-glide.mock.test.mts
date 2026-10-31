@@ -22,7 +22,7 @@ import {
 import {
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
-} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 // A relative import: @workers/background depends on this package, so a package dependency would cycle.
 import { createBackgroundProcessor } from '../background/processors.mts'
 import { accountLifecycleHandlers } from './workers.mts'

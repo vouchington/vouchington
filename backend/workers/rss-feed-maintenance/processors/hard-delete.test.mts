@@ -14,7 +14,7 @@ import { createRssFeed } from '@services/rss-feeds/create'
 import { hardDeleteRssFeedById } from '@services/rss-feeds/delete'
 import { hardDeleteRssFeedChildPage } from '@services/rss-feeds/hard-delete-child-page'
 import { hardDeleteRssFeedSourcePage } from '@services/rss-feeds/hard-delete-source-page'
-import { RSS_FEED_HARD_DELETE_CHILD_PHASES } from '@queues/rss-feed-maintenance/types'
+import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 import { processRecoverRssFeedHardDeletes } from '@services/rss-feeds/hard-delete-recovery'
 import {
   getPostPublicationWorkLimit,
@@ -77,7 +77,7 @@ describe('RSS feed deletion job chain', () => {
       removed: 0,
       hasMore: false,
     })
-    for (const phase of RSS_FEED_HARD_DELETE_CHILD_PHASES)
+    for (const phase of rssFeedHardDeleteChildPhases())
       await processCurrentChildPage(feed.id, phase)
     await processFinalizeHardDeleteRssFeed({ rssFeedId: feed.id })
     expect(await readTestRssFeedDeleteMarker(feed.id)).toBeNull()
@@ -161,13 +161,28 @@ describe('RSS feed deletion job chain', () => {
   })
 })
 
+/** Every production child phase, so a new phase fails this file at typecheck. */
+function rssFeedHardDeleteChildPhases(): RssFeedHardDeleteChildPhase[] {
+  const phases = {
+    setting_changes: true,
+    crawls: true,
+    community_list_feeds: true,
+    curated_asides: true,
+    user_import_requests: true,
+    feed_categories: true,
+    canonical_redirects: true,
+    user_import_rows: true,
+  } as const satisfies Record<RssFeedHardDeleteChildPhase, true>
+  return Object.keys(phases) as RssFeedHardDeleteChildPhase[]
+}
+
 async function processCurrentSourcePage(rssFeedId: string): Promise<void> {
   const [page] = await listHardDeleteRssFeedNextPages([rssFeedId])
   await processHardDeleteRssFeedSourcePage({ rssFeedId, pageCursor: page?.cursor ?? rssFeedId })
 }
 async function processCurrentChildPage(
   rssFeedId: string,
-  phase: (typeof RSS_FEED_HARD_DELETE_CHILD_PHASES)[number],
+  phase: RssFeedHardDeleteChildPhase,
 ): Promise<void> {
   const [page] = await listHardDeleteRssFeedNextPages([rssFeedId])
   await processHardDeleteRssFeedChildPage({

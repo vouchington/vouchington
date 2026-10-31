@@ -35,7 +35,7 @@ describe('operational job through the registered admin SDK', () => {
       const name = 'run_operational_job'
       expect(
         await catalog.callAndValidate(name, 'scheduled', {
-          id: 'kagi-smallweb-sync',
+          id: 'imports-recover-stalled',
         }),
       ).toBeDefined()
       expect([name]).toEqual([...sdkMergedSuccessNames.operationalFixture])

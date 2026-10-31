@@ -1671,6 +1671,13 @@
 - `monthly`
 - `annually`
 
+## `topic_alias_category_reconciliation_phases`
+
+- `rss_item_categories`
+- `rss_item_text_categories`
+- `rss_feed_text_categories`
+- `completed`
+
 ## `topic_claim_verification_methods`
 
 - `dns_txt`

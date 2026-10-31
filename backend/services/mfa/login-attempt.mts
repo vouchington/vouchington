@@ -12,7 +12,7 @@ const LOGIN_ATTEMPT_TTL_SECONDS = 300 // 5 minutes
 const KEY_PREFIX = 'mfa-login-attempt'
 const FAILED_ATTEMPT_THRESHOLD = 6
 
-export const failedMfaLoginAttemptRateLimiter = new RateLimiter({
+const failedMfaLoginAttemptRateLimiter = new RateLimiter({
   prefix: 'mfa-login-attempt-failures',
   ttlSeconds: LOGIN_ATTEMPT_TTL_SECONDS,
 })

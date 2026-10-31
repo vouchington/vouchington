@@ -42,14 +42,6 @@ test.describe('Preferences Page', () => {
     await expect(page).toHaveURL('/login')
   })
 
-  test('theme select changes to dark and adds .dark class to html', async ({ page }) => {
-    const themeSelect = page.getByTestId('preferences-theme-trigger')
-    await themeSelect.press(' ')
-    await page.getByTestId('preferences-theme-option-dark').click()
-
-    await expect(page.locator('html')).toHaveClass(/dark/)
-  })
-
   test('theme select changes to light and removes .dark class from html', async ({ page }) => {
     const themeSelect = page.getByTestId('preferences-theme-trigger')
     await themeSelect.press(' ')
@@ -106,9 +98,5 @@ test.describe('Preferences Page', () => {
       'data-state',
       'checked',
     )
-  })
-
-  test('page heading shows Display', async ({ page }) => {
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Display')
   })
 })

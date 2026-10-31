@@ -5,6 +5,8 @@ import {
   releaseStoryPostRelatedUrlProjectionWork,
 } from '@services/stories/story-post-related-url-projection-work'
 import { reconcileStoryPostRelatedUrlProjection } from '@services/stories/story-post-related-url-projection'
+import { registerScenarioContract } from '../plan-expectations.mts'
+import { runAndCapture } from '../run-support.mts'
 import {
   seedStoryProjectionDispatcherWitness,
   removeStoryProjectionDispatcherWitness,
@@ -95,5 +97,56 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
     })
   } finally {
     await removeStoryProjectionDispatcherWitness(fixture)
+  }
+
+  const { rows: planStories } = await write<{ id: string }>(
+    `/* seedStoryProjectionClaimPlan:story */ INSERT INTO stories (title)
+     VALUES ('EXPLAIN global claim') RETURNING id`,
+  )
+  const planStoryId = planStories[0]!.id
+  try {
+    await write(
+      `/* seedStoryProjectionClaimPlan:jobs */
+       INSERT INTO story_post_related_url_projection_jobs
+         (post_id, story_id, lease_token, leased_at, lease_expires_at, last_claimed_at)
+       SELECT id, $1::uuid,
+         CASE WHEN ordinal <= 1900 THEN uuidv7() END,
+         CASE WHEN ordinal <= 1900 THEN NOW() END,
+         CASE WHEN ordinal <= 1900 THEN NOW() + INTERVAL '1 day' END,
+         CASE WHEN ordinal <= 1900 THEN NOW() - INTERVAL '1 hour' END
+       FROM (SELECT id, row_number() OVER (ORDER BY id) AS ordinal
+             FROM posts ORDER BY id LIMIT 2000) candidates`,
+      [planStoryId],
+    )
+    await write(
+      `/* seedStoryProjectionClaimPlan:analyze */ ANALYZE story_post_related_url_projection_jobs`,
+    )
+    registerScenarioContract('story-projection-global-claim', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: ['idx_story_post_relate_url_project_jobs__last_claimed_at_post_id'],
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'story_post_related_url_projection_jobs', max: 4 },
+      ],
+      seededRows: { story_post_related_url_projection_jobs: 2000 },
+    })
+    await runAndCapture(
+      'story-projection-global-claim',
+      claimStoryPostRelatedUrlProjectionWork,
+      undefined,
+      'claimStoryPostRelatedUrlProjection',
+    )
+  } finally {
+    await write(
+      `/* seedStoryProjectionClaimPlan:removeJobs */
+       DELETE FROM story_post_related_url_projection_jobs WHERE story_id = $1::uuid`,
+      [planStoryId],
+    )
+    await write(
+      `/* seedStoryProjectionClaimPlan:removeStory */ DELETE FROM stories WHERE id = $1::uuid`,
+      [planStoryId],
+    )
   }
 }

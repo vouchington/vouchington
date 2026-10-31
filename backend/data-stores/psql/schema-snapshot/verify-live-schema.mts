@@ -16,12 +16,10 @@ const __dirname = import.meta.dirname
  * treating the recorded version as a byte-for-byte equality requirement between "live" and
  * "committed" produces permanent, unfixable false positives rather than catching real drift.
  * Extension *presence* still participates in the comparison below -- only `version` is normalized
- * away. Exported for direct unit coverage in `verify-live-schema.test.mts`: this is pure logic
- * with no live-DB dependency, unlike `verifyLiveSchemaMatchesSnapshot` below.
+ * away. `verifyLiveSchemaMatchesSnapshot` is the production comparison. The live schema test
+ * covers version-only drift and still compares extension presence.
  */
-export function normalizeExtensionVersionsForLiveComparison(
-  snapshot: SchemaSnapshot,
-): SchemaSnapshot {
+function normalizeExtensionVersionsForLiveComparison(snapshot: SchemaSnapshot): SchemaSnapshot {
   return {
     ...snapshot,
     extensions: Object.fromEntries(
@@ -64,19 +62,19 @@ export function normalizeExtensionVersionsForLiveComparison(
    docs/development/reference-tests-schema-checks.md */
 export async function verifyLiveSchemaMatchesSnapshot({
   root = __dirname,
-}: { root?: string } = {}): Promise<void> {
+}: { root?: string } = {}): Promise<{ live: SchemaSnapshot; committed: SchemaSnapshot }> {
   const schemaJsonPath = path.join(root, 'schema.json')
   const [catalog, committedJson] = await Promise.all([
     readSchemaCatalog(),
     readFile(schemaJsonPath, 'utf8'),
   ])
-  const live = stableStringify(
-    normalizeExtensionVersionsForLiveComparison(buildSchemaSnapshot(catalog)),
+  const liveSnapshot = normalizeExtensionVersionsForLiveComparison(buildSchemaSnapshot(catalog))
+  const committedSnapshot = normalizeExtensionVersionsForLiveComparison(
+    JSON.parse(committedJson) as SchemaSnapshot,
   )
-  const committed = stableStringify(
-    normalizeExtensionVersionsForLiveComparison(JSON.parse(committedJson) as SchemaSnapshot),
-  )
-  if (live === committed) return
+  const live = stableStringify(liveSnapshot)
+  const committed = stableStringify(committedSnapshot)
+  if (live === committed) return { live: liveSnapshot, committed: committedSnapshot }
 
   throw new Error(
     'The live PostgreSQL schema does not match the committed schema snapshot ' +

@@ -117,12 +117,6 @@ describe('unfurl referral links processor', () => {
       processUnfurlReferralLinksJob(makeJob('crawl.remove_unfurled_children_for_user', {})),
     ).rejects.toThrow('Remove unfurled children for user job .userId is required')
   })
-
-  it('rejects an unknown job name outside the dispatcher ordering key', async () => {
-    await expect(processUnfurlReferralLinksJob(makeJob('unexpected', {}))).rejects.toThrow(
-      'Unfurl referral links job unexpected not found',
-    )
-  })
 })
 
 function randomSlug(label: string): string {

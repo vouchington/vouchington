@@ -15,7 +15,7 @@ export const VOTE_AGGREGATION_DOMAIN = defineBackgroundDomain({
   workerConcurrency: 10,
 })
 
-export const ELECTION_LANES = [
+const ELECTION_LANES = [
   'topic',
   'hostname',
   'agent_moderation',

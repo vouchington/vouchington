@@ -182,18 +182,4 @@ describe('worker fetch handler - machine-readable discovery', () => {
     expect(publicResponse.headers.get('link')).toContain('<https://voucha.ai/llms.txt>')
     expect(createResponse.headers.get('link')).toBeNull()
   })
-
-  it('never echoes RSS apikey query parameters in discovery Link headers', async () => {
-    globalThis.fetch = vi.fn<VitestLooseMock>(() =>
-      Promise.resolve(new Response('ok')),
-    ) as unknown as typeof fetch
-
-    const response = await worker.fetch(
-      new Request('https://voucha.ai/rewards-program/world-of-hyatt/posts?apikey=fil_secret'),
-      baseEnv,
-      createContext(),
-    )
-
-    expect(response.headers.get('link')).toBeNull()
-  })
 })

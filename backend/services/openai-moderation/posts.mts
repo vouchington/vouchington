@@ -125,7 +125,7 @@ export async function isPostOpenAIModerationUpToDate(
   return rows.length > 0
 }
 
-export async function findExistingPostOpenAIModeration(
+async function findExistingPostOpenAIModeration(
   contentSha256: Buffer,
   options: OpenAIModerationReadOptions = {},
 ): Promise<{ results: PersistedOpenAIModerationResults; flagged: boolean } | null> {

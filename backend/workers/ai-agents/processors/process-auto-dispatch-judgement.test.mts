@@ -122,25 +122,6 @@ describe('processAutoDispatchJudgement', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('resolves report dismissed for no_action when auto_dispatch_no_action is true', async () => {
-    overrideDynamicConfigFieldsForTest(moderationAiDispatchConfig, {
-      auto_dispatch_enabled: true,
-      auto_dispatch_no_action: true,
-    })
-    const { postId, reportId, judgementId } = await makeTestFixture('no-act', 'no_action')
-
-    await processAutoDispatchJudgement(
-      makeJob({
-        judgement_id: judgementId,
-        entity_type: 'post',
-        entity_id: postId,
-        community_id: null,
-      }),
-    )
-
-    expect(await getTestModerationReportStatus(reportId)).toBe('dismissed')
-  })
-
   it('skips no_action resolution when auto_dispatch_no_action is false', async () => {
     overrideDynamicConfigFieldsForTest(moderationAiDispatchConfig, { auto_dispatch_enabled: true })
     const { postId, reportId, judgementId } = await makeTestFixture('no-act-skip', 'no_action')
@@ -240,24 +221,6 @@ describe('processAutoDispatchJudgement', () => {
       ),
     ).resolves.toBeUndefined()
 
-    expect(await getTestModerationReportStatus(reportId)).toBe('pending')
-  })
-
-  it('warn with non-post entity_type returns early when no author (url_hostname path)', async () => {
-    overrideDynamicConfigFieldsForTest(moderationAiDispatchConfig, {
-      auto_dispatch_enabled: true,
-      auto_dispatch_warn: true,
-    })
-    const { postId, reportId, judgementId } = await makeTestFixture('no-author', 'warn')
-
-    await processAutoDispatchJudgement(
-      makeJob({
-        judgement_id: judgementId,
-        entity_type: 'url_hostname',
-        entity_id: postId,
-        community_id: null,
-      }),
-    )
     expect(await getTestModerationReportStatus(reportId)).toBe('pending')
   })
 

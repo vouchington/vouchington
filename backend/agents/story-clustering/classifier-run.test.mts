@@ -12,7 +12,6 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-fixture'
 import { softDeleteRssFeedItemForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-edits'
 import { getSubjectClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
-import { STORY_CLUSTERING_NONE_KEY, STORY_CLUSTERING_QUESTION_ID } from './bindings.mts'
 import { executeStoryClusteringRun } from './execute.mts'
 import { buildStoryClusteringRunInput } from './run-input.mts'
 
@@ -60,12 +59,9 @@ describe('executeStoryClusteringRun (real PG)', () => {
     const { questions } = decide.mock.calls[0]![0]
     expect(questions).toHaveLength(1)
     expect(questions[0]).toMatchObject({
-      id: STORY_CLUSTERING_QUESTION_ID,
+      id: 'story-clustering',
       type: 'choice',
-      criteria: [
-        ...neighbors.map(neighbor => `rss_feed_item:${neighbor.itemId}`),
-        STORY_CLUSTERING_NONE_KEY,
-      ],
+      criteria: [...neighbors.map(neighbor => `rss_feed_item:${neighbor.itemId}`), 'none'],
     })
   })
 
@@ -111,7 +107,7 @@ describe('executeStoryClusteringRun (real PG)', () => {
 
     const request = decide.mock.calls[0]![0]
     expect(request.questions[0]).toMatchObject({
-      criteria: [`story:${story.id}`, STORY_CLUSTERING_NONE_KEY],
+      criteria: [`story:${story.id}`, 'none'],
     })
     expect(request.state).toContain(`Candidate key: story:${story.id}`)
     expect(request.state).toContain('Content unavailable')

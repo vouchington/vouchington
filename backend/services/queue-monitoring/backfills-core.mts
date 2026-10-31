@@ -37,10 +37,8 @@ import { enqueueRecoverUserDeletions } from '@queues/account-lifecycle/enqueues/
 import { enqueueRecoverStripeEvents } from '@queues/memberships/enqueues'
 import { enqueueBackfillCrawlEmbeds } from '@queues/crawl-embeds/enqueues'
 import { BACKGROUND_BACKFILLS } from './backfills-background.mts'
-import { POST_PUBLICATION_BACKFILLS } from './backfills-post-publication.mts'
 
 export const CORE_BACKFILLS: BackfillEntry[] = [
-  ...POST_PUBLICATION_BACKFILLS,
   ...BACKGROUND_BACKFILLS,
   {
     id: 'classifier-runs',

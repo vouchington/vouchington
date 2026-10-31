@@ -14,7 +14,7 @@ import {
 } from '@voucha/test-helpers'
 import { ADDED_DOMAINS_TABLE } from './sync-cache.mts'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
-import { BLOCKLIST_DIFF_DIRECTORY_PREFIX, syncDomainsWithDatabase } from './sync-db.mts'
+import { syncDomainsWithDatabase } from './sync-db.mts'
 import { stageBothDiffFiles } from './membership-diff-stage.mts'
 import { sourceMembershipOrderSql } from './membership-copy-sql.mts'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
@@ -170,7 +170,7 @@ function interruptedDownload(): Response {
 }
 
 function diffDirectories(): string[] {
-  return readdirSync(tmpdir()).filter(name => name.startsWith(BLOCKLIST_DIFF_DIRECTORY_PREFIX))
+  return readdirSync(tmpdir()).filter(name => name.startsWith(`blocklist-diff-${process.pid}-`))
 }
 
 function sourceNameSuffix(): string {

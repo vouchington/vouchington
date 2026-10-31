@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  DEFAULT_RECONCILIATION_INTERVAL_SECONDS,
-  getEntityListenerReconciliationIntervalSeconds,
-} from './config.mts'
+import { getEntityListenerReconciliationIntervalSeconds } from './config.mts'
 
 describe('entity listener reconciliation config', () => {
   const original = process.env.ENTITY_LISTENER_RECONCILIATION_INTERVAL_SECONDS
@@ -14,9 +11,7 @@ describe('entity listener reconciliation config', () => {
 
   it('defaults to hourly and accepts configured minute multiples', () => {
     delete process.env.ENTITY_LISTENER_RECONCILIATION_INTERVAL_SECONDS
-    expect(getEntityListenerReconciliationIntervalSeconds()).toBe(
-      DEFAULT_RECONCILIATION_INTERVAL_SECONDS,
-    )
+    expect(getEntityListenerReconciliationIntervalSeconds()).toBe(3600)
     process.env.ENTITY_LISTENER_RECONCILIATION_INTERVAL_SECONDS = '1800'
     expect(getEntityListenerReconciliationIntervalSeconds()).toBe(1800)
   })

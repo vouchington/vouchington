@@ -27,7 +27,6 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
-    "@data-stores/valkey-core": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

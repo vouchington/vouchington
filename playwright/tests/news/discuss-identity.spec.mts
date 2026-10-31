@@ -10,11 +10,11 @@ import {
 } from '../../../backend/test-helpers/index.mts'
 
 // Seeded RSS feed that has items visible on /news and /communities/:slug/news.
-// Source: backend/scripts/seeds/playwright-test-data/feeds.mts
+// Source: backend/test-helpers/playwright-seed-feeds.mts
 const SEEDED_RSS_FEED_ID = '019c64e6-f8c0-7000-8000-000000000001'
 
 // Seeded community used across Playwright coverage tests.
-// Source: backend/scripts/seeds/playwright-test-data/core-memberships-and-communities.mts
+// Source: backend/test-helpers/playwright-seed-memberships-and-communities.mts
 const PLAYWRIGHT_COMMUNITY_ID = '019c0000-0000-7000-8000-000000000010'
 const PLAYWRIGHT_COMMUNITY_SLUG = 'playwright-popular-community'
 

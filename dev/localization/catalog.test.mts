@@ -8,7 +8,7 @@ import {
   resolveLocalizationBatch,
 } from '@vouchington/localization-compiler'
 import { serializeCatalogTable } from '@vouchington/localization'
-import { compileCatalogDirectory } from '../../backend/services/localization/compile-catalog.mts'
+import { runCompileCli } from '../../backend/services/localization/compile-catalog.mts'
 import { runCatalogCli } from './catalog.mts'
 
 async function withTemp<T>(prefix: string, run: (directory: string) => Promise<T>): Promise<T> {
@@ -170,7 +170,7 @@ describe('normalized catalog commands', () => {
       const source = join(directory, 'source')
       cpSync('localization/normalized-fixture', source, { recursive: true })
       const output = join(directory, 'catalog.sqlite')
-      await compileCatalogDirectory(source, output)
+      await runCompileCli(['--source', source, '--output', output])
       const database = openLocalizationDatabase(output)
       try {
         const batch = resolveLocalizationBatch(database, {

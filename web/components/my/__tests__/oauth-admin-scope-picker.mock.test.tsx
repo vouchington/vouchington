@@ -4,7 +4,7 @@ import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { ScopePicker } from '../api-keys-manager/scope-picker'
 import { scopeResourceGroups } from '../api-keys-manager/scope-selection'
-import type { ScopeCatalogResponse } from '@/types/scopes'
+import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
 import catalogFixture from '../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
 let translate!: (key: MessageKey, params?: Record<string, unknown>) => string
@@ -37,5 +37,33 @@ describe('OAuth administrator scope picker', () => {
     expect(onToggle).toHaveBeenLastCalledWith('moderation:approve', true)
     fireEvent.click(screen.getByRole('checkbox', { name: 'site-operations:config Write' }))
     expect(onToggle).toHaveBeenLastCalledWith('site-operations:config', true)
+  })
+
+  it('includes adjacent permission helper text in the checkbox target and description', () => {
+    const entry: ScopeCatalogEntry = {
+      scope: 'financial-profile:read',
+      resource: 'financial-profile',
+      action: 'read',
+      audience: 'user',
+      description_key: 'financial_profile_read',
+      requires: null,
+      surfaces: ['api-key'],
+    }
+    const onToggle = vi.fn<(scope: string, checked: boolean) => void>()
+    const helperText =
+      'Read your credit score range, stated income range, total credit limit and years of credit history.'
+    render(
+      <ScopePicker
+        idPrefix='api-key'
+        groups={scopeResourceGroups([entry], 'api-key', ['user'])}
+        selected={[]}
+        onToggle={onToggle}
+      />,
+    )
+
+    const checkbox = screen.getByRole('checkbox', { name: 'financial-profile Read' })
+    expect(checkbox).toHaveAccessibleDescription(helperText)
+    fireEvent.click(screen.getByText(helperText))
+    expect(onToggle).toHaveBeenCalledWith('financial-profile:read', true)
   })
 })

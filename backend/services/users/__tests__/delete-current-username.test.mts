@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
 import { createTestUser, updateUserUsername } from '@voucha/test-helpers'
-import { getUserDeletionCompletionAuditForTest } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
+import { getUserDeletionCompletionAuditForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { deleteUser } from '../delete.mts'
 
 describe('deleteUser durable cleanup identity', () => {

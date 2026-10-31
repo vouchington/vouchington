@@ -6,8 +6,7 @@ import { decodeCursor, buildPageInfo, isScoreCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanManageRssFeedCategories } from './authorization.mts'
-import { createTopicAliases } from '@services/topics/aliases'
-import { backfillCategoriesForTopicAliases } from './backfill-categories-for-topic-aliases.mts'
+import { assignCategoryInTransaction } from './assign-unmapped-category.mts'
 import { registerRssCategoryIdentities } from './category-identities.mts'
 
 export type UnmappedCategoryStatus = 'pending' | 'rejected' | 'all'
@@ -187,14 +186,4 @@ export async function assignRssFeedItemCategoryToTopic(
     )
     return { updated }
   })
-}
-
-async function assignCategoryInTransaction(
-  currentUserId: string,
-  topicId: string,
-  category: string,
-  query: TransactionQuery,
-) {
-  await createTopicAliases(topicId, [category], { query, revisedById: currentUserId })
-  return backfillCategoriesForTopicAliases(topicId, { query })
 }

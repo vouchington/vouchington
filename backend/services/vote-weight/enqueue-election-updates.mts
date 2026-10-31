@@ -145,7 +145,7 @@ export async function enqueueElectionUpdatePageForUser(
   }
 }
 
-export function getBulkEnqueuedJobIds(result: unknown): string[] {
+function getBulkEnqueuedJobIds(result: unknown): string[] {
   if (!Array.isArray(result)) {
     throw new Error('Expected election bulk enqueue to return an array of persisted jobs')
   }

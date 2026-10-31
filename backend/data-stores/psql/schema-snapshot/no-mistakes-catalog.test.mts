@@ -4,13 +4,11 @@ import { join } from 'node:path'
 import { format } from 'oxfmt'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { stableStringify } from '@modules/utils/stable-stringify'
-import {
-  NO_MISTAKES_CATALOG_DATABASE,
-  NO_MISTAKES_CATALOG_FILE,
-  readNoMistakesCatalog,
-  writeNoMistakesCatalog,
-} from './no-mistakes-catalog.mts'
+import { readNoMistakesCatalog, writeNoMistakesCatalog } from './no-mistakes-catalog.mts'
 import type { PostgresCatalog, PostgresCatalogOptions } from 'no-mistakes'
+
+const NO_MISTAKES_CATALOG_FILE = 'no-mistakes-catalog.json'
+const NO_MISTAKES_CATALOG_DATABASE = 'voucha'
 
 const catalog: PostgresCatalog = {
   formatVersion: 2,
@@ -142,25 +140,5 @@ describe('no-mistakes catalog', () => {
     await expect(
       writeNoMistakesCatalog({ catalog, root, format: formatForTest, check: true }),
     ).rejects.toThrow('Unsafe generated PostgreSQL schema snapshot path')
-  })
-
-  it('keeps the committed catalog canonical, complete, and database-name independent', async () => {
-    const committed = JSON.parse(
-      await readFile(new URL(`./${NO_MISTAKES_CATALOG_FILE}`, import.meta.url), 'utf8'),
-    ) as PostgresCatalog
-
-    expect(committed).toMatchObject({
-      coverage: 'complete',
-      schema: 'public',
-      currentDatabase: NO_MISTAKES_CATALOG_DATABASE,
-    })
-    await expect(
-      writeNoMistakesCatalog({
-        catalog: committed,
-        root: new URL('.', import.meta.url).pathname,
-        format: formatForTest,
-        check: true,
-      }),
-    ).resolves.toBeUndefined()
   })
 })

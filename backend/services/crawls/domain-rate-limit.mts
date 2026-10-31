@@ -47,7 +47,7 @@ export function normalizeDomainRateLimitMs(retryAfterMs?: number): number {
   return retryAfterMs > 0 ? retryAfterMs : IMMEDIATE_RETRY_RATE_LIMIT_MS
 }
 
-export function normalizeDomainRateLimitScriptResult(result: unknown): number {
+function normalizeDomainRateLimitScriptResult(result: unknown): number {
   const lockMs = Number(String(result))
   if (!Number.isFinite(lockMs)) {
     throw new Error(`set-domain-rate-limit returned invalid TTL: ${String(result)}`)

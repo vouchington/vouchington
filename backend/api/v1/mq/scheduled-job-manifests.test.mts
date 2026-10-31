@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { validateScheduledJobManifests } from '../../../modules/scheduled-job-manifest/validation.mts'
 import { allLiveWorkerQueueNames } from '@modules/worker-queue-inventory'
-import { BLOOM_FILTER_REBUILD_INPUTS } from '@queues/bloom-filters/types'
+import type { BloomFilterRebuildInput } from '@queues/bloom-filters/types'
 import { enqueueGlideMqStats } from '@queues/heartbeat/enqueues'
 import {
   PRIORITY_DEFAULT,
@@ -9,10 +9,23 @@ import {
   RSS_FEED_CRAWL_TIERS_VIEW,
 } from '@queues/psql/config'
 import { psql } from '@queues/psql/queues'
-import { PSQL_SCHEDULED_ADMIN_JOB_TYPES } from '@queues/psql/types'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
 import { SCHEDULED_JOBS_REGISTRY } from '@services/queue-monitoring/scheduled-jobs-registry'
+
+const PSQL_SCHEDULED_ADMIN_JOB_TYPES = ['createPartitions', 'cleanupPartitions'] as const
+
+/** Every production rebuild input, so a new BloomFilterRebuildInput fails this file at typecheck. */
+function bloomFilterRebuildInputs(): BloomFilterRebuildInput[] {
+  const inputs = {
+    'url-blocklist': true,
+    'email-blocklist': true,
+    embedding: true,
+    'entity-cache': true,
+    'api-keys': true,
+  } as const satisfies Record<BloomFilterRebuildInput, true>
+  return Object.keys(inputs) as BloomFilterRebuildInput[]
+}
 
 const EXPECTED_SCHEDULED_JOBS = [
   'background-cpu/bedrock-embeddings:backlog-dispatcher',
@@ -46,7 +59,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/hostnameBlockingRecovery',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
-  'background/kagi-smallweb-sync',
   'background/imports-recover-stalled',
   'memberships/dispatchMembershipPauseCollection',
   'memberships/dispatchMembershipRefundReconciliation',
@@ -135,7 +147,7 @@ describe('scheduled job manifest catalog', () => {
   it('references only live operator inputs', () => {
     const backfills = new Set(BACKFILL_REGISTRY.map(backfill => backfill.id))
     const psql = new Set<string>(PSQL_SCHEDULED_ADMIN_JOB_TYPES)
-    const blooms = new Set<string>(BLOOM_FILTER_REBUILD_INPUTS)
+    const blooms = new Set<string>(bloomFilterRebuildInputs())
     const valid = SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
       manifest.jobs.flatMap(job => job.operatorSurfaces),
     ).map(surface => {

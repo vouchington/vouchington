@@ -3080,11 +3080,11 @@
   "web.admin.mq.scheduled-jobs.default": {
     "jobs": [
       {
-        "description": "Sync Kagi Small Web data",
-        "id": "kagi-smallweb-sync",
-        "job_name": "kagi-smallweb.sync",
+        "description": "Re-dispatch imports whose dispatcher failed",
+        "id": "imports-recover-stalled",
+        "job_name": "imports.recoverStalledImports",
         "queue_name": "background",
-        "schedule": "0 5 * * *"
+        "schedule": "*/5 * * * *"
       },
       {
         "description": "Refresh RSS feed crawl-tier materialized view",
@@ -3194,9 +3194,6 @@
   "native.feature-flags.default": {
     "flags": {
       "memberships": false,
-      "chat": false,
-      "combinedSearch": false,
-      "support": false,
       "fediverse": false
     },
     "overrides": {}
@@ -3359,14 +3356,11 @@
       "namespace": "feature-flags",
       "label": "Feature Flags",
       "description": "Runtime feature toggles with optional browser-local overrides.",
-      "field_count": 5,
+      "field_count": 2,
       "can_view": true,
       "can_update": true,
       "config": {
         "memberships": false,
-        "chat": false,
-        "combinedSearch": false,
-        "support": false,
         "fediverse": true
       },
       "fields": [
@@ -3376,27 +3370,6 @@
           "value": false,
           "default_value": false,
           "description": "Membership purchase and plan-management flows."
-        },
-        {
-          "name": "chat",
-          "type": "boolean",
-          "value": false,
-          "default_value": false,
-          "description": "Chat entry points and conversation features."
-        },
-        {
-          "name": "combinedSearch",
-          "type": "boolean",
-          "value": false,
-          "default_value": false,
-          "description": "Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints."
-        },
-        {
-          "name": "support",
-          "type": "boolean",
-          "value": false,
-          "default_value": false,
-          "description": "Support chat entry point in the chat sidebar."
         },
         {
           "name": "fediverse",
@@ -3414,14 +3387,11 @@
       "namespace": "feature-flags",
       "label": "Feature Flags",
       "description": "Runtime feature toggles with optional browser-local overrides.",
-      "field_count": 5,
+      "field_count": 2,
       "can_view": true,
       "can_update": true,
       "config": {
         "memberships": false,
-        "chat": false,
-        "combinedSearch": false,
-        "support": false,
         "fediverse": false
       },
       "fields": [
@@ -3431,27 +3401,6 @@
           "value": false,
           "default_value": false,
           "description": "Membership purchase and plan-management flows."
-        },
-        {
-          "name": "chat",
-          "type": "boolean",
-          "value": false,
-          "default_value": false,
-          "description": "Chat entry points and conversation features."
-        },
-        {
-          "name": "combinedSearch",
-          "type": "boolean",
-          "value": false,
-          "default_value": false,
-          "description": "Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints."
-        },
-        {
-          "name": "support",
-          "type": "boolean",
-          "value": false,
-          "default_value": false,
-          "description": "Support chat entry point in the chat sidebar."
         },
         {
           "name": "fediverse",

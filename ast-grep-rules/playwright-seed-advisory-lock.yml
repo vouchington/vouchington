@@ -3,7 +3,7 @@ language: Tsx
 severity: error
 message: 'seedPlaywrightTestData must acquire the playwright advisory lock before seedPlaywright* writes.'
 files:
-  - 'backend/scripts/seeds/playwright-test-data.mts'
+  - 'backend/test-helpers/playwright-seed-data.mts'
 rule:
   any:
     - all:
@@ -29,7 +29,7 @@ examples:
         await transaction.commit()
       }
     isValid: false
-    file: 'backend/scripts/seeds/playwright-test-data.mts'
+    file: 'backend/test-helpers/playwright-seed-data.mts'
   - code: |
       export async function seedPlaywrightTestData() {
         await using transaction = await beginTransaction()
@@ -38,7 +38,7 @@ examples:
         await transaction.commit()
       }
     isValid: false
-    file: 'backend/scripts/seeds/playwright-test-data.mts'
+    file: 'backend/test-helpers/playwright-seed-data.mts'
   - code: |
       export async function seedPlaywrightTestData() {
         await using transaction = await beginTransaction()
@@ -47,4 +47,4 @@ examples:
         await transaction.commit()
       }
     isValid: true
-    file: 'backend/scripts/seeds/playwright-test-data.mts'
+    file: 'backend/test-helpers/playwright-seed-data.mts'

@@ -4,7 +4,6 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 export type PagedDispatcher =
   | 'hostnames'
   | 'rss'
-  | 'kagi'
   | 'elections'
   | 'notifications'
   | 'activitypub'
@@ -18,8 +17,6 @@ const defaultFields = {
   hostnames_backoff_ms: 300000,
   rss_page_size: 500,
   rss_backoff_ms: 300000,
-  kagi_page_size: 500,
-  kagi_backoff_ms: 300000,
   elections_page_size: 500,
   elections_backoff_ms: 300000,
   notifications_page_size: 500,

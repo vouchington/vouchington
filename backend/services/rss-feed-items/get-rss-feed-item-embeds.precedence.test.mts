@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { v7 as uuidv7 } from 'uuid'
 import type { ResolvedEmbed } from '@vouchington/embeds'
 import { describe, expect, it } from 'vitest'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
@@ -85,9 +86,12 @@ describe('getRssFeedItemEmbedsByItems safe text', () => {
       description: 'Historical normalized description',
       provider: 'Historical publisher',
     })
+    const historicalAt = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000)
     await insertTestCrawl({
+      id: uuidv7({ msecs: historicalAt.getTime() }),
       urlId,
       statusCode: 200,
+      completedAt: historicalAt,
       markdown: 'Historical markdown',
       metaTags: { 'og:title': 'Historical Open Graph title' },
       embedMetadata: historicalEmbed,
@@ -100,6 +104,18 @@ describe('getRssFeedItemEmbedsByItems safe text', () => {
       markdown: 'Latest markdown',
       title: 'Latest crawl title',
       metaTags: { robots: 'index,follow', viewport: 'width=device-width' },
+    })
+    await insertTestCrawl({
+      urlId,
+      statusCode: 503,
+      markdown: 'Failed response markdown',
+      title: 'Failed response title',
+      metaTags: { 'og:title': 'Failed response Open Graph title' },
+      embedMetadata: makeEmbed(1, {
+        title: 'Failed response embed title',
+        description: 'Failed response embed description',
+        provider: 'Failed response publisher',
+      }),
     })
 
     const input = [{ id: itemId, url: { id: urlId } }]

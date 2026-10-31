@@ -3,6 +3,16 @@
 // PR #3018 removed 48 story-hydration rss_feeds/topics fingerprints after keyed RSS feed
 // hydration passed paired custom/generic captures (2026-10-17T02-25-09-194Z).
 export const BASELINE_FINGERPRINTS = [
+  // The bounded hostname candidate probes one small recent crawl partition.
+  'crawler-boilerplate-candidates|0|searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId:force_custom_plan|force_custom_plan:crawls',
+  // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
+  'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_generic_plan|force_generic_plan:relation__user__follow__rss_feed',
+  'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_generic_plan|force_generic_plan:users',
+  'engagement-follow-topics|0|getFollowTopicsRecipients:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'engagement-follow-topics|0|getFollowTopicsRecipients:force_custom_plan|force_custom_plan:users',
+  'engagement-follow-topics|0|getFollowTopicsRecipients:force_generic_plan|force_generic_plan:relation__user__follow__topic',
+  'engagement-follow-topics|0|getFollowTopicsRecipients:force_generic_plan|force_generic_plan:users',
+  'engagement-post-referral-link|0|getPostReferralLinkRecipients:force_generic_plan|force_generic_plan:users',
   'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_custom_plan|force_custom_plan:posts',
   'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_custom_plan|force_custom_plan:topics',
   'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_generic_plan|force_generic_plan:posts',
@@ -37,16 +47,6 @@ export const BASELINE_FINGERPRINTS = [
   'search-admin-users-email|0|searchAdminUsers:email:force_generic_plan|force_generic_plan:users',
   'search-admin-users-uuid|0|searchAdminUsers:uuid:force_generic_plan|force_generic_plan:users',
   'search-admin-users|0|searchAdminUsers:prefix:force_generic_plan|force_generic_plan:users',
-  'story-hydration-detail-25-after|2|getRssFeedItemEmbedsByItems:force_custom_plan|force_custom_plan:crawls',
-  'story-hydration-detail-25-after|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
-  'story-hydration-detail-25-first|2|getRssFeedItemEmbedsByItems:force_custom_plan|force_custom_plan:crawls',
-  'story-hydration-detail-25-first|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
-  'story-hydration-preview-1-after|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
-  'story-hydration-preview-1-first|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
-  'story-hydration-preview-3-after|2|getRssFeedItemEmbedsByItems:force_custom_plan|force_custom_plan:crawls',
-  'story-hydration-preview-3-after|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
-  'story-hydration-preview-3-first|2|getRssFeedItemEmbedsByItems:force_custom_plan|force_custom_plan:crawls',
-  'story-hydration-preview-3-first|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feeds',
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',

@@ -28,10 +28,10 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-cloudfront": "^3.1158.0",
-    "@aws-sdk/client-dynamodb": "^3.1158.0",
-    "@aws-sdk/client-s3": "^3.1158.0",
-    "@aws-sdk/s3-request-presigner": "^3.1158.0",
+    "@aws-sdk/client-cloudfront": "^3.1159.0",
+    "@aws-sdk/client-dynamodb": "^3.1159.0",
+    "@aws-sdk/client-s3": "^3.1159.0",
+    "@aws-sdk/s3-request-presigner": "^3.1159.0",
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
@@ -60,6 +60,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
+    "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.0",
     "@vouchington/http-transport": "^0.1.1",
@@ -72,7 +73,7 @@
     "@vouchington/utils": "^0.10.2",
     "@vouchington/worker-runtime": "^0.3.1",
     "glide-mq": "^0.20.0",
-    "jose": "^6.2.13",
+    "jose": "^6.2.14",
     "no-mistakes": "^0.106.0",
     "openai": "^7.43.0",
     "otpauth": "^9.5.2",
@@ -83,7 +84,7 @@
     "undici": "^8.12.3",
     "uuid": "^14.0.3",
     "valkyries": "^0.15.0",
-    "vouchington-tooling": "^0.83.0"
+    "vouchington-tooling": "^0.84.0"
   },
   "devDependencies": {
     "@jongleberry/api-server": "^3.1.0",

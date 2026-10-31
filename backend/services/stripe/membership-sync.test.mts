@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getMembershipChangeType,
-  getMembershipLifecycleSnapshot,
+  getMembershipLifecycleSnapshotFromFields,
 } from './membership-change-helpers.mts'
 
 function opts(overrides: {
@@ -101,15 +101,21 @@ describe('getMembershipChangeType - no change', () => {
   })
 })
 
-describe('getMembershipLifecycleSnapshot', () => {
+describe('getMembershipLifecycleSnapshotFromFields', () => {
   it('preserves an existing lifecycle entry timestamp for history snapshots', () => {
     const pastDueAt = new Date('2026-01-01T00:00:00Z')
 
-    const snapshot = getMembershipLifecycleSnapshot('past_due', false, {
+    const snapshot = getMembershipLifecycleSnapshotFromFields({
+      user_id: '00000000-0000-7000-8000-000000000001',
+      plan: 'plus',
+      sku_id: 'sku_past_due',
+      status: 'past_due',
+      expires_at: null,
       cancelled_at: null,
       expired_at: null,
       past_due_at: pastDueAt,
       paused_at: null,
+      should_cancel_at_period_end: false,
     })
 
     expect(snapshot.pastDueAt).toBe(pastDueAt)

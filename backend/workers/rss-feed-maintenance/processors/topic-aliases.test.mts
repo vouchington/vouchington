@@ -40,7 +40,7 @@ describe('topic-aliases processors', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('passes removed alias identity through to RSS category cleanup', async () => {
+  it('passes removed alias identity to durable RSS category reconciliation', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const topicId = await insertTestTopic({
@@ -62,10 +62,25 @@ describe('topic-aliases processors', () => {
     ])
     await unlinkTopicAlias(alias!.id, { expectedTopicId: topicId, skipSideEffects: true })
 
+    const priorJobIds = new Set((await readAllQueueJobs(rssFeedMaintenance)).map(job => job.id))
     await processTopicAliasesUpdate({ topicId, removedTopicAliasId: alias!.id })
 
-    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual(
-      expect.arrayContaining([expect.objectContaining({ topic_id: null })]),
+    const queued = (await readAllQueueJobs(rssFeedMaintenance)).find(
+      job =>
+        job.name === 'processReconcileTopicAliasCategoryMappings' &&
+        (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias!.id),
+    )
+    expect(queued).toBeDefined()
+    expect(
+      (await readAllQueueJobs(rssFeedMaintenance)).some(
+        job =>
+          !priorJobIds.has(job.id) &&
+          job.name === 'processReconcileTopicAliasCategoryMappings' &&
+          !(job.data as { topicAliasIds?: string[] }).topicAliasIds,
+      ),
+    ).toBe(true)
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toContainEqual(
+      expect.objectContaining({ topic_id: topicId }),
     )
   })
 

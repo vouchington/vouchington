@@ -129,7 +129,7 @@ same as the topic-claim REST routes.
 
 ## Generated Artifacts
 
-The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them.
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs), which also rejects an MCP tool file that is not part of the registry, and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them.
 
 - [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json) — each server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool
 - [`catalog.md`](catalog.md) — the generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers

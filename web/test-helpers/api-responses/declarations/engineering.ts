@@ -103,7 +103,7 @@ export const ENGINEERING_DECLARATIONS = [
   defineWebApiFixture<{ success: boolean }>()(
     'web.admin.mq.scheduled-jobs.trigger.default',
     adminMqScheduledJobsTriggerDefault,
-    context => context.client.mq.triggerScheduledJob('kagi-smallweb-sync'),
+    context => context.client.mq.triggerScheduledJob('imports-recover-stalled'),
   ),
   defineWebApiFixture<{ backfills: Backfill[] }>()(
     'web.admin.mq.backfills.default',

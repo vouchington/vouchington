@@ -108,7 +108,7 @@ async function initializeMigrationSql(): Promise<void> {
   }
 }
 
-type VerifySchemaAfterMigration = () => Promise<void>
+type VerifySchemaAfterMigration = () => Promise<unknown>
 type MigrationPhase = 'application' | 'verification'
 
 export async function runAllMigrations(

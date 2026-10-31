@@ -11,12 +11,10 @@ import {
 } from '../config.mts'
 import type { TerminalActivityRetentionData } from '../types.mts'
 
-export const terminalActivityRetentionJobId = (data: TerminalActivityRetentionData): string =>
+const terminalActivityRetentionJobId = (data: TerminalActivityRetentionData): string =>
   `psql__terminal_activity_retention__${data.family}`
 
-export function getTerminalActivityRetentionJobOptions(
-  data: TerminalActivityRetentionData,
-): JobOptions {
+function getTerminalActivityRetentionJobOptions(data: TerminalActivityRetentionData): JobOptions {
   return {
     ...PSQL_RETRY_OPTIONS,
     jobId: terminalActivityRetentionJobId(data),

@@ -2,7 +2,6 @@ import { createTestUser, insertTestRewardsProgramStatus } from '@voucha/test-hel
 import { it, expect, beforeAll, describe } from 'vitest'
 import {
   getIndividualRewardsProgramStatuses,
-  getIndividualRewardsProgramStatusById,
   createIndividualRewardsProgramStatus,
   updateIndividualRewardsProgramStatusById,
   deleteIndividualRewardsProgramStatusById,
@@ -83,12 +82,14 @@ describe('rewards-program-statuses.generated', () => {
     ).rejects.toThrow('Invalid rewards program status cursor')
   })
 
-  it('getIndividualRewardsProgramStatusById - returns specific status', async () => {
+  it('getIndividualRewardsProgramStatuses - returns the created status', async () => {
     const statusId = await insertTestRewardsProgramStatus({
       createdById: user.id,
     })
     const created = await createIndividualRewardsProgramStatus(user, user, statusId)
-    const retrieved = await getIndividualRewardsProgramStatusById(user, user, created.id)
+    const retrieved = (
+      await getIndividualRewardsProgramStatuses(user, user, { limit: 100 })
+    ).results.find(status => status.id === created.id)
 
     expect(retrieved).toBeDefined()
     expect(retrieved?.id).toBe(created.id)
@@ -173,7 +174,9 @@ describe('rewards-program-statuses.generated', () => {
     expect(deleted).toBeDefined()
     expect(deleted.id).toBe(created.id)
 
-    const retrieved = await getIndividualRewardsProgramStatusById(user, user, created.id)
+    const retrieved = (
+      await getIndividualRewardsProgramStatuses(user, user, { limit: 100 })
+    ).results.find(status => status.id === created.id)
     expect(retrieved).toBeUndefined()
   })
 })

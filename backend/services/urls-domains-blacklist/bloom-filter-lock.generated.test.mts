@@ -3,10 +3,9 @@ import {
   injectTestBlocklistBloomUnlockFault,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import {
-  BLOCKLIST_BLOOM_FILTER_LOCK_NAMESPACE,
-  withBlocklistBloomFilterLock,
-} from './bloom-filter-lock.mts'
+import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
+
+const BLOCKLIST_BLOOM_FILTER_LOCK_NAMESPACE = 0x4246
 
 describe('bloom-filter-lock.generated', () => {
   it('serializes operations for the same blocklist Bloom filter', async () => {

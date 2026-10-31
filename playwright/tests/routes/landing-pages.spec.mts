@@ -57,7 +57,10 @@ test.describe('Landing pages', () => {
     await loginAsTestUser(page)
     await navigateTo(page, '/my/landing-pages')
 
-    await expect(page.getByTestId('landing-pages-settings-heading')).toBeVisible()
+    await expect(page.getByTestId('settings-page-header-title')).toContainText('Landing Pages')
+    await expect(page.getByTestId('settings-page-header-description')).toContainText(
+      `@${TEST_USER_USERNAME}`,
+    )
     await expect(page.getByTestId('landing-pages-settings-page-title').first()).toContainText(
       'Test landing page',
     )

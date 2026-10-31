@@ -3,7 +3,7 @@ import {
   type LocalizationDatabase,
 } from '@vouchington/localization-compiler'
 
-export const DEFAULT_LOCALIZATION_SQLITE_PATH = '/app/localization/catalog.sqlite'
+const DEFAULT_LOCALIZATION_SQLITE_PATH = '/app/localization/catalog.sqlite'
 
 export function localizationSqlitePath(): string {
   return process.env.LOCALIZATION_SQLITE_PATH ?? DEFAULT_LOCALIZATION_SQLITE_PATH
