@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { backgroundQueueConfig } from '@queues/background/config'
-import {
-  insertPausedQueueDomainControlForTest,
-  removeQueueDomainControlsForTest,
-} from '../../test-helpers/queue-domain-controls.mts'
-import { invalidateQueueDomainPause, isQueueDomainPaused } from './pause-cache.mts'
+import { removeQueueDomainControlsForTest } from '../../test-helpers/queue-domain-controls.mts'
+import { pauseQueueDomain } from './write.mts'
+import { isQueueDomainPaused, watchQueueDomainControls } from './pause-cache.mts'
 
 // Synthetic domain ids keep these rows apart from the registered domains other tests run workers for.
 const createdDomains: string[] = []
@@ -35,20 +34,24 @@ describe('queue domain pause cache', () => {
     }
   })
 
-  it('does not cache an answer that a published change overtook while it was being read', async () => {
+  it('clears a cached answer when a queue domain change is published', async () => {
     const domain = newDomain()
+    const user = await createTestUser()
     const restore = overrideDynamicConfigFieldsForTest(backgroundQueueConfig, {
       pause_cache_ms: 60_000,
     })
+    const invalidated = Promise.withResolvers<string>()
+    const watcher = await watchQueueDomainControls(changed => {
+      if (changed === domain) invalidated.resolve(changed)
+    })
     try {
-      const stale = isQueueDomainPaused(domain)
-      invalidateQueueDomainPause(domain)
-      await expect(stale).resolves.toBe(false)
+      await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
 
-      // Written without publishing: only a fresh read sees it, because the stale answer was dropped.
-      await insertPausedQueueDomainControlForTest(domain)
+      await pauseQueueDomain(domain, { userId: user.id })
+      await expect(invalidated.promise).resolves.toBe(domain)
       await expect(isQueueDomainPaused(domain)).resolves.toBe(true)
     } finally {
+      await watcher.close()
       restore()
     }
   })

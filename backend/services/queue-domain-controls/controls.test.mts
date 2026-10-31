@@ -15,7 +15,6 @@ import {
   resumeQueueDomain,
   watchQueueDomainControls,
 } from './index.mts'
-import { invalidateQueueDomainPause } from './pause-cache.mts'
 
 // Synthetic domain ids keep these rows apart from the registered domains other tests run workers for.
 const createdDomains: string[] = []
@@ -77,9 +76,9 @@ describe('queue domain controls', () => {
     const restore = overrideDynamicConfigFieldsForTest(backgroundQueueConfig, {
       pause_cache_ms: 60_000,
     })
-    const invalidated = Promise.withResolvers<string>()
+    let onChanged: (domain: string) => void = () => {}
     const watcher = await watchQueueDomainControls(changed => {
-      if (changed === domain) invalidated.resolve(changed)
+      if (changed === domain) onChanged(changed)
     })
     try {
       await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
@@ -89,12 +88,16 @@ describe('queue domain controls', () => {
       await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
 
       // The published change clears the entry on its own, without waiting out the cache lifetime.
+      const paused = Promise.withResolvers<string>()
+      onChanged = changed => paused.resolve(changed)
       await pauseQueueDomain(domain, { userId: user.id })
-      await invalidated.promise
+      await expect(paused.promise).resolves.toBe(domain)
       await expect(isQueueDomainPaused(domain)).resolves.toBe(true)
 
+      const resumed = Promise.withResolvers<string>()
+      onChanged = changed => resumed.resolve(changed)
       await resumeQueueDomain(domain)
-      invalidateQueueDomainPause(domain)
+      await expect(resumed.promise).resolves.toBe(domain)
       await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
     } finally {
       await watcher.close()
