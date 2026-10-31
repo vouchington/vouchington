@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Resolve a published GHA script, then exec it. Usable before pnpm install:
 # it falls back from the installed package to pnpm dlx, then to a
-# lockfile-integrity-checked registry download.
+# lockfile-integrity-checked registry download. VOUCHINGTON_GHA_SKIP_DLX=1
+# skips dlx so a standalone script comes from that download without
+# re-resolving the package's dependencies.
 # usage: exec-vouchington-gha.sh <cli-command> <scripts/gha/file.sh> [args...]
 set -euo pipefail
 if [ "$#" -lt 2 ]; then
@@ -60,7 +62,8 @@ case "$locked_version" in
   '' | *[!A-Za-z0-9._-]*) fail 'pnpm-lock.yaml has no exact vouchington-tooling version for the root importer' ;;
 esac
 
-if command -v pnpm >/dev/null 2>&1 && command -v node >/dev/null 2>&1 &&
+if [ "${VOUCHINGTON_GHA_SKIP_DLX:-}" != 1 ] &&
+  command -v pnpm >/dev/null 2>&1 && command -v node >/dev/null 2>&1 &&
   pnpm --version >/dev/null 2>&1; then
   exec pnpm dlx --package "vouchington-tooling@${locked_version}" vouchington "$cmd" "$@"
 fi
