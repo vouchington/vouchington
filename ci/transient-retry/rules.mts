@@ -1,4 +1,7 @@
-import { backendImageAttestationEmptyPersistErrorRule } from './attestation-rules.mts'
+import {
+  backendImageAttestationEmptyPersistErrorRule,
+  webImageAttestationTlogFetchErrorRule,
+} from './attestation-rules.mts'
 import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
@@ -34,6 +37,7 @@ export const rules: TransientRetryRule[] = [
   detectChangesPathsFilterGithubConnectTimeoutRule,
   gitleaksInstallReleasesDownloadFlakeRule,
   backendImageAttestationEmptyPersistErrorRule,
+  webImageAttestationTlogFetchErrorRule,
   mainWebPlaywrightSetupAptLockRule,
   webIntegrationWranglerSocketClosedRule,
   runnerShutdownLeafRerunRule,
