@@ -97,6 +97,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],
+        legalRecords: { recordIds: [] },
         softDeletedUsers: emptyWindow,
         oldReferralAttributions: emptyWindow,
         histories: emptyWindow,

@@ -12,6 +12,13 @@ const scannedDone = { ...done, scanned: 0 }
 const continuationDone = { ...done, continuation: null }
 const historyDone = { scanned: 0, changed: 0, hasMore: false }
 const settled = {
+  legalRecords: (
+    [
+      'identity_verification_attempt',
+      'user_deletion_request',
+      'user_legal_preservation_hold',
+    ] as const
+  ).map(family => ({ family, ...scannedDone })),
   retainedRelationIdentities: [],
   retainedMediaBindings: scannedDone,
   retainedIdentityRoots: [],

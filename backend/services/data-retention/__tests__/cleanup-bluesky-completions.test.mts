@@ -44,6 +44,7 @@ describe('runDataRetentionCleanup', () => {
       retainedIdentityRootIds: {},
       retainedRelationIdentityKeys: {},
       retainedMediaBindingIds: [],
+      legalRecords: { recordIds: [] },
       softDeletedUsers: emptyWindow,
       oldReferralAttributions: emptyWindow,
       histories: emptyWindow,

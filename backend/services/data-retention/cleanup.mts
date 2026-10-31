@@ -111,6 +111,7 @@ import {
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
 import { cleanupSecurityRecords } from './cleanup-security-records.mts'
+import { cleanupLegalRecords } from './cleanup-legal-records.mts'
 import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
 import {
   cleanupSupersededVoteBallots,
@@ -199,6 +200,7 @@ type DataRetentionCleanupOptions = {
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
   oauthFriendEdges?: Partial<DataRetentionLimits> & { now?: Date }
   securityRecords?: Partial<DataRetentionLimits> & { now?: Date }
+  legalRecords?: { now?: Date; recordIds?: readonly string[] }
   expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
     authorizationIds?: readonly string[]
   }
@@ -266,6 +268,7 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
+  legalRecords: Awaited<ReturnType<typeof cleanupLegalRecords>>
   copyrightFormScreeningAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightActionAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightDeliveryAttempts?: { scanned: number; deleted: number; hasMore: boolean }
@@ -646,6 +649,12 @@ export async function runDataRetentionCleanup(
     retainedPageSize,
     options.retainedMediaBindingIds,
   )
+  // Expired legal proof no longer keeps a retained user identity alive.
+  const legalRecords = await cleanupLegalRecords(
+    limits,
+    options.legalRecords?.now,
+    options.legalRecords?.recordIds,
+  )
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedIdentityRoots = await cleanupRetainedIdentityRoots(
     retainedPageSize,
@@ -657,6 +666,7 @@ export async function runDataRetentionCleanup(
     ...copyright,
     retainedRelationIdentities,
     retainedMediaBindings,
+    legalRecords,
     retainedIdentityRoots,
     softDeletedUsers,
     oldReferralAttributions,

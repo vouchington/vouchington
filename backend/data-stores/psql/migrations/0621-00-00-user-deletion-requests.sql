@@ -60,6 +60,9 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_deletion_requests__processing_attempt_id
 ON user_deletion_requests (processing_attempt_id);
 
+CREATE INDEX idx_user_deletion_requests__completed_retention
+ON user_deletion_requests (completed_at, id) WHERE completed_at IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__requested_by_id
 ON user_deletion_requests (requested_by_id) WHERE requested_by_id IS NOT NULL;

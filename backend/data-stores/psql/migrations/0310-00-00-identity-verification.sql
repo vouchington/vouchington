@@ -83,7 +83,7 @@ CREATE UNIQUE INDEX uq_identity_verification_attempts__support_grant_active_chil
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__user
-  ON identity_verification_attempts (user_id);
+  ON identity_verification_attempts (user_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__grant_entitlement
