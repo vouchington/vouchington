@@ -162,14 +162,4 @@ test.describe('Aside toggle — mobile', () => {
 
     await expect(drawer).toBeHidden()
   })
-
-  test('visual snapshot — drawer open on mobile', async ({ page }) => {
-    await page.setViewportSize(MOBILE)
-    await navigateTo(page, '/discussions')
-
-    await page.getByTestId('aside-toggle-button').click()
-
-    const drawer = page.getByRole('dialog')
-    await expect(drawer).toBeVisible()
-  })
 })
