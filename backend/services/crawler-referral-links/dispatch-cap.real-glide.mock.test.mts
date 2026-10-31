@@ -169,4 +169,37 @@ describe('bounded referral crawl dispatch', () => {
     }
     expect(enqueuedIds).toHaveLength(3)
   })
+
+  it('keeps an explicit page when shared referral crawl config is larger', async () => {
+    const owner = await createTestUser()
+    const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
+    const ids = (
+      await Promise.all(
+        Array.from({ length: 3 }, async () =>
+          insertTestUserReferralProgramLink({
+            userId: owner.id,
+            referralProgramId,
+            urlId: await createTestUrlWithHostname(),
+          }),
+        ),
+      )
+    ).toSorted()
+    const restore = overrideDynamicConfigFieldsForTest(referralCrawlDispatchConfig, {
+      batch_size: 1000,
+      max_rows_per_run: 20000,
+    })
+    try {
+      await withOwnedReferralDispatchAdmissions({ linkIds: ids }, async () => {
+        await expect(
+          dispatchReferralLinkCrawls({
+            referralLinkIds: ids,
+            computeHostnameRateLimitMs: async () => 1,
+            limits: { batchSize: 1, maxRows: 1 },
+          }),
+        ).resolves.toMatchObject({ count: 1, hasMore: true })
+      })
+    } finally {
+      restore()
+    }
+  })
 })

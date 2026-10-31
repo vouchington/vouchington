@@ -25,12 +25,20 @@ function getStoryPreviewRequests(results: readonly StoryPrimaryResult[]): StoryM
   return [...selected.values()]
 }
 
+function explicitStoryPreviewLimit(limit: number): number {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 3)
+    throw new RangeError('Story preview limit must be an integer from 1 to 3')
+  return limit
+}
+
 export function getStoryPreviews(
   currentUser: BasicUser | null,
   results: readonly StoryPrimaryResult[],
+  options?: { limit?: number },
 ) {
-  const { preview_limit } = getStoryRelatedItemsConfig()
-  return getStoryMemberPagesBatch(currentUser, getStoryPreviewRequests(results), {
-    limit: preview_limit,
-  })
+  const limit =
+    options?.limit === undefined
+      ? getStoryRelatedItemsConfig().preview_limit
+      : explicitStoryPreviewLimit(options.limit)
+  return getStoryMemberPagesBatch(currentUser, getStoryPreviewRequests(results), { limit })
 }

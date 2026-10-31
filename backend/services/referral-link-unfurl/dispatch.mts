@@ -2,7 +2,7 @@ import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkUnfurlReferralLinks } from '@queues/unfurl-referral-links/enqueues'
 
-import { getDispatchLimits } from './work-limits.mts'
+import { resolveReferralUnfurlPageLimits, type ReferralUnfurlPageLimits } from './work-limits.mts'
 import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
 
 /**
@@ -16,9 +16,9 @@ import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
 export async function dispatchUnfurlReferralLinks(
   cursor?: UnfurlDispatchCursor,
   saveProgress?: (cursor: UnfurlDispatchCursor) => Promise<void>,
-  options: { referralLinkIds?: readonly string[] } = {},
+  options: { referralLinkIds?: readonly string[]; limits?: ReferralUnfurlPageLimits } = {},
 ) {
-  const limits = getDispatchLimits()
+  const limits = resolveReferralUnfurlPageLimits(options.limits)
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.after && { after: cursor.after }) })
   const queryStatement = sql`/* dispatchUnfurlReferralLinks */

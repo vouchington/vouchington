@@ -1,4 +1,8 @@
-import { getCrawlerReferralLinksWorkLimit, getDispatchLimits } from './work-limits.mts'
+import {
+  getCrawlerReferralLinksWorkLimit,
+  resolveReferralCrawlPageLimits,
+  type ReferralCrawlPageLimits,
+} from './work-limits.mts'
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueByHostname } from './dispatch-hostnames.mts'
@@ -28,6 +32,7 @@ type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
   cursor?: ReferralCrawlDispatchCursor
   urlId?: string
   saveProgress?: (data: ReferralCrawlDispatchData) => Promise<void>
+  limits?: ReferralCrawlPageLimits
 }
 
 export async function dispatchReferralLinkCrawls(
@@ -35,7 +40,7 @@ export async function dispatchReferralLinkCrawls(
 ) {
   const CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS =
     getCrawlerReferralLinksWorkLimit('failure_retry_hours')
-  const limits = getDispatchLimits()
+  const limits = resolveReferralCrawlPageLimits(options.limits)
   const clock = options.cursor?.sweepStartedAt ?? new Date((options.now ?? new Date()).getTime())
   if (typeof clock !== 'string' && !Number.isFinite(clock.getTime()))
     throw new TypeError('Referral dispatch clock must be valid')

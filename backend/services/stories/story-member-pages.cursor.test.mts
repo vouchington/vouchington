@@ -33,6 +33,26 @@ describe('story member cursors', () => {
     expect(second.page_info.end_cursor).toBeNull()
   })
 
+  it('rejects an explicit preview limit outside 1 to 3', () => {
+    expect(() => getStoryPreviews(null, [], { limit: 4 })).toThrow(
+      'Story preview limit must be an integer from 1 to 3',
+    )
+  })
+
+  it('keeps an explicit preview limit when the shared config is larger', async () => {
+    const fixture = await createTestStoryMembers(4)
+    const request = { id: fixture.itemIds[1]!, story_id: fixture.story.id }
+    const restore = overrideDynamicConfigFieldsForTest(storyRelatedItemsConfig, {
+      preview_limit: 3,
+    })
+    try {
+      const pages = await getStoryPreviews(null, [request], { limit: 1 })
+      expect(pages[fixture.story.id]!.item_ids).toHaveLength(1)
+    } finally {
+      restore()
+    }
+  })
+
   it('rejects changed story, viewer, administrator access or excluded primary scopes', async () => {
     const [fixture, other, user, differentUser] = await Promise.all([
       createTestStoryMembers(4),

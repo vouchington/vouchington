@@ -4,7 +4,6 @@ import type {
   StoryMemberPage,
   StoryMemberRequest,
 } from '@services/feeds/rss-feed-items/story-member-pages'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'
 import * as services from '../run-services.mts'
@@ -12,7 +11,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 
 const { getPrivateUserByAny, getRssFeedItemFeedIds, getStoryPreviews, getStoryMemberPagesBatch } =
   services
-const { hydrateStoryMemberPage, storyRelatedItemsConfig } = services
+const { hydrateStoryMemberPage } = services
 const HYDRATION_QUERY_NAMES = [
   'getRssFeedItemsByIdBatch',
   'getElectionsByIdBatch',
@@ -39,17 +38,9 @@ export async function runStoryMemberPageScenarios(): Promise<void> {
   for (const limit of [1, 3] as const) {
     const kind = `preview-${limit}`
     const request = { story_id: storyId, exclude_item_id: primaryId }
-    const restore = overrideDynamicConfigFieldsForTest(storyRelatedItemsConfig, {
-      preview_limit: limit,
-    })
-    let first: StoryMemberPage
-    try {
-      first = await capturePage(`story-members-${kind}-first`, storyId, limit, () =>
-        getStoryPreviews(viewer, [primary]),
-      )
-    } finally {
-      restore()
-    }
+    const first = await capturePage(`story-members-${kind}-first`, storyId, limit, () =>
+      getStoryPreviews(viewer, [primary], { limit }),
+    )
     if (first.item_ids.includes(primaryId))
       throw new Error(`${kind} included its primary in related previews`)
     await captureHydration(`story-hydration-${kind}-first`, viewer, storyId, first, request)

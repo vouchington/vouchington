@@ -2,10 +2,7 @@ import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-host
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
 import type { CrawlDispatchPageLimits } from '@services/crawls/work-limits'
 import { dispatchReferralLinkCrawls } from '@services/crawler-referral-links/dispatch'
-import { referralCrawlDispatchConfig } from '@services/crawler-referral-links/work-limits'
 import { dispatchUnfurlReferralLinks } from '@services/referral-link-unfurl/dispatch'
-import { referralUnfurlDispatchConfig } from '@services/referral-link-unfurl/work-limits'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   prepareCrawlDispatchScale,
   prepareReferralCrawlScale,
@@ -32,7 +29,7 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
   }
   const cursor = { afterId: crawl.afterId, sweepStartedAt: crawl.sweepStartedAt }
   // The shared DynamicConfig map is replaced by Valkey refresh. Pass the page
-  // directly so a refresh cannot widen this selectivity probe mid-run.
+  // directly so a refresh cannot widen these selectivity probes mid-run.
   const pageLimits: CrawlDispatchPageLimits = { batchSize: 1, maxRows: 1 }
   await runAndCapture(
     'dispatch-hostname-url-selectivity',
@@ -71,62 +68,51 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
   )
 
   const referral = await prepareReferralCrawlScale()
-  const restoreReferral = overrideDynamicConfigFieldsForTest(referralCrawlDispatchConfig, {
-    batch_size: 1,
-    max_rows_per_run: 1,
-  })
-  try {
-    await runAndCapture(
-      'dispatch-referral-crawl-due-selectivity',
-      async () => {
-        const result = await dispatchReferralLinkCrawls({
-          cursor: {
-            sweepStartedAt: referral.sweepStartedAt,
-            afterWork: { dueAt: '-infinity', id: referral.skipped[0] },
-          },
-          computeHostnameRateLimitMs: async () => 0,
-          enqueueBulkCrawlReferralLinks: async () => {},
-        })
-        if (
-          result.count !== 0 ||
-          !result.hasMore ||
-          referral.skipped.length !== 2 ||
-          referral.healthy.length !== 2
-        )
-          throw new Error('Missing retry-filtered due page')
-      },
-      undefined,
-      'dispatchReferralLinkCrawls',
-    )
-  } finally {
-    restoreReferral()
-  }
+  await runAndCapture(
+    'dispatch-referral-crawl-due-selectivity',
+    async () => {
+      const result = await dispatchReferralLinkCrawls({
+        cursor: {
+          sweepStartedAt: referral.sweepStartedAt,
+          afterWork: { dueAt: '-infinity', id: referral.skipped[0] },
+        },
+        computeHostnameRateLimitMs: async () => 0,
+        enqueueBulkCrawlReferralLinks: async () => {},
+        limits: pageLimits,
+      })
+      if (
+        result.count !== 0 ||
+        !result.hasMore ||
+        referral.skipped.length !== 2 ||
+        referral.healthy.length !== 2
+      )
+        throw new Error('Missing retry-filtered due page')
+    },
+    undefined,
+    'dispatchReferralLinkCrawls',
+  )
 
   const unfurl = await prepareReferralUnfurlScale()
-  const restoreUnfurl = overrideDynamicConfigFieldsForTest(referralUnfurlDispatchConfig, {
-    batch_size: 1,
-    max_rows_per_run: 1,
-  })
-  try {
-    await runAndCapture(
-      'dispatch-referral-unfurl-due-selectivity',
-      async () => {
-        const result = await dispatchUnfurlReferralLinks({
+  await runAndCapture(
+    'dispatch-referral-unfurl-due-selectivity',
+    async () => {
+      const result = await dispatchUnfurlReferralLinks(
+        {
           sweepStartedAt: unfurl.dueAt,
           after: {
             requestedAt: new Date(new Date(unfurl.dueAt).getTime() - 1).toISOString(),
             id: unfurl.ids[0],
           },
-        })
-        if (result.count !== 1 || !result.hasMore)
-          throw new Error('Missing bounded pending-unfurl page')
-      },
-      undefined,
-      'dispatchUnfurlReferralLinks',
-    )
-  } finally {
-    restoreUnfurl()
-  }
+        },
+        undefined,
+        { limits: pageLimits },
+      )
+      if (result.count !== 1 || !result.hasMore)
+        throw new Error('Missing bounded pending-unfurl page')
+    },
+    undefined,
+    'dispatchUnfurlReferralLinks',
+  )
 }
 
 registerScenarioContract('dispatch-referral-crawl-due-selectivity', {

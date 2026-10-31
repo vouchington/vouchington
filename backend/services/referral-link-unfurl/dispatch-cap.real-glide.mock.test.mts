@@ -151,4 +151,37 @@ describe('bounded referral unfurl dispatch', () => {
       captured.queries.some(query => query.text.startsWith('/* dispatchUnfurlReferralLinks */')),
     ).toBe(true)
   })
+
+  it('keeps an explicit page when shared unfurl config is larger', async () => {
+    const owner = await createTestUser()
+    const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
+    const ownerCreatedAt = getDateFromUUIDv7(owner.id)
+    if (!ownerCreatedAt) throw new Error('Expected owned native UUIDv7 anchor')
+    const requestedAt = new Date(ownerCreatedAt.getTime() + 86_400_000).toISOString()
+    const ids = await insertTestUnfurlDispatchPlanLinks({
+      userId: owner.id,
+      referralProgramId,
+      urlIds: await Promise.all(Array.from({ length: 3 }, () => createTestUrlWithHostname())),
+      requestedAt,
+    })
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(referralUnfurlDispatchConfig, {
+        batch_size: 1000,
+        max_rows_per_run: 20000,
+      }),
+    )
+    await expect(
+      dispatchUnfurlReferralLinks(
+        {
+          sweepStartedAt: requestedAt,
+          after: {
+            requestedAt: new Date(new Date(requestedAt).getTime() - 1).toISOString(),
+            id: ids[0],
+          },
+        },
+        undefined,
+        { referralLinkIds: ids, limits: { batchSize: 1, maxRows: 1 } },
+      ),
+    ).resolves.toEqual({ count: 1, hasMore: true })
+  })
 })
