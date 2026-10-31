@@ -37,7 +37,7 @@ CREATE TABLE copyright_notice_submission_requests (
 
   CONSTRAINT uq_copyright_submission_requests__requester__key_digest UNIQUE (requester_user_id, idempotency_key_sha256)
 );
-CREATE INDEX idx_copyright_submission_requests__uncleared_key_age
+CREATE INDEX idx_copyright_notice_submission_requests__uncleared_key_age
   ON copyright_notice_submission_requests (id) WHERE idempotency_key IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
