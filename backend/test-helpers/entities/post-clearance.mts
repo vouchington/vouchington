@@ -40,7 +40,14 @@ export async function insertTestPostClearanceChange(options: {
   const id = options.occurredAt
     ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
     : null
-  const { rows } = await write<{ id: string }>(sql`
+  await using transaction = await beginTransaction()
+  // RowExclusive on posts before history. FOR UPDATE is only RowShare and does not
+  // wait for the ShareRowExclusive lock clearance-month attach takes on posts.
+  await transaction(sql`
+    /* insertTestPostClearanceChange:lockPost */
+    UPDATE posts SET created_via = created_via WHERE id = ${options.postId}
+  `)
+  const { rows } = await transaction<{ id: string }>(sql`
     /* insertTestPostClearanceChange */
     INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id, metadata, moderation_transparency_categories)
     VALUES (
@@ -53,6 +60,7 @@ export async function insertTestPostClearanceChange(options: {
     )
     RETURNING id
   `)
+  await transaction.commit()
   return rows[0]!
 }
 
@@ -89,10 +97,9 @@ export async function setTestPostClearanceStatus(
   const changeType = clearanceChangeType(status)
   const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
   await using transaction = await beginTransaction()
-  // RowExclusive on the post before history. The insert takes RowExclusive on
-  // post_clearance_changes; a session that already holds posts and then needs
-  // ShareRowExclusive on that history deadlocks if this transaction still waits
-  // for the post after the insert.
+  // Posts before history. Clearance-month attach locks post_clearance_changes,
+  // then ShareRowExclusive on posts; createPostClearancePartitions takes posts
+  // first. Waiting here means this transaction does not already hold history.
   await transaction(sql`
     /* setTestPostClearanceStatus:lockPost */
     UPDATE posts
