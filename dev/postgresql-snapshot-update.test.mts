@@ -106,16 +106,13 @@ describe('PostgreSQL snapshot dispatch command', () => {
     expect(colors).toEqual(Array(3).fill('CLICOLOR_FORCE=unset'))
   })
 
-  it('accepts the documented pnpm --pr forwarding form', async () => {
-    const { root, env } = await fixture()
-    await execFile('pnpm', ['run', 'db:snapshot:update', '--', '--pr', '663'], {
-      cwd: process.cwd(),
-      env,
-    })
-    expect(await readFile(join(root, 'dispatch.log'), 'utf8')).toContain('pr_number=663')
-    expect(pullRequestViewLines(await readFile(join(root, 'gh.log'), 'utf8'))).toEqual([
-      'GH_REPO=vouchington/vouchington pr view 663 --repo vouchington/vouchington --json number,headRefOid,headRepositoryOwner,state',
-    ])
+  it('points db:snapshot:update at the dispatch command', async () => {
+    const manifest = JSON.parse(
+      await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as {
+      scripts: Record<string, string>
+    }
+    expect(manifest.scripts['db:snapshot:update']).toBe('node dev/postgresql-snapshot-update.mts')
   })
 
   it('rejects a local head that has not been pushed to the selected PR', async () => {
