@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { readEuCopyrightReportCoveragePage } from '@services/copyright-notices/eu-report-coverage.mts'
+import { readEuCopyrightReportCoveragePage } from '../services/copyright-notices/eu-report-coverage.mts'
 
 export async function readTestEuCopyrightReceiptCoverage(noticeId: string) {
   await using transaction = await beginTransaction()
