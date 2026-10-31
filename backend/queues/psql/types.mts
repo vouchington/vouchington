@@ -83,6 +83,7 @@ export const COPYRIGHT_RETENTION_FAMILIES = [
   'copyrightDeliveryAttempts',
   'copyrightGuestCapabilities',
   'copyrightUnlinkedEmailIntakes',
+  'copyrightReceiptReviews',
   'copyrightCaseThreads',
   'copyrightOrphanEmailThreadTokens',
 ] as const

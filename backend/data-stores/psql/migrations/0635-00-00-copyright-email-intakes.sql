@@ -11,6 +11,14 @@ CREATE TABLE copyright_notice_email_intake_receipts (
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
   erased_at timestamptz,
   review_decision copyright_notice_email_intake_review_decisions,
+  review_retirement_check_after timestamptz NOT NULL DEFAULT '-infinity'::timestamptz,
+  current_preservation_hold_token uuid,
+  preservation_hold_kind text CHECK (preservation_hold_kind IN ('litigation_threat', 'regulator_request', 'court_request')),
+  preservation_hold_placed_at timestamptz,
+  preservation_hold_placed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  preservation_hold_released_at timestamptz,
+  preservation_hold_released_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  last_preservation_hold_released_at timestamptz,
   review_rationale_ciphertext text
     CHECK (char_length(review_rationale_ciphertext) BETWEEN 1 AND 1048576),
   reviewed_at timestamptz,
@@ -18,7 +26,18 @@ CREATE TABLE copyright_notice_email_intake_receipts (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT chk_copyright_email_intake_receipts__review_result CHECK (
     (review_decision IS NULL AND reviewed_at IS NULL AND reviewed_by_id IS NULL AND review_rationale_ciphertext IS NULL)
-    OR (review_decision IS NOT NULL AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL AND review_rationale_ciphertext IS NOT NULL))
+    OR (review_decision IS NOT NULL AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL AND review_rationale_ciphertext IS NOT NULL)),
+  CONSTRAINT chk_copyright_email_receipts__preservation CHECK (
+    (preservation_hold_kind IS NULL AND current_preservation_hold_token IS NULL
+      AND preservation_hold_placed_at IS NULL AND preservation_hold_placed_by_id IS NULL
+      AND preservation_hold_released_at IS NULL AND preservation_hold_released_by_id IS NULL)
+    OR (preservation_hold_kind IS NOT NULL AND preservation_hold_placed_at IS NOT NULL
+      AND preservation_hold_placed_by_id IS NOT NULL
+      AND ((current_preservation_hold_token IS NOT NULL AND preservation_hold_released_at IS NULL
+        AND preservation_hold_released_by_id IS NULL)
+      OR (current_preservation_hold_token IS NULL AND preservation_hold_released_at IS NOT NULL
+        AND preservation_hold_released_by_id IS NOT NULL
+        AND last_preservation_hold_released_at >= preservation_hold_released_at))))
 );
 COMMENT ON TABLE copyright_notice_email_intake_receipts IS 'Minimal SES replay identity retained after an unlinked private intake and its evidence are erased; this row never authorizes access to an intake.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.amazon_ses_message_id IS 'Stable opaque SES delivery identifier reserved against re-admission after erasure.';
@@ -26,10 +45,81 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_sha256 IS 'Digest o
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_storage_key_sha256 IS 'Digest of the original object key used to reject changed replay evidence without keeping the key.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.raw_byte_size IS 'Original MIME size used to reject changed replay evidence.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.erased_at IS 'Time the private intake began operational erasure; the replay identity survives.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_rationale_ciphertext IS 'Final initial-review explanation encrypted with the receipt-owned immutable SES message identity; retained independently of finite review history.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result, retained independently of finite review history.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_rationale_ciphertext IS 'Final initial-review explanation encrypted under the global stored-secret key; erased after the finite standalone legal-record window.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Final initial staff review result until the standalone legal-record window expires.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_retirement_check_after IS 'Next bounded eligibility probe for a completed standalone review; a blocked receipt yields to later candidates.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.current_preservation_hold_token IS 'Current standalone receipt preservation authority, cleared only by its matching release.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_kind IS 'Legal basis of the latest standalone receipt preservation hold.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_placed_at IS 'Time the latest standalone receipt preservation hold was placed.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_placed_by_id IS 'Retained staff identity that placed the latest receipt hold.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_released_at IS 'Time the latest receipt hold was released.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_released_by_id IS 'Retained staff identity that released the latest receipt hold.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.last_preservation_hold_released_at IS 'Latest receipt hold release, which restarts the six-year legal-record clock.';
+CREATE INDEX idx_cpyrght_ntc_eml_intk_rcpts__preservation_placed_by ON copyright_notice_email_intake_receipts(preservation_hold_placed_by_id) WHERE preservation_hold_placed_by_id IS NOT NULL;
+CREATE INDEX idx_cpyrght_ntc_eml_intk_rcpts__preservation_released_by ON copyright_notice_email_intake_receipts(preservation_hold_released_by_id) WHERE preservation_hold_released_by_id IS NOT NULL;
+CREATE INDEX idx_copyright_email_receipts__review_retirement ON copyright_notice_email_intake_receipts(review_retirement_check_after, reviewed_at, id)
+  WHERE review_decision IS NOT NULL;
+
+CREATE FUNCTION fn_copyright_receipt_review_retirement_eligible(receipt_id uuid)
+RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
+    WHERE receipt.id = receipt_id AND receipt.review_decision IS NOT NULL
+      AND receipt.reviewed_at IS NOT NULL
+      AND receipt.erased_at IS NOT NULL AND receipt.current_preservation_hold_token IS NULL
+      AND GREATEST(receipt.created_at, receipt.reviewed_at, receipt.last_preservation_hold_released_at,
+        (SELECT max(GREATEST(delivery.created_at, delivery.sent_at, delivery.bounced_at))
+         FROM copyright_notice_delivery_work_items delivery
+         WHERE delivery.copyright_notice_email_intake_receipt_id = receipt.id))
+        <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intakes intake WHERE intake.id = receipt.id)
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_receipt_id = receipt.id)
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
+        WHERE review.copyright_notice_email_intake_receipt_id = receipt.id
+          AND review.promoted_copyright_notice_id IS NOT NULL)
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_correspondence_messages correspondence
+        WHERE correspondence.copyright_notice_email_intake_id = receipt.id)
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
+        WHERE delivery.copyright_notice_email_intake_receipt_id = receipt.id
+          AND delivery.state IN ('pending', 'claimed')));
+END;
+$$;
+COMMENT ON FUNCTION fn_copyright_receipt_review_retirement_eligible IS 'Six-calendar-year standalone review eligibility after private intake deletion, with live links, delivery and preservation checked.';
+
+CREATE FUNCTION fn_copyright_receipt_review_retirement_allowed(
+  old_row copyright_notice_email_intake_receipts,
+  new_row copyright_notice_email_intake_receipts
+) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  IF current_setting('app.copyright_receipt_review_retirement', true) IS DISTINCT FROM 'on'
+    OR old_row.review_decision IS NULL OR old_row.reviewed_at IS NULL
+    OR NOT fn_copyright_receipt_review_retirement_eligible(old_row.id)
+    THEN RETURN false; END IF;
+  RETURN new_row.review_decision IS NULL AND new_row.reviewed_at IS NULL
+    AND new_row.reviewed_by_id IS NULL AND new_row.review_rationale_ciphertext IS NULL
+    AND new_row.review_retirement_check_after = '-infinity'::timestamptz
+    AND new_row.current_preservation_hold_token IS NULL
+    AND new_row.preservation_hold_kind IS NULL AND new_row.preservation_hold_placed_at IS NULL
+    AND new_row.preservation_hold_placed_by_id IS NULL
+    AND new_row.preservation_hold_released_at IS NULL
+    AND new_row.preservation_hold_released_by_id IS NULL
+    AND new_row.last_preservation_hold_released_at IS NULL
+    AND (to_jsonb(old_row) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id',
+      'review_rationale_ciphertext', 'review_retirement_check_after', 'preservation_hold_kind',
+      'preservation_hold_placed_at', 'preservation_hold_placed_by_id',
+      'preservation_hold_released_at', 'preservation_hold_released_by_id',
+      'last_preservation_hold_released_at']) =
+      (to_jsonb(new_row) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id',
+      'review_rationale_ciphertext', 'review_retirement_check_after', 'preservation_hold_kind',
+      'preservation_hold_placed_at', 'preservation_hold_placed_by_id',
+      'preservation_hold_released_at', 'preservation_hold_released_by_id',
+      'last_preservation_hold_released_at']);
+END;
+$$;
+COMMENT ON FUNCTION fn_copyright_receipt_review_retirement_allowed IS 'Narrow six-year retirement gate for unlinked final receipt review facts after private evidence erasure and preservation checks.';
 
 CREATE FUNCTION fn_reject_copyright_email_receipt_current_review()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -39,6 +129,31 @@ BEGIN
   END IF;
   IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
     RETURN NEW;
+  END IF;
+  IF fn_copyright_receipt_review_retirement_allowed(OLD, NEW) THEN RETURN NEW; END IF;
+  IF current_setting('app.copyright_receipt_review_retirement', true) = 'on'
+    AND OLD.review_decision IS NOT NULL
+    AND NEW.review_retirement_check_after > OLD.review_retirement_check_after
+    AND (to_jsonb(OLD) - 'review_retirement_check_after') =
+        (to_jsonb(NEW) - 'review_retirement_check_after') THEN RETURN NEW; END IF;
+  IF (to_jsonb(OLD) - ARRAY['current_preservation_hold_token', 'preservation_hold_kind',
+      'preservation_hold_placed_at', 'preservation_hold_placed_by_id', 'preservation_hold_released_at',
+      'preservation_hold_released_by_id', 'last_preservation_hold_released_at']) =
+     (to_jsonb(NEW) - ARRAY['current_preservation_hold_token', 'preservation_hold_kind',
+      'preservation_hold_placed_at', 'preservation_hold_placed_by_id', 'preservation_hold_released_at',
+      'preservation_hold_released_by_id', 'last_preservation_hold_released_at']) THEN
+    IF OLD.current_preservation_hold_token IS NULL AND NEW.current_preservation_hold_token IS NOT NULL
+      AND OLD.review_decision IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_receipt_id = OLD.id)
+      AND NEW.last_preservation_hold_released_at IS NOT DISTINCT FROM OLD.last_preservation_hold_released_at
+      AND NEW.preservation_hold_released_at IS NULL AND NEW.preservation_hold_released_by_id IS NULL THEN RETURN NEW; END IF;
+    IF OLD.current_preservation_hold_token IS NOT NULL AND NEW.current_preservation_hold_token IS NULL
+      AND ROW(NEW.preservation_hold_kind, NEW.preservation_hold_placed_at, NEW.preservation_hold_placed_by_id)
+        IS NOT DISTINCT FROM ROW(OLD.preservation_hold_kind, OLD.preservation_hold_placed_at, OLD.preservation_hold_placed_by_id)
+      AND NEW.preservation_hold_released_at IS NOT NULL AND NEW.preservation_hold_released_by_id IS NOT NULL
+      AND NEW.last_preservation_hold_released_at = GREATEST(OLD.last_preservation_hold_released_at, NEW.preservation_hold_released_at)
+      THEN RETURN NEW; END IF;
   END IF;
   IF (to_jsonb(OLD) - ARRAY['review_decision', 'reviewed_at', 'reviewed_by_id', 'review_rationale_ciphertext', 'erased_at'])
       IS DISTINCT FROM
