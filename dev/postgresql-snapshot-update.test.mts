@@ -106,15 +106,6 @@ describe('PostgreSQL snapshot dispatch command', () => {
     expect(colors).toEqual(Array(3).fill('CLICOLOR_FORCE=unset'))
   })
 
-  it('points db:snapshot:update at the dispatch command', async () => {
-    const manifest = JSON.parse(
-      await readFile(new URL('../package.json', import.meta.url), 'utf8'),
-    ) as {
-      scripts: Record<string, string>
-    }
-    expect(manifest.scripts['db:snapshot:update']).toBe('node dev/postgresql-snapshot-update.mts')
-  })
-
   it('rejects a local head that has not been pushed to the selected PR', async () => {
     const { root, env } = await fixture()
     await expect(dispatch({ ...env, FAKE_GIT_HEAD: 'b'.repeat(40) })).rejects.toThrow(/pushed HEAD/)

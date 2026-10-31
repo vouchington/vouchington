@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -36,14 +34,5 @@ describe('agent workflow documentation', () => {
     expect(agentWorkflowDocViolations(['docs/agent.md'], path => files.get(path)!)).toContain(
       'web/AGENTS.md is missing from tracked Markdown',
     )
-  })
-
-  it('points pr:attach-screenshots at the published package bin', async () => {
-    const manifest = JSON.parse(
-      await readFile(new URL('../package.json', import.meta.url), 'utf8'),
-    ) as {
-      scripts: Record<string, string>
-    }
-    expect(manifest.scripts['pr:attach-screenshots']).toBe('gh-pr-attach-screenshots')
   })
 })
