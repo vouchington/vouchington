@@ -6,6 +6,7 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertCopyrightDsaTransparencyReportsEnabled } from './eu-reporting-gate.mts'
 import { readDsaCopyrightComplaintFigures } from './eu-reporting-complaints.mts'
 import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
+import { DSA_COPYRIGHT_NOTICE_JURISDICTIONS } from './eu-reporting-population.mts'
 import {
   readExistingEuCounts,
   readStoredEuReport,
@@ -23,7 +24,10 @@ const JURISDICTION = 'eu_dsa'
 const REPORT_METHOD = {
   version: 1,
   jurisdiction: JURISDICTION,
-  scope: 'all_eu_notices',
+  scope: 'all_notices',
+  eu_counts_jurisdiction: JURISDICTION,
+  notice_export_jurisdictions: [...DSA_COPYRIGHT_NOTICE_JURISDICTIONS],
+  complaint_export_jurisdiction: JURISDICTION,
   interval: 'start_inclusive_end_exclusive',
   sources: {
     receipt_count: 'copyright_territorial_notice_receipts.received_at',

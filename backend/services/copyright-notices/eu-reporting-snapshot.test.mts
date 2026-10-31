@@ -24,7 +24,11 @@ describe('closed EU report snapshot', () => {
     const end = new Date()
     const report = await compileEuCopyrightTransparencyReport(staff, start, end)
     const stored = await readEuTransparencyReportMethod(report.id)
-    expect(stored?.method_snapshot).toMatchObject({ scope: 'all_eu_notices' })
+    expect(stored?.method_snapshot).toMatchObject({
+      scope: 'all_notices',
+      eu_counts_jurisdiction: 'eu_dsa',
+      notice_export_jurisdictions: ['us_dmca', 'eu_dsa', 'uk'],
+    })
     expect(stored?.figures_snapshot).toMatchObject({
       receipt_count: expect.any(Number),
       notices_received_count: expect.any(Number),
