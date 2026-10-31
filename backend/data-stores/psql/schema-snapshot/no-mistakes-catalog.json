@@ -285,6 +285,9 @@
         "non_post_target"
       ]
     },
+    "copyright_case_preservation_kinds": {
+      "values": ["litigation_threat", "regulator_request", "court_request"]
+    },
     "copyright_claimant_misuse_event_outcomes": {
       "values": [
         "notice_withdrawn",
@@ -1708,6 +1711,9 @@
     "fn_reject_copyright_automated_assessment_screening()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_automated_assessment_screening()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL\n    AND NEW.assessed_by_id IS NULL AND NEW.copyright_notice_form_screening_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.assessed_by_id IS NULL AND NOT fn_current_copyright_form_screening(\n    NEW.copyright_notice_submission_id, NEW.copyright_notice_form_screening_id\n  ) THEN\n    RAISE EXCEPTION 'automated copyright assessment requires its current completed screen and complete structured US DMCA notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.assessed_by_id IS NOT NULL AND NEW.copyright_notice_form_screening_id IS NOT NULL THEN\n    RAISE EXCEPTION 'human copyright assessment cannot claim an automated form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_reject_copyright_case_preservation_hold_update()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_case_preservation_hold_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.released_at IS NOT NULL OR NEW.released_at IS NULL\n    OR (to_jsonb(NEW) - ARRAY['released_at', 'released_by_id'])\n      IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['released_at', 'released_by_id']) THEN\n    RAISE EXCEPTION 'case preservation hold may be released once' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_reject_copyright_correspondence()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_correspondence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright correspondence is a retained legal record' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.copyright_notice_submission_id,\n    OLD.direction,\n    OLD.composition_kind,\n    OLD.correspondence_kind,\n    NULL\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.copyright_notice_submission_id,\n    NEW.direction,\n    NEW.composition_kind,\n    NEW.correspondence_kind,\n    NULL\n  ) THEN\n    RAISE EXCEPTION 'copyright correspondence identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.direction = 'inbound' AND OLD.body_ciphertext IS DISTINCT FROM NEW.body_ciphertext THEN\n    RAISE EXCEPTION 'inbound copyright correspondence body is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS NOT NULL AND ROW(\n    OLD.body_ciphertext,\n    OLD.approved_at\n  ) IS DISTINCT FROM ROW(\n    NEW.body_ciphertext,\n    NEW.approved_at\n  ) THEN\n    RAISE EXCEPTION 'approved copyright correspondence is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.sent_at IS NOT NULL AND OLD.body_ciphertext IS DISTINCT FROM NEW.body_ciphertext THEN\n    RAISE EXCEPTION 'sent copyright correspondence body is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS NULL AND NEW.approved_at IS NOT NULL AND NEW.approved_by_id IS NULL THEN\n    RAISE EXCEPTION 'copyright correspondence approval requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.drafted_by_id IS DISTINCT FROM NEW.drafted_by_id AND NEW.drafted_by_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright correspondence drafter cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_by_id IS DISTINCT FROM NEW.approved_by_id\n    AND OLD.approved_by_id IS NOT NULL\n    AND NEW.approved_by_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright correspondence approver cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.sent_at IS NOT NULL AND OLD.sent_at IS DISTINCT FROM NEW.sent_at THEN\n    RAISE EXCEPTION 'copyright correspondence delivery is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1782,6 +1788,9 @@
     },
     "fn_reject_copyright_territorial_escalation()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_escalation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF (\n    NEW.copyright_territorial_notice_acknowledgment_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1\n      FROM copyright_territorial_notice_acknowledgments acknowledgment\n      JOIN copyright_territorial_notice_receipts receipt\n        ON receipt.id = acknowledgment.copyright_territorial_notice_receipt_id\n      WHERE acknowledgment.id = NEW.copyright_territorial_notice_acknowledgment_id\n        AND receipt.copyright_notice_id = NEW.copyright_notice_id\n    )\n  ) OR (\n    NEW.copyright_eu_supervised_complaint_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM copyright_eu_supervised_complaints complaint\n      WHERE complaint.id = NEW.copyright_eu_supervised_complaint_id\n        AND complaint.copyright_notice_id = NEW.copyright_notice_id\n    )\n  ) THEN\n    RAISE EXCEPTION 'territorial escalation source belongs to another notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_reject_copyright_territorial_terminal_fact_mutation()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_terminal_fact_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_TABLE_NAME = 'copyright_eu_supervised_complaints' THEN\n    IF OLD.resolved_at IS NOT NULL OR NEW.resolved_at IS NULL\n      OR (to_jsonb(NEW) - ARRAY['resolved_at', 'resolved_by_id'])\n        IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['resolved_at', 'resolved_by_id']) THEN\n      RAISE EXCEPTION 'supervised complaint may be resolved once' USING ERRCODE = 'check_violation';\n    END IF;\n  ELSE\n    IF OLD.closed_at IS NOT NULL OR NEW.closed_at IS NULL\n      OR (to_jsonb(NEW) - ARRAY['closed_at', 'closed_by_id'])\n        IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['closed_at', 'closed_by_id']) THEN\n      RAISE EXCEPTION 'territorial escalation may be closed once' USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_erased_copyright_decision_rationale()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_erased_copyright_decision_rationale()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id UUID;\nBEGIN\n  FOR case_id IN\n    SELECT notice.id FROM copyright_notices notice\n    WHERE notice.id = NEW.copyright_notice_id\n      OR notice.id IN (\n        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)\n    ORDER BY notice.id\n  LOOP\n    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;\n  END LOOP;\n  IF EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased\n    WHERE erased.copyright_notice_id = NEW.copyright_notice_id\n      OR erased.copyright_notice_id IN (\n        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)) THEN\n    RETURN NULL;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1961,7 +1970,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_action_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.completed_at_reason IN ('blocked', 'failed') AND NEW.completed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.completed_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '5 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_copyright_case_lifecycle_activity()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_case_lifecycle_activity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Placement-wide registry retries add audit, not a new case filing or legal decision.\n  IF NEW.copyright_notice_id IS NOT NULL\n    AND NEW.change_type <> 'media_delivery_registry_replayed' THEN\n    UPDATE copyright_notices notice\n    -- Virtual generated columns are absent from trigger NEW records; derive the same event clock.\n    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id))\n    WHERE notice.id = NEW.copyright_notice_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_case_lifecycle_activity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Placement-wide registry retries add audit, not a new case filing or legal decision.\n  IF NEW.copyright_notice_id IS NOT NULL\n    AND NEW.change_type <> 'media_delivery_registry_replayed' THEN\n    UPDATE copyright_notices notice\n    -- Virtual generated columns are absent from trigger NEW records; derive the same event clock.\n    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id)),\n      last_legal_activity_at = GREATEST(notice.last_legal_activity_at, uuid_extract_timestamp(NEW.id), clock_timestamp())\n    WHERE notice.id = NEW.copyright_notice_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_copyright_delivery_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -25560,6 +25569,250 @@
         }
       }
     },
+    "copyright_case_preservation_holds": {
+      "checkConstraints": {
+        "chk_copyright_case_preservation_holds__release": {
+          "definition": "CHECK (((released_at IS NULL) = (released_by_id IS NULL)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "copyright_notice_id": {
+          "comment": "Case preserved by this matter.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "created_at": {
+          "comment": "Placement time derived from the UUIDv7 identity.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "id": {
+          "comment": "UUIDv7 identity of the preservation matter.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "kind": {
+          "comment": "Reason requiring case preservation.",
+          "dataType": "copyright_case_preservation_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "placed_by_id": {
+          "comment": "Staff identity that recorded the matter.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "released_at": {
+          "comment": "Terminal release time; NULL while this matter blocks case deletion.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "released_by_id": {
+          "comment": "Staff identity recording release.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        }
+      },
+      "comment": "Written litigation threats and authority requests preserving a case; multiple concurrent matters may overlap.",
+      "foreignKeys": {
+        "copyright_case_preservation_holds_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "copyright_case_preservation_holds_placed_by_id_fkey": {
+          "columns": ["placed_by_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "copyright_case_preservation_holds_released_by_id_fkey": {
+          "columns": ["released_by_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "copyright_case_preservation_holds_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_case_preservation_holds_pkey ON public.copyright_case_preservation_holds USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_case_preservation_holds__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_case_preservation_holds__notice ON public.copyright_case_preservation_holds USING btree (copyright_notice_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_case_preservation_holds__open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_case_preservation_holds__open ON public.copyright_case_preservation_holds USING btree (copyright_notice_id) WHERE (released_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(released_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_case_preservation_holds__placed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_case_preservation_holds__placed_by ON public.copyright_case_preservation_holds USING btree (placed_by_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "placed_by_id",
+              "descending": false,
+              "expression": "placed_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_case_preservation_holds__released_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_case_preservation_holds__released_by ON public.copyright_case_preservation_holds USING btree (released_by_id) WHERE (released_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "released_by_id",
+              "descending": false,
+              "expression": "released_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(released_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_case_preservation_holds_release": {
+          "definition": "CREATE TRIGGER trigger_copyright_case_preservation_holds_release BEFORE UPDATE ON public.copyright_case_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_case_preservation_hold_update()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_claimant_misuse_events": {
       "checkConstraints": {
         "copyright_claimant_misuse_event_shape": {
@@ -27490,6 +27743,10 @@
         "chk_copyright_eu_supervised_complaints__reference": {
           "definition": "CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))",
           "validated": true
+        },
+        "chk_copyright_eu_supervised_complaints__resolved": {
+          "definition": "CHECK (((resolved_at IS NULL) = (resolved_by_id IS NULL)))",
+          "validated": true
         }
       },
       "columns": {
@@ -27521,7 +27778,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "explanation_ciphertext": {
           "comment": "Encrypted explanation of the supervised complaint.",
@@ -27582,10 +27839,38 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 4
+        },
+        "resolved_at": {
+          "comment": "Staff resolution time; NULL while the complaint remains open.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "resolved_by_id": {
+          "comment": "Staff identity recording resolution.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
         }
       },
       "comment": "Supervised complaint recorded against an EU notice. EU only. Recording it can escalate the notice.",
       "foreignKeys": {
+        "copyright_eu_supervised_complaints_resolved_by_id_fkey": {
+          "columns": ["resolved_by_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "fk_copyright_eu_supervised_complaints__notice": {
           "columns": ["copyright_notice_id", "jurisdiction"],
           "onDelete": "RESTRICT",
@@ -27627,6 +27912,29 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_eu_supervised_complaints__open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_supervised_complaints__open ON public.copyright_eu_supervised_complaints USING btree (copyright_notice_id) WHERE (resolved_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(resolved_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_eu_supervised_complaints__recorded_by": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -27645,6 +27953,29 @@
           ],
           "live": true,
           "predicate": "(recorded_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_eu_supervised_complaints__resolved_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_supervised_complaints__resolved_by ON public.copyright_eu_supervised_complaints USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "resolved_by_id",
+              "descending": false,
+              "expression": "resolved_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(resolved_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -27739,8 +28070,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_eu_supervised_complaints_immutable": {
-          "definition": "CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_copyright_eu_supervised_complaints_terminal": {
+          "definition": "CREATE TRIGGER trigger_copyright_eu_supervised_complaints_terminal BEFORE UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()"
         }
       },
       "uniqueConstraints": {
@@ -42362,7 +42693,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "claimant_display_name": {
           "comment": "Immutable claimant display-name snapshot for authorized legal and staff use.",
@@ -42372,7 +42703,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "claimant_user_id": {
           "comment": "Signed-in claimant account linked to the member record; NULL for guest/email claimants or after account deletion.",
@@ -42382,7 +42713,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "created_at": {
           "comment": null,
@@ -42392,7 +42723,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "current_territorial_decision_identity_id": {
           "comment": "Current EU or UK published decision identity; result and authority are stored on this case.",
@@ -42432,6 +42763,16 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
+          "ordinalPosition": 16
+        },
+        "last_legal_activity_at": {
+          "comment": "Latest substantive legal decision or terminal case activity; retention starts here, and each deciding transaction advances it.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
           "ordinalPosition": 15
         },
         "last_lifecycle_activity_at": {
@@ -42462,7 +42803,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "provisional_withholding_at": {
           "comment": "When the case first caused a provisional restriction; NULL when no restriction was imposed.",
@@ -42552,7 +42893,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "work_description": {
           "comment": "Private description identifying the copyrighted work claimed by the submitter.",
@@ -42562,7 +42903,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         }
       },
       "comment": "Legal copyright allegation aggregate. Member views must use an allowlisted projection and never expose contact or evidence.",
@@ -42642,6 +42983,47 @@
           ],
           "live": true,
           "predicate": "(claimant_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notices__legal_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notices__legal_activity ON public.copyright_notices USING btree (jurisdiction, last_legal_activity_at, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "last_legal_activity_at",
+              "descending": false,
+              "expression": "last_legal_activity_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -45843,6 +46225,10 @@
     },
     "copyright_territorial_escalations": {
       "checkConstraints": {
+        "chk_copyright_territorial_escalations__closed": {
+          "definition": "CHECK (((closed_at IS NULL) = (closed_by_id IS NULL)))",
+          "validated": true
+        },
         "chk_copyright_territorial_escalations__jurisdiction": {
           "definition": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))",
           "validated": true
@@ -45853,6 +46239,26 @@
         }
       },
       "columns": {
+        "closed_at": {
+          "comment": "Explicit staff closure time; NULL while the escalation remains open.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "closed_by_id": {
+          "comment": "Staff identity recording closure.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
         "copyright_eu_supervised_complaint_id": {
           "comment": "EU supervised complaint that caused this escalation. Exactly one source is set.",
           "dataType": "uuid",
@@ -45891,7 +46297,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "escalated_at": {
           "comment": "When the escalation was recorded.",
@@ -45926,6 +46332,14 @@
       },
       "comment": "Escalation of one EU or UK notice from either an exhausted acknowledgment or, for EU only, a supervised complaint.",
       "foreignKeys": {
+        "copyright_territorial_escalations_closed_by_id_fkey": {
+          "columns": ["closed_by_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "fk_copyright_territorial_escalations__eu_supervised_complaint": {
           "columns": ["copyright_eu_supervised_complaint_id"],
           "onDelete": "RESTRICT",
@@ -45975,6 +46389,29 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_territorial_escalations__closed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_territorial_escalations__closed_by ON public.copyright_territorial_escalations USING btree (closed_by_id) WHERE (closed_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "closed_by_id",
+              "descending": false,
+              "expression": "closed_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(closed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_territorial_escalations__notice": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -46002,6 +46439,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_territorial_escalations__open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_territorial_escalations__open ON public.copyright_territorial_escalations USING btree (copyright_notice_id) WHERE (closed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(closed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -46060,11 +46520,11 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_territorial_escalations_immutable": {
-          "definition": "CREATE TRIGGER trigger_copyright_territorial_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
-        },
         "trigger_copyright_territorial_escalations_source": {
           "definition": "CREATE TRIGGER trigger_copyright_territorial_escalations_source BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation()"
+        },
+        "trigger_copyright_territorial_escalations_terminal": {
+          "definition": "CREATE TRIGGER trigger_copyright_territorial_escalations_terminal BEFORE UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()"
         }
       },
       "uniqueConstraints": {

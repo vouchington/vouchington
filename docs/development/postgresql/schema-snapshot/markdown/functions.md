@@ -821,6 +821,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_automated_assessment_scree
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_case_preservation_hold_update`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_case_preservation_hold_update()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_correspondence`
 
 ```sql
@@ -1017,6 +1025,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_acknowledgment
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_escalation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_territorial_terminal_fact_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_terminal_fact_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
