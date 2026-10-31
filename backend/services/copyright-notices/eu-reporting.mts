@@ -83,7 +83,11 @@ export async function compileEuCopyrightTransparencyReport(
   const existing = await readStoredEuReport(periodStartedAt, periodEndedAt)
   if (existing) return existing
   await using transaction = await beginTransaction()
-  // Wait for in-flight source writes and hold new ones until the counts are durable.
+  // Every figure uses one snapshot, including the notice, restriction and derived inputs that
+  // the count-source locks below do not themselves fence.
+  await transaction(sql`/* consistentEuCopyrightTransparencySnapshot */
+    SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`)
+  // Wait for in-flight legal fact writes and hold new ones until the counts are durable.
   await transaction(sql`/* lockEuCopyrightTransparencySources */
     LOCK TABLE copyright_territorial_decision_identities,
       copyright_territorial_redress_decision_identities,

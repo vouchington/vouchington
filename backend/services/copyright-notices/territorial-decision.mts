@@ -128,16 +128,18 @@ export async function recordTerritorialCopyrightDecision(
     )
     assessmentId = assessment.id
   }
-  const decisionId = uuidv7()
   const rationaleCiphertext = encryptSecret(text, `${labels.decisionPurpose}:${noticeId}`)
   const publicExplanationCiphertext = encryptSecret(
     publicExplanation,
     `${labels.publicExplanationPurpose}:${noticeId}`,
   )
-  await transaction(sql`/* recordTerritorialCopyrightDecision:identity */
+  const { rows: identities } = await transaction<{ id: string }>(sql`
+    /* recordTerritorialCopyrightDecision:identity */
     INSERT INTO copyright_territorial_decision_identities
-      (id, copyright_notice_id, jurisdiction)
-    VALUES (${decisionId}, ${noticeId}, ${jurisdiction})`)
+      (copyright_notice_id, jurisdiction)
+    VALUES (${noticeId}, ${jurisdiction}) RETURNING id`)
+  const decisionId = identities[0]?.id
+  assert(decisionId, 500, labels.decisionFailed)
   const { rows } = await transaction<TerritorialCopyrightDecision>(sql`
     /* recordTerritorialCopyrightDecision */
     INSERT INTO copyright_territorial_decisions (
