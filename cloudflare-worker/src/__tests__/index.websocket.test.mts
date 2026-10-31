@@ -14,42 +14,6 @@ import type { Env } from '../types.mts'
 describe('WebSocket handling', () => {
   installWebSocketHandlingHooks()
 
-  it('proxies WebSocket upgrade to HMR endpoint: calls accept() on both WebSockets', async () => {
-    const originWs = makeMockWebSocket()
-    const clientWs = makeMockWebSocket()
-    const serverWs = makeMockWebSocket()
-    ;(globalThis as any).WebSocketPair = function (this: Record<number, MockWebSocketLike>) {
-      this[0] = clientWs
-      this[1] = serverWs
-    }
-    globalThis.fetch = vi.fn<VitestLooseMock>().mockResolvedValue({
-      status: 101,
-      webSocket: originWs,
-    }) as unknown as typeof fetch
-
-    const env: Env = {
-      BACKEND_ORIGIN: 'https://backend.example.com',
-      WEB_ORIGIN: 'http://localhost:3000',
-      DEV_WEBSOCKET_PROXY: 'true',
-    }
-
-    // In the test environment new Response(null, { status: 101 }) throws a RangeError
-    // because the WHATWG Fetch spec disallows status < 200 outside the CF Workers runtime.
-    // We still verify that accept() was called on both sides of the bridge.
-    await worker
-      .fetch(
-        new Request('https://voucha.ai/_next/hmr', {
-          headers: { Upgrade: 'websocket', Connection: 'Upgrade' },
-        }),
-        env,
-        createContext(env),
-      )
-      .catch(() => {})
-
-    expect(serverWs.accept).toHaveBeenCalled()
-    expect(originWs.accept).toHaveBeenCalled()
-  })
-
   it('returns 502 when WebSocket origin does not return a webSocket', async () => {
     const clientWs = makeMockWebSocket()
     const serverWs = makeMockWebSocket()

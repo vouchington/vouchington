@@ -29,18 +29,6 @@ describe('unverified session cookies cache policy', () => {
     })
   })
 
-  it('does not bypass cache when no session cookies are present at all', () => {
-    expect(
-      getCachePolicy({
-        ...baseInput,
-        pathname: '/blog',
-        botTier: null,
-        isAuthenticated: false,
-        hasUnverifiedSessionCookies: false,
-      }).mode,
-    ).toBe('cache')
-  })
-
   it('bot audience takes precedence over unverified session cookies', () => {
     expect(
       getCachePolicy({

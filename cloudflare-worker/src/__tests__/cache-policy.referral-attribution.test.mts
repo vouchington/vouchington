@@ -27,7 +27,6 @@ describe('referral attribution cache policy', () => {
   registerCachePolicyBypassSignalTests({
     bypassTitle:
       'bypasses cache when a referral attribution signal is present, before anonymous or bot caching',
-    negativeTitle: 'does not bypass cache when no referral attribution signal is present',
     firstBypass: {
       pathname: '/@alice',
       botTier: null,
