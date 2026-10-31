@@ -43,6 +43,7 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
+- `idx_user_deletion_requests__completed_retention`: `CREATE INDEX idx_user_deletion_requests__completed_retention ON public.user_deletion_requests USING btree (completed_at, id) WHERE (completed_at IS NOT NULL)`
 - `idx_user_deletion_requests__processing_attempt_id`: `CREATE UNIQUE INDEX idx_user_deletion_requests__processing_attempt_id ON public.user_deletion_requests USING btree (processing_attempt_id)`
 - `idx_user_deletion_requests__recover_started`: `CREATE INDEX idx_user_deletion_requests__recover_started ON public.user_deletion_requests USING btree (processing_started_at, id) WHERE ((completed_at IS NULL) AND (processing_started_at IS NOT NULL))`
 - `idx_user_deletion_requests__recover_unstarted`: `CREATE INDEX idx_user_deletion_requests__recover_unstarted ON public.user_deletion_requests USING btree (dispatched_at, id) WHERE ((completed_at IS NULL) AND (processing_started_at IS NULL))`
