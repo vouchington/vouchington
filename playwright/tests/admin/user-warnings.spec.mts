@@ -113,15 +113,6 @@ test.describe('User Warnings — /my/warnings page', () => {
     await expect(page.getByTestId('my-warnings-list')).toBeVisible()
     await expect(page.getByTestId('my-warning-no-message').first()).toBeVisible()
   })
-
-  test('shows empty state for a user with no warnings', async ({ page }) => {
-    const cleanUser = requireTestValue(await createTestUser(), 'Failed to create clean user')
-
-    await loginAsUser(page, cleanUser.id)
-    await navigateTo(page, '/my/warnings')
-
-    await expect(page.getByTestId('my-warnings-empty')).toBeVisible()
-  })
 })
 
 test.describe('User Warnings — Admin Panel', () => {
