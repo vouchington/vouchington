@@ -82,7 +82,7 @@ async function drainBufferedRecords(): Promise<void> {
 }
 
 async function flushBufferedRecords(): Promise<void> {
-  const records = buffer.splice(0, buffer.length)
+  const records = buffer.splice(0)
   bufferedBytes = 0
   const groups = new Map<string, { table: AnalyticsTableName; date: string; lines: string[] }>()
 
