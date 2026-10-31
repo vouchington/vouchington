@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getTurnstileConfig, isTurnstileAlwaysApprove, turnstileConfig } from './config.mts'
+import { isTurnstileAlwaysApprove, turnstileConfig } from './config.mts'
 import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
@@ -13,7 +13,8 @@ describe('turnstile-config', () => {
   })
 
   it('defaults always_approve to false', () => {
-    expect(getTurnstileConfig()).toEqual({ always_approve: false })
+    expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'staging' })).toBe(false)
+    expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'production' })).toBe(false)
   })
 
   it('honors boolean true only on staging', () => {
@@ -41,6 +42,7 @@ describe('turnstile-config', () => {
 
   it('treats an invalid stored field as the default and reports it', () => {
     overrideUncheckedDynamicConfigFieldsForTest(turnstileConfig, { always_approve: 'TRUE' })
-    expect(getTurnstileConfig()).toEqual({ always_approve: false })
+    expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'staging' })).toBe(false)
+    expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'production' })).toBe(false)
   })
 })
