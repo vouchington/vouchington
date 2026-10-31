@@ -14,6 +14,7 @@ import {
   type EuCopyrightTransparencyReport,
 } from './eu-reporting-counts.mts'
 import { assertReportingPeriod } from './territorial-fields.mts'
+import { lockEuCopyrightTransparencySources } from './eu-reporting-lock.mts'
 
 export type {
   DsaCopyrightTransparencyFigures,
@@ -87,17 +88,9 @@ export async function compileEuCopyrightTransparencyReport(
   // the count-source locks below do not themselves fence.
   await transaction(sql`/* consistentEuCopyrightTransparencySnapshot */
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`)
-  // The global figures also read notices and restrictions. Source writers can reach these
-  // tables in either order, so acquire all report locks without waiting; a busy source leaves
-  // this report unpublished for a later request instead of deadlocking a legal decision.
-  await transaction(sql`/* lockEuCopyrightTransparencySources */
-    LOCK TABLE copyright_notices, copyright_restrictions,
-      copyright_territorial_decision_identities,
-      copyright_territorial_redress_decision_identities,
-      copyright_territorial_notice_receipts,
-      copyright_territorial_decisions, copyright_territorial_redress_requests,
-      copyright_territorial_redress_decisions, copyright_eu_supervised_complaints,
-      copyright_territorial_escalations IN SHARE MODE NOWAIT`)
+  // Writers may take these tables in inverse order. A failed partial attempt releases every
+  // acquired lock before waiting for one source, then retries the whole fence.
+  await lockEuCopyrightTransparencySources(transaction)
   const [counts, noticeFigures, complaintFigures] = await Promise.all([
     readExistingEuCounts(periodStartedAt, periodEndedAt, undefined, transaction),
     readDsaCopyrightNoticeFigures(periodStartedAt, periodEndedAt, undefined, transaction),
