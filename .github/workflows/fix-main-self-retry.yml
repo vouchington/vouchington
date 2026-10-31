@@ -43,9 +43,10 @@ jobs:
         timeout-minutes: 3
         with:
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@91c3b061e039acca26bb72e40f43b3db68de6415 # v0.84.0
         timeout-minutes: 5
         with:
+          deadline-seconds: '270'
           install-scripts: 'false'
       - name: Revalidate source run
         timeout-minutes: 2
