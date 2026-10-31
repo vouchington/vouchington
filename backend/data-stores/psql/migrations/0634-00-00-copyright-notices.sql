@@ -879,6 +879,13 @@ DECLARE
 BEGIN
   SELECT relname INTO logical_table_name FROM pg_class
     WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
+  IF TG_OP = 'UPDATE' AND logical_table_name = 'copyright_notice_submission_requests'
+    AND current_setting('app.copyright_submission_key_retention', true) = 'on'
+    AND uuid_extract_timestamp(OLD.id) < clock_timestamp() - interval '30 days'
+    AND OLD.idempotency_key IS NOT NULL AND NEW.idempotency_key IS NULL
+    AND (to_jsonb(OLD) - 'idempotency_key') = (to_jsonb(NEW) - 'idempotency_key') THEN
+    RETURN NEW;
+  END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
     IF fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;

@@ -161,7 +161,9 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 
 The daily operational cleanup separately expires screening and transport attempts, unused guest
 capabilities, and case-exclusive email threading after the case has no open work and its reply
-window has passed. A per-case intake-age high-water prevents old SES replays from rebuilding
+window has passed. It clears raw appeal and counter-notice retry keys after 30 days while a
+case-owned digest continues to match exact retries for as long as the case exists.
+A per-case intake-age high-water prevents old SES replays from rebuilding
 expired references while fresh email can still thread through an eligible case. An unlinked email
 intake loses its original object and private MIME parse and attachment data after inactivity; a
 minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
