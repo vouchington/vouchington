@@ -1,26 +1,17 @@
 import { parsePostgresSql, type PostgresSqlInsert, type PostgresSqlStatement } from 'no-mistakes'
 
 import { isConvergentOnConflict, isGuardedSelect } from './on-conflict-convergence.mts'
-import {
-  hasGeneratedArbiterViolation,
-  hasReplayUnsafeTrigger,
-  type SchemaSnapshotFacts,
-} from './schema-snapshot-facts.mts'
+import type { SchemaSnapshotFacts } from './schema-snapshot-facts.mts'
 
 export type InsertSchemaFacts = Pick<
   SchemaSnapshotFacts,
   'hasReplayUnsafeTrigger' | 'hasGeneratedArbiterViolation'
 >
 
-const fixtureFacts: InsertSchemaFacts = {
-  hasReplayUnsafeTrigger,
-  hasGeneratedArbiterViolation,
-}
-
-/** Replay guard. Unit tests use the bounded fixture; static CI passes committed-snapshot facts. */
+/** Replay guard. Callers pass bounded fixture facts or committed-snapshot facts. */
 export async function findFirstUnguardedInsertViolation(
   sql: string,
-  schemaFacts: InsertSchemaFacts = fixtureFacts,
+  schemaFacts: InsertSchemaFacts,
 ): Promise<string | null> {
   return findViolation(sql, 0, schemaFacts)
 }

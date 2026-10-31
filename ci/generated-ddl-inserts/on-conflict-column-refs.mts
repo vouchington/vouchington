@@ -6,7 +6,7 @@ import type {
 
 export type ExpressionNode = PostgresSqlExpression | PostgresSqlExpressionChild
 
-export function columnName(name: PostgresSqlName): string | undefined {
+function columnName(name: PostgresSqlName): string | undefined {
   return name.parts.at(-1)?.identity
 }
 

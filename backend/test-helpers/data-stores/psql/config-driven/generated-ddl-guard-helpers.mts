@@ -1,7 +1,3 @@
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
-
-import { getFilesFromFolder } from '../../../../data-stores/psql/migration-runner/files.mts'
 import { splitSqlStatements } from '../../../../data-stores/psql/migration-runner/sql-statements.mts'
 import { readStartedIfBlocks, type PrecheckFrame } from './ddl-precheck-stack-helpers.mts'
 import {
@@ -15,26 +11,6 @@ import {
 import { extractDoBlocks, stripDoBlocks } from './do-block-readers.mts'
 import { loadExecutableSqlStrings } from './generated-ddl-execute-helpers.mts'
 import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mts'
-
-export async function loadGeneratedConfigDrivenSql(
-  configDrivenDir: string,
-): Promise<{ file: string; sql: string }[]> {
-  const generatorFiles = getFilesFromFolder(configDrivenDir)
-    .filter(file => file.endsWith('.mts'))
-    .toSorted()
-  return Promise.all(
-    generatorFiles.map(async file => {
-      const mod = (await import(pathToFileURL(join(configDrivenDir, file)).href)) as {
-        default?: unknown
-      }
-      if (typeof mod.default !== 'function')
-        throw new TypeError(`${file} must export a default SQL generator`)
-      const sql = await (mod.default as () => unknown)()
-      if (typeof sql !== 'string') throw new TypeError(`${file} must generate SQL text`)
-      return { file, sql: sql as string }
-    }),
-  )
-}
 
 export async function findFirstGeneratedDdlViolation(sql: string): Promise<string | null> {
   const executableSql = stripSqlComments(sql)

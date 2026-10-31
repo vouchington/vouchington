@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
+import { findFirstUnguardedInsertViolation as findUnguardedInsertViolation } from '../../../../../ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts'
+import { fixtureInsertFacts } from '../../../../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
+
+const findFirstUnguardedInsertViolation = (sql: string) =>
+  findUnguardedInsertViolation(sql, fixtureInsertFacts)
 
 describe('config-driven generated DDL insert invariant: PREPARE/EXPLAIN wrappers', () => {
   it('flags a non-convergent INSERT inside a PREPARE ... AS statement', async () => {

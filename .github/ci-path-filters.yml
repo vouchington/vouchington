@@ -6,6 +6,7 @@ backend:
   - 'ci/mcp-tool-file-registration.mts'
   - 'ci/check-topic-merge-foreign-keys.mts'
   - 'ci/validate-generated-ddl-inserts.mts'
+  - 'ci/generated-ddl-inserts/**'
   - 'ci/package.json'
   - 'api-fixtures/**'
   - 'vitest.config.mts'

@@ -7,10 +7,8 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
-import {
-  findFirstGeneratedDdlViolation,
-  loadGeneratedConfigDrivenSql,
-} from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
+import { loadGeneratedConfigDrivenSql } from '../../../../../ci/generated-ddl-inserts/load-generated-config-driven-sql.mts'
+import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
 import { findFirstUuidv7CreatedAtViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-schema-invariants.mts'
 import {
   readDollarQuoteDelimiter,

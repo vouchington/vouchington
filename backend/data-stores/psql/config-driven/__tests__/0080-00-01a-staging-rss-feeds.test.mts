@@ -3,8 +3,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule, splitSqlStatements } from '../../migration-runner/sql-statements.mts'
+import { findFirstUnguardedInsertViolation as findUnguardedInsertViolation } from '../../../../../ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts'
 import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
-import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
+import { fixtureInsertFacts } from '../../../../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
 import { findFirstUuidv7CreatedAtViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-schema-invariants.mts'
 import { stripSqlComments } from '../../../../test-helpers/data-stores/psql/config-driven/sql-text-scanner-helpers.mts'
 import {
@@ -18,6 +19,9 @@ import {
 } from '../../../../test-helpers/data-stores/psql/staging-rss-feeds.mts'
 import generateStagingRssFeedsSQL from '../0080-00-01a-staging-rss-feeds.mts'
 import { STAGING_RSS_FEEDS, type StagingRssFeed } from '../utils/staging-rss-feeds.mts'
+
+const findFirstUnguardedInsertViolation = (sql: string) =>
+  findUnguardedInsertViolation(sql, fixtureInsertFacts)
 
 // The three feeds the staging decision names (vouchington/vouchington#1956).
 const GUARDIAN_URL = 'https://www.theguardian.com/science/rss'
