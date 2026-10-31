@@ -20,6 +20,16 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 type ElectionUpdatePage = Awaited<ReturnType<typeof enqueueElectionUpdatePageForUser>>
 
 const ELECTION_JOB_NAME = 'vote-aggregation.processUpdateElectionVoteStats'
+
+function electionJobs(result: unknown): { id: string }[] {
+  if (!Array.isArray(result)) throw new Error('Expected election jobs')
+  return result.flatMap(job =>
+    typeof job === 'object' && job !== null && 'id' in job && typeof job.id === 'string'
+      ? [{ id: job.id }]
+      : [],
+  )
+}
+
 const randomHex = () => randomBytes(4).toString('hex')
 const randomUsername = () => `test-vw-enqueue-${randomHex()}`
 
@@ -140,11 +150,11 @@ describe('enqueueElectionUpdatePageForUser', () => {
 
     const [page, unrelatedJobs] = await Promise.all([
       enqueueElectionUpdatePageForUser(user!.id, null),
-      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]),
+      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]).then(electionJobs),
     ])
     expect(page).toEqual({ jobIds: [], nextCursor: null })
 
-    const unrelatedJob = await voteAggregation.getJob((unrelatedJobs as [{ id: string }])[0].id)
+    const unrelatedJob = await voteAggregation.getJob(unrelatedJobs[0]!.id)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 
@@ -153,28 +163,14 @@ describe('enqueueElectionUpdatePageForUser', () => {
     const postIds = await Promise.all([1, 2].map(() => createPost(user!.id)))
     for (const postId of postIds) await insertPostElectionVote(user!.id, postId, 1)
 
-    const admitted: string[] = []
-    const onAdded = (job: { id: string; name: string; data: unknown }) => {
-      if (
-        job.name === ELECTION_JOB_NAME &&
-        typeof job.data === 'object' &&
-        job.data !== null &&
-        'electionId' in job.data &&
-        typeof job.data.electionId === 'string' &&
-        postIds.includes(job.data.electionId)
-      )
-        admitted.push(job.id)
-    }
-    voteAggregation.on('added', onAdded)
-    try {
-      const page = await enqueueElectionUpdatePageForUser(user!.id, null)
-      expect(admitted).toHaveLength(2)
-      expect(page.jobIds).toEqual(admitted)
-      const persisted = await Promise.all(page.jobIds.map(jobId => voteAggregation.getJob(jobId)))
-      expect(persisted.map(job => job?.id)).toEqual(page.jobIds)
-    } finally {
-      voteAggregation.off('added', onAdded)
-    }
+    const page = await enqueueElectionUpdatePageForUser(user!.id, null)
+    expect(page.jobIds).toHaveLength(2)
+    const jobs = await Promise.all(page.jobIds.map(jobId => voteAggregation.getJob(jobId)))
+    const foundElectionIds = jobs.map(job => {
+      if (!job) throw new Error('Expected a persisted election job')
+      return (job.data as { electionId: string }).electionId
+    })
+    expect(new Set(foundElectionIds)).toEqual(new Set(postIds))
   })
 
   it('enqueues a post election update for the voted post id', async () => {
@@ -229,11 +225,11 @@ describe('enqueueElectionUpdatePageForUser', () => {
 
     const [page, unrelatedJobs] = await Promise.all([
       enqueueElectionUpdatePageForUser(fakeId, null),
-      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]),
+      enqueueBulkUpdatePostElectionVoteStats([unrelatedPostId]).then(electionJobs),
     ])
     expect(page.jobIds).toEqual([])
 
-    const unrelatedJob = await voteAggregation.getJob((unrelatedJobs as [{ id: string }])[0].id)
+    const unrelatedJob = await voteAggregation.getJob(unrelatedJobs[0]!.id)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 
