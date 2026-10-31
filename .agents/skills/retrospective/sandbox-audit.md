@@ -1,6 +1,6 @@
 ## Sandbox & Permission Audit Details
 
-Referenced from [the agent-sandbox scheduled prompt](../../../docs/prompts/scheduled/agent-sandbox-policy.md), which runs `node dev/sandbox-command-audit.mts` and links this doc as the complementary human-run half of the audit.
+Referenced from [the agent-sandbox scheduled prompt](../../../docs/prompts/scheduled/agent-sandbox-policy.md), which links this doc as the complementary human-run half. That rotation stays on static project config and does not read session transcripts. Run `pnpm exec vouchington sandbox-command-audit --rules dev/sandbox-command-audit/rules.mts`.
 
 ### Why frequency isn't the signal
 
@@ -77,7 +77,7 @@ stale (a script renamed or removed since the session ran).
 
 The report's default output is prefix-only: a normalized `<leading command> <subcommand>` plus counts, not the raw command line and never Codex justifications. Any token over 40 characters is redacted outright (never truncated), so long embedded payloads — JSON blobs, giant quoted args, a secret glued into a `VAR=...` assignment — never reach default output.
 
-This is a prefix boundary, not a full-command boundary: for a short two-token command, the "prefix" **is** the whole command. `./dev/tmux-name my-topic-slug` or `source /tmp/my-script.sh` pass through unredacted whenever the second token is under 40 characters, so a branch/topic slug, short path, or hostname can appear verbatim. Retros get distilled into public GitHub issues by `retrospective-distill`, so skim the (non-`--raw`) output before pasting it into the retro file and hand-redact anything sensitive — don't assume "not `--raw`" means "nothing sensitive." `--raw` goes further still (full commands, Codex justifications, and sandbox-failure text) and is local-inspection-only; never paste `--raw` output into the retro file.
+This is a prefix boundary, not a full-command boundary: for a short two-token command, the "prefix" **is** the whole command. `./dev/initialize monorepo` or `source /tmp/my-script.sh` pass through unredacted whenever the second token is under 40 characters, so a branch/topic slug, short path, or hostname can appear verbatim. Retros get distilled into public GitHub issues by `retrospective-distill`, so skim the (non-`--raw`) output before pasting it into the retro file and hand-redact anything sensitive — don't assume "not `--raw`" means "nothing sensitive." `--raw` goes further still (full commands, Codex justifications, and sandbox-failure text) and is local-inspection-only; never paste `--raw` output into the retro file.
 
 ### Related
 
