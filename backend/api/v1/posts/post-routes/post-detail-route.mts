@@ -131,7 +131,9 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
           is_following: isFollowing,
         }
       : null,
-    post_metrics: getPostMetricsByAnyCached(ctx.params.idOrSlug!),
+    // The post is already resolved. Key metrics by that id so slug requests share the
+    // entry list hydration and invalidation already use, instead of a separate slug lookup.
+    post_metrics: getPostMetricsByAnyCached(post.id),
     post_election: getPostElectionByIdCachedBatch([post.id])
       .then(elections => elections[0] ?? null)
       .then(election => maybeSanitizeElection(currentUser, election)),
