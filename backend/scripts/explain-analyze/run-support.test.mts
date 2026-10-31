@@ -1,10 +1,7 @@
 import { readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  capturedProbeStatements,
-  writeAnnotatedSelectProbe,
-} from '@voucha/test-helpers/data-stores/psql/annotated-select-probe'
+import { executeCapturedStatement } from '@voucha/test-helpers/query-capture'
 import { assertScenarioManifest, getResults, runAndCapture } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
@@ -24,7 +21,7 @@ describe('writeResults', () => {
   it('persists a gate-rejected captured plan', async () => {
     vi.resetModules()
     vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', '')
-    const probe = await import('@voucha/test-helpers/data-stores/psql/annotated-select-probe')
+    const captured = await import('@voucha/test-helpers/query-capture')
     const expectations = await import('./plan-expectations.mts')
     const failures = await import('./scenario-failures.mts')
     const support = await import('./run-support.mts')
@@ -41,7 +38,7 @@ describe('writeResults', () => {
     })
     const beforeFailures = failures.getScenarioFailures().length
     await support.runAndCapture('membership-refunds-already-refunded-batch', async () => {
-      await probe.writeAnnotatedSelectProbe()
+      await captured.executeCapturedStatement('/* postSearch */ SELECT 1')
     })
     const failing = support.getResults().at(-1)
     expect(failing?.query_text).toBe('/* postSearch */ SELECT 1')
@@ -103,7 +100,7 @@ describe('EXPLAIN query capture', () => {
     await expect(
       recordedScenarioError(() =>
         runAndCapture('post-search-new', async () => {
-          await writeAnnotatedSelectProbe()
+          await executeCapturedStatement('/* postSearch */ SELECT 1')
         }),
       ),
     ).rejects.toThrow('Invalid EXPLAIN_PLAN_CACHE_MODE: "invalid"')
@@ -113,9 +110,8 @@ describe('EXPLAIN query capture', () => {
     vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', '')
     const before = getResults().length
     await runAndCapture('post-search-new', async () => {
-      await writeAnnotatedSelectProbe()
+      await executeCapturedStatement('/* postSearch */ SELECT 1')
     })
-    expect(capturedProbeStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
     const explained = getResults().slice(before)
     expect(explained.map(result => result.query_text)).toEqual(['/* postSearch */ SELECT 1'])
     expect(explained.map(result => result.plan_cache_mode)).toEqual(['auto'])
@@ -125,9 +121,8 @@ describe('EXPLAIN query capture', () => {
     vi.stubEnv('EXPLAIN_PLAN_CACHE_MODE', 'compare')
     const before = getResults().length
     await runAndCapture('post-search-new', async () => {
-      await writeAnnotatedSelectProbe()
+      await executeCapturedStatement('/* postSearch */ SELECT 1')
     })
-    expect(capturedProbeStatements()).toEqual([{ text: '/* postSearch */ SELECT 1', values: [] }])
     const explained = getResults().slice(before)
     expect(explained.map(result => result.query_text)).toEqual([
       '/* postSearch */ SELECT 1',

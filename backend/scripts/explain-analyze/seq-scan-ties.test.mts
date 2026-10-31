@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { assertNoNewSeqScans, getSeqScanNearTies } from './seq-scan-baseline.mts'
 import {
   costWithoutSeqScan,
+  forcedSeqScan,
   isSeqScanNearTie,
   isStaleSeqScanNearTie,
-  forcedSeqScan,
   planTotalCost,
   SEQ_SCAN_TIE_RATIO,
   type ProbedExplainResult,
@@ -149,12 +149,12 @@ describe('sequential scan near-ties', () => {
     }
 
     it('reads the forced scan only when the plan still scans the relation', () => {
-      const posts = seqScanResult()
-      expect(forcedSeqScan(posts.plan, 'posts')).toEqual({
+      const seq = seqScanResult().plan
+      expect(forcedSeqScan(seq, 'posts')).toEqual({
         total_cost: SEQ_PLAN_COST,
         scan_cost: SEQ_SCAN_COST,
       })
-      expect(forcedSeqScan(posts.plan, 'topics')).toBeUndefined()
+      expect(forcedSeqScan(seq, 'topics')).toBeUndefined()
       expect(forcedSeqScan({}, 'posts')).toBeUndefined()
     })
 
