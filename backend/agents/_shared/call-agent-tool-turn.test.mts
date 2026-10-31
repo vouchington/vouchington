@@ -7,11 +7,7 @@ import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/cla
 import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { SpendCapBreachError } from '@services/ai-usage'
-import {
-  callAgentToolTurn,
-  callProviderToolTurn,
-  type AgentToolTurnCaller,
-} from './call-agent-tool-turn.mts'
+import { callAgentToolTurn, type AgentToolTurnCaller } from './call-agent-tool-turn.mts'
 
 const request = {
   instructions: 'Decide.',
@@ -80,14 +76,13 @@ describe('callAgentToolTurn (real PG)', () => {
 
     expect(order).toEqual(['reserve', 'turn'])
   })
-})
 
-describe('callProviderToolTurn', () => {
   it('refuses an unpriced model before any request is sent', async () => {
     await expect(
-      callProviderToolTurn(request, {
+      callAgentToolTurn({
+        request,
+        agentSlug: 'autotagger-agent',
         selection: { provider: 'anthropic', model: 'claude-unpriced' },
-        openaiTransport: 'openrouter',
       }),
     ).rejects.toMatchObject({ code: 'unsupported-parameter' })
   })
