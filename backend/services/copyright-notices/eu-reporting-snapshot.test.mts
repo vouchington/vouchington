@@ -51,4 +51,17 @@ describe('closed EU report snapshot', () => {
       })
     })
   })
+
+  it('publishes one immutable report for concurrent compilers of the same period', async () => {
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    const offset = Number.parseInt(crypto.randomUUID().slice(0, 8), 16) % 60_000
+    const start = new Date(Date.now() - 120_000 - offset)
+    const end = new Date(start.getTime() + 30_000)
+    const reports = await Promise.all([
+      compileEuCopyrightTransparencyReport(staff, start, end),
+      compileEuCopyrightTransparencyReport(staff, start, end),
+      compileEuCopyrightTransparencyReport(staff, start, end),
+    ])
+    expect(new Set(reports.map(report => report.id)).size).toBe(1)
+  })
 })

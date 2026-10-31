@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertCopyrightDsaTransparencyReportsEnabled } from './eu-reporting-gate.mts'
@@ -104,7 +105,10 @@ export async function compileEuCopyrightTransparencyReport(
     ...noticeFigures,
     ...complaintFigures,
   }
-  const { rows } = await transaction<EuCopyrightTransparencyReport>(sql`
+  let rows: EuCopyrightTransparencyReport[]
+  try {
+    rows = (
+      await transaction<EuCopyrightTransparencyReport>(sql`
     /* compileEuCopyrightTransparencyReport */
     INSERT INTO copyright_eu_transparency_reports (
       jurisdiction, period_started_at, period_ended_at, receipt_count,
@@ -123,6 +127,17 @@ export async function compileEuCopyrightTransparencyReport(
       statement_of_reasons_count, redress_request_count, redress_decision_count,
       supervised_complaint_count, escalation_count
   `)
+    ).rows
+  } catch (err) {
+    if (typeof err !== 'object' || err === null || !('code' in err) || err.code !== '40001')
+      throw err
+    // Repeatable Read cannot see the winner after an ON CONFLICT serialization failure.
+    // Leave this owned transaction before reading the immutable report in a new snapshot.
+    await transaction.rollback()
+    const published = await readStoredEuReport(periodStartedAt, periodEndedAt)
+    if (published) return published
+    throw createHttpError(503, 'EU report publication is busy', { cause: err })
+  }
   const report = rows[0] ?? (await readStoredEuReport(periodStartedAt, periodEndedAt, transaction))
   assert(report, 500, 'Failed to record EU transparency report')
   await transaction.commit()
