@@ -71,6 +71,12 @@ describe('collectConfigInventory shared reader', () => {
     expect(inventory.envVars).not.toContainEqual(
       expect.objectContaining({ name: 'HIDDEN_SOURCE_ENV' }),
     )
+    expect(inventory.envVars).toContainEqual(
+      expect.objectContaining({
+        name: 'STRIPE_SECRET_KEY',
+        contractKey: 'vouchington-infra:ecs-backend-secret+ecs-worker-secret:STRIPE_SECRET_KEY',
+      }),
+    )
   })
 
   it('retains typed metadata, constructor carriers and action-versus-workflow routing with finite sources', async () => {
