@@ -87,6 +87,12 @@ export async function compileEuCopyrightTransparencyReport(
   // the count-source locks below do not themselves fence.
   await transaction(sql`/* consistentEuCopyrightTransparencySnapshot */
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`)
+  // Notice receipt and restriction imposition feed the global figures snapshot. Their writers
+  // acquire the notice before writing these facts, so fence them before the identity/fact locks.
+  // This also prevents a Node-allocated notice or restriction ID from predating this report
+  // while its row commits after the snapshot.
+  await transaction(sql`/* lockEuCopyrightTransparencyFigureSources */
+    LOCK TABLE copyright_notices, copyright_restrictions IN SHARE MODE`)
   // Wait for in-flight legal fact writes and hold new ones until the counts are durable.
   await transaction(sql`/* lockEuCopyrightTransparencySources */
     LOCK TABLE copyright_territorial_decision_identities,
