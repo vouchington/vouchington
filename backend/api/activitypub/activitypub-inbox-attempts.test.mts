@@ -2,6 +2,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
+import { ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES } from '@services/ap-inbox-activities'
 import {
   isActivityPubInboxSenderRateLimited,
   recordActivityPubInboxAttempt,
@@ -140,7 +141,7 @@ describe('POST /ap/inbox pre-verification attempt limit', () => {
     const keyId = `${actorUri}#main-key`
     const { privateKeyPem } = generateRsaSha256KeyPair()
     const signedBody = makeBody(actorUri)
-    const oversizedBody = `${signedBody}${' '.repeat(1024 * 1024)}`
+    const oversizedBody = `${signedBody}${' '.repeat(ACTIVITYPUB_INBOX_MAX_RAW_BODY_BYTES)}`
 
     await postInbox(sourceIp, signInboxRequest(signedBody, keyId, privateKeyPem))
       .send(oversizedBody)

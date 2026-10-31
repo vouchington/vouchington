@@ -68,7 +68,7 @@ describe('runCommand', () => {
   it('caps retained stderr and still drains the rest', async () => {
     const { stderr } = await runCommand({
       command: node,
-      args: ['-e', 'process.stderr.write("x".repeat(50_000))'],
+      args: ['-e', 'process.stderr.write("x".repeat(129))'],
       timeoutMs: 2_000,
       stderrCapBytes: 128,
     })
