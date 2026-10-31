@@ -1,5 +1,5 @@
 import type { TestProjectConfiguration } from 'vitest/config'
-import { backendNoDataUnitTestFiles } from './backend-core-projects.mts'
+import { backendNoDataUnitTestFiles } from './backend-no-data-unit-tests.mts'
 
 const backendDataStoreTestDefaults = {
   pool: 'forks' as const,

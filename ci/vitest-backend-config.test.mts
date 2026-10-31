@@ -190,6 +190,7 @@ describe('backend Vitest project config', () => {
       'backend/entrypoints/api/glidemq-dashboard.test.mts',
       'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
       'backend/data-stores/graceful-shutdown/index.test.mts',
+      'backend/services/jwt-session/verify-request-memo.test.mts',
     ]) {
       const owners = backendProjects().filter(project => projectOwnsPath(project, path))
       expect(owners.map(project => project.test?.name)).toEqual(['backend-no-data-mocks'])

@@ -1,33 +1,6 @@
 import react from '@vitejs/plugin-react'
 import type { TestProjectConfiguration } from 'vitest/config'
-
-// Dependency-injected unit tests need neither database bootstrap nor module mocking.
-export const backendNoDataUnitTestFiles = [
-  'backend/queues/content-analysis/payload/upload-cleanup.test.mts',
-  'backend/services/jwt-session/client-binding.test.mts',
-  'backend/services/sitemaps/generation-page.no-data.test.mts',
-  'backend/services/urls-domains-robots/__tests__/fetch-body-signal.test.mts',
-  'backend/services/urls-domains-robots/__tests__/fetch-unread-body.test.mts',
-  'backend/services/urls-domains-robots/__tests__/fetch-pinned.test.mts',
-  'backend/services/urls-domains-robots/__tests__/fetch-pinned-budget.test.mts',
-  'backend/scripts/build/compile-source-rewrites.test.mts',
-  'backend/scripts/explain-analyze/pruning/migration-command-failure.test.mts',
-  'backend/scripts/explain-analyze/pruning/migration-control-clients.test.mts',
-  'backend/scripts/explain-analyze/scenario-failures.test.mts',
-  'backend/scripts/explain-analyze/seed-data/materialized-view-maintenance.test.mts',
-  'backend/services/oauth/__tests__/authorization-provider-url.test.mts',
-  'backend/services/users/settle-deletion-operations.test.mts',
-  'backend/services/users/enqueue-delete-user-bookmark-bloom-filter.test.mts',
-  'backend/entrypoints/api/startup.test.mts',
-  'backend/entrypoints/api/glidemq-dashboard.test.mts',
-  'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
-  'backend/data-stores/graceful-shutdown/index.test.mts',
-  'backend/data-stores/valkey-glide-mq/shared-queue-ordering.test.mts',
-  'backend/queues/background-cpu/enqueues/job-lanes.test.mts',
-  'backend/services/dynamic-config-admin/registry-shared-ordering.test.mts',
-  'backend/services/oauth/__tests__/authorization-account-microsoft.test.mts',
-  'backend/modules/model-providers/openai-generate.no-data.test.mts',
-]
+import { backendNoDataUnitTestFiles } from './backend-no-data-unit-tests.mts'
 
 export const backendCoreProjects: TestProjectConfiguration[] = [
   {
