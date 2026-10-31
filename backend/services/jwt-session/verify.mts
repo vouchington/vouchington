@@ -1,3 +1,4 @@
+import { memoizeRequestSessionPairVerification } from './verify-request-memo.mts'
 import { isStrictSessionTokenPair } from './token-pair.mts'
 import {
   EDGE_ANON_SESSION_JWT_ISSUER,
@@ -11,7 +12,19 @@ import type { VerifyDeviceAndSessionTokenResult } from './types.mts'
 let edgeAnonPublicKeysMissingLogged = false
 
 // Combined function to verify both device and session tokens (signature-only, no Valkey)
-export async function verifyDeviceAndSessionTokens({
+export function verifyDeviceAndSessionTokens({
+  deviceToken,
+  sessionToken,
+}: {
+  deviceToken: string
+  sessionToken: string
+}): Promise<VerifyDeviceAndSessionTokenResult | false> {
+  return memoizeRequestSessionPairVerification(deviceToken, sessionToken, () =>
+    verifyDeviceAndSessionTokensUncached({ deviceToken, sessionToken }),
+  )
+}
+
+async function verifyDeviceAndSessionTokensUncached({
   deviceToken,
   sessionToken,
 }: {

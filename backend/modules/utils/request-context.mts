@@ -13,6 +13,18 @@ export type RequestContextStore = {
 }
 
 const requestContext = new AsyncLocalStorage<RequestContextStore>()
+const requestContextIdentities = new WeakMap<RequestContextStore, object>()
+
+/** Stable identity for request-local memos. Absent outside a request. */
+export function getRequestContextIdentity(): object | undefined {
+  const store = requestContext.getStore()
+  if (!store) return undefined
+  const existing = requestContextIdentities.get(store)
+  if (existing) return existing
+  const identity = {}
+  requestContextIdentities.set(store, identity)
+  return identity
+}
 
 export function createRequestContextListener<Result>(
   listener: HttpListener<Result>,
