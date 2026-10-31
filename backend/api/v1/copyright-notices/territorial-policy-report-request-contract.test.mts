@@ -26,7 +26,7 @@ describe('EU transparency report request contract', () => {
     const { staff, staffRequest } = await createTerritorialActors()
     const body = {
       period_start: new Date(Date.now() - 60_000).toISOString(),
-      period_end: new Date(Date.now() + 60_000).toISOString(),
+      period_end: new Date(Date.now() - 1_000).toISOString(),
     }
 
     await staffRequest
@@ -36,6 +36,16 @@ describe('EU transparency report request contract', () => {
     expect(await countEuTransparencyReportsBy(staff.id)).toBe(0)
     await staffRequest.post(url).send(body).expect(201)
     expect(await countEuTransparencyReportsBy(staff.id)).toBe(1)
+  })
+
+  it('does not record an open reporting period', async () => {
+    const { staff, staffRequest } = await createTerritorialActors()
+    const body = {
+      period_start: new Date(Date.now() - 60_000).toISOString(),
+      period_end: new Date(Date.now() + 60_000).toISOString(),
+    }
+    await staffRequest.post(url).send(body).expect(422)
+    expect(await countEuTransparencyReportsBy(staff.id)).toBe(0)
   })
 
   it.each([

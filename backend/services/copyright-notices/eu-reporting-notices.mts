@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { aiGuidanceSql, automaticRestrictionSql } from './automated-assessment-sql.mts'
@@ -21,6 +21,7 @@ export async function readDsaCopyrightNoticeFigures(
   periodStartedAt: Date,
   periodEndedAt: Date,
   noticeIds?: readonly string[],
+  queryExecutor: QueryExecutor = read,
 ): Promise<DsaCopyrightNoticeFigures> {
   if (noticeIds?.length === 0) return emptyDsaCopyrightNoticeFigures()
   const population = [...DSA_COPYRIGHT_NOTICE_JURISDICTIONS]
@@ -97,7 +98,7 @@ export async function readDsaCopyrightNoticeFigures(
       (SELECT round(percentile_cont(0.5) WITHIN GROUP (ORDER BY hours)::numeric, 2)::double precision
         FROM elapsed WHERE trusted) AS median_hours_to_action_trusted_flagger
   `)
-  const { rows } = await read<NoticeFigureRow>(query)
+  const { rows } = await queryExecutor<NoticeFigureRow>(query)
   const row = rows[0]
   assert(row, 500, 'Failed to count DSA copyright notices')
   const { median_hours_to_action, median_hours_to_action_trusted_flagger, ...figures } = row

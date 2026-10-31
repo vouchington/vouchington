@@ -169,7 +169,7 @@ describe('EU copyright notice routes', () => {
       .post('/api/v1/copyright-eu-reports')
       .send({
         period_start: periodStart,
-        period_end: new Date(Date.now() + 60_000).toISOString(),
+        period_end: new Date().toISOString(),
       })
       .expect(201)
     expect(report.body.copyright_eu_report).toMatchObject({
