@@ -296,6 +296,9 @@
     "copyright_dsa_statement_attempt_outcomes": {
       "values": ["submitted", "retryable_failure", "permanent_failure", "replayed"]
     },
+    "copyright_email_receipt_preservation_kinds": {
+      "values": ["litigation_threat", "regulator_request", "court_request"]
+    },
     "copyright_eu_dispute_settlement_results": {
       "values": ["decided_for_recipient", "decided_for_platform", "withdrawn", "no_decision"]
     },
@@ -33694,7 +33697,7 @@
           "validated": true
         },
         "copyright_notice_email_intake_rece_preservation_hold_kind_check": {
-          "definition": "CHECK ((preservation_hold_kind = ANY (ARRAY['litigation_threat'::text, 'regulator_request'::text, 'court_request'::text])))",
+          "definition": "CHECK ((preservation_hold_kind = ANY (ARRAY['litigation_threat'::copyright_email_receipt_preservation_kinds, 'regulator_request'::copyright_email_receipt_preservation_kinds, 'court_request'::copyright_email_receipt_preservation_kinds])))",
           "validated": true
         },
         "copyright_notice_email_intake_rece_raw_storage_key_sha256_check": {
@@ -33740,7 +33743,7 @@
           "ordinalPosition": 19
         },
         "current_preservation_hold_token": {
-          "comment": "Current standalone receipt preservation authority, cleared only by its matching release.",
+          "comment": "Opaque compare-and-release authority for the current standalone receipt hold; it identifies no row and is erased with final review facts.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -33781,7 +33784,7 @@
         },
         "preservation_hold_kind": {
           "comment": "Legal basis of the latest standalone receipt preservation hold.",
-          "dataType": "text",
+          "dataType": "copyright_email_receipt_preservation_kinds",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

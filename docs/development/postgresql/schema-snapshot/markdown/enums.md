@@ -394,6 +394,12 @@
 - `permanent_failure`
 - `replayed`
 
+## `copyright_email_receipt_preservation_kinds`
+
+- `litigation_threat`
+- `regulator_request`
+- `court_request`
+
 ## `copyright_eu_dispute_settlement_results`
 
 - `decided_for_recipient`

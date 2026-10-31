@@ -294,6 +294,9 @@
     "copyright_dsa_statement_attempt_outcomes": {
       "values": ["submitted", "retryable_failure", "permanent_failure", "replayed"]
     },
+    "copyright_email_receipt_preservation_kinds": {
+      "values": ["litigation_threat", "regulator_request", "court_request"]
+    },
     "copyright_eu_dispute_settlement_results": {
       "values": ["decided_for_recipient", "decided_for_platform", "withdrawn", "no_decision"]
     },
@@ -32060,7 +32063,7 @@
       "checkConstraints": {
         "chk_copyright_email_intake_receipts__review_result": "CHECK ((((review_decision IS NULL) AND (reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (review_rationale_ciphertext IS NULL)) OR ((review_decision IS NOT NULL) AND (reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (review_rationale_ciphertext IS NOT NULL))))",
         "chk_copyright_email_receipts__preservation": "CHECK ((((preservation_hold_kind IS NULL) AND (current_preservation_hold_token IS NULL) AND (preservation_hold_placed_at IS NULL) AND (preservation_hold_placed_by_id IS NULL) AND (preservation_hold_released_at IS NULL) AND (preservation_hold_released_by_id IS NULL)) OR ((preservation_hold_kind IS NOT NULL) AND (preservation_hold_placed_at IS NOT NULL) AND (preservation_hold_placed_by_id IS NOT NULL) AND (((current_preservation_hold_token IS NOT NULL) AND (preservation_hold_released_at IS NULL) AND (preservation_hold_released_by_id IS NULL)) OR ((current_preservation_hold_token IS NULL) AND (preservation_hold_released_at IS NOT NULL) AND (preservation_hold_released_by_id IS NOT NULL) AND (last_preservation_hold_released_at >= preservation_hold_released_at))))))",
-        "copyright_notice_email_intake_rece_preservation_hold_kind_check": "CHECK ((preservation_hold_kind = ANY (ARRAY['litigation_threat'::text, 'regulator_request'::text, 'court_request'::text])))",
+        "copyright_notice_email_intake_rece_preservation_hold_kind_check": "CHECK ((preservation_hold_kind = ANY (ARRAY['litigation_threat'::copyright_email_receipt_preservation_kinds, 'regulator_request'::copyright_email_receipt_preservation_kinds, 'court_request'::copyright_email_receipt_preservation_kinds])))",
         "copyright_notice_email_intake_rece_raw_storage_key_sha256_check": "CHECK ((octet_length(raw_storage_key_sha256) = 32))",
         "copyright_notice_email_intake_recei_amazon_ses_message_id_check": "CHECK (((char_length(amazon_ses_message_id) >= 1) AND (char_length(amazon_ses_message_id) <= 512)))",
         "copyright_notice_email_intake_receipts_raw_byte_size_check": "CHECK ((raw_byte_size >= 0))",
@@ -32092,7 +32095,7 @@
         },
         "current_preservation_hold_token": {
           "collation": null,
-          "comment": "Current standalone receipt preservation authority, cleared only by its matching release.",
+          "comment": "Opaque compare-and-release authority for the current standalone receipt hold; it identifies no row and is erased with final review facts.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -32143,7 +32146,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 10,
-          "type": "text"
+          "type": "copyright_email_receipt_preservation_kinds"
         },
         "preservation_hold_placed_at": {
           "collation": null,
