@@ -7,7 +7,7 @@ import {
 } from '@vouchington/queue-errors'
 
 /** How long, in ms, a job that hit this 429 should wait: the clamped `Retry-After`, else a minute. */
-export function getOpenAIRateLimitDelayMs(error: unknown): number {
+function getOpenAIRateLimitDelayMs(error: unknown): number {
   return clampRateLimitDelayMs(getOpenAIRetryAfterMs(error))
 }
 
