@@ -33,6 +33,7 @@ CREATE TABLE copyright_notices (
   territorial_rationale_ciphertext text,
   territorial_public_explanation_ciphertext text,
   last_lifecycle_activity_at timestamptz,
+  last_legal_activity_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_guest_capability_activity_at timestamptz,
   claimant_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   claimant_display_name text,
@@ -1408,6 +1409,8 @@ COMMENT ON COLUMN copyright_notice_action_work_items.completed_at IS 'One-way ti
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notices__legal_activity ON copyright_notices(jurisdiction, last_legal_activity_at, id);
+
 CREATE INDEX IF NOT EXISTS idx_copyright_notices__received_id
   ON copyright_notices (received_at, id);
 
@@ -1425,7 +1428,8 @@ BEGIN
     AND NEW.change_type <> 'media_delivery_registry_replayed' THEN
     UPDATE copyright_notices notice
     -- Virtual generated columns are absent from trigger NEW records; derive the same event clock.
-    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id))
+    SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id)),
+      last_legal_activity_at = GREATEST(notice.last_legal_activity_at, uuid_extract_timestamp(NEW.id), clock_timestamp())
     WHERE notice.id = NEW.copyright_notice_id;
   END IF;
   RETURN NEW;
@@ -1480,3 +1484,5 @@ CREATE INDEX idx_copyright_notice_submissions__current_assessed_by
 CREATE INDEX idx_copyright_notice_lifecycle_changes__case_activity
   ON copyright_notice_lifecycle_changes (copyright_notice_id, id)
   WHERE change_type <> 'media_delivery_registry_replayed';
+
+COMMENT ON COLUMN copyright_notices.last_legal_activity_at IS 'Latest substantive legal decision or terminal case activity; retention starts here, and each deciding transaction advances it.';

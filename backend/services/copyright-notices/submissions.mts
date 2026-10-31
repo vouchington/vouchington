@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -175,6 +176,7 @@ async function createAuthenticatedCopyrightSubmission(
     },
     transaction,
   )
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   return { submission, isDuplicate: false }
 }

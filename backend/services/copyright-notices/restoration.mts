@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
@@ -137,6 +138,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
   `)
   await recordCounterNoticeRestoration(transaction, input)
+  await advanceCopyrightLastLegalActivityAt(transaction, input.noticeId)
   await transaction.commit()
   void enqueueApplyCopyrightAction(intent.id)
   return intent

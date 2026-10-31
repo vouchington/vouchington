@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import type { PrivateUser } from '@services/users/types'
@@ -109,6 +110,7 @@ export async function submitTerritorialCopyrightRedress(
   )
   const created = rows[0]
   assert(created, 500, labels.redressFailed)
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   return { id: created.id, is_duplicate: false }
 }

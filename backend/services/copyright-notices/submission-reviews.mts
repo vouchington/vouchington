@@ -1,5 +1,6 @@
 /* oxlint-disable max-lines -- Appeal and counter-notice reviews share one atomic moderator boundary. */
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -229,6 +230,7 @@ export async function reviewCopyrightAppeal(
       event: { outcome: 'restriction_reversed_by_appeal', restrictionId },
     })
   }
+  await advanceCopyrightLastLegalActivityAt(transaction, appeal.copyright_notice_id)
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(reversalIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)
@@ -395,6 +397,7 @@ export async function reviewCopyrightCounterNotice(input: {
       },
       transaction,
     )
+  await advanceCopyrightLastLegalActivityAt(transaction, submission.copyright_notice_id)
   await transaction.commit()
   return { noticeId: submission.copyright_notice_id, assessmentId: assessment.id, deadlineId }
 }

@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -95,6 +96,7 @@ export async function recordEuCopyrightSupervisedComplaint(
   )
   const escalation = escalations[0]
   assert(escalation, 500, 'Failed to record EU supervised complaint')
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   return { id: complaint.id, escalation_id: escalation.id, is_duplicate: false }
 }

@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightHoldProceedingKind, CopyrightLegalHoldAssessmentRecord } from './types.mts'
@@ -127,6 +128,11 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     now: input.assessedAt,
     query: transaction,
   })
+  await advanceCopyrightLastLegalActivityAt(
+    transaction,
+    submissionRows[0].copyright_notice_id,
+    input.assessedAt,
+  )
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions([...new Set([...lateHoldIntentIds, ...replayedIds])])
   return { ...assessment, target_ids: input.targetIds }

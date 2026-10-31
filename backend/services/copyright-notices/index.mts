@@ -127,3 +127,5 @@ export {
   listCopyrightTrustedFlaggers,
   recordCopyrightTrustedFlaggerChange,
 } from './trusted-flaggers.mts'
+
+export * from './retention-review-closures.mts'

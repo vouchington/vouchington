@@ -1,4 +1,5 @@
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
@@ -183,5 +184,6 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   `)
   assert(inserted[0], 409, 'Copyright repeat-infringer incident already has a disposition')
   await syncCopyrightRepeatInfringerIncidents(incident.copyright_notice_id, transaction)
+  await advanceCopyrightLastLegalActivityAt(transaction, incident.copyright_notice_id)
   await transaction.commit()
 }

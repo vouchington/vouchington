@@ -96,6 +96,7 @@ export const COPYRIGHT_FINITE_VALUES = {
   copyright_notice_form_screening_recommendations: ['not_obviously_invalid', 'invalid_or_spam'],
   copyright_notice_legal_hold_assessment_ccb_claim_kinds: ['claim', 'counterclaim'],
   copyright_notice_legal_hold_assessment_proceeding_kinds: ['federal_court', 'ccb'],
+  copyright_case_preservation_kinds: ['litigation_threat', 'regulator_request', 'court_request'],
   copyright_notice_legal_hold_resolution_kinds: ['dismissed', 'proceeding_ended', 'superseded'],
   copyright_notice_lifecycle_change_recovery_sources: ['durable_review', 'durable_decision'],
   copyright_notice_lifecycle_change_replay_reasons: ['operator_replay'],
