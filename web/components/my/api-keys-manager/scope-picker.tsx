@@ -120,30 +120,39 @@ function ScopeCheckbox({
 }) {
   const t = useTranslations()
   const id = `${resourceId}-${entry.action}`
+  const descriptionId = `${id}-description`
+  const description =
+    entry.description_key && !entry.resource.startsWith('mcp.')
+      ? t(scopeDescriptionMessageKey(entry.description_key))
+      : null
   return (
-    <span className='flex min-h-11 flex-wrap items-center gap-2'>
+    <Label
+      id={`${id}-target`}
+      htmlFor={id}
+      className='flex min-h-11 cursor-pointer flex-wrap items-center gap-2 font-normal'
+    >
       <Checkbox
         id={id}
         checked={checked}
         onCheckedChange={value => onToggle(entry.scope, value === true)}
         aria-labelledby={`${resourceId} ${id}-label`}
+        aria-describedby={description ? descriptionId : undefined}
         // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from catalogue data
         data-pw={`scope-checkbox-${entry.scope}`}
       />
-      <Label
-        id={`${id}-label`}
-        htmlFor={id}
-        className='cursor-pointer font-normal'
-      >
+      <span id={`${id}-label`}>
         {entry.action === 'read'
           ? t('extracted.apiKeysManager.scopePicker.read_9b9a8d05')
           : t('extracted.apiKeysManager.scopePicker.write_3f00927a')}
-      </Label>
-      {entry.description_key && !entry.resource.startsWith('mcp.') && (
-        <span className='text-xs text-muted-foreground'>
-          {t(scopeDescriptionMessageKey(entry.description_key))}
+      </span>
+      {description ? (
+        <span
+          id={descriptionId}
+          className='text-xs leading-normal text-muted-foreground'
+        >
+          {description}
         </span>
-      )}
-    </span>
+      ) : null}
+    </Label>
   )
 }
