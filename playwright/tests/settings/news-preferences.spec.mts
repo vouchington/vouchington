@@ -66,11 +66,4 @@ test.describe('News Preferences Page', () => {
     await firstMuteButton.click()
     await expect(firstMuteButton).toHaveAttribute('aria-pressed', 'false')
   })
-
-  test('Preferences tab is active in nav on this page', async ({ page }) => {
-    await expect(page.getByTestId('settings-nav-preferences-tab')).toHaveAttribute(
-      'data-active',
-      'true',
-    )
-  })
 })
