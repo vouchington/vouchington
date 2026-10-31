@@ -9,6 +9,15 @@ import {
 import { cleanupCopyrightSubmissionKeys } from './cleanup-copyright-submission-keys.mts'
 
 describe('copyright submission key expiry', () => {
+  it('rejects a scoped request larger than one batch before opening a transaction', async () => {
+    await expect(
+      cleanupCopyrightSubmissionKeys({ batchSize: 1, maxBatches: 1 }, new Date(), [
+        randomUUID(),
+        randomUUID(),
+      ]),
+    ).rejects.toThrow('Scoped copyright submission key cleanup must fit one page')
+  })
+
   it('clears an old raw key once, keeps its replay digest, and leaves a young key', async () => {
     const now = new Date()
     const oldCase = await createRetentionMinimalCase({ claimant: true })
