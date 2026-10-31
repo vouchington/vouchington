@@ -5,8 +5,8 @@ import { evaluateWorkflow as decide } from './decide.mts'
 import { rules, type WorkflowRunContext } from './rules.mts'
 
 const leaf = 'test-web-api / web-api-tests (1)'
-const checkoutRef = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-const toolingRef = 'vouchington/vouchington-tooling@342444cffceccb5ea0c1fca9d264be6af79d9fd5'
+const checkoutRef = `actions/checkout@${'a'.repeat(40)}`
+const toolingRef = `vouchington/vouchington-tooling@${'b'.repeat(40)}`
 const unresolved = (ref: string, version = ref.split('@')[1]) =>
   `Unable to resolve action \`${ref}\`, unable to find version \`${version}\``
 
@@ -64,8 +64,8 @@ describe('GitHub Actions action-resolve setup failure', () => {
         '##[error]Process completed with exit code 1.',
       ]),
     ],
-    ['a tag ref', toLog([`##[error]${unresolved('actions/checkout@v4')}`])],
-    ['a version that differs from the SHA', toLog([`##[error]${unresolved(checkoutRef, 'v4')}`])],
+    ['a tag ref', toLog([`##[error]${unresolved('actions/checkout@main')}`])],
+    ['a version that differs from the SHA', toLog([`##[error]${unresolved(checkoutRef, 'main')}`])],
     ['a missing error line', toLog(['Getting action download info'])],
   ])('does not match %s', async (_name, log) => {
     expect(await matchedRule(context(log))).toBe('')
