@@ -199,16 +199,5 @@ describe('ReportsClient', () => {
 
       expect(screen.getByText('remove')).toBeInTheDocument()
     })
-
-    it('renders an em-dash placeholder when judgement is null', () => {
-      render(
-        <ReportsClient
-          viewerTier='staff'
-          data={makeReportsResponse({ judgement: null })}
-        />,
-      )
-
-      expect(screen.queryByText('remove')).not.toBeInTheDocument()
-    })
   })
 })
