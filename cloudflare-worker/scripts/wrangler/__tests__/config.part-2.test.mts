@@ -55,7 +55,7 @@ describe('start-wrangler config', () => {
   it('detects ready output before trimming the retained search text', () => {
     const result = appendWranglerReadySearchText(
       '',
-      `Ready on http://localhost:3902\n${'x'.repeat(5000)}`,
+      `Ready on http://localhost:3902\n${'x'.repeat(4096)}`,
     )
 
     expect(result.isReady).toBe(true)
