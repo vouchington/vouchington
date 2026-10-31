@@ -4,6 +4,7 @@ import { createTestEuNoticeWithOwnedApproval } from '@voucha/test-helpers/copyri
 import { readEuTransparencyReportMethod } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { describe, expect, it } from 'vitest'
+import sql from 'sql-template-strings'
 import { readEuCopyrightReportCoveragePage } from './eu-report-coverage.mts'
 import {
   compileEuCopyrightTransparencyReport,
@@ -45,5 +46,18 @@ describe('closed EU report snapshot', () => {
     expect(again.id).toBe(report.id)
     const published = await readEuCopyrightTransparencyFigures(staff, start, end)
     expect(published.receipt_count).toBe(stored?.figures_snapshot.receipt_count)
+  })
+
+  it('refuses a busy source immediately before taking a partial lock set', async () => {
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    const start = new Date(Date.now() - 60_000)
+    const end = new Date(Date.now() - 30_000)
+    await using writer = await beginTransaction()
+    await writer(sql`/* blockEuReportRestrictionSourceForTest */
+      LOCK TABLE copyright_restrictions IN ROW EXCLUSIVE MODE`)
+    await expect(compileEuCopyrightTransparencyReport(staff, start, end)).rejects.toMatchObject({
+      code: '55P03',
+    })
+    await writer.commit()
   })
 })
