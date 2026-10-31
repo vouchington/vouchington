@@ -24,7 +24,7 @@ export const enqueueExtractImageMetadata = createExtractImageMetadataEnqueue(ima
  * deduplication collapses duplicates while a job is waiting, active, or retrying, and releases
  * when that job finishes, including a terminal stall.
  */
-export function getExtractImageMetadataJobOptions(imageId: string) {
+function getExtractImageMetadataJobOptions(imageId: string) {
   return {
     deduplication: { id: `extract-image-metadata-${imageId}`, mode: 'simple' },
   } satisfies Partial<JobOptions>

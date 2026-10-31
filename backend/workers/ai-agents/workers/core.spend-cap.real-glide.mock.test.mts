@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { spendCapRecheckDeduplicationId } from '@queues/ai-agents/enqueues/spend-cap-recheck'
 import { backgroundCpu as spendCapRechecks } from '@queues/background-cpu/queues'
 import {
   processSpendCapRecheckJob,
@@ -16,6 +15,17 @@ import { spendCapDelayedRegistryKey, releaseSpendCapDelayedJobs } from '@service
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+
+function spendCapCoordinatorGeneration(data: unknown): string {
+  if (typeof data !== 'object' || data === null || !('generation' in data)) {
+    throw new Error('Expected the spend-cap recheck coordinator generation')
+  }
+  const generation = data.generation
+  if (typeof generation !== 'string') {
+    throw new Error('Expected the spend-cap recheck coordinator generation')
+  }
+  return generation
+}
 
 describe('daily AI spend-cap coordination with real GlideMQ', () => {
   it('drops missing and stale registry entries while draining', async () => {
@@ -58,6 +68,19 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
       if (!job) throw new Error('Expected spend-cap registration job')
       await expect(registerSpendCapRecheck(job, day, Date.now())).resolves.toBe(true)
       expect(job.data.spendCapDelayedDay).toBe(day)
+      const coordinators = await spendCapRechecks.searchJobs({
+        name: 'ai-spend-cap.recheck',
+        data: { day },
+      })
+      expect(coordinators).toHaveLength(1)
+      const coordinator = coordinators[0]
+      if (!coordinator) throw new Error('Expected the spend-cap recheck coordinator')
+      const generation = spendCapCoordinatorGeneration(coordinator.data)
+      expect(generation).toEqual(expect.any(String))
+      expect(coordinator.opts.deduplication).toEqual({
+        id: `ai-spend-cap:recheck:${day}:${generation}`,
+        mode: 'simple',
+      })
     } finally {
       const coordinators = await spendCapRechecks.searchJobs({
         name: 'ai-spend-cap.recheck',
@@ -166,7 +189,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
         { generation: 'generation-a' },
         {
           deduplication: {
-            id: spendCapRecheckDeduplicationId(day, 'generation-a'),
+            id: `ai-spend-cap:recheck:${day}:generation-a`,
             mode: 'simple',
           },
         },
@@ -181,7 +204,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
         { generation: 'generation-b' },
         {
           deduplication: {
-            id: spendCapRecheckDeduplicationId(day, 'generation-b'),
+            id: `ai-spend-cap:recheck:${day}:generation-b`,
             mode: 'simple',
           },
         },
