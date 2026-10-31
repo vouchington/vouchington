@@ -80,7 +80,11 @@ describe('POST /api/v1/my/import/topics', () => {
     const response = await request
       .post('/api/v1/my/import/topics')
       .set('Content-Type', 'application/json')
-      .send({ names: [`Oversized ${'x'.repeat(12 * 1024)}`] })
+      .send({
+        names: [
+          `Oversized ${'x'.repeat(10 * 1024 - JSON.stringify({ names: ['Oversized '] }).length + 1)}`,
+        ],
+      })
       .expect(200)
 
     expect(response.body.results).toHaveLength(1)

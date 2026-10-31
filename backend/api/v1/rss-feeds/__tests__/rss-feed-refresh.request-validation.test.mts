@@ -55,7 +55,10 @@ describe('RSS feed refresh request validation', () => {
     const { request, feedId } = await createAdminFeed()
     await request
       .post(`/api/v1/rss-feeds/${feedId}/refreshes`)
-      .send({ force: false, padding: 'x'.repeat(1_100_000) })
+      .send({
+        force: false,
+        padding: 'x'.repeat(1024 * 1024 - JSON.stringify({ force: false, padding: '' }).length + 1),
+      })
       .expect(413)
     await expect(readFetchJobs(feedId)).resolves.toHaveLength(0)
   })

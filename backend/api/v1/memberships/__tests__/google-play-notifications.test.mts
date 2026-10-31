@@ -162,10 +162,15 @@ describe('Google Play RTDN ingress route', () => {
       expiresAt: new Date(Date.now() + 60_000),
     })
 
+    const messageId = `synthetic-${randomUUID()}`
+    const bodyLimit = 32 * 1024
+    const data = 'x'.repeat(
+      bodyLimit - JSON.stringify({ message: { messageId, data: '' } }).length + 1,
+    )
     await createRequest()
       .post('/api/v1/memberships/google-play/notifications')
       .set('Authorization', `Bearer ${oidcJwt(keyId)}`)
-      .send({ message: { messageId: `synthetic-${randomUUID()}`, data: 'x'.repeat(40 * 1024) } })
+      .send({ message: { messageId, data } })
       .expect(401)
   })
 

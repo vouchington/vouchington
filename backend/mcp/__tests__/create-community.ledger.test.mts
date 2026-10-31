@@ -131,7 +131,7 @@ describe('delegated create ledger — real store', () => {
     // The ledger bounds a stored response at 2 MiB.
     const oversized = async (query: TransactionQuery) => ({
       ...(await createIn(query)),
-      filler: 'x'.repeat(2_200_000),
+      filler: 'x'.repeat(2 * 1024 * 1024 + 1),
     })
 
     await expect(admitDelegatedCreate({ ...base, execute: oversized })).rejects.toThrow(

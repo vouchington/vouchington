@@ -96,8 +96,8 @@ describe('community moderation prompt selection', () => {
 
   it('stops at the first rule that does not fit, even when a later one is short', async () => {
     const { community, active } = await communityWithPrompts(3, 1)
-    await editTestCommunityRule(active[0]!.id, 'r'.repeat(30_000))
-    await editTestCommunityRule(active[1]!.id, 'r'.repeat(20_000))
+    await editTestCommunityRule(active[0]!.id, 'r'.repeat(20_000))
+    await editTestCommunityRule(active[1]!.id, 'r'.repeat(20_001))
     await editTestCommunityRule(active[2]!.id, 'r'.repeat(5))
 
     const resolved = await resolveCommunityModerationRunConfiguration(community.id)

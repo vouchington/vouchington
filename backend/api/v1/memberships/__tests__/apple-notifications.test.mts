@@ -19,10 +19,9 @@ describe('Apple App Store notification ingress route', () => {
       .set('Content-Type', 'application/json')
       .send('{"signedPayload":')
       .expect(400)
-    const oversized = await request
-      .post(ROUTE)
-      .send({ signedPayload: 'x'.repeat(40 * 1024) })
-      .expect(413)
+    const bodyLimit = 32 * 1024
+    const signedPayload = 'x'.repeat(bodyLimit - JSON.stringify({ signedPayload: '' }).length + 1)
+    const oversized = await request.post(ROUTE).send({ signedPayload }).expect(413)
 
     expect(JSON.stringify([malformed.body, oversized.body])).not.toMatch(/schema/i)
   })

@@ -91,6 +91,19 @@ describe('backend-firehose', () => {
     }
   }
 
+  const FIREHOSE_RECORD_BYTES = 1000 * 1024
+  const FIREHOSE_BATCH_BYTES = 4 * 1024 * 1024
+
+  function encodedBytes(eventId: string, payload: string): number {
+    return Buffer.byteLength(
+      `${JSON.stringify({ ...makeQueueWorkerRecord({ event_id: eventId }), payload })}\n`,
+    )
+  }
+
+  function payloadOfEncodedSize(eventId: string, encodedSize: number): string {
+    return 'x'.repeat(encodedSize - encodedBytes(eventId, ''))
+  }
+
   it('flushes records on the timer', async () => {
     vi.useFakeTimers()
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'timer' }))
@@ -134,7 +147,7 @@ describe('backend-firehose', () => {
     for (let index = 0; index < 5; index += 1) {
       const record = {
         ...makeQueueWorkerRecord({ event_id: `large-${index}` }),
-        payload: 'x'.repeat(900_000),
+        payload: payloadOfEncodedSize(`large-${index}`, Math.floor(FIREHOSE_BATCH_BYTES / 5) + 1),
       }
       writeRecord('queue_workers', record)
     }
@@ -147,7 +160,7 @@ describe('backend-firehose', () => {
   it('drops records that exceed the Firehose record limit', async () => {
     const record = {
       ...makeQueueWorkerRecord({ event_id: 'oversized' }),
-      payload: 'x'.repeat(1_030_000),
+      payload: payloadOfEncodedSize('oversized', FIREHOSE_RECORD_BYTES + 1),
     }
 
     writeRecord('queue_workers', record)
