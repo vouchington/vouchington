@@ -87,8 +87,3 @@ function assertExpectationKinds(id: string, contract: ScenarioPlanContract): voi
     )
       throw new Error(`${id} needs a nonempty function and a nonnegative call cap`)
 }
-
-/** Unit tests use this to avoid leaking dynamic declarations between cases. */
-export function resetScenarioContracts(): void {
-  registered.clear()
-}

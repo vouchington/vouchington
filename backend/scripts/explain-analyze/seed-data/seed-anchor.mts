@@ -17,10 +17,10 @@ const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/
 // `id > subject_id`. A noon anchor on the run's own day was in the future until noon UTC (#3409).
 // MAX_SEED_FORWARD_MS bounds how far any seed helper stamps a row after the anchor;
 // seed-anchor.test.mts checks each forward-offset helper against it.
-export const MAX_SEED_FORWARD_MS = 15 * 60_000
+const MAX_SEED_FORWARD_MS = 15 * 60_000
 // The anchor day is the UTC day of (now - SEED_ANCHOR_LAG_MS): the latest day whose noon plus
 // MAX_SEED_FORWARD_MS has already passed. explain-analyze.yml pins the same day with GNU `date`.
-export const SEED_ANCHOR_LAG_MS = 12 * 60 * 60_000 + MAX_SEED_FORWARD_MS
+const SEED_ANCHOR_LAG_MS = 12 * 60 * 60_000 + MAX_SEED_FORWARD_MS
 
 export interface SeedAnchor {
   // Noon UTC on the anchor day, 15 minutes to 24 hours 15 minutes before the run starts, safely
