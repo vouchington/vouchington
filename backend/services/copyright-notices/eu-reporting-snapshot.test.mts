@@ -1,11 +1,10 @@
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import { createTestEuNoticeWithOwnedApproval } from '@voucha/test-helpers/copyright-owned-policy-receipt'
 import { readEuTransparencyReportMethod } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
+import { readTestEuCopyrightReceiptCoverage } from '@voucha/test-helpers/copyright-eu-report-coverage'
+import { withEuReportRestrictionWriterForTest } from '@voucha/test-helpers/copyright-eu-report-lock'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
-import { readEuCopyrightReportCoveragePage } from './eu-report-coverage.mts'
 import {
   compileEuCopyrightTransparencyReport,
   readEuCopyrightTransparencyFigures,
@@ -37,11 +36,11 @@ describe('closed EU report snapshot', () => {
     expect(stored?.reported_at.getTime()).toBeGreaterThanOrEqual(
       stored?.period_ended_at.getTime() ?? Number.POSITIVE_INFINITY,
     )
-    await using transaction = await beginTransaction()
-    await expect(
-      readEuCopyrightReportCoveragePage(transaction, noticeId, 'receipts', null, 1),
-    ).resolves.toMatchObject({ covered: true, hasMore: false, nextId: expect.any(String) })
-    await transaction.commit()
+    await expect(readTestEuCopyrightReceiptCoverage(noticeId)).resolves.toMatchObject({
+      covered: true,
+      hasMore: false,
+      nextId: expect.any(String),
+    })
     const again = await compileEuCopyrightTransparencyReport(staff, start, end)
     expect(again.id).toBe(report.id)
     const published = await readEuCopyrightTransparencyFigures(staff, start, end)
@@ -52,12 +51,10 @@ describe('closed EU report snapshot', () => {
     const staff = await createTestUser({ extraRoles: ['moderator'] })
     const start = new Date(Date.now() - 60_000)
     const end = new Date(Date.now() - 30_000)
-    await using writer = await beginTransaction()
-    await writer(sql`/* blockEuReportRestrictionSourceForTest */
-      LOCK TABLE copyright_restrictions IN ROW EXCLUSIVE MODE`)
-    await expect(compileEuCopyrightTransparencyReport(staff, start, end)).rejects.toMatchObject({
-      code: '55P03',
+    await withEuReportRestrictionWriterForTest(async () => {
+      await expect(compileEuCopyrightTransparencyReport(staff, start, end)).rejects.toMatchObject({
+        code: '55P03',
+      })
     })
-    await writer.commit()
   })
 })
