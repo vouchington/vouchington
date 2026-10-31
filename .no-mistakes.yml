@@ -5609,7 +5609,7 @@ rules:
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
-      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       idKeyPattern: '(^id$|Id$|_id$)'
       include:
@@ -5630,7 +5630,7 @@ rules:
       unanalyzable: advise
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
-      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
       exclude:
         - '**/*.test.*'
         - '**/__tests__/**'
