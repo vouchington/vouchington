@@ -1,6 +1,6 @@
 import { assertNever } from '@modules/utils/assert-never'
 /* oxlint-disable max-lines -- Clearance fixtures include ledger-backed completion setup. */
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import sql from 'sql-template-strings'
 import { recordTestPostModerationDisposition } from './post-moderation.mts'
@@ -88,10 +88,12 @@ export async function setTestPostClearanceStatus(
 ): Promise<{ id: string; community_id: string | null } | null> {
   const changeType = clearanceChangeType(status)
   const changeId = occurredAt ? uuidv7({ msecs: occurredAt.getTime(), seq: sequence }) : null
-  await using transaction = await beginTransaction()
-  // History before RowExclusive on posts. Holding the post first deadlocks a session that
-  // already has post_clearance_changes and then needs ShareRowExclusive on posts.
-  const { rows: insertedRows } = await transaction<{
+  // History commits before the post update. One transaction holds RowExclusive on
+  // post_clearance_changes and then waits for RowExclusive on posts, while the other
+  // session holds ShareRowExclusive on posts and waits for ShareRowExclusive on
+  // post_clearance_changes. The reverse order deadlocks too. The insert takes only
+  // AccessShare and RowShare on posts, which ShareRowExclusive allows.
+  const { rows: insertedRows } = await write<{
     id: string
     change_type: string
     created_at: Date
@@ -107,11 +109,8 @@ export async function setTestPostClearanceStatus(
     RETURNING id, change_type, created_at, changed_by_id, public_reason_code, is_platform_override
   `)
   const inserted = insertedRows[0]
-  if (!inserted) {
-    await transaction.commit()
-    return null
-  }
-  const { rows } = await transaction<{ community_id: string | null }>(sql`
+  if (!inserted) return null
+  const { rows } = await write<{ community_id: string | null }>(sql`
     /* setTestPostClearanceStatus:projectPost */
     UPDATE posts
     SET
@@ -129,7 +128,6 @@ export async function setTestPostClearanceStatus(
   `)
   const projected = rows[0]
   if (!projected) return null
-  await transaction.commit()
   return { id: inserted.id, community_id: projected.community_id }
 }
 
