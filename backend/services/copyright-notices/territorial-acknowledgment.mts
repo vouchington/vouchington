@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -65,6 +66,7 @@ export async function recordTerritorialCopyrightAcknowledgment(
     )
     updated.escalated = true
   }
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   return updated
 }

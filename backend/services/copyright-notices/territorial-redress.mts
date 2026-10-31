@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { getImagePlacementKey } from '@services/images/placements'
@@ -145,6 +146,7 @@ export async function recordTerritorialCopyrightRedressDecision(
   )
   if (redressNotice) deliveries.push(redressNotice)
   await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction)
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(restoreIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)

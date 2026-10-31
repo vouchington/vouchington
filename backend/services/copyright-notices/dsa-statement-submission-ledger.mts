@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
@@ -87,6 +88,16 @@ export async function recordDsaStatementSubmissionResult(input: {
   responseUuid?: string
 }): Promise<{ recorded: boolean; deadLettered: boolean; retryableFailures: number }> {
   await using transaction = await beginTransaction()
+  const { rows: cases } = await transaction<{
+    copyright_notice_id: string
+  }>(sql`/* recordDsaStatementSubmissionResult:lockNotice */
+    SELECT target.copyright_notice_id
+    FROM copyright_dsa_statement_submissions submission
+    JOIN copyright_restrictions restriction ON restriction.id = submission.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    JOIN copyright_notices notice ON notice.id = target.copyright_notice_id
+    WHERE submission.id = ${input.submissionId}
+    FOR UPDATE OF notice`)
   const { rows: itemRows } = await transaction<{
     id: string
     submitted_at: Date | null
@@ -131,6 +142,8 @@ export async function recordDsaStatementSubmissionResult(input: {
     RETURNING id
   `)
   if (updatedRows.length !== 1) return { recorded: false, deadLettered: false, retryableFailures }
+  if ((input.outcome === 'submitted' || deadLettered) && cases[0])
+    await advanceCopyrightLastLegalActivityAt(transaction, cases[0].copyright_notice_id)
   await transaction.commit()
   return { recorded: true, deadLettered, retryableFailures }
 }

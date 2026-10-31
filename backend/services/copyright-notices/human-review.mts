@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -98,6 +99,7 @@ export async function completeCopyrightMandatoryHumanReview(
         `copyright-restriction-review:${input.restrictionId}`,
       )})
   `)
+  await advanceCopyrightLastLegalActivityAt(transaction, input.noticeId)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
   enqueueCopyrightStaydownHashes(staydownImageIds)

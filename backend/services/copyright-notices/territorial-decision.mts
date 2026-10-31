@@ -154,6 +154,7 @@ export async function recordTerritorialCopyrightDecision(
       current_territorial_decision_identity_id = ${created.id},
       territorial_decision_outcome = ${created.outcome},
       territorial_decided_at = ${created.decided_at},
+      last_legal_activity_at = GREATEST(last_legal_activity_at, ${created.decided_at}, clock_timestamp()),
       territorial_decided_by_id = ${actor.id},
       territorial_authorizing_assessment_identity_id = ${assessmentId},
       territorial_rationale_ciphertext = ${rationaleCiphertext},

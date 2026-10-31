@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -81,6 +82,7 @@ export async function recordEuDisputeSettlementReferral(
   `)
   const referral = referrals[0]
   assert(referral, 500, 'EU dispute settlement referral was not recorded')
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
   await transaction.commit()
   return referral
 }
@@ -121,6 +123,7 @@ export async function recordEuDisputeSettlementOutcome(
   `)
   const outcome = outcomes[0]
   assert(outcome, 409, 'EU dispute settlement outcome already recorded')
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId, input.decidedAt)
   await transaction.commit()
   return outcome
 }
@@ -164,6 +167,7 @@ export async function recordEuDisputeSettlementImplementation(
     WHERE id = ${outcome.id} RETURNING id, result, implemented_at
   `)
   assert(updated[0], 500, 'EU dispute settlement implementation was not recorded')
+  await advanceCopyrightLastLegalActivityAt(transaction, noticeId, implementedAt)
   await transaction.commit()
   return updated[0]
 }

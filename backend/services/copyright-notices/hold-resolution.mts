@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -114,6 +115,11 @@ async function resolveCopyrightLegalHoldInTransaction(
     now: input.resolvedAt,
     query: transaction,
   })
+  await advanceCopyrightLastLegalActivityAt(
+    transaction,
+    assessment.copyright_notice_id,
+    input.resolvedAt,
+  )
   return {
     resolution,
     intentIds: [...new Set([...restrictionRows.map(row => row.intent_id), ...replayedIds])],
