@@ -50,6 +50,10 @@ const settled = {
   terminalGooglePlayAcknowledgments: done,
   terminalStripeEventWork: { ...done, cursorId: null },
   abandonedMembershipPurchaseIntents: { ...done, cursorId: null },
+  paymentLedgers: [
+    { family: 'stripe_event', ...scannedDone },
+    { family: 'membership_operation', ...scannedDone },
+  ],
   emailAddressLoginTokens: continuationDone,
   phoneNumberLoginTokens: continuationDone,
   expiredUserSessions: continuationDone,

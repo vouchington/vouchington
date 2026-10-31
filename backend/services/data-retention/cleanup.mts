@@ -57,6 +57,7 @@ import {
   type PaymentOperationCleanupOptions,
   type PaymentOperationCleanupResult,
 } from './cleanup-payment-operations.mts'
+import { cleanupPaymentLedgers, type PaymentLedgerCleanupPage } from './cleanup-payment-ledgers.mts'
 import {
   cleanupEmailAddressLoginTokens,
   cleanupPhoneNumberLoginTokens,
@@ -217,6 +218,10 @@ type DataRetentionCleanupOptions = {
   terminalGooglePlayAcknowledgments?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
   terminalStripeEventWork?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
   abandonedMembershipPurchaseIntents?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
+  paymentLedgers?: OptionalRetentionLimits<{
+    maxBatches?: number
+    recordIds?: readonly string[]
+  }>
   emailAddressLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
   phoneNumberLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
   expiredUserSessions?: OptionalRetentionLimits<ExpiryCleanupOptions>
@@ -300,6 +305,7 @@ type DataRetentionCleanupResult = {
   terminalGooglePlayAcknowledgments: CleanupResult
   terminalStripeEventWork: PaymentOperationCleanupResult
   abandonedMembershipPurchaseIntents: PaymentOperationCleanupResult
+  paymentLedgers: PaymentLedgerCleanupPage[]
   emailAddressLoginTokens: AuthSessionCleanupResult
   phoneNumberLoginTokens: AuthSessionCleanupResult
   expiredUserSessions: AuthSessionCleanupResult
@@ -521,6 +527,10 @@ export async function runDataRetentionCleanup(
   const abandonedMembershipPurchaseIntents = await cleanupAbandonedMembershipPurchaseIntents(
     withLimits(options.abandonedMembershipPurchaseIntents),
   )
+  const paymentLedgers = await cleanupPaymentLedgers(
+    withLimits(options.paymentLedgers),
+    options.paymentLedgers?.recordIds,
+  )
   const emailAddressLoginTokens = await cleanupEmailAddressLoginTokens(
     withLimits(options.emailAddressLoginTokens),
   )
@@ -692,6 +702,7 @@ export async function runDataRetentionCleanup(
     terminalGooglePlayAcknowledgments,
     terminalStripeEventWork,
     abandonedMembershipPurchaseIntents,
+    paymentLedgers,
     emailAddressLoginTokens,
     phoneNumberLoginTokens,
     expiredUserSessions,

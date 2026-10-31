@@ -625,6 +625,7 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   period_started_at TIMESTAMPTZ, period_ends_at TIMESTAMPTZ, collision_at TIMESTAMPTZ,
   reconciliation_attempt_ordinal INTEGER NOT NULL DEFAULT 0,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, completed_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, failure_message TEXT,
+  fiscal_retention_started_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (char_length(idempotency_key) BETWEEN 1 AND 255 AND idempotency_key = TRIM(idempotency_key)),
   CHECK (period_ends_at IS NULL OR period_started_at IS NOT NULL),
@@ -645,6 +646,7 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   CHECK (operation_kind <> 'administrator_refund' OR (qualifying_allocation_minor_units IS NOT NULL AND remaining_refundable_minor_units IS NOT NULL AND currency_code IS NOT NULL)),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
   CHECK (completed_at IS NULL OR completed_at >= requested_at),
+  CHECK (fiscal_retention_started_at IS NULL OR completed_at IS NOT NULL),
   CHECK (failed_at IS NULL OR failed_at >= requested_at),
   CHECK ((failed_at IS NULL) = (failure_message IS NULL)),
   CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 2000),
@@ -672,6 +674,8 @@ CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_o
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+COMMENT ON COLUMN membership_operations.fiscal_retention_started_at IS
+  'One-way finite child-drain progress fact on an expired terminal operation; the operation and this marker are deleted together.';
 COMMENT ON COLUMN membership_operations.provider_refund_id IS 'Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying.';
 COMMENT ON COLUMN membership_operations.membership_lineage_binding_id IS 'Binding and owner captured when the provider operation was requested.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -875,10 +879,29 @@ CREATE INDEX IF NOT EXISTS idx_membership_refunds__stripe_payment_intent_id ON m
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refunds__stripe_idempotency_key ON membership_refunds (stripe_idempotency_key) WHERE stripe_idempotency_key IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__operation_id ON membership_refunds (membership_operation_id, id DESC) WHERE membership_operation_id IS NOT NULL;
+-- Fiscal retention begins after the UTC year containing the final provider operation.
+CREATE FUNCTION fn_membership_operation_fiscal_retention_due(operation_id UUID)
+RETURNS BOOLEAN LANGUAGE SQL STABLE AS $$
+  SELECT COALESCE(current_setting('app.billing_retention_delete', true) = 'on', FALSE)
+    AND EXISTS (
+      SELECT 1 FROM membership_operations operation
+      WHERE operation.id = operation_id AND operation.completed_at IS NOT NULL
+        AND operation.operation_kind IN ('cancel_source', 'administrator_refund')
+        AND date_trunc('year', operation.completed_at AT TIME ZONE 'UTC') + INTERVAL '8 years'
+          <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
+          WHERE work.membership_operation_id = operation.id)
+        AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
+          WHERE receipt.membership_operation_id = operation.id));
+$$;
+COMMENT ON FUNCTION fn_membership_operation_fiscal_retention_due(UUID) IS
+  'Permits bounded deletion only after seven full years following the completed operation UTC fiscal year, without live work or automatic refund receipts.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF OLD.membership_operation_id IS NOT NULL
+      AND fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'membership refund receipts cannot be deleted';
   END IF;
   IF ROW(NEW.id, NEW.membership_id, NEW.membership_source_id, NEW.user_id,
@@ -945,7 +968,14 @@ END $$;
 CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE FUNCTION fn_reject_membership_administrator_refund_request_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)
+    THEN RETURN OLD; END IF;
+  RAISE EXCEPTION 'administrator refund request is immutable' USING ERRCODE = 'check_violation';
+END $$;
+CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_invalid_membership_refund_operation_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -960,7 +990,11 @@ CREATE TRIGGER trigger_membership_refund_operation_attempts_valid BEFORE INSERT 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;
+  IF TG_OP = 'DELETE' THEN
+    IF fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)
+      THEN RETURN OLD; END IF;
+    RAISE EXCEPTION 'membership refund operation attempts cannot be deleted';
+  END IF;
   IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
 END $$;
@@ -1013,7 +1047,18 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE OR DELETE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE FUNCTION fn_reject_stripe_event_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND COALESCE(current_setting('app.billing_retention_delete', true) = 'on', FALSE)
+    AND date_trunc('year', OLD.occurred_at AT TIME ZONE 'UTC') + INTERVAL '8 years'
+      <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    AND NOT EXISTS (SELECT 1 FROM stripe_event_processing_work_items work
+      WHERE work.stripe_event_id = OLD.id)
+    THEN RETURN OLD; END IF;
+  RAISE EXCEPTION 'Stripe events are immutable until completed fiscal retention'
+    USING ERRCODE = 'check_violation';
+END $$;
+CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE OR DELETE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_stripe_event_mutation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_event_processing_work_items (
   stripe_event_id UUID PRIMARY KEY REFERENCES stripe_events(id) ON DELETE CASCADE,

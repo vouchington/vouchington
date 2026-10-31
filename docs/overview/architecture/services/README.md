@@ -67,10 +67,12 @@ while a live enabled source feed still supplies them.
 Payment operational retention removes finished Stripe event processing work and expired abandoned,
 failed, ownerless, or provider-expired purchase launches in bounded, persisted keyset passes.
 Launched subscriptions and native purchase tokens remain available to resolve later provider
-events. The immutable Stripe event ledger remains the deduplication authority after work is
-removed; verification-linked purchase intents remain because their accounting evidence must keep
-a valid reference. Failed Stripe processing work remains recoverable until it reaches a completed
-or ignored outcome.
+events. The immutable Stripe event ledger remains the deduplication authority while its record
+exists. Expired Stripe events and settled cancellation or administrator refund operations are
+removed after their fiscal retention window, including dependent refund records in foreign-key
+order. No separate permanent replay identity survives deletion. Verification-linked purchase
+intents remain because their accounting evidence must keep a valid reference. Failed Stripe
+processing work remains recoverable until it reaches a completed or ignored outcome.
 
 Browser device credentials carry refresh authority separately from access authority. The session
 service may renew an access credential only after checking device binding, revocation and the
