@@ -44,7 +44,7 @@ async function readAndCache(domain: string): Promise<boolean> {
 }
 
 /** Drops a domain's cached state so the next job re-reads it. */
-export function invalidateQueueDomainPause(domain: string): void {
+function invalidateQueueDomainPause(domain: string): void {
   generations.set(domain, (generations.get(domain) ?? 0) + 1)
   cache.delete(domain)
 }
