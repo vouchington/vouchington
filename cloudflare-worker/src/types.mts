@@ -104,13 +104,6 @@ export interface Env {
   SITE_ORIGIN?: string
   RATE_LIMITER_GET_HEAD?: RateLimiterBinding
   RATE_LIMITER_MUTATING?: RateLimiterBinding
-  /** Post-cache rate limiter for unknown bots (GET/HEAD). Falls back to RATE_LIMITER_GET_HEAD if unset. */
-  RATE_LIMITER_BOT_GET_HEAD?: RateLimiterBinding
-  /** Post-cache rate limiter for unknown bots (mutating methods). Falls back to RATE_LIMITER_MUTATING if unset. */
-  RATE_LIMITER_BOT_MUTATING?: RateLimiterBinding
-  /** Pre-cache anonymous/generic rate limiters. Backend route limits handle authenticated trust tiers. */
-  RATE_LIMITER_ANON_GET_HEAD?: RateLimiterBinding
-  RATE_LIMITER_ANON_MUTATING?: RateLimiterBinding
   /**
    * Pre-cache limiter for Server Action POSTs (requests carrying `next-action` header).
    * Stricter bucket containing blast radius of any future RSC deserialize-DoS / RCE bug

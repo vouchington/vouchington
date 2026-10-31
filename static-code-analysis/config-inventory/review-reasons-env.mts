@@ -60,22 +60,6 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Worker process topology selector; keep environment-scoped because it is read at startup.',
   ],
   [
-    'RATE_LIMITER_ANON_GET_HEAD',
-    'Cloudflare RateLimiter binding; keep environment-scoped for Worker binding configuration.',
-  ],
-  [
-    'RATE_LIMITER_ANON_MUTATING',
-    'Cloudflare RateLimiter binding; keep environment-scoped for Worker binding configuration.',
-  ],
-  [
-    'RATE_LIMITER_BOT_GET_HEAD',
-    'Cloudflare RateLimiter binding; keep environment-scoped for Worker binding configuration.',
-  ],
-  [
-    'RATE_LIMITER_BOT_MUTATING',
-    'Cloudflare RateLimiter binding; keep environment-scoped for Worker binding configuration.',
-  ],
-  [
     'RATE_LIMITER_GET_HEAD',
     'Rate limiter operation class; keep environment-scoped for runtime policy.',
   ],

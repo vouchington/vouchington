@@ -27,7 +27,7 @@ describe('checkConfiguredIdentityBuckets — nested Server Action quotas', () =>
     const result = await checkConfiguredIdentityBuckets({
       ...baseInput,
       env: {
-        RATE_LIMITER_ANON_MUTATING: successfulLimiter,
+        RATE_LIMITER_MUTATING: successfulLimiter,
         RATE_LIMITER_SERVER_ACTION: successfulLimiter,
       },
     })
@@ -43,7 +43,7 @@ describe('checkConfiguredIdentityBuckets — nested Server Action quotas', () =>
       ...baseInput,
       botTier: 'unknown',
       env: {
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
@@ -68,7 +68,7 @@ describe('checkConfiguredIdentityBuckets — nested Server Action quotas', () =>
     const result = await checkConfiguredIdentityBuckets({
       ...baseInput,
       env: {
-        RATE_LIMITER_ANON_MUTATING: {
+        RATE_LIMITER_MUTATING: {
           limit: async ({ key }) => {
             keys.push(key)
             return { success: false }

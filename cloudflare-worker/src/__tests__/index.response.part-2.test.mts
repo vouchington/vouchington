@@ -171,7 +171,7 @@ describe('worker fetch handler — response headers and edge behaviors', () => {
     // Error response (missing IP when only bot rate limiter configured → 400, not 429)
     const botRateLimitEnv: Env = {
       ...env,
-      RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
     }
     const botErrorResponse = await worker.fetch(
       new Request('https://voucha.ai/blog', {
