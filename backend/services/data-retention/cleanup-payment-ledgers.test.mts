@@ -48,6 +48,9 @@ describe('payment ledger fiscal retention', () => {
 
   it('rejects an oversized scoped page before touching another ledger', async () => {
     await expect(
+      cleanupPaymentLedgers({ batchSize: 0, maxBatches: 1 }, [randomUUID()]),
+    ).rejects.toThrow('Payment ledger retention requires positive limits')
+    await expect(
       cleanupPaymentLedgers({ batchSize: 1, maxBatches: 1 }, [randomUUID(), randomUUID()]),
     ).rejects.toThrow('Scoped payment ledger cleanup must fit one page')
   })

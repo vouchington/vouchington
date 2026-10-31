@@ -25,6 +25,14 @@ describe('immutable Stripe events and current worker ownership', () => {
     expect((await getStripeEventById(first.id))?.payload).toEqual(event)
   })
 
+  it('admits one ledger row when the same fresh Stripe event arrives concurrently', async () => {
+    const event = createTestStripeDeletionEvent()
+    const admitted = await Promise.all(Array.from({ length: 6 }, () => insertStripeEvent(event)))
+    expect(admitted.filter(row => row.is_new)).toHaveLength(1)
+    expect(new Set(admitted.map(row => row.id)).size).toBe(1)
+    expect(admitted.every(row => row.stripe_event_id === event.id)).toBe(true)
+  })
+
   it('keeps exact replay until fiscal retirement and accepts the event anew afterward', async () => {
     const occurredAt = new Date(Date.UTC(new Date().getUTCFullYear() - 8, 11, 31, 12))
     const event = {
