@@ -8,7 +8,7 @@ import {
   type ExplainResult,
 } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gates.mts'
 import { ensureScenarioContract } from './plan-expectations.mts'

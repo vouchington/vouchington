@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, rmSync } from 'node:fs'
+import { readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { executeCapturedStatement } from '@voucha/test-helpers/query-capture'
