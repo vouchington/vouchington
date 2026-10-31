@@ -48,9 +48,7 @@ export async function createMonthlyPartitions(writer: QueryExecutor = write): Pr
 
 export async function createPostClearancePartitions(
   writer: QueryExecutor,
-  tables: readonly MonthlyPartitionTableConfig[] = ALL_MONTHLY_PARTITION_TABLES.filter(
-    table => table.table === POST_CLEARANCE_CHANGES,
-  ),
+  tables: readonly MonthlyPartitionTableConfig[],
   baseDate?: Date,
 ): Promise<void> {
   if (tables.length === 0) return
