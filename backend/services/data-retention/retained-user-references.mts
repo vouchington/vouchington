@@ -42,6 +42,8 @@ export const RETAINED_USER_REFERENCES = [
   ['copyright_notice_email_correspondence_reviews', 'reviewed_by_id'],
   ['copyright_notice_email_intake_notice_links', 'correspondence_reviewed_by_id'],
   ['copyright_notice_email_intake_receipts', 'reviewed_by_id'],
+  ['copyright_notice_email_intake_receipts', 'preservation_hold_placed_by_id'],
+  ['copyright_notice_email_intake_receipts', 'preservation_hold_released_by_id'],
   ['copyright_notice_email_intake_reviews', 'reviewed_by_id'],
   ['copyright_notice_submission_assessments', 'assessed_by_id'],
   ['copyright_notice_submissions', 'current_assessed_by_id'],

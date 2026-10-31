@@ -3,6 +3,8 @@
 -- intentionally separate from a legal case because email cannot safely identify a target until a
 -- moderator verifies the agent's extraction.
 
+COMMENT ON TYPE copyright_email_receipt_preservation_kinds IS 'Legal bases for a temporary standalone copyright email receipt preservation hold.';
+
 CREATE TABLE copyright_notice_email_intake_receipts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
@@ -13,7 +15,8 @@ CREATE TABLE copyright_notice_email_intake_receipts (
   review_decision copyright_notice_email_intake_review_decisions,
   review_retirement_check_after timestamptz NOT NULL DEFAULT '-infinity'::timestamptz,
   current_preservation_hold_token uuid,
-  preservation_hold_kind text CHECK (preservation_hold_kind IN ('litigation_threat', 'regulator_request', 'court_request')),
+  preservation_hold_kind copyright_email_receipt_preservation_kinds
+    CHECK (preservation_hold_kind IN ('litigation_threat', 'regulator_request', 'court_request')),
   preservation_hold_placed_at timestamptz,
   preservation_hold_placed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   preservation_hold_released_at timestamptz,
@@ -50,7 +53,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_decision IS 'Fin
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_at IS 'Time of the final initial staff review.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.reviewed_by_id IS 'Retained identity of the staff member who made the final initial review.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.review_retirement_check_after IS 'Next bounded eligibility probe for a completed standalone review; a blocked receipt yields to later candidates.';
-COMMENT ON COLUMN copyright_notice_email_intake_receipts.current_preservation_hold_token IS 'Current standalone receipt preservation authority, cleared only by its matching release.';
+COMMENT ON COLUMN copyright_notice_email_intake_receipts.current_preservation_hold_token IS 'Opaque compare-and-release authority for the current standalone receipt hold; it identifies no row and is erased with final review facts.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_kind IS 'Legal basis of the latest standalone receipt preservation hold.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_placed_at IS 'Time the latest standalone receipt preservation hold was placed.';
 COMMENT ON COLUMN copyright_notice_email_intake_receipts.preservation_hold_placed_by_id IS 'Retained staff identity that placed the latest receipt hold.';

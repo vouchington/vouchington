@@ -170,7 +170,8 @@ continues. Case-linked ancestry can retain a receipt endpoint without keeping th
 intake. A standalone unlinked email receipt keeps its final review decision, reviewer, time, and
 encrypted explanation for six years from the latest receipt, review, delivery, or preservation
 release activity. An active legal preservation hold, a linked case, live private intake, or pending
-delivery blocks that erasure. The receipt then keeps only the SES identity needed for exact replay.
+delivery blocks that erasure. The receipt then keeps only its SES identity and original replay checks.
+Any dependent attempted-rationale legal record retires first so its review context remains intact.
 Final case and redress outcomes remain on their owners while those owners exist. The six-year policy includes EU and UK lifecycle and staff-review history and
 records advisor review with owner approval.
 Detailed lifecycle, assessment, recommendation, and review history expires through guarded monthly partition

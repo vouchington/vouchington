@@ -66,7 +66,7 @@ export async function placeCopyrightEmailReceiptPreservationHold(
   }>(sql`/* placeCopyrightEmailReceiptPreservationHold */
     UPDATE copyright_notice_email_intake_receipts SET
       current_preservation_hold_token = uuidv7(),
-      preservation_hold_kind = ${kind},
+      preservation_hold_kind = ${kind}::copyright_email_receipt_preservation_kinds,
       preservation_hold_placed_at = CURRENT_TIMESTAMP,
       preservation_hold_placed_by_id = ${currentUser.id},
       preservation_hold_released_at = NULL,
