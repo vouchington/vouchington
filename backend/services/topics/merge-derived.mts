@@ -1,12 +1,8 @@
 import { assertWhitelistedSqlIdentifier, type TransactionQuery } from '@data-stores/psql'
 
-export const derivedReferences = [
-  ['topic_metrics', 'topic_id'],
-  ['bedrock_embedding_batch_entities', 'topic_id'],
-  ['classifier_run_candidates', 'topic_id'],
-  ['topic_classifier_results', 'topic_id'],
-  ['autotagger_agent_run_topics', 'topic_id'],
-] as const
+import { derivedReferences } from './merge-derived-references.mts'
+
+export { derivedReferences }
 
 const derivedTableNames = derivedReferences.map(([table]) => table)
 const derivedColumnNames = derivedReferences.map(([, column]) => column)
