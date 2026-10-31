@@ -164,7 +164,7 @@ export const membershipBenefitCatalog = buildMembershipBenefitCatalog({
   ],
 })
 
-export function buildMembershipBenefitCatalog(
+function buildMembershipBenefitCatalog(
   catalog: MembershipBenefitCatalog,
 ): MembershipBenefitCatalog {
   const { plans: _, ...publicCatalog } = buildCatalog(
