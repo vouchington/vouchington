@@ -9,7 +9,7 @@ describe('anonymous public cache headers', () => {
     app.route('/cached').get(ctx => {
       ctx.set('Vary', 'Origin, Accept-Language')
       setAnonymousPublicCacheHeaders(ctx, null, 60)
-      ctx.json({ body: 'x'.repeat(2048) })
+      ctx.json({ body: 'x'.repeat(1013) })
     })
 
     const response = await request(app.callback()).get('/cached').set('Accept-Encoding', 'gzip')

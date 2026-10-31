@@ -150,7 +150,7 @@ describe('referrer', () => {
       const { deviceToken, sessionToken } = await createAnonymousSession()
       setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
 
-      const longUrl = `https://example.com/?x=${'a'.repeat(2050)}`
+      const longUrl = `https://example.com/?x=${'a'.repeat(2026)}`
       await request
         .post('/api/v1/attribution/referrer')
         .send({ referrer: referrer!.id, landing_url: longUrl })
@@ -162,7 +162,7 @@ describe('referrer', () => {
       const { deviceToken, sessionToken } = await createAnonymousSession()
       setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
 
-      const expandingUrl = `https://example.com/${'é'.repeat(1000)}`
+      const expandingUrl = `https://example.com/${'é'.repeat(339)}`
       expect(expandingUrl.length).toBeLessThanOrEqual(2048)
       expect(new URL(expandingUrl).href.length).toBeGreaterThan(2048)
 

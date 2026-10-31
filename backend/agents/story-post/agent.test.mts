@@ -48,7 +48,7 @@ describe('callStoryPostAgent', () => {
       makeStory(),
       itemSummaries,
       TEST_MODEL_SELECTION,
-      makeAgentModelCaller({ title: 'A'.repeat(150), ai_summary_markdown: 'Summary.' }),
+      makeAgentModelCaller({ title: 'A'.repeat(101), ai_summary_markdown: 'Summary.' }),
     )
 
     expect(result.title).toBe('A'.repeat(100))

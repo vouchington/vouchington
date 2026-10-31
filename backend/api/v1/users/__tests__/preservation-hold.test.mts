@@ -148,7 +148,7 @@ describe('user preservation hold routes', () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       const url = `/api/v1/users/${user.id}/preservation-hold`
-      const oversized = `Secret-${'x'.repeat(600)}`
+      const oversized = `Secret-${'x'.repeat(494)}`
 
       for (const body of [
         {},

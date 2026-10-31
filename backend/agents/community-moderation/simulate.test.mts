@@ -154,13 +154,19 @@ describe('simulateCommunityPromptOnPosts', () => {
         states.push(stateOf(init))
         return answerCommunityQuestions(init)
       })
-      const long = (head: string, tail: string) => `${head} ${'filler '.repeat(1000)}${tail}`
+      const overCap = (head: string, tail: string) => {
+        const prefix = `${head} `
+        return `${prefix}${'x'.repeat(4_000 - prefix.length)}${tail}`
+      }
 
       await simulateCommunityPromptOnPosts(
         rule,
         [
-          post('body', { markdown: long('BODY_HEAD', 'BODY_TAIL') }),
-          post('title', { title: long('TITLE_HEAD', 'TITLE_TAIL'), markdown: 'BODY_AFTER_TITLE' }),
+          post('body', { markdown: overCap('BODY_HEAD', 'BODY_TAIL') }),
+          post('title', {
+            title: overCap('TITLE_HEAD', 'TITLE_TAIL'),
+            markdown: 'BODY_AFTER_TITLE',
+          }),
           post('empty', { title: ' ', markdown: ' ' }),
         ],
         options(fetch),
