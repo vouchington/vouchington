@@ -7,16 +7,50 @@ import {
   getTestMembershipRaw,
   getTestMembershipSourceState,
 } from '@voucha/test-helpers'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import {
   createMembership,
   getMembershipByStripeSubscriptionId,
   getMembershipByUserId,
   getMembershipHistory,
+  getRetainedDirectMembershipSourceByStripeIdentity,
   grantMembership,
   updateMembershipFromEvent,
 } from '@services/memberships'
-import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
-import { reconcileStripeMembershipSource } from './reconcile-source.mts'
+import {
+  getStripeMembershipSourceIdentity,
+  type StripeMembershipSourceIdentity,
+} from '@services/memberships/create-types'
+import type { AcceptedStripeMembershipObservation } from './accepted-observation.mts'
+import { reconcileLockedStripeMembershipSource } from './reconcile-source.mts'
+import type { StripeSubscriptionMembershipValues } from './subscription-values.mts'
+
+function reconcileOwnedStripeSource(
+  eventId: string,
+  sourceIdentity: StripeMembershipSourceIdentity,
+  values: StripeSubscriptionMembershipValues,
+  acceptedObservation?: AcceptedStripeMembershipObservation,
+) {
+  return withCommittedPostgresTransactionForTest(query =>
+    reconcileLockedStripeMembershipSource(
+      eventId,
+      sourceIdentity,
+      values,
+      query,
+      new Date(),
+      undefined,
+      undefined,
+      acceptedObservation,
+    ),
+  )
+}
+
+async function expectRetainedSourceWithoutDirectMembership(
+  sourceIdentity: StripeMembershipSourceIdentity,
+) {
+  expect(await getMembershipByStripeSubscriptionId(sourceIdentity)).toBeNull()
+  expect(await getRetainedDirectMembershipSourceByStripeIdentity(sourceIdentity)).not.toBeNull()
+}
 
 describe('reconcileStripeMembershipSource', () => {
   it('reactivates a terminal source through its original projection', async () => {
@@ -49,21 +83,16 @@ describe('reconcileStripeMembershipSource', () => {
       source_cancelled_at: expect.any(Date),
     })
 
-    await reconcileStripeMembershipSource(
-      reactivationEventId,
-      { ...terminalMembership, status: 'cancelled' },
-      sourceIdentity,
-      {
-        status: 'active',
-        plan: 'pro',
-        skuId: sku.id,
-        expiresAt: undefined,
-        effectiveAt: undefined,
-        currentPeriodStart: undefined,
-        terminalEffectiveAt: undefined,
-        cancelAtPeriodEnd: false,
-      },
-    )
+    await reconcileOwnedStripeSource(reactivationEventId, sourceIdentity, {
+      status: 'active',
+      plan: 'pro',
+      skuId: sku.id,
+      expiresAt: undefined,
+      effectiveAt: undefined,
+      currentPeriodStart: undefined,
+      terminalEffectiveAt: undefined,
+      cancelAtPeriodEnd: false,
+    })
 
     await expect(getMembershipByStripeSubscriptionId(sourceIdentity)).resolves.toMatchObject({
       id: terminal.id,
@@ -127,9 +156,9 @@ describe('reconcileStripeMembershipSource', () => {
 
     const observedEffectiveAt = new Date('2020-01-01T00:00:00.000Z')
     const currentPeriodStart = new Date('2021-01-01T00:00:00.000Z')
-    await reconcileStripeMembershipSource(
+    await expectRetainedSourceWithoutDirectMembership(sourceIdentity)
+    await reconcileOwnedStripeSource(
       `evt_${randomUUID()}`,
-      null,
       sourceIdentity,
       {
         status: 'active',
@@ -141,10 +170,6 @@ describe('reconcileStripeMembershipSource', () => {
         terminalEffectiveAt: undefined,
         cancelAtPeriodEnd: false,
       },
-      undefined,
-      undefined,
-      undefined,
-      undefined,
       { effectiveAt: observedEffectiveAt, autoRenews: false },
     )
 
@@ -208,7 +233,7 @@ describe('reconcileStripeMembershipSource', () => {
       terminalEffectiveAt: undefined,
       cancelAtPeriodEnd: false,
     }
-    await reconcileStripeMembershipSource(eventId, null, sourceIdentity, activeValues)
+    await reconcileOwnedStripeSource(eventId, sourceIdentity, activeValues)
 
     const active = await getMembershipByStripeSubscriptionId(sourceIdentity)
     expect(active).toMatchObject({
@@ -216,7 +241,7 @@ describe('reconcileStripeMembershipSource', () => {
       status: 'active',
     })
     if (!active) throw new Error('Expected active Stripe membership')
-    await reconcileStripeMembershipSource(eventId, active, sourceIdentity, activeValues)
+    await reconcileOwnedStripeSource(eventId, sourceIdentity, activeValues)
 
     const changes = await getMembershipHistory(user.id)
     const corrections = changes.filter(
@@ -229,56 +254,5 @@ describe('reconcileStripeMembershipSource', () => {
     await expect(getTestMembershipEntitlementEffects(correction.id)).resolves.toEqual([
       expect.objectContaining({ membership_change_id: correction.id, user_id: user.id }),
     ])
-  })
-
-  it('applies a terminal observation after a cached terminal source has reactivated', async () => {
-    const applicationId = `test-reconcile-source-preloaded-terminal-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'pro', provider_application_id: applicationId })
-    const subscriptionId = `sub_preloaded_terminal_${randomUUID()}`
-    const sourceIdentity = getStripeMembershipSourceIdentity({
-      stripeSubscriptionId: subscriptionId,
-      providerApplicationId: applicationId,
-    })
-    await createMembership({
-      userId: user.id,
-      plan: 'pro',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      status: 'cancelled',
-      stripeEventId: `evt_initial_terminal_${randomUUID()}`,
-      providerApplicationId: applicationId,
-    })
-    const reactivated = await createMembership({
-      userId: user.id,
-      plan: 'pro',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      status: 'active',
-      stripeEventId: `evt_reactivated_${randomUUID()}`,
-      providerApplicationId: applicationId,
-    })
-
-    await reconcileStripeMembershipSource(
-      `evt_authoritative_terminal_${randomUUID()}`,
-      null,
-      sourceIdentity,
-      {
-        status: 'cancelled',
-        plan: 'pro',
-        skuId: sku.id,
-        expiresAt: undefined,
-        effectiveAt: undefined,
-        currentPeriodStart: undefined,
-        terminalEffectiveAt: undefined,
-        cancelAtPeriodEnd: false,
-      },
-      { membershipId: reactivated.id, userId: user.id, status: 'cancelled' },
-    )
-
-    await expect(getTestMembershipRaw(reactivated.id)).resolves.toMatchObject({
-      cancelled_at: expect.any(Date),
-      source_cancelled_at: expect.any(Date),
-    })
   })
 })

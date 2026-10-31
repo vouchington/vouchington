@@ -5,16 +5,20 @@ import { createTestSku, createTestUser, getTestMembershipRaw } from '@voucha/tes
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import {
   createMembership,
+  getMembershipByStripeSubscriptionId,
   getRetainedDirectMembershipSourceByStripeIdentity,
+  grantMembership,
 } from '@services/memberships'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
-import { reconcileStripeMembershipSource } from '../reconcile-source.mts'
+import { reconcileLockedStripeMembershipSource } from '../reconcile-source.mts'
 
 describe('reconcileStripeMembershipSource retained source database failure', () => {
   it('rethrows an unexpected restoration failure and preserves the retained projection', async () => {
+    const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const applicationId = `test-retained-failure-${randomUUID()}`
     const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
+    const grantSku = await createTestSku({ plan: 'plus' })
     const sourceIdentity = getStripeMembershipSourceIdentity({
       stripeSubscriptionId: `sub_retained_failure_${randomUUID()}`,
       providerApplicationId: applicationId,
@@ -27,17 +31,17 @@ describe('reconcileStripeMembershipSource retained source database failure', () 
       stripeSubscriptionId: sourceIdentity.providerLineageId,
       providerApplicationId: applicationId,
     })
-    const retained = await getRetainedDirectMembershipSourceByStripeIdentity(sourceIdentity)
-    expect(retained).not.toBeNull()
+    await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
+    expect(await getMembershipByStripeSubscriptionId(sourceIdentity)).toBeNull()
+    expect(await getRetainedDirectMembershipSourceByStripeIdentity(sourceIdentity)).not.toBeNull()
     const before = await getTestMembershipRaw(membership.id)
 
     const { result, error } = await withPostgresQueryFailureForTest(
       '/* getActiveMembershipProduct */',
       () =>
         withPostgresTransactionForTest(query =>
-          reconcileStripeMembershipSource(
+          reconcileLockedStripeMembershipSource(
             `evt_retained_failure_${randomUUID()}`,
-            null,
             sourceIdentity,
             {
               status: 'active',
@@ -49,8 +53,8 @@ describe('reconcileStripeMembershipSource retained source database failure', () 
               terminalEffectiveAt: undefined,
               cancelAtPeriodEnd: false,
             },
-            retained,
             query,
+            new Date(),
           ).catch((err: unknown) => err),
         ),
       { command: 'SELECT' },
