@@ -37,7 +37,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.4.0",
     "@vouchington/session-jwt": "^0.0.2",
-    "jose": "^6.2.13",
+    "jose": "^6.2.14",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3"
   },
