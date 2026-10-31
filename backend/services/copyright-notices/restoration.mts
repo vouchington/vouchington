@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
@@ -133,12 +132,16 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   `)
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
-  await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
-    VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
-  `)
   await recordCounterNoticeRestoration(transaction, input)
-  await advanceCopyrightLastLegalActivityAt(transaction, input.noticeId)
+  await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
+    WITH recorded_event AS (INSERT INTO copyright_notice_lifecycle_changes
+      (copyright_notice_id, change_type, copyright_notice_action_intent_id)
+      VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
+      RETURNING copyright_notice_id)
+    UPDATE copyright_notices SET last_legal_activity_at =
+      GREATEST(last_legal_activity_at, clock_timestamp())
+    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
+  `)
   await transaction.commit()
   void enqueueApplyCopyrightAction(intent.id)
   return intent

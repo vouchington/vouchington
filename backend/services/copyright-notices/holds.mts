@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightHoldProceedingKind, CopyrightLegalHoldAssessmentRecord } from './types.mts'
@@ -114,10 +113,13 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     )
   }
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+    WITH recorded_event AS (INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_legal_hold_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
-      ${assessment.id})
+      ${assessment.id}) RETURNING copyright_notice_id)
+    UPDATE copyright_notices SET last_legal_activity_at =
+      GREATEST(last_legal_activity_at, ${input.assessedAt}, clock_timestamp())
+    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
   `)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: submissionRows[0].copyright_notice_id,
@@ -128,11 +130,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     now: input.assessedAt,
     query: transaction,
   })
-  await advanceCopyrightLastLegalActivityAt(
-    transaction,
-    submissionRows[0].copyright_notice_id,
-    input.assessedAt,
-  )
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions([...new Set([...lateHoldIntentIds, ...replayedIds])])
   return { ...assessment, target_ids: input.targetIds }

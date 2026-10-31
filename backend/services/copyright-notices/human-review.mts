@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -89,7 +88,7 @@ export async function completeCopyrightMandatoryHumanReview(
     transaction,
   )
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
+    WITH recorded_event AS (INSERT INTO copyright_notice_lifecycle_changes (
       id, copyright_notice_id, change_type, changed_by_id,
       copyright_restriction_id, review_action, review_rationale_ciphertext
     ) VALUES (
@@ -97,9 +96,11 @@ export async function completeCopyrightMandatoryHumanReview(
       ${input.restrictionId}, ${input.action}, ${encryptSecret(
         input.rationale,
         `copyright-restriction-review:${input.restrictionId}`,
-      )})
+      )}) RETURNING copyright_notice_id)
+    UPDATE copyright_notices SET last_legal_activity_at =
+      GREATEST(last_legal_activity_at, clock_timestamp())
+    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
   `)
-  await advanceCopyrightLastLegalActivityAt(transaction, input.noticeId)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
   enqueueCopyrightStaydownHashes(staydownImageIds)
