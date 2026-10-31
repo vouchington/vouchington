@@ -90,7 +90,6 @@ export async function compileEuCopyrightTransparencyReport(
   // The global figures also read notices and restrictions. Source writers can reach these
   // tables in either order, so acquire all report locks without waiting; a busy source leaves
   // this report unpublished for a later request instead of deadlocking a legal decision.
-  // ast-grep-ignore: no-three-sequential-awaits -- the source locks must precede the first read that fixes the repeatable-read snapshot; queries on one transaction client then execute in order.
   await transaction(sql`/* lockEuCopyrightTransparencySources */
     LOCK TABLE copyright_notices, copyright_restrictions,
       copyright_territorial_decision_identities,
@@ -99,19 +98,11 @@ export async function compileEuCopyrightTransparencyReport(
       copyright_territorial_decisions, copyright_territorial_redress_requests,
       copyright_territorial_redress_decisions, copyright_eu_supervised_complaints,
       copyright_territorial_escalations IN SHARE MODE NOWAIT`)
-  const counts = await readExistingEuCounts(periodStartedAt, periodEndedAt, undefined, transaction)
-  const noticeFigures = await readDsaCopyrightNoticeFigures(
-    periodStartedAt,
-    periodEndedAt,
-    undefined,
-    transaction,
-  )
-  const complaintFigures = await readDsaCopyrightComplaintFigures(
-    periodStartedAt,
-    periodEndedAt,
-    undefined,
-    transaction,
-  )
+  const [counts, noticeFigures, complaintFigures] = await Promise.all([
+    readExistingEuCounts(periodStartedAt, periodEndedAt, undefined, transaction),
+    readDsaCopyrightNoticeFigures(periodStartedAt, periodEndedAt, undefined, transaction),
+    readDsaCopyrightComplaintFigures(periodStartedAt, periodEndedAt, undefined, transaction),
+  ])
   const figures: DsaCopyrightTransparencyFigures = {
     period_start: periodStartedAt.toISOString(),
     period_end: periodEndedAt.toISOString(),
