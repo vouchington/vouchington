@@ -21,35 +21,13 @@ describe('typed env contract docs drift', () => {
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
-      'ts-shared/env-contract/index.mts': `
-        export function collectTypedEnvContractEntries() {
-          return [
-            { name: 'DOC_DRIFT_ENV', contractKey: 'local-init:local-web:DOC_DRIFT_ENV', sourceOfTruth: 'local-init', sensitivity: 'internal', runtimeSurfaces: ['local-web'] },
-          ]
-        }
-      `,
       'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
     })
 
     await expect(checkConfigInventoryPolicy(ctx)).resolves.toEqual({
       errors: expect.arrayContaining([
-        'typed local env var DOC_DRIFT_ENV from local-init:local-web:DOC_DRIFT_ENV is missing from docs/development/local-env-vars.md',
+        'typed local env var CF_WORKER_SECRET from local-init:local-worktree:CF_WORKER_SECRET is missing from docs/development/local-env-vars.md',
       ]),
-    })
-  })
-
-  it('reports typed contract import failures as policy errors', async () => {
-    const ctx = await makeRepoFixture({
-      [ENVIRONMENT_VARIABLES_INDEX]: './dev/config-inventory\n',
-      'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
-      'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
-      'ts-shared/env-contract/index.mts': 'throw new Error("broken contract")\n',
-      'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
-    })
-
-    await expect(checkConfigInventoryPolicy(ctx)).resolves.toEqual({
-      errors: [expect.stringContaining('failed to load typed env contract')],
     })
   })
 

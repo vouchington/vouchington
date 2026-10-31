@@ -61,23 +61,6 @@ describe('config inventory', () => {
       `,
       'ts-shared/url-signing/index.mts':
         "export const SIDELOAD_SIGNING_KEYS_ENV = 'VOUCHA_SIDELOAD_SIGNING_KEYS'\n",
-      'ts-shared/env-contract/index.mts': `
-        export function collectTypedEnvContractEntries() {
-          return [
-            { name: 'CF_WORKER_SECRET', contractKey: 'local-init:local-worktree:CF_WORKER_SECRET', sourceOfTruth: 'local-init', sensitivity: 'secret', runtimeSurfaces: ['local-web', 'local-worker', 'local-worktree'] },
-            { name: 'CF_WORKER_SECRET', contractKey: 'vouchington-infra:ecs-backend-secret+ecs-worker-secret:CF_WORKER_SECRET', sourceOfTruth: 'vouchington-infra', sensitivity: 'secret', runtimeSurfaces: ['ecs-backend-secret', 'ecs-worker-secret'] },
-            { name: 'CF_WORKER_SECRET', contractKey: 'vouchington-infra:ecs-web-secret:CF_WORKER_SECRET', sourceOfTruth: 'vouchington-infra', sensitivity: 'secret', runtimeSurfaces: ['ecs-web-secret'] },
-            { name: 'STRIPE_SECRET_KEY', contractKey: 'vouchington-infra:ecs-backend-secret+ecs-worker-secret:STRIPE_SECRET_KEY', sourceOfTruth: 'vouchington-infra', sensitivity: 'secret', runtimeSurfaces: ['ecs-backend-secret', 'ecs-worker-secret'] },
-          ]
-        }
-        export function collectTypedEnvVarConstants() {
-          return {
-            HASH_ENV: 'VOUCHA_OTP_TOKEN_HASH_SECRET',
-            MAX_ENV: 'WORKER_CONCURRENCY_MAX',
-            SIDELOAD_SIGNING_KEYS_ENV: 'VOUCHA_SIDELOAD_SIGNING_KEYS',
-          }
-        }
-      `,
       'backend/config/stripe.mts': 'const value = process.env.STRIPE_SECRET_KEY\n',
       'package.json': '{"scripts":{"coverage":"VITEST_COVERAGE_SCOPE=tooling vitest"}}',
       '.env.example':

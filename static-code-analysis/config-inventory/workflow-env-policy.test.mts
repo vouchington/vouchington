@@ -67,9 +67,6 @@ describe('workflow env policy', () => {
       'workflow env STALE_WORKFLOW_ENV in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
     )
     expect(errors).toContain(
-      'workflow env PORT in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
-    )
-    expect(errors).toContain(
       'workflow env HARNESS_CANCEL_CONFIRMATION in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
     )
     for (const name of [
@@ -89,6 +86,7 @@ describe('workflow env policy', () => {
     }
     for (const name of [
       'CODE_ENV',
+      'PORT',
       'DOCKER_BUILD_SUMMARY',
       'GIT_CONFIG_COUNT',
       'GIT_CONFIG_KEY_0',

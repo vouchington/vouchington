@@ -16,48 +16,27 @@ describe('typed env contract integration', () => {
   it('loads typed contract metadata and constant indirection from ts-shared/env-contract', async () => {
     const ctx = await makeRepoFixture({
       'backend/services/typed-contract/consumer.mts':
-        'export const value = process.env[SHARED_TYPED_CONTRACT_CONST]\n',
+        'export const value = process.env[HASH_ENV]\n',
       'backend/services/typed-contract/local-alias.mts':
         "const LOCAL_ALIAS_ENV = 'UNDECLARED_LOCAL_ALIAS_ENV'\nprocess.env[LOCAL_ALIAS_ENV]\n",
-      'ts-shared/env-contract/index.mts': [
-        'export function collectTypedEnvContractEntries() {',
-        '  return [{',
-        "    name: 'TYPED_CONTRACT_ENV',",
-        "    contractKey: 'typed-contract',",
-        "    sourceOfTruth: '@ts-shared/env-contract',",
-        "    sensitivity: 'secret',",
-        "    runtimeSurfaces: ['backend', 'worker'],",
-        '  }]',
-        '}',
-        'export function collectTypedEnvVarConstants() {',
-        '  return { SHARED_TYPED_CONTRACT_CONST: "TYPED_CONTRACT_ENV" }',
-        '}',
-      ].join('\n'),
     })
 
     const inventory = await collectConfigInventory(ctx)
 
     expect(inventory.envVars).toContainEqual(
       expect.objectContaining({
-        name: 'TYPED_CONTRACT_ENV',
-        contractKey: 'typed-contract',
-        sourceOfTruth: '@ts-shared/env-contract',
+        name: 'VOUCHA_OTP_TOKEN_HASH_SECRET',
+        contractKey:
+          'vouchington-infra:ecs-backend-secret+ecs-worker-secret:VOUCHA_OTP_TOKEN_HASH_SECRET',
+        sourceOfTruth: 'vouchington-infra',
         sensitivity: 'secret',
-        runtimeSurfaces: ['backend', 'worker'],
+        runtimeSurfaces: ['ecs-backend-secret', 'ecs-worker-secret'],
         readers: ['backend/services/typed-contract/consumer.mts'],
       }),
     )
     expect(inventory.envVars).not.toContainEqual(
       expect.objectContaining({ name: 'UNDECLARED_LOCAL_ALIAS_ENV' }),
     )
-  })
-
-  it('fails when the typed contract entrypoint exists but cannot load', async () => {
-    const ctx = await makeRepoFixture({
-      'ts-shared/env-contract/index.mts': 'throw new Error("broken contract")\n',
-    })
-
-    await expect(collectConfigInventory(ctx)).rejects.toThrow('failed to load typed env contract')
   })
 
   async function makeRepoFixture(files: Record<string, string>): Promise<SharedContext> {

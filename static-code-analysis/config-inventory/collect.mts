@@ -30,7 +30,7 @@ function readSource(ctx: SharedContext, file: string): string | null {
 }
 
 export async function collectConfigInventory(ctx: SharedContext): Promise<ConfigInventory> {
-  const typedContract = await loadTypedEnvContractData(ctx.repoRoot)
+  const typedContract = await loadTypedEnvContractData()
   const inventory = collectPublishedConfigInventory(
     {
       trackedFiles: ctx.trackedFiles,
