@@ -1,0 +1,117 @@
+id: backend-no-top-level-await
+language: Tsx
+severity: error
+message: >-
+  Backend library modules must not use top-level await. Bun's bundler does not await `export * from`
+  targets that use top-level await, directly or transitively (#4238, #4401), so importers read
+  uninitialized bindings. Initialize synchronously or lazily inside a function; top-level await
+  belongs only in entrypoints, standalone scripts, and `if (import.meta.main)` CLI blocks.
+files:
+  - backend/**/*.mts
+  - backend/**/*.cts
+  - backend/**/*.ts
+ignores:
+  - backend/entrypoints/**/*
+  - backend/scripts/**/*
+  - backend/test-helpers/**/*
+  - backend/modules/structured-decisions/benchmark.mts
+  # One-off commands run directly, never imported.
+  - backend/services/localization/compile-cli.mts
+  - backend/worker-runtime/enqueue-heartbeat.mts
+  - '**/*.test.mts'
+  - '**/*.test.ts'
+  - '**/*.test.cts'
+  - '**/__tests__/**'
+  - '**/node_modules/**'
+rule:
+  any:
+    - kind: await_expression
+    - all:
+        - kind: for_in_statement
+        - regex: ^for\s+await\b
+  not:
+    inside:
+      stopBy: end
+      any:
+        - kind: function_declaration
+        - kind: function_expression
+        - kind: generator_function
+        - kind: generator_function_declaration
+        - kind: arrow_function
+        - kind: method_definition
+        - kind: class_static_block
+        # A direct-execution CLI entry in an otherwise importable module.
+        - kind: if_statement
+          has:
+            field: condition
+            regex: import\.meta\.main
+examples:
+  - code: |
+      export const client = await createClient()
+    isValid: false
+    file: 'backend/data-stores/valkey/clients.mts'
+  - code: |
+      await warmUp()
+    isValid: false
+    file: 'backend/modules/utils/warm.mts'
+  - code: |
+      for await (const chunk of stream) handle(chunk)
+    isValid: false
+    file: 'backend/services/example/stream.mts'
+  - code: |
+      if (enabled) {
+        await warmUp()
+      }
+    isValid: false
+    file: 'backend/queues/example/index.mts'
+  - code: |
+      export async function load() {
+        return await createClient()
+      }
+    isValid: true
+    file: 'backend/data-stores/valkey/clients.mts'
+  - code: |
+      export const load = async () => {
+        for await (const chunk of stream) handle(chunk)
+      }
+    isValid: true
+    file: 'backend/services/example/stream.mts'
+  - code: |
+      class Loader {
+        async load() {
+          await warmUp()
+        }
+        static {
+          void warmUp()
+        }
+      }
+    isValid: true
+    file: 'backend/modules/utils/loader.mts'
+  - code: |
+      if (import.meta.main) {
+        await runCli()
+      }
+    isValid: true
+    file: 'backend/data-stores/psql/migrate.mts'
+  - code: |
+      if (enabled) {
+        await runCli()
+      }
+    isValid: false
+    file: 'backend/data-stores/psql/migrate.mts'
+  - code: |
+      await run()
+    isValid: true
+    file: 'backend/worker-runtime/enqueue-heartbeat.mts'
+  - code: |
+      const result = await run()
+    isValid: true
+    file: 'backend/entrypoints/api/serve.mts'
+  - code: |
+      await main()
+    isValid: true
+    file: 'backend/scripts/generate-mcp-catalog.mts'
+  - code: |
+      await run()
+    isValid: true
+    file: 'backend/modules/utils/run.test.mts'
