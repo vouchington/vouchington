@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { isTurnstileAlwaysApprove, turnstileConfig } from './config.mts'
 import {
   deleteDynamicConfigFieldsForTest,
@@ -15,6 +16,8 @@ describe('turnstile-config', () => {
   it('defaults always_approve to false', () => {
     expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'staging' })).toBe(false)
     expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'production' })).toBe(false)
+    overrideDynamicConfigFieldsForTest(turnstileConfig, { always_approve: true })
+    expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'staging' })).toBe(true)
   })
 
   it('honors boolean true only on staging', () => {
@@ -43,6 +46,9 @@ describe('turnstile-config', () => {
   it('treats an invalid stored field as the default and reports it', () => {
     overrideUncheckedDynamicConfigFieldsForTest(turnstileConfig, { always_approve: 'TRUE' })
     expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'staging' })).toBe(false)
-    expect(isTurnstileAlwaysApprove({ ENVIRONMENT: 'production' })).toBe(false)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
+    expect(sentryCaptureExceptionMock.mock.calls[0]?.[0]).toMatchObject({
+      message: 'Invalid turnstile config field always_approve: "TRUE"',
+    })
   })
 })
