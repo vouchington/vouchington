@@ -6,11 +6,7 @@ import {
   makeStoryClusteringVectors,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-fixture'
 import { describe, expect, it } from 'vitest'
-import {
-  buildStoryClusteringBindings,
-  STORY_CLUSTERING_NONE_KEY,
-  STORY_CLUSTERING_QUESTION_ID,
-} from './bindings.mts'
+import { buildStoryClusteringBindings } from './bindings.mts'
 
 type StoryClusteringPromptCandidate = Parameters<
   typeof buildStoryClusteringBindings
@@ -60,7 +56,7 @@ describe('buildStoryClusteringBindings (real PG)', () => {
     expect(bindings).toHaveLength(1)
     expect(bindings[0]).toMatchObject({
       type: 'choice',
-      questionId: STORY_CLUSTERING_QUESTION_ID,
+      questionId: 'story-clustering',
       question: PROMPT,
     })
     expect(bindings[0].criteria).toEqual([
@@ -76,7 +72,7 @@ describe('buildStoryClusteringBindings (real PG)', () => {
         criterion: `story:${STORY_ID}`,
         candidate: { candidateKind: 'story', storyId: STORY_ID, storedCandidateId: null },
       },
-      { criterion: STORY_CLUSTERING_NONE_KEY, candidate: null },
+      { criterion: 'none', candidate: null },
     ])
   })
 
@@ -150,7 +146,7 @@ describe('buildStoryClusteringBindings (real PG)', () => {
 
     expect(bindings[0].criteria.map(criterion => criterion.criterion)).toEqual([
       `story:${STORY_ID}`,
-      STORY_CLUSTERING_NONE_KEY,
+      'none',
     ])
     expect(state).toContain(`Candidate key: story:${STORY_ID}`)
     expect(state).toContain(`Published: ${published.toISOString()}`)
