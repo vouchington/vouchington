@@ -83,4 +83,3 @@ export { getStoryPostRelatedUrlProjectionSourcePage } from '@services/stories/st
 export { getStoryPreviews } from '@services/stories/story-previews'
 export { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-member-pages'
 export { hydrateStoryMemberPage } from '@services/stories/story-page-hydration'
-export { storyRelatedItemsConfig } from '@services/stories/story-related-items-config'
