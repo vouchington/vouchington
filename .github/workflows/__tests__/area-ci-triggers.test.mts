@@ -65,7 +65,10 @@ const refinedRuntimeFilters = [
 
 describe('Area CI triggers', () => {
   it('runs backend validation when the live MCP catalog checker changes', () => {
-    expectFilterMatches('backend', ['ci/check-live-mcp-catalog.mjs'])
+    expectFilterMatches('backend', [
+      'ci/check-live-mcp-catalog.mjs',
+      'ci/mcp-tool-file-registration.mts',
+    ])
   })
 
   it('selects backend tests for the deployed Valkey admin entrypoint without the deleted script path', () => {

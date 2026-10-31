@@ -34,6 +34,7 @@ on:
       - 'ci/prepare-trivy-db.sh'
       - 'ci/resolve-published-images.sh'
       - 'ci/check-live-mcp-catalog.mjs'
+      - 'ci/mcp-tool-file-registration.mts'
       - 'ci/check-topic-merge-foreign-keys.mts'
       - 'ci/package.json'
       - 'vitest.config.mts'
