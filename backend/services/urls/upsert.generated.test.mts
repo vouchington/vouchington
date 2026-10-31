@@ -2,7 +2,7 @@ import { it, expect, describe, vi } from 'vitest'
 import crypto from 'node:crypto'
 import { addUrl, addUrls } from './upsert.mts'
 import { dispatchUrlCreatedEvents, extractInsertedUrlIds } from './upsert-results.mts'
-import { getUrlByAnyCached } from './get.mts'
+import { getUrlByAnyCached, getUrlById } from './get.mts'
 import { beginTransaction } from '@voucha/test-helpers'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getCrawlersForHostname } from '@services/crawlers'
@@ -94,8 +94,8 @@ describe('upsert.generated', () => {
       skipCreatedEvents: true,
     })
     expect(created).not.toBeNull()
-    // An id miss is cached on that id. Probe a different id so the uncommitted row stays readable after commit.
-    expect(await getUrlByAnyCached(crypto.randomUUID())).toBeNull()
+    // getUrlById reads outside this transaction and does not cache, so the uncommitted row is null.
+    expect(await getUrlById(created!.id)).toBeNull()
     const admission = holdQueueBulkAdmission(
       entitiesListeners,
       ENTITY_LISTENERS_URL_CREATED_JOB.name,
