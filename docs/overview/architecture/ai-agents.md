@@ -1,7 +1,7 @@
 # AI Agents
 
-Voucha uses OpenAI for content moderation and fixed classifiers (Jev is the retained classifier fallback), OpenRouter for retained
-focused agents, Amazon Bedrock for semantic search embeddings, and a local Rust detector for
+Voucha uses OpenAI for content moderation and fixed classifiers (Jev is the retained classifier fallback), Anthropic or OpenAI
+per service setting for focused agents, Amazon Bedrock for semantic search embeddings, and a local Rust detector for
 AI-generated post labels. The [AI platform overview](ai-platform.md) owns classifier execution,
 provider boundaries and measurement. Native conversation transcript synchronization has its own
 [storage contract](conversations.md).
