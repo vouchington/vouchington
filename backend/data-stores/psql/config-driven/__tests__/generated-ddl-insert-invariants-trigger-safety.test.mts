@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { parsePostgresSql, type PostgresSqlTrigger } from 'no-mistakes'
 
-import { replayUnsafeTrigger } from '../../../../test-helpers/data-stores/psql/config-driven/on-conflict-triggers.mts'
-import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
+import { findFirstUnguardedInsertViolation as findUnguardedInsertViolation } from '../../../../../ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts'
+import { replayUnsafeTrigger } from '../../../../../ci/generated-ddl-inserts/on-conflict-triggers.mts'
 import {
+  fixtureInsertFacts,
   generatedDependenciesForTable,
   hasGeneratedArbiterViolation,
   hasReplayUnsafeTrigger,
   triggerFactsForTable,
 } from '../../../../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
+
+const findFirstUnguardedInsertViolation = (sql: string) =>
+  findUnguardedInsertViolation(sql, fixtureInsertFacts)
 
 async function parseTrigger(sql: string): Promise<PostgresSqlTrigger> {
   const parsed = await parsePostgresSql({ sql })
@@ -29,7 +33,7 @@ async function parseInsert(sql: string) {
   return { insert: statement.insert, conflict: statement.insert.onConflict }
 }
 
-describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
+describe('schema-snapshot-facts (bounded topic and agent fixture)', () => {
   it('returns parsed trigger facts for a known table', async () => {
     const triggers = triggerFactsForTable('topic_aliases')
     expect(triggers).toBeDefined()
@@ -46,8 +50,8 @@ describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
   })
 })
 
-describe('generated-ddl-insert-invariants + real schema.json trigger data', () => {
-  it('flags a replay-unsafe topic_aliases DO UPDATE exactly like the real, pre-fix seed bug', async () => {
+describe('generated-ddl-insert-invariants against the bounded trigger fixture', () => {
+  it('flags a replay-unsafe topic_aliases DO UPDATE on the bounded fixture pre-fix shape', async () => {
     expect(
       await findFirstUnguardedInsertViolation(
         "INSERT INTO topic_aliases (topic_id, alias) SELECT 1, 'bot' " +
@@ -146,7 +150,7 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
     expect(hasReplayUnsafeTrigger(insert, conflict)).toBe(true)
   })
 
-  it('flags an INSERT that assigns topic_aliases.alias, a source of the real search_vector column', async () => {
+  it('flags an INSERT that assigns topic_aliases.alias, a source of the fixture search_vector column', async () => {
     expect(
       await findFirstUnguardedInsertViolation(
         "INSERT INTO topic_aliases (search_vector, alias) VALUES (to_tsvector('a'), 'a') " +
@@ -155,7 +159,7 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
     ).not.toBeNull()
   })
 
-  it('accepts a bare self-reference to topic_aliases.alias against the same real arbiter', async () => {
+  it('accepts a bare self-reference to topic_aliases.alias against the same fixture arbiter', async () => {
     expect(
       await findFirstUnguardedInsertViolation(
         "INSERT INTO topic_aliases (search_vector, alias) VALUES (to_tsvector('a'), 'a') " +
@@ -216,8 +220,8 @@ describe('replayUnsafeTrigger from parsed SQL facts', () => {
   })
 })
 
-describe('generatedDependenciesForTable (backend real schema.json singleton)', () => {
-  it('maps the real topic_aliases.search_vector STORED column to its alias source', async () => {
+describe('generatedDependenciesForTable (bounded topic_aliases fixture)', () => {
+  it('maps the fixture topic_aliases.search_vector STORED column to its alias source', async () => {
     const dependencies = generatedDependenciesForTable('topic_aliases')
     expect(dependencies?.get('search_vector')).toEqual(new Set(['alias']))
   })

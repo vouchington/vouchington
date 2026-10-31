@@ -1,5 +1,5 @@
 // Test-time judge for TypeScript-generated config-driven SQL
-// (`generated-ddl-insert-invariants.mts`). Tracked `.sql` files use no-mistakes
+// (`ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts`). Tracked `.sql` files use no-mistakes
 // `postgres-idempotent-insert`.
 
 // Postgres double-quoted identifiers (`"weird name"`, `""` escaping a literal `"`) can contain

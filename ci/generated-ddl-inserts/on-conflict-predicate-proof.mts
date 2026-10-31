@@ -1,47 +1,12 @@
-import type {
-  PostgresSqlExpression,
-  PostgresSqlExpressionChild,
-  PostgresSqlName,
-} from 'no-mistakes'
+import type { PostgresSqlExpression } from 'no-mistakes'
 
-export type ExpressionNode = PostgresSqlExpression | PostgresSqlExpressionChild
-
-export function columnName(name: PostgresSqlName): string | undefined {
-  return name.parts.at(-1)?.identity
-}
-
-function directColumn(node: ExpressionNode): PostgresSqlName | undefined {
-  if (node.root.kind === 'columnReference') return node.root.name
-  if (node.root.kind !== 'parenthesized') return undefined
-  const child = node.children.find(part => part.role === 'parenthesizedExpression')
-  return child === undefined ? undefined : directColumn(child)
-}
-
-function isExcluded(name: PostgresSqlName): boolean {
-  return name.parts.length === 2 && name.parts[0]?.identity === 'excluded'
-}
-
-export function selfReferenceColumn(node: ExpressionNode): string | undefined {
-  const name = directColumn(node)
-  return name === undefined || isExcluded(name) ? undefined : columnName(name)
-}
-
-export function excludedColumnRefName(node: ExpressionNode): string | undefined {
-  const name = directColumn(node)
-  return name !== undefined && isExcluded(name) ? columnName(name) : undefined
-}
-
-export function isBareSelfReference(node: ExpressionNode, column: string): boolean {
-  return selfReferenceColumn(node) === column
-}
-
-export function isExcludedReferenceToColumn(node: ExpressionNode, column: string): boolean {
-  return excludedColumnRefName(node) === column
-}
-
-export function isNullLiteral(node: ExpressionNode): boolean {
-  return node.root.kind === 'literal' && node.root.value.kind === 'null'
-}
+import {
+  excludedColumnRefName,
+  isBareSelfReference,
+  isExcludedReferenceToColumn,
+  selfReferenceColumn,
+  type ExpressionNode,
+} from './on-conflict-column-refs.mts'
 
 function conjunctiveProof(
   node: ExpressionNode | null,
@@ -87,6 +52,12 @@ export function isDistinctFromExcluded(node: PostgresSqlExpression, column: stri
   )
 }
 
+function excludedNotNullColumn(node: ExpressionNode): string | undefined {
+  if (node.root.kind !== 'nullTest' || !node.root.negated) return undefined
+  const operand = node.children.find(child => child.role === 'nullOperand')
+  return operand === undefined ? undefined : excludedColumnRefName(operand)
+}
+
 export function isNullUntilProvenNonNull(
   predicate: PostgresSqlExpression | null,
   column: string,
@@ -95,14 +66,6 @@ export function isNullUntilProvenNonNull(
   collectNullProvenColumns(predicate, nullProven)
   if (!nullProven.has(column)) return false
   const excludedNotNull = new Set<string>()
-  conjunctiveProof(
-    predicate,
-    node => {
-      if (node.root.kind !== 'nullTest' || !node.root.negated) return undefined
-      const operand = node.children.find(child => child.role === 'nullOperand')
-      return operand === undefined ? undefined : excludedColumnRefName(operand)
-    },
-    excludedNotNull,
-  )
+  conjunctiveProof(predicate, excludedNotNullColumn, excludedNotNull)
   return excludedNotNull.has(column)
 }

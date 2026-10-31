@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
+import { findFirstUnguardedInsertViolation as findUnguardedInsertViolation } from '../../../../../ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts'
+import { fixtureInsertFacts } from '../../../../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
+
+const findFirstUnguardedInsertViolation = (sql: string) =>
+  findUnguardedInsertViolation(sql, fixtureInsertFacts)
 
 describe('config-driven generated DDL insert invariant: double-quoted identifiers', () => {
-  it('does not flag a double-quoted identifier whose text reads as the real conflict action', async () => {
+  it('does not flag a double-quoted identifier whose text reads as the conflict action', async () => {
     // A double-quoted identifier containing guard text (a column named "DO UPDATE") must not
     // be mistaken for the real conflict action — the real action here is DO NOTHING.
     expect(

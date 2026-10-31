@@ -5,11 +5,8 @@ import type {
   PostgresSqlTrigger,
 } from 'no-mistakes'
 
-import {
-  isDistinctFromExcluded,
-  isExcludedReferenceToColumn,
-  isNullUntilProvenNonNull,
-} from './on-conflict-column-refs.mts'
+import { isExcludedReferenceToColumn } from './on-conflict-column-refs.mts'
+import { isDistinctFromExcluded, isNullUntilProvenNonNull } from './on-conflict-predicate-proof.mts'
 
 const REPLAY_SAFE_TRIGGER_FUNCTIONS = new Set([
   'fn_update_updated_at',

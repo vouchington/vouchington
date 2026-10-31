@@ -71,6 +71,14 @@ describe('Area CI triggers', () => {
     ])
   })
 
+  it('runs backend validation when the generated INSERT guard changes', () => {
+    expectFilterMatches('backend', [
+      'ci/validate-generated-ddl-inserts.mts',
+      'ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts',
+      'ci/generated-ddl-inserts/load-generated-config-driven-sql.mts',
+    ])
+  })
+
   it('selects backend tests for the deployed Valkey admin entrypoint without the deleted script path', () => {
     expectFilterMatches('backend', [
       'backend/entrypoints/api/valkey-admin.mts',

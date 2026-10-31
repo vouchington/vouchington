@@ -5,11 +5,11 @@ import type {
 } from 'vouchington-tooling/pg-schema-snapshot'
 
 import {
-  collectNullProvenColumns,
   isBareSelfReference,
   isExcludedReferenceToColumn,
   isNullLiteral,
 } from './on-conflict-column-refs.mts'
+import { collectNullProvenColumns } from './on-conflict-predicate-proof.mts'
 
 export type ArbiterVerdict =
   | { kind: 'safe' }
