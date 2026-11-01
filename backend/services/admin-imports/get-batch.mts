@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { isUUID } from '@modules/utils'
+import { MAX_ROWS } from './create-batch.mts'
 import type { ImportBatch, ImportRow } from './types.mts'
 
 export type BatchProgress = {
@@ -40,6 +41,7 @@ export async function getImportRowsByBatchId(batchId: string): Promise<ImportRow
     FROM admin_import_rows row_definition
     WHERE row_definition.batch_id = ${batchId}
     ORDER BY row_index ASC
+    LIMIT ${MAX_ROWS}
   `,
   )
 
