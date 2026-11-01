@@ -1,7 +1,20 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export const COPYRIGHT_CASE_POINTER_PHASE_COUNT = 3
+/** FK cycles cut after report and evidence proof, before child-first deletion. */
+export const COPYRIGHT_CASE_POINTER_CUTS = [
+  ['copyright_territorial_decisions', ['supersedes_decision_id']],
+  [
+    'copyright_notice_submissions',
+    [
+      'copyright_notice_guest_capability_id',
+      'current_assessment_identity_id',
+      'current_assessment_form_screening_id',
+    ],
+  ],
+  ['copyright_territorial_redress_requests', ['current_staff_decision_identity_id']],
+] as const
+export const COPYRIGHT_CASE_POINTER_PHASE_COUNT = COPYRIGHT_CASE_POINTER_CUTS.length
 
 /** Null only current FK cycles, after the locked legal and reporting proof. */
 export async function cutCopyrightCasePointerPage(
@@ -12,11 +25,7 @@ export async function cutCopyrightCasePointerPage(
 ): Promise<{ nextPhaseIndex: number; cut: number }> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
     throw new Error('Invalid copyright pointer page size')
-  const table = [
-    'copyright_territorial_decisions',
-    'copyright_notice_submissions',
-    'copyright_territorial_redress_requests',
-  ][phaseIndex]
+  const table = COPYRIGHT_CASE_POINTER_CUTS[phaseIndex]?.[0]
   if (!table) return { nextPhaseIndex: phaseIndex, cut: 0 }
   await query(sql`/* scopeCopyrightCasePointerCut */
     SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true),

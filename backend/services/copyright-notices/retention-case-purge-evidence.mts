@@ -8,7 +8,7 @@ type EvidenceSource = { id: string; intake_id: string | null; storage_object_id:
 type ObjectRow = {
   id: string
   storage_key: string
-  deletion_claimed: boolean
+  is_deletion_claimed: boolean
   reference_generation: string
 }
 type OwnerRow = { id: string; copyright_notice_id: string | null }
@@ -65,13 +65,13 @@ export async function eraseCopyrightCaseEvidencePage(
   // New FK writers take SHARE on this registry row. Every proof page gets a fresh
   // READ COMMITTED snapshot after the registry lock, then checks its generation.
   const { rows: objects } = await query<ObjectRow>(sql`/* lockCopyrightCaseEvidenceObject */
-    SELECT id, storage_key, deletion_claimed, reference_generation::text
+    SELECT id, storage_key, is_deletion_claimed, reference_generation::text
     FROM copyright_notice_storage_objects
     WHERE id = ${source.storage_object_id}::uuid FOR UPDATE NOWAIT`)
   const object = objects[0]
   if (!object) throw new Error('Copyright evidence registry row is missing')
 
-  if (!object.deletion_claimed) {
+  if (!object.is_deletion_claimed) {
     const proof: NonNullable<OwnerCursor> =
       ownerCursor?.objectId === object.id && ownerCursor.generation === object.reference_generation
         ? ownerCursor
@@ -118,8 +118,8 @@ export async function eraseCopyrightCaseEvidencePage(
       SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true),
         set_config('app.copyright_case_purge_table', 'copyright_notice_storage_objects', true)`)
     await query(sql`/* claimCopyrightCaseEvidenceObjectDeletion */
-      UPDATE copyright_notice_storage_objects SET deletion_claimed = true
-      WHERE id = ${object.id}::uuid AND NOT deletion_claimed
+      UPDATE copyright_notice_storage_objects SET is_deletion_claimed = true
+      WHERE id = ${object.id}::uuid AND NOT is_deletion_claimed
         AND reference_generation = ${object.reference_generation}::bigint`)
     return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true }
   }

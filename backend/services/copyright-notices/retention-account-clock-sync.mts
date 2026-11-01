@@ -33,7 +33,7 @@ export async function runCopyrightAccountClockSyncPage(
     LEFT JOIN user_legal_preservation_holds hold
       ON hold.account_user_id = identity.id AND hold.released_at IS NULL
     WHERE identity.id = ${data.accountUserId}::uuid
-      AND identity.copyright_case_clock_sync_pending`)
+      AND identity.is_copyright_case_clock_sync_pending`)
   const source = sources[0]
   if (!source) {
     await query.commit()
@@ -75,8 +75,8 @@ export async function runCopyrightAccountClockSyncPage(
   if (parties.length < pageSize) {
     await query(sql`/* completeCopyrightAccountClockSync */
       UPDATE retained_user_identities
-      SET copyright_case_clock_sync_pending = false
-      WHERE id = ${data.accountUserId}::uuid AND copyright_case_clock_sync_pending`)
+      SET is_copyright_case_clock_sync_pending = false
+      WHERE id = ${data.accountUserId}::uuid AND is_copyright_case_clock_sync_pending`)
   }
   await query.commit()
   return {

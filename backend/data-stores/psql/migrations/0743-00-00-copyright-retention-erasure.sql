@@ -129,7 +129,7 @@ COMMENT ON FUNCTION fn_reject_copyright_decision_rationale_mutation() IS 'Permit
 -- Receipt-owned private rows have no case FK. Serialize their current writers
 -- with the linked case before each new row, so a page cannot pass an old cursor
 -- and later miss new ciphertext after the evidence marker is committed.
-CREATE FUNCTION fn_fence_copyright_linked_email_private_write()
+CREATE FUNCTION fn_reject_copyright_linked_email_private_write()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   receipt_id uuid;
@@ -169,31 +169,31 @@ END;
 $$;
 CREATE TRIGGER trigger_fence_copyright_email_parse_case
   BEFORE INSERT ON copyright_notice_email_intake_parses FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
 CREATE TRIGGER trigger_fence_copyright_email_attachment_case
   BEFORE INSERT ON copyright_notice_email_intake_attachments FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
 CREATE TRIGGER trigger_fence_copyright_email_reference_case
   BEFORE INSERT ON copyright_notice_email_thread_references FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
 CREATE TRIGGER trigger_fence_copyright_email_recommendation_case
   BEFORE INSERT ON copyright_notice_email_intake_recommendations FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
 CREATE TRIGGER trigger_fence_copyright_email_review_case
   BEFORE INSERT ON copyright_notice_email_intake_reviews FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
 CREATE TRIGGER trigger_fence_copyright_email_recommendation_identity_case
   BEFORE INSERT ON copyright_notice_email_intake_recommendation_identities FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
 CREATE TRIGGER trigger_fence_copyright_email_delivery_work_case
   BEFORE INSERT ON copyright_notice_delivery_work_items FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
 CREATE TRIGGER trigger_fence_copyright_email_delivery_recipient_case
   BEFORE INSERT ON copyright_notice_delivery_recipients FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('work', 'copyright_notice_delivery_work_item_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('work', 'copyright_notice_delivery_work_item_id');
 CREATE TRIGGER trigger_fence_copyright_email_delivery_attempt_case
   BEFORE INSERT ON copyright_notice_delivery_attempts FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('work', 'work_item_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('work', 'work_item_id');
 CREATE TRIGGER trigger_fence_copyright_email_delivery_result_case
   BEFORE INSERT ON copyright_notice_delivery_attempt_results FOR EACH ROW
-  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('attempt', 'attempt_id');
+  EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('attempt', 'attempt_id');

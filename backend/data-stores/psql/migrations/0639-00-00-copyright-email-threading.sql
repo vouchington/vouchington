@@ -137,7 +137,7 @@ CREATE TABLE copyright_notice_email_intake_notice_links (
         AND correspondence_submission_id IS NULL AND correspondence_message_id IS NULL
         AND correspondence_reviewed_at IS NOT NULL AND correspondence_reviewed_by_id IS NOT NULL))))
 );
-CREATE FUNCTION fn_fence_copyright_email_link_storage_owner()
+CREATE FUNCTION fn_reject_copyright_email_link_storage_owner()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   object_id uuid;
@@ -171,7 +171,7 @@ BEGIN
   END IF;
   IF TG_OP = 'INSERT' THEN
     PERFORM 1 FROM copyright_notice_storage_objects
-      WHERE id = object_id AND NOT deletion_claimed FOR UPDATE;
+      WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'copyright evidence object deletion has started'
         USING ERRCODE = 'check_violation';
@@ -180,7 +180,7 @@ BEGIN
   END IF;
   -- A claimed object must keep its case link until physical deletion has cleared the intake FK.
   PERFORM 1 FROM copyright_notice_storage_objects
-    WHERE id = object_id AND NOT deletion_claimed FOR UPDATE;
+    WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'claimed copyright evidence cannot lose its case link'
       USING ERRCODE = 'check_violation';
@@ -188,7 +188,7 @@ BEGIN
   RETURN OLD;
 END;
 $$;
-CREATE FUNCTION fn_bump_copyright_email_link_storage_generation()
+CREATE FUNCTION fn_update_copyright_email_link_storage_generation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE intake_id uuid;
 BEGIN
@@ -201,7 +201,7 @@ BEGIN
   RETURN OLD;
 END;
 $$;
-CREATE FUNCTION fn_advance_copyright_email_link_case_clock()
+CREATE FUNCTION fn_update_copyright_email_link_case_clock()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE copyright_notices SET last_legal_activity_at =
@@ -212,13 +212,13 @@ END;
 $$;
 CREATE TRIGGER trigger_fence_copyright_email_link_storage_owner
   BEFORE INSERT OR DELETE ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_fence_copyright_email_link_storage_owner();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_storage_owner();
 CREATE TRIGGER trigger_bump_copyright_email_link_storage_generation
   AFTER INSERT OR DELETE ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_email_link_storage_generation();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_email_link_storage_generation();
 CREATE TRIGGER trigger_advance_copyright_email_link_case_clock
   AFTER INSERT ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_advance_copyright_email_link_case_clock();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_email_link_case_clock();
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice

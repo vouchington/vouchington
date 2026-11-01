@@ -241,7 +241,7 @@ CREATE TRIGGER trigger_copyright_thread_party_target
 CREATE TABLE copyright_notice_storage_objects (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   storage_key text NOT NULL UNIQUE CHECK (char_length(storage_key) BETWEEN 1 AND 1024 AND NOT starts_with(storage_key, 'erased:')),
-  deletion_claimed boolean NOT NULL DEFAULT false,
+  is_deletion_claimed boolean NOT NULL DEFAULT false,
   reference_generation bigint NOT NULL DEFAULT 0 CHECK (reference_generation >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
@@ -250,7 +250,7 @@ CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 COMMENT ON TABLE copyright_notice_storage_objects IS 'One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.';
 COMMENT ON COLUMN copyright_notice_storage_objects.storage_key IS 'Unique private object-storage key; the row is deleted only after no intake or artifact references it.';
-COMMENT ON COLUMN copyright_notice_storage_objects.deletion_claimed IS 'One-way fence against new references while bounded physical version deletion is in progress; the existing reference remains until deletion completes.';
+COMMENT ON COLUMN copyright_notice_storage_objects.is_deletion_claimed IS 'One-way fence against new references while bounded physical version deletion is in progress; the existing reference remains until deletion completes.';
 COMMENT ON COLUMN copyright_notice_storage_objects.reference_generation IS 'Per-object mutation version for bounded ownership proof before the one-way deletion claim.';
 
 CREATE TABLE copyright_notice_evidence_artifacts (
@@ -906,7 +906,7 @@ BEGIN
   IF TG_OP = 'UPDATE' THEN
     old_object_id := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;
     IF old_object_id IS NOT NULL AND object_id IS DISTINCT FROM old_object_id THEN
-      SELECT deletion_claimed INTO claimed FROM copyright_notice_storage_objects
+      SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects
       WHERE id = old_object_id FOR UPDATE;
       IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
         RAISE EXCEPTION 'claimed copyright evidence cannot lose its reference'
@@ -916,7 +916,7 @@ BEGIN
   END IF;
   IF object_id IS NOT NULL THEN
     IF TG_OP = 'INSERT' OR object_id IS DISTINCT FROM old_object_id THEN
-      SELECT deletion_claimed INTO claimed FROM copyright_notice_storage_objects
+      SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects
       WHERE id = object_id FOR UPDATE;
       IF claimed THEN
         RAISE EXCEPTION 'copyright evidence object deletion has started'
@@ -934,14 +934,14 @@ END;
 $$;
 COMMENT ON FUNCTION fn_reject_copyright_missing_storage_object() IS 'Reject missing intake or artifact object identities except when controlled retention erasure clears them.';
 
-CREATE FUNCTION fn_guard_copyright_claimed_storage_reference_delete()
+CREATE FUNCTION fn_reject_copyright_claimed_storage_reference_delete()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   object_id uuid := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;
   claimed boolean;
 BEGIN
   IF object_id IS NULL THEN RETURN OLD; END IF;
-  SELECT deletion_claimed INTO claimed FROM copyright_notice_storage_objects
+  SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects
     WHERE id = object_id FOR UPDATE;
   IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
     RAISE EXCEPTION 'claimed copyright evidence cannot lose its reference'
@@ -951,7 +951,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION fn_bump_copyright_storage_reference_generation()
+CREATE FUNCTION fn_update_copyright_storage_reference_generation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   old_object_id uuid;
@@ -1086,7 +1086,7 @@ $$;
 CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_submission();
 -- Every submission producer uses this one table. Capture its account before the
 -- live users FK can be SET NULL by account deletion.
-CREATE FUNCTION fn_retain_copyright_submission_party()
+CREATE FUNCTION fn_update_copyright_submission_party()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.submitted_by_id IS NOT NULL THEN
@@ -1102,17 +1102,17 @@ END;
 $$;
 CREATE TRIGGER trigger_retain_copyright_submission_party
   AFTER INSERT ON copyright_notice_submissions FOR EACH ROW
-  EXECUTE FUNCTION fn_retain_copyright_submission_party();
+  EXECUTE FUNCTION fn_update_copyright_submission_party();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE UPDATE OR DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id');
 CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete
   BEFORE DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_copyright_claimed_storage_reference_delete('storage_object_id');
+  EXECUTE FUNCTION fn_reject_copyright_claimed_storage_reference_delete('storage_object_id');
 CREATE TRIGGER trigger_copyright_evidence_object_reference_generation
   AFTER INSERT OR UPDATE OF storage_object_id OR DELETE ON copyright_notice_evidence_artifacts
-  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_storage_reference_generation('storage_object_id');
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
 

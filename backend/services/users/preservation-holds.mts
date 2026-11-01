@@ -106,7 +106,7 @@ export async function placeUserPreservationHold(
       RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
     ), marked AS (
       UPDATE retained_user_identities identity
-      SET copyright_case_clock_sync_pending = true
+      SET is_copyright_case_clock_sync_pending = true
       FROM placed WHERE identity.id = placed.account_user_id
       RETURNING identity.id
     )
@@ -147,7 +147,7 @@ export async function releaseUserPreservationHold(
       UPDATE retained_user_identities identity
       SET last_legal_preservation_hold_released_at = GREATEST(
         identity.last_legal_preservation_hold_released_at, released.released_at),
-        copyright_case_clock_sync_pending = true
+        is_copyright_case_clock_sync_pending = true
       FROM released WHERE identity.id = released.account_user_id
       RETURNING identity.id
     )

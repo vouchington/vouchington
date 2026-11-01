@@ -41,6 +41,7 @@ export async function retainCopyrightCaseTargetParties(
       JOIN retained_user_identities identity ON identity.id = party.user_id
       WHERE target.copyright_notice_id = ${noticeId}::uuid
         AND target.id = ANY(${[...targetIds]}::uuid[])
+    ORDER BY identity.id ASC NULLS LAST
     ON CONFLICT (copyright_notice_id, account_user_id) DO NOTHING`),
   )
   await query(sql`/* advanceCopyrightCaseTargetPartyClock */
@@ -61,6 +62,7 @@ export async function retainCopyrightCaseIncidentParties(
     SELECT ${noticeId}::uuid, identity.id, true
     FROM retained_user_identities identity
     WHERE identity.id = ANY(${[...new Set(accountUserIds)]}::uuid[])
+    ORDER BY identity.id ASC NULLS LAST
     ON CONFLICT (copyright_notice_id, account_user_id) DO UPDATE
       SET is_incident_party = true
       WHERE NOT copyright_notice_party_identities.is_incident_party`)
