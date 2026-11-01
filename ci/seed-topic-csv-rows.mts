@@ -1,4 +1,4 @@
-import { isSlug } from '../backend/modules/utils/slugs.mts'
+import { isSlug } from '@ts-shared/utils/slugs'
 import { topicTypes } from '../backend/types/entities/topic.mts'
 
 import { appendFeedFieldFailures } from './seed-topic-csv-feed.mts'
