@@ -16,5 +16,6 @@ describe('conversation title on Anthropic Haiku 5.5', () => {
     )
 
     expect(title.trim().length).toBeGreaterThan(0)
+    expect(title).not.toEqual('New Conversation')
   }, 30_000)
 })
