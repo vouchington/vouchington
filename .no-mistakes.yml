@@ -5634,7 +5634,6 @@ rules:
             file: backend/scripts/native-mv-contracts/trending-http.mts,
             symbol: checkTrendingHttpContracts,
           }
-        - { file: backend/scripts/native-mv-contracts/revenue.mts, symbol: checkRevenueContracts }
         - {
             file: backend/scripts/native-mv-contracts/hashtag-author-deletion.mts,
             symbol: checkHashtagAuthorDeletionContract,
