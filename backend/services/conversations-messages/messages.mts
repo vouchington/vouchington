@@ -25,10 +25,8 @@ export async function getConversationMessagesByConversationId(
   `
   if (options?.after) query.append(sql` AND id < ${options.after.id}`)
   query.append(sql` ORDER BY id DESC`)
-  if (options?.limit !== undefined) {
-    const limit = Math.max(1, Math.min(options.limit, 100))
-    query.append(sql` LIMIT ${limit + (options.probeForNextPage ? 1 : 0)}`)
-  }
+  const limit = Math.max(1, Math.min(options?.limit ?? 100, 100))
+  query.append(sql` LIMIT ${limit + (options?.probeForNextPage ? 1 : 0)}`)
 
   const { rows } = await read<ConversationMessage>(query)
   return rows.toReversed()

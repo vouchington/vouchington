@@ -6,7 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import type { ImportType, ImportBatch, ImportRow } from './types.mts'
 
-const MAX_ROWS = 50000
+export const MAX_ROWS = 50000
 
 type CreateBatchResult = {
   batch: ImportBatch
