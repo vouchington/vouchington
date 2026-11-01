@@ -4,7 +4,8 @@ import sql from 'sql-template-strings'
 /** Models the crash boundary after the live case was deleted but its retained owner remained. */
 export async function insertCopyrightPurgeOrphanForTest(noticeId: string): Promise<void> {
   await write(sql`/* insertCopyrightPurgeOrphanForTest */
-    INSERT INTO retained_copyright_notice_identities (id) VALUES (${noticeId}::uuid)`)
+    INSERT INTO retained_copyright_notice_identities (id, case_deleted_at)
+    VALUES (${noticeId}::uuid, clock_timestamp())`)
 }
 
 export async function deleteCopyrightPurgeOrphanForTest(noticeId: string): Promise<void> {

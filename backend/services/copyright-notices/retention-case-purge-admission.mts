@@ -12,6 +12,40 @@ const MAX_PSQL_PENDING = 1_000
 
 type CopyrightCasePurgeAdmissionCursor = NonNullable<CopyrightCasePurgeAdmissionData['after']>
 
+/** Owners whose case row is gone and whose party cleanup is pending, found by the partial index. */
+export function copyrightResidualRecoveryStatement(afterId: string | undefined, pageSize: number) {
+  // Only owners carrying the marker are read, so a run is bounded by unfinished purges and never
+  // by the number of cases ever created.
+  const cursor = afterId ? sql` AND id > ${afterId}::uuid` : sql``
+  return sql`/* admitCopyrightResidualCaseRecoveryPage */
+    SELECT id FROM retained_copyright_notice_identities
+    WHERE case_deleted_at IS NOT NULL`.append(cursor).append(sql`
+    ORDER BY id LIMIT ${pageSize}`)
+}
+
+/** One keyset page of due cases in index order; blockers are checked under the case worker's gates. */
+export function copyrightCasePurgeAdmissionStatement(
+  after: CopyrightCasePurgeAdmissionCursor | undefined,
+  pageSize: number,
+) {
+  const cursor = after
+    ? sql`AND (notice.jurisdiction, notice.last_legal_activity_at, notice.id) >
+        (${after.jurisdiction}::copyright_jurisdictions,
+          ${after.lastLegalActivityAt}::timestamptz, ${after.noticeId}::uuid)`
+    : sql``
+  return sql`/* admitCopyrightCasePurgePage */
+    SELECT notice.id, notice.jurisdiction, notice.last_legal_activity_at
+    FROM copyright_notices notice
+    WHERE notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
+      AND notice.last_legal_activity_at <=
+        ((clock_timestamp() AT TIME ZONE 'UTC')
+          - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC' `.append(
+    cursor,
+  ).append(sql`
+    ORDER BY notice.jurisdiction, notice.last_legal_activity_at, notice.id
+    LIMIT ${pageSize}`)
+}
+
 /** One index-ordered admission page; blockers are checked under the case worker's legal gates. */
 export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmissionData): Promise<{
   hasMore: boolean
@@ -51,50 +85,25 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
     }
   }
   if (data.caseCandidatesComplete) {
-    const orphanCursor = data.orphanAfterId ? sql`WHERE id > ${data.orphanAfterId}::uuid` : sql``
-    const { rows: owners } = await read<{ id: string; missing: boolean }>(
-      sql`
-      /* admitCopyrightResidualCaseRecoveryPage */
-      WITH page AS MATERIALIZED (
-        SELECT id FROM retained_copyright_notice_identities `.append(orphanCursor).append(sql`
-        ORDER BY id LIMIT ${pageSize}
-      )
-      SELECT page.id, (notice.id IS NULL) AS missing
-      FROM page LEFT JOIN copyright_notices notice ON notice.id = page.id
-      ORDER BY page.id`),
+    // Only owners whose case row is gone and whose party cleanup is pending carry the marker, so
+    // this read is bounded by unfinished purges, never by the number of cases ever created.
+    const { rows: owners } = await read<{ id: string }>(
+      copyrightResidualRecoveryStatement(data.orphanAfterId, pageSize),
     )
-    const page = owners
-    const missing = page.filter(owner => owner.missing)
-    if (missing.length > 0) await enqueueCopyrightCasePurgeBatch(missing.map(owner => owner.id))
+    if (owners.length > 0) await enqueueCopyrightCasePurgeBatch(owners.map(owner => owner.id))
     return {
       hasMore: owners.length === pageSize,
-      next: { ...data, orphanAfterId: page.at(-1)?.id },
-      admitted: missing.length,
+      next: { ...data, orphanAfterId: owners.at(-1)?.id },
+      admitted: owners.length,
       stalled: false,
     }
   }
   const after = data.after
-  const cursor = after
-    ? sql`AND (notice.jurisdiction, notice.last_legal_activity_at, notice.id) >
-        (${after.jurisdiction}::copyright_jurisdictions,
-          ${after.lastLegalActivityAt}::timestamptz, ${after.noticeId}::uuid)`
-    : sql``
-  const statement = sql`/* admitCopyrightCasePurgePage */
-    SELECT notice.id, notice.jurisdiction, notice.last_legal_activity_at
-    FROM copyright_notices notice
-    WHERE notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
-      AND notice.last_legal_activity_at <=
-        ((clock_timestamp() AT TIME ZONE 'UTC')
-          - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC' `.append(
-    cursor,
-  ).append(sql`
-    ORDER BY notice.jurisdiction, notice.last_legal_activity_at, notice.id
-    LIMIT ${pageSize}`)
   const { rows } = await read<{
     id: string
     jurisdiction: CopyrightCasePurgeAdmissionCursor['jurisdiction']
     last_legal_activity_at: Date
-  }>(statement)
+  }>(copyrightCasePurgeAdmissionStatement(after, pageSize))
   const page = rows
   if (page.length > 0) await enqueueCopyrightCasePurgeBatch(page.map(row => row.id))
   const last = page.at(-1)

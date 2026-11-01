@@ -38,7 +38,7 @@ export type CounterNoticeBody = {
 /**
  * One row of `copyright-notices-filed.csv`. These purposes mirror `copyrightFormSecretPurpose` and
  * `copyrightSubmissionPurpose`; a decrypt failure throws, so a record is never silently omitted.
- * Plaintext is marked erased only when the case has a retention-erasure record; ciphertext uses
+ * Plaintext is marked erased only when the case has an evidence-erased marker; ciphertext uses
  * the sweep sentinel. Every erased column reads as an explicit marker, and the row
  * keeps the same columns either way, because the CSV header comes from the first row.
  */

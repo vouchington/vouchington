@@ -8,7 +8,7 @@ export async function eraseTestCopyrightSubmissionGuidanceForNotice(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(
-    sql`/* eraseTestCopyrightSubmissionGuidanceForNotice */ SET LOCAL app.copyright_retention_erasure = 'on'`,
+    sql`/* eraseTestCopyrightSubmissionGuidanceForNotice */ SET LOCAL session_replication_role = replica`,
   )
   await transaction(sql`/* eraseTestCopyrightSubmissionGuidanceForNotice */
     UPDATE copyright_notice_submission_guidance

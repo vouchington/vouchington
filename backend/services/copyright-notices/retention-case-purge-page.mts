@@ -23,7 +23,7 @@ type LockedNotice = {
   blocker_generation: string | null
 }
 
-function caseProofSql(noticeId: string, lock: boolean): SQLStatement {
+export function copyrightCasePurgeProofSql(noticeId: string, lock: boolean): SQLStatement {
   const statement = sql`/* readCopyrightCasePurgeProof */
     SELECT notice.id, notice.last_legal_activity_at::text AS legal_clock,
       notice.received_at::text AS received_clock,
@@ -74,13 +74,18 @@ export async function runCopyrightCasePurgePage(
     SELECT pg_advisory_xact_lock_shared(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows: dirtyAccounts } = await query<{ id: string }>(sql`
     /* readPendingCopyrightAccountClockSync */
-    SELECT id FROM retained_user_identities
-    WHERE is_copyright_case_clock_sync_pending ORDER BY id LIMIT 1`)
+    SELECT identity.id FROM copyright_notice_party_identities party
+    JOIN retained_user_identities identity ON identity.id = party.account_user_id
+    WHERE party.copyright_notice_id = ${data.noticeId}::uuid
+      AND identity.is_copyright_case_clock_sync_pending
+    LIMIT 1`)
   if (dirtyAccounts.length > 0) {
     await query.commit()
     return { data, hasMore: true, deferred: true }
   }
-  const { rows: locked } = await query<LockedNotice>(caseProofSql(data.noticeId, true))
+  const { rows: locked } = await query<LockedNotice>(
+    copyrightCasePurgeProofSql(data.noticeId, true),
+  )
   if (locked.length === 0) {
     await query.commit()
     return await deleteCopyrightCaseResidualPartyPage(
@@ -104,7 +109,9 @@ export async function runCopyrightCasePurgePage(
       }
     : { ...data, legalClockAt: clock, proofVersion: beforeVersion }
   const result = await runLockedPage(query, current, eligible[0]!, pageSize)
-  const { rows: after } = await query<LockedNotice>(caseProofSql(data.noticeId, false))
+  const { rows: after } = await query<LockedNotice>(
+    copyrightCasePurgeProofSql(data.noticeId, false),
+  )
   if (after[0]) {
     result.data.proofVersion = proofVersion(after[0])
     result.data.legalClockAt = after[0].legal_clock

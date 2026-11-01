@@ -9,7 +9,7 @@ export async function eraseTestCopyrightEmailIntakeSender(
 ) {
   await using transaction = await beginTransaction()
   await transaction(
-    sql`/* eraseTestCopyrightEmailIntakeSender:permit */ SET LOCAL app.copyright_retention_erasure = 'on'`,
+    sql`/* eraseTestCopyrightEmailIntakeSender:permit */ SET LOCAL session_replication_role = replica`,
   )
   await transaction(
     sql`/* eraseTestCopyrightEmailIntakeSender:eraseSender */

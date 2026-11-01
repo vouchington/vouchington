@@ -2,7 +2,7 @@ import { DeleteObjectsCommand, ListObjectVersionsCommand, S3Client } from '@aws-
 import { afterEach, beforeEach, vi } from 'vitest'
 
 const BUCKET = 'test-copyright-evidence'
-const PAGE_SIZE = 2
+const DEFAULT_PAGE_SIZE = 2
 
 type StoredVersion = { versionId: string; deleteMarker: boolean }
 
@@ -20,10 +20,13 @@ export type FakeEvidenceBucket = {
 
 /**
  * A versioned evidence bucket behind the shared S3 client: only the two calls the retention sweep
- * makes are answered, listings page two entries at a time, and `DeleteObjects` honours
+ * makes are answered, listings page two entries at a time unless `pageSize` says otherwise, and `DeleteObjects` honours
  * `VersionId` and reports refusals the way S3 does. The bucket env is set for the test.
  */
-export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
+export function useFakeCopyrightEvidenceBucket(
+  bucketOptions: { pageSize?: number } = {},
+): FakeEvidenceBucket {
+  const PAGE_SIZE = bucketOptions.pageSize ?? DEFAULT_PAGE_SIZE
   const objects = new Map<string, StoredVersion[]>()
   const refused = new Set<string>()
   let deleteCalls = 0
