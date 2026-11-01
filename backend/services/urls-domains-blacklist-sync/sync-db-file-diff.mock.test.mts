@@ -1,7 +1,8 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { expectRemovedBlocklistDiffDirectories } from '@voucha/test-helpers/blocklist-diff-directories'
 import {
   beginTransaction,
   countBlacklistEntriesBySource,
@@ -18,6 +19,11 @@ import { syncDomainsWithDatabase } from './sync-db.mts'
 import { stageBothDiffFiles } from './membership-diff-stage.mts'
 import { sourceMembershipOrderSql } from './membership-copy-sql.mts'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
+
+vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => {
+  const fs = await importOriginal()
+  return { ...fs, mkdtempSync: vi.fn<VitestLooseMock>(fs.mkdtempSync) }
+})
 
 describe('blocklist file diff', () => {
   it('reads membership from the replica and stages only the diff', async () => {
@@ -99,13 +105,13 @@ describe('blocklist file diff', () => {
       name: `interrupt-${suffix}`,
       url: 'https://example.com/interrupt.txt',
     })
-    const before = new Set(diffDirectories())
     try {
+      vi.mocked(mkdtempSync).mockClear()
       await expect(syncDomainsWithDatabase(sourceId, interruptedDownload(), 'url')).rejects.toThrow(
         Error,
       )
       expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
-      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
+      expectRemovedBlocklistDiffDirectories(1)
     } finally {
       await deleteTestBlacklistSource(sourceId)
     }
@@ -167,10 +173,6 @@ function interruptedDownload(): Response {
       },
     }),
   )
-}
-
-function diffDirectories(): string[] {
-  return readdirSync(tmpdir()).filter(name => name.startsWith(`blocklist-diff-${process.pid}-`))
 }
 
 function sourceNameSuffix(): string {
