@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { cleanupPaymentLedgers } from '@services/data-retention/cleanup-payment-ledgers'
+import { runPaymentLedgerRetentionBacklogScenarios } from './payment-ledger-retention-backlog.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
@@ -35,10 +36,7 @@ export async function runPaymentLedgerRetentionScenarios(): Promise<void> {
 
   const limits = { batchSize: 20, maxBatches: 1 }
   registerScenarioContract('membership-stripe-event-retention-idle', {
-    expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_stripe_events__occurred_at_id'], noSort: true },
-      { kind: 'maxProcessedRows', relation: 'stripe_events', max: 5 },
-    ],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'stripe_events', max: 5 }],
     seededRows: { stripe_events: 2000 },
     allowEmptyResult: true,
   })
@@ -67,4 +65,5 @@ export async function runPaymentLedgerRetentionScenarios(): Promise<void> {
     undefined,
     'selectExpiredMembershipOperationLedgerPage',
   )
+  await runPaymentLedgerRetentionBacklogScenarios()
 }

@@ -45,7 +45,7 @@ describe('immutable Stripe events and current worker ownership', () => {
       cleanupPaymentLedgers({ batchSize: 1, maxBatches: 1 }, [first.id]),
     ).resolves.toContainEqual({
       family: 'stripe_event',
-      scanned: 0,
+      scanned: 1,
       deleted: 0,
       hasMore: false,
     })

@@ -673,8 +673,11 @@ CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_o
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Fiscal retention scan: only kinds this job can ever delete. Receipts, reversal-case links and
+-- execution work exist only for other kinds or never for a completed operation, so every row in
+-- this index is a candidate and a run reads at most its page of it.
 CREATE INDEX IF NOT EXISTS idx_membership_operations__completed_at_id ON membership_operations (completed_at, id)
-  WHERE completed_at IS NOT NULL;
+  WHERE completed_at IS NOT NULL AND operation_kind IN ('cancel_source', 'administrator_refund');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 COMMENT ON COLUMN membership_operations.fiscal_retention_started_at IS
@@ -895,10 +898,16 @@ RETURNS BOOLEAN LANGUAGE SQL STABLE AS $$
         AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
           WHERE work.membership_operation_id = operation.id)
         AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
-          WHERE receipt.membership_operation_id = operation.id));
+          WHERE receipt.membership_operation_id = operation.id)
+        AND (operation.fiscal_retention_started_at IS NOT NULL
+          OR operation.operation_kind = 'cancel_source' OR EXISTS (
+          SELECT 1 FROM membership_administrator_refund_operation_requests request
+          JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
+          WHERE request.membership_operation_id = operation.id
+            AND (NOT request.is_cancel_requested OR refund.has_revoked_access))));
 $$;
 COMMENT ON FUNCTION fn_membership_operation_fiscal_retention_due(UUID) IS
-  'Permits bounded deletion only after seven full years following the completed operation UTC fiscal year, without live work or automatic refund receipts.';
+  'Permits bounded deletion only after seven full years following the completed operation UTC fiscal year, without live work or automatic refund receipts, and only once any requested cancellation revoked access.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -1084,7 +1093,6 @@ COMMENT ON COLUMN stripe_event_processing_work_items.available_at IS 'Earliest t
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__stripe_event_type_id ON stripe_events (stripe_event_type_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_stripe_events__occurred_at_id ON stripe_events (occurred_at, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_events__stripe_event_id ON stripe_events (stripe_event_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -1093,8 +1101,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_event_processing_work_items__lease_t
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__claim ON stripe_event_processing_work_items (available_at, stripe_event_id) WHERE processed_at IS NULL AND ignored_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__retention ON stripe_event_processing_work_items (stripe_event_id)
   WHERE processed_at IS NOT NULL OR ignored_at IS NOT NULL;
-CREATE TYPE payment_operational_cleanup_kinds AS ENUM ('stripe_event_work', 'purchase_intent');
-COMMENT ON TYPE payment_operational_cleanup_kinds IS 'Independent persisted keyset streams for terminal Stripe work and abandoned purchase intent cleanup.';
+CREATE TYPE payment_operational_cleanup_kinds AS ENUM ('stripe_event_work', 'purchase_intent', 'stripe_event_ledger');
+COMMENT ON TYPE payment_operational_cleanup_kinds IS 'Independent persisted keyset streams for terminal Stripe work, abandoned purchase intent, and fiscal Stripe event ledger cleanup.';
 CREATE TABLE IF NOT EXISTS payment_operational_cleanup_cursors (
   kind payment_operational_cleanup_kinds PRIMARY KEY,
   cursor_id UUID,
@@ -1102,7 +1110,7 @@ CREATE TABLE IF NOT EXISTS payment_operational_cleanup_cursors (
 );
 CREATE TRIGGER trigger_payment_operational_cleanup_cursors_updated_at BEFORE UPDATE ON payment_operational_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-INSERT INTO payment_operational_cleanup_cursors (kind) VALUES ('stripe_event_work'), ('purchase_intent') ON CONFLICT DO NOTHING;
+INSERT INTO payment_operational_cleanup_cursors (kind) VALUES ('stripe_event_work'), ('purchase_intent'), ('stripe_event_ledger') ON CONFLICT DO NOTHING;
 COMMENT ON TABLE payment_operational_cleanup_cursors IS 'One persisted UUIDv7 keyset position per daily payment operational cleanup.';
 COMMENT ON COLUMN payment_operational_cleanup_cursors.kind IS 'Cleanup stream whose position this row stores.';
 COMMENT ON COLUMN payment_operational_cleanup_cursors.cursor_id IS 'Last scanned UUIDv7 id; NULL starts the next full pass.';

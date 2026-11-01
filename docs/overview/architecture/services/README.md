@@ -70,7 +70,10 @@ Launched subscriptions and native purchase tokens remain available to resolve la
 events. The immutable Stripe event ledger remains the deduplication authority while its record
 exists. Expired Stripe events and settled cancellation or administrator refund operations are
 removed after their fiscal retention window, including dependent refund records in foreign-key
-order. No separate permanent replay identity survives deletion. Verification-linked purchase
+order. Each run reads one bounded page: operations are scanned through a partial index of the two
+deletable kinds, and Stripe events through a persisted id cursor that passes over events with
+unfinished or failed work and restarts after a full pass. Other operation kinds are outside this
+job. No separate permanent replay identity survives deletion. Verification-linked purchase
 intents remain because their accounting evidence must keep a valid reference. Failed Stripe
 processing work remains recoverable until it reaches a completed or ignored outcome.
 

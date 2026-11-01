@@ -33,6 +33,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'membership-stripe-event-recovery',
   'membership-stripe-event-retention-idle',
   'membership-operation-retention-idle',
+  'membership-stripe-event-retention-blocked-backlog',
+  'membership-operation-retention-blocked-backlog',
   'membership-renewal-selection',
   'media-delivery-staging-page',
   'media-delivery-staging-global-page',

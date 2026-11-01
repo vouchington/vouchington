@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DATA_RETENTION_MAX_VALUES, type DataRetentionLimits } from './config.mts'
+import { cleanupStripeEventPage } from './cleanup-payment-stripe-events.mts'
 import { drainExpiredMembershipOperationChildren } from './cleanup-payment-ledger-children.mts'
 
 export type PaymentLedgerFamily = 'stripe_event' | 'membership_operation'
@@ -34,7 +35,7 @@ export async function cleanupPaymentLedgers(
     const result: PaymentLedgerCleanupPage = { family, scanned: 0, deleted: 0, hasMore: false }
     for (let batch = 0; batch < (recordIds ? 1 : limits.maxBatches); batch++) {
       // oxlint-disable-next-line no-await-in-loop -- each bounded transaction commits before the next oldest-id page.
-      const page = await cleanupPaymentLedgerPage(family, limits.batchSize, fiscalCutoff, recordIds) // no-mistakes-disable-line query-reached-per-item: two fixed families each commit at most maxBatches transactions; each page locks at most two parent IDs and deletes at most batchSize physical rows.
+      const page = await cleanupPaymentLedgerPage(family, limits.batchSize, fiscalCutoff, recordIds) // no-mistakes-disable-line query-reached-per-item: two fixed families each commit at most maxBatches transactions; a Stripe page locks at most batchSize + 1 event IDs, a membership page at most two operation IDs, and each deletes at most batchSize physical rows.
       result.scanned += page.scanned
       result.deleted += page.deleted
       result.hasMore = page.hasMore
@@ -56,42 +57,6 @@ function cleanupPaymentLedgerPage(
     : cleanupMembershipOperationPage(pageSize, fiscalCutoff, recordIds)
 }
 
-async function cleanupStripeEventPage(
-  pageSize: number,
-  fiscalCutoff: Date,
-  recordIds?: readonly string[],
-) {
-  await using query = await beginTransaction()
-  const statement = sql`/* selectExpiredStripeEventLedgerPage */
-    SELECT event.id FROM stripe_events event
-    WHERE event.occurred_at < ${fiscalCutoff}`
-  if (recordIds) statement.append(sql` AND event.id = ANY(${[...recordIds]}::uuid[])`)
-  // Keep the work check as an indexed scalar probe. A generic plan otherwise hashes
-  // the entire work table and sorts a sequential scan of current Stripe events.
-  statement.append(sql`
-      AND (SELECT work.stripe_event_id FROM stripe_event_processing_work_items work
-        WHERE work.stripe_event_id = event.id LIMIT 1) IS NULL
-    ORDER BY event.occurred_at, event.id
-    LIMIT ${pageSize + 1} FOR UPDATE OF event SKIP LOCKED`)
-  const { rows } = await query<{ id: string }>(statement)
-  const ids = rows.slice(0, pageSize).map(row => row.id)
-  let deleted = 0
-  if (ids.length > 0) {
-    await query(
-      sql`/* permitExpiredStripeEventDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
-    )
-    const result = await query(sql`/* deleteExpiredStripeEventLedgerPage */
-      DELETE FROM stripe_events event WHERE event.id = ANY(${ids}::uuid[])
-        AND date_trunc('year', event.occurred_at AT TIME ZONE 'UTC') + INTERVAL '8 years'
-          <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        AND NOT EXISTS (SELECT 1 FROM stripe_event_processing_work_items work
-          WHERE work.stripe_event_id = event.id)`)
-    deleted = result.rowCount ?? 0
-  }
-  await query.commit()
-  return { scanned: ids.length, deleted, hasMore: !recordIds && rows.length > pageSize }
-}
-
 async function cleanupMembershipOperationPage(
   pageSize: number,
   fiscalCutoff: Date,
@@ -102,28 +67,19 @@ async function cleanupMembershipOperationPage(
     sql`/* permitExpiredMembershipOperationDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
   )
   const statement = sql`/* selectExpiredMembershipOperationLedgerPage */
-    SELECT operation.id FROM membership_operations operation
+    SELECT operation.id, fn_membership_operation_fiscal_retention_due(operation.id) AS due
+    FROM membership_operations operation
     WHERE operation.completed_at IS NOT NULL
       AND operation.operation_kind IN ('cancel_source', 'administrator_refund')
       AND operation.completed_at < ${fiscalCutoff}`
   if (recordIds) statement.append(sql` AND operation.id = ANY(${[...recordIds]}::uuid[])`)
+  // Matches the partial index predicate. Deletion safety lives in the due function, evaluated
+  // only for the page's rows, so no ineligible row can sit ahead of a deletable one in the scan.
   statement.append(sql`
-      AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
-        WHERE work.membership_operation_id = operation.id)
-      AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
-        WHERE receipt.membership_operation_id = operation.id)
-      AND NOT EXISTS (SELECT 1 FROM membership_ineligible_purchase_reversal_case_operations case_operation
-        WHERE case_operation.membership_operation_id = operation.id)
-      AND (operation.operation_kind = 'cancel_source'
-        OR operation.fiscal_retention_started_at IS NOT NULL OR EXISTS (
-        SELECT 1 FROM membership_administrator_refund_operation_requests request
-        JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
-        WHERE request.membership_operation_id = operation.id
-          AND (NOT request.is_cancel_requested OR refund.has_revoked_access)))
     ORDER BY operation.completed_at, operation.id
     LIMIT 2 FOR UPDATE OF operation SKIP LOCKED`)
-  const { rows } = await query<{ id: string }>(statement)
-  const operationId = rows[0]?.id
+  const { rows } = await query<{ id: string; due: boolean }>(statement)
+  const operationId = rows[0]?.due ? rows[0].id : undefined
   let deleted = 0
   let rootDeleted = 0
   if (operationId) {
@@ -131,13 +87,7 @@ async function cleanupMembershipOperationPage(
       UPDATE membership_operations operation
       SET fiscal_retention_started_at = clock_timestamp()
       WHERE operation.id = ${operationId}
-        AND operation.fiscal_retention_started_at IS NULL
-        AND fn_membership_operation_fiscal_retention_due(operation.id)
-        AND (operation.operation_kind = 'cancel_source' OR EXISTS (
-          SELECT 1 FROM membership_administrator_refund_operation_requests request
-          JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
-          WHERE request.membership_operation_id = operation.id
-            AND (NOT request.is_cancel_requested OR refund.has_revoked_access)))`)
+        AND operation.fiscal_retention_started_at IS NULL`)
     deleted = await drainExpiredMembershipOperationChildren(query, operationId, pageSize)
     if (deleted < pageSize) {
       const result = await query(sql`/* deleteExpiredMembershipOperationLedger */
