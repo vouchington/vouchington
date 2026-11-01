@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { COPYRIGHT_CASE_PURGE_PHASES } from '../../../services/copyright-notices/retention-case-purge-order.mts'
 import { COPYRIGHT_CASE_POINTER_CUTS } from '../../../services/copyright-notices/retention-case-purge-pointers.mts'
-import {
-  COPYRIGHT_CASE_FINAL_POINTER_CUT,
-  COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER,
-} from '../../../services/copyright-notices/retention-case-purge-final.mts'
-import { COPYRIGHT_CASE_RESIDUAL_DELETE_ORDER } from '../../../services/copyright-notices/retention-case-purge-residual.mts'
+import { COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER } from '../../../services/copyright-notices/retention-case-purge-final.mts'
 import { COPYRIGHT_CASE_EMAIL_LINK_DELETE_TABLE } from '../../../services/copyright-notices/retention-case-purge-email-links.mts'
 import {
+  COPYRIGHT_CASE_FINAL_POINTER_CUT,
+  COPYRIGHT_CASE_RESIDUAL_DELETE_ORDER,
   hasPurgeCursorIndex,
   reachablePurgeTables,
   readCopyrightCasePurgeSchema,

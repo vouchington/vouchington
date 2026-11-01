@@ -1,5 +1,15 @@
 import { readFile } from 'node:fs/promises'
 
+/** Expected fixed tail cuts and post-root order; the schema closure test checks their FK consequences. */
+export const COPYRIGHT_CASE_FINAL_POINTER_CUT = [
+  'current_territorial_decision_identity_id',
+  'territorial_authorizing_assessment_identity_id',
+] as const
+export const COPYRIGHT_CASE_RESIDUAL_DELETE_ORDER = [
+  'copyright_notice_party_identities',
+  'retained_copyright_notice_identities',
+] as const
+
 export type PurgeForeignKey = {
   name: string
   child: string

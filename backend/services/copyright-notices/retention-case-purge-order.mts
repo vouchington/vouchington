@@ -41,8 +41,3 @@ export const COPYRIGHT_CASE_PURGE_PHASES = [
 
 export const COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX =
   beforeEmail.length + COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS.length
-
-export const COPYRIGHT_CASE_PURGE_TAIL_TABLES = [
-  'copyright_notice_party_identities',
-  'copyright_territorial_notice_receipts',
-] as const

@@ -4,12 +4,6 @@ import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-co
 import sql from 'sql-template-strings'
 import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 
-/** Same-job bounded cleanup after the case root has been removed. */
-export const COPYRIGHT_CASE_RESIDUAL_DELETE_ORDER = [
-  'copyright_notice_party_identities',
-  'retained_copyright_notice_identities',
-] as const
-
 /** Same-job cleanup of finite party links after the live case root is gone. */
 export async function deleteCopyrightCaseResidualPartyPage(data: CopyrightCasePurgeJobData) {
   const pageSize = getCopyrightCasePurgePageSize()

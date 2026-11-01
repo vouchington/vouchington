@@ -36,7 +36,3 @@ export function enqueueCopyrightCasePurgeBatch(noticeIds: readonly string[]) {
     enqueueBulk,
   })
 }
-
-export function enqueueCopyrightCasePurge(noticeId: string) {
-  return enqueueCopyrightCasePurgeBatch([noticeId])
-}
