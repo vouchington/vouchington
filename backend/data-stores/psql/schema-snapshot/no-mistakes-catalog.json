@@ -40824,6 +40824,10 @@
     },
     "copyright_notice_submission_requests": {
       "checkConstraints": {
+        "copyright_notice_submission_reques_idempotency_key_sha256_check": {
+          "definition": "CHECK ((octet_length(idempotency_key_sha256) = 32))",
+          "validated": true
+        },
         "copyright_notice_submission_requests_request_sha256_check": {
           "definition": "CHECK ((octet_length(request_sha256) = 32))",
           "validated": true
@@ -40860,9 +40864,9 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "idempotency_key": {
-          "comment": "Caller-generated UUID preventing duplicate response admission.",
-          "dataType": "uuid",
+        "idempotency_key_sha256": {
+          "comment": "Digest of the canonical caller UUID used to match exact retries while the case exists.",
+          "dataType": "bytea",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -40934,38 +40938,6 @@
           "unique": true,
           "valid": true
         },
-        "uq_copyr_notic_submi_reques__requester_user_id__idempotency_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyr_notic_submi_reques__requester_user_id__idempotency_key ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "requester_user_id",
-              "descending": false,
-              "expression": "requester_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "idempotency_key",
-              "descending": false,
-              "expression": "idempotency_key",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "uq_copyright_notice_submission_requests__submission_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -40988,6 +40960,38 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_copyright_submission_requests__requester__key_digest": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_submission_requests__requester__key_digest ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key_sha256)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "requester_user_id",
+              "descending": false,
+              "expression": "requester_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "idempotency_key_sha256",
+              "descending": false,
+              "expression": "idempotency_key_sha256",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bytea_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -41001,11 +41005,11 @@
         }
       },
       "uniqueConstraints": {
-        "uq_copyr_notic_submi_reques__requester_user_id__idempotency_key": {
-          "columns": ["requester_user_id", "idempotency_key"]
-        },
         "uq_copyright_notice_submission_requests__submission_id": {
           "columns": ["copyright_notice_submission_id"]
+        },
+        "uq_copyright_submission_requests__requester__key_digest": {
+          "columns": ["requester_user_id", "idempotency_key_sha256"]
         }
       }
     },

@@ -165,7 +165,7 @@ describe('copyright notice routes', () => {
       (
         await poster
           .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
-          .set('Idempotency-Key', key)
+          .set('Idempotency-Key', key.toUpperCase())
           .send({ reason: 'This is my hosted material.', target_ids: [targetId] })
           .expect(200)
       ).body,

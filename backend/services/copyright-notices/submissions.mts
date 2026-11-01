@@ -81,10 +81,12 @@ async function createAuthenticatedCopyrightSubmission(
   assert(input.targetIds.length > 0, 422, 'At least one target is required')
   assert(new Set(input.targetIds).size === input.targetIds.length, 422, 'Targets must be unique')
   const requestSha256 = createHash('sha256').update(JSON.stringify({ kind, input })).digest()
+  const canonicalIdempotencyKey = idempotencyKey.toLowerCase()
+  const idempotencyKeySha256 = createHash('sha256').update(canonicalIdempotencyKey).digest()
   await using transaction = await beginTransaction()
   await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
     SELECT pg_advisory_xact_lock(
-      hashtextextended(${`copyright-submission:${currentUser.id}:${idempotencyKey}`}, 0)
+      hashtextextended(${`copyright-submission:${currentUser.id}:${canonicalIdempotencyKey}`}, 0)
     )
   `)
   const { rows: existingRows } = await transaction<
@@ -97,7 +99,8 @@ async function createAuthenticatedCopyrightSubmission(
       request.request_sha256
     FROM copyright_notice_submission_requests request
     JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
-    WHERE request.requester_user_id = ${currentUser.id} AND request.idempotency_key = ${idempotencyKey}
+    WHERE request.requester_user_id = ${currentUser.id}
+      AND request.idempotency_key_sha256 = ${idempotencyKeySha256}
     FOR UPDATE OF request
   `)
   const existing = existingRows[0]
@@ -155,8 +158,10 @@ async function createAuthenticatedCopyrightSubmission(
       WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
     ), inserted_request AS (
       INSERT INTO copyright_notice_submission_requests (
-        copyright_notice_submission_id, requester_user_id, idempotency_key, request_sha256
-      ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKey}, ${requestSha256})
+        copyright_notice_submission_id, requester_user_id, idempotency_key_sha256,
+        request_sha256
+      ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKeySha256},
+        ${requestSha256})
     )
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
