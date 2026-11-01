@@ -4,7 +4,7 @@ import testPrivateKey from './test-jwk-private-key.mts'
 // The AT Protocol authorization server verifies this keyset, so it uses the SDK's own ES256
 // default rather than mirroring ts-shared/session-jwt's RS512 keys.
 export const BLUESKY_JWT_ALGORITHM = 'ES256'
-export const BLUESKY_JWT_PRIVATE_KEYS_ENV = 'VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64'
+const BLUESKY_JWT_PRIVATE_KEYS_ENV = 'VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64'
 
 export type BlueskyJwtRuntimeMode = KeysetRuntimeMode
 

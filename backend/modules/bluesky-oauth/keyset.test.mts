@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BLUESKY_JWT_PRIVATE_KEYS_ENV, getBlueskyKeyset } from './keyset.mts'
+import { getBlueskyKeyset } from './keyset.mts'
 import testPrivateKey from './test-jwk-private-key.mts'
 
 describe('getBlueskyKeyset', () => {
@@ -10,7 +10,7 @@ describe('getBlueskyKeyset', () => {
 
   it('never offers the bundled test key in production', async () => {
     await expect(getBlueskyKeyset({ mode: 'production', env: '' })).rejects.toThrow(
-      new RegExp(`${BLUESKY_JWT_PRIVATE_KEYS_ENV} must be configured in production`),
+      /VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64 must be configured in production/,
     )
   })
 })
