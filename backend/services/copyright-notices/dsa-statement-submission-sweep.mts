@@ -1,3 +1,7 @@
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForRestriction,
+} from './last-legal-activity.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import { recordScheduledJobConfigMissing } from '@modules/on-error'
 import {
@@ -111,6 +115,7 @@ async function insertDsaStatementSubmission(
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   const payload = await buildPayload(restrictionId, transaction)
+  const lockedNotice = await lockCopyrightNoticeForRestriction(transaction, restrictionId)
   const { rows } = await transaction<{ id: string }>(sql`/* insertDsaStatementSubmission */
     INSERT INTO copyright_dsa_statement_submissions (copyright_restriction_id, payload, available_at)
     SELECT restriction.id, ${JSON.stringify(payload)}::jsonb, CURRENT_TIMESTAMP
@@ -119,6 +124,8 @@ async function insertDsaStatementSubmission(
     ON CONFLICT (copyright_restriction_id) DO NOTHING
     RETURNING id
   `)
+  if (rows.length === 1 && lockedNotice)
+    await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return rows.length === 1
 }

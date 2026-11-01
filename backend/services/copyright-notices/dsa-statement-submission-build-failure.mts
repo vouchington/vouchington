@@ -1,4 +1,8 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForRestriction,
+} from './last-legal-activity.mts'
 import Sentry from '@modules/on-error/sentry'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -23,7 +27,9 @@ export async function recordDsaStatementBuildFailure(
   from: Date,
   failureCode: string,
 ): Promise<boolean> {
-  const { rowCount } = await write(sql`/* recordDsaStatementBuildFailure */
+  await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForRestriction(transaction, restrictionId)
+  const { rowCount } = await transaction(sql`/* recordDsaStatementBuildFailure */
     INSERT INTO copyright_dsa_statement_submissions (
       copyright_restriction_id, payload, failed_at, failure_code, available_at
     )
@@ -32,6 +38,9 @@ export async function recordDsaStatementBuildFailure(
     WHERE restriction.id = ${restrictionId} AND restriction.imposed_at >= ${from}
     ON CONFLICT (copyright_restriction_id) DO NOTHING
   `)
+  if (rowCount === 1 && lockedNotice)
+    await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+  await transaction.commit()
   return rowCount === 1
 }
 

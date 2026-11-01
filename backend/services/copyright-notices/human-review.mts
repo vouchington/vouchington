@@ -3,6 +3,10 @@ import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -43,15 +47,16 @@ export async function completeCopyrightMandatoryHumanReview(
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:placementAdvisoryLock */
     SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
   `)
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
+  assert(lockedNotice, 409, 'Copyright restriction is not awaiting mandatory human review')
   const { rows: locks } = await transaction<{ id: string }>(
     sql`/* completeCopyrightMandatoryHumanReview:lock */
     SELECT restriction.id
-    FROM copyright_notices notice
-    JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
+    FROM copyright_notice_targets target
     JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE notice.id = ${input.noticeId}
+    WHERE target.copyright_notice_id = ${input.noticeId}
       AND restriction.id = ${input.restrictionId}
-    FOR UPDATE OF notice, target, restriction
+    FOR UPDATE OF target, restriction
   `,
   )
   assert(locks[0], 409, 'Copyright restriction is not awaiting mandatory human review')
@@ -88,7 +93,7 @@ export async function completeCopyrightMandatoryHumanReview(
     transaction,
   )
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
-    WITH recorded_event AS (INSERT INTO copyright_notice_lifecycle_changes (
+    INSERT INTO copyright_notice_lifecycle_changes (
       id, copyright_notice_id, change_type, changed_by_id,
       copyright_restriction_id, review_action, review_rationale_ciphertext
     ) VALUES (
@@ -96,11 +101,9 @@ export async function completeCopyrightMandatoryHumanReview(
       ${input.restrictionId}, ${input.action}, ${encryptSecret(
         input.rationale,
         `copyright-restriction-review:${input.restrictionId}`,
-      )}) RETURNING copyright_notice_id)
-    UPDATE copyright_notices SET last_legal_activity_at =
-      GREATEST(last_legal_activity_at, clock_timestamp())
-    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
+      )})
   `)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
   enqueueCopyrightStaydownHashes(staydownImageIds)

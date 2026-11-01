@@ -33,6 +33,7 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
   const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
     sql`/* createDeterministicCopyrightCorrespondencesInTransaction */
+      WITH created AS (
       INSERT INTO copyright_notice_correspondence_messages (
         id, copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
         composition_kind, body_ciphertext, drafted_by_id
@@ -51,9 +52,17 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
           SELECT 1 FROM copyright_notice_submissions submission
           WHERE submission.id = input.submission_id AND submission.copyright_notice_id = notice.id
         )
+      ORDER BY input.notice_id, input.id
+      FOR UPDATE OF notice
       RETURNING id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
         direction, correspondence_kind, composition_kind, body_ciphertext, drafted_by_id,
         approved_at, approved_by_id, sent_at
+      ), advanced AS (
+        UPDATE copyright_notices
+        SET last_legal_activity_at = GREATEST(last_legal_activity_at, clock_timestamp())
+        WHERE id IN (SELECT copyright_notice_id FROM created)
+      )
+      SELECT * FROM created
     `,
   )
   const byId = new Map(rows.map(row => [row.id, row]))

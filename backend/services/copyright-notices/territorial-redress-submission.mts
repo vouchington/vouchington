@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import type { PrivateUser } from '@services/users/types'
@@ -32,9 +35,8 @@ export async function submitTerritorialCopyrightRedress(
   assertIdempotencyKey(idempotencyKey)
   const text = assertBoundedText(explanation, 50_000, 'explanation is required')
   await using transaction = await beginTransaction()
-  await transaction(sql`/* submitTerritorialCopyrightRedress:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, labels.decisionNotFound)
   const { rows: parents } = await transaction<{
     id: string
     decided_at: Date
@@ -110,7 +112,7 @@ export async function submitTerritorialCopyrightRedress(
   )
   const created = rows[0]
   assert(created, 500, labels.redressFailed)
-  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return { id: created.id, is_duplicate: false }
 }
