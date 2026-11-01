@@ -51,11 +51,13 @@ export async function hasCompletedClassifierRun(
     WHERE first_classifier.slug = ${input.classifierSlug}
       AND first_run.input_sha256 = ${input.inputSha256}
       AND first_run.completed_at IS NOT NULL AND first_run.superseded_at IS NULL
-      AND `.append(
-      subject.postId !== null
-        ? sql`first_run.post_id = ${subject.postId}`
-        : sql`first_run.rss_feed_item_id = ${subject.rssFeedItemId}`,
-    ).append(' LIMIT 1'),
+      AND `
+      .append(
+        subject.postId !== null
+          ? sql`first_run.post_id = ${subject.postId}`
+          : sql`first_run.rss_feed_item_id = ${subject.rssFeedItemId}`,
+      )
+      .append(' LIMIT 1'),
   )
   return rows.length > 0
 }
