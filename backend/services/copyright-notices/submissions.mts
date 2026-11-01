@@ -81,11 +81,12 @@ async function createAuthenticatedCopyrightSubmission(
   assert(input.targetIds.length > 0, 422, 'At least one target is required')
   assert(new Set(input.targetIds).size === input.targetIds.length, 422, 'Targets must be unique')
   const requestSha256 = createHash('sha256').update(JSON.stringify({ kind, input })).digest()
-  const idempotencyKeySha256 = createHash('sha256').update(idempotencyKey.toLowerCase()).digest()
+  const canonicalIdempotencyKey = idempotencyKey.toLowerCase()
+  const idempotencyKeySha256 = createHash('sha256').update(canonicalIdempotencyKey).digest()
   await using transaction = await beginTransaction()
   await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
     SELECT pg_advisory_xact_lock(
-      hashtextextended(${`copyright-submission:${currentUser.id}:${idempotencyKey}`}, 0)
+      hashtextextended(${`copyright-submission:${currentUser.id}:${canonicalIdempotencyKey}`}, 0)
     )
   `)
   const { rows: existingRows } = await transaction<
