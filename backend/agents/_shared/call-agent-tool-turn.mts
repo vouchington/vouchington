@@ -14,7 +14,7 @@ export type AgentToolTurnCaller = (
 ) => Promise<ToolTurnResult>
 
 /** The real provider turn: whichever provider the caller selected, on the global transport. */
-export const callProviderToolTurn: AgentToolTurnCaller = (request, call) =>
+const callProviderToolTurn: AgentToolTurnCaller = (request, call) =>
   generateToolTurn(call.selection, request, {
     openaiTransport: call.openaiTransport,
     signal: call.signal,
