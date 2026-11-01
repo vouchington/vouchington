@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
-import { write } from '../../clients.mts'
 import { refreshMaterializedView } from '../../migrate.mts'
 import { createLocalTestUser } from '../../../../test-helpers/data-stores/psql/users.mts'
 import {
   createLocalTestMembership,
   insertLocalTestRssFeed,
   setLocalRssFeedOwningTopicVoteScore,
+  softDeleteLocalRssFeeds,
 } from '../../../../test-helpers/data-stores/psql/rss-feeds.mts'
 import {
   followRssFeed,
@@ -23,12 +22,7 @@ function requireScore(actual: number | undefined, label: string): number {
 
 async function retireOwnedFeeds(feedIds: readonly string[]): Promise<void> {
   if (feedIds.length === 0) return
-  await write(sql`/* retireOwnedFeeds */
-    UPDATE rss_feeds
-    SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = ANY(${feedIds}::uuid[])
-      AND deleted_at IS NULL
-  `)
+  await softDeleteLocalRssFeeds(feedIds)
   await refreshMaterializedView('mv_rss_feed_crawl_tiers')
 }
 
