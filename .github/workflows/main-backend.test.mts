@@ -64,6 +64,18 @@ describe('main-backend workflow', () => {
     expect(pushPaths.some(glob => picomatch.isMatch(registration, glob, { dot: true }))).toBe(true)
   })
 
+  it('triggers the main backend workflow when the scheduled-job schedule checker changes', () => {
+    const checker = 'ci/check-scheduled-job-schedules.mts'
+    expect(ciBackendFilter()).toContain(checker)
+
+    const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on?: { push?: { paths?: string[] } }
+    }
+    const pushPaths = workflow.on?.push?.paths ?? []
+    expect(pushPaths).toContain(checker)
+    expect(pushPaths.some(glob => picomatch.isMatch(checker, glob, { dot: true }))).toBe(true)
+  })
+
   it('contains only image publication selection, intent, and publication jobs', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
     const parsed = load(workflow) as { jobs?: Record<string, unknown> }

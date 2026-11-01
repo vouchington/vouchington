@@ -71,6 +71,10 @@ describe('Area CI triggers', () => {
     ])
   })
 
+  it('runs backend validation when the scheduled-job schedule checker changes', () => {
+    expectFilterMatches('backend', ['ci/check-scheduled-job-schedules.mts'])
+  })
+
   it('runs backend validation when the generated INSERT guard changes', () => {
     expectFilterMatches('backend', [
       'ci/validate-generated-ddl-inserts.mts',
