@@ -10,10 +10,9 @@ export function currentUserCanCreateStoryPost(currentUser: PrivateUser | null): 
   return currentUser != null
 }
 
-export async function assertRssFeedItemIsDiscoverable(rssFeedItemId: string): Promise<void> {
+async function assertRssFeedItemIsDiscoverable(rssFeedItemId: string): Promise<void> {
   const item = await getRssFeedItemById(rssFeedItemId, { readOnly: false })
-  assert(item, 404, 'RSS feed item not found')
-  if (item.rss_feed.is_discoverable) return
+  if (item?.rss_feed.is_discoverable) return
   throw createCodedError(
     403,
     'RSS feed is not discoverable; use the regular discussion creation flow',
