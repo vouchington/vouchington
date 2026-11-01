@@ -113,11 +113,22 @@ export async function readCopyrightIntakeAuditReview(id: string): Promise<{
 export async function linkTestCopyrightEmailIntake(
   intakeId: string,
   noticeId: string,
+  linkKind: 'initial' | 'thread' = 'initial',
+  reviewedById?: string,
 ): Promise<void> {
+  if (linkKind === 'thread' && !reviewedById)
+    throw new Error('A closed thread fixture needs its reviewer')
   await write(sql`/* linkTestCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intake_notice_links
-      (copyright_notice_email_intake_id, copyright_notice_id, link_kind)
-    VALUES (${intakeId}, ${noticeId}, 'initial')`)
+      (copyright_notice_email_intake_id, copyright_notice_id, link_kind,
+       correspondence_action, correspondence_kind, correspondence_reviewed_at,
+       correspondence_reviewed_by_id, correspondence_rationale_ciphertext)
+    VALUES (${intakeId}, ${noticeId}, ${linkKind},
+      ${linkKind === 'thread' ? 'rejected' : null},
+      ${linkKind === 'thread' ? 'supplement' : null},
+      ${linkKind === 'thread' ? new Date() : null},
+      ${reviewedById ?? null},
+      ${linkKind === 'thread' ? 'fixture-closed-correspondence' : null})`)
 }
 
 export async function seedTestCopyrightAncestorEdge(
