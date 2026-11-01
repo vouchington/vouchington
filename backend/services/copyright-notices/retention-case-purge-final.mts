@@ -59,7 +59,7 @@ export async function deleteCopyrightCaseFinalTail(
       territorial_decided_by_id = NULL,
       territorial_rationale_ciphertext = NULL,
       territorial_public_explanation_ciphertext = NULL
-    WHERE id = ${noticeId}::uuid AND current_territorial_decision_identity_id IS NOT NULL`)
+    WHERE id = ${noticeId}::uuid`)
 
   await query(sql`/* scopeCopyrightCaseFinalDecisionIdentity */
     SELECT set_config('app.copyright_case_purge_table', 'copyright_territorial_decision_identities', true)`)

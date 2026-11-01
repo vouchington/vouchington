@@ -58,6 +58,7 @@ function proofVersion(row: LockedNotice): string {
 /** Each page starts a fresh transaction and rechecks the notice after the shared legal gates. */
 export async function runCopyrightCasePurgePage(
   data: CopyrightCasePurgeJobData,
+  now: Date = new Date(),
 ): Promise<PageResult> {
   if (data.phase === 'residual_parties') return deleteCopyrightCaseResidualPartyPage(data)
   if (!(await isCopyrightEvidenceRetentionDeletionEnabled())) return { data, hasMore: false }
@@ -73,7 +74,7 @@ export async function runCopyrightCasePurgePage(
   const { rows: dirtyAccounts } = await query<{ id: string }>(sql`
     /* readPendingCopyrightAccountClockSync */
     SELECT id FROM retained_user_identities
-    WHERE copyright_case_clock_sync_pending ORDER BY id LIMIT 1`)
+    WHERE is_copyright_case_clock_sync_pending ORDER BY id LIMIT 1`)
   if (dirtyAccounts.length > 0) {
     await query.commit()
     return { data, hasMore: true, deferred: true }
@@ -88,7 +89,7 @@ export async function runCopyrightCasePurgePage(
     })
   }
   const { rows: eligible } = await query<EligibleNotice>(
-    copyrightCasePurgeEligibilitySql(data.noticeId),
+    copyrightCasePurgeEligibilitySql(data.noticeId, now),
   )
   if (eligible.length === 0) return { data, hasMore: false }
   const lock = locked[0]!
