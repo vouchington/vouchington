@@ -14,6 +14,7 @@ export const EXISTING_FINITE_VALUES_5 = {
     'membership',
     'community_bridge',
     'remote_actor',
+    'copyright_notice',
   ],
   revision_types: ['create', 'update', 'delete'],
   user_display_name_sources: [
