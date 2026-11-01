@@ -3,6 +3,7 @@ import { checkAgentWorkflowDocs } from './check-agent-workflow-doc-policy.mts'
 import { checkKnipDependencyPolicy } from './check-knip-dependency-policy.mts'
 import { checkPostgresOrderingPolicy } from './check-postgres-ordering-policy.mts'
 import { checkPrShepherdGuidance } from './check-pr-shepherd-guidance.mts'
+import { checkThinRouteCoverage } from './check-thin-route-coverage.mts'
 import { checkWorkerSecretExemptPaths } from './check-worker-secret-exempt-paths.mts'
 
 /** Run live repository policies once in the dedicated static CI job. */
@@ -14,6 +15,7 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
     ...(await checkTransientRetryPolicy(root)),
     ...checkAgentWorkflowDocs(root),
     ...checkPrShepherdGuidance(root),
+    ...checkThinRouteCoverage(root),
     ...checkWorkerSecretExemptPaths(root),
   ]
   if (violations.length > 0) {

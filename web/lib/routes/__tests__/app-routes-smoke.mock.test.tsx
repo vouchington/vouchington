@@ -1,6 +1,6 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/lib/routes/topic-subpage-factories'), () => ({
   createTopicRootPage: vi.fn<VitestLooseMock>(() => ({
@@ -152,26 +152,6 @@ vi.mock(
     }) as unknown as typeof import('@/components/tags/manage-topic-tags'),
 )
 
-// Eagerly import all thin route files from the explicit topic-type directories.
-// This executes every module-level statement (factory calls, export const dynamic,
-// createNoIndexMetadata()) and is the primary mechanism for hitting the patch lines
-// that live outside of testable function bodies.
-
-interface RouteModule {
-  default: unknown
-  generateMetadata?: unknown
-}
-
-const topicRoutes = import.meta.glob(
-  '../../../app/*/{bank-account,card,instance,referral-program,rewards-program,rewards-program-status,source,topic}/**/{page,layout}.{ts,tsx}',
-  { eager: true },
-) as Record<string, RouteModule>
-
-const postRoutes = import.meta.glob(
-  '../../../app/*/{article,blog-post,data-point,discussion,link,review,story}/**/{page,layout}.{ts,tsx}',
-  { eager: true },
-) as Record<string, RouteModule>
-
 // Static imports for tags page function-body coverage (lines inside the async page
 // function that are only executed when the component is actually called/rendered).
 
@@ -199,26 +179,6 @@ const allTagsPages: [string, { default: TagsPageFn }][] = [
   ['source', sourceTagsPage as never],
   ['topic', topicTagsPage as never],
 ]
-
-describe('thin route modules load and export defaults', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('all topic route files export a default component', () => {
-    expect(Object.keys(topicRoutes).length).toBeGreaterThan(0)
-    for (const [path, module] of Object.entries(topicRoutes)) {
-      assert(module.default !== undefined, `${path} must export default`)
-    }
-  })
-
-  it('all post route files export a default component', () => {
-    expect(Object.keys(postRoutes).length).toBeGreaterThan(0)
-    for (const [path, module] of Object.entries(postRoutes)) {
-      assert(module.default !== undefined, `${path} must export default`)
-    }
-  })
-})
 
 describe.each(allTagsPages)('%s topic tags page', (_slug, module) => {
   const TagsPage = module.default
