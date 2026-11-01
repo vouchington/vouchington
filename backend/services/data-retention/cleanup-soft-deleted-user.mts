@@ -10,8 +10,7 @@ import {
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
 import onError from '@modules/on-error'
-
-export const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@services/users/final-purge-lock'
 
 export async function cleanupSoftDeletedUser(
   targetId: string,

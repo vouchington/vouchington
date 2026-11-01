@@ -1,6 +1,6 @@
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import type { CopyrightCasePurgeJobData } from '@queues/psql/types'
-import { runCopyrightCasePurgePage } from '../../../services/copyright-notices/retention-case-purge-page.mts'
+import { runCopyrightCasePurgePage } from '@services/copyright-notices/retention-case-purge-page'
 import type { Job } from 'glide-mq'
 
 /** Native updateData and moveToDelayed preserve the active job id across bounded pages. */

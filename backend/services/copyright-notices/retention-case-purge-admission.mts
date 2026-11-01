@@ -1,11 +1,11 @@
 import { read } from '@data-stores/psql'
-import { psql } from '../../queues/psql/queues.mts'
-import { enqueueCopyrightCasePurgeBatch } from '../../queues/psql/enqueues/copyright-case-purge.mts'
-import { enqueueCopyrightAccountClockSyncBatch } from '../../queues/psql/enqueues/copyright-account-clock-sync.mts'
+import { psql } from '@queues/psql/queues'
+import { enqueueCopyrightCasePurgeBatch } from '@queues/psql/enqueues/copyright-case-purge'
+import { enqueueCopyrightAccountClockSyncBatch } from '@queues/psql/enqueues/copyright-account-clock-sync'
 import sql from 'sql-template-strings'
 import { COPYRIGHT_CASE_RETENTION_MONTHS } from './retention-case-purge-eligibility.mts'
 import { isCopyrightEvidenceRetentionDeletionEnabled } from './config.mts'
-import { getCopyrightCasePurgePageSize } from '../../queues/psql/enqueues/ordering-config.mts'
+import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-config'
 import type { CopyrightCasePurgeAdmissionData } from '../../queues/background/enqueues/notifications-domain.mts'
 
 const MAX_PSQL_PENDING = 1_000
