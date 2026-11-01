@@ -1,4 +1,3 @@
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -28,7 +27,7 @@ function readRecoverableDeliveryIntentIds(channel: 'in_app' | 'email', intentId:
     intentId,
   )
 }
-async function createFixture() {
+async function createFixture(sourceKind: 'signed_in_form' | 'guest_form' = 'signed_in_form') {
   const [claimant, moderatorRecord] = await Promise.all([
     createTestUserDirect(),
     createTestUserDirect(),
@@ -45,14 +44,14 @@ async function createFixture() {
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-    claimantUserId: claimant.id,
+    claimantUserId: sourceKind === 'guest_form' ? null : claimant.id,
     claimantDisplayName: 'private snapshot',
     claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
-      sourceKind: 'signed_in_form',
+      sourceKind,
       bodyCiphertext: `notice-${crypto.randomUUID()}`,
     },
     targets: [
@@ -244,15 +243,9 @@ describe('copyright delivery and correspondence persistence', () => {
   })
 
   it('requires a reviewer for email and guest-form compliance assessments', async () => {
-    const { notice } = await createFixture()
-    const submission = await appendTestCopyrightNoticeSubmission({
-      noticeId: notice.id,
-      kind: 'notice',
-      receivedAt: new Date('2026-07-01T12:00:00.000Z'),
-      sourceKind: 'guest_form',
-      submittedByUserId: null,
-      bodyCiphertext: `guest-${crypto.randomUUID()}`,
-    })
+    const { aggregate } = await createFixture('guest_form')
+    const submission = aggregate.submissions[0]
+    if (!submission) throw new Error('fixture initial submission disappeared')
     await expect(
       appendCopyrightSubmissionAssessment({
         submissionId: submission.id,
