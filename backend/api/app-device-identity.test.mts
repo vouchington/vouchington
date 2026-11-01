@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import * as jose from 'jose'
 import request from 'supertest'
-import { signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
-import { v7 } from 'uuid'
+import { describe, expect, it, vi } from 'vitest'
 import { getOptionalRequestClientInfo } from '@modules/request-client-info'
+import { EDGE_ANON_SESSION_JWT_ISSUER, signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
+import { derivePublicJwk, encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
+import { v7 } from 'uuid'
 import { createApiRequestGuardedListener } from './app.mts'
 
 const listener = createApiRequestGuardedListener((_req, res) => {
@@ -27,16 +29,50 @@ async function deviceIdForCookie(cookie: string): Promise<string | null> {
   return body?.deviceId ?? null
 }
 
+async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
+  const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
+  const jwk = await jose.exportJWK(privateKey)
+  return { ...jwk, alg: 'RS512', kid, use: 'sig' }
+}
+
 describe('request device identity verification', () => {
   it('uses the paired device id when the session token verifies', async () => {
     const did = v7()
-    const deviceToken = await signDeviceJwt({ did }, { expiresIn: '30 days' })
-    const sessionToken = await signSessionJwt(
-      { did, sid: v7(), uid: null },
-      { expiresIn: '2 days' },
+    const edgeKey = await generatePrivateJwk('edge-anon-key')
+    const privateEnv = {
+      VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([edgeKey]),
+    }
+    const previousPublicKeys = process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
+    vi.stubEnv(
+      'VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64',
+      encodeJwkSetForEnv([derivePublicJwk(edgeKey)]),
     )
 
-    await expect(deviceIdForCookie(`dt=${deviceToken}; st=${sessionToken}`)).resolves.toBe(did)
+    try {
+      const deviceToken = await signDeviceJwt(
+        { did },
+        {
+          env: privateEnv,
+          issuer: EDGE_ANON_SESSION_JWT_ISSUER,
+          mode: 'production',
+          expiresIn: '30 days',
+        },
+      )
+      const sessionToken = await signSessionJwt(
+        { did, sid: v7(), uid: null },
+        {
+          env: privateEnv,
+          issuer: EDGE_ANON_SESSION_JWT_ISSUER,
+          mode: 'production',
+          expiresIn: '2 days',
+        },
+      )
+
+      await expect(deviceIdForCookie(`dt=${deviceToken}; st=${sessionToken}`)).resolves.toBe(did)
+      await expect(deviceIdForCookie(`dt=${deviceToken}; st=stale-st`)).resolves.toBeNull()
+    } finally {
+      vi.stubEnv('VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64', previousPublicKeys)
+    }
   })
 
   it('keeps the device id when the session token is stale', async () => {
