@@ -1,7 +1,7 @@
 const ROUTE_EXTENSION = /\.(?:tsx|ts)$/u
 
 /** Repository path with the web/ prefix and extension removed, matching a static import. */
-export function thinRouteCoverageSuffix(discovered: string): string {
+function thinRouteCoverageSuffix(discovered: string): string {
   return discovered.replace(/^web\//u, '').replace(ROUTE_EXTENSION, '')
 }
 
