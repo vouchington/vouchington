@@ -1211,7 +1211,8 @@
         "image",
         "membership",
         "community_bridge",
-        "remote_actor"
+        "remote_actor",
+        "copyright_notice"
       ]
     },
     "retained_identity_families": {
