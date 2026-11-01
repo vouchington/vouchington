@@ -4,6 +4,7 @@
 -- edited-in-place: added language detection columns to topics
 -- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
 -- edited-in-place: idx_topic_aliases__unlink_topic_id is now (unlink_topic_id, id) to serve id-ordered paging
+-- edited-in-place: topic_aliases rejects a pending unlink that still has a topic_id
 -- Merged from: 0005-00-00-topics.sql, 0110-00-00-wikipedia-topic-recommendations.sql, 0160-00-00-review-snippet-categories.sql
 
 -- ==========================================================================
@@ -725,6 +726,7 @@ CREATE TABLE IF NOT EXISTS topic_aliases (
   CHECK (alias = LOWER(alias)),
   CHECK (alias = TRIM(alias)),
   CHECK ((unlink_requested_at IS NULL) = (unlink_topic_id IS NULL)),
+  CHECK (unlink_requested_at IS NULL OR topic_id IS NULL),
 
   search_vector TSVECTOR GENERATED ALWAYS AS (setweight(to_tsvector('voucha_english', alias), 'A')) STORED,
 

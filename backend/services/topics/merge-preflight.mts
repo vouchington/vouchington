@@ -35,6 +35,19 @@ export async function lockAndAssertMergeParticipants(
   return sourceRow
 }
 
+/** A pending unlink owns its alias until bounded deletion finishes; a merge must not relink it. */
+export async function assertSourceSlugAliasClaimable(
+  query: TransactionQuery,
+  sourceSlug: string,
+): Promise<void> {
+  const { rows } = await query<{ id: string }>(
+    `/* assertSourceSlugAliasClaimable */ SELECT id FROM topic_aliases
+      WHERE alias = $1 AND unlink_requested_at IS NOT NULL`,
+    [sourceSlug],
+  )
+  assert(rows.length === 0, 409, 'Topic alias unlink is in progress')
+}
+
 export async function lockTopicMergeLifecycles(
   query: TransactionQuery,
   topicIds: readonly string[],

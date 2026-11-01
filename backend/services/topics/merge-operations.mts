@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import { currentUserCanMergeTopic } from './authorization.mts'
 import {
+  assertSourceSlugAliasClaimable,
   lockAndAssertMergeParticipants,
   lockTopicMergeAdmission,
   lockTopicMergeLifecycles,
@@ -46,7 +47,12 @@ export async function createTopicMergeOperation(
   await lockTopicMergeAdmission(query)
   const topicIds = [sourceTopic.id, destinationTopic.id]
   await lockTopicMergeLifecycles(query, topicIds)
-  await lockAndAssertMergeParticipants(query, sourceTopic.id, destinationTopic.id)
+  const lockedSource = await lockAndAssertMergeParticipants(
+    query,
+    sourceTopic.id,
+    destinationTopic.id,
+  )
+  await assertSourceSlugAliasClaimable(query, lockedSource.slug)
   const { rows: reservations } = await query<{ id: string }>(
     `/* createTopicMergeOperation reservations */
       SELECT id FROM topic_merge_operations
