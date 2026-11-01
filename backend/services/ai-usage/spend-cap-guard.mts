@@ -29,7 +29,7 @@ export class SpendCapBreachError extends Error {
   }
 }
 
-export type SpendCapGuardDeps = {
+type SpendCapGuardDeps = {
   waitForSpendCapConfig: () => Promise<void>
   getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER,
   normalizeFixedClientGeneratedChatModelName,
   parseClientGeneratedChatModelProvider,
 } from './model-providers.mts'
@@ -8,13 +7,17 @@ import {
 describe('model-providers', () => {
   it('maps client-generated chat providers to their local model names', () => {
     expect(parseClientGeneratedChatModelProvider('apple_foundation')).toBe('apple_foundation')
-    expect(CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER.apple_foundation).toBe('apple-foundation-system')
+    expect(normalizeFixedClientGeneratedChatModelName('apple_foundation', undefined)).toBe(
+      'apple-foundation-system',
+    )
     expect(parseClientGeneratedChatModelProvider('windows_foundry')).toBe('windows_foundry')
-    expect(CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER.windows_foundry).toBe(
+    expect(normalizeFixedClientGeneratedChatModelName('windows_foundry', undefined)).toBe(
       'windows-system-language-model',
     )
     expect(parseClientGeneratedChatModelProvider('android_aicore')).toBe('android_aicore')
-    expect(CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER.android_aicore).toBe('android-aicore-system')
+    expect(normalizeFixedClientGeneratedChatModelName('android_aicore', undefined)).toBe(
+      'android-aicore-system',
+    )
     expect(parseClientGeneratedChatModelProvider('openai_compatible')).toBe('openai_compatible')
   })
 

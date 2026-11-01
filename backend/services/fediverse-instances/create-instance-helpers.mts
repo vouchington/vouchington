@@ -39,10 +39,7 @@ export type GeneratedInstanceDetails = { name: string; slug: string }
  * `.` entirely rather than hyphenating it, which would otherwise collapse "example.com" into
  * the unreadable "examplecom" instead of "example-com".
  */
-export function generateInstanceDetails(
-  hostname: string,
-  attempt: number,
-): GeneratedInstanceDetails {
+function generateInstanceDetails(hostname: string, attempt: number): GeneratedInstanceDetails {
   const baseSlug = createSlugFromTitle(hostname.replace(/\./g, ' '), 250)
   if (attempt === 0) return { name: hostname, slug: baseSlug }
   const suffix = randomBytes(2).toString('hex')

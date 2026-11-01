@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createInstanceFromHostname } from './create-instance.mts'
-import { generateInstanceDetails, createInstanceInTransaction } from './create-instance-helpers.mts'
+import { createInstanceInTransaction } from './create-instance-helpers.mts'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
 import { getFediverseInstanceAttributes } from './get-attributes.mts'
 import { getTopicByAny } from '@services/topics/get'
@@ -20,22 +20,6 @@ import {
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
-describe('generateInstanceDetails', () => {
-  it('uses the hostname as-is for name and slugifies it (hyphenating dots) on attempt 0', () => {
-    expect(generateInstanceDetails('Example.Com', 0)).toEqual({
-      name: 'Example.Com',
-      slug: 'example-com',
-    })
-  })
-
-  it('appends the same random hex suffix to both name and slug on retry attempts', () => {
-    const { name, slug } = generateInstanceDetails('example.com', 1)
-    expect(slug).toMatch(/^example-com-[0-9a-f]{4}$/)
-    const suffix = slug.slice('example-com-'.length)
-    expect(name).toBe(`example.com (${suffix})`)
-  })
-})
-
 describe('createInstanceFromHostname', () => {
   it('returns before NodeInfo classification populates metadata', async () => {
     const user = await createTestUserDirect()
@@ -52,7 +36,8 @@ describe('createInstanceFromHostname', () => {
   })
   it('creates a new instance topic, links the hostname, and returns created', async () => {
     const user = await createTestUserDirect()
-    const hostname = `fedi-create-${randomSuffix()}.example.com`
+    const suffix = randomSuffix()
+    const hostname = `fedi-create-${suffix}.example.com`
 
     const { result, queries } = await withCapturedTestQueries(() =>
       createInstanceFromHostname(user, WEB_PROVENANCE, hostname),
@@ -63,10 +48,11 @@ describe('createInstanceFromHostname', () => {
     )
 
     expect(result.status).toBe('created')
-    expect(result.topic_slug).toContain('fedi-create')
+    expect(result.topic_slug).toBe(`fedi-create-${suffix}-example-com`)
 
     const topic = await getTopicByAny(result.topic_id)
     expect(topic).not.toBeNull()
+    expect(topic!.name).toBe(hostname)
     expect(topic!.topic_type).toBe('fediverse_instance')
     expect(topic!.hostname_id).not.toBeNull()
 
@@ -120,7 +106,7 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const suffix = randomSuffix()
     const hostname = `fedi-slug-collide-${suffix}.example.com`
-    const { slug: collidingSlug } = generateInstanceDetails(hostname, 0)
+    const collidingSlug = `fedi-slug-collide-${suffix}-example-com`
 
     // Pre-occupy the slug this hostname would generate with an unrelated, non-instance topic
     // so the collision is purely on topics.slug's global uniqueness, not the hostname dedup path.
@@ -134,13 +120,15 @@ describe('createInstanceFromHostname', () => {
 
     expect(result.status).toBe('created')
     expect(result.topic_slug).toMatch(new RegExp(`^${collidingSlug}-[0-9a-f]{4}$`))
+    const hexSuffix = result.topic_slug.slice(collidingSlug.length + 1)
+    expect((await getTopicByAny(result.topic_id))!.name).toBe(`${hostname} (${hexSuffix})`)
   })
 
   it('retries when an unrelated active topic owns the generated canonical alias', async () => {
     const user = await createTestUserDirect()
     const suffix = randomSuffix()
     const hostname = `fedi-alias-collide-${suffix}.example.com`
-    const { slug: claimedAlias } = generateInstanceDetails(hostname, 0)
+    const claimedAlias = `fedi-alias-collide-${suffix}-example-com`
     const ownerTopicId = await insertTestTopic({
       name: `Fediverse alias owner ${suffix}`,
       slug: `fedi-alias-owner-${suffix}`,

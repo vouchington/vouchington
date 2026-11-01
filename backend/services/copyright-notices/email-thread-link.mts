@@ -7,16 +7,14 @@ import {
 } from './email-thread-ancestors.mts'
 import { COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE } from './email-thread-references.mts'
 
-export type CopyrightEmailIntakeNoticeLink = {
-  intakeId: string
-  noticeId: string
-  linkKind: 'initial' | 'thread'
-  matchedReference?: string | null
-}
-
 export async function insertCopyrightEmailIntakeNoticeLink(
   transaction: TransactionQuery,
-  input: CopyrightEmailIntakeNoticeLink,
+  input: {
+    intakeId: string
+    noticeId: string
+    linkKind: 'initial' | 'thread'
+    matchedReference?: string | null
+  },
 ): Promise<boolean> {
   let matchedTokenId: string | null = null
   if (input.matchedReference) {
