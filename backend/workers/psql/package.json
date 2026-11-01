@@ -18,6 +18,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@queues/psql": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/data-retention": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@vouchington/queue-errors": "^0.2.0",

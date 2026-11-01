@@ -1,6 +1,6 @@
 import { beginBoundedTransaction } from '@data-stores/psql'
 import type { CopyrightAccountClockSyncJobData } from '../../queues/psql/types.mts'
-import { getCopyrightCasePurgePageSize } from '../../queues/psql/enqueues/ordering-config.mts'
+import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-config'
 import sql from 'sql-template-strings'
 
 type Source = {

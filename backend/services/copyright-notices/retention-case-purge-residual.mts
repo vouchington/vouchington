@@ -1,6 +1,6 @@
 import { beginBoundedTransaction } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
-import { getCopyrightCasePurgePageSize } from '../../queues/psql/enqueues/ordering-config.mts'
+import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-config'
 import sql from 'sql-template-strings'
 import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 

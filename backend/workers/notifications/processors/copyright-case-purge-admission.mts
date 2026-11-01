@@ -1,6 +1,6 @@
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import type { CopyrightCasePurgeAdmissionData } from '../../../queues/background/enqueues/notifications-domain.mts'
-import { admitCopyrightCasePurgePage } from '../../../services/copyright-notices/retention-case-purge-admission.mts'
+import { admitCopyrightCasePurgePage } from '@services/copyright-notices/retention-case-purge-admission'
 import type { Job } from 'glide-mq'
 
 /** The scheduled admission carries its index cursor in the same native job across pages. */
