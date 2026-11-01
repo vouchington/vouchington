@@ -48,4 +48,3 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_email_attachment_active_receipt`: `CREATE TRIGGER trigger_copyright_email_attachment_active_receipt BEFORE INSERT ON public.copyright_notice_email_intake_attachments FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_email_attachments_immutable`: `CREATE TRIGGER trigger_copyright_email_attachments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_attachments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
-- `trigger_fence_copyright_email_attachment_case`: `CREATE TRIGGER trigger_fence_copyright_email_attachment_case BEFORE INSERT ON public.copyright_notice_email_intake_attachments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id')`

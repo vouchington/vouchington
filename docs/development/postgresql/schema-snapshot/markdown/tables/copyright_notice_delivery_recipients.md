@@ -36,4 +36,3 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_delivery_recipients_immutable`: `CREATE TRIGGER trigger_copyright_delivery_recipients_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
-- `trigger_fence_copyright_email_delivery_recipient_case`: `CREATE TRIGGER trigger_fence_copyright_email_delivery_recipient_case BEFORE INSERT ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('work', 'copyright_notice_delivery_work_item_id')`

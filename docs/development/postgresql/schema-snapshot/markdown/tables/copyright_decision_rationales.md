@@ -51,5 +51,4 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_decision_rationales_immutable`: `CREATE TRIGGER trigger_copyright_decision_rationales_immutable BEFORE DELETE OR UPDATE ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation()`
-- `trigger_copyright_decision_rationales_skip_erased`: `CREATE TRIGGER trigger_copyright_decision_rationales_skip_erased BEFORE INSERT ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale()`
 - `trigger_copyright_email_rationale_active_receipt`: `CREATE TRIGGER trigger_copyright_email_rationale_active_receipt BEFORE INSERT ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
