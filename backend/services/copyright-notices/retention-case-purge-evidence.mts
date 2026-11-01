@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
-import { deleteCopyrightEvidenceObjectVersionPage } from './retention-erasure-s3.mts'
+import { deleteCopyrightEvidenceObjectVersionPage } from './evidence-object-version-page.mts'
 
 type OwnerCursor = CopyrightCasePurgeJobData['evidenceOwner']
 type EvidenceSource = { id: string; intake_id: string | null; storage_object_id: string | null }

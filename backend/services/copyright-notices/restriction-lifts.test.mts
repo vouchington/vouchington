@@ -5,23 +5,16 @@ import { getImagePlacementForCopyright } from '@services/images/placements'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { readTestCopyrightRestrictionAdministratorLift } from '@voucha/test-helpers/copyright-administrator-lifts'
 import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
-import { sendAllCopyrightDeliveries } from '@voucha/test-helpers/services/copyright-notices/retention-deliveries'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
-import { processCopyrightActionIntent, sweepCopyrightEvidenceRetention } from './index.mts'
+import { processCopyrightActionIntent } from './index.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 
 describe('administrator copyright restriction lifts', () => {
-  const configureRetention = useCopyrightRetentionConfig()
-  useFakeCopyrightEvidenceBucket()
   it('lifts a confirmed post restriction after its author is deleted and retains the audit decision', async () => {
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const [poster, moderator, administrator] = await Promise.all([
       createTestUserDirect(),
       createTestUserDirect({ extraRoles: ['moderator'] }),
@@ -118,24 +111,6 @@ describe('administrator copyright restriction lifts', () => {
     expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: noticeId, is_operative: false }),
     ])
-    await sendAllCopyrightDeliveries(noticeId)
-    const retentionBefore = await readCopyrightRetentionColumns(noticeId)
-    await expect(
-      sweepCopyrightEvidenceRetention({
-        now: new Date('2028-01-01T00:00:00.000Z'),
-        noticeIds: [noticeId],
-      }),
-    ).resolves.toMatchObject({ erased: 1, failed: [] })
-    const erasedLift = (
-      await readCopyrightRetentionColumns(noticeId)
-    ).copyright_restriction_administrator_lifts?.find(row => row.id === lift.id)
-    expect(retentionBefore.copyright_restriction_administrator_lifts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: lift.id, rationale_ciphertext: expect.any(String) }),
-      ]),
-    )
-    expect(erasedLift?.rationale_ciphertext).toBe('erased')
-
     await expect(
       liftCopyrightRestrictionWithoutSetter({
         currentUser: administrator,

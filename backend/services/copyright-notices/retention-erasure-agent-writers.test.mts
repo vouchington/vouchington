@@ -5,7 +5,10 @@ import {
   markTestCopyrightNoticeErasedAndCommit,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
-import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
+import {
+  countTestCopyrightEmailRecommendations,
+  countTestCopyrightFormScreenings,
+} from '@voucha/test-helpers/data-stores/psql/copyright-agent-results'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import {
@@ -30,8 +33,7 @@ describe('retention fences for agent results', () => {
         erased,
       ),
     ).resolves.toBe(!erased)
-    const retained = await readCopyrightRetentionColumns(noticeId)
-    expect(retained.copyright_notice_email_intake_recommendations).toHaveLength(erased ? 0 : 1)
+    expect(await countTestCopyrightEmailRecommendations(noticeId)).toBe(erased ? 0 : 1)
   })
 
   it('suppresses an in-flight form screening after its case receives an erasure marker', async () => {
@@ -52,7 +54,6 @@ describe('retention fences for agent results', () => {
         guidance: testCopyrightFormGuidance,
       }),
     ).resolves.toBeNull()
-    const retained = await readCopyrightRetentionColumns(notice.intake.copyright_notice_id)
-    expect(retained.copyright_notice_form_screenings).toEqual([])
+    expect(await countTestCopyrightFormScreenings(notice.intake.copyright_notice_id)).toBe(0)
   })
 })
