@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { refreshMaterializedView } from '../../migrate.mts'
 import { createLocalTestUser } from '../../../../test-helpers/data-stores/psql/users.mts'
 import {
   createLocalTestMembership,
@@ -14,6 +13,7 @@ import {
   getRssFeedCrawlTiers,
   setCanonicalRssFeed,
 } from '../../../../test-helpers/data-stores/psql/rss-feed-crawl-tiers.mts'
+import { refreshMaterializedViewForTest } from '../../../../test-helpers/refresh-materialized-view-for-test.mts'
 
 function requireScore(actual: number | undefined, label: string): number {
   if (actual === undefined) throw new Error(`${label} must have a crawl score`)
@@ -23,7 +23,7 @@ function requireScore(actual: number | undefined, label: string): number {
 async function retireOwnedFeeds(feedIds: readonly string[]): Promise<void> {
   if (feedIds.length === 0) return
   await softDeleteLocalRssFeeds(feedIds)
-  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+  await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
 }
 
 async function readFreePlusProScore(ownedFeedIds: string[]): Promise<number | undefined> {
@@ -39,7 +39,7 @@ async function readFreePlusProScore(ownedFeedIds: string[]): Promise<number | un
     createLocalTestMembership(proFollower.id, { plan: 'pro' }),
   ])
   await followRssFeed([freeFollower.id, plusFollower.id, proFollower.id], weightedFeed.id)
-  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+  await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
   return getRssFeedCrawlScore(weightedFeed.id)
 }
 
@@ -87,7 +87,7 @@ async function readInactivePaidScore(ownedFeedIds: string[]): Promise<number | u
     ],
     membershipFeed.id,
   )
-  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+  await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
   return getRssFeedCrawlScore(membershipFeed.id)
 }
 
@@ -101,7 +101,7 @@ async function readTiedScoreTiers(ownedFeedIds: string[]): Promise<number[]> {
   await Promise.all(
     tiedFeeds.map(feed => setLocalRssFeedOwningTopicVoteScore(feed.id, 1_000_000, 0)),
   )
-  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+  await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
   return getRssFeedCrawlTiers(tiedFeeds.map(feed => feed.id))
 }
 
@@ -118,7 +118,7 @@ async function readRedirectedPaidScore(ownedFeedIds: string[]): Promise<number |
   ])
   await followRssFeed([redirectedFollower.id], canonicalFeed.id)
   await followRssFeed([redirectedFollower.id], sourceFeed.id)
-  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+  await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
   return getRssFeedCrawlScore(canonicalFeed.id)
 }
 
