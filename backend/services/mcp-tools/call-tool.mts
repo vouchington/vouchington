@@ -27,7 +27,7 @@ import { ManageEntityInputError } from '@vouchington/mcp-server/tools'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { ToolRateLimitError } from '@services/openai-agents/tool-rate-limit-error'
 
-export const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
+const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
   'The tool result is too large to return. Narrow the query or lower the limit, then try again.'
 
 type UserForCall = BasicUser & {

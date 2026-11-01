@@ -10,7 +10,7 @@ type RssFeedFetchFailurePolicy = {
   hostname_unreliable_status_codes: number[] | null
 }
 
-export function getEffectiveUnreliableStatusCodes(
+function getEffectiveUnreliableStatusCodes(
   policy: RssFeedFetchFailurePolicy | null | undefined,
 ): readonly number[] {
   return policy?.feed_unreliable_status_codes ?? policy?.hostname_unreliable_status_codes ?? []

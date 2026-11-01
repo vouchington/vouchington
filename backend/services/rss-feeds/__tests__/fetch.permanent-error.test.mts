@@ -16,7 +16,7 @@ import {
   CrawlerServerError,
   CrawlerRateLimitError,
 } from '@modules/on-error/errors'
-import { getEffectiveUnreliableStatusCodes } from '../fetch-failures.mts'
+import { maybeSoftDeletePermanentFetchErrorForFetch } from '../fetch-failures.mts'
 import {
   createTestTopic,
   getRssFeedDeletedAt,
@@ -43,11 +43,6 @@ describe('fetch.permanent-error', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCheckRssFeedCrawlable.mockResolvedValue(true)
-  })
-
-  it('getEffectiveUnreliableStatusCodes tolerates missing policy data', () => {
-    expect(getEffectiveUnreliableStatusCodes(null)).toEqual([])
-    expect(getEffectiveUnreliableStatusCodes(undefined)).toEqual([])
   })
 
   async function createEnabledFeed(random: string) {
@@ -199,6 +194,26 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).not.toBeNull()
+  })
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+  ])('soft-deletes a feed on a 404 when the fetch policy is %s', async (_label, policy) => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const feed = await createEnabledFeed(random)
+    const hostnameId = await getFeedHostnameId(feed.id)
+    const feedUrl = `https://perm-err-${random}.example.com/feed.xml`
+
+    await maybeSoftDeletePermanentFetchErrorForFetch({
+      error: new CrawlerHttpClientError(feedUrl, 404, 50),
+      feedUrl,
+      rssFeedId: feed.id,
+      policy,
+      fetchHostnameId: hostnameId,
+    })
+
+    expect(await getRssFeedDeletedAt(feed.id)).not.toBeNull()
   })
 
   it('fetchRssFeed does NOT soft-delete on CrawlerHttpClientError 429 (transient)', async () => {

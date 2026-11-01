@@ -8,7 +8,7 @@ const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000
 
 // Penalty applied when a confirmed bad-faith reporter penalty is active.
-export const BAD_FAITH_REPORTER_PENALTY = 2
+const BAD_FAITH_REPORTER_PENALTY = 2
 
 export function hasOAuthAccount(user: PrivateUser): boolean {
   return !!(

@@ -13,9 +13,12 @@ import {
   MAX_MCP_TOOL_RESULT_VISITS,
 } from '@vouchington/mcp-server/results'
 import { ManageEntityInputError } from '@vouchington/mcp-server/tools'
-import { callMcpTool, MCP_TOOL_RESULT_TOO_LARGE_TEXT } from './call-tool.mts'
+import { callMcpTool } from './call-tool.mts'
 import { optionArgs } from '../../test-helpers/mcp-tool-contract.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
+
+const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
+  'The tool result is too large to return. Narrow the query or lower the limit, then try again.'
 
 const TOOL_NAME = 'discover_topics'
 
