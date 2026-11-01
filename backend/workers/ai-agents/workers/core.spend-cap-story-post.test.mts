@@ -12,7 +12,7 @@ import type { getDailyAiCostTotalMicrounits } from '@services/ai-usage'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '@services/stories/story-posts'
-import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
+import type { recordSpendCapBreach as RecordSpendCapBreach } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 
@@ -106,7 +106,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('ok')
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
 
     const result2 = await processAIAgentWorkerJob(job, {
       waitForSpendCapConfig: () => Promise.resolve(),
@@ -130,7 +130,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
 
     const job = mockJob(result.post.id)
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
@@ -164,7 +164,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
 
     const job = mockJob(result.post.id, true)
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(

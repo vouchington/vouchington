@@ -17,7 +17,7 @@ const DEFAULTS = {
 } as const
 
 export type RssFeedFetchData = { rssFeedId: string; ttl?: number }
-export type RssFeedsDispatchData = {
+type RssFeedsDispatchData = {
   cursor?: { lane: number; afterId: string; throughId?: string }
   asOf?: string
   /** Feed admissions left in this sweep; each continuation reads one bounded raw page. */

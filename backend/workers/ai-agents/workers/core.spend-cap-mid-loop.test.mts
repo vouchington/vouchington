@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
 import { SpendCapBreachError, type evaluateSpendCapBreach } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
-import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
+import type { recordSpendCapBreach as RecordSpendCapBreach } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 
@@ -42,7 +42,7 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
       day: '2026-08-16',
     }
     const job = mockJob()
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
     const handleOpenAIRateLimit =
       vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
     const processAIAgent = vi

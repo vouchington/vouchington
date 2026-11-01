@@ -66,7 +66,7 @@ export function resolveSeedAnchor(rawDate: string | undefined, now: Date = new D
   }
 }
 
-export function seedAnchorDayFor(now: Date): string {
+function seedAnchorDayFor(now: Date): string {
   return new Date(now.getTime() - SEED_ANCHOR_LAG_MS).toISOString().slice(0, 10)
 }
 

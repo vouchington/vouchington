@@ -4,7 +4,7 @@ import { shouldLogToConsole } from './should-log-to-console.mts'
 const spendCapBreachThrottleMs = 60_000
 let lastSpendCapBreachReportedAt: number | undefined
 
-export type SpendCapBreachContext = {
+type SpendCapBreachContext = {
   agentJobName: string
   dailyTotalMicrounits: number
   dailyCapMicrounits: number
