@@ -1,10 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeAll } from 'vitest'
-import {
-  assertRssFeedItemIsDiscoverable,
-  assertStoryIsDiscoverable,
-  currentUserCanCreateStoryPost,
-} from './authorization.mts'
+import { assertStoryIsDiscoverable, currentUserCanCreateStoryPost } from './authorization.mts'
 import { setRssFeedDiscoverabilityAsSystem } from '@services/rss-feeds/discoverability'
 import { FEED_NOT_DISCOVERABLE } from '@modules/on-error/error-codes'
 import {
@@ -65,27 +61,6 @@ describe('authorization', () => {
     })
   })
 
-  describe('assertRssFeedItemIsDiscoverable', () => {
-    it('resolves for items on a discoverable feed', async () => {
-      const itemId = await makeItem(discoverableFeedId)
-      await expect(assertRssFeedItemIsDiscoverable(itemId)).resolves.toBeUndefined()
-    })
-
-    it('throws 404 for unknown items', async () => {
-      await expect(assertRssFeedItemIsDiscoverable(randomUUID())).rejects.toMatchObject({
-        status: 404,
-      })
-    })
-
-    it('throws 403 with FEED_NOT_DISCOVERABLE for items on a non-discoverable feed', async () => {
-      const itemId = await makeItem(nonDiscoverableFeedId)
-      await expect(assertRssFeedItemIsDiscoverable(itemId)).rejects.toMatchObject({
-        status: 403,
-        code: FEED_NOT_DISCOVERABLE,
-      })
-    })
-  })
-
   describe('assertStoryIsDiscoverable', () => {
     it('resolves for stories whose source feed is discoverable', async () => {
       const story = await insertTestStory({ title: 'Discoverable Story' })
@@ -121,16 +96,15 @@ describe('authorization', () => {
 
   it('routes mutable discoverability reads through the write pool', async () => {
     const itemId = await makeItem(discoverableFeedId)
-    const itemRead = await observeTestPostgresQueryPools('/* getRssFeedItemById */', () =>
-      assertRssFeedItemIsDiscoverable(itemId),
-    )
-    expect(itemRead.pools).toEqual(['write'])
-
     const story = await insertTestStory({ title: 'Primary-read Story' })
     await setTestItemStoryId(itemId, story.id)
     const storyRead = await observeTestPostgresQueryPools('/* assertStoryIsDiscoverable */', () =>
       assertStoryIsDiscoverable(story.id),
     )
     expect(storyRead.pools).toEqual(['write'])
+    const itemRead = await observeTestPostgresQueryPools('/* getRssFeedItemById */', () =>
+      assertStoryIsDiscoverable(story.id),
+    )
+    expect(itemRead.pools).toEqual(['write'])
   })
 })
