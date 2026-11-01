@@ -19,6 +19,7 @@ import {
 } from './retention-case-purge-children.mts'
 import { deleteCopyrightCaseFinalTail } from './retention-case-purge-final.mts'
 import { deleteCopyrightCaseEmailThreadLinkPage } from './retention-case-purge-email-links.mts'
+import { COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX } from './retention-case-purge-order.mts'
 
 type PageResult = { data: CopyrightCasePurgeJobData; hasMore: boolean; deferred?: boolean }
 type EligibleNotice = { id: string; jurisdiction: string; last_legal_activity_at: Date }
@@ -128,15 +129,31 @@ export async function runLockedPage(
         data.noticeId,
         data.phaseIndex,
         pageSize,
+        data.afterId,
       )
-      return { data: { ...data, phaseIndex: page.nextPhaseIndex, afterId: null }, hasMore: true }
+      return {
+        data: { ...data, phaseIndex: page.nextPhaseIndex, afterId: page.nextAfterId },
+        hasMore: true,
+      }
     }
     case 'children': {
       if (data.phaseIndex >= COPYRIGHT_CASE_CHILD_PHASE_COUNT)
         return {
-          data: { ...data, phase: 'email_links', phaseIndex: 0, afterId: null },
+          data: { ...data, phase: 'final', phaseIndex: 0, afterId: null },
           hasMore: true,
         }
+      if (data.phaseIndex === COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX) {
+        const deleted = await deleteCopyrightCaseEmailThreadLinkPage(query, data.noticeId)
+        return {
+          data: {
+            ...data,
+            phaseIndex: deleted ? data.phaseIndex : data.phaseIndex + 1,
+            childFrames: undefined,
+            afterId: null,
+          },
+          hasMore: true,
+        }
+      }
       const page = await deleteCopyrightCaseChildPage(
         query,
         data.noticeId,
@@ -151,13 +168,6 @@ export async function runLockedPage(
           afterId: null,
           childFrames: page.childFrames,
         },
-        hasMore: true,
-      }
-    }
-    case 'email_links': {
-      const deleted = await deleteCopyrightCaseEmailThreadLinkPage(query, data.noticeId)
-      return {
-        data: deleted ? data : { ...data, phase: 'final', phaseIndex: 0, afterId: null },
         hasMore: true,
       }
     }

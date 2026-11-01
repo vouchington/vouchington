@@ -37,6 +37,8 @@ export async function deleteCopyrightCaseFinalTail(
   if (initialLinks[0]) {
     await query(sql`/* scopeCopyrightCaseFinalEmailIntake */
       SELECT set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER[1]}, true)`)
+    await query(sql`/* permitCopyrightCaseFinalEmailIntakeDelete */
+      SET LOCAL app.copyright_operational_retention = 'on'`)
     await query(sql`/* deleteCopyrightCaseFinalEmailIntake */
       DELETE FROM copyright_notice_email_intakes
       WHERE id = ${initialLinks[0].copyright_notice_email_intake_id}::uuid`)

@@ -31,7 +31,7 @@ function receiptDeliveryChild(table: string, fkColumn: string): Phase {
 
 const attempt: Edge = [
   'copyright_notice_delivery_attempts',
-  ['copyright_notice_delivery_work_item_id'],
+  ['work_item_id'],
   ['id'],
   ['id'],
   ['id'],
@@ -64,10 +64,7 @@ export const COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS: readonly Phase[] = [
     ],
     null,
   ],
-  receiptDeliveryChild(
-    'copyright_notice_delivery_attempts',
-    'copyright_notice_delivery_work_item_id',
-  ),
+  receiptDeliveryChild('copyright_notice_delivery_attempts', 'work_item_id'),
   receiptDeliveryChild(
     'copyright_notice_delivery_recipients',
     'copyright_notice_delivery_work_item_id',
@@ -86,4 +83,11 @@ export const COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS: readonly Phase[] = [
     'copyright_notice_email_intake_recommendation_identities',
     'copyright_notice_email_intake_receipt_id',
   ),
+]
+
+/** Link removal follows private intake children and precedes correspondence rows it references. */
+export const COPYRIGHT_CASE_EMAIL_LINK_PHASE: Phase = [
+  'copyright_notice_email_intake_notice_links',
+  [link],
+  "link_kind = 'thread'",
 ]
