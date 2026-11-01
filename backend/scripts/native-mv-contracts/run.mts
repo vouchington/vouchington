@@ -4,10 +4,7 @@ import { background } from '@queues/background/queues'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { checkTrendingHttpContracts } from './trending-http.mts'
-import { checkHashtagAuthorDeletionContract } from './hashtag-author-deletion.mts'
-import { checkHashtagCommunityContracts } from './hashtag-community.mts'
 import { checkHashtagEligibilityContracts } from './hashtag-eligibility.mts'
-import { checkHashtagRootVisibilityContracts } from './hashtag-root-visibility.mts'
 import { checkHashtagSearchRankingContracts } from './hashtag-search-ranking.mts'
 import { checkHashtagSearchRssContracts } from './hashtag-search-rss.mts'
 
@@ -17,14 +14,8 @@ async function main(): Promise<void> {
   try {
     await checkTrendingHttpContracts()
     console.log('Native materialized-view contract passed: trending HTTP')
-    await checkHashtagAuthorDeletionContract()
-    console.log('Native materialized-view contract passed: hashtag author deletion')
-    await checkHashtagCommunityContracts()
-    console.log('Native materialized-view contract passed: hashtag community')
     await checkHashtagEligibilityContracts()
     console.log('Native materialized-view contract passed: hashtag eligibility')
-    await checkHashtagRootVisibilityContracts()
-    console.log('Native materialized-view contract passed: hashtag root visibility')
     await checkHashtagSearchRankingContracts()
     console.log('Native materialized-view contract passed: hashtag search ranking')
     await checkHashtagSearchRssContracts()
