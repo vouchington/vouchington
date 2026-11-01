@@ -58,6 +58,16 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
   return { id: feedId }
 }
 
+export async function softDeleteLocalRssFeeds(feedIds: readonly string[]): Promise<void> {
+  if (feedIds.length === 0) return
+  await write(sql`/* softDeleteLocalRssFeeds */
+    UPDATE rss_feeds
+    SET deleted_at = CURRENT_TIMESTAMP
+    WHERE id = ANY(${feedIds}::uuid[])
+      AND deleted_at IS NULL
+  `)
+}
+
 /**
  * Directly set votes_score_up/votes_score_down on the topic that owns the given RSS feed.
  * votes_score_net = votes_score_up - votes_score_down (generated column).
