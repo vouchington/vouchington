@@ -37,4 +37,5 @@ Not partitioned — growth: unbounded.
 - `uq_copyright_email_recommendation_identities__receipt_id`: `CREATE UNIQUE INDEX uq_copyright_email_recommendation_identities__receipt_id ON public.copyright_notice_email_intake_recommendation_identities USING btree (copyright_notice_email_intake_receipt_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_fence_copyright_email_recommendation_identity_case`: `CREATE TRIGGER trigger_fence_copyright_email_recommendation_identity_case BEFORE INSERT ON public.copyright_notice_email_intake_recommendation_identities FOR EACH ROW EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')`

@@ -51,6 +51,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_intake__correspondence_submission_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake__correspondence_submission_id_key ON public.copyright_notice_email_intake_notice_links USING btree (correspondence_submission_id)`
 - `copyright_notice_email_intake_not_correspondence_message_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake_not_correspondence_message_id_key ON public.copyright_notice_email_intake_notice_links USING btree (correspondence_message_id)`
 - `copyright_notice_email_intake_notice_links_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_notice_links_pkey ON public.copyright_notice_email_intake_notice_links USING btree (id)`
+- `idx_copyright_notice_email_intake_notice_links__initial_case`: `CREATE UNIQUE INDEX idx_copyright_notice_email_intake_notice_links__initial_case ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id) WHERE (link_kind = 'initial'::copyright_notice_email_intake_link_kinds)`
 - `idx_copyright_notice_email_intake_notice_links__matched_token`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token ON public.copyright_notice_email_intake_notice_links USING btree (matched_token_id) WHERE (matched_token_id IS NOT NULL)`
 - `idx_copyright_notice_email_intake_notice_links__notice`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__notice ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_email_intake_notice_links__reviewed_by`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__reviewed_by ON public.copyright_notice_email_intake_notice_links USING btree (correspondence_reviewed_by_id) WHERE (correspondence_reviewed_by_id IS NOT NULL)`
@@ -59,7 +60,10 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_advance_copyright_email_link_case_clock`: `CREATE TRIGGER trigger_advance_copyright_email_link_case_clock AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_advance_copyright_email_link_case_clock()`
+- `trigger_bump_copyright_email_link_storage_generation`: `CREATE TRIGGER trigger_bump_copyright_email_link_storage_generation AFTER INSERT OR DELETE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_email_link_storage_generation()`
 - `trigger_copyright_email_link_active_receipt`: `CREATE TRIGGER trigger_copyright_email_link_active_receipt BEFORE INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()`
 - `trigger_copyright_email_thread_links_current_decision`: `CREATE TRIGGER trigger_copyright_email_thread_links_current_decision BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_current_decision()`
 - `trigger_copyright_thread_activity_on_link`: `CREATE TRIGGER trigger_copyright_thread_activity_on_link AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link()`
 - `trigger_copyright_thread_blocker_generation`: `CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()`
+- `trigger_fence_copyright_email_link_storage_owner`: `CREATE TRIGGER trigger_fence_copyright_email_link_storage_owner BEFORE INSERT OR DELETE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_fence_copyright_email_link_storage_owner()`

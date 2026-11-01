@@ -89,7 +89,7 @@ _none_
 - `idx_notifications__community_ban_id`: `CREATE INDEX idx_notifications__community_ban_id ON ONLY public.notifications USING btree (community_ban_id) WHERE (community_ban_id IS NOT NULL)`
 - `idx_notifications__community_id`: `CREATE INDEX idx_notifications__community_id ON ONLY public.notifications USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_notifications__conversation_id__id__user_id`: `CREATE INDEX idx_notifications__conversation_id__id__user_id ON ONLY public.notifications USING btree (conversation_id, id, user_id) WHERE (conversation_id IS NOT NULL)`
-- `idx_notifications__copyright_notice`: `CREATE INDEX idx_notifications__copyright_notice ON ONLY public.notifications USING btree (copyright_notice_id) WHERE (copyright_notice_id IS NOT NULL)`
+- `idx_notifications__copyright_notice`: `CREATE INDEX idx_notifications__copyright_notice ON ONLY public.notifications USING btree (copyright_notice_id, user_id, id) WHERE (copyright_notice_id IS NOT NULL)`
 - `idx_notifications__household_id`: `CREATE INDEX idx_notifications__household_id ON ONLY public.notifications USING btree (household_id) WHERE (household_id IS NOT NULL)`
 - `idx_notifications__household_invitation_id`: `CREATE INDEX idx_notifications__household_invitation_id ON ONLY public.notifications USING btree (household_invitation_id)`
 - `idx_notifications__moderation_appeal`: `CREATE INDEX idx_notifications__moderation_appeal ON ONLY public.notifications USING btree (moderation_appeal_id) WHERE ((moderation_appeal_id IS NOT NULL) AND (deleted_at IS NULL))`
