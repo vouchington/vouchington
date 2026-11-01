@@ -1,4 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
@@ -56,22 +57,23 @@ export async function readExistingEuCounts(
   queryExecutor: QueryExecutor = read,
 ): Promise<EuCounts> {
   if (noticeIds?.length === 0) return emptyEuCounts()
+  const [from, to] = [getMinUUIDv7ForDate(start), getMinUUIDv7ForDate(end)]
   const query = sql`/* readExistingEuCopyrightCounts */
     SELECT
       (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt
         WHERE receipt.jurisdiction = ${JURISDICTION}
-          AND receipt.received_at >= ${start} AND receipt.received_at < ${end}`
+          AND receipt.id >= ${from}::uuid AND receipt.id < ${to}::uuid`
   appendEuNoticeIds(query, noticeIds, 'receipt.copyright_notice_id')
   query.append(sql`) AS receipt_count,
       (SELECT count(*)::integer FROM copyright_territorial_decisions statement
         WHERE statement.jurisdiction = ${JURISDICTION}
-          AND statement.decided_at >= ${start} AND statement.decided_at < ${end}`)
+          AND statement.id >= ${from}::uuid AND statement.id < ${to}::uuid`)
   appendEuNoticeIds(query, noticeIds, 'statement.copyright_notice_id')
   query.append(sql`)
         AS statement_of_reasons_count,
       (SELECT count(*)::integer FROM copyright_territorial_redress_requests redress
         WHERE redress.jurisdiction = ${JURISDICTION}
-          AND redress.received_at >= ${start} AND redress.received_at < ${end}`)
+          AND redress.id >= ${from}::uuid AND redress.id < ${to}::uuid`)
   appendEuNoticeIds(query, noticeIds, 'redress.copyright_notice_id')
   query.append(sql`)
         AS redress_request_count,
@@ -79,19 +81,19 @@ export async function readExistingEuCounts(
         JOIN copyright_territorial_redress_requests redress
           ON redress.id = decision.copyright_territorial_redress_request_id
         WHERE redress.jurisdiction = ${JURISDICTION}
-          AND decision.decided_at >= ${start} AND decision.decided_at < ${end}`)
+          AND decision.id >= ${from}::uuid AND decision.id < ${to}::uuid`)
   appendEuNoticeIds(query, noticeIds, 'redress.copyright_notice_id')
   query.append(sql`)
         AS redress_decision_count,
       (SELECT count(*)::integer FROM copyright_eu_supervised_complaints complaint
         WHERE complaint.jurisdiction = ${JURISDICTION}
-          AND complaint.received_at >= ${start} AND complaint.received_at < ${end}`)
+          AND complaint.id >= ${from}::uuid AND complaint.id < ${to}::uuid`)
   appendEuNoticeIds(query, noticeIds, 'complaint.copyright_notice_id')
   query.append(sql`)
         AS supervised_complaint_count,
       (SELECT count(*)::integer FROM copyright_territorial_escalations escalation
         WHERE escalation.jurisdiction = ${JURISDICTION}
-          AND escalation.escalated_at >= ${start} AND escalation.escalated_at < ${end}`)
+          AND escalation.id >= ${from}::uuid AND escalation.id < ${to}::uuid`)
   appendEuNoticeIds(query, noticeIds, 'escalation.copyright_notice_id')
   query.append(sql`)
         AS escalation_count

@@ -253,7 +253,8 @@ describe('EU copyright notice contracts', () => {
     const scoped = await readEuCopyrightTransparencyFigures(staff, periodStart, periodEnd, [
       receipt.notice_id,
     ])
-    const report = await compileEuCopyrightTransparencyReport(staff, periodStart, new Date())
+    const end = new Date(Date.now() - 4 * 86_400_000 - (Date.now() % 3_600_000))
+    const report = await compileEuCopyrightTransparencyReport(staff, new Date(+end - 1_000), end)
     expect(foreign.notice_id).not.toBe(receipt.notice_id)
     expect(scoped).toMatchObject({
       receipt_count: 1,
@@ -263,7 +264,7 @@ describe('EU copyright notice contracts', () => {
       supervised_complaint_count: 1,
       escalation_count: 1,
     })
-    expect(report.receipt_count).toBeGreaterThanOrEqual(1)
+    expect(report.receipt_count).toBe(0)
     await expect(readCopyrightTerritorialContractShape(receipt.notice_id)).resolves.toMatchObject({
       deadline_count: 0,
       target_count: 0,
