@@ -5,10 +5,11 @@ import {
   forcedSeqScan,
   isSeqScanNearTie,
   isStaleSeqScanNearTie,
-  planTotalCost,
-  SEQ_SCAN_TIE_RATIO,
   type ProbedExplainResult,
 } from './seq-scan-ties.mts'
+
+/** Near-tie fraction from seq-scan-ties.mts. The public gates fail when this changes. */
+const SEQ_SCAN_TIE_RATIO = 0.25
 
 // The post-search-hot custom plan of merge-group run 38992808434: a Limit costing 17577.54 over a
 // sequential scan of posts costing 10676.17. The passing run's bitmap plan for the same statement
@@ -50,11 +51,14 @@ const FINGERPRINT =
 
 describe('sequential scan near-ties', () => {
   it('reads the root plan cost and ignores a missing or malformed plan', () => {
-    expect(planTotalCost(seqScanResult().plan)).toBe(SEQ_PLAN_COST)
-    expect(planTotalCost(null)).toBeUndefined()
-    expect(planTotalCost([])).toBeUndefined()
-    expect(planTotalCost({ Plan: null })).toBeUndefined()
-    expect(planTotalCost({ Plan: { 'Total Cost': '1' } })).toBeUndefined()
+    expect(forcedSeqScan(seqScanResult().plan, 'posts')).toEqual({
+      total_cost: SEQ_PLAN_COST,
+      scan_cost: SEQ_SCAN_COST,
+    })
+    expect(forcedSeqScan(null, 'posts')).toBeUndefined()
+    expect(forcedSeqScan([], 'posts')).toBeUndefined()
+    expect(forcedSeqScan({ Plan: null }, 'posts')).toBeUndefined()
+    expect(forcedSeqScan({ Plan: { 'Total Cost': '1' } }, 'posts')).toBeUndefined()
   })
 
   it('prices the probe only when it avoids the sequential scan of every scanned relation', () => {

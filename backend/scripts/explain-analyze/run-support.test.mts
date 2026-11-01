@@ -36,15 +36,24 @@ describe('writeResults', () => {
         },
       ],
     })
-    const beforeFailures = failures.getScenarioFailures().length
     await support.runAndCapture('membership-refunds-already-refunded-batch', async () => {
       await captured.executeCapturedStatement('/* postSearch */ SELECT 1')
     })
     const failing = support.getResults().at(-1)
     expect(failing?.query_text).toBe('/* postSearch */ SELECT 1')
-    expect(failures.getScenarioFailures().length).toBe(beforeFailures + 1)
+    let recorded: unknown
     expect(() => {
-      throw failures.getScenarioFailures().at(-1)?.error
+      try {
+        failures.assertNoScenarioFailures()
+      } catch (err) {
+        recorded = err
+        throw err
+      }
+    }).toThrow(
+      '1 EXPLAIN scenario failure(s) [membership-refunds-already-refunded-batch] and 0 run check failure(s)',
+    )
+    expect(() => {
+      throw (recorded as AggregateError).errors[0]
     }).toThrow(
       'postSearch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
     )

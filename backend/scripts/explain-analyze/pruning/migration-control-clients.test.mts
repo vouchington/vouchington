@@ -1,18 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import {
-  assertMigrationServerClientsClosed,
-  formatMigrationServerClients,
-  migrationServerClientActivitySql,
-  migrationServerClientSampleMs,
-  migrationServerClients,
-  parseMigrationActivity,
-  readSettledMigrationServerClients,
-} from './migration-control-clients.mts'
+import { assertMigrationServerClientsClosed } from './migration-control-clients.mts'
 
-type MigrationActivityRow = ReturnType<typeof parseMigrationActivity>[number]
 const ownedDatabase = `voucha_pruning_${'a'.repeat(24)}`
 
-function activity(backendType: string, pid = 42): MigrationActivityRow {
+function activity(backendType: string, pid = 42) {
   return {
     pid,
     backendType,
@@ -25,6 +16,24 @@ function activity(backendType: string, pid = 42): MigrationActivityRow {
   }
 }
 
+function closed(input: {
+  databaseName?: string
+  controlDeadline: number
+  now?: () => number
+  sleep?: (milliseconds: number) => Promise<void>
+  run: (file: string, args: string[]) => Promise<{ stdout: string }>
+}) {
+  let now = 0
+  return assertMigrationServerClientsClosed({
+    databaseName: input.databaseName ?? ownedDatabase,
+    sourceUrl: 'postgres://postgres@127.0.0.1/postgres',
+    now: input.now ?? (() => now),
+    controlDeadline: input.controlDeadline,
+    sleep: input.sleep,
+    run: input.run,
+  })
+}
+
 describe('migration server clients', () => {
   it.each([
     { disappears: false, expected: 'Owned database still has server clients: pid=42' },
@@ -34,13 +43,13 @@ describe('migration server clients', () => {
     async ({ disappears, expected }) => {
       let now = 0
       let reads = 0
+      const sleeps: number[] = []
       const controlDeadline = 12_405
-      const result = assertMigrationServerClientsClosed({
-        databaseName: ownedDatabase,
-        sourceUrl: 'postgres://postgres@127.0.0.1/postgres',
-        now: () => now,
+      const result = closed({
         controlDeadline,
+        now: () => now,
         sleep: async milliseconds => {
+          sleeps.push(milliseconds)
           now += milliseconds + 1
         },
         run: async () => {
@@ -63,15 +72,13 @@ describe('migration server clients', () => {
       )
       expect(outcome).toContain(expected)
       expect(reads).toBeGreaterThan(1)
+      expect(sleeps).toEqual([200])
     },
   )
 
   it('accepts an autovacuum-only activity sample', async () => {
     const queries: string[] = []
-    await assertMigrationServerClientsClosed({
-      databaseName: ownedDatabase,
-      sourceUrl: 'postgres://postgres@127.0.0.1/postgres',
-      now: () => 0,
+    await closed({
       controlDeadline: 11_500,
       sleep: async () => {
         throw new Error('autovacuum is not a server client')
@@ -84,64 +91,114 @@ describe('migration server clients', () => {
     expect(queries).toEqual([
       expect.stringContaining("backend_type IN ('client backend', 'parallel worker')"),
     ])
-  })
-
-  it('does not treat an autovacuum worker as a server client', () => {
-    expect(migrationServerClients([activity('autovacuum worker')])).toEqual([])
-  })
-
-  it('keeps a client backend and a parallel worker', () => {
-    const client = activity('client backend', 7)
-    const worker = activity('parallel worker', 8)
-    expect(migrationServerClients([activity('autovacuum worker'), client, worker])).toEqual([
-      client,
-      worker,
-    ])
-  })
-
-  it('selects client backends and their parallel workers', () => {
-    const sql = migrationServerClientActivitySql(ownedDatabase)
+    const sql = queries[0] ?? ''
     expect(sql).toContain('/* assertMigrationControlClientsClosed */')
     expect(sql).toContain(`datname = '${ownedDatabase}'`)
-    expect(sql).toContain("backend_type IN ('client backend', 'parallel worker')")
     expect(sql).not.toContain('count(*)')
-    expect(() => migrationServerClientActivitySql('postgres')).toThrow(/voucha_pruning_/)
   })
 
-  it('parses activity json from the control query', () => {
+  it('rejects a database name outside the owned pruning pattern', async () => {
+    await expect(
+      closed({
+        databaseName: 'postgres',
+        controlDeadline: 11_500,
+        run: async () => {
+          throw new Error('should not query')
+        },
+      }),
+    ).rejects.toThrow(/voucha_pruning_/)
+  })
+
+  it('keeps a client backend and a parallel worker and drops autovacuum', async () => {
+    const outcome = await closed({
+      controlDeadline: 11_500,
+      sleep: async () => {
+        throw new Error('sleep past the deadline')
+      },
+      run: async () => ({
+        stdout: JSON.stringify([
+          activity('autovacuum worker'),
+          activity('client backend', 7),
+          activity('parallel worker', 8),
+        ]),
+      }),
+    }).then(
+      () => 'closed',
+      (err: unknown) => {
+        if (!(err instanceof Error)) throw err
+        return err.message
+      },
+    )
+    expect(outcome).toContain('pid=7')
+    expect(outcome).toContain('backend_type=client backend')
+    expect(outcome).toContain('pid=8')
+    expect(outcome).toContain('backend_type=parallel worker')
+    expect(outcome).not.toContain('autovacuum')
+  })
+
+  it('parses activity json from the control query', async () => {
     const client = activity('client backend', 9)
-    expect(parseMigrationActivity(JSON.stringify([client]))).toEqual([client])
-    expect(parseMigrationActivity('[]')).toEqual([])
+    const outcome = await closed({
+      controlDeadline: 11_500,
+      sleep: async () => {
+        throw new Error('sleep past the deadline')
+      },
+      run: async () => ({ stdout: JSON.stringify([client]) }),
+    }).then(
+      () => 'closed',
+      (err: unknown) => {
+        if (!(err instanceof Error)) throw err
+        return err.message
+      },
+    )
+    expect(outcome).toContain('pid=9')
+    expect(outcome).toContain('backend_type=client backend')
+    expect(outcome).toContain('state=idle')
+    expect(outcome).toContain('wait_event=Client.ClientRead')
+    expect(outcome).toContain('application_name=')
+    expect(outcome).toContain('query=SELECT 1')
+
+    await closed({
+      controlDeadline: 11_500,
+      run: async () => ({ stdout: '[]' }),
+    })
   })
 
   it('waits out a backend that disappears and still reports one that stays', async () => {
     let now = 0
-    const disappearing = [[activity('client backend')], [], []]
+    const disappearing = [JSON.stringify([activity('client backend')]), '[]']
     const sleeps: number[] = []
-    const settled = await readSettledMigrationServerClients({
-      read: async () => disappearing.shift() ?? [],
+    await closed({
+      controlDeadline: 12_400,
       now: () => now,
-      deadline: 500,
       sleep: async milliseconds => {
         sleeps.push(milliseconds)
         now += milliseconds
       },
+      run: async () => {
+        const stdout = disappearing.shift()
+        if (stdout === undefined) throw new Error('unexpected extra read')
+        return { stdout }
+      },
     })
-    expect(settled).toEqual([])
-    expect(sleeps).toEqual([migrationServerClientSampleMs])
+    expect(sleeps).toEqual([200])
 
     now = 0
-    const stayed = activity('client backend', 11)
-    const remaining = await readSettledMigrationServerClients({
-      read: async () => [stayed],
+    const stayed = await closed({
+      controlDeadline: 11_500,
       now: () => now,
-      deadline: 0,
       sleep: async () => {
         throw new Error('sleep past the deadline')
       },
-    })
-    expect(remaining).toEqual([stayed])
-    expect(formatMigrationServerClients(remaining)).toContain('pid=11')
-    expect(formatMigrationServerClients(remaining)).toContain('backend_type=client backend')
+      run: async () => ({ stdout: JSON.stringify([activity('client backend', 11)]) }),
+    }).then(
+      () => 'closed',
+      (err: unknown) => {
+        if (!(err instanceof Error)) throw err
+        return err.message
+      },
+    )
+    expect(stayed).toContain('pid=11')
+    expect(stayed).toContain('backend_type=client backend')
   })
 })

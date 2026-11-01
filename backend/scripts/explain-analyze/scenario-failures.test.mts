@@ -1,19 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  assertNoScenarioFailures,
-  continueAfterFailure,
-  getScenarioFailures,
-  resetScenarioFailures,
-} from './scenario-failures.mts'
+
+async function loadReporter() {
+  vi.resetModules()
+  return import('./scenario-failures.mts')
+}
 
 describe('continueAfterFailure', () => {
   afterEach(() => {
-    resetScenarioFailures()
     vi.restoreAllMocks()
   })
 
   it('runs every scenario and reports each failure in one error', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { continueAfterFailure, assertNoScenarioFailures } = await loadReporter()
     const ran: string[] = []
 
     await continueAfterFailure('first', async () => {
@@ -29,19 +28,20 @@ describe('continueAfterFailure', () => {
     })
 
     expect(ran).toEqual(['first', 'second', 'third'])
-    expect(getScenarioFailures().map(failure => failure.scenario)).toEqual(['first', 'third'])
     expect(() => assertNoScenarioFailures()).toThrow(
       '2 EXPLAIN scenario failure(s) [first, third] and 0 run check failure(s)',
     )
   })
 
-  it('reports run check errors with no scenario failure', () => {
+  it('reports run check errors with no scenario failure', async () => {
+    const { assertNoScenarioFailures } = await loadReporter()
     expect(() => assertNoScenarioFailures([new Error('manifest mismatch')])).toThrow(
       '0 EXPLAIN scenario failure(s) [] and 1 run check failure(s)',
     )
   })
 
   it('passes when nothing failed', async () => {
+    const { continueAfterFailure, assertNoScenarioFailures } = await loadReporter()
     await continueAfterFailure('only', async () => {})
 
     expect(() => assertNoScenarioFailures()).not.toThrow()
