@@ -3,6 +3,8 @@
   // Production-only (`!`): helper files would otherwise be production entries whose imports hide
   // exports that only tests use.
   "ignoreWorkspaces": ["backend/test-helpers!"],
+  // Exports used inside their own file are live; they need not be private just because only tests import them.
+  "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
       "entry": [
@@ -64,7 +66,6 @@
     },
     "backend/entrypoints/worker-io": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": false,
     },
     "backend/worker-runtime": {
       "entry": ["**/*.mts"],
@@ -135,11 +136,9 @@
         "test-helpers/launch-api.mts",
       ],
       "project": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/data-stores/psql": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
       "ignoreIssues": {
         "migrations/0000-00-00-0-finite-values.mts": ["exports"],
       },
@@ -161,7 +160,6 @@
     },
     "backend/data-stores/*": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/data-stores/graceful-shutdown": {
       "entry": ["**/*.mts"],
@@ -177,7 +175,6 @@
     },
     "backend/modules/*": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/modules/on-error": {
       "entry": ["**/*.mts"],
@@ -194,11 +191,9 @@
     "backend/modules/structured-decisions": {
       // Benchmark is a development CLI; keep manifest entries for production callers.
       "entry": ["benchmark.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/services/*": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/services/oauth-accounts": {
       "entry": ["**/*.mts"],
@@ -239,7 +234,6 @@
     "backend/services/mcp-tools": {
       // Keep Knip's package.json-derived entry and default source/test project patterns so API
       // route imports reach authenticate/challenge internals in production analysis.
-      "ignoreExportsUsedInFile": true,
     },
     "backend/services/api-keys": {
       "entry": ["**/*.mts"],
@@ -291,14 +285,12 @@
     },
     "backend/queues/*": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/workers/*": {
       "entry": ["**/*.mts"],
     },
     "backend/agents/*": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
     },
     "backend/agents/copyright-appeal-recommendation": {
       // Keep the package's manifest entry so production consumers reach its run module.
