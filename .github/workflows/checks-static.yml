@@ -74,6 +74,7 @@ jobs:
           node ci/check-topic-merge-foreign-keys.mts
           node ci/validate-generated-ddl-inserts.mts
           node ci/check-scheduled-job-schedules.mts
+          node ci/check-seed-topic-csvs.mts
           pnpm run mcp:catalog -- --check
         timeout-minutes: 8
       - name: Check canonical API snapshot git state

@@ -114,8 +114,9 @@ async function importSeedRows(
  * causes `Connection terminated due to connection timeout` from PostgreSQL connection-pool
  * contention with the rest of that project's concurrent DB workload; the isolated project that
  * avoided it required `maxWorkers: 1`, which this repo no longer permits (see #9121). Its two
- * halves are independently covered: `readSeedCsvRows` by `seed-csvs-catalog.test.mts`,
- * `seedTopicsFromRows` by `seed-csvs.test.mts`'s fixture. The bootstrap actor lookup and composition are not.
+ * `seedTopicsFromRows` is covered by `seed-csvs.test.mts`'s fixture. `readSeedCsvRows` stays the
+ * importer's reader; the static backend gate checks the same `seed/*-topics.csv` files, and no
+ * Vitest root calls this reader. The bootstrap actor lookup and composition are not covered.
  */
 /* c8 ignore start -- see comment above; full-catalog DB import, exercised by the real seed script, not by tests (#8972) */
 export async function seedTopicsFromCsvs(): Promise<SeedCsvsResult> {

@@ -75,6 +75,16 @@ describe('Area CI triggers', () => {
     expectFilterMatches('backend', ['ci/check-scheduled-job-schedules.mts'])
   })
 
+  it('runs backend validation when the shipped topic CSV checker changes', () => {
+    expectFilterMatches('backend', [
+      'ci/check-seed-topic-csvs.mts',
+      'ci/seed-topic-csv-policy.mts',
+      'ci/seed-topic-csv-rows.mts',
+      'ci/seed-topic-csv-feed.mts',
+      'seed/ai-topics.csv',
+    ])
+  })
+
   it('runs backend validation when the generated INSERT guard changes', () => {
     expectFilterMatches('backend', [
       'ci/validate-generated-ddl-inserts.mts',
