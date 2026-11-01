@@ -44,3 +44,18 @@ export function rejectPostgresReadForTest(marker: string, error: unknown): () =>
   })
   return () => spy.mockRestore()
 }
+
+/**
+ * Reject default-pool `write()` calls whose statement text contains `marker` (the leading SQL
+ * comment label). Use only for writes outside any caller-owned transaction; returns the restore.
+ */
+export function rejectPostgresWriteForTest(marker: string, error: unknown): () => void {
+  const realWrite = psql.write
+  const spy = vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
+    const text = typeof query === 'string' ? query : query.text
+    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Callers inject non-Error rejection values on purpose.
+    if (text.includes(marker)) return Promise.reject(error)
+    return realWrite(query, ...rest)
+  })
+  return () => spy.mockRestore()
+}

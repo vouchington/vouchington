@@ -708,6 +708,13 @@ rules:
         # A per-page PostgreSQL effect is required; the loop is bounded by maxBatches.
         - { file: backend/services/data-retention/cleanup-auth-sessions.mts, callee: 'cleanupPage' }
         - { file: backend/api/mcp-route-rate-limit-helpers.mts, callee: 'checkRouteRateLimit' }
+        # A user-tag create refreshes the primary stats of the few relations it just created
+        # (bounded by the tag-add limit); each keeps the singular refresh's discoverability,
+        # notification, and queue-fallback side effects, which the batch refresh does not run.
+        - {
+            file: backend/services/entity-relation-actions/create.mts,
+            callee: 'refreshEntityRelationVoteStatsFromPrimaryWithFallback',
+          }
         - {
             file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
             callee: 'backfillRssFeedItemSourcePublications',

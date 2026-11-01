@@ -11,10 +11,18 @@ const electionRelationTables = entityRelationMetadatum.flatMap(metadata =>
 export async function refreshEntityRelationVoteStatsFromPrimaryWithFallback(
   target: EntityRelationElectionTarget,
 ): Promise<void> {
-  await refreshEntityRelationVoteStatsWithDependencies(target, {
-    refreshFromPrimary: updateEntityRelationElectionVoteStatsFromPrimary,
-    enqueueReconciliation: enqueueBulkUpdateEntityRelationElectionVoteStats,
-  })
+  try {
+    await updateEntityRelationElectionVoteStatsFromPrimary(target)
+  } catch (outerErr) {
+    try {
+      await enqueueBulkUpdateEntityRelationElectionVoteStats([target])
+    } catch (err) {
+      throw new Error(
+        `Primary entity-relation vote refresh failed (${outerErr instanceof Error ? outerErr.message : String(outerErr)}) and fallback enqueue also failed`,
+        { cause: err },
+      )
+    }
+  }
 }
 
 export async function refreshEntityRelationVoteStatsById(relationId: string): Promise<void> {
@@ -34,27 +42,4 @@ export async function refreshEntityRelationVoteStatsById(relationId: string): Pr
   await refreshEntityRelationVoteStatsFromPrimaryWithFallback(
     createEntityRelationElectionTarget(relation.id, relation.entity_relation),
   )
-}
-
-type RefreshStatsDependencies = {
-  refreshFromPrimary: (target: EntityRelationElectionTarget) => Promise<void>
-  enqueueReconciliation: (targets: EntityRelationElectionTarget[]) => unknown | Promise<unknown>
-}
-
-export async function refreshEntityRelationVoteStatsWithDependencies(
-  target: EntityRelationElectionTarget,
-  dependencies: RefreshStatsDependencies,
-): Promise<void> {
-  try {
-    await dependencies.refreshFromPrimary(target)
-  } catch (outerErr) {
-    try {
-      await dependencies.enqueueReconciliation([target])
-    } catch (err) {
-      throw new Error(
-        `Primary entity-relation vote refresh failed (${outerErr instanceof Error ? outerErr.message : String(outerErr)}) and fallback enqueue also failed`,
-        { cause: err },
-      )
-    }
-  }
 }
