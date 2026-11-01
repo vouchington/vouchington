@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import type { CopyrightCasePurgeJobData } from '@queues/psql/types'
+import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
 import {
   addRetentionArtifact,
   createRetentionMinimalCase,
@@ -65,12 +64,10 @@ async function assertKeyReused(key: string): Promise<void> {
 describe('copyright case purge shared evidence ownership', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useFakeCopyrightEvidenceBucket()
-  const configureRetention = useCopyrightRetentionConfig()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: two reviewed email cases and their bounded PostgreSQL and S3 pages
   it('keeps a shared object for its other owner, then resumes a claimed deletion after a page boundary', async () => {
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     await setPageSize(2)
     const sharedKey = `copyright-inbound/${randomUUID()}.pdf`
     const [first, second] = await Promise.all([

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { CopyrightCasePurgeJobData } from '@queues/psql/types'
+import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
 import {
   publishCopyrightCasePurgeCoverage,
   readCopyrightCasePurgeFixture,
@@ -61,12 +60,10 @@ async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
 describe('initial copyright submission replay during case purge', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useFakeCopyrightEvidenceBucket()
-  const configureRetention = useCopyrightRetentionConfig()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed form fixture and bounded case purge pages through final root deletion
   it('replays the original form through pointer cuts, then accepts a new case after the root is gone', async () => {
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     await setPageSize(20)
     const form = await createReplayableCopyrightCasePurgeForm()
     await publishCopyrightCasePurgeCoverage(form.noticeId)
@@ -88,7 +85,6 @@ describe('initial copyright submission replay during case purge', () => {
 
   // no-mistakes-timeout-reason: reviewed email fixture, versioned evidence deletion, and bounded case purge pages
   it('replays the original email before evidence deletion and rejects the same SES message after erasure', async () => {
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     await setPageSize(20)
     const email = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(email.noticeId)
