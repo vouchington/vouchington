@@ -5,7 +5,7 @@ import {
   holdTestFinalPurgeUserLifecycle,
   setReciprocalTestUserDeletionActors,
 } from '../../../test-helpers/reciprocal-user-purge.mts'
-import { cleanupSoftDeletedUser, FINAL_USER_PURGE_LOCK_KEY } from '../cleanup-soft-deleted-user.mts'
+import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 
 describe('reciprocal final user purges', () => {
   it('serializes overlapping purges before either acquires user locks', async () => {
@@ -40,7 +40,7 @@ describe('reciprocal final user purges', () => {
       {
         holderProcessId: await first.waiterProcessId(),
         pool: 'write',
-        lock: { kind: 'advisory', key: FINAL_USER_PURGE_LOCK_KEY },
+        lock: { kind: 'advisory', key: 'data-retention:final-user-purge' },
         queryMarker: 'cleanupSoftDeletedUserBatch:serializeFinalPurges',
         releaseHolder,
       },
