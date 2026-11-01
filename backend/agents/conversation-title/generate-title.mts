@@ -22,7 +22,7 @@ const TITLE_SCHEMA = {
 /** The model-calling seam. Injectable so tests can exercise the agent without a provider. */
 export type ConversationTitleModelCaller = AgentModelCaller<{ title: string }>
 
-export const callConversationTitleModel: ConversationTitleModelCaller = (
+const callConversationTitleModel: ConversationTitleModelCaller = (
   input,
   safetyIdentifier,
   { selection, openaiTransport },
