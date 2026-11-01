@@ -5,7 +5,10 @@ import {
   functionCallReports,
   getResourcePressureFingerprints,
 } from './plan-warnings.mts'
-import { RESOURCE_PRESSURE_BASELINE } from './resource-pressure-baseline.mts'
+import {
+  RESOURCE_PRESSURE_BASELINE,
+  type ResourcePressureBaseline,
+} from './resource-pressure-baseline.mts'
 import {
   assertNoNewSeqScans,
   getExplainResultIdentity,
@@ -15,24 +18,26 @@ import { loadLatestPairedResults } from './paired-results.mts'
 
 const OUTPUT_DIR = join(import.meta.dirname, 'output')
 
-function getUserLabel(name: string): 'baseline' | 'heavy' {
+export function getUserLabel(name: string): 'baseline' | 'heavy' {
   return name.split(':').some(segment => segment === 'heavy' || segment.startsWith('heavy-'))
     ? 'heavy'
     : 'baseline'
 }
 
-function getDisplayName(name: string): string {
+export function getDisplayName(name: string): string {
   return name.replace(/:heavy(?=:|$)/, '')
 }
 
-function assertResultsPresent(results: readonly ExplainResult[]): void {
+export function assertResultsPresent(results: readonly ExplainResult[]): void {
   if (results.length === 0) {
     throw new Error('Latest EXPLAIN output contains no query results')
   }
 }
 
-function assertNoDisallowedRegressions(results: readonly ExplainResult[]): void {
-  const baseline = RESOURCE_PRESSURE_BASELINE
+export function assertNoDisallowedRegressions(
+  results: readonly ExplainResult[],
+  baseline: ResourcePressureBaseline = RESOURCE_PRESSURE_BASELINE,
+): void {
   const regressions = results.flatMap(result => {
     const identity = getExplainResultIdentity(result)
     const allowed = new Set(baseline[identity] ?? [])
@@ -47,8 +52,8 @@ function assertNoDisallowedRegressions(results: readonly ExplainResult[]): void 
   }
 }
 
-function main(outputDir = OUTPUT_DIR) {
-  const { filePath, results, repeatedResults } = loadLatestPairedResults(outputDir)
+function main() {
+  const { filePath, results, repeatedResults } = loadLatestPairedResults(OUTPUT_DIR)
   console.error(`Reading: ${filePath}`)
   assertResultsPresent(results)
   assertResultsPresent(repeatedResults)
@@ -173,8 +178,6 @@ function main(outputDir = OUTPUT_DIR) {
   process.exit(0)
 }
 
-// Optional directory argument summarizes one captured EXPLAIN output folder.
-// `pnpm explain:analyze` keeps the script's own output directory.
 if (import.meta.main) {
-  main(process.argv[2])
+  main()
 }

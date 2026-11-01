@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { assertMigrationServerClientsClosed } from './migration-control-clients.mts'
 
 const ownedDatabase = `voucha_pruning_${'a'.repeat(24)}`
-const migrationServerClientSampleMs = 200
 
 function activity(backendType: string, pid = 42) {
   return {
@@ -73,7 +72,7 @@ describe('migration server clients', () => {
       )
       expect(outcome).toContain(expected)
       expect(reads).toBeGreaterThan(1)
-      expect(sleeps).toEqual([migrationServerClientSampleMs])
+      expect(sleeps).toEqual([200])
     },
   )
 
@@ -182,7 +181,7 @@ describe('migration server clients', () => {
         return { stdout }
       },
     })
-    expect(sleeps).toEqual([migrationServerClientSampleMs])
+    expect(sleeps).toEqual([200])
 
     now = 0
     const stayed = await closed({
