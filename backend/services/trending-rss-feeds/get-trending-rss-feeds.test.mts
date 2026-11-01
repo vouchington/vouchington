@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { refreshMaterializedView } from '@data-stores/psql/migrate'
-import { updateRssFeedById } from '@services/rss-feeds/update'
 import { createNativeTrendingFeed } from '@voucha/test-helpers/native-trending-rss-feeds'
+import { updateRssFeedById } from '../rss-feeds/update.mts'
 import { getTrendingRssFeeds } from './get-trending-rss-feeds.mts'
 
 const refreshTrendingFeeds = () => refreshMaterializedView('mv_trending_rss_feeds')
