@@ -6,6 +6,7 @@ import { isCopyrightEvidenceRetentionDeletionEnabled } from './config.mts'
 import { copyrightCasePurgeEligibilitySql } from './retention-case-purge-eligibility.mts'
 import { getCopyrightCasePurgePageSize } from '../../queues/psql/enqueues/ordering-config.mts'
 import { runLockedPage } from './retention-case-purge-phases.mts'
+import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 import { deleteCopyrightCaseResidualPartyPage } from './retention-case-purge-residual.mts'
 
 type PageResult = { data: CopyrightCasePurgeJobData; hasMore: boolean; deferred?: boolean }
@@ -82,11 +83,9 @@ export async function runCopyrightCasePurgePage(
   const { rows: locked } = await query<LockedNotice>(caseProofSql(data.noticeId, true))
   if (locked.length === 0) {
     await query.commit()
-    return await deleteCopyrightCaseResidualPartyPage({
-      ...data,
-      phase: 'residual_parties',
-      afterId: null,
-    })
+    return await deleteCopyrightCaseResidualPartyPage(
+      enterCopyrightCasePurgePhase(data, 'residual_parties'),
+    )
   }
   const { rows: eligible } = await query<EligibleNotice>(
     copyrightCasePurgeEligibilitySql(data.noticeId, now),
@@ -99,11 +98,7 @@ export async function runCopyrightCasePurgePage(
   const changed = data.proofVersion !== null && data.proofVersion !== beforeVersion
   const current: CopyrightCasePurgeJobData = changed
     ? {
-        ...data,
-        phase: 'parties',
-        phaseIndex: 0,
-        afterId: null,
-        childFrames: undefined,
+        ...enterCopyrightCasePurgePhase(data, 'parties'),
         legalClockAt: clock,
         proofVersion: beforeVersion,
       }

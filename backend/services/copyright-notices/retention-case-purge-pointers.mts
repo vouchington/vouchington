@@ -54,7 +54,8 @@ export async function cutCopyrightCasePointerPage(
         SELECT id FROM copyright_notice_submissions
         WHERE copyright_notice_id = ${noticeId}::uuid AND (
           copyright_notice_guest_capability_id IS NOT NULL
-          OR current_assessment_identity_id IS NOT NULL)
+          OR current_assessment_identity_id IS NOT NULL
+          OR current_assessment_form_screening_id IS NOT NULL)
         ORDER BY id LIMIT ${limit} FOR UPDATE
       ), changed AS (
         UPDATE copyright_notice_submissions submission SET

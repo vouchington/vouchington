@@ -8,6 +8,7 @@ import {
   EU_REPORT_FACT_FAMILIES,
   readEuCopyrightReportCoveragePage,
 } from './eu-report-coverage.mts'
+import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 
 export async function verifyCopyrightCaseReportCoveragePage(
   query: TransactionQuery,
@@ -19,7 +20,7 @@ export async function verifyCopyrightCaseReportCoveragePage(
   const euIndex = data.phaseIndex - COPYRIGHT_CASE_GLOBAL_REPORT_FAMILIES.length
   const euFamily = EU_REPORT_FACT_FAMILIES[euIndex]
   if (!globalFamily && (!euFamily || jurisdiction !== 'eu_dsa'))
-    return { data: { ...data, phase: 'evidence', phaseIndex: 0, afterId: null }, hasMore: true }
+    return { data: enterCopyrightCasePurgePhase(data, 'evidence'), hasMore: true }
   const page = globalFamily
     ? await readCopyrightCaseGlobalReportCoveragePage(
         query,

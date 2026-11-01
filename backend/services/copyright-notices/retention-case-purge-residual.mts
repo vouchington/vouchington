@@ -2,6 +2,7 @@ import { beginBoundedTransaction } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { getCopyrightCasePurgePageSize } from '../../queues/psql/enqueues/ordering-config.mts'
 import sql from 'sql-template-strings'
+import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 
 /** Same-job bounded cleanup after the case root has been removed. */
 export const COPYRIGHT_CASE_RESIDUAL_DELETE_ORDER = [
@@ -20,7 +21,7 @@ export async function deleteCopyrightCaseResidualPartyPage(data: CopyrightCasePu
     SELECT id FROM copyright_notices WHERE id = ${data.noticeId}::uuid FOR UPDATE`)
   if (live.length > 0) {
     await query.commit()
-    return { data: { ...data, phase: 'final' as const, afterId: null }, hasMore: true }
+    return { data: enterCopyrightCasePurgePhase(data, 'final'), hasMore: true }
   }
   const cursor =
     data.afterId === null ? sql`` : sql` AND party.account_user_id > ${data.afterId}::uuid`
