@@ -58,8 +58,8 @@ cookies, so they are not CSRF targets. SES bounce/complaint notifications and St
 no longer hairpin through a public endpoint: both arrive over SQS (SNS→SQS for SES,
 EventBridge→SQS for Stripe) that a backend worker consumes directly (see
 [event-ingress.md](../../overview/architecture/event-ingress.md)), so there is nothing to exempt
-here. The worker-secret check has its own `WORKER_SECRET_EXEMPT_PATHS` list, pinned by tests so
-additions are reviewed.
+here. The worker-secret check has its own exempt-path list. Cover an exempt request in the
+origin-guard tests when adding a path.
 Server-to-server requests are exempt from the origin guard structurally (no browser signal), as
 described in layer 3.
 
