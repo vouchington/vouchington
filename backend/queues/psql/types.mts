@@ -78,7 +78,6 @@ export type AIRetentionFamily = (typeof AI_RETENTION_FAMILIES)[number]
 export type AIRetentionContinuationData = { family: AIRetentionFamily }
 
 export const COPYRIGHT_RETENTION_FAMILIES = [
-  'copyrightSubmissionKeys',
   'copyrightFormScreeningAttempts',
   'copyrightActionAttempts',
   'copyrightDeliveryAttempts',

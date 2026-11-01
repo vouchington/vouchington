@@ -30,16 +30,12 @@ CREATE TABLE copyright_notice_submission_requests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_submission_requests__submission_id UNIQUE CONSTRAINT fk_copyright_notice_submission_requests__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   requester_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  idempotency_key uuid,
   idempotency_key_sha256 bytea NOT NULL CHECK (octet_length(idempotency_key_sha256) = 32),
   request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_copyr_notic_submi_reques__requester_user_id__idempotency_key UNIQUE (requester_user_id, idempotency_key),
   CONSTRAINT uq_copyright_submission_requests__requester__key_digest UNIQUE (requester_user_id, idempotency_key_sha256)
 );
-CREATE INDEX idx_copyright_notice_submission_requests__uncleared_key_age
-  ON copyright_notice_submission_requests (id) WHERE idempotency_key IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_targets__target ON copyright_notice_submission_targets(copyright_notice_target_id, copyright_notice_submission_id);
@@ -131,8 +127,7 @@ COMMENT ON COLUMN copyright_notice_submission_targets.copyright_notice_submissio
 COMMENT ON COLUMN copyright_notice_submission_targets.copyright_notice_target_id IS 'Exact case target selected by the affected poster.';
 COMMENT ON COLUMN copyright_notice_submission_requests.copyright_notice_submission_id IS 'Submission admitted for this idempotent request.';
 COMMENT ON COLUMN copyright_notice_submission_requests.requester_user_id IS 'Authenticated affected poster making the request.';
-COMMENT ON COLUMN copyright_notice_submission_requests.idempotency_key IS 'Raw caller UUID cleared after 30 days; the digest preserves exact replay while the case exists.';
-COMMENT ON COLUMN copyright_notice_submission_requests.idempotency_key_sha256 IS 'Digest of the canonical caller UUID used to match retries after raw-key expiry.';
+COMMENT ON COLUMN copyright_notice_submission_requests.idempotency_key_sha256 IS 'Digest of the canonical caller UUID used to match exact retries while the case exists.';
 COMMENT ON COLUMN copyright_notice_submission_requests.request_sha256 IS 'Digest used to reject conflicting reuse of an idempotency key.';
 
 CREATE INDEX idx_copyright_notice_submissions__current_form_screening

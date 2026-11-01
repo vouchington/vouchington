@@ -157,10 +157,10 @@ async function createAuthenticatedCopyrightSubmission(
       WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
     ), inserted_request AS (
       INSERT INTO copyright_notice_submission_requests (
-        copyright_notice_submission_id, requester_user_id, idempotency_key,
-        idempotency_key_sha256, request_sha256
-      ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKey},
-        ${idempotencyKeySha256}, ${requestSha256})
+        copyright_notice_submission_id, requester_user_id, idempotency_key_sha256,
+        request_sha256
+      ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKeySha256},
+        ${requestSha256})
     )
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id

@@ -113,7 +113,6 @@ import {
 import { cleanupSecurityRecords } from './cleanup-security-records.mts'
 import { cleanupLegalRecords } from './cleanup-legal-records.mts'
 import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
-import { cleanupCopyrightSubmissionKeys } from './cleanup-copyright-submission-keys.mts'
 import {
   cleanupSupersededVoteBallots,
   type VoteBallotCleanupPage,
@@ -270,7 +269,6 @@ type DataRetentionCleanupOptions = {
 
 type DataRetentionCleanupResult = {
   legalRecords: Awaited<ReturnType<typeof cleanupLegalRecords>>
-  copyrightSubmissionKeys?: { cleared: number; hasMore: boolean }
   copyrightFormScreeningAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightActionAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightDeliveryAttempts?: { scanned: number; deleted: number; hasMore: boolean }
@@ -366,7 +364,6 @@ export async function runVoteRetentionCleanupPage(
 }
 
 export type CopyrightRetentionFamily =
-  | 'copyrightSubmissionKeys'
   | 'copyrightFormScreeningAttempts'
   | 'copyrightActionAttempts'
   | 'copyrightDeliveryAttempts'
@@ -390,8 +387,6 @@ export async function runCopyrightOperationalRetentionCleanup(
   const active = (family: CopyrightRetentionFamily) =>
     options.activeFamilies === undefined || options.activeFamilies.includes(family)
   const result: CopyrightRetentionCleanupResult = {}
-  if (active('copyrightSubmissionKeys'))
-    result.copyrightSubmissionKeys = await cleanupCopyrightSubmissionKeys(limits)
   if (active('copyrightFormScreeningAttempts'))
     result.copyrightFormScreeningAttempts = await sweepCopyrightOperationalRetention(
       'form_screening_attempts',
