@@ -1,8 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
-import { MAX_IMAGE_UPLOAD_BYTES } from '@services/images/freeze-upload'
-import { addImageToBatch } from './images.mts'
+import { addImageToBatch, MAX_IMAGE_EMBEDDING_SOURCE_BYTES } from './images.mts'
 
 const mocks = vi.hoisted(() => ({
   getImageFromS3: vi.fn<VitestLooseMock>(),
@@ -52,7 +51,10 @@ describe('entities/images', () => {
   it('rejects a private source that exceeds the uploaded-image byte limit before transformation', async () => {
     const megabyte = Buffer.alloc(1024 * 1024)
     mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: streamRepeatedBytes(megabyte, Math.ceil(MAX_IMAGE_UPLOAD_BYTES / megabyte.length) + 1),
+      Body: streamRepeatedBytes(
+        megabyte,
+        Math.ceil(MAX_IMAGE_EMBEDDING_SOURCE_BYTES / megabyte.length) + 1,
+      ),
       ContentType: 'image/gif',
     })
     const fileBuilder = new BatchFileBuilder()
@@ -64,7 +66,7 @@ describe('entities/images', () => {
         10,
         mocks,
       ),
-    ).rejects.toThrow(`${MAX_IMAGE_UPLOAD_BYTES}-byte limit`)
+    ).rejects.toThrow(`${MAX_IMAGE_EMBEDDING_SOURCE_BYTES}-byte limit`)
     await fileBuilder.cleanup()
   })
 

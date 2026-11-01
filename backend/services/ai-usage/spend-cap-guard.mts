@@ -29,14 +29,11 @@ export class SpendCapBreachError extends Error {
   }
 }
 
-export type SpendCapAssertDeps = {
+type SpendCapGuardDeps = {
   waitForSpendCapConfig: () => Promise<void>
   getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
-  recordSpendCapBreach: typeof recordSpendCapBreach
 }
-
-type SpendCapGuardDeps = Omit<SpendCapAssertDeps, 'recordSpendCapBreach'>
 
 const defaultGuardDeps: SpendCapGuardDeps = {
   waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
@@ -56,7 +53,7 @@ const defaultGuardDeps: SpendCapGuardDeps = {
  * evaluation restarts for the new day before any admit-or-block decision.
  */
 export async function evaluateSpendCapBreach(
-  deps: Partial<Omit<SpendCapAssertDeps, 'recordSpendCapBreach'>> = {},
+  deps: Partial<SpendCapGuardDeps> = {},
 ): Promise<SpendCapBreach | null> {
   return evaluateUntilUtcDayStable({ ...defaultGuardDeps, ...deps }, 2)
 }
@@ -100,6 +97,10 @@ async function evaluateSpendCapBreachForDay(
     // Usage and config are best-effort reporting inputs. An unavailable read cannot stop a call.
     return null
   }
+}
+
+export type SpendCapAssertDeps = SpendCapGuardDeps & {
+  recordSpendCapBreach: typeof recordSpendCapBreach
 }
 
 /**

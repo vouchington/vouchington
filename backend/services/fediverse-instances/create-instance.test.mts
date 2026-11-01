@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { createSlugFromTitle } from '@modules/utils'
 import { createInstanceFromHostname } from './create-instance.mts'
 import { createInstanceInTransaction } from './create-instance-helpers.mts'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
@@ -37,7 +36,8 @@ describe('createInstanceFromHostname', () => {
   })
   it('creates a new instance topic, links the hostname, and returns created', async () => {
     const user = await createTestUserDirect()
-    const hostname = `fedi-create-${randomSuffix()}.example.com`
+    const suffix = randomSuffix()
+    const hostname = `fedi-create-${suffix}.example.com`
 
     const { result, queries } = await withCapturedTestQueries(() =>
       createInstanceFromHostname(user, WEB_PROVENANCE, hostname),
@@ -48,7 +48,7 @@ describe('createInstanceFromHostname', () => {
     )
 
     expect(result.status).toBe('created')
-    expect(result.topic_slug).toBe(createSlugFromTitle(hostname.replace(/\./g, ' '), 250))
+    expect(result.topic_slug).toBe(`fedi-create-${suffix}-example-com`)
 
     const topic = await getTopicByAny(result.topic_id)
     expect(topic).not.toBeNull()
@@ -106,7 +106,7 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const suffix = randomSuffix()
     const hostname = `fedi-slug-collide-${suffix}.example.com`
-    const collidingSlug = createSlugFromTitle(hostname.replace(/\./g, ' '), 250)
+    const collidingSlug = `fedi-slug-collide-${suffix}-example-com`
 
     // Pre-occupy the slug this hostname would generate with an unrelated, non-instance topic
     // so the collision is purely on topics.slug's global uniqueness, not the hostname dedup path.
@@ -128,7 +128,7 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const suffix = randomSuffix()
     const hostname = `fedi-alias-collide-${suffix}.example.com`
-    const claimedAlias = createSlugFromTitle(hostname.replace(/\./g, ' '), 250)
+    const claimedAlias = `fedi-alias-collide-${suffix}-example-com`
     const ownerTopicId = await insertTestTopic({
       name: `Fediverse alias owner ${suffix}`,
       slug: `fedi-alias-owner-${suffix}`,
