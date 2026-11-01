@@ -36,7 +36,7 @@ export type McpUsageMeter = {
 }
 
 // Message positions, rather than JSON-RPC ids, identify refusals: a batch may reuse an id.
-export function createMcpMessageMeter() {
+function createMcpMessageMeter() {
   let messageCount = 0
   const refusedMessages = new Set<number>()
   return {
