@@ -1604,6 +1604,7 @@
 - `membership`
 - `community_bridge`
 - `remote_actor`
+- `copyright_notice`
 
 ## `retained_identity_families`
 
