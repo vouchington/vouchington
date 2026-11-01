@@ -20,6 +20,7 @@ import {
 import { deleteCopyrightCaseFinalTail } from './retention-case-purge-final.mts'
 import { deleteCopyrightCaseEmailThreadLinkPage } from './retention-case-purge-email-links.mts'
 import { COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX } from './retention-case-purge-order.mts'
+import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 
 type PageResult = { data: CopyrightCasePurgeJobData; hasMore: boolean; deferred?: boolean }
 type EligibleNotice = { id: string; jurisdiction: string; last_legal_activity_at: Date }
@@ -34,7 +35,7 @@ export async function runLockedPage(
     case 'parties': {
       if (data.phaseIndex >= COPYRIGHT_CASE_PARTY_SOURCE_COUNT)
         return {
-          data: { ...data, phase: 'verify_parties', phaseIndex: 0, afterId: null },
+          data: enterCopyrightCasePurgePhase(data, 'verify_parties'),
           hasMore: true,
         }
       const page = await retainCopyrightCasePartyPage(
@@ -65,20 +66,14 @@ export async function runLockedPage(
       return {
         data: page.hasMore
           ? { ...data, afterId: page.nextId }
-          : { ...data, phase: 'verify_children', phaseIndex: 0, afterId: null },
+          : enterCopyrightCasePurgePhase(data, 'verify_children'),
         hasMore: true,
       }
     }
     case 'verify_children': {
       if (data.phaseIndex >= COPYRIGHT_CASE_CHILD_PHASE_COUNT)
         return {
-          data: {
-            ...data,
-            phase: 'coverage',
-            phaseIndex: 0,
-            afterId: null,
-            childFrames: undefined,
-          },
+          data: enterCopyrightCasePurgePhase(data, 'coverage'),
           hasMore: true,
         }
       const page = await verifyCopyrightCaseChildPage(
@@ -101,7 +96,7 @@ export async function runLockedPage(
         await query(sql`/* finishCopyrightCaseEvidenceErasure */
           UPDATE copyright_notices SET evidence_erased_at = COALESCE(evidence_erased_at, clock_timestamp())
           WHERE id = ${data.noticeId}::uuid`)
-        return { data: { ...data, phase: 'pointers', phaseIndex: 0, afterId: null }, hasMore: true }
+        return { data: enterCopyrightCasePurgePhase(data, 'pointers'), hasMore: true }
       }
       const page = await eraseCopyrightCaseEvidencePage(
         query,
@@ -123,7 +118,7 @@ export async function runLockedPage(
     }
     case 'pointers': {
       if (data.phaseIndex >= COPYRIGHT_CASE_POINTER_PHASE_COUNT)
-        return { data: { ...data, phase: 'children', phaseIndex: 0, afterId: null }, hasMore: true }
+        return { data: enterCopyrightCasePurgePhase(data, 'children'), hasMore: true }
       const page = await cutCopyrightCasePointerPage(
         query,
         data.noticeId,
@@ -139,7 +134,7 @@ export async function runLockedPage(
     case 'children': {
       if (data.phaseIndex >= COPYRIGHT_CASE_CHILD_PHASE_COUNT)
         return {
-          data: { ...data, phase: 'final', phaseIndex: 0, afterId: null },
+          data: enterCopyrightCasePurgePhase(data, 'final'),
           hasMore: true,
         }
       if (data.phaseIndex === COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX) {
@@ -174,7 +169,7 @@ export async function runLockedPage(
     case 'final':
       await deleteCopyrightCaseFinalTail(query, data.noticeId)
       return {
-        data: { ...data, phase: 'residual_parties', phaseIndex: 0, afterId: null },
+        data: enterCopyrightCasePurgePhase(data, 'residual_parties'),
         hasMore: true,
       }
     case 'residual_parties':

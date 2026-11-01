@@ -18,7 +18,7 @@ export const COPYRIGHT_CASE_CHILD_PHASE_COUNT = COPYRIGHT_CASE_PURGE_PHASES.leng
 type ChildPage = {
   processed: number
   nextPhaseIndex: number
-  childFrames: Frame[]
+  childFrames?: Frame[]
   blocked: boolean
 }
 
@@ -34,7 +34,8 @@ async function runCopyrightCaseChildPage(
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
     throw new Error('Invalid copyright child page size')
   const phase = COPYRIGHT_CASE_PURGE_PHASES[phaseIndex] as Phase | undefined
-  if (!phase) return { processed: 0, nextPhaseIndex: phaseIndex, childFrames: [], blocked: false }
+  if (!phase)
+    return { processed: 0, nextPhaseIndex: phaseIndex, childFrames: undefined, blocked: false }
   const path = phase[1]
   const frames: Frame[] = inputFrames?.length
     ? inputFrames.map(frame => ({
@@ -69,7 +70,7 @@ async function runCopyrightCaseChildPage(
       return {
         processed: 0,
         nextPhaseIndex: phaseIndex + Number(finished),
-        childFrames: finished ? [] : frames,
+        childFrames: finished ? undefined : frames,
         blocked: false,
       }
     }
@@ -133,7 +134,7 @@ async function runCopyrightCaseChildPage(
   return {
     processed,
     nextPhaseIndex: phaseIndex + Number(finished),
-    childFrames: finished ? [] : frames,
+    childFrames: finished ? undefined : frames,
     blocked: rows[0]?.blocked ?? false,
   }
 }
