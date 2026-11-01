@@ -119,7 +119,7 @@ jobs:
     name: Harness dispatch
     needs: [select-prompt]
     if: always() && needs.select-prompt.result == 'success'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
     permissions:
       contents: read
     secrets:

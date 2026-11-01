@@ -65,7 +65,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           suite: lambdas
       - name: Upload full lambdas LCOV to GitHub (attempt 2)
@@ -73,7 +73,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           suite: lambdas
           name-suffix: -retry

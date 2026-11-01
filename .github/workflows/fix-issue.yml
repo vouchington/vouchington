@@ -41,19 +41,19 @@ jobs:
 
       - id: authorize
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
 
       - id: extract-fix
         timeout-minutes: 2
         if: steps.authorize.outputs.authorized == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-parse@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-parse@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           command: /fix
 
       - name: Acknowledge
         timeout-minutes: 2
         if: steps.extract-fix.outputs.accepted == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           command: /fix
 
@@ -79,7 +79,7 @@ jobs:
 
       - name: Capture trusted issue context
         timeout-minutes: 2
-        uses: vouchington/vouchington-tooling/.github/actions/issue-comment-context@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/issue-comment-context@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           number: ${{ github.event.issue.number }}
 
@@ -113,7 +113,7 @@ jobs:
     name: Harness dispatch
     needs: [gate, render-prompt]
     if: needs.gate.outputs.accepted == 'true'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
     permissions:
       contents: read
     secrets:
@@ -155,7 +155,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         timeout-minutes: 1
         with:
           target: ${{ github.event.issue.number }}
@@ -185,7 +185,7 @@ jobs:
     steps:
       - name: Revalidate trigger comment
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           mode: revalidate
           issue-number: ${{ github.event.issue.number }}
@@ -208,7 +208,7 @@ jobs:
       - name: Comment failure on source issue
         timeout-minutes: 1
         if: steps.check.outputs.valid == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         with:
           status: failed
           target: ${{ github.event.issue.number }}
