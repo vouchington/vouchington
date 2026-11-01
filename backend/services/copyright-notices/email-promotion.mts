@@ -29,7 +29,7 @@ import {
 } from './email-promotion-input.mts'
 import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
-import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './email-erased-key.mts'
 
 export type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 
@@ -40,8 +40,14 @@ export async function promoteCopyrightEmailIntake(
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertStatutoryEmailFields(input)
   const admitted = await admitCopyrightEmailIntake(input)
-  await assessAndEnforceCopyrightEmailIntake(input, admitted)
-  return admitted
+  if (!admitted.evidenceErased) {
+    try {
+      await assessAndEnforceCopyrightEmailIntake(input, admitted)
+    } catch (err) {
+      if (!admitted.isDuplicate || !isErasedCaseConflict(err)) throw err
+    }
+  }
+  return { noticeId: admitted.noticeId, submissionId: admitted.submissionId }
 }
 
 async function assessAndEnforceCopyrightEmailIntake(
@@ -52,9 +58,21 @@ async function assessAndEnforceCopyrightEmailIntake(
   await enforceCopyrightAssessment(assessment.id)
 }
 
-async function admitCopyrightEmailIntake(
-  input: PromoteCopyrightEmailIntakeInput,
-): Promise<{ noticeId: string; submissionId: string }> {
+function isErasedCaseConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { status?: unknown }).status === 410 &&
+    (error as { message?: unknown }).message === 'Copyright case evidence was erased'
+  )
+}
+
+async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailIntakeInput): Promise<{
+  noticeId: string
+  submissionId: string
+  evidenceErased: boolean
+  isDuplicate: boolean
+}> {
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   await using transaction = await beginTransaction()
   const { rows: existing } = await transaction<{ id: string }>(sql`
@@ -115,23 +133,24 @@ async function admitCopyrightEmailIntake(
     WHERE intake.id = ${input.intakeId}
   `)
   const intake = intakeRows[0]
-  assert(intake?.raw_storage_object_id, 404, 'Copyright email intake not found')
-  await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
-  await assertNoThreadCorrespondenceDecision(transaction, intake.id)
+  assert(intake, 404, 'Copyright email intake not found')
   const { rows: priorPromotions } = await transaction<{
     decision: string
     promoted_copyright_notice_id: string | null
     submission_id: string | null
+    evidence_erased: boolean
   }>(
     sql`/* promoteCopyrightEmailIntake:priorPromotion */
       SELECT receipt.review_decision AS decision,
-        link.copyright_notice_id AS promoted_copyright_notice_id, submission.id AS submission_id
+        link.copyright_notice_id AS promoted_copyright_notice_id, submission.id AS submission_id,
+        notice.evidence_erased_at IS NOT NULL AS evidence_erased
       FROM copyright_notice_email_intake_receipts receipt
       LEFT JOIN copyright_notice_email_intake_notice_links link
         ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
       LEFT JOIN copyright_notice_submissions submission
         ON submission.copyright_notice_id = link.copyright_notice_id
-        AND submission.kind = 'notice'
+        AND submission.kind = 'notice' AND submission.source_kind <> 'staff'
+      LEFT JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
       WHERE receipt.id = ${intake.id} AND receipt.review_decision IS NOT NULL
     `,
   )
@@ -143,7 +162,6 @@ async function admitCopyrightEmailIntake(
       409,
       'Copyright email intake was already rejected',
     )
-    // ast-grep-ignore: no-three-sequential-awaits -- the case link and reply backfill must commit before returning an idempotent promotion.
     const { rows: replayLinks } = await transaction<{
       copyright_notice_id: string
       link_kind: string
@@ -169,7 +187,7 @@ async function admitCopyrightEmailIntake(
       409,
       'Copyright email intake was linked concurrently',
     )
-    if (shouldLinkReplies)
+    if (shouldLinkReplies && !prior.evidence_erased)
       await linkPendingCopyrightEmailRepliesInTransaction(
         {
           initialIntakeId: intake.id,
@@ -186,8 +204,13 @@ async function admitCopyrightEmailIntake(
     return {
       noticeId: prior.promoted_copyright_notice_id,
       submissionId: prior.submission_id,
+      evidenceErased: prior.evidence_erased,
+      isDuplicate: true,
     }
   }
+  await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
+  await assertNoThreadCorrespondenceDecision(transaction, intake.id)
+  assert(intake.raw_storage_object_id, 404, 'Copyright email intake not found')
   await assertRecommendationScope(transaction, input.recommendationId, intake.id)
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   const notice = await createCopyrightNoticeAggregateInTransaction(
@@ -206,7 +229,7 @@ async function admitCopyrightEmailIntake(
   await transaction.commit()
   if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
   if (tokens.overflow) logCopyrightEmailTokenLockOverflow(notice.id, maxGraphRows)
-  return { noticeId: notice.id, submissionId }
+  return { noticeId: notice.id, submissionId, evidenceErased: false, isDuplicate: false }
 }
 
 function logCopyrightEmailGraphOverflow(noticeId: string, graph: CopyrightEmailThreadGraph): void {
@@ -299,11 +322,11 @@ async function recordEmailPromotion(
   const { rows } = await transaction<{
     id: string
   }>(sql`/* promoteCopyrightEmailIntake:submission */
-    SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId} AND kind = 'notice'
+    SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId}
+      AND kind = 'notice' AND source_kind <> 'staff'
   `)
   const submission = rows[0]
   assert(submission, 500, 'Email copyright submission was not created')
-  // ast-grep-ignore: no-three-sequential-awaits -- immutable evidence, human review, thread linking, and delivery obligations are ordered in one transaction.
   await transaction(sql`/* promoteCopyrightEmailIntake:evidence */
     INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
     VALUES (${submission.id}, ${intake.raw_storage_object_id}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})

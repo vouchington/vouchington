@@ -8,7 +8,7 @@ import {
 } from './email-ses-verdicts.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './email-erased-key.mts'
 import {
   copyrightEmailIntakePurpose,
   ErasedCopyrightEmailIntakeReplay,

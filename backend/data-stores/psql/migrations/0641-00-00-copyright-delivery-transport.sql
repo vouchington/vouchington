@@ -10,7 +10,7 @@ ALTER TABLE notifications
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__copyright_notice;
 CREATE INDEX idx_notifications__copyright_notice
-  ON notifications (copyright_notice_id) WHERE copyright_notice_id IS NOT NULL;
+  ON notifications (copyright_notice_id, user_id, id) WHERE copyright_notice_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_recipients (

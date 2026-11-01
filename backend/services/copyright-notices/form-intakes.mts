@@ -114,7 +114,7 @@ export async function createCopyrightFormIntake(
     id: string
   }>(sql`/* createCopyrightFormIntake:submission */
     SELECT id FROM copyright_notice_submissions
-    WHERE copyright_notice_id = ${notice.id} AND kind = 'notice'
+    WHERE copyright_notice_id = ${notice.id} AND kind = 'notice' AND source_kind <> 'staff'
   `)
   const submission = submissionRows[0]
   assert(submission, 500, 'Copyright notice submission was not created')

@@ -143,7 +143,7 @@ async function createAcceptedNoticeFixture() {
     claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'notice' },
+    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
     targets: [
       {
         placementId: placement.placement_id,

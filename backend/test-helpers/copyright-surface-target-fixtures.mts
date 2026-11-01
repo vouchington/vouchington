@@ -167,7 +167,7 @@ export async function createTestCopyrightRestrictionForImage(fixture: Fixture, a
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
-      sourceKind: 'staff',
+      sourceKind: 'email',
       bodyCiphertext: `body-${crypto.randomUUID()}`,
     },
     targets: [resolved],

@@ -9,7 +9,7 @@ import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
-import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './email-erased-key.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { createGuestTerritorialComplaintFromEmail } from './territorial-complaint-email.mts'
 

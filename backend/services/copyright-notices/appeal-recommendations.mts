@@ -101,8 +101,8 @@ async function appendCopyrightAppealRecommendation(input: {
     WHERE submission.id = ${input.submissionId}
       AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
       AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_retention_erasures erased
-        WHERE erased.copyright_notice_id = submission.copyright_notice_id
+        SELECT 1 FROM copyright_notices erased
+        WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
       )
     ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
   `)

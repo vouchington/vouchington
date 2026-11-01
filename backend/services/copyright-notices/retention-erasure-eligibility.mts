@@ -70,10 +70,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
     ), eligible AS (
       SELECT notice.id FROM copyright_notices notice
       WHERE notice.jurisdiction = 'us_dmca'
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_retention_erasures erased
-          WHERE erased.copyright_notice_id = notice.id
-        )
+        AND notice.evidence_erased_at IS NULL
         AND NOT EXISTS (SELECT 1 FROM blocked WHERE blocked.notice_id = notice.id)
         AND GREATEST(
           notice.created_at,

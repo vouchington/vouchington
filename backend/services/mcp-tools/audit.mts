@@ -177,13 +177,14 @@ export async function recordMcpCallAudit(
            hold_assessment.copyright_notice_id, repeat_incident.copyright_notice_id),
          email_intake.id, repeat_review.id, account_user.id
        ) = 1
-         AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
-           WHERE erased.copyright_notice_id = COALESCE(
+         AND NOT EXISTS (SELECT 1 FROM copyright_notices erased
+           WHERE erased.id = COALESCE(
              notice.id, form_intake.copyright_notice_id, submission.copyright_notice_id,
-             hold_assessment.copyright_notice_id, repeat_incident.copyright_notice_id))
+             hold_assessment.copyright_notice_id, repeat_incident.copyright_notice_id)
+             AND erased.evidence_erased_at IS NOT NULL)
          AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-           JOIN copyright_notice_retention_erasures erased
-             ON erased.copyright_notice_id = link.copyright_notice_id
+           JOIN copyright_notices erased
+             ON erased.id = link.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
            WHERE link.copyright_notice_email_intake_id = email_intake.id)`,
       [
         context.actorUserId,

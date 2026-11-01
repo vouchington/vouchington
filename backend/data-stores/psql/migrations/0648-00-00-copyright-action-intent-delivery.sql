@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE next_state copyright_notice_action_intent_states;
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   next_state := CASE WHEN NEW.completed_at IS NOT NULL THEN NEW.completed_at_reason WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_action_intent_states ELSE 'pending'::copyright_notice_action_intent_states END;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';

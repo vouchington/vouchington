@@ -7,6 +7,7 @@ import { S3ImagesClient } from '@modules/aws'
 
 // S3 DeleteObjects accepts at most 1,000 keys: https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
 const DELETE_BATCH_SIZE = 1000
+const REQUEST_TIMEOUT_MS = 20_000
 
 /** Delete one physical version page for an exact key. A later call restarts at the remaining head. */
 export async function deleteCopyrightEvidenceObjectVersionPage(
@@ -23,6 +24,7 @@ export async function deleteCopyrightEvidenceObjectVersionPage(
       Prefix: key,
       MaxKeys: Math.min(workLimit, DELETE_BATCH_SIZE),
     }),
+    { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
   )
   const versions: ObjectIdentifier[] = []
   for (const entry of [...(page.Versions ?? []), ...(page.DeleteMarkers ?? [])]) {
@@ -38,6 +40,7 @@ export async function deleteCopyrightEvidenceObjectVersionPage(
       Prefix: key,
       MaxKeys: 1,
     }),
+    { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
   )
   return {
     hasMore: [...(confirmation.Versions ?? []), ...(confirmation.DeleteMarkers ?? [])].some(
@@ -79,6 +82,7 @@ async function deleteVersions(bucket: string, versions: ObjectIdentifier[]): Pro
         Bucket: bucket,
         Delete: { Objects: versions.slice(start, start + DELETE_BATCH_SIZE), Quiet: true },
       }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
     )
     // DeleteObjects answers 200 even when individual versions were refused (missing IAM, hold).
     if (result.Errors?.length) {

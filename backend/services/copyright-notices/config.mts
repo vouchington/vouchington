@@ -30,7 +30,7 @@ export const copyrightConfig = new DynamicConfig({
     automaticProvisionalWithholdingSince: '',
     // 0 means unset: no review-target page until an operator records an approved target.
     reviewTargetMinutes: 0,
-    evidenceRetentionDeletion: false,
+    evidenceRetentionDeletion: true,
     // 0 means unset: nothing is deleted until the owner approves a retention period, even when the
     // switch is on.
     evidenceRetentionDays: 0,

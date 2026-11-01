@@ -13,8 +13,9 @@ async function lockCopyrightRetentionPartyAccounts(
   transaction: TransactionQuery,
   noticeId: string,
 ): Promise<void> {
-  const statement = sql`/* listCopyrightRetentionParties */
-    SELECT DISTINCT party.user_id FROM (
+  const statement = sql`/* retainCopyrightCasePartiesBeforeEvidenceErasure */
+    INSERT INTO copyright_notice_party_identities (copyright_notice_id, account_user_id)
+    SELECT DISTINCT ${noticeId}::uuid, party.user_id FROM (
       SELECT claimant_user_id AS user_id FROM copyright_notices WHERE id = ${noticeId}
       UNION ALL
       SELECT submitted_by_id FROM copyright_notice_submissions
@@ -31,9 +32,13 @@ async function lockCopyrightRetentionPartyAccounts(
       WHERE target.copyright_notice_id = ${noticeId}
     ) party
     WHERE party.user_id IS NOT NULL
-    ORDER BY party.user_id`)
-  const { rows } = await transaction<{ user_id: string }>(statement)
-  for (const { user_id: userId } of rows) {
+    ON CONFLICT (copyright_notice_id, account_user_id) DO NOTHING`)
+  await transaction(statement)
+  const { rows } = await transaction<{ account_user_id: string }>(sql`
+    /* listCopyrightRetentionParties */
+    SELECT account_user_id FROM copyright_notice_party_identities
+    WHERE copyright_notice_id = ${noticeId} ORDER BY account_user_id`)
+  for (const { account_user_id: userId } of rows) {
     // oxlint-disable-next-line no-await-in-loop -- locks must be taken one at a time in id order.
     await transaction(sql`/* lockCopyrightRetentionParty */
       SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`)

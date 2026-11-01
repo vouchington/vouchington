@@ -15,6 +15,7 @@ import {
 } from './restriction-reversal-sources-sql.mts'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { recordCopyrightRepeatInfringerTargetProvenance } from './repeat-infringer-target-provenance.mts'
+import { retainCopyrightCaseIncidentParties } from './retention-parties-admission.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
@@ -97,7 +98,12 @@ export async function syncCopyrightRepeatInfringerIncidents(
     UNION ALL
     SELECT account_user_id, false FROM cleared
   `)
-  await transaction(statement)
+  const { rows: changedIncidents } = await transaction<{ account_user_id: string }>(statement)
+  await retainCopyrightCaseIncidentParties(
+    transaction,
+    noticeId,
+    changedIncidents.map(row => row.account_user_id),
+  )
   await recordCopyrightRepeatInfringerTargetProvenance(noticeId, transaction)
   if (accountIds.length === 0) return
   await transaction(sql`

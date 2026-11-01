@@ -40,7 +40,7 @@ export async function createTestLiftNotice(
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
-      sourceKind: 'staff',
+      sourceKind: options.claimantUserId ? 'signed_in_form' : 'email',
       bodyCiphertext: `body-${crypto.randomUUID()}`,
     },
     targets,

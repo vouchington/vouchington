@@ -4,17 +4,7 @@
 -- loses claimant personal data and stored evidence. Legal-record guards stay in force; they allow a
 -- transaction that sets app.copyright_retention_erasure to overwrite only the columns listed in
 -- fn_copyright_retention_erasable_columns. Rows are overwritten in place, never deleted, so every
--- foreign key and immutability trigger keeps holding.
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE copyright_notice_retention_erasures (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id UUID NOT NULL UNIQUE REFERENCES copyright_notices (id) ON DELETE RESTRICT,
-  retention_days INTEGER NOT NULL CHECK (retention_days > 0),
-  erased_object_count INTEGER NOT NULL CHECK (erased_object_count >= 0),
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
-
-CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR DELETE ON copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+-- foreign key and immutability trigger keeps holding until final case deletion.
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_copyright_retention_erasable_columns(table_name text)
@@ -61,11 +51,6 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       = (new_row - fn_copyright_retention_erasable_columns(table_name))
 $$;
 
-COMMENT ON TABLE copyright_notice_retention_erasures IS 'Append-only record that a case''s personal data and stored evidence were erased after the retention period. Its presence ends every reader and sweep touch of the case''s erased columns; the case keeps its legal skeleton and repeat-infringer facts.';
-COMMENT ON COLUMN copyright_notice_retention_erasures.copyright_notice_id IS 'The erased case; one row per case, so the sweep is idempotent.';
-COMMENT ON COLUMN copyright_notice_retention_erasures.retention_days IS 'Owner-approved retention period, in days, that was in force when the case was erased.';
-COMMENT ON COLUMN copyright_notice_retention_erasures.erased_object_count IS 'Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written.';
-COMMENT ON COLUMN copyright_notice_retention_erasures.created_at IS 'Time the case was erased, derived from the UUIDv7 id; the row is append-only.';
 COMMENT ON FUNCTION fn_copyright_retention_erasable_columns(text) IS 'Columns, per table, that a retention-erasure transaction may overwrite in place; NULL for any table that is never erased. The TypeScript erasure spec must list exactly these columns.';
 COMMENT ON FUNCTION fn_copyright_retention_erasure_permitted(text, jsonb, jsonb) IS 'True only inside a transaction that set app.copyright_retention_erasure to on and only when the update changes nothing outside the table''s erasable columns; legal-record guards call it before rejecting an update.';
 
@@ -84,15 +69,22 @@ BEGIN
         WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)
     ORDER BY notice.id
   LOOP
-    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
+    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR UPDATE;
   END LOOP;
-  IF EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
-    WHERE erased.copyright_notice_id = NEW.copyright_notice_id
-      OR erased.copyright_notice_id IN (
+  IF EXISTS (SELECT 1 FROM copyright_notices erased
+    WHERE erased.evidence_erased_at IS NOT NULL
+      AND (erased.id = NEW.copyright_notice_id
+      OR erased.id IN (
         SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)) THEN
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id))) THEN
     RETURN NULL;
   END IF;
+  UPDATE copyright_notices notice SET last_legal_activity_at =
+    GREATEST(notice.last_legal_activity_at, clock_timestamp())
+    WHERE notice.id = NEW.copyright_notice_id
+      OR notice.id IN (SELECT link.copyright_notice_id
+        FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id);
   RETURN NEW;
 END;
 $$;
@@ -106,6 +98,7 @@ CREATE OR REPLACE FUNCTION fn_reject_copyright_decision_rationale_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE retention_cutoff TIMESTAMPTZ;
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(
     TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
     RETURN NEW;
@@ -132,3 +125,75 @@ BEFORE UPDATE OR DELETE ON copyright_decision_rationales
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation();
 
 COMMENT ON FUNCTION fn_reject_copyright_decision_rationale_mutation() IS 'Permits only controlled case redaction or bounded retention deletion of eligible legal rationale.';
+
+-- Receipt-owned private rows have no case FK. Serialize their current writers
+-- with the linked case before each new row, so a page cannot pass an old cursor
+-- and later miss new ciphertext after the evidence marker is committed.
+CREATE FUNCTION fn_fence_copyright_linked_email_private_write()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  receipt_id uuid;
+  work_id uuid;
+  case_id uuid;
+  erased_at timestamptz;
+BEGIN
+  CASE TG_ARGV[0]
+    WHEN 'intake', 'receipt' THEN
+      receipt_id := NULLIF(to_jsonb(NEW) ->> TG_ARGV[1], '')::uuid;
+    WHEN 'work' THEN
+      work_id := NULLIF(to_jsonb(NEW) ->> TG_ARGV[1], '')::uuid;
+    WHEN 'attempt' THEN
+      SELECT attempt.work_item_id INTO work_id FROM copyright_notice_delivery_attempts attempt
+        WHERE attempt.id = NULLIF(to_jsonb(NEW) ->> TG_ARGV[1], '')::uuid;
+    ELSE RAISE EXCEPTION 'unsupported copyright linked-email write source';
+  END CASE;
+  IF work_id IS NOT NULL THEN
+    SELECT work.copyright_notice_email_intake_receipt_id INTO receipt_id
+    FROM copyright_notice_delivery_work_items work WHERE work.id = work_id;
+  END IF;
+  IF receipt_id IS NULL THEN RETURN NEW; END IF;
+  SELECT notice.id, notice.evidence_erased_at INTO case_id, erased_at
+    FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
+    WHERE link.copyright_notice_email_intake_id = receipt_id
+    FOR UPDATE OF notice;
+  IF case_id IS NULL THEN RETURN NEW; END IF;
+  IF erased_at IS NOT NULL THEN
+    RAISE EXCEPTION 'erased copyright case cannot acquire private email facts'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  UPDATE copyright_notices SET last_legal_activity_at =
+    GREATEST(last_legal_activity_at, clock_timestamp()) WHERE id = case_id;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_fence_copyright_email_parse_case
+  BEFORE INSERT ON copyright_notice_email_intake_parses FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
+CREATE TRIGGER trigger_fence_copyright_email_attachment_case
+  BEFORE INSERT ON copyright_notice_email_intake_attachments FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
+CREATE TRIGGER trigger_fence_copyright_email_reference_case
+  BEFORE INSERT ON copyright_notice_email_thread_references FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id');
+CREATE TRIGGER trigger_fence_copyright_email_recommendation_case
+  BEFORE INSERT ON copyright_notice_email_intake_recommendations FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+CREATE TRIGGER trigger_fence_copyright_email_review_case
+  BEFORE INSERT ON copyright_notice_email_intake_reviews FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+CREATE TRIGGER trigger_fence_copyright_email_recommendation_identity_case
+  BEFORE INSERT ON copyright_notice_email_intake_recommendation_identities FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+CREATE TRIGGER trigger_fence_copyright_email_delivery_work_case
+  BEFORE INSERT ON copyright_notice_delivery_work_items FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id');
+CREATE TRIGGER trigger_fence_copyright_email_delivery_recipient_case
+  BEFORE INSERT ON copyright_notice_delivery_recipients FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('work', 'copyright_notice_delivery_work_item_id');
+CREATE TRIGGER trigger_fence_copyright_email_delivery_attempt_case
+  BEFORE INSERT ON copyright_notice_delivery_attempts FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('work', 'work_item_id');
+CREATE TRIGGER trigger_fence_copyright_email_delivery_result_case
+  BEFORE INSERT ON copyright_notice_delivery_attempt_results FOR EACH ROW
+  EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('attempt', 'attempt_id');

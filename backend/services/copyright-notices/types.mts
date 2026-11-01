@@ -42,7 +42,7 @@ export type CreateCopyrightNoticeAggregateInput = {
   targets: CopyrightNoticeTargetInput[]
   initialSubmission: {
     kind: 'notice'
-    sourceKind: CopyrightSubmissionSourceKind
+    sourceKind: Exclude<CopyrightSubmissionSourceKind, 'staff'>
     bodyCiphertext: string
   }
 }

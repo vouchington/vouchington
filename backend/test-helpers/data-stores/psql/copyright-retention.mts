@@ -78,15 +78,13 @@ export async function readCopyrightRetentionSkeleton(
   return tables
 }
 
-export async function readCopyrightRetentionMarker(
-  noticeId: string,
-): Promise<{ retention_days: number; erased_object_count: number } | null> {
-  const { rows } = await read<{ retention_days: number; erased_object_count: number }>(
+export async function readCopyrightRetentionMarker(noticeId: string): Promise<Date | null> {
+  const { rows } = await read<{ evidence_erased_at: Date | null }>(
     sql`/* readCopyrightRetentionMarker */
-      SELECT retention_days, erased_object_count FROM copyright_notice_retention_erasures
-      WHERE copyright_notice_id = ${noticeId}`,
+      SELECT evidence_erased_at FROM copyright_notices
+      WHERE id = ${noticeId}`,
   )
-  return rows[0] ?? null
+  return rows[0]?.evidence_erased_at ?? null
 }
 
 /**

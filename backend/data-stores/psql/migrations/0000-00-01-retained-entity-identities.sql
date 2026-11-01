@@ -2,11 +2,15 @@
 CREATE TABLE IF NOT EXISTS retained_user_identities (
   id UUID PRIMARY KEY,
   last_legal_preservation_hold_released_at TIMESTAMPTZ,
-  purged_at TIMESTAMPTZ
+  purged_at TIMESTAMPTZ,
+  copyright_case_clock_sync_pending BOOLEAN NOT NULL DEFAULT false
 );
 COMMENT ON TABLE retained_user_identities IS 'Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.';
 COMMENT ON COLUMN retained_user_identities.last_legal_preservation_hold_released_at IS 'Latest released account legal hold, retained after bounded deletion of its audit row so case retention still waits its full legal period.';
 COMMENT ON COLUMN retained_user_identities.purged_at IS 'Final hard deletion time of the account, retained for the legal clock of copyright cases naming this party.';
+COMMENT ON COLUMN retained_user_identities.copyright_case_clock_sync_pending IS 'Fences case purge while this account’s latest hold or purge clock is propagated through bounded notice pages.';
+CREATE INDEX IF NOT EXISTS idx_retained_user_identities__copyright_clock_pending
+  ON retained_user_identities (id) WHERE copyright_case_clock_sync_pending;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retained_membership_identities (

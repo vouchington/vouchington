@@ -7,9 +7,10 @@ import { CONFLICT } from '@modules/on-error/error-codes'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { isAdminUser } from './authorization.mts'
+import { parsePreservationHoldReference } from './preservation-hold-reference.mts'
 import type { PrivateUser } from './types.mts'
 
-const REFERENCE_MAX_LENGTH = 500
+export { parsePreservationHoldReference } from './preservation-hold-reference.mts'
 const HISTORY_LIMIT = 100
 
 type HoldRow = {
@@ -74,18 +75,6 @@ async function lockPreservationHoldUser(
   return rows[0]
 }
 
-/** The reference is a short matter identifier; the message never echoes the submitted text. */
-export function parsePreservationHoldReference(reference: unknown): string {
-  const trimmed = typeof reference === 'string' ? reference.trim() : ''
-  if (!trimmed || trimmed.length > REFERENCE_MAX_LENGTH) {
-    throw createHttpError(
-      422,
-      `Reference is required and must be at most ${REFERENCE_MAX_LENGTH} characters`,
-    )
-  }
-  return trimmed
-}
-
 /**
  * Places the account's single open hold. The placement takes the account-deletion advisory lock,
  * accepts a soft-deleted account, and refuses an account whose users row has already been purged.
@@ -110,10 +99,18 @@ export async function placeUserPreservationHold(
   await query(sql`/* lockCopyrightThreadPreservationGate:place */
     SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
-    INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
-    VALUES (${holdId}, ${userId}, ${currentUser.id}, ${ciphertext})
-    ON CONFLICT (account_user_id) WHERE released_at IS NULL DO NOTHING
-    RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
+    WITH placed AS (
+      INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
+      VALUES (${holdId}, ${userId}, ${currentUser.id}, ${ciphertext})
+      ON CONFLICT (account_user_id) WHERE released_at IS NULL DO NOTHING
+      RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
+    ), marked AS (
+      UPDATE retained_user_identities identity
+      SET copyright_case_clock_sync_pending = true
+      FROM placed WHERE identity.id = placed.account_user_id
+      RETURNING identity.id
+    )
+    SELECT placed.* FROM placed JOIN marked ON marked.id = placed.account_user_id
   `)
   const row = rows[0]
   if (!row) throw createCodedError(409, 'User already has an open preservation hold', CONFLICT)
@@ -149,7 +146,8 @@ export async function releaseUserPreservationHold(
     ), clocked AS (
       UPDATE retained_user_identities identity
       SET last_legal_preservation_hold_released_at = GREATEST(
-        identity.last_legal_preservation_hold_released_at, released.released_at)
+        identity.last_legal_preservation_hold_released_at, released.released_at),
+        copyright_case_clock_sync_pending = true
       FROM released WHERE identity.id = released.account_user_id
       RETURNING identity.id
     )

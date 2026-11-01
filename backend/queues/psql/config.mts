@@ -1,6 +1,6 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
-import { psqlQueueConfig } from './enqueues/ordering-config.mts'
+import { getCopyrightCasePurgeConcurrency, psqlQueueConfig } from './enqueues/ordering-config.mts'
 import type { OperationalTombstoneFamily } from './types.mts'
 import type { JobOptions } from 'glide-mq'
 
@@ -11,6 +11,13 @@ export const PRIORITY_DEFAULT = 10
 export const CREATE_PARTITIONS_JOB_NAME = 'createPartitions'
 export const CLEANUP_PARTITIONS_JOB_NAME = 'cleanupPartitions'
 export const DATA_RETENTION_JOB_NAME = 'dataRetentionCleanup'
+export const COPYRIGHT_CASE_PURGE_JOB_NAME = 'copyright.case-purge'
+export const COPYRIGHT_ACCOUNT_CLOCK_SYNC_JOB_NAME = 'copyright.account-clock-sync'
+export const copyrightCasePurgeJobId = (noticeId: string): string =>
+  `copyright__case_purge__${noticeId}`
+export const copyrightAccountClockSyncJobId = (accountUserId: string): string =>
+  `copyright__account_clock_sync__${accountUserId}`
+
 export const VOTE_RETENTION_CONTINUATION_JOB_NAME = 'continueVoteRetentionCleanup'
 export const DATA_RETENTION_RETRY_OPTIONS = {
   attempts: 3,
@@ -78,6 +85,34 @@ export const PSQL_RETRY_OPTIONS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
 } satisfies JobOptions
+
+export function getCopyrightCasePurgeJobOptions(noticeId: string): JobOptions {
+  const jobId = copyrightCasePurgeJobId(noticeId)
+  return {
+    ...PSQL_RETRY_OPTIONS,
+    jobId,
+    priority: PRIORITY_DEFAULT,
+    deduplication: { id: jobId, mode: 'simple' },
+    ordering: {
+      key: `copyright:case-purge:${noticeId}`,
+      concurrency: getCopyrightCasePurgeConcurrency(),
+    },
+  }
+}
+
+export function getCopyrightAccountClockSyncJobOptions(accountUserId: string): JobOptions {
+  const jobId = copyrightAccountClockSyncJobId(accountUserId)
+  return {
+    ...PSQL_RETRY_OPTIONS,
+    jobId,
+    priority: PRIORITY_DEFAULT,
+    deduplication: { id: jobId, mode: 'simple' },
+    ordering: {
+      key: `copyright:account-clock-sync:${accountUserId}`,
+      concurrency: getCopyrightCasePurgeConcurrency(),
+    },
+  }
+}
 
 export const MODERATION_RETENTION_JOB_NAME = 'moderationRetentionCleanup'
 export const MODERATION_RETENTION_SCHEDULER_ID = 'moderation-retention-cleanup-daily'

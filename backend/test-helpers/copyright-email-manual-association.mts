@@ -70,20 +70,19 @@ export function insertCopyrightEmailManualAssociationEvent(
   `)
 }
 
-/** Hold the case row as the retention sweep does before it records the erasure marker. */
+/** Hold the case row as the retention sweep does before recording erasure. */
 export async function markTestCopyrightNoticeErased(
   noticeId: string,
   transaction: TransactionQuery,
 ): Promise<void> {
   await transaction(sql`/* markTestCopyrightNoticeErased:lock */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
-  await transaction(sql`/* markTestCopyrightNoticeErased:marker */
-    INSERT INTO copyright_notice_retention_erasures
-      (copyright_notice_id, retention_days, erased_object_count)
-    VALUES (${noticeId}, 1, 0)`)
+  await transaction(sql`/* markTestCopyrightNoticeErased:fact */
+    UPDATE copyright_notices SET evidence_erased_at = clock_timestamp()
+    WHERE id = ${noticeId}`)
 }
 
-/** Commit the retained erasure marker before a new inbound reply is parsed. */
+/** Commit the erasure fact before a new inbound reply is parsed. */
 export async function markTestCopyrightNoticeErasedAndCommit(noticeId: string): Promise<void> {
   await using transaction = await beginTransaction()
   await markTestCopyrightNoticeErased(noticeId, transaction)

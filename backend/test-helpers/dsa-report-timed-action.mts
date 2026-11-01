@@ -32,7 +32,7 @@ export async function createTestTimedDsaReportAction(input: {
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
-      sourceKind: 'staff',
+      sourceKind: 'email',
       bodyCiphertext: `notice-${crypto.randomUUID()}`,
     },
     targets: [

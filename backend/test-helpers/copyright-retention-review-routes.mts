@@ -46,13 +46,12 @@ export async function createRetentionReviewComplaintCase() {
   }
 }
 
-/** Marks a unique test case as already erased, exercising the same immutable marker readers see. */
+/** Marks a unique test case as already erased. */
 export async function markCopyrightReviewCaseExpired(noticeId: string): Promise<void> {
   await using query = await beginTransaction()
   await query(sql`/* markCopyrightReviewCaseExpired */
-    INSERT INTO copyright_notice_retention_erasures (
-      copyright_notice_id, retention_days, erased_object_count
-    ) VALUES (${noticeId}, 1, 0)`)
+    UPDATE copyright_notices SET evidence_erased_at = clock_timestamp()
+    WHERE id = ${noticeId}`)
   await query.commit()
 }
 

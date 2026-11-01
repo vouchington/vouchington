@@ -38,10 +38,7 @@ describe('copyright storage-object ownership locks', () => {
       await race.lockWait
       await race.commitWriter()
       await expect(race.erasure).resolves.toBe('erased')
-      await expect(readCopyrightRetentionMarker(race.firstNoticeId)).resolves.toEqual({
-        retention_days: retentionDays,
-        erased_object_count: 0,
-      })
+      await expect(readCopyrightRetentionMarker(race.firstNoticeId)).resolves.toBeInstanceOf(Date)
       const retained = await getCopyrightNoticePrivateAggregate(race.secondNoticeId)
       expect(retained?.evidenceArtifacts).toEqual([
         expect.objectContaining({ storage_object_id: race.storageObjectId }),

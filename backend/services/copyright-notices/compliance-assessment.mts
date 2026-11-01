@@ -26,8 +26,10 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     source_kind: CopyrightSubmissionSourceKind
     current_assessment_identity_id: string | null
     automated_statutory_fields_complete: boolean
+    evidence_erased: boolean
   }>(sql`/* appendCopyrightSubmissionAssessment:lockSubmission */
     SELECT s.copyright_notice_id, s.kind, s.source_kind, s.current_assessment_identity_id,
+      n.evidence_erased_at IS NOT NULL AS evidence_erased,
       intake.requester_user_id IS NOT NULL
         AND n.jurisdiction = 'us_dmca'
         AND char_length(n.claimant_contact_ciphertext) > 0
@@ -58,6 +60,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     FOR UPDATE OF n, s
   `)
   assert(submissionRows[0], 404, 'Copyright submission not found')
+  assert(!submissionRows[0].evidence_erased, 410, 'Copyright case evidence was erased')
   assert(
     submissionRows[0].source_kind === 'signed_in_form' || input.currentUser !== null,
     403,

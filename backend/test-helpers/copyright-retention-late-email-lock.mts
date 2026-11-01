@@ -47,10 +47,9 @@ async function writeAfterRetentionMarker<Result>(
     async waitForLock => {
       const lateWrite = write()
       await waitForLock(lateWrite)
-      await holder(sql`/* testLateCopyrightEmail:marker */
-        INSERT INTO copyright_notice_retention_erasures
-          (copyright_notice_id, retention_days, erased_object_count)
-        VALUES (${noticeId}, 30, 0)`)
+      await holder(sql`/* testLateCopyrightEmail:fact */
+        UPDATE copyright_notices SET evidence_erased_at = clock_timestamp()
+        WHERE id = ${noticeId}`)
       await holder.commit()
       return lateWrite
     },

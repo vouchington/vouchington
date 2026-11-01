@@ -35,7 +35,7 @@ import {
   NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
   NOTIFICATIONS_REPLAY_MEDIA_REGISTRY_JOB,
   NOTIFICATIONS_SUBMIT_DSA_JOB,
-  NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
+  NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import * as processors from './processors.mts'
 import { enqueueVisibilityContinuations } from './processors/visibility-continuations.mts'
@@ -157,9 +157,9 @@ export const notificationsHandlers = [
     NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
     processors.processCheckCopyrightReviewTarget,
   ),
-  backgroundSweepHandler(
-    NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
-    processors.processSweepCopyrightEvidenceRetention,
+  backgroundHandler(
+    NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
+    processors.processCopyrightCasePurgeAdmission,
   ),
   backgroundDataHandler(
     NOTIFICATIONS_SUBMIT_DSA_JOB,

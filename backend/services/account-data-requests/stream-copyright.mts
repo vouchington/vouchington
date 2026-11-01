@@ -26,8 +26,7 @@ export async function* streamCopyrightFiledNotices(userId: string): CopyrightExp
       intake.idempotency_key, intake.has_good_faith_belief,
       intake.has_accuracy_authority_under_penalty_of_perjury, intake.electronic_signature_ciphertext,
       submission.body_ciphertext,
-      (SELECT erasure.created_at FROM copyright_notice_retention_erasures erasure
-        WHERE erasure.copyright_notice_id = notice.id) AS erased_by_retention_at
+      notice.evidence_erased_at AS erased_by_retention_at
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
     JOIN copyright_notice_submissions submission
