@@ -64,17 +64,16 @@ export function createApiRequestGuardedListener(
   )
 }
 
-export async function verifyRequestDeviceIdentity(
+async function verifyRequestDeviceIdentity(
   deviceToken: string,
   sessionToken: string | undefined,
-  dependencies: {
-    verifyDevice: typeof verifyDeviceJwt
-    verifyPair: typeof verifyDeviceAndSessionTokens
-  } = { verifyDevice: verifyDeviceJwt, verifyPair: verifyDeviceAndSessionTokens },
 ): Promise<Pick<DeviceTokenPayload, 'did' | 'dc'> | null> {
-  const paired = sessionToken ? await dependencies.verifyPair({ deviceToken, sessionToken }) : null
-  const verified = paired || (await dependencies.verifyDevice(deviceToken))
-  return verified ? { did: verified.did, dc: verified.dc } : null
+  const paired = sessionToken
+    ? await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
+    : false
+  const verified = paired || (await verifyDeviceJwt(deviceToken))
+  if (!verified) return null
+  return { did: verified.did, dc: verified.dc }
 }
 
 applyContext(app)
