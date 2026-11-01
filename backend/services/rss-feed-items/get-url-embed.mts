@@ -67,11 +67,9 @@ export async function getUrlEmbedByUrlId(
         -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through a join and may differ from the supplied URL; no bound canonical URL ID exists in this query
         FROM crawls c
         WHERE c.url_id = cu.id
-          AND c.completed_at IS NOT NULL
-          AND c.network_error IS NULL
+          AND c.completed_at IS NOT NULL AND c.network_error IS NULL
           AND c.response_status_code BETWEEN 200 AND 299
-        ORDER BY c.id DESC
-        LIMIT 1
+        ORDER BY c.id DESC LIMIT 1
       ) c
     ),
     embed_crawl AS (
@@ -137,25 +135,19 @@ export async function getUrlEmbedByUrlId(
         -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through a join and may differ from the supplied URL; no bound canonical URL ID exists in this query
         FROM crawls c
         WHERE c.url_id = cu.id
-          AND c.completed_at IS NOT NULL
-          AND c.network_error IS NULL
+          AND c.completed_at IS NOT NULL AND c.network_error IS NULL
           AND c.response_status_code BETWEEN 200 AND 299
           AND (
             c.embed_metadata IS NOT NULL
             OR EXISTS (
-              SELECT 1
-              FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-              WHERE LOWER(tag.key) IN (
-                'og:image', 'twitter:image', 'og:audio', 'og:title', 'twitter:title',
-                'og:description', 'twitter:description', 'og:site_name'
-              )
-                AND jsonb_typeof(tag.value) = 'string'
-                AND NULLIF(TRIM(tag.value #>> '{}'), '') IS NOT NULL
+              SELECT 1 FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
+              WHERE LOWER(tag.key) IN ('og:image', 'twitter:image', 'og:audio', 'og:title',
+                'twitter:title', 'og:description', 'twitter:description', 'og:site_name')
+                AND jsonb_typeof(tag.value) = 'string' AND NULLIF(TRIM(tag.value #>> '{}'), '') IS NOT NULL
             )
             OR c.embed_oembed_resolved_at IS NOT NULL
           )
-        ORDER BY c.id DESC
-        LIMIT 1
+        ORDER BY c.id DESC LIMIT 1
       ) c
     )
     SELECT
