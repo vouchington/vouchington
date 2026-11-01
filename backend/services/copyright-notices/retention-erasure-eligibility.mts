@@ -60,6 +60,8 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
       UNION ALL
       SELECT notice_id FROM preservation WHERE released_at IS NULL
       UNION ALL
+      SELECT copyright_notice_id FROM copyright_case_preservation_holds WHERE released_at IS NULL
+      UNION ALL
       SELECT copyright_notice_id FROM copyright_notice_delivery_work_items
       WHERE copyright_notice_id IS NOT NULL AND state IN ('pending', 'claimed')
       UNION ALL
@@ -84,6 +86,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
           (SELECT max(incident.updated_at) FROM copyright_repeat_infringer_incidents incident
            WHERE incident.copyright_notice_id = notice.id),
           (SELECT max(held.released_at) FROM preservation held WHERE held.notice_id = notice.id),
+          (SELECT max(held.released_at) FROM copyright_case_preservation_holds held WHERE held.copyright_notice_id = notice.id),
           (SELECT max(GREATEST(intake.received_at, link.created_at))
             FROM copyright_notice_email_intake_notice_links link
             JOIN copyright_notice_email_intakes intake

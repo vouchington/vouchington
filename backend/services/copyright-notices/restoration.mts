@@ -1,3 +1,7 @@
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -28,12 +32,8 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   await transaction(sql`/* createEligibleCopyrightRestoreIntent:placementAdvisoryLock */
     SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
   `)
-  const { rows: noticeLocks } = await transaction<{ id: string }>(
-    sql`/* createEligibleCopyrightRestoreIntent:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
-  `,
-  )
-  assert(noticeLocks[0], 404, 'Copyright notice restoration record not found')
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
+  assert(lockedNotice, 404, 'Copyright notice restoration record not found')
   const { rows } = await transaction<{
     human_reviewed_at: Date | null
     placement_id: string
@@ -132,11 +132,14 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   `)
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
+  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle event insert must precede the clock advance in this locked transaction.
+  await recordCounterNoticeRestoration(transaction, input)
   await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
+    INSERT INTO copyright_notice_lifecycle_changes
+      (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
   `)
-  await recordCounterNoticeRestoration(transaction, input)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   void enqueueApplyCopyrightAction(intent.id)
   return intent

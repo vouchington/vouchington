@@ -40919,6 +40919,77 @@
     }
   },
   "operations": {
+    "POST:/api/v1/copyright-notices/:id/escalations/:escalationId/closures": {
+      "path": {
+        "properties": {
+          "escalationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "escalationId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/supervised-complaints/:complaintId/resolutions": {
+      "path": {
+        "properties": {
+          "complaintId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "complaintId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/preservation-holds": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["litigation_threat", "regulator_request", "court_request"],
+            "type": "string"
+          }
+        },
+        "required": ["kind"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/preservation-holds/:holdId/releases": {
+      "path": {
+        "properties": {
+          "holdId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "holdId"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/auth/re-auth/passkeys/options": {
       "body": {
         "type": "object",
@@ -51861,6 +51932,78 @@
     }
   },
   "responses": {
+    "POST:/api/v1/copyright-notices/:id/escalations/:escalationId/closures": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_territorial_escalation_closure": {
+          "additionalProperties": false,
+          "properties": {
+            "closed_at": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          "required": ["closed_at"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_territorial_escalation_closure"],
+      "type": "object"
+    },
+    "POST:/api/v1/copyright-notices/:id/supervised-complaints/:complaintId/resolutions": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_eu_supervised_complaint_resolution": {
+          "additionalProperties": false,
+          "properties": {
+            "resolved_at": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          "required": ["resolved_at"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_eu_supervised_complaint_resolution"],
+      "type": "object"
+    },
+    "POST:/api/v1/copyright-notices/:id/preservation-holds": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_case_preservation_hold": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": ["id"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_case_preservation_hold"],
+      "type": "object"
+    },
+    "POST:/api/v1/copyright-notices/:id/preservation-holds/:holdId/releases": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_case_preservation_hold_release": {
+          "additionalProperties": false,
+          "properties": {
+            "released_at": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          "required": ["released_at"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_case_preservation_hold_release"],
+      "type": "object"
+    },
     "DELETE:/api/v1/report-integrity/penalties/:id": {
       "$ref": "#/components/schemas/RevokeReportAbusePenaltyResult"
     },

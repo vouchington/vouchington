@@ -1,4 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -37,6 +41,8 @@ export async function recordEuDisputeSettlementReferral(
     'referred_by_party is required',
   )
   await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, 'EU copyright decision not found')
   const { rows } = await transaction<{ id: string; requester_user_id: string | null }>(sql`
     /* recordEuDisputeSettlementReferral:decision */
     SELECT notice.current_territorial_decision_identity_id AS id,
@@ -46,7 +52,7 @@ export async function recordEuDisputeSettlementReferral(
       ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
     WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'
       AND notice.current_territorial_decision_identity_id IS NOT NULL
-    FOR UPDATE OF notice`)
+    `)
   const parent = rows[0]
   assert(parent, 404, 'EU copyright decision not found')
   if (input.referredByParty === 'notifier') {
@@ -81,6 +87,7 @@ export async function recordEuDisputeSettlementReferral(
   `)
   const referral = referrals[0]
   assert(referral, 500, 'EU dispute settlement referral was not recorded')
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return referral
 }
@@ -102,6 +109,8 @@ export async function recordEuDisputeSettlementOutcome(
   )
   assertValidDate(input.decidedAt, 'decided_at')
   await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, 'EU dispute settlement referral not found')
   const { rows: referrals } = await transaction<{ referred_at: Date }>(sql`
     /* recordEuDisputeSettlementOutcome:referral */
     SELECT referred_at FROM copyright_eu_dispute_settlement_referrals
@@ -121,6 +130,7 @@ export async function recordEuDisputeSettlementOutcome(
   `)
   const outcome = outcomes[0]
   assert(outcome, 409, 'EU dispute settlement outcome already recorded')
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, input.decidedAt)
   await transaction.commit()
   return outcome
 }
@@ -135,6 +145,8 @@ export async function recordEuDisputeSettlementImplementation(
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   assertValidDate(implementedAt, 'implemented_at')
   await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, 'EU dispute settlement outcome not found')
   const { rows } = await transaction<{
     id: string
     result: EuDisputeSettlementResult
@@ -164,6 +176,7 @@ export async function recordEuDisputeSettlementImplementation(
     WHERE id = ${outcome.id} RETURNING id, result, implemented_at
   `)
   assert(updated[0], 500, 'EU dispute settlement implementation was not recorded')
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, implementedAt)
   await transaction.commit()
   return updated[0]
 }

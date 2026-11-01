@@ -1,3 +1,4 @@
+import { lockCopyrightNoticeForLegalWrite } from './last-legal-activity.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -61,6 +62,7 @@ export async function recordTerritorialCopyrightDecision(
     'Territorial decision targets must be unique',
   )
   await using transaction = await beginTransaction()
+  assert(await lockCopyrightNoticeForLegalWrite(transaction, noticeId), 404, labels.noticeNotFound)
   const { rows: receipts } = await transaction<{ id: string; received_at: Date }>(sql`
     /* recordTerritorialCopyrightDecision:receipt */
     SELECT id, received_at FROM copyright_territorial_notice_receipts
@@ -81,7 +83,7 @@ export async function recordTerritorialCopyrightDecision(
       ) AS revoked
       FROM copyright_notices notice
       WHERE notice.id = ${noticeId} AND notice.jurisdiction = ${jurisdiction}
-      FOR UPDATE OF notice`)
+      `)
   const previous = existing[0]
   assert(
     !(previous?.outcome === 'no_action' && previous.revoked && input.outcome === 'no_action'),
@@ -154,6 +156,7 @@ export async function recordTerritorialCopyrightDecision(
       current_territorial_decision_identity_id = ${created.id},
       territorial_decision_outcome = ${created.outcome},
       territorial_decided_at = ${created.decided_at},
+      last_legal_activity_at = GREATEST(last_legal_activity_at, ${created.decided_at}, clock_timestamp()),
       territorial_decided_by_id = ${actor.id},
       territorial_authorizing_assessment_identity_id = ${assessmentId},
       territorial_rationale_ciphertext = ${rationaleCiphertext},

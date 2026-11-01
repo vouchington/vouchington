@@ -305,6 +305,8 @@ CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   authority_reference text NOT NULL,
   explanation_ciphertext text NOT NULL,
   received_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resolved_at timestamptz,
+  resolved_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT uq_copyright_eu_supervised_complaints__reference UNIQUE (
@@ -313,6 +315,7 @@ CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   CONSTRAINT uq_copyright_eu_supervised_complaints__idempotency UNIQUE (
     recorded_by_id, jurisdiction, idempotency_key
   ),
+  CONSTRAINT chk_copyright_eu_supervised_complaints__resolved CHECK ((resolved_at IS NULL) = (resolved_by_id IS NULL)),
   CONSTRAINT chk_copyright_eu_supervised_complaints__jurisdiction CHECK (jurisdiction = 'eu_dsa'),
   CONSTRAINT chk_copyright_eu_supervised_complaints__idempotency CHECK (char_length(idempotency_key) = 36),
   CONSTRAINT chk_copyright_eu_supervised_complaints__reference CHECK (
@@ -380,8 +383,11 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
   copyright_eu_supervised_complaint_id uuid CONSTRAINT uq_copyright_territoria_escalations__eu_supervised_complaint_id UNIQUE
     CONSTRAINT fk_copyright_territorial_escalations__eu_supervised_complaint REFERENCES copyright_eu_supervised_complaints (id) ON DELETE RESTRICT,
   escalated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  closed_at timestamptz,
+  closed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
+  CONSTRAINT chk_copyright_territorial_escalations__closed CHECK ((closed_at IS NULL) = (closed_by_id IS NULL)),
   CONSTRAINT chk_copyright_territorial_escalations__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
   CONSTRAINT chk_copyright_territorial_escalations__source CHECK (
     num_nonnulls(
@@ -390,6 +396,52 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
     ) = 1
   )
 );
+
+-- Explicit case preservation remains available after evidence erasure and allows overlapping matters.
+CREATE TABLE copyright_case_preservation_holds (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  kind copyright_case_preservation_kinds NOT NULL,
+  placed_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  released_at timestamptz,
+  released_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT chk_copyright_case_preservation_holds__release CHECK ((released_at IS NULL) = (released_by_id IS NULL))
+);
+CREATE FUNCTION fn_reject_copyright_case_preservation_hold_update()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.released_at IS NOT NULL OR NEW.released_at IS NULL
+    OR (to_jsonb(NEW) - ARRAY['released_at', 'released_by_id'])
+      IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['released_at', 'released_by_id']) THEN
+    RAISE EXCEPTION 'case preservation hold may be released once' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_case_preservation_holds_release
+  BEFORE UPDATE ON copyright_case_preservation_holds
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_case_preservation_hold_update();
+CREATE INDEX idx_copyright_case_preservation_holds__notice ON copyright_case_preservation_holds(copyright_notice_id, id);
+CREATE INDEX idx_copyright_case_preservation_holds__open ON copyright_case_preservation_holds(copyright_notice_id) WHERE released_at IS NULL;
+CREATE INDEX idx_copyright_case_preservation_holds__placed_by ON copyright_case_preservation_holds(placed_by_id);
+CREATE INDEX idx_copyright_case_preservation_holds__released_by ON copyright_case_preservation_holds(released_by_id) WHERE released_by_id IS NOT NULL;
+COMMENT ON TABLE copyright_case_preservation_holds IS 'Written litigation threats and authority requests preserving a case; multiple concurrent matters may overlap.';
+COMMENT ON COLUMN copyright_case_preservation_holds.id IS 'UUIDv7 identity of the preservation matter.';
+COMMENT ON COLUMN copyright_case_preservation_holds.copyright_notice_id IS 'Case preserved by this matter.';
+COMMENT ON COLUMN copyright_case_preservation_holds.kind IS 'Reason requiring case preservation.';
+COMMENT ON COLUMN copyright_case_preservation_holds.placed_by_id IS 'Staff identity that recorded the matter.';
+COMMENT ON COLUMN copyright_case_preservation_holds.released_at IS 'Terminal release time; NULL while this matter blocks case deletion.';
+COMMENT ON COLUMN copyright_case_preservation_holds.released_by_id IS 'Staff identity recording release.';
+COMMENT ON COLUMN copyright_case_preservation_holds.created_at IS 'Placement time derived from the UUIDv7 identity.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.resolved_at IS 'Staff resolution time; NULL while the complaint remains open.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.resolved_by_id IS 'Staff identity recording resolution.';
+COMMENT ON COLUMN copyright_territorial_escalations.closed_at IS 'Explicit staff closure time; NULL while the escalation remains open.';
+COMMENT ON COLUMN copyright_territorial_escalations.closed_by_id IS 'Staff identity recording closure.';
+CREATE INDEX idx_copyright_eu_supervised_complaints__open ON copyright_eu_supervised_complaints(copyright_notice_id) WHERE resolved_at IS NULL;
+CREATE INDEX idx_copyright_territorial_escalations__open ON copyright_territorial_escalations(copyright_notice_id) WHERE closed_at IS NULL;
+CREATE INDEX idx_copyright_eu_supervised_complaints__resolved_by ON copyright_eu_supervised_complaints(resolved_by_id) WHERE resolved_by_id IS NOT NULL;
+CREATE INDEX idx_copyright_territorial_escalations__closed_by ON copyright_territorial_escalations(closed_by_id) WHERE closed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
@@ -955,9 +1007,28 @@ CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable
 CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_decisions
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
-CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable
-  BEFORE UPDATE OR DELETE ON copyright_eu_supervised_complaints
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_TABLE_NAME = 'copyright_eu_supervised_complaints' THEN
+    IF OLD.resolved_at IS NOT NULL OR NEW.resolved_at IS NULL
+      OR (to_jsonb(NEW) - ARRAY['resolved_at', 'resolved_by_id'])
+        IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['resolved_at', 'resolved_by_id']) THEN
+      RAISE EXCEPTION 'supervised complaint may be resolved once' USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE
+    IF OLD.closed_at IS NOT NULL OR NEW.closed_at IS NULL
+      OR (to_jsonb(NEW) - ARRAY['closed_at', 'closed_by_id'])
+        IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['closed_at', 'closed_by_id']) THEN
+      RAISE EXCEPTION 'territorial escalation may be closed once' USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_eu_supervised_complaints_terminal
+  BEFORE UPDATE ON copyright_eu_supervised_complaints
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_dispute_settlement_referrals
@@ -968,9 +1039,9 @@ CREATE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_guard
 CREATE TRIGGER trigger_copyright_territorial_escalations_source
   BEFORE INSERT ON copyright_territorial_escalations
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation();
-CREATE TRIGGER trigger_copyright_territorial_escalations_immutable
-  BEFORE UPDATE OR DELETE ON copyright_territorial_escalations
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_copyright_territorial_escalations_terminal
+  BEFORE UPDATE ON copyright_territorial_escalations
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation();
 CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_transparency_reports
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

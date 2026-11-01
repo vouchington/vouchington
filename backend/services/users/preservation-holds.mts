@@ -141,10 +141,19 @@ export async function releaseUserPreservationHold(
   await query(sql`/* lockCopyrightThreadPreservationGate:release */
     SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows } = await query<HoldRow>(sql`/* releaseUserPreservationHold */
-    UPDATE user_legal_preservation_holds
-    SET released_at = CURRENT_TIMESTAMP, released_by_id = ${currentUser.id}
-    WHERE account_user_id = ${userId} AND released_at IS NULL
-    RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
+    WITH released AS (
+      UPDATE user_legal_preservation_holds
+      SET released_at = clock_timestamp(), released_by_id = ${currentUser.id}
+      WHERE account_user_id = ${userId} AND released_at IS NULL
+      RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
+    ), clocked AS (
+      UPDATE retained_user_identities identity
+      SET last_legal_preservation_hold_released_at = GREATEST(
+        identity.last_legal_preservation_hold_released_at, released.released_at)
+      FROM released WHERE identity.id = released.account_user_id
+      RETURNING identity.id
+    )
+    SELECT released.* FROM released JOIN clocked ON clocked.id = released.account_user_id
   `)
   const row = rows[0]
   if (!row) throw createCodedError(409, 'User has no open preservation hold', CONFLICT)
