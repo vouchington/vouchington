@@ -32,6 +32,7 @@ export const RETAINED_USER_REFERENCES = [
   ['oauth_native_session_token_mints', 'user_id'],
   ['oauth_grant_retention_anchors', 'user_id'],
   ['copyright_decision_rationales', 'account_user_id'],
+  ['copyright_notice_party_identities', 'account_user_id'],
   ['copyright_decision_rationales', 'recorded_by_id'],
   ['post_moderation_dispositions', 'actor_user_id'],
   ['post_clearance_changes', 'changed_by_id'],
