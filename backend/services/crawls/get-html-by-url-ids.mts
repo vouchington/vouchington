@@ -35,7 +35,7 @@ async function readLatestHtmlRows(urlIds: string[], recentCutoffDate: Date) {
       latest.html_snapshot_uploaded_at,
       latest.url_id,
       h.hostname
-    FROM unnest(${urlIds}::UUID[]) AS u(id)
+    FROM unnest(${[...new Set(urlIds)]}::UUID[]) AS u(id)
     JOIN urls uu ON uu.id = u.id
     JOIN url_hostnames h ON h.id = uu.hostname_id
     CROSS JOIN LATERAL (
