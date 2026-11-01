@@ -20,7 +20,6 @@ export async function setup(): Promise<void> {
   })
   // Not a readiness dependency — fire-and-forget like the api-key warmup above, so a slow/failed
   // sweep never gates worker startup or job processing.
-  /* c8 ignore next -- fire-and-forget dispatch; runHygieneSweeps is covered directly below. */
   void runHygieneSweeps()
   await Promise.all([
     warmUpEmbeddingBloomFilter(),
@@ -30,16 +29,11 @@ export async function setup(): Promise<void> {
   ])
 }
 
-// `sweeps` is injectable so tests can exercise the catch-and-report path with a deliberately
-// rejecting sweep, without mocking `@services/bloom-filter-maintenance` or touching Valkey
-// directly (backend/worker-runtime is not on the dependency-cruiser allowlist for `@data-stores/*`).
-export async function runHygieneSweeps(
-  sweeps: readonly (() => Promise<void>)[] = [
+async function runHygieneSweeps(): Promise<void> {
+  for (const sweep of [
     expireOrphanedBloomFilterBuildingKeys,
     sweepBookmarkBloomFiltersMissingTtl,
-  ],
-): Promise<void> {
-  for (const sweep of sweeps) {
+  ]) {
     // oxlint-disable-next-line no-await-in-loop -- sweeps share bloomValkeyClient; one at a time bounds peak concurrent SCAN/Batch traffic instead of doubling it
     await sweep().catch((err: unknown) => {
       onError(err instanceof Error ? err : new Error(String(err)))
