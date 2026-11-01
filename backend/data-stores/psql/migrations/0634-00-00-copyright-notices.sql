@@ -877,9 +877,9 @@ CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE logical_table_name text;
 BEGIN
-  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   SELECT relname INTO logical_table_name FROM pg_class
     WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(logical_table_name) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on'
     AND logical_table_name IN (
       'copyright_notice_email_intakes', 'copyright_notice_email_intake_parses',
@@ -985,9 +985,9 @@ DECLARE
   old_actor jsonb;
   new_actor jsonb;
 BEGIN
-  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   SELECT relname INTO logical_table_name FROM pg_class
     WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(logical_table_name) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
     IF fn_copyright_retention_erasure_permitted(logical_table_name, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;
