@@ -84,7 +84,7 @@ importers:
         version: 0.0.2
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       agent-blackboard:
         specifier: ^0.7.0
         version: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
@@ -159,7 +159,7 @@ importers:
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1319,7 +1319,7 @@ importers:
         version: 0.10.2
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -1346,14 +1346,14 @@ importers:
         version: 0.15.0
     devDependencies:
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(supports-color@10.2.2)(zod@4.6.5)
@@ -1474,7 +1474,7 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
     devDependencies:
       no-mistakes:
         specifier: ^0.106.0
@@ -1545,7 +1545,7 @@ importers:
         version: link:../../modules/on-error
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -1750,7 +1750,7 @@ importers:
         version: link:../../queues/unfurl-referral-links
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../../workers/ai-agents
@@ -1853,7 +1853,7 @@ importers:
         version: link:../../queues/vote-aggregation
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
@@ -2283,35 +2283,35 @@ importers:
   backend/modules/aws:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-cloudwatch':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-firehose':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-ses':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-sqs':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -2325,8 +2325,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@smithy/node-http-handler':
-        specifier: ^4.13.0
-        version: 4.13.0
+        specifier: ^4.14.0
+        version: 4.14.0
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
@@ -2335,7 +2335,7 @@ importers:
         version: link:../../../ts-shared/url-signing
       '@vouchington/aws':
         specifier: ^0.1.0
-        version: 0.1.0(@aws-sdk/client-cloudwatch@3.1159.0)(@aws-sdk/client-firehose@3.1159.0)(@aws-sdk/client-ses@3.1159.0)(@aws-sdk/client-sqs@3.1159.0)(@smithy/node-http-handler@4.13.0)
+        version: 0.1.0(@aws-sdk/client-cloudwatch@3.1160.0)(@aws-sdk/client-firehose@3.1160.0)(@aws-sdk/client-ses@3.1160.0)(@aws-sdk/client-sqs@3.1160.0)(@smithy/node-http-handler@4.14.0)
       '@vouchington/http-transport':
         specifier: ^0.1.1
         version: 0.1.1
@@ -2592,7 +2592,7 @@ importers:
         version: link:../../../ts-shared/deploy-environment
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/modules/scopes:
     dependencies:
@@ -2727,7 +2727,7 @@ importers:
     dependencies:
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/queues/account-lifecycle:
     dependencies:
@@ -2745,7 +2745,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2763,7 +2763,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2862,7 +2862,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2883,7 +2883,7 @@ importers:
         version: link:../../modules/scheduled-job-manifest
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2928,7 +2928,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3102,7 +3102,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3142,7 +3142,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/queues/find-your-friends:
     dependencies:
@@ -3269,7 +3269,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3287,7 +3287,7 @@ importers:
         version: link:../background
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3309,7 +3309,7 @@ importers:
         version: link:../background
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3394,7 +3394,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3419,7 +3419,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3450,7 +3450,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3474,7 +3474,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/queues/unfurl-referral-links:
     dependencies:
@@ -3510,7 +3510,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/queues/user-rss-feed-imports:
     dependencies:
@@ -3528,7 +3528,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3552,7 +3552,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3936,11 +3936,11 @@ importers:
   backend/services/account-data-requests:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4386,8 +4386,8 @@ importers:
   backend/services/articles:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4552,8 +4552,8 @@ importers:
   backend/services/bedrock-embeddings:
     dependencies:
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4613,11 +4613,11 @@ importers:
   backend/services/bedrock-embeddings-batch:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -5398,8 +5398,8 @@ importers:
   backend/services/copyright-notices:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -5803,8 +5803,8 @@ importers:
   backend/services/crawls:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6647,7 +6647,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/services/entity-cache:
     dependencies:
@@ -7403,11 +7403,11 @@ importers:
   backend/services/images:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -7489,7 +7489,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/services/individuals-households:
     dependencies:
@@ -7898,11 +7898,11 @@ importers:
         version: 0.15.0
     devDependencies:
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -9293,7 +9293,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -10820,8 +10820,8 @@ importers:
   backend/services/sitemaps:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -12234,7 +12234,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/services/valkey-admin:
     dependencies:
@@ -12457,17 +12457,17 @@ importers:
   backend/test-helpers:
     dependencies:
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../data-stores/analytics
@@ -12587,7 +12587,7 @@ importers:
         version: 0.10.2
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -12626,7 +12626,7 @@ importers:
         version: 0.15.0
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
     devDependencies:
       '@jongleberry/api-server':
         specifier: ^3.1.0
@@ -12708,7 +12708,7 @@ importers:
         version: 0.10.2
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
@@ -13048,8 +13048,8 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3
@@ -13311,8 +13311,8 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
@@ -13366,11 +13366,11 @@ importers:
         version: link:../../services/bedrock-embeddings
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -14278,7 +14278,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       web-push:
         specifier: ^3.6.7
         version: 3.6.7(supports-color@10.2.2)
@@ -14483,14 +14483,14 @@ importers:
         version: link:../../services/ses-bounce-events
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -14498,8 +14498,8 @@ importers:
   backend/workers/ses-inbound:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -14554,14 +14554,14 @@ importers:
         version: link:../../../ts-shared/ses-inbound-contract
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
 
   backend/workers/sitemaps:
     dependencies:
@@ -14619,11 +14619,11 @@ importers:
         version: link:../../services/stripe
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
 
   backend/workers/topic-merge:
     dependencies:
@@ -14791,7 +14791,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -14928,11 +14928,11 @@ importers:
   lambdas/image-resize:
     dependencies:
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -14983,8 +14983,8 @@ importers:
   lambdas/shared:
     dependencies:
       '@aws-sdk/client-ssm':
-        specifier: ^3.1159.0
-        version: 3.1159.0
+        specifier: ^3.1160.0
+        version: 3.1160.0
       '@sentry/aws-serverless':
         specifier: ^11.9.0
         version: 11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
@@ -15025,7 +15025,7 @@ importers:
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
 
   static-code-analysis:
     dependencies:
@@ -15052,7 +15052,7 @@ importers:
         version: 1.9.1
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -15433,7 +15433,7 @@ importers:
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^0.85.1
-        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
 
 packages:
 
@@ -15609,100 +15609,100 @@ packages:
     resolution: {integrity: sha512-6erto9nK2OZO/woEgmFIaPh5gChgdNd7nL6jgAf8TAXz3/QHC8Pan2TFe9GYp3IxOIKCCGWPylSjtOHKfNzQlw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/checksums@3.1001.7':
-    resolution: {integrity: sha512-hUlYwqlsiDuPyhI5nQLgLZYKo0bFvMKaVk9JRfpb9S2kXxT2ZhyHZ5RTfH3PBpD3dMnDkGrA0/aY1AeAMFLmrQ==}
+  '@aws-sdk/checksums@3.1002.0':
+    resolution: {integrity: sha512-JhnrBaQczTv0niJccOmIC6uRLVi7YCP85Yl7lhdnfyEjaqZBQ0GVtT5rILziQoGparp23bZS0fgUiE/bUR7g+A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock-runtime@3.1159.0':
-    resolution: {integrity: sha512-Zj744tR9wNs+jjvb7C8zDBDxjJhGJSMwIHnOc9zdsDdrRirai4CtR5iQ5BMP1qfazjH6jYKCxGpZC1BOUnslKg==}
+  '@aws-sdk/client-bedrock-runtime@3.1160.0':
+    resolution: {integrity: sha512-BA3Qi39ZUFucJJRACFioI1cYQu5DDie4HzqmaWrA5o5tYPidBvZvxPoOfS40LGamcRfu3szoSlYf4U3dnlX9vg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock@3.1159.0':
-    resolution: {integrity: sha512-GlZggiTfB10I8pCA+OdoVRmtqoHAOwNFB1J+bVjXN3Bg22Oj2sBBuX8jm4UvB5H1jVxerT9pniwQE68fKxWbxQ==}
+  '@aws-sdk/client-bedrock@3.1160.0':
+    resolution: {integrity: sha512-MunVmfAHR1tbldmQEka9qbLdBWWWODmc2PNsfkUjxPguaslRhiuvKCAlOIHVBZfTK7BwYIuaC4+ZQs4i9zy4fA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudfront@3.1159.0':
-    resolution: {integrity: sha512-afayeOZhcKtjyPLwOgPcsIVSNeMo5j3I7fyscFWroc4hVnrmIdDCx/eIkZ3qm+gwKG7h0REEg2iNRk2/8kqk2Q==}
+  '@aws-sdk/client-cloudfront@3.1160.0':
+    resolution: {integrity: sha512-JF1QzOiwcXz8izTcwZbElrj5Y77QDq384WyyGNbVxLPfDaZ/6y4My7U/FPuvXdgtHnhvUzExoIKe0/74fd5EuQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudwatch@3.1159.0':
-    resolution: {integrity: sha512-X89S0GGiqQ+j8BTKnz2khLB8Ytsax6G8yMES755pwopb2gIVZ0TCjvVf2B4xGPf8sZfvgaadRXDi1P94WGTe3w==}
+  '@aws-sdk/client-cloudwatch@3.1160.0':
+    resolution: {integrity: sha512-u/JwNMLqbhB5HSBgUKMaUJPwn9kfD4bI1Zjo1srG5QJO+rY78m9zNehFEDEnGsG00wSUV7cDVNG2yMYnisM84Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-dynamodb@3.1159.0':
-    resolution: {integrity: sha512-vdIwN77VEj/ojm6l1AJ7PFv7rCK+DLmYBjFh2RCcta7dQ5uwhPZNkVX05xzRLLRV3G0AvDpyS9152NtwzKm46A==}
+  '@aws-sdk/client-dynamodb@3.1160.0':
+    resolution: {integrity: sha512-DXTNy4ZcOwSwIviqOmJj6T4GgoyiqAsL2TT1obBE1EQGrjKcqH8K4+Trc4TKEjQ9+BcSNfMn+tXIpCS27uu7Sg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-firehose@3.1159.0':
-    resolution: {integrity: sha512-pPIjdTsP01aso2b+QunKTGirf1jDp40E7vVY/ViJY2qQaKhNrvuF3UOtEwg0wZ/26RH57TpG6NChHG8xHItQmA==}
+  '@aws-sdk/client-firehose@3.1160.0':
+    resolution: {integrity: sha512-LOY4wmLZiqO9DVGVocfX+bTxjALHOnTgGYv7h6nN7LeftFAX0RrdLNK192dw5Ua3Y5py29WWAfdE5r7S2XYQag==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.1149.0':
     resolution: {integrity: sha512-wEccG+3/ap7iIBO4DbWwqNHh2u5Qm5OCQJzJaAvtVFIoZbp0qia8HIXv4rpnNmJJEX8205mlq67F9QJ0nKlcxg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1159.0':
-    resolution: {integrity: sha512-el/Ihylk4PjJh/uJvYUeAzBiVLR6zt0xBOPIbciybePABWD/cOcxinHEPQslogm61LI2etnRrixSQltX94gzLA==}
+  '@aws-sdk/client-s3@3.1160.0':
+    resolution: {integrity: sha512-547MvuVvH0s2mcrQ0G+F3Q6STJp54JyI9IS40Hx2JYljkjJpoijT2TG0M8XsgFyuqbQAKWHESYXD/7hmdUNAvQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ses@3.1159.0':
-    resolution: {integrity: sha512-mSZq34F5/0FMPB53gfgl+kxw+dBVrXMAdX//U4R7JWfOSJqeQALIMECa0LPLNxucs9PjT66Xxi3a6gDvn6pSZw==}
+  '@aws-sdk/client-ses@3.1160.0':
+    resolution: {integrity: sha512-mgejMWxLL4e9ZoQsXg0DoP93XOPmjkVlmu/hXaQPBtZ/QjtWbCR912RupYAUMEEe7YxCK8mkyMq9e/2EpifVjQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-sqs@3.1159.0':
-    resolution: {integrity: sha512-rekoxU9A2UZge6RqPTg/2W1RNKbU+YKkiLhGVdoOgI+OQB7417LUVqWtopV+IT+Hd9KPKskmV6YMOm6pMrXcfA==}
+  '@aws-sdk/client-sqs@3.1160.0':
+    resolution: {integrity: sha512-bI84jclwAR47lGSzqGbaYXWzKz/17isk/Y0iy9mZMwgZCMQdppoJ74qb9GXFpLz3RQc5uyKjH8blf7+zyWkFKA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ssm@3.1159.0':
-    resolution: {integrity: sha512-zw10ZIoQGnAnKl2dI9T4QdYRA/oDIIvksJPtqmT6wScRtvOmD1k+Wp30sLmzTImFmHIMyUqDj92IOYL6OTCFvA==}
+  '@aws-sdk/client-ssm@3.1160.0':
+    resolution: {integrity: sha512-xz86vxk5UOiHEG9SsO8GiYU2iQuBIKq2HmMo1d6r3rqRB0pItMghcH++ifPsJF54FhDDbjeECpa7bBXSv52UmQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.5':
     resolution: {integrity: sha512-ruI0AWqcrfL20XDS6SwZIJFPOBZ6N0ADa9nLzWlBhxk1aoUjbUX3JkTR9vEmk7o35XpAHi68ahZ4T6RE2U9XyA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/core@3.978.7':
-    resolution: {integrity: sha512-QsYdn5xhvEBzcDC6bgKuvPv87kFtXK/3f5NqKfR+eok5AAn7RaZnkgBKncX+UW3ZMcjSELyAMATN0iqgZmvWVg==}
+  '@aws-sdk/core@3.979.0':
+    resolution: {integrity: sha512-E3eeLhIOxlIc9NPsZbtpHuk8W/gEZ3YvFauNPrrrtNtF7Pq1cwSrFwA51Z1EIoUY6VFvTyltyLRNUhaa0aSKSA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-env@3.972.78':
-    resolution: {integrity: sha512-d8V47OxkM/FKe7bVfk5Rga4aNGUaQNk3ip1PFIYhxtup9r8SuNIHLs4HfBAmHT25ZbzowluMHp833UXfFMQbhA==}
+  '@aws-sdk/credential-provider-env@3.972.79':
+    resolution: {integrity: sha512-fhfGcGiY70EcH9H8N/K+K2NMW3wF2J/7slHYJo0u1mF7XBpU7dlaJ8xmc0jBYUzJLRbKz4+BtVwwqrH7eZNTNw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-http@3.972.80':
-    resolution: {integrity: sha512-OQqanXiRhnl/wBIJc3TtA7TYmnN7VO0mP95eVoHsLXtPwHz6HeccMpi7cqtnhHw+K7p6VIoAt2IK4M9Ixd9uGg==}
+  '@aws-sdk/credential-provider-http@3.972.81':
+    resolution: {integrity: sha512-bp2TG0g2seN4LMEOjIVxkDpb/ls4GsDiguteIFxxQUxFBoyhf0pmfGbZCddHORrg58K72c+7CMlaDEw921c/3Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-ini@3.973.23':
-    resolution: {integrity: sha512-pTTRK7xoi8NNbrcjVUSd9YdMTUxiWEPfk8newBQCzV+VS5STh5sDPAy3iO29fSqipqNuCpILJcD6wAawxHvG+w==}
+  '@aws-sdk/credential-provider-ini@3.973.24':
+    resolution: {integrity: sha512-ULdPVLKR46qGsVCmbilDWWcry5qAR8nYm7RZewaNtCvVLPSIyb9zSWabTA9M07s10ZpEPUl67rcORyXE50Obog==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-login@3.972.85':
-    resolution: {integrity: sha512-UHjnTeS+5OBFfRL+BQwCGJPJvnzjhGD6dIwncBJDa+ziyQjPUte9Q0I4BCkybGrHotnyiiluXj13bgelP14J5Q==}
+  '@aws-sdk/credential-provider-login@3.972.86':
+    resolution: {integrity: sha512-e6cD5PUesauIYxV4IaOLNfEh0FnhUeIxnY4AZzmEH9PsPGpScROmrdzA0MaaCxiDVzGPtxcJW7Ku7vKU+w2p9Q==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/credential-provider-node@3.972.88':
     resolution: {integrity: sha512-AG0KID5qhQPzrFkh5b0Cws1Amytvzo0L0Xj6hMgJXEwD6ZXAqninDhSNAWJiN5zU4YVVZnuidnqwPwYJ04IamA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-node@3.972.90':
-    resolution: {integrity: sha512-+McgOQuAUze95AumVmoOBRp++Z8IjsZ0qOASb6+igHdKNzA0FiIf5kbTFaZ64txfd9KTBDpgvlEDGQE41lSq/A==}
+  '@aws-sdk/credential-provider-node@3.972.91':
+    resolution: {integrity: sha512-0j1oy7cFwsMaIpueqFGeQG0VpulcF61ucKKqZUha9rZXvRK91chmAxFfov6Q155TerBGgt1dvy9n9Y3O4HD/UQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-process@3.972.78':
-    resolution: {integrity: sha512-bzB92SriflYf6LVRJcDv/a9I87tmkdmdE8hAqT1oRGKFkEH2rxxHeHZVK/4vsiRsFi44cUj0J9+bUSmqYX+26w==}
+  '@aws-sdk/credential-provider-process@3.972.79':
+    resolution: {integrity: sha512-b9QnxJiZSccqpkSNNWkHRwU0XKbybD1p+j02m/qJc4mIwLkwQpJYfA/cbjg6hgGOoD7W1/imi+obSzDk/T1oNg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-sso@3.973.22':
-    resolution: {integrity: sha512-MXUkWHgcf6G+TowL+QPvn4kJTEYKd9qHKMV6eNGXSA5lilDgGRrP3EXPHChZ3eZ7z+oprn/ZvOovLoS2WR3D8g==}
+  '@aws-sdk/credential-provider-sso@3.973.23':
+    resolution: {integrity: sha512-KZiZ6RUQY4mahZVreo1pp5usUDOJAf613NLicgC0MQWA0rfdkRDaeT2K0WClYEHjMy9BKvXRxc087Kr1QjV9MA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-web-identity@3.972.84':
-    resolution: {integrity: sha512-6I3zYcDHt5ZM0J4gEuRgCHgN505k5haUiiPM46iIQgrHm2p70zpnssHFVYqHYfgJe3Mf+a5+nsF3BZmW4xcZNg==}
+  '@aws-sdk/credential-provider-web-identity@3.972.85':
+    resolution: {integrity: sha512-r9bZrCczKj0V46yRpFZavTmPlqBPtziEBZnKVHcGZ5NwpUrzHwhzizc7ntMfw5KPWHmL35C2tChwPH3MIy2TMQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/dynamodb-codec@3.973.52':
-    resolution: {integrity: sha512-YVvRKW6bRvSnFf/LJQAwpUJ4NBWBnt5Q0Q9iBoaGKzPY3ADgOsoGNY6Xp6Lu13JAyLAcwBuC8Oqwkn/WTC30jA==}
+  '@aws-sdk/dynamodb-codec@3.973.53':
+    resolution: {integrity: sha512-hmq4qVpo3Q1Iw2D4/IfhkSpB5tYItXjugKTcYhg6nq5wqmEezefTIBZC8Kblx6Evf+ZwVA95RPue5Hyil+Hylg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/endpoint-cache@3.972.11':
@@ -15725,24 +15725,24 @@ packages:
     resolution: {integrity: sha512-jfanv1pV0sJFZw6/DPiNjvK7B478god0zOum5yIWo+/+1Gy+CSXWpGBWx+3nBJyDvjcu/2kUMr4ADUp9BHH34Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/middleware-sdk-s3@3.972.83':
-    resolution: {integrity: sha512-SPZ4knkYFQfNv423Yu5nCxKwRXjWCRWv2OIzO+t+ffjdu0Ux6HlClFjy10OBKwzzVFJs9YvgiHYSS21p+TG4xg==}
+  '@aws-sdk/middleware-sdk-s3@3.972.84':
+    resolution: {integrity: sha512-gRzZ8SEHIJ67h2b4akUjtmMBpB9sXBC4qBM6q+8wwJfcVtdvsgthwo+b7HHm0u+wnQY2yaUCKj7f4gE0hEAtRQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/middleware-sdk-sqs@3.972.47':
     resolution: {integrity: sha512-fdvNvoZATQ3Q3/nkvLz1oK/8RmgfBrd3ahNnS1aIpsOa1ErbLpcjCI8ulK3GnhA0eEH8+ytNtUJg69gROPXdgw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/middleware-websocket@3.972.60':
-    resolution: {integrity: sha512-IgxzXK1c0r/2yjC/qJc06OZPzQ3FSxuIc/Au6chqMb0H60k1+sHIOgjcqsxl1BxUTGQr//BU5A3niytx0IvICA==}
+  '@aws-sdk/middleware-websocket@3.972.61':
+    resolution: {integrity: sha512-+biJmi2766Jr7DGjB63nfVbmkHXGeaJZ2izkf3KBhxaffbn4LDInLmSV9SioSuY5EEiMfJ9FMaDc105TrxdGOw==}
     engines: {node: '>= 14.0.0'}
 
-  '@aws-sdk/nested-clients@3.997.52':
-    resolution: {integrity: sha512-/bNl6b3VEoWQg3Z8yHt3gzYjSFoOOv7+eUglzITmGP8H7jovN8c9NoOI+6bU25+lSLvyRpJOs4n8YSaX+BcUPg==}
+  '@aws-sdk/nested-clients@3.997.53':
+    resolution: {integrity: sha512-JRcs7wwU/cMw62hbLUxlh/wyrHaL/4KOnJs/Hny0ZIo4GY8biBMEfLJrYDEBMF8wDIewtDZsBWT9Rna4uaRemw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/s3-request-presigner@3.1159.0':
-    resolution: {integrity: sha512-61ydUdPny2+kJ7Jv7LRVSmJ7/HI3lyNcQFr923l7Ib4fkDLOYCvmw203BL6i2+oihxblXf3kmxdAYTjrsLUwrA==}
+  '@aws-sdk/s3-request-presigner@3.1160.0':
+    resolution: {integrity: sha512-RBp9dEUMaznUMqbHFCBEzGDk+tAAoGD8WdPrRZnITshs/fsieajD1fmodmUxKq3BFOeIOrG9UUJpcgW+GNNcWg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/signature-v4-multi-region@3.996.49':
@@ -15753,8 +15753,8 @@ packages:
     resolution: {integrity: sha512-Ob9GCZ3YnGPws696zTYW/rLFYHa9QLh6DgTCnkHb+0jhHNBgHWM8Ui2b+yrIjkfDsRVsglyrOey6tOOG/VWxMA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/token-providers@3.1159.0':
-    resolution: {integrity: sha512-IJvghXXcEpqTWGjrjJwxBdEecHeXp+t9FaybRf8Zf0wYW84KN1snXBsYOdfDBBx78ChwfJxH8KIHqmhNZuDLcw==}
+  '@aws-sdk/token-providers@3.1160.0':
+    resolution: {integrity: sha512-KHT4W6fRqXEDYM0lIPQD55bvZSk1xmzShUcEcw0dZYiUsgFVmilnfwY8K+tn2V/MG1Lv+SX7wkbzq/ld4XiygQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/types@3.975.0':
@@ -19418,6 +19418,11 @@ packages:
     resolution: {integrity: sha512-97imTcCyiPd8k0e9+ts/Sp0W65Dn9Ti357J7M09Ov4tI8Q1JDJVFSoAJtjEVKqfHEr3Pdo2jfolqKCaaiszH0g==}
     engines: {node: '>=18.0.0'}
 
+  '@smithy/core@3.38.0':
+    resolution: {integrity: sha512-aLyyCnK2p4yvNA2TaM+5owXqb+rZGSiUKEsNP329AzeYnERtAz7NrlTbRsaxqmZ0ooxwoID8LMm959UGQQDIsg==}
+    engines: {node: '>=18.0.0'}
+    deprecated: Deprecated due to a bug in custom logger data redaction. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
+
   '@smithy/credential-provider-imds@4.5.2':
     resolution: {integrity: sha512-A9uSdn72ozbRUSit0eib0TW7nXuNPlaeM0zcGkJ+nE6tFcSDbnmtwoxbTCFBukVQcszDAyvsd7+rTduPTXpygg==}
     engines: {node: '>=18.0.0'}
@@ -19430,8 +19435,8 @@ packages:
     resolution: {integrity: sha512-Q9d+luiRjyHT6kCL/9NyGpdZJgodh4vtvfHC6H8SqoVKrV2k9RoyI9/IloVfdCYks3/2DIi7BsYYLcda5KZS0A==}
     engines: {node: '>=18.0.0'}
 
-  '@smithy/node-http-handler@4.13.0':
-    resolution: {integrity: sha512-/GGcPoNJ2nzGytdAanpbx7mpp9Coa8LP+/Rpmbktr8YeLuIXs9B0SEz+X3AeonHdyzOIFJdKbN7jOZ+Tj+pMGw==}
+  '@smithy/node-http-handler@4.14.0':
+    resolution: {integrity: sha512-j24RS5V9J52u0z81RpgF7H55p4bS6UCEIxF4ZYzTYh6M9hzXvjAIAYwgLobqf7vJq3xib5VXc7nX3YesV8Rx4A==}
     engines: {node: '>=18.0.0'}
 
   '@smithy/signature-v4@5.7.4':
@@ -24634,85 +24639,85 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/checksums@3.1001.7':
+  '@aws-sdk/checksums@3.1002.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock-runtime@3.1159.0':
+  '@aws-sdk/client-bedrock-runtime@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/eventstream-handler-node': 3.972.39
       '@aws-sdk/middleware-eventstream': 3.972.35
-      '@aws-sdk/middleware-websocket': 3.972.60
-      '@aws-sdk/token-providers': 3.1159.0
+      '@aws-sdk/middleware-websocket': 3.972.61
+      '@aws-sdk/token-providers': 3.1160.0
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock@3.1159.0':
+  '@aws-sdk/client-bedrock@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
-      '@aws-sdk/token-providers': 3.1159.0
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
+      '@aws-sdk/token-providers': 3.1160.0
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudfront@3.1159.0':
+  '@aws-sdk/client-cloudfront@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudwatch@3.1159.0':
+  '@aws-sdk/client-cloudwatch@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
       '@smithy/middleware-compression': 4.6.2
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-dynamodb@3.1159.0':
+  '@aws-sdk/client-dynamodb@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
-      '@aws-sdk/dynamodb-codec': 3.973.52
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
+      '@aws-sdk/dynamodb-codec': 3.973.53
       '@aws-sdk/middleware-endpoint-discovery': 3.972.36
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-firehose@3.1159.0':
+  '@aws-sdk/client-firehose@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -24726,55 +24731,55 @@ snapshots:
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.36.2
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1159.0':
+  '@aws-sdk/client-s3@3.1160.0':
     dependencies:
-      '@aws-sdk/checksums': 3.1001.7
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
-      '@aws-sdk/middleware-sdk-s3': 3.972.83
+      '@aws-sdk/checksums': 3.1002.0
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
+      '@aws-sdk/middleware-sdk-s3': 3.972.84
       '@aws-sdk/signature-v4-multi-region': 3.996.50
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ses@3.1159.0':
+  '@aws-sdk/client-ses@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-sqs@3.1159.0':
+  '@aws-sdk/client-sqs@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/middleware-sdk-sqs': 3.972.47
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ssm@3.1159.0':
+  '@aws-sdk/client-ssm@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-node': 3.972.90
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-node': 3.972.91
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -24789,118 +24794,118 @@ snapshots:
       bowser: 2.14.1
       tslib: 2.8.1
 
-  '@aws-sdk/core@3.978.7':
+  '@aws-sdk/core@3.979.0':
     dependencies:
       '@aws-sdk/types': 3.975.0
       '@aws-sdk/xml-builder': 3.972.42
       '@aws/lambda-invoke-store': 0.3.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/signature-v4': 5.7.4
       '@smithy/types': 4.19.0
       bowser: 2.14.1
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-env@3.972.78':
+  '@aws-sdk/credential-provider-env@3.972.79':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-http@3.972.80':
+  '@aws-sdk/credential-provider-http@3.972.81':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-ini@3.973.23':
+  '@aws-sdk/credential-provider-ini@3.973.24':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/credential-provider-env': 3.972.78
-      '@aws-sdk/credential-provider-http': 3.972.80
-      '@aws-sdk/credential-provider-login': 3.972.85
-      '@aws-sdk/credential-provider-process': 3.972.78
-      '@aws-sdk/credential-provider-sso': 3.973.22
-      '@aws-sdk/credential-provider-web-identity': 3.972.84
-      '@aws-sdk/nested-clients': 3.997.52
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/credential-provider-env': 3.972.79
+      '@aws-sdk/credential-provider-http': 3.972.81
+      '@aws-sdk/credential-provider-login': 3.972.86
+      '@aws-sdk/credential-provider-process': 3.972.79
+      '@aws-sdk/credential-provider-sso': 3.973.23
+      '@aws-sdk/credential-provider-web-identity': 3.972.85
+      '@aws-sdk/nested-clients': 3.997.53
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/credential-provider-imds': 4.5.2
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-login@3.972.85':
+  '@aws-sdk/credential-provider-login@3.972.86':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/nested-clients': 3.997.52
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/nested-clients': 3.997.53
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
   '@aws-sdk/credential-provider-node@3.972.88':
     dependencies:
-      '@aws-sdk/credential-provider-env': 3.972.78
-      '@aws-sdk/credential-provider-http': 3.972.80
-      '@aws-sdk/credential-provider-ini': 3.973.23
-      '@aws-sdk/credential-provider-process': 3.972.78
-      '@aws-sdk/credential-provider-sso': 3.973.22
-      '@aws-sdk/credential-provider-web-identity': 3.972.84
+      '@aws-sdk/credential-provider-env': 3.972.79
+      '@aws-sdk/credential-provider-http': 3.972.81
+      '@aws-sdk/credential-provider-ini': 3.973.24
+      '@aws-sdk/credential-provider-process': 3.972.79
+      '@aws-sdk/credential-provider-sso': 3.973.23
+      '@aws-sdk/credential-provider-web-identity': 3.972.85
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/credential-provider-imds': 4.5.2
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-node@3.972.90':
+  '@aws-sdk/credential-provider-node@3.972.91':
     dependencies:
-      '@aws-sdk/credential-provider-env': 3.972.78
-      '@aws-sdk/credential-provider-http': 3.972.80
-      '@aws-sdk/credential-provider-ini': 3.973.23
-      '@aws-sdk/credential-provider-process': 3.972.78
-      '@aws-sdk/credential-provider-sso': 3.973.22
-      '@aws-sdk/credential-provider-web-identity': 3.972.84
+      '@aws-sdk/credential-provider-env': 3.972.79
+      '@aws-sdk/credential-provider-http': 3.972.81
+      '@aws-sdk/credential-provider-ini': 3.973.24
+      '@aws-sdk/credential-provider-process': 3.972.79
+      '@aws-sdk/credential-provider-sso': 3.973.23
+      '@aws-sdk/credential-provider-web-identity': 3.972.85
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/credential-provider-imds': 4.5.2
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-process@3.972.78':
+  '@aws-sdk/credential-provider-process@3.972.79':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-sso@3.973.22':
+  '@aws-sdk/credential-provider-sso@3.973.23':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/nested-clients': 3.997.52
-      '@aws-sdk/token-providers': 3.1159.0
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/nested-clients': 3.997.53
+      '@aws-sdk/token-providers': 3.1160.0
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-provider-web-identity@3.972.84':
+  '@aws-sdk/credential-provider-web-identity@3.972.85':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/nested-clients': 3.997.52
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/nested-clients': 3.997.53
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/dynamodb-codec@3.973.52':
+  '@aws-sdk/dynamodb-codec@3.973.53':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@smithy/core': 3.37.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
@@ -24941,9 +24946,9 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/middleware-sdk-s3@3.972.83':
+  '@aws-sdk/middleware-sdk-s3@3.972.84':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/signature-v4-multi-region': 3.996.50
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
@@ -24953,13 +24958,13 @@ snapshots:
   '@aws-sdk/middleware-sdk-sqs@3.972.47':
     dependencies:
       '@aws-sdk/types': 3.975.0
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/middleware-websocket@3.972.60':
+  '@aws-sdk/middleware-websocket@3.972.61':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
@@ -24967,20 +24972,20 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/nested-clients@3.997.52':
+  '@aws-sdk/nested-clients@3.997.53':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/signature-v4-multi-region': 3.996.50
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/s3-request-presigner@3.1159.0':
+  '@aws-sdk/s3-request-presigner@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
+      '@aws-sdk/core': 3.979.0
       '@aws-sdk/signature-v4-multi-region': 3.996.50
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
@@ -25001,10 +25006,10 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/token-providers@3.1159.0':
+  '@aws-sdk/token-providers@3.1160.0':
     dependencies:
-      '@aws-sdk/core': 3.978.7
-      '@aws-sdk/nested-clients': 3.997.52
+      '@aws-sdk/core': 3.979.0
+      '@aws-sdk/nested-clients': 3.997.53
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.37.0
       '@smithy/types': 4.19.0
@@ -28305,15 +28310,20 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
+  '@smithy/core@3.38.0':
+    dependencies:
+      '@smithy/types': 4.19.0
+      tslib: 2.8.1
+
   '@smithy/credential-provider-imds@4.5.2':
     dependencies:
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
   '@smithy/fetch-http-handler@5.8.0':
     dependencies:
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -28324,15 +28334,15 @@ snapshots:
       fflate: 0.8.3
       tslib: 2.8.1
 
-  '@smithy/node-http-handler@4.13.0':
+  '@smithy/node-http-handler@4.14.0':
     dependencies:
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
   '@smithy/signature-v4@5.7.4':
     dependencies:
-      '@smithy/core': 3.37.0
+      '@smithy/core': 3.38.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -29117,13 +29127,13 @@ snapshots:
     dependencies:
       '@simplewebauthn/server': 14.0.3
 
-  '@vouchington/aws@0.1.0(@aws-sdk/client-cloudwatch@3.1159.0)(@aws-sdk/client-firehose@3.1159.0)(@aws-sdk/client-ses@3.1159.0)(@aws-sdk/client-sqs@3.1159.0)(@smithy/node-http-handler@4.13.0)':
+  '@vouchington/aws@0.1.0(@aws-sdk/client-cloudwatch@3.1160.0)(@aws-sdk/client-firehose@3.1160.0)(@aws-sdk/client-ses@3.1160.0)(@aws-sdk/client-sqs@3.1160.0)(@smithy/node-http-handler@4.14.0)':
     optionalDependencies:
-      '@aws-sdk/client-cloudwatch': 3.1159.0
-      '@aws-sdk/client-firehose': 3.1159.0
-      '@aws-sdk/client-ses': 3.1159.0
-      '@aws-sdk/client-sqs': 3.1159.0
-      '@smithy/node-http-handler': 4.13.0
+      '@aws-sdk/client-cloudwatch': 3.1160.0
+      '@aws-sdk/client-firehose': 3.1160.0
+      '@aws-sdk/client-ses': 3.1160.0
+      '@aws-sdk/client-sqs': 3.1160.0
+      '@smithy/node-http-handler': 4.14.0
 
   '@vouchington/crawler-html@0.0.1':
     dependencies:
@@ -29204,8 +29214,8 @@ snapshots:
 
   '@vouchington/media@0.2.0':
     dependencies:
-      '@aws-sdk/client-s3': 3.1159.0
-      '@aws-sdk/s3-request-presigner': 3.1159.0
+      '@aws-sdk/client-s3': 3.1160.0
+      '@aws-sdk/s3-request-presigner': 3.1160.0
 
   '@vouchington/memberships@0.2.0': {}
 
@@ -29298,11 +29308,11 @@ snapshots:
     dependencies:
       uuid: 14.0.3
 
-  '@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
+  '@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
     dependencies:
       glide-mq: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     optionalDependencies:
-      '@aws-sdk/client-sqs': 3.1159.0
+      '@aws-sdk/client-sqs': 3.1160.0
       vitest: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   '@webassemblyjs/ast@1.14.1':
@@ -29818,7 +29828,7 @@ snapshots:
     dependencies:
       '@aws-sdk/client-s3': 3.1149.0
       '@jridgewell/trace-mapping': 0.3.31
-      '@smithy/node-http-handler': 4.13.0
+      '@smithy/node-http-handler': 4.14.0
       acorn: 8.19.0
       ast-v8-to-istanbul: 1.0.7
       esbuild: 0.28.2
@@ -33333,7 +33343,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5):
+  vouchington-tooling@0.85.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.0.5)(@vouchington/postgres@0.3.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.106.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -33354,7 +33364,7 @@ snapshots:
       '@playwright/test': 1.64.1
       '@typescript/typescript6': 6.0.2
       '@vouchington/postgres': 0.3.0
-      '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1159.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+      '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1160.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       no-mistakes: 0.106.0(vitest@5.0.5)
       pg: 8.23.1
