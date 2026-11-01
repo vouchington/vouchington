@@ -124,7 +124,7 @@ export const assertReferralProgramAndLinkValidationExist = async (
   options?: QueryOptions,
 ): Promise<void> => {
   validateUUID(referralProgramId)
-  const validationIdIsValid = isUUID(validationId)
+  const validationIdParam = isUUID(validationId) ? validationId : null
   const { rows } = await read(
     sql`/* assertReferralProgramExists */
       SELECT
@@ -136,11 +136,11 @@ export const assertReferralProgramAndLinkValidationExist = async (
           WHERE rp.topic_id = ${referralProgramId}
             AND t.deleted_at IS NULL
         ) AS referral_program_exists,
-        CASE WHEN ${validationIdIsValid} THEN EXISTS (
+        EXISTS (
           SELECT 1
           FROM referral_program_link_validation_rule_sets
-          WHERE id = ${validationId}::uuid
-        ) ELSE FALSE END AS validation_exists
+          WHERE id = ${validationIdParam}
+        ) AS validation_exists
     `,
     options,
   )
