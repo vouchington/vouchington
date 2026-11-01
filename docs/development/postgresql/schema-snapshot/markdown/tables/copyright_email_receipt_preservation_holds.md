@@ -34,10 +34,10 @@ _none_
 **Indexes:**
 
 - `copyright_email_receipt_preservation_holds_pkey`: `CREATE UNIQUE INDEX copyright_email_receipt_preservation_holds_pkey ON public.copyright_email_receipt_preservation_holds USING btree (id)`
-- `idx_cpyrght_eml_rcpt_holds__one_open`: `CREATE UNIQUE INDEX idx_cpyrght_eml_rcpt_holds__one_open ON public.copyright_email_receipt_preservation_holds USING btree (copyright_notice_email_intake_receipt_id) WHERE (released_at IS NULL)`
-- `idx_cpyrght_eml_rcpt_holds__placed_by`: `CREATE INDEX idx_cpyrght_eml_rcpt_holds__placed_by ON public.copyright_email_receipt_preservation_holds USING btree (placed_by_id)`
-- `idx_cpyrght_eml_rcpt_holds__receipt_release`: `CREATE INDEX idx_cpyrght_eml_rcpt_holds__receipt_release ON public.copyright_email_receipt_preservation_holds USING btree (copyright_notice_email_intake_receipt_id, released_at DESC)`
-- `idx_cpyrght_eml_rcpt_holds__released_by`: `CREATE INDEX idx_cpyrght_eml_rcpt_holds__released_by ON public.copyright_email_receipt_preservation_holds USING btree (released_by_id) WHERE (released_by_id IS NOT NULL)`
+- `idx_cpyrght_eml_rcpt_prsrvtn_hlds__one_open`: `CREATE UNIQUE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__one_open ON public.copyright_email_receipt_preservation_holds USING btree (copyright_notice_email_intake_receipt_id) WHERE (released_at IS NULL)`
+- `idx_cpyrght_eml_rcpt_prsrvtn_hlds__placed_by`: `CREATE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__placed_by ON public.copyright_email_receipt_preservation_holds USING btree (placed_by_id)`
+- `idx_cpyrght_eml_rcpt_prsrvtn_hlds__receipt_release`: `CREATE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__receipt_release ON public.copyright_email_receipt_preservation_holds USING btree (copyright_notice_email_intake_receipt_id, released_at DESC)`
+- `idx_cpyrght_eml_rcpt_prsrvtn_hlds__released_by`: `CREATE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__released_by ON public.copyright_email_receipt_preservation_holds USING btree (released_by_id) WHERE (released_by_id IS NOT NULL)`
 
 **Triggers:**
 

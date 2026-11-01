@@ -53,10 +53,10 @@ COMMENT ON COLUMN copyright_email_receipt_preservation_holds.kind IS 'Legal basi
 COMMENT ON COLUMN copyright_email_receipt_preservation_holds.placed_by_id IS 'Retained staff identity that placed the hold; the placement time is the UUIDv7 id time.';
 COMMENT ON COLUMN copyright_email_receipt_preservation_holds.released_at IS 'Time the hold was released, restarting the six-year legal-record clock; NULL while open.';
 COMMENT ON COLUMN copyright_email_receipt_preservation_holds.released_by_id IS 'Retained staff identity that released the hold; set together with released_at.';
-CREATE UNIQUE INDEX idx_cpyrght_eml_rcpt_holds__one_open ON copyright_email_receipt_preservation_holds(copyright_notice_email_intake_receipt_id) WHERE released_at IS NULL;
-CREATE INDEX idx_cpyrght_eml_rcpt_holds__receipt_release ON copyright_email_receipt_preservation_holds(copyright_notice_email_intake_receipt_id, released_at DESC);
-CREATE INDEX idx_cpyrght_eml_rcpt_holds__placed_by ON copyright_email_receipt_preservation_holds(placed_by_id);
-CREATE INDEX idx_cpyrght_eml_rcpt_holds__released_by ON copyright_email_receipt_preservation_holds(released_by_id) WHERE released_by_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__one_open ON copyright_email_receipt_preservation_holds(copyright_notice_email_intake_receipt_id) WHERE released_at IS NULL;
+CREATE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__receipt_release ON copyright_email_receipt_preservation_holds(copyright_notice_email_intake_receipt_id, released_at DESC);
+CREATE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__placed_by ON copyright_email_receipt_preservation_holds(placed_by_id);
+CREATE INDEX idx_cpyrght_eml_rcpt_prsrvtn_hlds__released_by ON copyright_email_receipt_preservation_holds(released_by_id) WHERE released_by_id IS NOT NULL;
 
 CREATE FUNCTION fn_copyright_receipt_review_retirement_eligible(receipt_id uuid)
 RETURNS boolean LANGUAGE plpgsql STABLE AS $$
