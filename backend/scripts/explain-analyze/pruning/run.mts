@@ -23,7 +23,9 @@ function withoutLibpqOverrides(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 }
 
 function relayWithoutLibpqOverrides(): Promise<void> {
-  const child = spawn(process.execPath, process.argv.slice(1), {
+  // The spawned child re-enters here, with libpq overrides already removed, and runs the proof.
+  if (process.argv.includes('--pruning-relay-child')) return runPruningProof()
+  const child = spawn(process.execPath, [...process.argv.slice(1), '--pruning-relay-child'], {
     env: withoutLibpqOverrides(process.env),
     stdio: 'inherit',
   })
@@ -188,7 +190,10 @@ async function runPruningProof(): Promise<void> {
     throw new AggregateError(errors, 'Pruning proof and cleanup failed', { cause: errors[0] })
 }
 
-if (libpqOverrideKeys.some(key => process.env[key] !== undefined)) {
+if (
+  process.argv.includes('--pruning-relay-child') ||
+  libpqOverrideKeys.some(key => process.env[key] !== undefined)
+) {
   await relayWithoutLibpqOverrides()
 } else {
   await runPruningProof()
