@@ -9,12 +9,12 @@ const ROUTE_GLOBS = [
 ] as const
 
 const COVERAGE_FILES = [
-  'web/lib/routes/__tests__/app-routes-posts.mock.test.tsx',
-  'web/lib/routes/__tests__/app-routes-smoke.mock.test.tsx',
-  'web/lib/routes/__tests__/app-routes-topic-accounts.mock.test.tsx',
-  'web/lib/routes/__tests__/app-routes-topic-instance-source.mock.test.tsx',
-  'web/lib/routes/__tests__/app-routes-topic-referral.mock.test.tsx',
-  'web/lib/routes/__tests__/app-routes-topic-rewards.mock.test.tsx',
+  'web/lib/routes/__tests__/app-routes-posts.test.tsx',
+  'web/lib/routes/__tests__/app-routes-smoke.test.tsx',
+  'web/lib/routes/__tests__/app-routes-topic-accounts.test.tsx',
+  'web/lib/routes/__tests__/app-routes-topic-instance-source.test.tsx',
+  'web/lib/routes/__tests__/app-routes-topic-referral.test.tsx',
+  'web/lib/routes/__tests__/app-routes-topic-rewards.test.tsx',
 ] as const
 
 /** Read the thin route files and the tests that import them. Vitest supplies synthetic text. */
