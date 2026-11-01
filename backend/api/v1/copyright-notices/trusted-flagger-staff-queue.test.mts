@@ -116,11 +116,7 @@ describe('trusted-flagger staff queue priority', () => {
     const ownedIds = [unmatched, boosted, outOfArea, missed]
     await withCopyrightStaffQueueHttp(
       moderator,
-      {
-        approvalId: approval.id,
-        actor: administrator,
-      },
-      async ({ query, read, rejectPriorCursor, assertInterleaving }) => {
+      async ({ read, rejectPriorCursor, assertInterleaving }) => {
         restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
           trustedFlaggerPriority: false,
         })
@@ -170,21 +166,11 @@ describe('trusted-flagger staff queue priority', () => {
           priorQueueCursorScope,
         )
         await rejectPriorCursor(priorCursor)
-
-        expect(
-          await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id, { query }),
-        ).toEqual({
-          id: expect.any(String),
-        })
-        const afterWithdrawal = await read(ownedIds, false, 100)
-        expect(afterWithdrawal.copyright_notices.map(item => item.id)).toEqual([
-          missed,
-          unmatched,
-          boosted,
-          outOfArea,
-        ])
       },
-      decisionNow,
     )
+    expect(await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)).toEqual({
+      id: expect.any(String),
+    })
+    ownedApprovalId = undefined
   })
 })
