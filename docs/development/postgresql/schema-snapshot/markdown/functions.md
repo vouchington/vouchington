@@ -2,11 +2,35 @@
 
 [Schema index](README.md).
 
+## `fn_advance_copyright_email_link_case_clock`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_advance_copyright_email_link_case_clock()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)
  RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_bump_copyright_email_link_storage_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_bump_copyright_email_link_storage_generation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_bump_copyright_storage_reference_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_bump_copyright_storage_reference_generation()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 
@@ -16,6 +40,24 @@ CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(
 CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)
  RETURNS boolean
  LANGUAGE sql
+```
+
+## `fn_copyright_case_purge_permitted(table_name text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_case_purge_permitted(table_name text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+```
+
+## `fn_copyright_case_purge_pointer_cut_permitted(table_name text, old_row jsonb, new_row jsonb)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_case_purge_pointer_cut_permitted(table_name text, old_row jsonb, new_row jsonb)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
 ```
 
 ## `fn_copyright_decision_rationale_retention_eligible(rationale copyright_decision_rationales, cutoff_at timestamp with time zone)`
@@ -238,6 +280,22 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_slug_alias_not_reserved(
  LANGUAGE plpgsql
 ```
 
+## `fn_fence_copyright_email_link_storage_owner`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_fence_copyright_email_link_storage_owner()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_fence_copyright_linked_email_private_write`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_fence_copyright_linked_email_private_write()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_field_changes(before_fields jsonb, after_fields jsonb)`
 
 ```sql
@@ -245,6 +303,14 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
+```
+
+## `fn_guard_copyright_claimed_storage_reference_delete`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_claimed_storage_reference_delete()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
@@ -649,6 +715,14 @@ CREATE OR REPLACE FUNCTION public.fn_register_oauth_grant_retention_anchor()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_register_released_user_agent_string_cleanup_candidate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_copyright_notice_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_copyright_notice_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1434,6 +1508,14 @@ CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollu
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)
  RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_retain_copyright_submission_party`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_retain_copyright_submission_party()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 

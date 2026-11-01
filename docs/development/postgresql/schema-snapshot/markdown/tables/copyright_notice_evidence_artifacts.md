@@ -40,11 +40,13 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_copyright_notice_id_id_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_id, id)`
 - `copyright_notice_evidence_artifacts_pkey`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_pkey ON public.copyright_notice_evidence_artifacts USING btree (id)`
 - `idx_copyright_notice_evidence_artifacts__media_type_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON public.copyright_notice_evidence_artifacts USING btree (media_type_id)`
-- `idx_copyright_notice_evidence_artifacts__storage_object_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id ON public.copyright_notice_evidence_artifacts USING btree (storage_object_id) WHERE (storage_object_id IS NOT NULL)`
+- `idx_copyright_notice_evidence_artifacts__storage_object_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id ON public.copyright_notice_evidence_artifacts USING btree (storage_object_id, id) WHERE (storage_object_id IS NOT NULL)`
 - `uq_copyright_evidence_artifacts__submission_object`: `CREATE UNIQUE INDEX uq_copyright_evidence_artifacts__submission_object ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_object_id)`
 
 **Triggers:**
 
+- `trigger_copyright_evidence_claimed_object_delete`: `CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete BEFORE DELETE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_claimed_storage_reference_delete('storage_object_id')`
+- `trigger_copyright_evidence_object_reference_generation`: `CREATE TRIGGER trigger_copyright_evidence_object_reference_generation AFTER INSERT OR DELETE OR UPDATE OF storage_object_id ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_storage_reference_generation('storage_object_id')`
 - `trigger_copyright_notice_evidence_immutable`: `CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
 - `trigger_copyright_notice_evidence_requires_storage_object`: `CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id')`
 - `trigger_update_copyright_artifacts_scope`: `CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

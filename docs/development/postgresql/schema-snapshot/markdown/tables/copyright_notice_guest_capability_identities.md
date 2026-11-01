@@ -29,7 +29,7 @@ _none_
 
 - `copyright_guest_capability_identity_notice_key`: `CREATE UNIQUE INDEX copyright_guest_capability_identity_notice_key ON public.copyright_notice_guest_capability_identities USING btree (id, copyright_notice_id)`
 - `copyright_notice_guest_capability_identities_pkey`: `CREATE UNIQUE INDEX copyright_notice_guest_capability_identities_pkey ON public.copyright_notice_guest_capability_identities USING btree (id)`
-- `idx_cpyrght_ntc_gst_cpblty_idntts__notice`: `CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice ON public.copyright_notice_guest_capability_identities USING btree (copyright_notice_id)`
+- `idx_cpyrght_ntc_gst_cpblty_idntts__notice`: `CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice ON public.copyright_notice_guest_capability_identities USING btree (copyright_notice_id, id)`
 
 **Triggers:**
 _none_

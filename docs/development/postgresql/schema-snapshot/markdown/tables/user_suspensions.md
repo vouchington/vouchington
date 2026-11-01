@@ -33,7 +33,7 @@ _none_
 
 **Indexes:**
 
-- `idx_user_suspensions__user`: `CREATE INDEX idx_user_suspensions__user ON public.user_suspensions USING btree (user_id) WHERE (lifted_at IS NULL)`
+- `idx_user_suspensions__user`: `CREATE INDEX idx_user_suspensions__user ON public.user_suspensions USING btree (user_id, reason) WHERE (lifted_at IS NULL)`
 - `idx_user_suspensions__user_id`: `CREATE INDEX idx_user_suspensions__user_id ON public.user_suspensions USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `user_suspensions_pkey`: `CREATE UNIQUE INDEX user_suspensions_pkey ON public.user_suspensions USING btree (id)`
 
