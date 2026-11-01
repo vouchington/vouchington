@@ -8,6 +8,7 @@ import {
   unlinkValidationFromReferralProgram,
   updateReferralProgramAttributes,
 } from './referral-programs.mts'
+import { assertReferralProgramAndLinkValidationExist } from './validation.mts'
 import type { Topic } from './types.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
@@ -158,5 +159,16 @@ describe('referral-programs', () => {
       assert.ok(err && typeof err === 'object' && 'status' in err)
       assert.equal(err.status, 403)
     }
+  })
+
+  it('assertReferralProgramAndLinkValidationExist rejects a non-uuid validation id with 422', async () => {
+    await assert.rejects(
+      assertReferralProgramAndLinkValidationExist(referralProgramId!, 'not-a-uuid'),
+      (err: unknown) => {
+        assert.ok(err && typeof err === 'object' && 'status' in err)
+        assert.equal(err.status, 422)
+        return true
+      },
+    )
   })
 })
