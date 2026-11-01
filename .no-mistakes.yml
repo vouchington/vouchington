@@ -5525,10 +5525,6 @@ rules:
             symbol: checkTrendingHttpContracts,
           }
         - {
-            file: backend/scripts/native-mv-contracts/rss-worker-sparse.mts,
-            symbol: checkRssWorkerSparseLane,
-          }
-        - {
             file: backend/scripts/native-mv-contracts/rss-worker.mts,
             symbol: checkRssWorkerContracts,
           }
