@@ -5530,10 +5530,6 @@ rules:
             symbol: checkTrendingHttpContracts,
           }
         - {
-            file: backend/scripts/native-mv-contracts/trending-service.mts,
-            symbol: checkTrendingServiceContracts,
-          }
-        - {
             file: backend/scripts/native-mv-contracts/rss-worker-paged.mts,
             symbol: checkRssWorkerPagedContracts,
           }
