@@ -16,10 +16,10 @@ import {
   setRssFeedOwningTopicVoteScore,
   updateRssFeedTiming,
 } from '@voucha/test-helpers/entities/rss-feeds'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 import { captureRssJobs } from '@voucha/test-helpers/rss-dispatch-jobs'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
-import { refreshMaterializedView } from '../../../data-stores/psql/migrate.mts'
 import { rssFeedsHandlers } from '../workers.mts'
 
 describe('rss feed tier lane dispatch', () => {
@@ -54,7 +54,7 @@ describe('rss feed tier lane dispatch', () => {
 
       // ast-grep-ignore: no-three-sequential-awaits -- write the score before refreshing the MV and reading its tier
       await setRssFeedOwningTopicVoteScore(newerId, 1_000_000_000, 0)
-      await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+      await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
       const [[olderTier], [newerTier]] = await Promise.all([
         getRssFeedCrawlTiers([olderId]),
         getRssFeedCrawlTiers([newerId]),
@@ -98,7 +98,7 @@ describe('rss feed tier lane dispatch', () => {
       restoreBudget()
       await Promise.all([job?.remove(), ...admitted.map(row => row.remove())])
       await deleteRssFeedsByIds(feedIds)
-      await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+      await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
     }
   })
 })

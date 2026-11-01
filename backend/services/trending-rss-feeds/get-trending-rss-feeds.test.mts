@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { refreshMaterializedView } from '@data-stores/psql/migrate'
 import { createNativeTrendingFeed } from '@voucha/test-helpers/native-trending-rss-feeds'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 import { updateRssFeedById } from '../rss-feeds/update.mts'
 import { getTrendingRssFeeds } from './get-trending-rss-feeds.mts'
 
-const refreshTrendingFeeds = () => refreshMaterializedView('mv_trending_rss_feeds')
+const refreshTrendingFeeds = () => refreshMaterializedViewForTest('mv_trending_rss_feeds')
 
 describe('getTrendingRssFeeds', () => {
   it('throws 400 for invalid time_range', async () => {
