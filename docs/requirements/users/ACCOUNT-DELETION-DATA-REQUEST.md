@@ -73,6 +73,9 @@ activation period without allowing its end to precede its start. Identity-verifi
 are similarly reassigned to the tombstone for both
 the attempted account and the administrator who issued a support grant; this retains an anonymized
 payment/support audit without retaining either deleted account identifier.
+The daily retention cleanup eventually removes those tombstoned attempts, completed deletion
+requests, and released preservation holds after their respective legal-record windows. Open holds
+continue to block final account deletion and are never eligible for this cleanup.
 
 ### Deletion Cascade
 

@@ -78,6 +78,24 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit,
       integer: true,
     },
+    identity_attempt_retention_months: {
+      description: 'Age in calendar months before deleting tombstoned verification attempts.',
+      minValue: 84,
+      maxValue: DATA_RETENTION_MAX_VALUES.identity_attempt_retention_months,
+      integer: true,
+    },
+    deletion_proof_retention_months: {
+      description: 'Age in calendar months before deleting completed account deletion proof.',
+      minValue: 36,
+      maxValue: DATA_RETENTION_MAX_VALUES.deletion_proof_retention_months,
+      integer: true,
+    },
+    released_hold_retention_months: {
+      description: 'Age in calendar months before deleting released account preservation holds.',
+      minValue: 36,
+      maxValue: DATA_RETENTION_MAX_VALUES.released_hold_retention_months,
+      integer: true,
+    },
     ai_retention_page_size: {
       description: 'Maximum rows in each persisted AI retention page.',
       minValue: 1,

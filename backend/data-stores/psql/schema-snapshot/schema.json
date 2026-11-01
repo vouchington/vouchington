@@ -1931,7 +1931,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_user_landing_page_group_member_item_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM user_landing_page_items\n    WHERE id = NEW.landing_page_item_id\n      AND item_type = 'topic_group'\n  ) THEN\n    RAISE EXCEPTION 'landing_page_item_id must reference a topic_group item';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_user_legal_preservation_hold_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_user_legal_preservation_hold_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'legal preservation holds are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.released_at IS NOT NULL\n    OR NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.placed_by_id IS DISTINCT FROM OLD.placed_by_id\n    OR NEW.reference_ciphertext IS DISTINCT FROM OLD.reference_ciphertext THEN\n    RAISE EXCEPTION 'legal preservation holds change only by a single release' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_user_legal_preservation_hold_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF current_setting('app.legal_record_retention_delete', true) = 'on'\n      AND OLD.released_at IS NOT NULL\n      AND OLD.released_at + make_interval(months => NULLIF(current_setting('app.released_hold_retention_months', true), '')::integer) <= CURRENT_TIMESTAMP THEN\n      RETURN OLD;\n    END IF;\n    RAISE EXCEPTION 'legal preservation holds are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.released_at IS NOT NULL\n    OR NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.placed_by_id IS DISTINCT FROM OLD.placed_by_id\n    OR NEW.reference_ciphertext IS DISTINCT FROM OLD.reference_ciphertext THEN\n    RAISE EXCEPTION 'legal preservation holds change only by a single release' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_user_rss_feed_import_result": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_user_rss_feed_import_result()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.outcome IS NOT NULL AND NEW.outcome <> 'error' AND NEW.rss_feed_id IS NULL THEN\n    IF TG_OP = 'UPDATE' AND OLD.rss_feed_id IS NOT NULL AND (\n      pg_trigger_depth() > 1 OR EXISTS (\n        SELECT 1 FROM rss_feeds\n        WHERE id = OLD.rss_feed_id AND hard_delete_requested_at IS NOT NULL\n      )\n    ) THEN RETURN NEW; END IF;\n    RAISE EXCEPTION 'completed RSS feed import requires a live feed target'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -52973,13 +52973,20 @@
         "idx_identity_verification_attempts__user": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_identity_verification_attempts__user ON public.identity_verification_attempts USING btree (user_id)",
+          "definition": "CREATE INDEX idx_identity_verification_attempts__user ON public.identity_verification_attempts USING btree (user_id, id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "user_id",
               "descending": false,
               "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -139818,6 +139825,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_user_deletion_requests__completed_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_deletion_requests__completed_retention ON public.user_deletion_requests USING btree (completed_at, id) WHERE (completed_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "completed_at",
+              "descending": false,
+              "expression": "completed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_deletion_requests__processing_attempt_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -141688,7 +141722,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL pauses the 90-day final account purge but not immediate account-deletion phases; at most one hold per account is open at a time. Rows are append-only apart from a single release and survive the account through retained identity references. Holds may be placed or released while the users row is soft-deleted. The owner decides scope and duration on a lawyer's advice, so neither is stored.",
+      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL pauses the 90-day final account purge but not immediate account-deletion phases; at most one hold per account is open at a time. Rows are append-only apart from a single release; released proof is removed after three years. Holds may be placed or released while the users row is soft-deleted. The owner decides scope and duration on a lawyer's advice, so neither is stored.",
       "foreignKeys": {
         "user_legal_preservation_holds_account_user_id_fkey": {
           "columns": ["account_user_id"],
@@ -141829,6 +141863,33 @@
             }
           ],
           "predicate": "(released_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_legal_preservation_holds__released_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_legal_preservation_holds__released_retention ON public.user_legal_preservation_holds USING btree (released_at, id) WHERE (released_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "released_at",
+              "descending": false,
+              "expression": "released_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(released_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

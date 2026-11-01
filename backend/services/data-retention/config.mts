@@ -12,6 +12,9 @@ export type DataRetentionConfig = {
   vote_integrity_detail_days: number
   max_batches_per_run: number
   partition_status_probe_limit: number
+  identity_attempt_retention_months: number
+  deletion_proof_retention_months: number
+  released_hold_retention_months: number
   moderation_batch_size: number
   moderation_max_batches_per_run: number
   ses_bounce_retention_days: number
@@ -44,6 +47,9 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   vote_integrity_detail_days: 180,
   max_batches_per_run: 200,
   partition_status_probe_limit: 64,
+  identity_attempt_retention_months: 84,
+  deletion_proof_retention_months: 36,
+  released_hold_retention_months: 36,
   moderation_batch_size: 25,
   moderation_max_batches_per_run: 4,
   ses_bounce_retention_days: 90,
@@ -68,6 +74,9 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   vote_integrity_detail_days: 180,
   max_batches_per_run: 2_000,
   partition_status_probe_limit: 256,
+  identity_attempt_retention_months: 1200,
+  deletion_proof_retention_months: 1200,
+  released_hold_retention_months: 1200,
   moderation_batch_size: 100,
   moderation_max_batches_per_run: 20,
   ses_bounce_retention_days: 365,
@@ -93,6 +102,9 @@ export const dataRetentionConfig = new DynamicConfig({
     community_purge_batch_size: 'number',
     topic_import_attempt_batch_size: 'number',
     partition_status_probe_limit: 'number',
+    identity_attempt_retention_months: 'number',
+    deletion_proof_retention_months: 'number',
+    released_hold_retention_months: 'number',
     moderation_batch_size: 'number',
     moderation_max_batches_per_run: 'number',
     ses_bounce_retention_days: 'number',
@@ -113,6 +125,17 @@ export function getDataRetentionLimits(): DataRetentionLimits {
   return {
     batchSize: readDataRetentionField('batch_size'),
     maxBatches: readDataRetentionField('max_batches_per_run'),
+  }
+}
+
+export function getLegalRecordRetentionWindows() {
+  return {
+    identityAttemptMonths: Math.max(
+      84,
+      readDataRetentionField('identity_attempt_retention_months'),
+    ),
+    deletionProofMonths: Math.max(36, readDataRetentionField('deletion_proof_retention_months')),
+    releasedHoldMonths: Math.max(36, readDataRetentionField('released_hold_retention_months')),
   }
 }
 
