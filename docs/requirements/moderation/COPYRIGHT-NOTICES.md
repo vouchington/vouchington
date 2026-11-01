@@ -124,6 +124,10 @@ complaint per decision, and the six-month window starts at that party's earliest
 notice. UK has no participant redress route. Transparency reporting and the Article 24(5) statement
 database are independently switchable and carry no personal data or statement text.
 
+An EU transparency report is stored once, a full day after its period closes, and never changes.
+Facts count by when Voucha recorded them, not by the email arrival date, so a late-admitted fact
+cannot be backdated into a published period; it counts in the period it was recorded in.
+
 ## Staydown matching
 
 DSM Directive Article 17(4)(b)-(c) obliges only an online content-sharing service provider to keep

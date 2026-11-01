@@ -77,6 +77,11 @@ describe('EU copyright notice routes', () => {
       .send({ rationale: 'Missing disposition' })
       .expect(422)
     const periodStart = new Date(Date.now() - 60_000).toISOString()
+    const closedStart = new Date(
+      Date.now() -
+        4 * 86_400_000 -
+        (Number.parseInt(crypto.randomUUID().slice(0, 8), 16) % 3_600_000),
+    ).toISOString()
     await staffRequest.post('/api/v1/copyright-eu-reports').send({ period_start: 1 }).expect(422)
     await staffRequest
       .post('/api/v1/copyright-eu-reports')
@@ -168,8 +173,8 @@ describe('EU copyright notice routes', () => {
     const report = await staffRequest
       .post('/api/v1/copyright-eu-reports')
       .send({
-        period_start: periodStart,
-        period_end: new Date(Date.now() + 60_000).toISOString(),
+        period_start: closedStart,
+        period_end: new Date(Date.parse(closedStart) + 1_000).toISOString(),
       })
       .expect(201)
     expect(report.body.copyright_eu_report).toMatchObject({

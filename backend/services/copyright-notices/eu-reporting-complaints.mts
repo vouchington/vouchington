@@ -1,4 +1,5 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
@@ -27,8 +28,10 @@ export async function readDsaCopyrightComplaintFigures(
   periodStartedAt: Date,
   periodEndedAt: Date,
   noticeIds?: readonly string[],
+  queryExecutor: QueryExecutor = read,
 ): Promise<DsaCopyrightComplaintFigures> {
   if (noticeIds?.length === 0) return emptyDsaCopyrightComplaintFigures()
+  const [from, to] = [getMinUUIDv7ForDate(periodStartedAt), getMinUUIDv7ForDate(periodEndedAt)]
   const query = sql`/* readDsaCopyrightComplaintFigures */
     WITH received AS (
       SELECT request.filed_by, request.challenged_decision_outcome::text AS outcome,
@@ -36,8 +39,8 @@ export async function readDsaCopyrightComplaintFigures(
     .append(sql` AS trusted
       FROM copyright_territorial_redress_requests request
       WHERE request.jurisdiction = 'eu_dsa'
-        AND request.received_at >= ${periodStartedAt}
-        AND request.received_at < ${periodEndedAt}`)
+        AND request.id >= ${from}::uuid
+        AND request.id < ${to}::uuid`)
   appendOwnedComplaintNoticeIds(query, noticeIds)
   query
     .append(sql`
@@ -49,8 +52,8 @@ export async function readDsaCopyrightComplaintFigures(
     .append(sql` AS trusted
       FROM copyright_territorial_redress_requests request
       WHERE request.jurisdiction = 'eu_dsa'
-        AND request.decided_at >= ${periodStartedAt}
-        AND request.decided_at < ${periodEndedAt}`)
+        AND request.current_staff_decision_identity_id >= ${from}::uuid
+        AND request.current_staff_decision_identity_id < ${to}::uuid`)
   appendOwnedComplaintNoticeIds(query, noticeIds)
   query.append(sql`
     ), buckets AS (
@@ -87,7 +90,7 @@ export async function readDsaCopyrightComplaintFigures(
         'reversed', reversed, 'median_hours', median_hours)) FROM metrics)
         AS by_decision_type
   `)
-  const { rows } = await read<ComplaintFigureRow>(query)
+  const { rows } = await queryExecutor<ComplaintFigureRow>(query)
   const row = rows[0]
   assert(row, 500, 'Failed to count DSA copyright complaints')
   return {

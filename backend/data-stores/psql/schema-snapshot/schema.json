@@ -27073,7 +27073,7 @@
       "checkConstraints": {
         "chk_copyright_eu_transparency_reports__counts": "CHECK (((receipt_count >= 0) AND (statement_of_reasons_count >= 0) AND (redress_request_count >= 0) AND (redress_decision_count >= 0) AND (supervised_complaint_count >= 0) AND (escalation_count >= 0)))",
         "chk_copyright_eu_transparency_reports__jurisdiction": "CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))",
-        "chk_copyright_eu_transparency_reports__period": "CHECK ((period_started_at < period_ended_at))"
+        "chk_copyright_eu_transparency_reports__period": "CHECK (((period_started_at < period_ended_at) AND (period_ended_at <= reported_at)))"
       },
       "columns": {
         "created_at": {
@@ -27084,7 +27084,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "escalation_count": {
@@ -27097,6 +27097,17 @@
           "nullable": false,
           "ordinalPosition": 10,
           "type": "integer"
+        },
+        "figures_snapshot": {
+          "collation": null,
+          "comment": "Non-personal aggregate export figures retained after source cases are deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "jsonb"
         },
         "id": {
           "collation": null,
@@ -27120,9 +27131,20 @@
           "ordinalPosition": 2,
           "type": "copyright_jurisdictions"
         },
+        "method_snapshot": {
+          "collation": null,
+          "comment": "Non-personal description of the sources and time boundaries used to compile the report.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "jsonb"
+        },
         "period_ended_at": {
           "collation": null,
-          "comment": "End of the caller-supplied reporting period. Must be after period_started_at.",
+          "comment": "Exclusive end of the completed reporting period.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27183,7 +27205,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "reported_by_id": {
@@ -27194,7 +27216,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "statement_of_reasons_count": {
@@ -27220,7 +27242,7 @@
           "type": "integer"
         }
       },
-      "comment": "Counts of stored EU copyright facts for a caller-supplied period. EU only. The period is not a statutory clock.",
+      "comment": "Immutable global EU copyright counts and method for a completed reporting period.",
       "foreignKeys": {
         "fk_copyright_eu_transparency_reports__reported_by": {
           "columns": ["reported_by_id"],
@@ -27273,6 +27295,33 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "uq_copyright_eu_transparency_reports__period": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_eu_transparency_reports__period ON public.copyright_eu_transparency_reports USING btree (period_started_at, period_ended_at)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "period_started_at",
+              "descending": false,
+              "expression": "period_started_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "period_ended_at",
+              "descending": false,
+              "expression": "period_ended_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -27285,7 +27334,12 @@
       "triggers": {
         "trigger_copyright_eu_transparency_reports_immutable": "CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_transparency_reports FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_copyright_eu_transparency_reports__period": {
+          "columns": ["period_started_at", "period_ended_at"],
+          "definition": "UNIQUE (period_started_at, period_ended_at)"
+        }
+      }
     },
     "copyright_jurisdiction_policy_approvals": {
       "checkConstraints": {
