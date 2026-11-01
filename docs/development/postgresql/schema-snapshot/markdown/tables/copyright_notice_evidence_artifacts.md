@@ -45,8 +45,8 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_evidence_claimed_object_delete`: `CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete BEFORE DELETE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_claimed_storage_reference_delete('storage_object_id')`
-- `trigger_copyright_evidence_object_reference_generation`: `CREATE TRIGGER trigger_copyright_evidence_object_reference_generation AFTER INSERT OR DELETE OR UPDATE OF storage_object_id ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_storage_reference_generation('storage_object_id')`
+- `trigger_copyright_evidence_claimed_object_delete`: `CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete BEFORE DELETE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_claimed_storage_reference_delete('storage_object_id')`
+- `trigger_copyright_evidence_object_reference_generation`: `CREATE TRIGGER trigger_copyright_evidence_object_reference_generation AFTER INSERT OR DELETE OR UPDATE OF storage_object_id ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('storage_object_id')`
 - `trigger_copyright_notice_evidence_immutable`: `CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
 - `trigger_copyright_notice_evidence_requires_storage_object`: `CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id')`
 - `trigger_update_copyright_artifacts_scope`: `CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

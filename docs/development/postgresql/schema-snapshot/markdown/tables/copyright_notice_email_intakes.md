@@ -61,7 +61,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_email_intake_object_reference_generation`: `CREATE TRIGGER trigger_copyright_email_intake_object_reference_generation AFTER INSERT OR DELETE OR UPDATE OF raw_storage_object_id ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_storage_reference_generation('raw_storage_object_id')`
-- `trigger_copyright_email_intakes_claimed_object_delete`: `CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete BEFORE DELETE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_claimed_storage_reference_delete('raw_storage_object_id')`
+- `trigger_copyright_email_intake_object_reference_generation`: `CREATE TRIGGER trigger_copyright_email_intake_object_reference_generation AFTER INSERT OR DELETE OR UPDATE OF raw_storage_object_id ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('raw_storage_object_id')`
+- `trigger_copyright_email_intakes_claimed_object_delete`: `CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete BEFORE DELETE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_claimed_storage_reference_delete('raw_storage_object_id')`
 - `trigger_copyright_email_intakes_current_result`: `CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation()`
 - `trigger_copyright_email_intakes_require_storage_object`: `CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')`

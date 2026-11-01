@@ -38,4 +38,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_fence_copyright_email_recommendation_identity_case`: `CREATE TRIGGER trigger_fence_copyright_email_recommendation_identity_case BEFORE INSERT ON public.copyright_notice_email_intake_recommendation_identities FOR EACH ROW EXECUTE FUNCTION fn_fence_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')`
+- `trigger_fence_copyright_email_recommendation_identity_case`: `CREATE TRIGGER trigger_fence_copyright_email_recommendation_identity_case BEFORE INSERT ON public.copyright_notice_email_intake_recommendation_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')`
