@@ -5,7 +5,6 @@ import { persistDynamicConfigTestBaseline } from '@voucha/test-helpers/dynamic-c
 import {
   copyrightConfig,
   getAutomaticWithholdingThresholds,
-  getCopyrightEvidenceRetentionDays,
   getCopyrightReviewTargetMinutes,
   getCopyrightDsaSorDatabaseFrom,
   isCopyrightEvidenceRetentionDeletionEnabled,
@@ -39,7 +38,7 @@ describe('copyright dynamic-config namespace', () => {
       .expect(400)
   })
 
-  it('launches with evidence retention deletion off and no retention period', async () => {
+  it('launches with the approved case purge enabled and exposes its pause switch', async () => {
     const developer = await createTestUser({ extraRoles: ['developer'] })
     const request = createRequest()
     await request.authenticateAs(developer)
@@ -48,28 +47,13 @@ describe('copyright dynamic-config namespace', () => {
 
     expect(current.body.namespace.fields).toContainEqual(
       expect.objectContaining({
-        name: 'evidenceRetentionDays',
-        type: 'number',
-        value: 0,
-        default_value: 0,
-        min_value: 0,
-        integer: true,
-      }),
-    )
-    expect(current.body.namespace.fields).toContainEqual(
-      expect.objectContaining({
         name: 'evidenceRetentionDeletion',
         type: 'boolean',
-        value: false,
-        default_value: false,
+        value: true,
+        default_value: true,
       }),
     )
-    expect(await isCopyrightEvidenceRetentionDeletionEnabled()).toBe(false)
-    expect(await getCopyrightEvidenceRetentionDays()).toBeNull()
-    await request
-      .patch(path)
-      .send({ config: { evidenceRetentionDays: -1 } })
-      .expect(400)
+    expect(await isCopyrightEvidenceRetentionDeletionEnabled()).toBe(true)
   })
 
   it('launches with automatic provisional withholding off and every abuse gate unset', async () => {
@@ -86,8 +70,7 @@ describe('copyright dynamic-config namespace', () => {
       mcpDecisionTools: false,
       emailThreadGraphMaxRows: 1000,
       reviewTargetMinutes: 0,
-      evidenceRetentionDeletion: false,
-      evidenceRetentionDays: 0,
+      evidenceRetentionDeletion: true,
       staydownMatching: false,
       trustedFlaggerPriority: false,
       dsaTransparencyReports: false,

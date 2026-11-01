@@ -20,7 +20,6 @@ export const BOUNDED_WORK_SCENARIOS = [
   'crawl-invalid-retention',
   'crawler-boilerplate-candidates',
   'copyright-review-target-breaches',
-  'copyright-evidence-retention-candidates',
   'membership-grant-expiry-candidates',
   'membership-pause-collection-due',
   'membership-apple-notification-recovery',
