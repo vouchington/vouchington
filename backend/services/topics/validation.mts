@@ -139,7 +139,7 @@ export const assertReferralProgramAndLinkValidationExist = async (
         CASE WHEN ${validationIdIsValid} THEN EXISTS (
           SELECT 1
           FROM referral_program_link_validation_rule_sets
-          WHERE id::text = ${validationId}
+          WHERE id = ${validationId}::uuid
         ) ELSE FALSE END AS validation_exists
     `,
     options,
