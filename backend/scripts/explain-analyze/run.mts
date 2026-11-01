@@ -86,10 +86,12 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
 }
 
 // A failing step is recorded and the run continues, so one run reports every failure.
-function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
-  return result.catch(err => {
+async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
+  try {
+    await result
+  } catch (err) {
     recordScenarioFailure(scenario, err)
-  })
+  }
 }
 
 async function main() {
