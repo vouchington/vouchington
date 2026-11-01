@@ -6,6 +6,14 @@ import { EXTRA_BOUNDED_TABLES_CONTINUED } from './schema-growth-bounded-extra-co
 import { VOTE_RETENTION_BOUNDED_TABLES } from './schema-vote-retention-policies.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
+  [
+    'retained_copyright_notice_identities',
+    'A finite residual owner shares the case UUIDv7 id and is deleted by the same bounded case job after root deletion; daily admission recovers lost cleanup.',
+  ],
+  [
+    'copyright_notice_party_identities',
+    'Finite associations to one live case or its residual owner; the same bounded job removes them after the case root.',
+  ],
   ['admin_import_batches', 'Completed batches retire after a bounded retention window.'],
   ['admin_import_rows', 'Child-first bounded import cleanup removes completed batch rows.'],
   ['user_rss_feed_import_batches', 'Completed batches retire after a bounded retention window.'],

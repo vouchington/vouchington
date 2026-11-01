@@ -32,7 +32,7 @@ export async function searchCopyrightNoticeAssociationTargets(
   const searchSql = sql`
     /* searchCopyrightNoticeAssociationTargets */
     WITH candidates AS MATERIALIZED (
-      SELECT notice.id, notice.jurisdiction, notice.received_at,
+      SELECT notice.id, notice.jurisdiction, notice.received_at, notice.evidence_erased_at,
         notice.claimant_display_name, notice.work_description
       FROM copyright_notices notice
   `
