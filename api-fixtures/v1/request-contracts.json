@@ -49252,12 +49252,12 @@
       "body": {
         "additionalProperties": false,
         "properties": {
-          "hold_token": {
+          "hold_id": {
             "format": "uuid",
             "type": "string"
           }
         },
-        "required": ["hold_token"],
+        "required": ["hold_id"],
         "type": "object"
       },
       "path": {

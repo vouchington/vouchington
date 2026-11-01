@@ -131,7 +131,7 @@ including unavailable or deleted content. Native adoption and UI evidence are de
 [clients #527](https://github.com/vouchington/vouchington-clients/issues/527).
 
 Staff can preserve an unlinked copyright email receipt after its private intake is erased and
-release that hold using its exact placement token. The API producer lands before staff web or
+release that hold by its hold id. The API producer lands before staff web or
 native controls; client adoption and UI evidence remain tracked under
 [clients #1229](https://github.com/vouchington/vouchington-clients/issues/1229).
 

@@ -58,7 +58,7 @@ app
     const hold = await releaseCopyrightEmailReceiptPreservationHold(
       currentUser,
       receiptId,
-      body.hold_token,
+      body.hold_id,
     )
     ctx.setStatus(201)
     ctx.json({ hold })

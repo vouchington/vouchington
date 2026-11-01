@@ -67,7 +67,9 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       (SELECT attachment.created_at FROM copyright_notice_email_intake_attachments attachment
        WHERE attachment.copyright_notice_email_intake_id = intake.id ORDER BY attachment.id DESC LIMIT 1),
       intake.recommendation_completed_at,
-      receipt.reviewed_at, receipt.last_preservation_hold_released_at,
+      receipt.reviewed_at,
+      (SELECT max(hold.released_at) FROM copyright_email_receipt_preservation_holds hold
+       WHERE hold.copyright_notice_email_intake_receipt_id = receipt.id),
       (SELECT reference.created_at FROM copyright_notice_email_thread_references reference
        WHERE reference.copyright_notice_email_intake_id = intake.id ORDER BY reference.id DESC LIMIT 1),
       (SELECT max(delivery.updated_at) FROM copyright_notice_delivery_work_items delivery
@@ -86,7 +88,9 @@ export async function lastActivityAndBlockers(transaction: TransactionQuery, int
       WHERE delivery.copyright_notice_email_intake_receipt_id = intake.id
         AND delivery.state IN ('pending', 'claimed')) AS has_pending_delivery,
     receipt.erased_at,
-    receipt.current_preservation_hold_token IS NOT NULL AS has_preservation_hold
+    EXISTS (SELECT 1 FROM copyright_email_receipt_preservation_holds hold
+      WHERE hold.copyright_notice_email_intake_receipt_id = receipt.id
+        AND hold.released_at IS NULL) AS has_preservation_hold
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
     WHERE intake.id = ${intakeId}`)

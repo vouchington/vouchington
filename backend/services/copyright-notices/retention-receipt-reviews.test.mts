@@ -7,10 +7,12 @@ import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/co
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import {
   attemptCopyrightReceiptReviewMutation,
+  readCopyrightReceiptHolds,
   readCopyrightReceiptReview,
   retireOldCopyrightReceiptRationale,
   seedCopyrightReceiptReview,
   seedOldCopyrightReceiptRationale,
+  seedReleasedCopyrightReceiptHold,
 } from '@voucha/test-helpers/copyright-receipt-review-retirement'
 import {
   placeCopyrightEmailReceiptPreservationHold,
@@ -89,13 +91,30 @@ describe('standalone copyright receipt review expiry', () => {
     )
     await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1 })
     expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBe('rejected')
-    await releaseCopyrightEmailReceiptPreservationHold(reviewer, receipt.id, hold.token)
+    await releaseCopyrightEmailReceiptPreservationHold(reviewer, receipt.id, hold.id)
     await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1 })
     expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
       review_decision: 'rejected',
-      current_preservation_hold_token: null,
-      last_preservation_hold_released_at: expect.any(Date),
     })
+    expect(await readCopyrightReceiptHolds(receipt.id)).toEqual([
+      expect.objectContaining({ id: hold.id, released_at: expect.any(Date) }),
+    ])
+  })
+
+  it('deletes expired released holds with the final review facts', async () => {
+    const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
+    const receipt = await seedCopyrightReceiptReview({
+      reviewerId: reviewer.id,
+      reviewedAt: oldReview,
+    })
+    await seedReleasedCopyrightReceiptHold({
+      receiptId: receipt.id,
+      staffId: reviewer.id,
+      releasedAt: new Date('2002-01-01T00:00:00.000Z'),
+    })
+    await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1 })
+    expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBeNull()
+    expect(await readCopyrightReceiptHolds(receipt.id)).toEqual([])
   })
 
   it('waits for a dependent attempted rationale to retire first', async () => {

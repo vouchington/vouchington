@@ -31,14 +31,20 @@ export async function readCopyrightReceiptReview(id: string) {
     reviewed_by_id: string | null
     reviewed_at: Date | null
     review_rationale_ciphertext: string | null
-    current_preservation_hold_token: string | null
-    last_preservation_hold_released_at: Date | null
   }>(sql`/* readCopyrightReceiptReview */
     SELECT amazon_ses_message_id, review_decision, reviewed_by_id, reviewed_at,
-      review_rationale_ciphertext, current_preservation_hold_token,
-      last_preservation_hold_released_at
+      review_rationale_ciphertext
     FROM copyright_notice_email_intake_receipts WHERE id = ${id}`)
   return rows[0] ?? null
+}
+
+export async function readCopyrightReceiptHolds(receiptId: string) {
+  const { rows } = await read<{ id: string; released_at: Date | null }>(
+    sql`/* readCopyrightReceiptHolds */
+      SELECT id, released_at FROM copyright_email_receipt_preservation_holds
+      WHERE copyright_notice_email_intake_receipt_id = ${receiptId} ORDER BY id`,
+  )
+  return rows
 }
 
 export async function attemptCopyrightReceiptReviewMutation(id: string) {
@@ -84,4 +90,16 @@ export async function retireOldCopyrightReceiptRationale(id: string) {
       AND fn_copyright_decision_rationale_retention_eligible(target, ${cutoff})`)
   await transaction.commit()
   return result.rowCount ?? 0
+}
+
+export async function seedReleasedCopyrightReceiptHold(input: {
+  receiptId: string
+  staffId: string
+  releasedAt: Date
+}) {
+  await write(sql`/* seedReleasedCopyrightReceiptHold */
+    INSERT INTO copyright_email_receipt_preservation_holds
+      (id, copyright_notice_email_intake_receipt_id, kind, placed_by_id, released_at, released_by_id)
+    VALUES (${v7({ msecs: input.releasedAt.getTime() - 86_400_000 })}, ${input.receiptId},
+      'court_request', ${input.staffId}, ${input.releasedAt}, ${input.staffId})`)
 }

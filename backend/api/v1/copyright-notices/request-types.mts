@@ -78,7 +78,7 @@ export type CopyrightEmailReceiptHoldRequest = {
 }
 
 export type CopyrightEmailReceiptHoldReleaseRequest = {
-  hold_token: ApiUuidContract
+  hold_id: ApiUuidContract
 }
 
 export type CopyrightCounterNoticeRequest = {

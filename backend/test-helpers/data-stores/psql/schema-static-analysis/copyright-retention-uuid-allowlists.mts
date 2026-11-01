@@ -1,9 +1,5 @@
 export const COPYRIGHT_RETENTION_UUID_COLUMNS_WITHOUT_KEYS: Array<[string, string]> = [
   [
-    'copyright_notice_email_intake_receipts.current_preservation_hold_token',
-    'Opaque compare-and-release authority for one current standalone receipt hold; it identifies no row and is cleared with the finite review facts.',
-  ],
-  [
     'copyright_notice_operational_retention_cursors.cursor_record_id',
     'Durable UUIDv7 keyset position can outlive the deleted operational row; it is not a relation.',
   ],

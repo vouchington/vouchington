@@ -52,6 +52,11 @@ async function sweepReceiptReviewPage(
   await transaction(sql`/* enableCopyrightReceiptReviewRetirement */
     SELECT set_config('app.copyright_receipt_review_retirement', 'on', true)`)
   const ids = candidates.map(candidate => candidate.id)
+  // Children first, in their own statement: the hold trigger must still see the final review facts.
+  await transaction(sql`/* deleteExpiredCopyrightReceiptPreservationHolds */
+    DELETE FROM copyright_email_receipt_preservation_holds hold
+    WHERE hold.copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
+      AND fn_copyright_receipt_review_retirement_eligible(hold.copyright_notice_email_intake_receipt_id)`)
   const { rows } = await transaction<{
     retired: boolean
   }>(sql`/* retireCopyrightReceiptReviewPage */
@@ -66,13 +71,7 @@ async function sweepReceiptReviewPage(
       reviewed_by_id = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.reviewed_by_id END,
       review_rationale_ciphertext = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.review_rationale_ciphertext END,
       review_retirement_check_at = CASE WHEN eligible.may_retire THEN '-infinity'::timestamptz
-        ELSE CURRENT_TIMESTAMP + interval '1 day' END,
-      preservation_hold_kind = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.preservation_hold_kind END,
-      preservation_hold_placed_at = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.preservation_hold_placed_at END,
-      preservation_hold_placed_by_id = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.preservation_hold_placed_by_id END,
-      preservation_hold_released_at = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.preservation_hold_released_at END,
-      preservation_hold_released_by_id = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.preservation_hold_released_by_id END,
-      last_preservation_hold_released_at = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.last_preservation_hold_released_at END
+        ELSE CURRENT_TIMESTAMP + interval '1 day' END
     FROM eligible WHERE receipt.id = eligible.id
     RETURNING eligible.may_retire AS retired`)
   await transaction.commit()

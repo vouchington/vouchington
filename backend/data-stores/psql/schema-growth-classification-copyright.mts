@@ -5,6 +5,10 @@ export const COPYRIGHT_RETENTION_UNBOUNDED_TABLES = [
     'Retained SES replay identities survive private intake erasure and grow with inbound email; indexed message-id reads remain selective.',
   ],
   [
+    'copyright_email_receipt_preservation_holds',
+    'At most one open hold belongs to each retained receipt and its rows are deleted when that receipt review retires; the receipt index bounds reads.',
+  ],
+  [
     'copyright_notice_email_thread_retirements',
     'At most one durable retirement marker belongs to each copyright case; the legal case skeleton persists.',
   ],

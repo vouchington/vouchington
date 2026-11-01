@@ -903,6 +903,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_receipt_current_revi
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_email_receipt_hold_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_receipt_hold_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_email_thread_reference_without_token`
 
 ```sql
