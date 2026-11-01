@@ -2,17 +2,12 @@ import { globSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import type { ScheduledJobManifest } from '../backend/modules/scheduled-job-manifest/types.mts'
-import { SCHEDULE_DEFINITIONS } from '../backend/entrypoints/worker-cpu/schedule-definitions.mts'
-import { BACKGROUND_CPU_QUEUE_NAME } from '../backend/queues/background-cpu/config.mts'
-import { BACKGROUND_QUEUE_NAME } from '../backend/queues/background/config.mts'
-import { SCHEDULED_JOB_MANIFESTS } from '../backend/services/queue-monitoring/scheduled-job-manifests.mts'
-
 // Shipped schedule catalog for the static backend gate. Not a Vitest root.
 // Shared-queue domains contribute manifests to one combined registration, so they have no
 // `upsertSchedules` of their own: registering a domain's manifest alone would prune the others.
+// Backend modules load through a non-literal import so the root script tsconfig does not
+// typecheck that graph under its own module settings.
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
-const combinedQueues: readonly string[] = [BACKGROUND_QUEUE_NAME, BACKGROUND_CPU_QUEUE_NAME]
 const schedulePaths = [
   ...globSync('backend/queues/*/enqueues/schedules.mts', { cwd: repoRoot }).filter(
     path =>
@@ -31,9 +26,23 @@ if (failures.length > 0) {
 }
 process.exit(0)
 
+type ScheduledJobManifest = {
+  queueName: string
+  jobs: readonly { schedulerId: string }[]
+}
+
 type ScheduleModule = {
   scheduledJobManifest?: ScheduledJobManifest
   upsertSchedules?: () => Promise<void>
+}
+
+type ScheduleDefinition = {
+  queueName: string
+  load: () => Promise<() => Promise<void>>
+}
+
+async function importSpecifier<T>(specifier: string): Promise<T> {
+  return (await import(specifier)) as T
 }
 
 async function scheduleCatalogFailures(): Promise<string[]> {
@@ -42,11 +51,28 @@ async function scheduleCatalogFailures(): Promise<string[]> {
     return ['no schedule modules matched the schedule globs']
   }
 
+  const [{ BACKGROUND_QUEUE_NAME }, { BACKGROUND_CPU_QUEUE_NAME }, catalog, schedules] =
+    await Promise.all([
+      importSpecifier<{ BACKGROUND_QUEUE_NAME: string }>('../backend/queues/background/config.mts'),
+      importSpecifier<{ BACKGROUND_CPU_QUEUE_NAME: string }>(
+        '../backend/queues/background-cpu/config.mts',
+      ),
+      importSpecifier<{ SCHEDULED_JOB_MANIFESTS: readonly ScheduledJobManifest[] }>(
+        '../backend/services/queue-monitoring/scheduled-job-manifests.mts',
+      ),
+      importSpecifier<{ SCHEDULE_DEFINITIONS: readonly ScheduleDefinition[] }>(
+        '../backend/entrypoints/worker-cpu/schedule-definitions.mts',
+      ),
+    ])
+  const combinedQueues = [BACKGROUND_QUEUE_NAME, BACKGROUND_CPU_QUEUE_NAME]
+  const SCHEDULED_JOB_MANIFESTS = catalog.SCHEDULED_JOB_MANIFESTS
+  const SCHEDULE_DEFINITIONS = schedules.SCHEDULE_DEFINITIONS
+
   const modules = await Promise.all(
     schedulePaths.map(async path => {
-      const loadedModule = (await import(
-        pathToFileURL(join(repoRoot, path)).href
-      )) as ScheduleModule
+      const loadedModule = await importSpecifier<ScheduleModule>(
+        pathToFileURL(join(repoRoot, path)).href,
+      )
       const manifest = loadedModule.scheduledJobManifest
       if (manifest === undefined) {
         failures.push(`${path}: missing scheduledJobManifest`)
