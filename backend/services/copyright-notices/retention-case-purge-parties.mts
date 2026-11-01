@@ -63,7 +63,7 @@ export async function retainCopyrightCasePartyPage(
   }
   return {
     nextId: page.at(-1)?.id ?? null,
-    hasMore: rows.length === limit,
+    hasMore: source !== 'claimant' && rows.length === limit,
     complete: false,
   }
 }
