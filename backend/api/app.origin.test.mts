@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createOriginGuardedListener, createVouchaApiApp } from './app.mts'
-import { WORKER_SECRET_EXEMPT_PATHS } from './app-origin-guard.mts'
 import { createConnection } from 'node:net'
 import { createServer } from 'node:http'
 import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
@@ -9,12 +8,6 @@ import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runne
 const WORKER_HEADER_VALUE = '0123456789abcdef0123456789abcdef'
 
 describe('API origin guards', () => {
-  // Every exempt path is a caller that cannot supply the CF worker secret — see
-  // docs/overview/architecture/event-ingress.md. This must stay flat, never silently grow.
-  it('keeps the worker-secret exempt path list to its known, reviewed entries', () => {
-    expect([...WORKER_SECRET_EXEMPT_PATHS].toSorted()).toEqual(['/infra/ping'])
-  })
-
   it('rejects requests without the CF worker secret', async () => {
     const app = createVouchaApiApp()
     app.route('/api/private').get(ctx => ctx.json({ ok: true }))

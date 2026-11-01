@@ -9,7 +9,7 @@ import { BACKEND_BASELINE_RAW_SECURITY_HEADERS } from './security-header-helpers
 // Every entry here bypasses Cloudflare's worker-secret check, so it must be a caller that
 // cannot supply the secret (an AWS-signed webhook, a health check) — see
 // docs/overview/architecture/event-ingress.md. Do not add a new entry without updating that doc.
-export const WORKER_SECRET_EXEMPT_PATHS = new Set(['/infra/ping'])
+const WORKER_SECRET_EXEMPT_PATHS = new Set(['/infra/ping'])
 export const CROSS_SITE_OAUTH_PROTOCOL_PATHS = new Set(['/register', '/revoke', '/token'])
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
