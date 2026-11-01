@@ -1,65 +1,80 @@
+import type { Context } from '@jongleberry/api-server'
+import * as onErrorModule from '@modules/on-error'
+import { createTestMembership, createTestUser } from '@voucha/test-helpers'
+import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveSessionPlan } from './rest-usage-meter.mts'
+import { meterRestUsage } from './rest-usage-meter.mts'
+import * as usageMeterHelpers from './usage-meter-helpers.mts'
 
-type Owner = { membership_plan: 'plus' | 'pro' | null }
+// Session routes settle a plan and return before the quota check.
+const ROUTE_KEY = 'GET:/api/v1/session'
 
-function dependencies(loadOwner: () => Promise<Owner | null>) {
-  return {
-    loadOwner: vi.fn<(userId: string) => Promise<Owner | null>>(loadOwner),
-    reportError: vi.fn<(error: Error) => void>(),
+function request(currentUser?: { id: string; membership_plan: 'plus' | 'pro' | null } | null) {
+  return { currentUser } as Context
+}
+
+async function settledPlan(ctx: Context, userId: string) {
+  const settle = vi.spyOn(usageMeterHelpers, 'settleUsageOnClose').mockImplementation(() => {})
+  try {
+    await meterRestUsage(ctx, ROUTE_KEY, userId)
+    return settle.mock.calls[0]?.[1].plan
+  } finally {
+    settle.mockRestore()
   }
 }
 
-describe('resolveSessionPlan', () => {
+describe('meterRestUsage session plan', () => {
   it('reuses the user the route already loaded without reading it again', async () => {
-    const deps = dependencies(() => Promise.resolve({ membership_plan: 'pro' }))
-
     await expect(
-      resolveSessionPlan('user-1', { id: 'user-1', membership_plan: 'plus' }, deps),
+      settledPlan(request({ id: 'user-1', membership_plan: 'plus' }), 'user-1'),
     ).resolves.toBe('plus')
-
-    expect(deps.loadOwner).not.toHaveBeenCalled()
   })
 
   it('reads the user by id when the route loaded none or loaded someone else', async () => {
-    const deps = dependencies(() => Promise.resolve({ membership_plan: 'pro' }))
+    const user = await createTestUser()
+    await createTestMembership({ user_id: user.id, plan: 'pro' })
 
-    await expect(resolveSessionPlan('user-1', undefined, deps)).resolves.toBe('pro')
-    await expect(resolveSessionPlan('user-1', null, deps)).resolves.toBe('pro')
+    await expect(settledPlan(request(undefined), user.id)).resolves.toBe('pro')
+    await expect(settledPlan(request(null), user.id)).resolves.toBe('pro')
     await expect(
-      resolveSessionPlan('user-1', { id: 'user-2', membership_plan: 'plus' }, deps),
+      settledPlan(request({ id: 'user-2', membership_plan: 'plus' }), user.id),
     ).resolves.toBe('pro')
-
-    expect(deps.loadOwner).toHaveBeenCalledTimes(3)
-    expect(deps.loadOwner).toHaveBeenCalledWith('user-1')
   })
 
   it('is the free plan for a user with no membership or no record', async () => {
-    const member = dependencies(() => Promise.resolve({ membership_plan: null }))
-    const missing = dependencies(() => Promise.resolve(null))
-
-    await expect(resolveSessionPlan('user-1', undefined, member)).resolves.toBe('free')
-    await expect(resolveSessionPlan('user-1', undefined, missing)).resolves.toBe('free')
-
-    expect(member.reportError).not.toHaveBeenCalled()
-    expect(missing.reportError).not.toHaveBeenCalled()
+    const user = await createTestUser()
+    const reportError = vi.spyOn(onErrorModule, 'default')
+    try {
+      await expect(settledPlan(request(undefined), user.id)).resolves.toBe('free')
+      await expect(settledPlan(request(undefined), crypto.randomUUID())).resolves.toBe('free')
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      reportError.mockRestore()
+    }
   })
 
   it('fails open to the free plan and reports a failed read', async () => {
     const failure = new Error('read replica unavailable')
-    const deps = dependencies(() => Promise.reject(failure))
-
-    await expect(resolveSessionPlan('user-1', undefined, deps)).resolves.toBe('free')
-
-    expect(deps.reportError).toHaveBeenCalledExactlyOnceWith(failure)
+    const restoreRead = rejectPostgresReadForTest('getPrivateUserByAny', failure)
+    const reportError = vi.spyOn(onErrorModule, 'default').mockReturnValue(undefined)
+    try {
+      await expect(settledPlan(request(undefined), crypto.randomUUID())).resolves.toBe('free')
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(failure)
+    } finally {
+      restoreRead()
+      reportError.mockRestore()
+    }
   })
 
   it('reports a non-Error failure as an Error', async () => {
-    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- A read may reject with any value.
-    const deps = dependencies(() => Promise.reject('connection reset'))
-
-    await expect(resolveSessionPlan('user-1', undefined, deps)).resolves.toBe('free')
-
-    expect(deps.reportError).toHaveBeenCalledExactlyOnceWith(new Error('connection reset'))
+    const restoreRead = rejectPostgresReadForTest('getPrivateUserByAny', 'connection reset')
+    const reportError = vi.spyOn(onErrorModule, 'default').mockReturnValue(undefined)
+    try {
+      await expect(settledPlan(request(undefined), crypto.randomUUID())).resolves.toBe('free')
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(new Error('connection reset'))
+    } finally {
+      restoreRead()
+      reportError.mockRestore()
+    }
   })
 })

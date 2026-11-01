@@ -34,10 +34,11 @@ export async function withRejectedPostgresQueryForTest<Result>(
  * Reject default-pool `read()` calls whose statement text contains `marker` (the leading SQL
  * comment label). Use only for reads outside any caller-owned transaction; returns the restore.
  */
-export function rejectPostgresReadForTest(marker: string, error: Error): () => void {
+export function rejectPostgresReadForTest(marker: string, error: unknown): () => void {
   const realRead = psql.read
   const spy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
     const text = typeof query === 'string' ? query : query.text
+    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Callers inject non-Error rejection values on purpose.
     if (text.includes(marker)) return Promise.reject(error)
     return realRead(query, ...rest)
   })
