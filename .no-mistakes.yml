@@ -3089,6 +3089,7 @@ rules:
         - .stripe
         - .no-data.mock
         - .real-glide.mock
+        - .real-glide
         - .actions.mock
         - .call-efficiency.mock
         - .mock
