@@ -152,7 +152,7 @@ jobs:
         timeout-minutes: 1
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
       # Covers browser-cache restore plus two 2-minute install attempts.
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
         timeout-minutes: 5
       - name: Create cloudflare worker dev vars
         timeout-minutes: 1

@@ -86,7 +86,7 @@ jobs:
       - name: Resolve pnpm version
         timeout-minutes: 1
         id: pnpm-version
-        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@342444cffceccb5ea0c1fca9d264be6af79d9fd5 # v0.83.0
+        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
       - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
         timeout-minutes: 1
         with:
