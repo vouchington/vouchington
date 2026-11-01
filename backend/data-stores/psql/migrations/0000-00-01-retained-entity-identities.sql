@@ -93,7 +93,7 @@ CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'pos
 COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; image identity requires its uploader and uses a separate creator.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE retained_identity_cleanup_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership', 'community_bridge', 'remote_actor');
+CREATE TYPE retained_identity_cleanup_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership', 'community_bridge', 'remote_actor', 'copyright_notice');
 COMMENT ON TYPE retained_identity_cleanup_families IS 'Retained identity families swept by cleanup, including the classifier community bridge.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
