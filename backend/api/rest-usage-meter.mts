@@ -67,29 +67,18 @@ export async function meterRestUsage(
 
 type PlanOwner = Parameters<typeof resolveUsagePlan>[0]
 
-interface UsagePlanDependencies {
-  loadOwner: (userId: string) => Promise<PlanOwner | null>
-  reportError: (error: Error) => void
-}
-
-const defaultPlanDependencies: UsagePlanDependencies = {
-  loadOwner: getPrivateUserByAny,
-  reportError: onError,
-}
-
 // Reuses the user the route already loaded; otherwise reads by id. It deliberately avoids
 // getCurrentUser, which can rewrite session cookies, because applyRouteRateLimit also runs on the
 // auth routes that carry their own tokens. A failed read costs a plan tier, not the request.
-export async function resolveSessionPlan(
+async function resolveSessionPlan(
   userId: string,
   loaded: (PlanOwner & { id: string }) | null | undefined,
-  { loadOwner, reportError }: UsagePlanDependencies = defaultPlanDependencies,
 ): Promise<UsagePlan> {
   try {
-    const owner = loaded?.id === userId ? loaded : await loadOwner(userId)
+    const owner = loaded?.id === userId ? loaded : await getPrivateUserByAny(userId)
     return resolveUsagePlan(owner ?? {})
   } catch (err) {
-    reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return 'free'
   }
 }
