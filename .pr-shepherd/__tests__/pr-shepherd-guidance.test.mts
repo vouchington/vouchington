@@ -1,48 +1,27 @@
-import { globSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-// #7180: a global pr-shepherd shadowed the workspace install on PATH. This guards Vouchington's own
-// guidance: checked-in docs and skills invoke the workspace-pinned CLI and no retired (pre-v1)
-// subcommands, flags, or action names.
-// pr-shepherd's command behavior, exit codes, and routing belong to its own tests and skill.
+import {
+  DEPRECATED_INVOCATIONS,
+  prShepherdGuidanceViolations,
+  REVISIT_FOLLOWUPS_SKILL,
+  TRUSTED_HOST_SHEPHERD_PROMPT,
+  WORKSPACE_JOURNAL_EXTRACT_COMMAND,
+} from '../../ci/pr-shepherd-guidance-policy.mts'
 
-const ROOT_URL = new URL('../../', import.meta.url)
-const ROOT_DIR = fileURLToPath(ROOT_URL)
-const repoFile = (path: string): URL => new URL(path, ROOT_URL)
+// #7180: a global pr-shepherd shadowed the workspace install on PATH. Command behavior,
+// exit codes, and routing belong to pr-shepherd's own tests. The live tree is checked
+// by ci/check-pr-shepherd-guidance.mts in static CI.
 
-const REVISIT_FOLLOWUPS_SKILL = readFileSync(
-  repoFile('.agents/skills/revisit-followups/SKILL.md'),
-  'utf8',
-)
-const TRUSTED_HOST_SHEPHERD_PROMPT = 'docs/prompts/automation/shepherd.md'
-const CHECKED_IN_GUIDANCE = [
-  ...globSync('.agents/skills/**/*.md', { cwd: ROOT_DIR }),
-  ...globSync('docs/**/*.md', { cwd: ROOT_DIR }),
-].map(path => ({ path, text: readFileSync(repoFile(path), 'utf8') }))
-const LOCAL_GUIDANCE = CHECKED_IN_GUIDANCE.filter(
-  ({ path }) => path !== TRUSTED_HOST_SHEPHERD_PROMPT,
-)
-
-const DEPRECATED_INVOCATIONS =
-  /\b(?:pnpm exec )?pr-shepherd\s+(?:poll|resolve|journal(?!\s+extract(?:\s|$))|commit-suggestion|build-suggestion-patch(?:es)?|mark-files-as-viewed|log-file|clean)\b|\bpr-shepherd(?:[ \t]+(?:iterate|<[^>\s]+>|\d+))?[ \t]+--(?:stack|poll-mode)\b|\b(?:FIX_CODE|fix_code|fix-thrash|fix-code-loop)\b/u
-const BARE_LOCAL_COMMAND =
-  /`pr-shepherd\s+(?:iterate|apply|journal|suggest|stack|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^`\n]+)?`|```(?:bash|sh|zsh|shell)?\n(?:(?!```)[^\n]*\n)*? {0,3}pr-shepherd\s+(?:iterate|apply|journal|suggest|stack|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^\n]+)?(?=\n|$)/u
+const currentGuidance = [
+  {
+    path: REVISIT_FOLLOWUPS_SKILL,
+    text: `Run ${WORKSPACE_JOURNAL_EXTRACT_COMMAND} when the journal is the source.`,
+  },
+  { path: 'docs/example.md', text: 'Use pnpm exec pr-shepherd stack 42 --until-terminal.' },
+]
 
 describe('pr-shepherd guidance', () => {
-  it('keeps local guidance workspace-pinned and on the current v1 commands', () => {
-    const divergentGuidance = LOCAL_GUIDANCE.filter(({ text }) =>
-      BARE_LOCAL_COMMAND.test(text),
-    ).map(({ path }) => path)
-    const deprecatedGuidance = CHECKED_IN_GUIDANCE.filter(({ text }) =>
-      DEPRECATED_INVOCATIONS.test(text),
-    ).map(({ path }) => path)
-
-    expect(divergentGuidance).toEqual([])
-    expect(deprecatedGuidance).toEqual([])
-    expect(REVISIT_FOLLOWUPS_SKILL).toContain(
-      'pnpm exec pr-shepherd journal extract --body-file <path>',
-    )
+  it('accepts current v1 commands and rejects retired ones', () => {
     expect(
       DEPRECATED_INVOCATIONS.test('pnpm exec pr-shepherd journal extract --body-file body.md'),
     ).toBe(false)
@@ -62,5 +41,35 @@ describe('pr-shepherd guidance', () => {
     expect(DEPRECATED_INVOCATIONS.test('pnpm exec pr-shepherd build-suggestion-patches')).toBe(true)
     expect(DEPRECATED_INVOCATIONS.test('On `FIX_CODE`, finish')).toBe(true)
     expect(DEPRECATED_INVOCATIONS.test('./dev/rebase-onto-main --stack')).toBe(false)
+  })
+
+  it('reports guidance violations from the supplied files', () => {
+    expect(prShepherdGuidanceViolations(currentGuidance)).toEqual([])
+    expect(prShepherdGuidanceViolations([])).toEqual([
+      `${REVISIT_FOLLOWUPS_SKILL}: missing workspace journal extract command`,
+    ])
+    expect(
+      prShepherdGuidanceViolations([
+        { path: REVISIT_FOLLOWUPS_SKILL, text: 'pnpm exec pr-shepherd journal 42' },
+      ]),
+    ).toEqual([
+      `${REVISIT_FOLLOWUPS_SKILL}: missing workspace journal extract command`,
+      `${REVISIT_FOLLOWUPS_SKILL}: deprecated pr-shepherd invocation`,
+    ])
+    expect(
+      prShepherdGuidanceViolations([
+        ...currentGuidance,
+        { path: 'docs/example.md', text: 'Run `pr-shepherd iterate 42` from a checkout.' },
+      ]),
+    ).toEqual(['docs/example.md: bare local pr-shepherd command'])
+    expect(
+      prShepherdGuidanceViolations([
+        ...currentGuidance,
+        {
+          path: TRUSTED_HOST_SHEPHERD_PROMPT,
+          text: 'The host may document `pr-shepherd iterate 42`.',
+        },
+      ]),
+    ).toEqual([])
   })
 })
