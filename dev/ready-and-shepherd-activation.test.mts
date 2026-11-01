@@ -1,5 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const ready = readFileSync('.agents/skills/ready-and-shepherd/SKILL.md', 'utf8')
@@ -7,11 +6,6 @@ const triage = readFileSync('.agents/skills/triage-prs/SKILL.md', 'utf8')
 const securityTriagePath = '.agents/skills/triage-security/SKILL.md'
 const securityTriage = readFileSync(securityTriagePath, 'utf8')
 const gitAndPrs = readFileSync('.agents/skills/agent-workflow/git-and-prs.md', 'utf8')
-
-const skillMarkdownPaths = readdirSync('.agents/skills', { recursive: true })
-  .map(path => join('.agents/skills', String(path)))
-  .filter(path => path.endsWith('.md'))
-  .toSorted()
 
 describe('ready-and-shepherd activation boundary', () => {
   it('fails closed before generic GitHub mutations when Harness dispatch is disabled', () => {
@@ -42,14 +36,9 @@ describe('ready-and-shepherd activation boundary', () => {
 
   it('allows only the Vouchington security-triage adapter to use the disabled provider-local handoff', () => {
     const flag = '--codex-security-local-handoff'
-    const filesWithFlag = skillMarkdownPaths.filter(path =>
-      readFileSync(path, 'utf8').includes(flag),
-    )
 
-    expect(filesWithFlag).toEqual([
-      '.agents/skills/ready-and-shepherd/SKILL.md',
-      securityTriagePath,
-    ])
+    // The static guidance check owns the "no other skill file" inventory.
+    expect(ready).toContain(flag)
     expect(securityTriage).toContain(`<N> ${flag}`)
     expect(securityTriage).toContain("`execution.status: 'completed'`")
     expect(securityTriage).toContain('security-triage')
