@@ -7,7 +7,10 @@ import {
 } from './retention-case-purge-parties.mts'
 import { verifyCopyrightCaseReportCoveragePage } from './retention-case-purge-coverage.mts'
 import { eraseCopyrightCaseEvidencePage } from './retention-case-purge-evidence.mts'
-import { verifyCopyrightCasePartyPage } from './retention-case-purge-verify-parties.mts'
+import {
+  hasBlockedCopyrightCaseParty,
+  verifyCopyrightCasePartyPage,
+} from './retention-case-purge-verify-parties.mts'
 import {
   COPYRIGHT_CASE_POINTER_PHASE_COUNT,
   cutCopyrightCasePointerPage,
@@ -167,6 +170,7 @@ export async function runLockedPage(
       }
     }
     case 'final':
+      if (await hasBlockedCopyrightCaseParty(query, data.noticeId)) return { data, hasMore: false }
       await deleteCopyrightCaseFinalTail(query, data.noticeId)
       return {
         data: enterCopyrightCasePurgePhase(data, 'residual_parties'),

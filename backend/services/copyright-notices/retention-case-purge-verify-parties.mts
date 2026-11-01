@@ -32,13 +32,9 @@ export async function verifyCopyrightCasePartyPage(
         OR (page.is_incident_party AND (
           state.current_open_review_identity_id IS NOT NULL
           OR state.is_termination_in_effect
-          OR EXISTS (
+          OR (state.current_outcome IN ('restrict', 'terminate') AND EXISTS (
             SELECT 1 FROM user_suspensions suspension
-            WHERE suspension.user_id = page.account_user_id
-              AND suspension.lifted_at IS NULL
-              AND suspension.reason IN (
-                'Copyright repeat-infringer review recorded restrict',
-                'Copyright repeat-infringer review recorded terminate')
+            WHERE suspension.user_id = page.account_user_id AND suspension.lifted_at IS NULL)
           )
         )), false) AS blocked
     FROM party_page page
@@ -71,4 +67,34 @@ export async function verifyCopyrightCasePartyPage(
     blocked: rows.some(row => row.blocked),
     clockAdvanced,
   }
+}
+
+/**
+ * Re-checks every account-level blocker in one indexed statement under the final tail's locks, so
+ * a hold, review, termination or suspension opened after `verify_parties` still stops the delete.
+ * A suspension blocks only while the account's decided review outcome is restrict or terminate.
+ */
+export async function hasBlockedCopyrightCaseParty(
+  query: TransactionQuery,
+  noticeId: string,
+): Promise<boolean> {
+  const { rows } = await query<{ blocked: boolean }>(sql`
+    /* readCopyrightCaseBlockedPartyAtFinal */
+    SELECT EXISTS (
+      SELECT 1 FROM copyright_notice_party_identities party
+      LEFT JOIN copyright_repeat_infringer_account_states state
+        ON state.account_user_id = party.account_user_id
+      WHERE party.copyright_notice_id = ${noticeId}::uuid
+        AND (EXISTS (SELECT 1 FROM user_legal_preservation_holds hold
+            WHERE hold.account_user_id = party.account_user_id AND hold.released_at IS NULL)
+          OR (party.is_incident_party AND (
+            state.current_open_review_identity_id IS NOT NULL
+            OR state.is_termination_in_effect
+            OR (state.current_outcome IN ('restrict', 'terminate') AND EXISTS (
+              SELECT 1 FROM user_suspensions suspension
+              WHERE suspension.user_id = party.account_user_id AND suspension.lifted_at IS NULL)
+            )
+          )))
+    ) AS blocked`)
+  return rows[0]!.blocked
 }

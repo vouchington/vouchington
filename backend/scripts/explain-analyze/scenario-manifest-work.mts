@@ -1,3 +1,4 @@
+import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
 import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids.mts'
 import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-scenario-ids.mts'
@@ -61,6 +62,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'request-attempt-retention-delete',
   'request-range-retirement-recent',
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
+  ...COPYRIGHT_CASE_PURGE_SCENARIO_IDS,
   'upload-cleanup-staged-upper',
   'upload-cleanup-staged-first',
   'upload-cleanup-staged-forward',
