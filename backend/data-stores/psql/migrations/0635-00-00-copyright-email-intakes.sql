@@ -200,6 +200,20 @@ BEGIN
     IF current_setting('app.copyright_operational_retention', true) = 'on' THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright email intake deletion requires operational retention' USING ERRCODE = 'check_violation';
   END IF;
+  IF fn_copyright_case_purge_permitted(TG_TABLE_NAME)
+    AND (to_jsonb(OLD) - ARRAY['current_recommendation_identity_id',
+      'current_recommendation_output_ciphertext', 'recommendation_completed_at'])
+      IS NOT DISTINCT FROM
+      (to_jsonb(NEW) - ARRAY['current_recommendation_identity_id',
+        'current_recommendation_output_ciphertext', 'recommendation_completed_at'])
+    AND NEW.current_recommendation_identity_id IS NULL
+    AND NEW.current_recommendation_output_ciphertext IS NULL
+    AND NEW.recommendation_completed_at IS NULL
+    AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+      WHERE link.copyright_notice_email_intake_id = OLD.id
+        AND link.copyright_notice_id = NULLIF(
+          current_setting('app.copyright_case_purge_notice_id', true), '')::uuid)
+  THEN RETURN NEW; END IF;
   IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
     RETURN NEW;
   END IF;

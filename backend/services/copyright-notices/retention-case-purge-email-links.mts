@@ -27,6 +27,8 @@ export async function deleteCopyrightCaseEmailThreadLinkPage(
     WHERE id = ${row.link_id}::uuid AND copyright_notice_id = ${noticeId}::uuid`)
   await query(sql`/* scopeCopyrightCaseEmailThreadIntake */
     SELECT set_config('app.copyright_case_purge_table', 'copyright_notice_email_intakes', true)`)
+  await query(sql`/* permitCopyrightCaseEmailThreadIntakeDelete */
+    SET LOCAL app.copyright_operational_retention = 'on'`)
   await query(sql`/* deleteCopyrightCaseEmailThreadIntake */
     DELETE FROM copyright_notice_email_intakes WHERE id = ${row.intake_id}::uuid`)
   return true

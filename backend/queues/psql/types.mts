@@ -101,7 +101,6 @@ export type CopyrightCasePurgeJobData = {
     | 'evidence'
     | 'pointers'
     | 'children'
-    | 'email_links'
     | 'final'
     | 'residual_parties'
   phaseIndex: number

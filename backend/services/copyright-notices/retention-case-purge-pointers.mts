@@ -13,6 +13,7 @@ export const COPYRIGHT_CASE_POINTER_CUTS = [
     ],
   ],
   ['copyright_territorial_redress_requests', ['current_staff_decision_identity_id']],
+  ['copyright_notice_email_intakes', ['current_recommendation_identity_id']],
 ] as const
 export const COPYRIGHT_CASE_POINTER_PHASE_COUNT = COPYRIGHT_CASE_POINTER_CUTS.length
 
@@ -22,11 +23,12 @@ export async function cutCopyrightCasePointerPage(
   noticeId: string,
   phaseIndex: number,
   limit: number,
-): Promise<{ nextPhaseIndex: number; cut: number }> {
+  afterId: string | null,
+): Promise<{ nextPhaseIndex: number; cut: number; nextAfterId: string | null }> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
     throw new Error('Invalid copyright pointer page size')
   const table = COPYRIGHT_CASE_POINTER_CUTS[phaseIndex]?.[0]
-  if (!table) return { nextPhaseIndex: phaseIndex, cut: 0 }
+  if (!table) return { nextPhaseIndex: phaseIndex, cut: 0, nextAfterId: null }
   await query(sql`/* scopeCopyrightCasePointerCut */
     SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true),
       set_config('app.copyright_case_purge_table', ${table}, true)`)
@@ -44,7 +46,7 @@ export async function cutCopyrightCasePointerPage(
         FROM page WHERE decision.id = page.id RETURNING 1
       ) SELECT count(*)::integer AS cut FROM changed`)
     const cut = rows[0]?.cut ?? 0
-    return { nextPhaseIndex: cut < limit ? 1 : 0, cut }
+    return { nextPhaseIndex: cut < limit ? 1 : 0, cut, nextAfterId: null }
   }
   if (phaseIndex === 1) {
     const { rows } = await query<{ cut: number }>(sql`/* cutCopyrightCaseSubmissionPointers */
@@ -65,9 +67,10 @@ export async function cutCopyrightCasePointerPage(
         FROM page WHERE submission.id = page.id RETURNING 1
       ) SELECT count(*)::integer AS cut FROM changed`)
     const cut = rows[0]?.cut ?? 0
-    return { nextPhaseIndex: cut < limit ? 2 : 1, cut }
+    return { nextPhaseIndex: cut < limit ? 2 : 1, cut, nextAfterId: null }
   }
-  const { rows } = await query<{ cut: number }>(sql`/* cutCopyrightCaseRedressPointers */
+  if (phaseIndex === 2) {
+    const { rows } = await query<{ cut: number }>(sql`/* cutCopyrightCaseRedressPointers */
     WITH page AS MATERIALIZED (
       SELECT id FROM copyright_territorial_redress_requests
       WHERE copyright_notice_id = ${noticeId}::uuid
@@ -82,6 +85,33 @@ export async function cutCopyrightCasePointerPage(
         rationale_ciphertext = NULL
       FROM page WHERE request.id = page.id RETURNING 1
     ) SELECT count(*)::integer AS cut FROM changed`)
-  const cut = rows[0]?.cut ?? 0
-  return { nextPhaseIndex: cut < limit ? 3 : 2, cut }
+    const cut = rows[0]?.cut ?? 0
+    return { nextPhaseIndex: cut < limit ? 3 : 2, cut, nextAfterId: null }
+  }
+
+  const cursor = afterId ? sql` AND link.id > ${afterId}::uuid` : sql``
+  const { rows: page } = await query<{ id: string; intake_id: string }>(
+    sql`/* readCopyrightCaseIntakePointerPage */
+      SELECT link.id, intake.id AS intake_id
+      FROM copyright_notice_email_intake_notice_links link
+      JOIN copyright_notice_email_intakes intake
+        ON intake.id = link.copyright_notice_email_intake_id
+      WHERE link.copyright_notice_id = ${noticeId}::uuid`
+      .append(cursor)
+      .append(sql` ORDER BY link.id LIMIT ${limit} FOR UPDATE OF intake NOWAIT`),
+  )
+  const intakeIds = page.map(row => row.intake_id)
+  if (intakeIds.length > 0)
+    await query(sql`/* cutCopyrightCaseIntakeRecommendationPointers */
+      UPDATE copyright_notice_email_intakes SET
+        current_recommendation_identity_id = NULL,
+        current_recommendation_output_ciphertext = NULL,
+        recommendation_completed_at = NULL
+      WHERE id = ANY(${intakeIds}::uuid[])
+        AND current_recommendation_identity_id IS NOT NULL`)
+  return {
+    nextPhaseIndex: page.length < limit ? 4 : 3,
+    cut: intakeIds.length,
+    nextAfterId: page.length === limit ? page.at(-1)!.id : null,
+  }
 }
