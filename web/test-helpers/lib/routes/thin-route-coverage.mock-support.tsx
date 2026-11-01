@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { vi } from 'vitest'
 
 vi.mock(import('@/lib/routes/topic-subpage-factories'), () => ({
@@ -128,7 +127,7 @@ vi.mock(
   import('@/components/posts/post-list-page'),
   () =>
     ({
-      PostListPage: () => <div data-testid='post-list-page' />,
+      PostListPage: () => <div>post-list-page</div>,
     }) as unknown as typeof import('@/components/posts/post-list-page'),
 )
 vi.mock(
@@ -147,6 +146,6 @@ vi.mock(
   import('@/components/tags/manage-topic-tags'),
   () =>
     ({
-      ManageTopicTags: () => <div data-testid='manage-topic-tags' />,
+      ManageTopicTags: () => <div>manage-topic-tags</div>,
     }) as unknown as typeof import('@/components/tags/manage-topic-tags'),
 )

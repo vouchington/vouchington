@@ -39,7 +39,7 @@ describe.each(allTagsPages)('%s topic tags page', (_slug, module) => {
       params: Promise.resolve({ id: 'topic-1', objectType: 'topic' }),
     })
     render(result)
-    expect(screen.getByTestId('manage-topic-tags')).toBeDefined()
+    expect(screen.getByText('manage-topic-tags')).toBeDefined()
   })
 
   it('calls notFound for invalid objectType', async () => {
@@ -57,6 +57,6 @@ describe('links list page', () => {
     const LinksPage = linksPage.default as LinksPageFn
     const result = await LinksPage({ searchParams: Promise.resolve({}) })
     render(result)
-    expect(screen.getByTestId('post-list-page')).toBeDefined()
+    expect(screen.getByText('post-list-page')).toBeDefined()
   })
 })

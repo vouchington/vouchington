@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  thinRouteCoverageSuffix,
-  thinRouteCoverageViolations,
-} from './thin-route-coverage-policy.mts'
+import { thinRouteCoverageViolations } from './thin-route-coverage-policy.mts'
 
 describe('thin route coverage policy', () => {
   it('accepts coverage text that imports every discovered route', () => {
@@ -11,9 +8,10 @@ describe('thin route coverage policy', () => {
       'web/app/(topics)/topic/[id]/page.tsx',
       'web/app/(topics)/topic/[id]/discussions/page.ts',
     ]
-    const coverageText = discovered
-      .map(path => `from '../../../${thinRouteCoverageSuffix(path)}'`)
-      .join('\n')
+    const coverageText = [
+      "from '../../../app/(topics)/topic/[id]/page'",
+      "from '../../../app/(topics)/topic/[id]/discussions/page'",
+    ].join('\n')
     expect(thinRouteCoverageViolations(discovered, coverageText)).toEqual([])
   })
 
