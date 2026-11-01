@@ -17,6 +17,7 @@ import { installApiEgressProxyRoutingResolver } from '@modules/api-egress-proxy'
 import { isApiEgressProxyEnabled } from '@services/api-egress-proxy'
 import { createWorkerSecretValidator, isAdminDashboardRequest } from './dashboard-auth.mts'
 import { createOriginGuardedListener } from '@voucha/api/app'
+import { createRequestQueryOptionsListener } from '@voucha/api/request-query-options'
 import { registerProductionApiShutdownCallbacks } from './shutdown.mts'
 import { exitAfterErrorReporting, startApiServer } from './startup.mts'
 
@@ -62,7 +63,10 @@ const PORT = Number(process.env.PORT) || 3000
 const DASHBOARD_PREFIX = '/admin/mq-dashboard'
 const isWorkerSecretValid = createWorkerSecretValidator()
 
-const apiCallback = createOriginGuardedListener(app.callback())
+const apiCallback = createRequestQueryOptionsListener(
+  createOriginGuardedListener(app.callback()),
+  {},
+)
 
 async function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   const url = req.url ?? '/'
@@ -88,7 +92,6 @@ async function handleApiRequest(req: http.IncomingMessage, res: http.ServerRespo
     dashboardApp(req, res)
     return
   }
-  // oxlint-disable-next-line typescript/no-floating-promises -- Node discards RequestListener returns; the existing unhandledRejection handler reports escaped failures.
   apiCallback(req, res)
 }
 

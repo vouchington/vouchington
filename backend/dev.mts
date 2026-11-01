@@ -2,6 +2,7 @@ import { addGracefulShutdownCallback } from '@data-stores/graceful-shutdown'
 import { parseArgs } from 'node:util'
 import http from 'node:http'
 import { createOriginGuardedListener } from '@voucha/api/app'
+import { createRequestQueryOptionsListener } from '@voucha/api/request-query-options'
 import app from './entrypoints/api/index.mts'
 import './entrypoints/worker-io/serve.mts'
 
@@ -39,7 +40,9 @@ function terminateHttpServer(server: http.Server): Promise<void> {
   })
 }
 
-const server = http.createServer(createOriginGuardedListener(app.callback()))
+const server = http.createServer(
+  createRequestQueryOptionsListener(createOriginGuardedListener(app.callback()), {}),
+)
 
 server.once('error', (err: Error) => {
   console.error(err.stack)
