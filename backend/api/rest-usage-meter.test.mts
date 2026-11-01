@@ -65,4 +65,16 @@ describe('meterRestUsage session plan', () => {
       reportError.mockRestore()
     }
   })
+
+  it('reports a non-Error failure as an Error', async () => {
+    const restoreRead = rejectPostgresReadForTest('getPrivateUserByAny', 'connection reset')
+    const reportError = vi.spyOn(onErrorModule, 'default').mockReturnValue(undefined)
+    try {
+      await expect(settledPlan(request(undefined), crypto.randomUUID())).resolves.toBe('free')
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(new Error('connection reset'))
+    } finally {
+      restoreRead()
+      reportError.mockRestore()
+    }
+  })
 })
