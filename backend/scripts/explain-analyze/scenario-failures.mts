@@ -7,6 +7,12 @@ export interface ScenarioFailure {
 
 const failures: ScenarioFailure[] = []
 
+export function recordScenarioFailure(scenario: string, error: unknown): void {
+  failures.push({ scenario, error })
+  console.error(`FAILED: ${scenario}`)
+  console.error(error)
+}
+
 export async function continueAfterFailure(
   scenario: string,
   fn: () => Promise<unknown>,
@@ -14,9 +20,7 @@ export async function continueAfterFailure(
   try {
     await fn()
   } catch (err) {
-    failures.push({ scenario, error: err })
-    console.error(`FAILED: ${scenario}`)
-    console.error(err)
+    recordScenarioFailure(scenario, err)
   }
 }
 

@@ -27,7 +27,7 @@ import {
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import { assertSeedAnchorMatches } from './seed-anchor-check.mts'
 import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
-import { assertNoScenarioFailures, continueAfterFailure } from './scenario-failures.mts'
+import { assertNoScenarioFailures, recordScenarioFailure } from './scenario-failures.mts'
 import { assertPlanRegistry } from './plan-expectations.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
@@ -86,88 +86,97 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
 }
 
 // A failing step is recorded and the run continues, so one run reports every failure.
-const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
-  runSitemapPageScenarios,
-  runStoryProjectionWorkScenarios,
-  runImageQuarantineScenarios,
-  runBloomReconciliationScenarios,
-  runMaterializedViewRefreshScenarios,
-  runIngestionRawPageScenarios,
-  runHostnameBlocklistScenario,
-  runHostnameCrawlSweepScenarios,
-  runCrawlerBoilerplateScenario,
-  runFeedAndMetricScenarios,
-  runHeavyFollowScenarios,
-  runPostFeedShareScenarios,
-  runStoryMemberPageScenarios,
-  runStoryByIdScenario,
-  runSearchAndFacetScenarios,
-  runOAuthClientVerificationScenarios,
-  runFollowerDistributionScenarios,
-  runEntityAndCommunityScenarios,
-  runViewDrivenReadScenarios,
-  runTopicImportAttemptScenarios,
-  runImportRequestRetentionScenarios,
-  runPostModerationRetentionScenarios,
-  seedAndAnalyzeAgentModerationRetention,
-  runAgentModerationRetentionScenarios,
-  runHotPathLoaderScenarios,
-  runSharedLoaderScenarios,
-  runMembershipRefundScenarios,
-  runMembershipWorkSelectionScenarios,
-  runEngagementEmailRecipientScenarios,
-  runRemoteFollowerScenarios,
-  runReviewSuccessionScenarios,
-  runClassifierHumanVoteComparisonScenarios,
-  runCopyrightStatementFactsScenarios,
-  runCopyrightDeliveryBatchScenarios,
-  seedMediaDeliveryReplay,
-  runMediaDeliveryReplayScenarios,
-  runMediaDeliveryScopedPageScenarios,
-  runMediaDeliveryGlobalPageScenarios,
-  runMediaDeliveryPopularImageScenario,
-  runRoundTripShapeScenarios,
-  runRequestContextFoldScenarios,
-  runCommunityRoundTripScenarios,
-  runImageDeliveryFoldScenarios,
-  runUserProfileRoundTripScenarios,
-  runUploadCleanupScenarios,
-  runRelationReadBatchScenarios,
-  runDispatchWorkPlanScenarios,
-  runModerationReportContextScenarios,
-  runRssFeedStateChangeScenarios,
-  // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
-  seedVoteWeightDispatch,
-  runVoteWeightDispatchScenarios,
-  runMembershipProviderRecoveryScenarios,
-  // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
-  runNotificationVisibilityScenarios,
-  runPublicationScopePageScenarios,
-  runDenseTopicViewerCountsScenario,
-  runTopicAliasCategoryWorkScenarios,
-  runRetentionStagePageScenarios,
-  runCopyrightRetentionCandidateScenario,
-  runEmbeddingReconciliationScenarios,
-  runStripeEventRecoveryScenario,
-  runMembershipRenewalSelectionScenario,
-]
+async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
+  try {
+    await result
+  } catch (err) {
+    recordScenarioFailure(scenario, err)
+  }
+}
 
 async function main() {
   prepareOutputDir()
   try {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
-    for (const step of RUN_STEPS) await continueAfterFailure(step.name, step)
+    await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios())
+    await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios())
+    await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios())
+    await runStep(runBloomReconciliationScenarios.name, runBloomReconciliationScenarios())
+    await runStep(runMaterializedViewRefreshScenarios.name, runMaterializedViewRefreshScenarios())
+    await runStep(runIngestionRawPageScenarios.name, runIngestionRawPageScenarios())
+    await runStep(runHostnameBlocklistScenario.name, runHostnameBlocklistScenario())
+    await runStep(runHostnameCrawlSweepScenarios.name, runHostnameCrawlSweepScenarios())
+    await runStep(runCrawlerBoilerplateScenario.name, runCrawlerBoilerplateScenario())
+    await runStep(runFeedAndMetricScenarios.name, runFeedAndMetricScenarios())
+    await runStep(runHeavyFollowScenarios.name, runHeavyFollowScenarios())
+    await runStep(runPostFeedShareScenarios.name, runPostFeedShareScenarios())
+    await runStep(runStoryMemberPageScenarios.name, runStoryMemberPageScenarios())
+    await runStep(runStoryByIdScenario.name, runStoryByIdScenario())
+    await runStep(runSearchAndFacetScenarios.name, runSearchAndFacetScenarios())
+    await runStep(runOAuthClientVerificationScenarios.name, runOAuthClientVerificationScenarios())
+    await runStep(runFollowerDistributionScenarios.name, runFollowerDistributionScenarios())
+    await runStep(runEntityAndCommunityScenarios.name, runEntityAndCommunityScenarios())
+    await runStep(runViewDrivenReadScenarios.name, runViewDrivenReadScenarios())
+    await runStep(runTopicImportAttemptScenarios.name, runTopicImportAttemptScenarios())
+    await runStep(runImportRequestRetentionScenarios.name, runImportRequestRetentionScenarios())
+    await runStep(runPostModerationRetentionScenarios.name, runPostModerationRetentionScenarios())
+    const analyzeAgentModerationRetention = seedAndAnalyzeAgentModerationRetention
+    await runStep(analyzeAgentModerationRetention.name, analyzeAgentModerationRetention())
+    await runStep(runAgentModerationRetentionScenarios.name, runAgentModerationRetentionScenarios())
+    await runStep(runHotPathLoaderScenarios.name, runHotPathLoaderScenarios())
+    await runStep(runSharedLoaderScenarios.name, runSharedLoaderScenarios())
+    await runStep(runMembershipRefundScenarios.name, runMembershipRefundScenarios())
+    await runStep(runMembershipWorkSelectionScenarios.name, runMembershipWorkSelectionScenarios())
+    await runStep(runEngagementEmailRecipientScenarios.name, runEngagementEmailRecipientScenarios())
+    await runStep(runRemoteFollowerScenarios.name, runRemoteFollowerScenarios())
+    await runStep(runReviewSuccessionScenarios.name, runReviewSuccessionScenarios())
+    const runClassifierHumanVoteComparison = runClassifierHumanVoteComparisonScenarios
+    await runStep(runClassifierHumanVoteComparison.name, runClassifierHumanVoteComparison())
+    await runStep(runCopyrightStatementFactsScenarios.name, runCopyrightStatementFactsScenarios())
+    await runStep(runCopyrightDeliveryBatchScenarios.name, runCopyrightDeliveryBatchScenarios())
+    await runStep(seedMediaDeliveryReplay.name, seedMediaDeliveryReplay())
+    await runStep(runMediaDeliveryReplayScenarios.name, runMediaDeliveryReplayScenarios())
+    await runStep(runMediaDeliveryScopedPageScenarios.name, runMediaDeliveryScopedPageScenarios())
+    await runStep(runMediaDeliveryGlobalPageScenarios.name, runMediaDeliveryGlobalPageScenarios())
+    await runStep(runMediaDeliveryPopularImageScenario.name, runMediaDeliveryPopularImageScenario())
+    await runStep(runRoundTripShapeScenarios.name, runRoundTripShapeScenarios())
+    await runStep(runRequestContextFoldScenarios.name, runRequestContextFoldScenarios())
+    await runStep(runCommunityRoundTripScenarios.name, runCommunityRoundTripScenarios())
+    await runStep(runImageDeliveryFoldScenarios.name, runImageDeliveryFoldScenarios())
+    await runStep(runUserProfileRoundTripScenarios.name, runUserProfileRoundTripScenarios())
+    await runStep(runUploadCleanupScenarios.name, runUploadCleanupScenarios())
+    await runStep(runRelationReadBatchScenarios.name, runRelationReadBatchScenarios())
+    await runStep(runDispatchWorkPlanScenarios.name, runDispatchWorkPlanScenarios())
+    await runStep(runModerationReportContextScenarios.name, runModerationReportContextScenarios())
+    await runStep(runRssFeedStateChangeScenarios.name, runRssFeedStateChangeScenarios())
+    // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
+    await runStep(seedVoteWeightDispatch.name, seedVoteWeightDispatch())
+    await runStep(runVoteWeightDispatchScenarios.name, runVoteWeightDispatchScenarios())
+    const runMembershipProviderRecovery = runMembershipProviderRecoveryScenarios
+    await runStep(runMembershipProviderRecovery.name, runMembershipProviderRecovery())
+    // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
+    await runStep(runNotificationVisibilityScenarios.name, runNotificationVisibilityScenarios())
+    await runStep(runPublicationScopePageScenarios.name, runPublicationScopePageScenarios())
+    await runStep(runDenseTopicViewerCountsScenario.name, runDenseTopicViewerCountsScenario())
+    await runStep(runTopicAliasCategoryWorkScenarios.name, runTopicAliasCategoryWorkScenarios())
+    await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios())
+    const runCopyrightRetentionCandidate = runCopyrightRetentionCandidateScenario
+    await runStep(runCopyrightRetentionCandidate.name, runCopyrightRetentionCandidate())
+    await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios())
+    await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario())
+    const runMembershipRenewalSelection = runMembershipRenewalSelectionScenario
+    await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection())
     const runErrors: unknown[] = []
-    for (const check of [
-      () => assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST),
-      () => assertPlanRegistry(getResults().map(result => result.scenario_id ?? '')),
-    ]) {
-      try {
-        check()
-      } catch (err) {
-        runErrors.push(err)
-      }
+    try {
+      assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
+    } catch (err) {
+      runErrors.push(err)
+    }
+    try {
+      assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
+    } catch (err) {
+      runErrors.push(err)
     }
     assertNoScenarioFailures(runErrors)
   } finally {
