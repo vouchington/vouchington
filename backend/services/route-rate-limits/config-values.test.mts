@@ -2,7 +2,6 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { overrideUncheckedDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   ACTIVITYPUB_INBOX_LIMITS,
-  ANON_ROUTE_RATE_LIMIT_DEFAULTS,
   getActivityPubInboxAttemptMaxRequests,
   getActivityPubInboxAttemptWindowSeconds,
   getActivityPubInboxMaxRequests,
@@ -68,9 +67,9 @@ describe('route rate-limit config values', () => {
   })
 
   it.each([
-    ['read', 'anon_read', ANON_ROUTE_RATE_LIMIT_DEFAULTS.thresholds.read],
-    ['write', 'anon_write', ANON_ROUTE_RATE_LIMIT_DEFAULTS.thresholds.write],
-    ['sensitive', 'anon_sensitive', ANON_ROUTE_RATE_LIMIT_DEFAULTS.thresholds.sensitive],
+    ['read', 'anon_read', 180],
+    ['write', 'anon_write', 15],
+    ['sensitive', 'anon_sensitive', 5],
   ] as const)(
     'falls back unless anonymous %s thresholds are positive safe integers',
     (category, field, fallback) => {
@@ -97,7 +96,7 @@ describe('route rate-limit config values', () => {
         const restore = overrideUncheckedDynamicConfigFieldsForTest(routeRateLimitConfig, {
           [field]: value,
         })
-        expect(getAnonTtl(category)).toBe(ANON_ROUTE_RATE_LIMIT_DEFAULTS.ttlSeconds)
+        expect(getAnonTtl(category)).toBe(60)
         restore()
       }
     },
@@ -109,7 +108,7 @@ describe('route rate-limit config values', () => {
       const restore = overrideUncheckedDynamicConfigFieldsForTest(routeRateLimitConfig, {
         attested_multiplier: value,
       })
-      expect(getAttestedMultiplier()).toBe(ANON_ROUTE_RATE_LIMIT_DEFAULTS.attestedMultiplier)
+      expect(getAttestedMultiplier()).toBe(1)
       restore()
     }
   })
