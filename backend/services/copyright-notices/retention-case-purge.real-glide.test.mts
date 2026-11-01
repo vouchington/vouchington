@@ -175,7 +175,11 @@ describe('copyright case purge pages', () => {
         const beforeWorker = await readCopyrightCasePurgeFixture(entry.noticeId)
         if (beforeWorker.live || !beforeWorker.retained || beforeWorker.partyCount < 1)
           throw new Error('Final purge transaction did not leave residual party work')
-        await finishResidualWithNativeWorker(result.data)
+        // The root DELETE can commit before the job saves its next payload. The
+        // native worker must recover from the original payload and drain the links.
+        await finishResidualWithNativeWorker(firstPage(entry.noticeId))
+        const repeated = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
+        if (repeated.hasMore) throw new Error('Completed purge was readmitted from its old payload')
         await assertPurgeFinished({
           noticeId: entry.noticeId,
           phases,
@@ -209,6 +213,43 @@ describe('copyright case purge pages', () => {
     await placeCopyrightCasePreservationHold(entry.moderator, entry.noticeId, 'litigation_threat')
     const afterHold = await runCopyrightCasePurgePage(first.data, PURGE_NOW)
     expect(afterHold.hasMore).toBe(false)
+    expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
+  }, 30_000)
+
+  // A persisted queue payload can be truncated or corrupted between activations.
+  // no-mistakes-timeout-reason: real case eligibility and bounded PostgreSQL traversal
+  it('fails closed on corrupt child traversal cursors without deleting the case', async () => {
+    await setPageSize(1)
+    const entry = await createRetentionEmailCase()
+    await publishCopyrightCasePurgeCoverage(entry.noticeId)
+    const first = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
+    const pathIndex = COPYRIGHT_CASE_PURGE_PHASES.findIndex(([, path]) => path.length > 1)
+    if (pathIndex < 0) throw new Error('Expected a nested copyright child path')
+    const path = COPYRIGHT_CASE_PURGE_PHASES[pathIndex]![1]
+    const cursorColumn = path[0]![5][0]!
+
+    const invalidCursor = {
+      ...first.data,
+      phase: 'verify_children',
+      phaseIndex: pathIndex,
+      childFrames: [{ values: { id: entry.noticeId }, after: { [cursorColumn]: null } }],
+    } as unknown as CopyrightCasePurgeJobData
+    await expect(runCopyrightCasePurgePage(invalidCursor, PURGE_NOW)).rejects.toThrow(
+      'Invalid copyright purge child cursor',
+    )
+
+    const invalidAncestor = {
+      ...first.data,
+      phase: 'verify_children',
+      phaseIndex: pathIndex,
+      childFrames: [
+        { values: { id: entry.noticeId }, after: null },
+        { values: {}, after: null },
+      ],
+    } as CopyrightCasePurgeJobData
+    await expect(runCopyrightCasePurgePage(invalidAncestor, PURGE_NOW)).rejects.toThrow(
+      'Invalid copyright purge child path',
+    )
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
   }, 30_000)
 })
