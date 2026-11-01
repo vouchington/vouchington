@@ -86,10 +86,10 @@ BEGIN
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
     AND TG_TABLE_NAME = 'copyright_notice_storage_objects'
     AND fn_copyright_case_purge_permitted(TG_TABLE_NAME)
-    AND COALESCE((to_jsonb(OLD) ->> 'deletion_claimed')::boolean, false) = false
-    AND COALESCE((to_jsonb(NEW) ->> 'deletion_claimed')::boolean, false) = true
-    AND (to_jsonb(OLD) - 'deletion_claimed') IS NOT DISTINCT FROM
-      (to_jsonb(NEW) - 'deletion_claimed')
+    AND COALESCE((to_jsonb(OLD) ->> 'is_deletion_claimed')::boolean, false) = false
+    AND COALESCE((to_jsonb(NEW) ->> 'is_deletion_claimed')::boolean, false) = true
+    AND (to_jsonb(OLD) - 'is_deletion_claimed') IS NOT DISTINCT FROM
+      (to_jsonb(NEW) - 'is_deletion_claimed')
   THEN RETURN NEW; END IF;
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
     AND TG_TABLE_NAME = 'copyright_territorial_decisions'

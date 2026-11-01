@@ -82,7 +82,7 @@ async function deletePurgedUser(query: TransactionQuery, targetId: string): Prom
       RETURNING id
     ), clocked AS (
       UPDATE retained_user_identities identity
-      SET purged_at = clock_timestamp(), copyright_case_clock_sync_pending = true
+      SET purged_at = clock_timestamp(), is_copyright_case_clock_sync_pending = true
       FROM removed WHERE identity.id = removed.id
       RETURNING identity.id
     )

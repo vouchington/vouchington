@@ -21,14 +21,14 @@ export async function upsertCopyrightStorageObjectId(
   // The row lock serializes the claim and reference generation with an issued copy.
   const { rows } = await transaction<{
     id: string
-    deletion_claimed: boolean
+    is_deletion_claimed: boolean
   }>(sql`/* upsertCopyrightStorageObjectId:existing */
-    SELECT id, deletion_claimed FROM copyright_notice_storage_objects
+    SELECT id, is_deletion_claimed FROM copyright_notice_storage_objects
     WHERE storage_key = ${storageKey}
     FOR UPDATE
   `)
   if (!rows[0]) throw new Error('Copyright storage object conflict has no owner')
-  if (rows[0].deletion_claimed)
+  if (rows[0].is_deletion_claimed)
     throw createHttpError(409, 'Copyright evidence object deletion has started')
   return rows[0].id
 }

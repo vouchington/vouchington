@@ -33,7 +33,7 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
       sql`
       /* admitCopyrightAccountClockSyncPage */
       SELECT id FROM retained_user_identities
-      WHERE copyright_case_clock_sync_pending `.append(accountCursor).append(sql`
+      WHERE is_copyright_case_clock_sync_pending `.append(accountCursor).append(sql`
       ORDER BY id LIMIT ${pageSize}`),
     )
     const page = accounts

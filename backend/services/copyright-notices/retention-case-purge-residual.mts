@@ -3,6 +3,12 @@ import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { getCopyrightCasePurgePageSize } from '../../queues/psql/enqueues/ordering-config.mts'
 import sql from 'sql-template-strings'
 
+/** Same-job bounded cleanup after the case root has been removed. */
+export const COPYRIGHT_CASE_RESIDUAL_DELETE_ORDER = [
+  'copyright_notice_party_identities',
+  'retained_copyright_notice_identities',
+] as const
+
 /** Same-job cleanup of finite party links after the live case root is gone. */
 export async function deleteCopyrightCaseResidualPartyPage(data: CopyrightCasePurgeJobData) {
   const pageSize = getCopyrightCasePurgePageSize()

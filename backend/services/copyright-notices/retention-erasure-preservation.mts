@@ -32,6 +32,7 @@ async function lockCopyrightRetentionPartyAccounts(
       WHERE target.copyright_notice_id = ${noticeId}
     ) party
     WHERE party.user_id IS NOT NULL
+    ORDER BY party.user_id ASC NULLS LAST
     ON CONFLICT (copyright_notice_id, account_user_id) DO NOTHING`)
   await transaction(statement)
   const { rows } = await transaction<{ account_user_id: string }>(sql`

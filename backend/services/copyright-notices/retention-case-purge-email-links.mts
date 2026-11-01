@@ -1,6 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+/** Noninitial links leave one at a time after their private child paths. */
+export const COPYRIGHT_CASE_EMAIL_LINK_DELETE_TABLE = 'copyright_notice_email_intake_notice_links'
+
 /** One exclusive thread link and its private intake, after its child pages drained. */
 export async function deleteCopyrightCaseEmailThreadLinkPage(
   query: TransactionQuery,
@@ -18,7 +21,7 @@ export async function deleteCopyrightCaseEmailThreadLinkPage(
   if (!row) return false
   await query(sql`/* scopeCopyrightCaseEmailThreadLink */
     SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true),
-      set_config('app.copyright_case_purge_table', 'copyright_notice_email_intake_notice_links', true)`)
+      set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_EMAIL_LINK_DELETE_TABLE}, true)`)
   await query(sql`/* deleteCopyrightCaseEmailThreadLink */
     DELETE FROM copyright_notice_email_intake_notice_links
     WHERE id = ${row.link_id}::uuid AND copyright_notice_id = ${noticeId}::uuid`)

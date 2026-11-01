@@ -55,6 +55,7 @@ export async function retainCopyrightCasePartyPage(
       SELECT ${noticeId}::uuid, identity.id, ${source === 'incidents'}
       FROM retained_user_identities identity
       WHERE identity.id = ANY(${userIds}::uuid[])
+      ORDER BY identity.id ASC NULLS LAST
       ON CONFLICT (copyright_notice_id, account_user_id) DO UPDATE
       SET is_incident_party = copyright_notice_party_identities.is_incident_party
         OR EXCLUDED.is_incident_party
