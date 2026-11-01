@@ -5,7 +5,7 @@ export const COPYRIGHT_CASE_RETENTION_MONTHS = 72
 export const COPYRIGHT_CASE_COMPLAINT_MONTHS = 6
 
 /** Indexed root and active case-hold proof, repeated under the notice lock on every page. */
-export function copyrightCasePurgeEligibilitySql(noticeId: string) {
+export function copyrightCasePurgeEligibilitySql(noticeId: string, now: Date = new Date()) {
   return sql`/* readCopyrightCasePurgeEligibility */
     SELECT notice.id, notice.jurisdiction, notice.last_legal_activity_at,
       notice.evidence_erased_at
@@ -13,14 +13,14 @@ export function copyrightCasePurgeEligibilitySql(noticeId: string) {
     WHERE notice.id = ${noticeId}::uuid
       AND notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
       AND notice.last_legal_activity_at <=
-        ((clock_timestamp() AT TIME ZONE 'UTC')
+        ((${now}::timestamptz AT TIME ZONE 'UTC')
           - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC'
       AND notice.received_at <=
-        ((clock_timestamp() AT TIME ZONE 'UTC')
+        ((${now}::timestamptz AT TIME ZONE 'UTC')
           - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC'
       AND (notice.last_guest_capability_activity_at IS NULL OR
         notice.last_guest_capability_activity_at <=
-          ((clock_timestamp() AT TIME ZONE 'UTC')
+          ((${now}::timestamptz AT TIME ZONE 'UTC')
             - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC')
       AND (notice.jurisdiction = 'us_dmca' OR notice.territorial_decision_outcome IS NOT NULL
         OR notice.evidence_erased_at IS NOT NULL)
@@ -28,7 +28,7 @@ export function copyrightCasePurgeEligibilitySql(noticeId: string) {
         ((notice.territorial_decided_at AT TIME ZONE 'UTC')
           + make_interval(months => ${COPYRIGHT_CASE_COMPLAINT_MONTHS})
           + make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC'
-            <= clock_timestamp())
+            <= ${now}::timestamptz)
       AND NOT EXISTS (SELECT 1 FROM copyright_case_preservation_holds hold
         WHERE hold.copyright_notice_id = notice.id AND hold.released_at IS NULL)
       AND (notice.evidence_erased_at IS NOT NULL OR NOT EXISTS (
