@@ -6,9 +6,10 @@ Finite identity owner for case-party links during bounded post-root purge cleanu
 
 Not partitioned — growth: bounded.
 
-| Column | Type   | Nullable | Default | Identity | Generated | Collation | Comment |
-| ------ | ------ | -------- | ------- | -------- | --------- | --------- | ------- |
-| `id`   | `uuid` | no       |         |          |           |           |         |
+| Column            | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                          |
+| ----------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `id`              | `uuid`                     | no       |         |          |           |           |                                                                                                                                  |
+| `case_deleted_at` | `timestamp with time zone` | yes      |         |          |           |           | Time the live case row was deleted; set only while party-link cleanup is still pending, so crash recovery reads only these rows. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,6 +24,7 @@ _none_
 
 **Indexes:**
 
+- `idx_retained_copyright_notice_identities_residual`: `CREATE INDEX idx_retained_copyright_notice_identities_residual ON public.retained_copyright_notice_identities USING btree (id) WHERE (case_deleted_at IS NOT NULL)`
 - `retained_copyright_notice_identities_pkey`: `CREATE UNIQUE INDEX retained_copyright_notice_identities_pkey ON public.retained_copyright_notice_identities USING btree (id)`
 
 **Triggers:**

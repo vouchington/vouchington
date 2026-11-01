@@ -1425,7 +1425,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_decision_rationale_retention_eligible(rationale copyright_decision_rationales, cutoff_at timestamp with time zone)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  WITH retention_bound AS (\n    SELECT LEAST(cutoff_at,\n      ((transaction_timestamp() AT TIME ZONE 'UTC') - INTERVAL '6 years') AT TIME ZONE 'UTC'\n    ) AS eligible_before_at\n  ), preserved_cases AS NOT MATERIALIZED (\n    \n      SELECT party.copyright_notice_id AS notice_id, hold.released_at\n      FROM user_legal_preservation_holds hold\n      JOIN copyright_notice_party_identities party ON party.account_user_id = hold.account_user_id\n      JOIN copyright_notices notice ON notice.id = party.copyright_notice_id\n      UNION ALL\n      SELECT notice.id AS notice_id, hold.released_at\n      FROM user_legal_preservation_holds hold\n      JOIN copyright_notices notice ON notice.claimant_user_id = hold.account_user_id\n      UNION ALL\n      SELECT submission.copyright_notice_id, hold.released_at\n      FROM user_legal_preservation_holds hold\n      JOIN copyright_notice_submissions submission\n        ON submission.submitted_by_id = hold.account_user_id\n      UNION ALL\n      SELECT incident.copyright_notice_id, hold.released_at\n      FROM user_legal_preservation_holds hold\n      JOIN copyright_repeat_infringer_incidents incident\n        ON incident.account_user_id = hold.account_user_id\n      UNION ALL\n      SELECT target.copyright_notice_id, hold.released_at\n      FROM copyright_notice_targets target\n      CROSS JOIN LATERAL (\n    SELECT post.created_by_id AS user_id, 'post_author'::text AS basis\n    FROM image_placements post_binding\n    JOIN posts post ON post.id = post_binding.post_id\n    WHERE post_binding.placement_id = target.placement_id\n      AND TRUE\n    UNION ALL\n    SELECT CASE WHEN FALSE THEN surface.user_id\n      ELSE target.surface_owner_user_id END AS user_id,\n      'profile_owner'::text AS basis\n    FROM image_surface_placements surface\n    WHERE surface.placement_id = target.placement_id\n      AND surface.surface_kind = 'user-profile-image'\n      AND TRUE\n    UNION ALL\n    SELECT CASE WHEN FALSE THEN link.user_id\n      ELSE target.surface_owner_user_id END AS user_id,\n      'profile_owner'::text AS basis\n    FROM image_surface_placements surface\n    LEFT JOIN user_profile_links link ON link.id = surface.user_profile_link_id\n    WHERE surface.placement_id = target.placement_id\n      AND surface.surface_kind = 'user-profile-link-image'\n      AND TRUE\n    UNION ALL\n    SELECT activation.bound_by_id AS user_id, 'activation_binder'::text AS basis\n    FROM image_surface_placements surface\n    JOIN LATERAL (\n      SELECT recorded.bound_by_id, recorded.is_bound_by_administrator\n      FROM image_surface_placement_activations recorded\n      WHERE recorded.placement_id = surface.placement_id\n        AND recorded.placement_revision = target.surface_activation_revision\n    ) activation ON true\n    WHERE surface.placement_id = target.placement_id\n      AND surface.surface_kind IN ('community-profile-image', 'community-banner-image')\n      AND TRUE AND (TRUE OR activation.is_bound_by_administrator = FALSE)\n    UNION ALL\n    SELECT member.user_id, 'community_owner'::text AS basis\n    FROM image_surface_placements surface\n    JOIN community_members member ON member.community_id = surface.community_id\n      AND member.role = 'owner' AND member.removed_at IS NULL\n    LEFT JOIN LATERAL (\n      SELECT recorded.bound_by_id\n      FROM image_surface_placement_activations recorded\n      WHERE recorded.placement_id = surface.placement_id\n        AND recorded.placement_revision = target.surface_activation_revision\n    ) activation ON true\n    WHERE surface.placement_id = target.placement_id\n      AND surface.surface_kind IN ('community-profile-image', 'community-banner-image')\n      AND FALSE AND member.user_id IS DISTINCT FROM activation.bound_by_id\n  ) party\n      JOIN user_legal_preservation_holds hold ON hold.account_user_id = party.user_id\n    \n  )\n  SELECT uuid_extract_timestamp(rationale.id) < retention_bound.eligible_before_at AND (\n    (rationale.copyright_notice_id IS NOT NULL AND EXISTS (\n      SELECT 1 FROM copyright_notices notice WHERE notice.id = rationale.copyright_notice_id\n        AND (\n          (notice.jurisdiction = 'us_dmca' AND rationale.rationale_ciphertext = 'erased'\n            AND notice.evidence_erased_at IS NOT NULL)\n          OR (notice.jurisdiction IN ('eu_dsa', 'uk') AND NOT EXISTS (\n            SELECT 1 FROM preserved_cases held\n            WHERE held.notice_id = notice.id AND held.released_at IS NULL))\n        )\n    ))\n    OR (rationale.copyright_notice_email_intake_receipt_id IS NOT NULL AND (\n      (rationale.rationale_ciphertext = 'erased'\n        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)\n        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id\n            AND NOT EXISTS (SELECT 1 FROM copyright_notices erasure\n              WHERE erasure.id = link.copyright_notice_id AND erasure.evidence_erased_at IS NOT NULL)))\n      OR (EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          JOIN copyright_notices notice ON notice.id = link.copyright_notice_id\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id\n            AND notice.jurisdiction IN ('eu_dsa', 'uk'))\n        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          JOIN copyright_notices notice ON notice.id = link.copyright_notice_id\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id\n            AND ((notice.jurisdiction = 'us_dmca' AND NOT (rationale.rationale_ciphertext = 'erased'\n              AND notice.evidence_erased_at IS NOT NULL))\n              OR EXISTS (SELECT 1 FROM preserved_cases held\n              WHERE held.notice_id = notice.id AND held.released_at IS NULL))))\n      OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)\n        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt\n          WHERE receipt.id = rationale.copyright_notice_email_intake_receipt_id\n            AND receipt.review_decision = 'rejected'\n            AND receipt.reviewed_at < retention_bound.eligible_before_at)\n        AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery\n          WHERE delivery.copyright_notice_email_intake_receipt_id = rationale.copyright_notice_email_intake_receipt_id\n            AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= retention_bound.eligible_before_at)))\n    ))\n    OR (rationale.copyright_repeat_infringer_review_identity_id IS NOT NULL\n      AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_review_identities review\n        WHERE review.id = rationale.copyright_repeat_infringer_review_identity_id\n          AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds held\n            WHERE held.account_user_id = review.account_user_id AND held.released_at IS NULL)))\n    OR (rationale.account_user_id IS NOT NULL\n      AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds held\n        WHERE held.account_user_id = rationale.account_user_id\n          AND (held.released_at IS NULL OR held.released_at >= retention_bound.eligible_before_at)))\n  ) FROM retention_bound\n$function$\n"
     },
     "fn_copyright_retention_erasable_columns(table_name text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description', 'territorial_rationale_ciphertext', 'territorial_public_explanation_ciphertext']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intake_receipts' THEN ARRAY['review_rationale_ciphertext']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id', 'current_recommendation_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id', 'correspondence_rationale_ciphertext', 'correspondence_manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_restrictions' THEN ARRAY['administrator_lift_rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_changes' THEN ARRAY['review_rationale_ciphertext']\n    WHEN 'copyright_decision_rationales' THEN ARRAY['rationale_ciphertext']\n  END\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']\n  END\n$function$\n"
     },
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
@@ -1528,6 +1528,9 @@
     },
     "fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  external_id TEXT;\n  lock_key BIGINT;\nBEGIN\n  IF target_provider IS NULL OR target_provider NOT IN ('facebook', 'github', 'x')\n    OR exclusive_lock IS NULL\n    OR target_external_ids IS NULL OR cardinality(target_external_ids) > 256 THEN\n    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';\n  END IF;\n  IF array_position(target_external_ids, NULL) IS NOT NULL THEN\n    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';\n  END IF;\n\n  FOR external_id IN\n    SELECT DISTINCT target_id FROM unnest(target_external_ids) AS targets(target_id)\n    ORDER BY target_id\n  LOOP\n    lock_key := hashtextextended('oauth-friend-target:' || target_provider || ':' || external_id, 0);\n    IF exclusive_lock THEN\n      PERFORM pg_advisory_xact_lock(lock_key);\n    ELSE\n      PERFORM pg_advisory_xact_lock_shared(lock_key);\n    END IF;\n  END LOOP;\nEND;\n$function$\n"
+    },
+    "fn_mark_retained_copyright_notice_identity_residual()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_mark_retained_copyright_notice_identity_residual()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE retained_copyright_notice_identities SET case_deleted_at = clock_timestamp() WHERE id = OLD.id;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_membership_grant_remaining_duration(grant_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_id uuid)\n RETURNS interval\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT make_interval(days => grant_row.calendar_days) - COALESCE(\n    (\n      SELECT SUM(GREATEST(INTERVAL '0', COALESCE(period.ended_at, CURRENT_TIMESTAMP) - period.started_at))\n      FROM membership_grant_activation_periods period\n      WHERE period.membership_grant_id = grant_row.id\n    ),\n    INTERVAL '0'\n  )\n  FROM membership_grants grant_row\n  WHERE grant_row.id = grant_id\n$function$\n"
@@ -1737,7 +1740,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_deadline()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright deadlines are durable statutory records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.qualifying_counter_notice_assessment_identity_id,\n    OLD.earliest_restoration_at,\n    OLD.escalation_at,\n    OLD.restoration_deadline_at\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.qualifying_counter_notice_assessment_identity_id,\n    NEW.earliest_restoration_at,\n    NEW.escalation_at,\n    NEW.restoration_deadline_at\n  ) THEN\n    RAISE EXCEPTION 'copyright deadline origin and schedule are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.resolved_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL)\n    AND ROW(OLD.resolved_at, OLD.cancelled_at) IS DISTINCT FROM ROW(NEW.resolved_at, NEW.cancelled_at) THEN\n    RAISE EXCEPTION 'copyright deadline terminal outcome is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_decision_rationale_mutation()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_decision_rationale_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE retention_cutoff TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(\n    TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    -- A case record may later be removed after its controlled erasure. Its already-redacted\n    -- rationale can follow the case through the notice FK's ON DELETE CASCADE.\n    IF OLD.copyright_notice_id IS NOT NULL AND OLD.rationale_ciphertext = 'erased' THEN\n      RETURN OLD;\n    END IF;\n    retention_cutoff := NULLIF(current_setting('app.copyright_rationale_retention_cutoff', TRUE), '')::timestamptz;\n    IF retention_cutoff IS NOT NULL\n      AND fn_copyright_decision_rationale_retention_eligible(OLD, retention_cutoff) THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'copyright decision rationale is retained legal evidence'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_decision_rationale_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE retention_cutoff TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;\n  IF TG_OP = 'DELETE' THEN\n    retention_cutoff := NULLIF(current_setting('app.copyright_rationale_retention_cutoff', TRUE), '')::timestamptz;\n    IF retention_cutoff IS NOT NULL\n      AND fn_copyright_decision_rationale_retention_eligible(OLD, retention_cutoff) THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'copyright decision rationale is retained legal evidence'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_copyright_delivery_intent_transition()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE next_state copyright_notice_delivery_intent_states;\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;\n  next_state := CASE WHEN NEW.bounced_at IS NOT NULL THEN 'bounced'::copyright_notice_delivery_intent_states WHEN NEW.sent_at IS NOT NULL THEN 'sent'::copyright_notice_delivery_intent_states WHEN NEW.failed_at IS NOT NULL THEN 'failed'::copyright_notice_delivery_intent_states WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_delivery_intent_states ELSE 'pending'::copyright_notice_delivery_intent_states END;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_email_intake_receipt_id IS DISTINCT FROM OLD.copyright_notice_email_intake_receipt_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.sent_at IS NOT NULL AND (NEW.sent_at IS DISTINCT FROM OLD.sent_at\n      OR NEW.amazon_ses_message_id IS DISTINCT FROM OLD.amazon_ses_message_id))\n    OR (OLD.bounced_at IS NOT NULL AND NEW.bounced_at IS DISTINCT FROM OLD.bounced_at)\n    OR (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND next_state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state\n    AND NOT (\n      next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1765,9 +1768,6 @@
     },
     "fn_reject_copyright_lifecycle_event_source_notice()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.id = NEW.media_delivery_registry_record_id\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_reject_copyright_linked_email_private_write()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_linked_email_private_write()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  receipt_id uuid;\n  work_id uuid;\n  case_id uuid;\n  erased_at timestamptz;\nBEGIN\n  CASE TG_ARGV[0]\n    WHEN 'intake', 'receipt' THEN\n      receipt_id := NULLIF(to_jsonb(NEW) ->> TG_ARGV[1], '')::uuid;\n    WHEN 'work' THEN\n      work_id := NULLIF(to_jsonb(NEW) ->> TG_ARGV[1], '')::uuid;\n    WHEN 'attempt' THEN\n      SELECT attempt.work_item_id INTO work_id FROM copyright_notice_delivery_attempts attempt\n        WHERE attempt.id = NULLIF(to_jsonb(NEW) ->> TG_ARGV[1], '')::uuid;\n    ELSE RAISE EXCEPTION 'unsupported copyright linked-email write source';\n  END CASE;\n  IF work_id IS NOT NULL THEN\n    SELECT work.copyright_notice_email_intake_receipt_id INTO receipt_id\n    FROM copyright_notice_delivery_work_items work WHERE work.id = work_id;\n  END IF;\n  IF receipt_id IS NULL THEN RETURN NEW; END IF;\n  SELECT notice.id, notice.evidence_erased_at INTO case_id, erased_at\n    FROM copyright_notice_email_intake_notice_links link\n    JOIN copyright_notices notice ON notice.id = link.copyright_notice_id\n    WHERE link.copyright_notice_email_intake_id = receipt_id\n    FOR UPDATE OF notice;\n  IF case_id IS NULL THEN RETURN NEW; END IF;\n  IF erased_at IS NOT NULL THEN\n    RAISE EXCEPTION 'erased copyright case cannot acquire private email facts'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  UPDATE copyright_notices SET last_legal_activity_at =\n    GREATEST(last_legal_activity_at, clock_timestamp()) WHERE id = case_id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_missing_storage_object()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_missing_storage_object()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  object_id uuid := NULLIF(to_jsonb(NEW) ->> TG_ARGV[0], '')::uuid;\n  old_object_id uuid;\n  claimed boolean;\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    old_object_id := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;\n    IF old_object_id IS NOT NULL AND object_id IS DISTINCT FROM old_object_id THEN\n      SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects\n      WHERE id = old_object_id FOR UPDATE;\n      IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN\n        RAISE EXCEPTION 'claimed copyright evidence cannot lose its reference'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n  END IF;\n  IF object_id IS NOT NULL THEN\n    IF TG_OP = 'INSERT' OR object_id IS DISTINCT FROM old_object_id THEN\n      SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects\n      WHERE id = object_id FOR UPDATE;\n      IF claimed THEN\n        RAISE EXCEPTION 'copyright evidence object deletion has started'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE' AND to_jsonb(OLD) ->> TG_ARGV[0] IS NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright evidence requires a stored object before retention erasure' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
@@ -1810,9 +1810,6 @@
     },
     "fn_reject_copyright_territorial_terminal_fact_mutation()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_terminal_fact_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_TABLE_NAME = 'copyright_eu_supervised_complaints' THEN\n    IF OLD.resolved_at IS NOT NULL OR NEW.resolved_at IS NULL\n      OR (to_jsonb(NEW) - ARRAY['resolved_at', 'resolved_by_id'])\n        IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['resolved_at', 'resolved_by_id']) THEN\n      RAISE EXCEPTION 'supervised complaint may be resolved once' USING ERRCODE = 'check_violation';\n    END IF;\n  ELSE\n    IF OLD.closed_at IS NOT NULL OR NEW.closed_at IS NULL\n      OR (to_jsonb(NEW) - ARRAY['closed_at', 'closed_by_id'])\n        IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['closed_at', 'closed_by_id']) THEN\n      RAISE EXCEPTION 'territorial escalation may be closed once' USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_reject_erased_copyright_decision_rationale()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_erased_copyright_decision_rationale()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id UUID;\nBEGIN\n  FOR case_id IN\n    SELECT notice.id FROM copyright_notices notice\n    WHERE notice.id = NEW.copyright_notice_id\n      OR notice.id IN (\n        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)\n    ORDER BY notice.id\n  LOOP\n    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR UPDATE;\n  END LOOP;\n  IF EXISTS (SELECT 1 FROM copyright_notices erased\n    WHERE erased.evidence_erased_at IS NOT NULL\n      AND (erased.id = NEW.copyright_notice_id\n      OR erased.id IN (\n        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id))) THEN\n    RETURN NULL;\n  END IF;\n  UPDATE copyright_notices notice SET last_legal_activity_at =\n    GREATEST(notice.last_legal_activity_at, clock_timestamp())\n    WHERE notice.id = NEW.copyright_notice_id\n      OR notice.id IN (SELECT link.copyright_notice_id\n        FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_follower_distribution_recipient_bounds()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_follower_distribution_recipient_bounds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  distribution_ids UUID[] := ARRAY[]::UUID[];\n  checked_distribution_id UUID;\n  audience_value follower_distribution_audiences;\n  recipient_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'follower_distributions' THEN\n    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];\n  ELSE\n    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];\n    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN\n      distribution_ids := distribution_ids || OLD.distribution_id;\n    END IF;\n  END IF;\n\n  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP\n    SELECT audience INTO audience_value\n    FROM follower_distributions\n    WHERE id = checked_distribution_id;\n    IF NOT FOUND THEN\n      CONTINUE;\n    END IF;\n\n    SELECT COUNT(*) INTO recipient_count\n    FROM follower_distribution_selected_recipients\n    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;\n\n    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN\n      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers'\n      AND recipient_count < 1\n      AND NOT (\n        TG_TABLE_NAME = 'follower_distribution_selected_recipients'\n        AND TG_OP = 'DELETE'\n      ) THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
@@ -26620,9 +26617,6 @@
         "trigger_copyright_decision_rationales_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_decision_rationales_immutable BEFORE DELETE OR UPDATE ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation()"
         },
-        "trigger_copyright_decision_rationales_skip_erased": {
-          "definition": "CREATE TRIGGER trigger_copyright_decision_rationales_skip_erased BEFORE INSERT ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale()"
-        },
         "trigger_copyright_email_rationale_active_receipt": {
           "definition": "CREATE TRIGGER trigger_copyright_email_rationale_active_receipt BEFORE INSERT ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_email_source_active_receipt()"
         }
@@ -31595,9 +31589,6 @@
       "triggers": {
         "trigger_copyright_delivery_attempt_results_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_delivery_attempt_results_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_attempt_results FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention()"
-        },
-        "trigger_fence_copyright_email_delivery_result_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_delivery_result_case BEFORE INSERT ON public.copyright_notice_delivery_attempt_results FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('attempt', 'attempt_id')"
         }
       },
       "uniqueConstraints": {}
@@ -31825,9 +31816,6 @@
       "triggers": {
         "trigger_copyright_delivery_attempts_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_delivery_attempts_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_operational_retention()"
-        },
-        "trigger_fence_copyright_email_delivery_attempt_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_delivery_attempt_case BEFORE INSERT ON public.copyright_notice_delivery_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('work', 'work_item_id')"
         }
       },
       "uniqueConstraints": {
@@ -31958,9 +31946,6 @@
         },
         "trigger_copyright_thread_blocker_generation": {
           "definition": "CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()"
-        },
-        "trigger_fence_copyright_email_delivery_recipient_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_delivery_recipient_case BEFORE INSERT ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('work', 'copyright_notice_delivery_work_item_id')"
         }
       },
       "uniqueConstraints": {
@@ -32810,9 +32795,6 @@
         },
         "trigger_copyright_thread_blocker_generation": {
           "definition": "CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()"
-        },
-        "trigger_fence_copyright_email_delivery_work_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_delivery_work_case BEFORE INSERT ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')"
         }
       },
       "uniqueConstraints": {
@@ -33496,9 +33478,6 @@
         },
         "trigger_copyright_email_attachments_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_email_attachments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_attachments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
-        },
-        "trigger_fence_copyright_email_attachment_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_attachment_case BEFORE INSERT ON public.copyright_notice_email_intake_attachments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id')"
         }
       },
       "uniqueConstraints": {
@@ -34198,9 +34177,6 @@
         },
         "trigger_copyright_email_parses_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_email_parses_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
-        },
-        "trigger_fence_copyright_email_parse_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_parse_case BEFORE INSERT ON public.copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id')"
         }
       },
       "uniqueConstraints": {
@@ -34623,11 +34599,7 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {
-        "trigger_fence_copyright_email_recommendation_identity_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_recommendation_identity_case BEFORE INSERT ON public.copyright_notice_email_intake_recommendation_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')"
-        }
-      },
+      "triggers": {},
       "uniqueConstraints": {
         "uq_copyright_email_recommendation_identities__dedup": {
           "columns": ["copyright_notice_email_intake_receipt_id", "input_sha256", "prompt_version"]
@@ -34849,9 +34821,6 @@
         },
         "trigger_copyright_email_recommendations_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_email_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
-        },
-        "trigger_fence_copyright_email_recommendation_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_recommendation_case BEFORE INSERT ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')"
         }
       },
       "uniqueConstraints": {
@@ -35171,9 +35140,6 @@
         },
         "trigger_copyright_thread_blocker_generation": {
           "definition": "CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()"
-        },
-        "trigger_fence_copyright_email_review_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_review_case BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('receipt', 'copyright_notice_email_intake_receipt_id')"
         }
       },
       "uniqueConstraints": {}
@@ -35949,9 +35915,6 @@
         },
         "trigger_copyright_thread_activity_on_reference": {
           "definition": "CREATE TRIGGER trigger_copyright_thread_activity_on_reference AFTER INSERT ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_reference()"
-        },
-        "trigger_fence_copyright_email_reference_case": {
-          "definition": "CREATE TRIGGER trigger_fence_copyright_email_reference_case BEFORE INSERT ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_linked_email_private_write('intake', 'copyright_notice_email_intake_id')"
         }
       },
       "uniqueConstraints": {
@@ -43447,6 +43410,9 @@
         },
         "trigger_copyright_thread_party_claimant": {
           "definition": "CREATE TRIGGER trigger_copyright_thread_party_claimant AFTER UPDATE OF claimant_user_id ON public.copyright_notices FOR EACH ROW WHEN ((old.claimant_user_id IS DISTINCT FROM new.claimant_user_id)) EXECUTE FUNCTION fn_update_copyright_thread_party_generation()"
+        },
+        "trigger_mark_retained_copyright_notice_identity_residual": {
+          "definition": "CREATE TRIGGER trigger_mark_retained_copyright_notice_identity_residual AFTER DELETE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_mark_retained_copyright_notice_identity_residual()"
         },
         "trigger_register_retained_copyright_notice_identity": {
           "definition": "CREATE TRIGGER trigger_register_retained_copyright_notice_identity BEFORE INSERT ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_register_retained_copyright_notice_identity()"
@@ -121914,6 +121880,16 @@
     "retained_copyright_notice_identities": {
       "checkConstraints": {},
       "columns": {
+        "case_deleted_at": {
+          "comment": "Time the live case row was deleted; set only while party-link cleanup is still pending, so crash recovery reads only these rows.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
         "id": {
           "comment": null,
           "dataType": "uuid",
@@ -121928,6 +121904,29 @@
       "comment": "Finite identity owner for case-party links during bounded post-root purge cleanup; it never authorizes a deleted notice.",
       "foreignKeys": {},
       "indexes": {
+        "idx_retained_copyright_notice_identities_residual": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_retained_copyright_notice_identities_residual ON public.retained_copyright_notice_identities USING btree (id) WHERE (case_deleted_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(case_deleted_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "retained_copyright_notice_identities_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
