@@ -2,18 +2,16 @@ import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { verifyDeviceJwt, type DeviceTokenPayload } from '@ts-shared/session-jwt'
 import { v7 } from 'uuid'
-import { createApp, type Application, type ApplicationOptions } from '@jongleberry/api-server'
 import onError from '@modules/on-error'
 import { createRequestClientInfoListener } from '@modules/request-client-info/listener'
 import { isRequestClientInfoEnforced } from '@services/request-client-info'
 import { verifyDeviceAndSessionTokens } from '@services/jwt-session'
 import { createOriginGuardedListener as createListenerWithOriginGuard } from './app-origin-guard.mts'
+import { createVouchaApiApp } from './create-voucha-api-app.mts'
 import { createRequestContextListener } from './context/request-context.mts'
 import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
-import { VOUCHA_API_SECURITY_HEADERS } from './security-header-helpers.mts'
-import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
 import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/utils/api-errors'
 import { isBotChallengeRequiredError } from './bot-challenge.mts'
 
@@ -43,24 +41,9 @@ if (!cfWorkerSecret) {
   }
 }
 
-const VOUCHA_API_SERVER_OPTIONS = {
-  trustProxy: true,
-  strictHttpMethods: false,
-  bodyLimit: 1024 * 1024,
-  oversizedBodyStrategy: 'drain',
-  fallbackContentSecurityPolicy: false,
-  securityHeaders: VOUCHA_API_SECURITY_HEADERS,
-} as const satisfies ApplicationOptions
-
 const app = createVouchaApiApp()
 
 export default app
-
-export function createVouchaApiApp(): Application {
-  const app = createApp(VOUCHA_API_SERVER_OPTIONS)
-  installRequestContractEnforcement(app, onError)
-  return app
-}
 
 export function createOriginGuardedListener(
   listener: HttpListener,

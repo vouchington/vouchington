@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import request from 'supertest'
-import { createOriginGuardedListener, createVouchaApiApp } from './app.mts'
+import { createOriginGuardedListener } from './app.mts'
+import { createVouchaApiApp } from './create-voucha-api-app.mts'
 import { createConnection } from 'node:net'
 import { createServer } from 'node:http'
 import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'

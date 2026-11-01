@@ -4,7 +4,7 @@ import type http from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
 import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
 import { recordQueryTiming } from './query-timing.mts'
-import { createVouchaApiApp } from '../../api/app.mts'
+import { createVouchaApiApp } from '../../api/create-voucha-api-app.mts'
 
 const matcher = createVouchaApiApp()
 matcher.route('/api/v1/rss-feeds/trending').get(() => {})

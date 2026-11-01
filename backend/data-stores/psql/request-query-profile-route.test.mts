@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createVouchaApiApp } from '../../api/app.mts'
+import { createVouchaApiApp } from '../../api/create-voucha-api-app.mts'
 import { resolveRequestProfileRoute } from '../../test-helpers/request-query-profile-route.mts'
 import { buildStaleReport } from 'vouchington-tooling/request-query-profile'
 

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import request from 'supertest'
 
-import { createOriginGuardedListener, createVouchaApiApp } from './app.mts'
+import { createOriginGuardedListener } from './app.mts'
+import { createVouchaApiApp } from './create-voucha-api-app.mts'
 
 const WORKER_HEADER_VALUE = '0123456789abcdef0123456789abcdef'
 
