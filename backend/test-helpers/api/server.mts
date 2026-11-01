@@ -1,5 +1,3 @@
-import type { QueryOptions } from '@data-stores/psql/types'
-import { createRequestQueryOptionsListener } from '../../api/request-query-options.mts'
 import supertest from 'supertest'
 import fn, { createApiRequestGuardedListener } from '../../api/app.mts'
 import '../../api/index.mts'
@@ -18,7 +16,6 @@ import {
 } from 'vouchington-tooling/runner-port-policy'
 import { recordServerErrorResponse } from './server-error-responses.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
-import { withOwnedApiServer } from '../api-query-options-server.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 type ApiTestServerAddress = { host: LoopbackHost; port: number }
@@ -176,16 +173,4 @@ function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerSta
 
 function formatIpv6Segment(value: number): string {
   return (value & 0xffff).toString(16)
-}
-
-/** Real HTTP dispatch; the caller retains inherited transaction ownership. */
-export async function withApiRequestQueryOptions<Result>(
-  options: QueryOptions & { now?: Date },
-  run: (request: AuthenticatedAgent) => Promise<Result>,
-): Promise<Result> {
-  const listener = createRequestQueryOptionsListener(
-    createApiRequestGuardedListener(fn.callback()),
-    options,
-  )
-  return withOwnedApiServer(listener, fn, address => run(createRequest(address)))
 }

@@ -8,7 +8,6 @@ import { isRequestClientInfoEnforced } from '@services/request-client-info'
 import { verifyDeviceAndSessionTokens } from '@services/jwt-session'
 import { createOriginGuardedListener as createListenerWithOriginGuard } from './app-origin-guard.mts'
 import { createVouchaApiApp } from './create-voucha-api-app.mts'
-import { createRequestQueryOptionsListener } from './request-query-options.mts'
 import { createRequestContextListener } from './context/request-context.mts'
 import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
@@ -50,12 +49,7 @@ export function createOriginGuardedListener(
   listener: HttpListener,
   secret: string | undefined = cfWorkerSecret,
 ): HttpListener {
-  // Empty scope matches the getter default. Transaction tests enter their own
-  // scope around createApiRequestGuardedListener.
-  return createRequestQueryOptionsListener(
-    createListenerWithOriginGuard(createApiRequestGuardedListener(listener), secret),
-    {},
-  )
+  return createListenerWithOriginGuard(createApiRequestGuardedListener(listener), secret)
 }
 
 export function createApiRequestGuardedListener(

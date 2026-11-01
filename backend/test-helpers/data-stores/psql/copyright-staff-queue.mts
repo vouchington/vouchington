@@ -1,14 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 /** Raw queue work without a contact-purpose producer; the real staff case hydrator omits it. */
-export async function insertUnreadableCopyrightQueueCase(
-  query: TransactionQuery,
-  receivedAt: Date,
-): Promise<string> {
-  const { rows } = await query<{ id: string }>(sql`/* insertUnreadableCopyrightQueueCase */
+export async function insertUnreadableCopyrightQueueCase(receivedAt: Date): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* insertUnreadableCopyrightQueueCase */
     WITH notice AS (
       INSERT INTO copyright_notices (
         jurisdiction, legal_basis, received_at, claimant_contact_ciphertext,

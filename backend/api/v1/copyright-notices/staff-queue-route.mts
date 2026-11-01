@@ -1,5 +1,4 @@
 import app from '../../app.mts'
-import { getRequestQueryOptions } from '../../request-query-options.mts'
 import type { Context } from '@jongleberry/api-server'
 import { currentUserCanReviewCopyrightNotices } from '@services/copyright-notices'
 import {
@@ -33,7 +32,6 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
           'GET:/api/v1/copyright-notices/review-queue',
           copyrightStaffQueueParser,
         ),
-        getRequestQueryOptions(),
       ),
     ),
   )
