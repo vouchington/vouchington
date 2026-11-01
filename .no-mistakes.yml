@@ -724,12 +724,7 @@ rules:
         - { file: backend/scripts/rss-crawl-tier-contract.mts, callee: 'updateRssFeedTiming' }
         - { file: backend/scripts/rss-crawl-tier-contract.mts, callee: 'getRssFeedsToFetch' }
         # The native MV preflight constructs owned assertion fixtures and observes sequential
-        # states. The tied-feed count follows the original 0.2% population threshold, while
-        # the hashtag fixtures use finite literal case sets; these are not production item loops.
-        - {
-            file: backend/scripts/native-mv-contracts/crawl-tiers.mts,
-            callee: 'setLocalRssFeedOwningTopicVoteScore',
-          }
+        # states. The hashtag fixtures use finite literal case sets; these are not production item loops.
         - {
             file: backend/scripts/native-mv-contracts/hashtag-author-deletion.mts,
             callee: 'createPost',
@@ -5523,10 +5518,6 @@ rules:
         - {
             file: backend/scripts/native-mv-contracts/trending-http.mts,
             symbol: checkTrendingHttpContracts,
-          }
-        - {
-            file: backend/scripts/native-mv-contracts/crawl-tiers.mts,
-            symbol: checkCrawlTierContracts,
           }
         - { file: backend/scripts/native-mv-contracts/revenue.mts, symbol: checkRevenueContracts }
         - {
