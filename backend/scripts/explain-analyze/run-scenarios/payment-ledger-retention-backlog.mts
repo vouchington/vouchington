@@ -36,6 +36,8 @@ export async function runPaymentLedgerRetentionBacklogScenarios(): Promise<void>
       { kind: 'maxProcessedRows', relation: 'membership_operations', max: 5 },
     ],
     seededRows: { membership_operations: 2001 },
+    // The captured run deletes the due row, so the replayed plan proves the 2,000 other rows stay out of the index.
+    allowEmptyResult: true,
   })
   await runAndCapture(
     'membership-operation-retention-blocked-backlog',
