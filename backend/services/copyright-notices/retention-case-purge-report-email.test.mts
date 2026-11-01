@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
   createTestEuParticipantCase,
