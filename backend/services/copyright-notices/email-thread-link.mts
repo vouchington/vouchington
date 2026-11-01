@@ -31,12 +31,13 @@ export async function insertCopyrightEmailIntakeNoticeLink(
   if (input.linkKind === 'thread') {
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
+      reviewed: boolean
     }>(sql`/* linkCopyrightEmailIntakeToNotice:lockThreadIntake */
-      SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-      WHERE id = ${input.intakeId}
-        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-          WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
-      FOR UPDATE
+      SELECT intake.raw_storage_object_id, receipt.review_decision IS NOT NULL AS reviewed
+      FROM copyright_notice_email_intakes intake
+      JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+      WHERE intake.id = ${input.intakeId} AND receipt.erased_at IS NULL
+      FOR UPDATE OF intake
     `)
     if (live.length === 0) return false
     const { rows: retained } = await transaction<{
@@ -51,6 +52,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
         retained[0].copyright_notice_id === input.noticeId &&
         retained[0].link_kind === input.linkKind
       )
+    if (live[0]!.reviewed) return false
     if (live[0]!.raw_storage_object_id === null) return false
     const { rows: notices } =
       await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockNotice */
@@ -60,8 +62,8 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     // A fresh READ COMMITTED statement sees a marker committed while the notice
     // lock was pending. The lock then fences erasure through this transaction.
     const { rows: erased } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:erasure */
-      SELECT 1 FROM copyright_notice_retention_erasures
-      WHERE copyright_notice_id = ${input.noticeId} LIMIT 1
+      SELECT 1 FROM copyright_notices
+      WHERE id = ${input.noticeId} AND evidence_erased_at IS NOT NULL LIMIT 1
     `)
     if (erased[0]) return false
     const { rows: retired } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:retired */

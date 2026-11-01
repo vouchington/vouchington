@@ -8,6 +8,17 @@ export const NOTIFICATIONS_DOMAIN = defineBackgroundDomain({
 })
 
 export type EmptyNotificationsJobData = Record<string, never>
+export type CopyrightCasePurgeAdmissionData = {
+  pendingAccountAfterId?: string
+  pendingAccountsComplete?: boolean
+  caseCandidatesComplete?: boolean
+  orphanAfterId?: string
+  after?: {
+    jurisdiction: 'eu_dsa' | 'uk' | 'us_dmca'
+    lastLegalActivityAt: string
+    noticeId: string
+  }
+}
 export type FollowNotificationData = { followeeId: string; followerId: string }
 export type ReferralSignupNotificationData = { referrerId: string; newUserId: string }
 export type ReferralClickNotificationData = { referrerId: string }

@@ -51,7 +51,11 @@ describe('findCopyrightImageSimilarityCandidates', () => {
           hostedUseUrl: 'https://voucha.ai',
         }),
       ],
-      initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'ciphertext' },
+      initialSubmission: {
+        kind: 'notice',
+        sourceKind: 'signed_in_form',
+        bodyCiphertext: 'ciphertext',
+      },
     })
     const targetId = await readCopyrightNoticeTargetId(notice.id)
 
@@ -97,7 +101,11 @@ describe('findCopyrightImageSimilarityCandidates', () => {
           hostedUseUrl: 'https://voucha.ai',
         }),
       ],
-      initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'ciphertext' },
+      initialSubmission: {
+        kind: 'notice',
+        sourceKind: 'signed_in_form',
+        bodyCiphertext: 'ciphertext',
+      },
     })
     const targetId = await readCopyrightNoticeTargetId(notice.id)
 

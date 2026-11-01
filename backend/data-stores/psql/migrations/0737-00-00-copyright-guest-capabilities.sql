@@ -10,7 +10,7 @@ CREATE TABLE copyright_notice_guest_capability_identities (
   CONSTRAINT copyright_guest_capability_identity_notice_key UNIQUE (id, copyright_notice_id)
 );
 CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice
-  ON copyright_notice_guest_capability_identities (copyright_notice_id);
+  ON copyright_notice_guest_capability_identities (copyright_notice_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capabilities (

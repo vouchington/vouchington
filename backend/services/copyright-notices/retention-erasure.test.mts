@@ -85,10 +85,7 @@ describe('copyright evidence retention sweep', () => {
       await expect(readTestRepeatInfringerOpenReviewIds(entry.posterId)).resolves.toEqual(
         openReviewIds[index],
       )
-      await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toEqual({
-        retention_days: 30,
-        erased_object_count: entry.evidenceKeys.length,
-      })
+      await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toBeInstanceOf(Date)
     }
     // Every table the sweep covers held a row in one of the fixtures, and each erasable
     // column of each row now differs from what it held, or is still null where it was null.

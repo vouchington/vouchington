@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeRecord, CreateCopyrightNoticeAggregateInput } from './types.mts'
 import { insertCopyrightNoticeTargetsInTransaction } from './notice-targets.mts'
+import { retainCopyrightCaseAccountParty } from './retention-parties-admission.mts'
 
 /** Internal transaction-aware variant for admission records which must commit with a legal case. */
 export async function createCopyrightNoticeAggregateInTransaction(
@@ -26,6 +27,7 @@ export async function createCopyrightNoticeAggregateInTransaction(
   `)
   const notice = rows[0]
   assert(notice, 500, 'Failed to create copyright notice')
+  await retainCopyrightCaseAccountParty(transaction, notice.id, input.claimantUserId)
   await insertCopyrightNoticeTargetsInTransaction(notice.id, input.targets, transaction)
   await Promise.all([
     transaction(sql`/* createCopyrightNoticeAggregate:submission */

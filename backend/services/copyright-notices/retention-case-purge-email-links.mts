@@ -1,0 +1,30 @@
+import type { TransactionQuery } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+
+/** One exclusive thread link and its private intake, after its child pages drained. */
+export async function deleteCopyrightCaseEmailThreadLinkPage(
+  query: TransactionQuery,
+  noticeId: string,
+): Promise<boolean> {
+  const { rows } = await query<{ link_id: string; intake_id: string }>(sql`
+    /* readCopyrightCaseEmailThreadLinkPage */
+    SELECT link.id AS link_id, intake.id AS intake_id
+    FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notice_email_intakes intake
+      ON intake.id = link.copyright_notice_email_intake_id
+    WHERE link.copyright_notice_id = ${noticeId}::uuid AND link.link_kind = 'thread'
+    ORDER BY link.id LIMIT 1 FOR UPDATE OF link, intake NOWAIT`)
+  const row = rows[0]
+  if (!row) return false
+  await query(sql`/* scopeCopyrightCaseEmailThreadLink */
+    SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true),
+      set_config('app.copyright_case_purge_table', 'copyright_notice_email_intake_notice_links', true)`)
+  await query(sql`/* deleteCopyrightCaseEmailThreadLink */
+    DELETE FROM copyright_notice_email_intake_notice_links
+    WHERE id = ${row.link_id}::uuid AND copyright_notice_id = ${noticeId}::uuid`)
+  await query(sql`/* scopeCopyrightCaseEmailThreadIntake */
+    SELECT set_config('app.copyright_case_purge_table', 'copyright_notice_email_intakes', true)`)
+  await query(sql`/* deleteCopyrightCaseEmailThreadIntake */
+    DELETE FROM copyright_notice_email_intakes WHERE id = ${row.intake_id}::uuid`)
+  return true
+}

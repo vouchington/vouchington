@@ -43,11 +43,7 @@ export async function searchCopyrightNoticeAssociationTargets(
     )
     SELECT candidate.id, candidate.jurisdiction, candidate.received_at,
       candidate.claimant_display_name, candidate.work_description,
-      COALESCE((
-        SELECT TRUE FROM copyright_notice_retention_erasures erasure
-        WHERE erasure.copyright_notice_id = candidate.id
-        LIMIT 1
-      ), FALSE) AS erased,
+      (candidate.evidence_erased_at IS NOT NULL) AS erased,
       (candidate.claimant_display_name ILIKE ${pattern} ESCAPE '\\'
         OR candidate.work_description ILIKE ${pattern} ESCAPE '\\'
         OR to_char(candidate.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') LIKE ${pattern} ESCAPE '\\') AS matches

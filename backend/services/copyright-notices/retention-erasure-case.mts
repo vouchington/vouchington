@@ -116,9 +116,9 @@ export async function eraseCopyrightRetentionCase(
   await transaction(sql`/* deleteCopyrightRetentionStorageObjects */
     DELETE FROM copyright_notice_storage_objects
     WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)
-  await transaction(sql`/* insertCopyrightRetentionErasure */
-    INSERT INTO copyright_notice_retention_erasures (copyright_notice_id, retention_days, erased_object_count)
-    VALUES (${noticeId}, ${options.retentionDays}, ${keys.length})`)
+  await transaction(sql`/* finishCopyrightRetentionErasure */
+    UPDATE copyright_notices SET evidence_erased_at = clock_timestamp()
+    WHERE id = ${noticeId} AND evidence_erased_at IS NULL`)
   await transaction.commit()
   return 'erased'
 }

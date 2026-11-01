@@ -10,6 +10,7 @@ import {
   type ReconcileMembershipVisibilityData,
   type ConversationMessageNotificationData,
   type CopyrightIntentData,
+  type CopyrightCasePurgeAdmissionData,
   type CopyrightSweepContinuation,
   type DeleteNotificationData,
   type DeliverNotificationPushData,
@@ -133,11 +134,12 @@ export const NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB = defineBackgroundJ
   DOMAIN,
   { name: 'processCheckCopyrightReviewTarget', ...DISPATCH, ...RETRY },
 )
-export const NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
-  name: 'processSweepCopyrightEvidenceRetention',
-  ...DISPATCH,
-  ...RETRY,
-})
+export const NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB =
+  defineBackgroundJob<CopyrightCasePurgeAdmissionData>(DOMAIN, {
+    name: 'processCopyrightCasePurgeAdmission',
+    ...DISPATCH,
+    ...RETRY,
+  })
 export const NOTIFICATIONS_SUBMIT_DSA_JOB = defineBackgroundJob<DsaStatementSubmissionData>(
   DOMAIN,
   { name: 'processSubmitDsaStatementOfReasons', ...TASK, ...RETRY },
@@ -186,7 +188,7 @@ export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
-  NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
+  NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
   NOTIFICATIONS_SUBMIT_DSA_JOB,
   NOTIFICATIONS_RECONCILE_DSA_JOB,
   NOTIFICATIONS_REPLAY_MEDIA_REGISTRY_JOB,

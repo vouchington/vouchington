@@ -66,8 +66,8 @@ async function appendWithCurrentLink(
   if (noticeId) {
     const { rows: erased } =
       await transaction(sql`/* appendCopyrightEmailIntakeRecommendation:erasure */
-      SELECT 1 FROM copyright_notice_retention_erasures
-      WHERE copyright_notice_id = ${noticeId} LIMIT 1`)
+      SELECT 1 FROM copyright_notices
+      WHERE id = ${noticeId} AND evidence_erased_at IS NOT NULL LIMIT 1`)
     if (erased[0]) return false
   }
   const recommendationId = uuidv7()

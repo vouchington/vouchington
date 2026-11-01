@@ -152,6 +152,9 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_decisions (
     char_length(public_explanation_ciphertext) BETWEEN 1 AND 1048576
   )
 ) PARTITION BY RANGE (id);
+CREATE INDEX idx_copyright_territorial_decisions__supersedes_page
+  ON copyright_territorial_decisions(copyright_notice_id, id)
+  WHERE supersedes_decision_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE copyright_notice_legal_retention_phases AS ENUM
@@ -853,7 +856,7 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__record
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_outcomes__recorded_by
   ON copyright_eu_dispute_settlement_outcomes (recorded_by_id) WHERE recorded_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_escalations__notice
-  ON copyright_territorial_escalations (copyright_notice_id, jurisdiction);
+  ON copyright_territorial_escalations (copyright_notice_id, jurisdiction, id);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__reported_by
   ON copyright_eu_transparency_reports (reported_by_id) WHERE reported_by_id IS NOT NULL;
 
@@ -886,6 +889,7 @@ $$;
 CREATE OR REPLACE FUNCTION fn_reject_copyright_territorial_acknowledgment_attempt()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright acknowledgment obligations are retained' USING ERRCODE = 'check_violation';
   END IF;
@@ -944,6 +948,7 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   referral_time timestamptz;
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'EU dispute settlement outcomes are retained' USING ERRCODE = 'check_violation';
   END IF;
@@ -994,6 +999,9 @@ CREATE TRIGGER trigger_copyright_territorial_decisions_scope
 CREATE FUNCTION fn_reject_copyright_redress_request_result()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
+  IF TG_OP = 'UPDATE' AND fn_copyright_case_purge_pointer_cut_permitted(
+    TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright redress requests are retained' USING ERRCODE = 'check_violation';
   END IF;

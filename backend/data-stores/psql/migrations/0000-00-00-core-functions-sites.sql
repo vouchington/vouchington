@@ -22,6 +22,52 @@ $$;
 COMMENT ON FUNCTION fn_reject_always() IS 'Always rejects the statement; the optional first trigger argument replaces the default message.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_copyright_case_purge_permitted(table_name text)
+RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT current_setting('app.copyright_case_purge_table', true) = table_name
+    AND NULLIF(current_setting('app.copyright_case_purge_notice_id', true), '')::uuid IS NOT NULL
+$$;
+COMMENT ON FUNCTION fn_copyright_case_purge_permitted(text) IS 'Transaction-local DELETE permit for one named case-purge phase after the service locked and rechecked the case.';
+
+-- One narrow exception cuts current-result FK cycles after the locked eligibility proof.
+CREATE FUNCTION fn_copyright_case_purge_pointer_cut_permitted(
+  table_name text, old_row jsonb, new_row jsonb
+) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  allowed text[];
+  column_name text;
+  notice_id text := current_setting('app.copyright_case_purge_notice_id', true);
+BEGIN
+  IF NOT fn_copyright_case_purge_permitted(table_name)
+    OR COALESCE(old_row ->> CASE WHEN table_name = 'copyright_notices' THEN 'id'
+      ELSE 'copyright_notice_id' END, '') <> notice_id THEN RETURN false; END IF;
+  allowed := CASE table_name
+    WHEN 'copyright_notices' THEN ARRAY[
+      'current_territorial_decision_identity_id', 'territorial_authorizing_assessment_identity_id',
+      'territorial_decision_outcome', 'territorial_decided_at', 'territorial_decided_by_id',
+      'territorial_rationale_ciphertext', 'territorial_public_explanation_ciphertext']
+    WHEN 'copyright_notice_submissions' THEN ARRAY[
+      'copyright_notice_guest_capability_id', 'current_assessment_identity_id',
+      'current_assessment_is_substantially_compliant', 'current_assessed_at',
+      'current_assessed_by_id', 'current_assessment_form_screening_id']
+    WHEN 'copyright_territorial_redress_requests' THEN ARRAY[
+      'staff_disposition', 'current_staff_decision_identity_id', 'decided_at',
+      'decided_by_id', 'rationale_ciphertext']
+    WHEN 'copyright_territorial_decisions' THEN ARRAY['supersedes_decision_id']
+    ELSE NULL
+  END;
+  IF allowed IS NULL OR (old_row - allowed) IS DISTINCT FROM (new_row - allowed) THEN
+    RETURN false;
+  END IF;
+  FOREACH column_name IN ARRAY allowed LOOP
+    IF new_row ->> column_name IS NOT NULL THEN RETURN false; END IF;
+  END LOOP;
+  RETURN true;
+END;
+$$;
+COMMENT ON FUNCTION fn_copyright_case_purge_pointer_cut_permitted(text, jsonb, jsonb) IS 'Allows only nulling named current-result fields on the locked case, so FK cycles can drain in bounded pages.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -30,6 +76,30 @@ DECLARE
   old_row JSONB;
   new_row JSONB;
 BEGIN
+  IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
+    AND TG_TABLE_NAME = 'copyright_notice_storage_objects'
+    AND (to_jsonb(NEW) - 'reference_generation') IS NOT DISTINCT FROM
+      (to_jsonb(OLD) - 'reference_generation')
+    AND (to_jsonb(NEW) ->> 'reference_generation')::bigint =
+      (to_jsonb(OLD) ->> 'reference_generation')::bigint + 1
+  THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
+    AND TG_TABLE_NAME = 'copyright_notice_storage_objects'
+    AND fn_copyright_case_purge_permitted(TG_TABLE_NAME)
+    AND COALESCE((to_jsonb(OLD) ->> 'deletion_claimed')::boolean, false) = false
+    AND COALESCE((to_jsonb(NEW) ->> 'deletion_claimed')::boolean, false) = true
+    AND (to_jsonb(OLD) - 'deletion_claimed') IS NOT DISTINCT FROM
+      (to_jsonb(NEW) - 'deletion_claimed')
+  THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
+    AND TG_TABLE_NAME = 'copyright_territorial_decisions'
+    AND fn_copyright_case_purge_pointer_cut_permitted(
+      TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW))
+  THEN RETURN NEW; END IF;
+  IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'
+    AND starts_with(TG_TABLE_NAME, 'copyright_')
+    AND fn_copyright_case_purge_permitted(TG_TABLE_NAME)
+  THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1
     AND NOT (TG_TABLE_SCHEMA = 'public' AND TG_TABLE_NAME = 'amazon_ses_bounce_events')
   THEN RETURN OLD; END IF;

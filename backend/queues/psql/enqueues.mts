@@ -13,6 +13,8 @@ import {
   VOTE_RETENTION_CONTINUATION_JOB_NAME,
 } from './config.mts'
 import { psql } from './queues.mts'
+export { enqueueCopyrightCasePurge } from './enqueues/copyright-case-purge.mts'
+export { enqueueCopyrightAccountClockSyncBatch } from './enqueues/copyright-account-clock-sync.mts'
 import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
 export { enqueueAgentModerationRetentionContinuation } from './enqueues/agent-moderation-retention.mts'
 export { enqueueAIRetentionContinuations }

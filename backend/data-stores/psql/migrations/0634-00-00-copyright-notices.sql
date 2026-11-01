@@ -17,9 +17,23 @@ CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 
 -- Copyright complaints are a distinct legal aggregate.  This migration records
 -- evidence and decisions only; it deliberately enables no media restriction.
 
+-- Only the case-purge job reads this owner after the live case is gone. Its remaining
+-- party links are removed in bounded pages before the identity itself is deleted.
+CREATE TABLE retained_copyright_notice_identities (
+  id uuid PRIMARY KEY
+);
+COMMENT ON TABLE retained_copyright_notice_identities IS 'Finite identity owner for case-party links during bounded post-root purge cleanup; it never authorizes a deleted notice.';
+CREATE FUNCTION fn_register_retained_copyright_notice_identity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO retained_copyright_notice_identities (id) VALUES (NEW.id);
+  RETURN NEW;
+END;
+$$;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notices (
-  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  id uuid PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_copyright_notice_identities(id) ON DELETE RESTRICT,
   jurisdiction copyright_jurisdictions NOT NULL CHECK (jurisdiction IN ('us_dmca', 'eu_dsa', 'uk', 'other')),
   legal_basis copyright_notice_legal_bases NOT NULL CHECK (legal_basis = 'copyright'),
   received_at timestamptz NOT NULL,
@@ -34,6 +48,7 @@ CREATE TABLE copyright_notices (
   territorial_public_explanation_ciphertext text,
   last_lifecycle_activity_at timestamptz,
   last_legal_activity_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  evidence_erased_at timestamptz,
   last_guest_capability_activity_at timestamptz,
   claimant_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   claimant_display_name text,
@@ -55,6 +70,20 @@ CREATE TABLE copyright_notices (
       AND territorial_decided_by_id IS NOT NULL)
   )
 );
+CREATE TRIGGER trigger_register_retained_copyright_notice_identity
+  BEFORE INSERT ON copyright_notices FOR EACH ROW
+  EXECUTE FUNCTION fn_register_retained_copyright_notice_identity();
+
+-- Keeps hold participants after evidence redaction clears live user references. This finite
+-- relation is owned by the case and is removed with the case at final retention expiry.
+CREATE TABLE copyright_notice_party_identities (
+  copyright_notice_id uuid NOT NULL REFERENCES retained_copyright_notice_identities(id) ON DELETE RESTRICT,
+  account_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  is_incident_party boolean NOT NULL DEFAULT false,
+  PRIMARY KEY (copyright_notice_id, account_user_id)
+);
+CREATE INDEX idx_copyright_notice_party_identities__account
+  ON copyright_notice_party_identities(account_user_id, copyright_notice_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_targets (
@@ -212,6 +241,8 @@ CREATE TRIGGER trigger_copyright_thread_party_target
 CREATE TABLE copyright_notice_storage_objects (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   storage_key text NOT NULL UNIQUE CHECK (char_length(storage_key) BETWEEN 1 AND 1024 AND NOT starts_with(storage_key, 'erased:')),
+  deletion_claimed boolean NOT NULL DEFAULT false,
+  reference_generation bigint NOT NULL DEFAULT 0 CHECK (reference_generation >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable
@@ -219,6 +250,8 @@ CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 COMMENT ON TABLE copyright_notice_storage_objects IS 'One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.';
 COMMENT ON COLUMN copyright_notice_storage_objects.storage_key IS 'Unique private object-storage key; the row is deleted only after no intake or artifact references it.';
+COMMENT ON COLUMN copyright_notice_storage_objects.deletion_claimed IS 'One-way fence against new references while bounded physical version deletion is in progress; the existing reference remains until deletion completes.';
+COMMENT ON COLUMN copyright_notice_storage_objects.reference_generation IS 'Per-object mutation version for bounded ownership proof before the one-way deletion claim.';
 
 CREATE TABLE copyright_notice_evidence_artifacts (
   copyright_notice_id uuid NOT NULL,
@@ -593,6 +626,7 @@ CREATE TABLE copyright_notice_action_work_items (
 CREATE FUNCTION fn_reject_copyright_operational_retention()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' AND
     current_setting('app.copyright_operational_retention', true) = 'on' THEN
     RETURN OLD;
@@ -748,6 +782,11 @@ CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restriction
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
 CREATE INDEX idx_copyright_notice_submissions__notice_id ON copyright_notice_submissions(copyright_notice_id, id);
+-- Every notice aggregate inserts one initial claimant allegation; staff territorial
+-- decisions may append their own notice-kind submission to the same case.
+CREATE UNIQUE INDEX idx_copyright_notice_submissions__initial_notice
+  ON copyright_notice_submissions(copyright_notice_id)
+  WHERE kind = 'notice' AND source_kind <> 'staff';
 CREATE INDEX idx_copyright_notice_submissions__current_assessment
   ON copyright_notice_submissions(copyright_notice_id, current_assessment_identity_id)
   WHERE current_assessment_identity_id IS NOT NULL;
@@ -838,6 +877,7 @@ CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE logical_table_name text;
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   SELECT relname INTO logical_table_name FROM pg_class
     WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
   IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on'
@@ -858,8 +898,33 @@ $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_missing_storage_object()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  object_id uuid := NULLIF(to_jsonb(NEW) ->> TG_ARGV[0], '')::uuid;
+  old_object_id uuid;
+  claimed boolean;
 BEGIN
-  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NOT NULL THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' THEN
+    old_object_id := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;
+    IF old_object_id IS NOT NULL AND object_id IS DISTINCT FROM old_object_id THEN
+      SELECT deletion_claimed INTO claimed FROM copyright_notice_storage_objects
+      WHERE id = old_object_id FOR UPDATE;
+      IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
+        RAISE EXCEPTION 'claimed copyright evidence cannot lose its reference'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+  END IF;
+  IF object_id IS NOT NULL THEN
+    IF TG_OP = 'INSERT' OR object_id IS DISTINCT FROM old_object_id THEN
+      SELECT deletion_claimed INTO claimed FROM copyright_notice_storage_objects
+      WHERE id = object_id FOR UPDATE;
+      IF claimed THEN
+        RAISE EXCEPTION 'copyright evidence object deletion has started'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
   IF TG_OP = 'UPDATE' AND to_jsonb(OLD) ->> TG_ARGV[0] IS NULL THEN RETURN NEW; END IF;
   IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
     RETURN NEW;
@@ -868,6 +933,48 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION fn_reject_copyright_missing_storage_object() IS 'Reject missing intake or artifact object identities except when controlled retention erasure clears them.';
+
+CREATE FUNCTION fn_guard_copyright_claimed_storage_reference_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  object_id uuid := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;
+  claimed boolean;
+BEGIN
+  IF object_id IS NULL THEN RETURN OLD; END IF;
+  SELECT deletion_claimed INTO claimed FROM copyright_notice_storage_objects
+    WHERE id = object_id FOR UPDATE;
+  IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
+    RAISE EXCEPTION 'claimed copyright evidence cannot lose its reference'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+CREATE FUNCTION fn_bump_copyright_storage_reference_generation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  old_object_id uuid;
+  new_object_id uuid;
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    old_object_id := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;
+  END IF;
+  IF TG_OP <> 'DELETE' THEN
+    new_object_id := NULLIF(to_jsonb(NEW) ->> TG_ARGV[0], '')::uuid;
+  END IF;
+  IF old_object_id IS NOT NULL AND old_object_id IS DISTINCT FROM new_object_id THEN
+    UPDATE copyright_notice_storage_objects
+      SET reference_generation = reference_generation + 1 WHERE id = old_object_id;
+  END IF;
+  IF new_object_id IS NOT NULL AND new_object_id IS DISTINCT FROM old_object_id THEN
+    UPDATE copyright_notice_storage_objects
+      SET reference_generation = reference_generation + 1 WHERE id = new_object_id;
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_immutable_with_actor_erasure()
@@ -878,6 +985,7 @@ DECLARE
   old_actor jsonb;
   new_actor jsonb;
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   SELECT relname INTO logical_table_name FROM pg_class
     WHERE oid = COALESCE(pg_partition_root(TG_RELID), TG_RELID);
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
@@ -950,6 +1058,9 @@ $$;
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_submission()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
+  IF TG_OP = 'UPDATE' AND fn_copyright_case_purge_pointer_cut_permitted(
+    TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
     IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;
@@ -973,10 +1084,35 @@ $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_submission();
+-- Every submission producer uses this one table. Capture its account before the
+-- live users FK can be SET NULL by account deletion.
+CREATE FUNCTION fn_retain_copyright_submission_party()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.submitted_by_id IS NOT NULL THEN
+    INSERT INTO copyright_notice_party_identities (copyright_notice_id, account_user_id)
+    VALUES (NEW.copyright_notice_id, NEW.submitted_by_id)
+    ON CONFLICT (copyright_notice_id, account_user_id) DO NOTHING;
+    UPDATE copyright_notices SET last_legal_activity_at =
+      GREATEST(last_legal_activity_at, clock_timestamp())
+      WHERE id = NEW.copyright_notice_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_retain_copyright_submission_party
+  AFTER INSERT ON copyright_notice_submissions FOR EACH ROW
+  EXECUTE FUNCTION fn_retain_copyright_submission_party();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE UPDATE OR DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id');
+CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete
+  BEFORE DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW
+  EXECUTE FUNCTION fn_guard_copyright_claimed_storage_reference_delete('storage_object_id');
+CREATE TRIGGER trigger_copyright_evidence_object_reference_generation
+  AFTER INSERT OR UPDATE OF storage_object_id OR DELETE ON copyright_notice_evidence_artifacts
+  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_storage_reference_generation('storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
 
@@ -1004,6 +1140,7 @@ CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
     IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;
@@ -1077,6 +1214,7 @@ CREATE TRIGGER trigger_copyright_notices_updated_at BEFORE UPDATE ON copyright_n
 CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';
   END IF;
@@ -1167,6 +1305,7 @@ CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON copy
 CREATE OR REPLACE FUNCTION fn_reject_copyright_deadline()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright deadlines are durable statutory records' USING ERRCODE = 'check_violation';
   END IF;
@@ -1202,6 +1341,7 @@ CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON copyright
 CREATE OR REPLACE FUNCTION fn_reject_copyright_correspondence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
     IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
   END IF;
@@ -1276,6 +1416,11 @@ COMMENT ON COLUMN copyright_notices.territorial_decided_by_id IS 'Retained staff
 COMMENT ON COLUMN copyright_notices.territorial_rationale_ciphertext IS 'Encrypted current EU or UK decision rationale retained with the case.';
 COMMENT ON COLUMN copyright_notices.territorial_public_explanation_ciphertext IS 'Encrypted public explanation of the current EU or UK decision retained with the case.';
 COMMENT ON COLUMN copyright_notices.last_lifecycle_activity_at IS 'Latest legal lifecycle activity retained as a case clock after detailed event history expires.';
+COMMENT ON COLUMN copyright_notices.evidence_erased_at IS 'Time case evidence and private fields were erased after their separate retention period; final case deletion remains governed by the legal clock.';
+COMMENT ON TABLE copyright_notice_party_identities IS 'Case participants retained through root deletion so late account holds are fenced; the same purge job deletes them before their identity owner.';
+COMMENT ON COLUMN copyright_notice_party_identities.copyright_notice_id IS 'Case whose hold participant identity is retained.';
+COMMENT ON COLUMN copyright_notice_party_identities.account_user_id IS 'Retained account identity whose legal hold may preserve this case; it does not authorize the account.';
+COMMENT ON COLUMN copyright_notice_party_identities.is_incident_party IS 'Whether this account was named by a repeat-infringer incident on the case; used for exact account-level review and suspension gates after incident details are deleted.';
 COMMENT ON COLUMN copyright_notices.last_guest_capability_activity_at IS 'Latest guest capability update or natural expiry activity retained after live token pruning.';
 COMMENT ON COLUMN copyright_notices.claimant_user_id IS 'Signed-in claimant account linked to the member record; NULL for guest/email claimants or after account deletion.';
 COMMENT ON COLUMN copyright_notices.claimant_display_name IS 'Immutable claimant display-name snapshot for authorized legal and staff use.';
@@ -1442,7 +1587,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_case_lifecycle_activity();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);
 CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id
-  ON copyright_notice_evidence_artifacts (storage_object_id)
+  ON copyright_notice_evidence_artifacts (storage_object_id, id)
   WHERE storage_object_id IS NOT NULL;
 
 COMMENT ON TABLE copyright_notice_submission_assessment_identities IS 'Minimal stable assessment ids and owner scope that survive detailed assessment history retirement without conferring authorization.';

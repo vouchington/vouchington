@@ -88,8 +88,8 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links other_link
           WHERE other_link.copyright_notice_email_intake_id = own_link.copyright_notice_email_intake_id
             AND other_link.copyright_notice_id <> ${id}
-            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
-              WHERE erased.copyright_notice_id = other_link.copyright_notice_id)))`,
+            AND NOT EXISTS (SELECT 1 FROM copyright_notices erased
+              WHERE erased.id = other_link.copyright_notice_id AND erased.evidence_erased_at IS NULL)))`,
   ),
   table(
     'copyright_notice_email_intakes',

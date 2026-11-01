@@ -52,10 +52,7 @@ describe('copyright evidence retention and the evidence bucket', () => {
 
     for (const key of refusedCase.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)
     await expect(readCopyrightRetentionColumns(refusedCase.noticeId)).resolves.not.toEqual(before)
-    await expect(readCopyrightRetentionMarker(refusedCase.noticeId)).resolves.toEqual({
-      retention_days: 30,
-      erased_object_count: 2,
-    })
+    await expect(readCopyrightRetentionMarker(refusedCase.noticeId)).resolves.toBeInstanceOf(Date)
     await expect(
       sweepCopyrightEvidenceRetention({ now: afterRetention(), noticeIds }),
     ).resolves.toEqual({ erased: 0, ineligible: 0, failed: [] })
@@ -91,10 +88,7 @@ describe('copyright evidence retention and the evidence bucket', () => {
     ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
 
     expect(bucket.deleteRequests()).toBe(0)
-    await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toEqual({
-      retention_days: 30,
-      erased_object_count: 0,
-    })
+    await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toBeInstanceOf(Date)
   })
 
   it('keeps an object another case still references until the last case is erased', async () => {
@@ -108,17 +102,13 @@ describe('copyright evidence retention and the evidence bucket', () => {
       sweepCopyrightEvidenceRetention({ now, noticeIds: [first.noticeId] }),
     ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
     expect(bucket.countVersions(sharedKey)).toBe(3)
-    await expect(readCopyrightRetentionMarker(first.noticeId)).resolves.toMatchObject({
-      erased_object_count: 0,
-    })
+    await expect(readCopyrightRetentionMarker(first.noticeId)).resolves.toBeInstanceOf(Date)
 
     await expect(
       sweepCopyrightEvidenceRetention({ now, noticeIds: [second.noticeId] }),
     ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
     expect(bucket.countVersions(sharedKey)).toBe(0)
-    await expect(readCopyrightRetentionMarker(second.noticeId)).resolves.toMatchObject({
-      erased_object_count: 1,
-    })
+    await expect(readCopyrightRetentionMarker(second.noticeId)).resolves.toBeInstanceOf(Date)
   })
 
   it('deletes only the exact key, never another object that merely shares its prefix', async () => {

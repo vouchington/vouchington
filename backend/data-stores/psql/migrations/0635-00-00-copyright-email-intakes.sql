@@ -225,6 +225,12 @@ CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE UPDATE OR D
   EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id');
+CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete
+  BEFORE DELETE ON copyright_notice_email_intakes FOR EACH ROW
+  EXECUTE FUNCTION fn_guard_copyright_claimed_storage_reference_delete('raw_storage_object_id');
+CREATE TRIGGER trigger_copyright_email_intake_object_reference_generation
+  AFTER INSERT OR UPDATE OF raw_storage_object_id OR DELETE ON copyright_notice_email_intakes
+  FOR EACH ROW EXECUTE FUNCTION fn_bump_copyright_storage_reference_generation('raw_storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_parses_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -292,7 +298,7 @@ CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON copyright_notice_email_intakes (raw_media_type_id);
 CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id
-  ON copyright_notice_email_intakes (raw_storage_object_id)
+  ON copyright_notice_email_intakes (raw_storage_object_id, id)
   WHERE raw_storage_object_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

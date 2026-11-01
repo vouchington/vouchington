@@ -2,6 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from './types.mts'
+import { retainCopyrightCaseTargetParties } from './retention-parties-admission.mts'
 
 /** Capture a hosted placement's current generation with its notice target in one transaction. */
 export async function insertCopyrightNoticeTargetsInTransaction(
@@ -34,7 +35,9 @@ export async function insertCopyrightNoticeTargetsInTransaction(
       hosted_use_url: target.hostedUseUrl,
     })),
   )
-  const insertion = await transaction(sql`/* insertCopyrightNoticeTargets */
+  const insertion = await transaction<{
+    copyright_notice_target_id: string
+  }>(sql`/* insertCopyrightNoticeTargets */
     WITH target_inputs AS (
       SELECT * FROM jsonb_to_recordset(${serializedTargets}::jsonb) AS target_input(
         placement_id uuid, placement_revision integer, image_id uuid,
@@ -65,6 +68,12 @@ export async function insertCopyrightNoticeTargetsInTransaction(
       target_inputs.image_id, target_inputs.binding_family
     FROM inserted_targets
     INNER JOIN target_inputs USING (placement_id, placement_revision)
+    RETURNING copyright_notice_target_id
   `)
   assert(insertion.rowCount === targets.length, 422, 'Hosted image placement was not found')
+  await retainCopyrightCaseTargetParties(
+    transaction,
+    noticeId,
+    insertion.rows.map(row => row.copyright_notice_target_id),
+  )
 }

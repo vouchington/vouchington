@@ -33,7 +33,7 @@ export type {
   ReconcileMediaDeliveryRegistryData,
 } from './enqueues/media-delivery-registry.mts'
 export { enqueueCheckCopyrightReviewTarget } from './enqueues/copyright-review-target.mts'
-export { enqueueSweepCopyrightEvidenceRetention } from './enqueues/copyright-evidence-retention.mts'
+export { enqueueCopyrightCasePurgeAdmission } from './enqueues/copyright-case-purge-admission.mts'
 export {
   enqueueSubmitDsaStatementOfReasons,
   enqueueBulkSubmitDsaStatementOfReasons,

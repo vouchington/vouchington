@@ -12,7 +12,7 @@ import {
   enqueueCheckCopyrightReviewTarget,
   enqueueReconcileCopyrightActionIntents,
   enqueueReconcileDsaStatementSubmissions,
-  enqueueSweepCopyrightEvidenceRetention,
+  enqueueCopyrightCasePurgeAdmission,
 } from './enqueues.mts'
 import { notifications } from './queues.mts'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
@@ -47,15 +47,15 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     })
   })
 
-  it('throttles the copyright evidence retention sweep to one schedule', async () => {
-    await enqueueSweepCopyrightEvidenceRetention()
+  it('throttles manual copyright case purge admission', async () => {
+    await enqueueCopyrightCasePurgeAdmission()
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'notifications.processSweepCopyrightEvidenceRetention',
+      candidate => candidate.name === 'notifications.processCopyrightCasePurgeAdmission',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
       deduplication: {
-        id: 'copyright-evidence-retention',
+        id: 'copyright-case-purge-admission',
         mode: 'throttle',
       },
     })
