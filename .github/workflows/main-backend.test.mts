@@ -76,6 +76,31 @@ describe('main-backend workflow', () => {
     expect(pushPaths.some(glob => picomatch.isMatch(checker, glob, { dot: true }))).toBe(true)
   })
 
+  it('triggers the main backend workflow when the shipped topic CSV checker changes', () => {
+    const checker = 'ci/check-seed-topic-csvs.mts'
+    const policy = 'ci/seed-topic-csv-policy.mts'
+    const rows = 'ci/seed-topic-csv-rows.mts'
+    const feed = 'ci/seed-topic-csv-feed.mts'
+    const shippedCsv = 'seed/ai-topics.csv'
+    expect(ciBackendFilter()).toContain(checker)
+    expect(ciBackendFilter()).toContain(policy)
+    expect(ciBackendFilter()).toContain(rows)
+    expect(ciBackendFilter()).toContain(feed)
+    expect(ciBackendFilter()).toContain('seed/*-topics.csv')
+
+    const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on?: { push?: { paths?: string[] } }
+    }
+    const pushPaths = workflow.on?.push?.paths ?? []
+    expect(pushPaths).toContain(checker)
+    expect(pushPaths).toContain(policy)
+    expect(pushPaths).toContain(rows)
+    expect(pushPaths).toContain(feed)
+    expect(pushPaths).toContain('seed/*-topics.csv')
+    expect(pushPaths.some(glob => picomatch.isMatch(checker, glob, { dot: true }))).toBe(true)
+    expect(pushPaths.some(glob => picomatch.isMatch(shippedCsv, glob, { dot: true }))).toBe(true)
+  })
+
   it('contains only image publication selection, intent, and publication jobs', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
     const parsed = load(workflow) as { jobs?: Record<string, unknown> }
