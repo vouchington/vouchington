@@ -3647,6 +3647,121 @@ rules:
         - backend/test-helpers/entities/urls.mts
         - backend/test-helpers/entities/users-direct.mts
 
+  - name: unbounded SQL identifiers are rejected
+    rule: postgres-no-unbounded-sql-identifier
+    scope: repository
+    severity: error
+    options:
+      effort: low
+      unanalyzableSql: ignore
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      include: ['backend/**/*.{ts,mts,js}']
+      exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+
+  - name: transformed uuid predicates are advised
+    rule: postgres-no-transformed-uuid-predicates
+    scope: repository
+    severity: advisory
+    options:
+      effort: low
+      unanalyzableSql: ignore
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      include: ['backend/**/*.{ts,mts,js}']
+      exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+
+  - name: statements are bounded
+    rule: postgres-bounded-statements
+    scope: repository
+    severity: advisory
+    options:
+      unanalyzableSql: ignore
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      include: ['backend/**/*.{ts,mts,js}']
+      exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+      columnBounds:
+        post_images.post_id: { reason: 'a post carries at most 20 attached images' }
+        post_images.image_id: { reason: 'an uploaded image attaches to one post' }
+        image_placements.post_id: { reason: 'one placement per attached image of a post' }
+        image_surface_placements.user_profile_link_id:
+          { reason: 'a profile link has one image surface' }
+        image_surface_placement_activations.placement_id:
+          { reason: 'a few activation revisions per surface placement' }
+        user_aside_preferences.user_id: { reason: 'one row per finite aside key per user' }
+        user_profile_links.user_id: { reason: 'a profile shows at most MAX_PROFILE_LINKS links' }
+        user_landing_page_items.landing_page_id: { reason: 'a landing page has a few items' }
+        user_landing_page_group_members.landing_page_item_id:
+          { reason: 'a group item has a few members' }
+        web_push_subscriptions.user_id: { reason: 'a user has a few push-enabled devices' }
+        web_push_endpoint_owners.user_id: { reason: 'a user has a few push-enabled devices' }
+        autotagger_agent_run_topics.run_id:
+          { reason: 'autotagger runs choose from at most 10 candidates' }
+        classifier_decision_calls.batch_id: { reason: 'a few shards per decision batch' }
+        classifier_run_requests.run_identity_id:
+          { reason: 'a run settles one request per classifier subject' }
+        community_pinned_posts.community_id: { reason: 'a community pins at most 3 posts' }
+        community_auto_tagger_agents.community_id:
+          { reason: 'a community enables a few tagger agents' }
+        url_hostname_blocks.url_hostname_id:
+          { reason: 'a hostname has a short block and lift history' }
+        curated_aside_items.aside_type: { reason: 'staff curate a short list per aside type' }
+        copyright_notice_targets.copyright_notice_id:
+          { reason: 'intake caps targets at 20 per notice' }
+        copyright_notice_target_images.copyright_notice_target_id:
+          { reason: 'one image per target' }
+        copyright_notice_email_intake_attachments.copyright_notice_email_intake_id:
+          { reason: 'at most 100 attachments per intake email' }
+        copyright_notice_counter_notice_assessment_targets.copyright_notice_submission_assessment_identity_id:
+          { reason: 'at most the notice targets (20)' }
+        copyright_legal_hold_restrictions.copyright_notice_legal_hold_assessment_id:
+          { reason: 'at most the notice targets (20)' }
+        membership_sources.user_id: { reason: 'a user has a few membership sources' }
+        membership_sources.membership_provider_lineage_id:
+          { reason: 'a provider lineage backs a few sources' }
+        membership_provider_products.membership_provider_context_id:
+          { reason: 'a provider context maps the four catalog products' }
+        membership_ineligible_purchase_reversal_case_operations.membership_ineligible_purchase_reversal_case_id:
+          { reason: 'a few operations per reversal case' }
+        membership_refund_operation_attempts.membership_operation_id:
+          { reason: 'a few refund attempts per operation' }
+        post_review_topic_ratings.post_id: { reason: 'a review rates a few topics' }
+        post_dispute_annotations.post_id: { reason: 'staff add a few annotations per post' }
+        relation__post__category__topic.subject_id: { reason: 'a post has a few category topics' }
+        relation__post__category__topic_alias.subject_id:
+          { reason: 'a post has a few category aliases' }
+        post_topic_recommendation_hostnames.post_id:
+          { reason: 'a recommendation lists a few hostnames' }
+        post_topic_recommendation_landing_page_urls.post_id:
+          { reason: 'a recommendation lists a few landing pages' }
+        review_succession_topics.review_succession_id:
+          { reason: 'a succession covers a few topics' }
+        moderation_queue_claims.post_id: { reason: 'one live claim per queue entry' }
+        moderation_queue_claims.report_id: { reason: 'one live claim per queue entry' }
+        rss_feed_categories.rss_feed_id: { reason: 'a podcast feed lists a few iTunes categories' }
+        relation__rss_feed_item__category__topic.subject_id:
+          { reason: 'an item maps to a few topics' }
+        relation__rss_feed_item__category__topic_alias.subject_id:
+          { reason: 'an item maps to a few aliases' }
+        rss_feeds.canonical_rss_feed_id: { reason: 'a canonical feed has a few duplicates' }
+        retailer_countries.retailer_topic_id:
+          { reason: 'a retailer serves a finite set of countries' }
+        hostname_crawler_configurations.hostname_id:
+          { reason: 'a hostname has a few crawler configurations' }
+        hostname_crawler_configurations.referral_program_topic_id:
+          { reason: 'a referral program has a few crawler hostnames' }
+        referral_program_topic_link_validation_rule_sets.referral_program_topic_id:
+          { reason: 'a program has a few rule sets' }
+        referral_program_link_validation_rules.referral_program_link_validation_rule_set_id:
+          { reason: 'a rule set has a few rules' }
+
   - name: reject unsafe PostgreSQL query shapes
     rule: postgres-sql-shape-policy
     scope: repository
