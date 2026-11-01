@@ -42,8 +42,16 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF fn_membership_operation_fiscal_retention_due(OLD.id) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'membership operations cannot be deleted';
   END IF;
+
+  IF OLD.fiscal_retention_started_at IS NULL
+    AND NEW.fiscal_retention_started_at IS NOT NULL
+    AND fn_membership_operation_fiscal_retention_due(OLD.id)
+    AND to_jsonb(NEW) - 'fiscal_retention_started_at'
+      = to_jsonb(OLD) - 'fiscal_retention_started_at'
+    THEN RETURN NEW; END IF;
 
   IF OLD.completed_at IS NOT NULL THEN
     RAISE EXCEPTION 'membership operations only allow one terminal lifecycle transition';

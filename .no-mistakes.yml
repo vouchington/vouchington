@@ -5286,6 +5286,11 @@ rules:
             dedicated trigger permits only bounded retention DELETE after the configured
             cutoff, while preserving the latest consent for a live grant and its approved
             post-revocation window; the generic mutation trigger would block that cleanup.
+        - object: table:stripe_events
+          reason: >-
+            Stripe events reject UPDATE and ordinary DELETE. Their dedicated trigger permits
+            only due fiscal-retention DELETE with no processing work; the generic mutation
+            trigger would block that finite cleanup. The exact replacement shape is checked below.
         - object: table:agent_moderation_votes
           reason: Binary moderation ballots intentionally do not model neutral or semantic score provenance;
         - object: table:copyright_notice_lifecycle_changes
@@ -5294,6 +5299,26 @@ rules:
         - object: table:media_delivery_registry_changes
           reason: This change ledger permits only a guarded, aged, superseded transition delete;
             its exact shape and trigger are checked by the dedicated rule below.
+  - name: stripe event ledger uses its scoped fiscal retention guard
+    rule: postgres-table-shape
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      shapes:
+        - name: stripe-event-fiscal-ledger
+          tablePattern: ^stripe_events$
+          requiredColumns:
+            - name: occurred_at
+              type: timestamp with time zone
+              nullable: false
+          forbiddenColumns:
+            - updated_at
+          requiredTriggers:
+            - function: fn_reject_stripe_event_mutation
+              timing: before
+              events:
+                - update
+                - delete
   - name: copyright lifecycle ledger uses its controlled evidence erasure guard
     rule: postgres-table-shape
     scope: repository

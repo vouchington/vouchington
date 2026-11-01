@@ -20,7 +20,7 @@ export type PaymentOperationCleanupResult = {
   cursorId: string | null
 }
 
-type PaymentCleanupKind = 'stripe_event_work' | 'purchase_intent'
+type PaymentCleanupKind = 'stripe_event_work' | 'purchase_intent' | 'stripe_event_ledger'
 
 function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
@@ -35,7 +35,7 @@ function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
   return { batchSize, cutoff, idCutoff, idLowerBound }
 }
 
-async function lockPaymentCleanupCursor(
+export async function lockPaymentCleanupCursor(
   query: QueryExecutor,
   kind: PaymentCleanupKind,
 ): Promise<string | null> {
@@ -52,7 +52,7 @@ async function lockPaymentCleanupCursor(
   return rows[0].cursor_id
 }
 
-async function savePaymentCleanupCursor(
+export async function savePaymentCleanupCursor(
   query: QueryExecutor,
   kind: PaymentCleanupKind,
   cursorId: string | null,
