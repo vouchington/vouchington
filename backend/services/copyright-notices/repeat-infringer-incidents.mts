@@ -151,14 +151,11 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
     SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents
     WHERE id = ${input.incidentId}
   `)
-  const identity = identities[0]
-  assert(identity, 404, 'Copyright repeat-infringer incident not found')
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
-    transaction,
-    identity.copyright_notice_id,
-  )
+  const noticeId = identities[0]?.copyright_notice_id
+  assert(noticeId, 404, 'Copyright repeat-infringer incident not found')
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, 'Copyright repeat-infringer incident not found')
-  await lockCopyrightRepeatInfringerNoticeAccounts(identity.copyright_notice_id, transaction)
+  await lockCopyrightRepeatInfringerNoticeAccounts(noticeId, transaction)
   const { rows } = await transaction<{
     copyright_notice_id: string
     current_disposition: CopyrightRepeatInfringerDisposition | null
