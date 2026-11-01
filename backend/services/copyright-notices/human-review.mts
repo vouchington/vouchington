@@ -88,6 +88,7 @@ export async function completeCopyrightMandatoryHumanReview(
     )
     restoreIntentId = intent.id
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle event insert must precede the clock advance in this locked transaction.
   const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
     input.noticeId,
     transaction,
