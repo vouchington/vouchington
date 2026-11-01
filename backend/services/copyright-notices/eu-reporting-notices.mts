@@ -1,4 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { aiGuidanceSql, automaticRestrictionSql } from './automated-assessment-sql.mts'
@@ -24,6 +25,7 @@ export async function readDsaCopyrightNoticeFigures(
   queryExecutor: QueryExecutor = read,
 ): Promise<DsaCopyrightNoticeFigures> {
   if (noticeIds?.length === 0) return emptyDsaCopyrightNoticeFigures()
+  const [from, to] = [getMinUUIDv7ForDate(periodStartedAt), getMinUUIDv7ForDate(periodEndedAt)]
   const population = [...DSA_COPYRIGHT_NOTICE_JURISDICTIONS]
   const noticeAlias = sql``.append('notice.id')
   const query = sql`/* readDsaCopyrightNoticeFigures */
@@ -45,8 +47,8 @@ export async function readDsaCopyrightNoticeFigures(
         )) AS automated
       FROM copyright_notices notice
       WHERE notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])
-        AND notice.received_at >= ${periodStartedAt}
-        AND notice.received_at < ${periodEndedAt}`)
+        AND notice.id >= ${from}::uuid
+        AND notice.id < ${to}::uuid`)
   appendOwnedNoticeIds(query, noticeIds)
   query
     .append(sql`
@@ -58,8 +60,8 @@ export async function readDsaCopyrightNoticeFigures(
     .append(automaticRestrictionSql('restriction')).append(sql` AS automated
       FROM copyright_restrictions restriction
       JOIN copyright_notices notice ON notice.id = restriction.copyright_notice_id
-      WHERE restriction.imposed_at >= ${periodStartedAt}
-        AND restriction.imposed_at < ${periodEndedAt}
+      WHERE restriction.id >= ${from}::uuid
+        AND restriction.id < ${to}::uuid
         AND notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])`)
   appendOwnedNoticeIds(query, noticeIds)
   query.append(sql`

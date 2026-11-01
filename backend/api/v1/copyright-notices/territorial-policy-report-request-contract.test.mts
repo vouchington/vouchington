@@ -24,9 +24,13 @@ describe('EU transparency report request contract', () => {
 
   it('rejects an unknown key before compiling a report', async () => {
     const { staff, staffRequest } = await createTerritorialActors()
+    const start =
+      Date.now() -
+      4 * 86_400_000 -
+      (Number.parseInt(crypto.randomUUID().slice(0, 8), 16) % 3_600_000)
     const body = {
-      period_start: new Date(Date.now() - 60_000).toISOString(),
-      period_end: new Date(Date.now() - 1_000).toISOString(),
+      period_start: new Date(start).toISOString(),
+      period_end: new Date(start + 1_000).toISOString(),
     }
 
     await staffRequest

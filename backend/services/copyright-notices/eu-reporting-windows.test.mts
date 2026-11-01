@@ -1,4 +1,6 @@
+import { read } from '@data-stores/psql'
 import { insertTestHistoricalTerritorialComplaint } from '@voucha/test-helpers/copyright-territorial-historical-complaint'
+import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { createTestTimedDsaReportAction } from '@voucha/test-helpers/dsa-report-timed-action'
@@ -8,133 +10,88 @@ import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
 import { readDsaCopyrightComplaintFigures } from './eu-reporting-complaints.mts'
 import { recordEuCopyrightRedressDecision } from './eu-redress.mts'
 
-const utcEdges = [
-  '2024-01-31T23:59:59.999Z',
-  '2024-02-01T00:00:00.000Z',
-  '2024-02-29T23:59:59.999Z',
-  '2024-03-01T00:00:00.000Z',
-  '2024-12-31T23:59:59.999Z',
-  '2025-01-01T00:00:00.000Z',
-] as const
+const ARRIVED_AT = new Date('2024-01-31T23:59:59.999Z')
 
-describe('DSA copyright half-open event windows', () => {
+/** The millisecond Voucha recorded a row, from its UUIDv7 id. */
+async function recordedAt(query: ReturnType<typeof sql>): Promise<Date> {
+  const { rows } = await read<{ at: Date }>(query)
+  const at = rows[0]?.at
+  if (!at) throw new Error('Expected a recorded row')
+  return at
+}
+
+const after = (at: Date, ms: number) => new Date(at.getTime() + ms)
+
+describe('DSA copyright half-open recorded-time windows', () => {
   useCopyrightIntakeEnvironment()
 
-  it.each(utcEdges)('counts notice receipt and imposition independently at %s', async instant => {
-    const receivedAt = new Date(instant)
-    const imposedAt = new Date(receivedAt.getTime() + 2_000)
+  it('counts a notice and its restriction by when Voucha recorded them, not by arrival', async () => {
     const noticeId = await createTestTimedDsaReportAction({
-      receivedAt,
-      imposedAt,
-      completedAt: new Date(imposedAt.getTime() + 1_000),
+      receivedAt: ARRIVED_AT,
+      imposedAt: after(ARRIVED_AT, 2_000),
+      completedAt: after(ARRIVED_AT, 3_000),
     })
-    const receiptBefore = await readDsaCopyrightNoticeFigures(
-      new Date(receivedAt.getTime() - 1),
-      receivedAt,
-      [noticeId],
+    const noticeAt = await recordedAt(
+      sql`/* readNoticeRecordedAt */ SELECT uuid_extract_timestamp(id) AS at
+        FROM copyright_notices WHERE id = ${noticeId}`,
     )
-    const receiptAt = await readDsaCopyrightNoticeFigures(
-      receivedAt,
-      new Date(receivedAt.getTime() + 1),
-      [noticeId],
+    const restrictionAt = await recordedAt(
+      sql`/* readRestrictionRecordedAt */ SELECT uuid_extract_timestamp(id) AS at
+        FROM copyright_restrictions WHERE copyright_notice_id = ${noticeId}`,
     )
-    const impositionBefore = await readDsaCopyrightNoticeFigures(
-      new Date(imposedAt.getTime() - 1),
-      imposedAt,
-      [noticeId],
-    )
-    const impositionAt = await readDsaCopyrightNoticeFigures(
-      imposedAt,
-      new Date(imposedAt.getTime() + 1),
-      [noticeId],
-    )
+    const [arrival, before, at, restrictionBefore, restriction] = await Promise.all([
+      readDsaCopyrightNoticeFigures(ARRIVED_AT, after(ARRIVED_AT, 1), [noticeId]),
+      readDsaCopyrightNoticeFigures(after(noticeAt, -1), noticeAt, [noticeId]),
+      readDsaCopyrightNoticeFigures(noticeAt, after(noticeAt, 1), [noticeId]),
+      readDsaCopyrightNoticeFigures(after(restrictionAt, -1), restrictionAt, [noticeId]),
+      readDsaCopyrightNoticeFigures(restrictionAt, after(restrictionAt, 1), [noticeId]),
+    ])
 
-    expect(receiptBefore.notices_received_count).toBe(0)
-    expect(receiptAt.notices_received_count).toBe(1)
-    expect(receiptAt.actions_on_law_count).toBe(0)
-    expect(impositionBefore.actions_on_law_count).toBe(0)
-    expect(impositionAt.actions_on_law_count).toBe(1)
-    expect(impositionAt.notices_received_count).toBe(0)
+    expect(arrival.notices_received_count).toBe(0)
+    expect(before.notices_received_count).toBe(0)
+    expect(at.notices_received_count).toBe(1)
+    expect(restrictionBefore.actions_on_law_count).toBe(0)
+    expect(restriction.actions_on_law_count).toBe(1)
   })
 
-  it.each(utcEdges)(
-    'counts complaint receipt at %s and excludes the previous window',
-    async instant => {
-      const receivedAt = new Date(instant)
-      const requester = await createTestUser()
-      const scene = await createTestHistoricalEuDecisionWindow({
-        requesterUserId: requester.id,
-        decidedAt: new Date(receivedAt.getTime() - 86_400_000),
-      })
-      await insertTestHistoricalTerritorialComplaint({
-        noticeId: scene.noticeId,
-        requesterUserId: requester.id,
-        idempotencyKey: crypto.randomUUID(),
-        receivedAt,
-      })
-      const before = await readDsaCopyrightComplaintFigures(
-        new Date(receivedAt.getTime() - 1),
-        receivedAt,
-        [scene.noticeId],
-      )
-      const at = await readDsaCopyrightComplaintFigures(
-        receivedAt,
-        new Date(receivedAt.getTime() + 1),
-        [scene.noticeId],
-      )
-      const after = await readDsaCopyrightComplaintFigures(
-        new Date(receivedAt.getTime() + 1),
-        new Date(receivedAt.getTime() + 2),
-        [scene.noticeId],
-      )
-
-      expect(before.complaints_by_submitter.notifier).toBe(0)
-      expect(at.complaints_by_submitter.notifier).toBe(1)
-      expect(at.complaints_by_decision_type.no_action.received).toBe(1)
-      expect(after.complaints_by_submitter.notifier).toBe(0)
-    },
-  )
-
-  it('counts a native redress decision at its persisted instant, independently of receipt', async () => {
+  it('counts a complaint and its decision by when Voucha recorded them', async () => {
     const [requester, staff] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
     ])
-    const receivedAt = new Date('2024-02-29T23:59:59.999Z')
     const scene = await createTestHistoricalEuDecisionWindow({
       requesterUserId: requester.id,
-      decidedAt: new Date(receivedAt.getTime() - 86_400_000),
+      decidedAt: after(ARRIVED_AT, -86_400_000),
     })
     const requestId = await insertTestHistoricalTerritorialComplaint({
       noticeId: scene.noticeId,
       requesterUserId: requester.id,
       idempotencyKey: crypto.randomUUID(),
-      receivedAt,
+      receivedAt: ARRIVED_AT,
     })
-    const decision = await recordEuCopyrightRedressDecision(staff, scene.noticeId, requestId, {
+    const requestAt = await recordedAt(
+      sql`/* readRedressRequestRecordedAt */ SELECT uuid_extract_timestamp(id) AS at
+        FROM copyright_territorial_redress_requests WHERE id = ${requestId}`,
+    )
+    await recordEuCopyrightRedressDecision(staff, scene.noticeId, requestId, {
       disposition: 'maintain',
       rationale: 'The original no-action decision remains appropriate.',
     })
-    const decisionAt = decision.decided_at
-    const before = await readDsaCopyrightComplaintFigures(
-      new Date(decisionAt.getTime() - 1),
-      decisionAt,
-      [scene.noticeId],
+    const decisionAt = await recordedAt(
+      sql`/* readRedressDecisionRecordedAt */ SELECT uuid_extract_timestamp(current_staff_decision_identity_id) AS at
+        FROM copyright_territorial_redress_requests WHERE id = ${requestId}`,
     )
-    const at = await readDsaCopyrightComplaintFigures(
-      decisionAt,
-      new Date(decisionAt.getTime() + 1),
-      [scene.noticeId],
-    )
-    const after = await readDsaCopyrightComplaintFigures(
-      new Date(decisionAt.getTime() + 1),
-      new Date(decisionAt.getTime() + 2),
-      [scene.noticeId],
-    )
+    const [arrival, requestWindow, decisionBefore, decision] = await Promise.all([
+      readDsaCopyrightComplaintFigures(ARRIVED_AT, after(ARRIVED_AT, 1), [scene.noticeId]),
+      readDsaCopyrightComplaintFigures(requestAt, after(requestAt, 1), [scene.noticeId]),
+      readDsaCopyrightComplaintFigures(after(decisionAt, -1), decisionAt, [scene.noticeId]),
+      readDsaCopyrightComplaintFigures(decisionAt, after(decisionAt, 1), [scene.noticeId]),
+    ])
 
-    expect(before.complaints_by_decision_type.no_action.upheld).toBe(0)
-    expect(at.complaints_by_decision_type.no_action.upheld).toBe(1)
-    expect(at.complaints_by_decision_type.no_action.received).toBe(0)
-    expect(after.complaints_by_decision_type.no_action.upheld).toBe(0)
+    expect(arrival.complaints_by_submitter.notifier).toBe(0)
+    expect(requestWindow.complaints_by_submitter.notifier).toBe(1)
+    expect(requestWindow.complaints_by_decision_type.no_action.received).toBe(1)
+    expect(decisionBefore.complaints_by_decision_type.no_action.upheld).toBe(0)
+    expect(decision.complaints_by_decision_type.no_action.upheld).toBe(1)
   })
 })
