@@ -4,6 +4,7 @@ import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { updateRssFeedById, type UpdateRssFeedChanges } from './update.mts'
 
+const MAX_RSS_FEED_CRAWL_PAGE_SIZE = 100
 const MIN_RSS_HEADER_DATE_MS = Date.UTC(1970, 0, 1)
 const ISO_DATE_YEAR_PATTERN = /^([+-]?\d{4,6})-\d{2}-\d{2}/
 const RFC_822_DATE_YEAR_PATTERN = /^(?:[A-Za-z]{3},\s*)?\d{1,2}\s+[A-Za-z]{3}\s+(\d{4})(?:\s|$)/
@@ -149,7 +150,7 @@ export async function searchRssFeedCrawls(
   rss_feed_id: string,
   options: { after?: string; limit?: number } = {},
 ): Promise<{ results: RssFeedCrawlSummary[]; page_info: PageInfo }> {
-  const limit = options.limit ?? 10
+  const limit = Math.min(Math.max(1, options.limit ?? 10), MAX_RSS_FEED_CRAWL_PAGE_SIZE)
   const cursorScope = `rss-feed:${rss_feed_id}:crawls`
   const after = options.after
     ? decodeScopedUuidCursor(options.after, cursorScope, 'Invalid RSS feed crawl cursor')

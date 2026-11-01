@@ -29,22 +29,32 @@ export const getLatestHtmlByUrlIds = async (urlIds: string[]): Promise<CrawlHtml
 async function readLatestHtmlRows(urlIds: string[], recentCutoffDate: Date) {
   return read<{ html_sha256_hex: string; hostname: string; url_id: string }>(
     sql`/* getLatestHtmlByUrlIds */
-    SELECT DISTINCT ON (u.id)
-      c.id AS crawl_id,
-      encode(c.html_sha256, 'hex') AS html_sha256_hex,
-      c.html_snapshot_uploaded_at,
-      c.url_id,
+    SELECT
+      latest.crawl_id,
+      encode(latest.html_sha256, 'hex') AS html_sha256_hex,
+      latest.html_snapshot_uploaded_at,
+      latest.url_id,
       h.hostname
     FROM unnest(${urlIds}::UUID[]) AS u(id)
-    -- no-mistakes-disable-next-line postgres-required-predicates: URL IDs and completed_at do not give a safe UUIDv7 crawl-ID partition bound; a crawl may finish long after it starts
-    JOIN crawls c ON c.url_id = u.id
     JOIN urls uu ON uu.id = u.id
     JOIN url_hostnames h ON h.id = uu.hostname_id
-    WHERE c.response_status_code = 200
-      AND c.completed_at >= ${recentCutoffDate}
-      AND c.html_sha256 IS NOT NULL
-      AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
-    ORDER BY u.id, c.completed_at DESC, c.id DESC
+    CROSS JOIN LATERAL (
+      SELECT
+        c.id AS crawl_id,
+        c.html_sha256,
+        c.html_snapshot_uploaded_at,
+        c.url_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: URL IDs and completed_at do not give a safe UUIDv7 crawl-ID partition bound; a crawl may finish long after it starts
+      FROM crawls c
+      WHERE c.url_id = u.id
+        AND c.response_status_code = 200
+        AND c.completed_at >= ${recentCutoffDate}
+        AND c.html_sha256 IS NOT NULL
+        AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
+      ORDER BY c.completed_at DESC, c.id DESC
+      LIMIT 1
+    ) latest
+    ORDER BY u.id
     `,
   )
 }
