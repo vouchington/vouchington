@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
 import type { getDailyAiCostTotalMicrounits } from '@services/ai-usage'
-import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
+import type { recordSpendCapBreach as RecordSpendCapBreach } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 
@@ -68,7 +68,7 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
       vi.setSystemTime(new Date(now))
       const job = mockJob()
       const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+      const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
       const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
       const getDailyAiCostTotalMicrounits = vi.fn<(day?: string) => Promise<DailyAiCostTotal>>(
         createDailyTotalLoader(1_000_001, day),
@@ -169,7 +169,7 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('ok')
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
@@ -235,7 +235,7 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
       const job = mockJob()
       const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       processAIAgent.mockResolvedValue('ok')
-      const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+      const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
       const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
       await expect(

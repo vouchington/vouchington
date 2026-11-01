@@ -4,7 +4,6 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 import {
   RSS_FEEDS_DISPATCH_JOB,
   RSS_FEEDS_FETCH_JOB,
-  type RssFeedsDispatchData,
 } from '@queues/background/enqueues/rss-feeds-jobs'
 import { background } from '@queues/background/queues'
 import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
@@ -19,6 +18,8 @@ import { captureRssJobs } from '@voucha/test-helpers/rss-dispatch-jobs'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { rssFeedsHandlers } from '../workers.mts'
+
+type RssFeedsDispatchData = NonNullable<typeof RSS_FEEDS_DISPATCH_JOB.data>
 
 describe('rss feed sparse lane', () => {
   // no-mistakes-timeout-reason: four real queue admissions each wait on the glide event deadline, after three owned feeds and their timing rows are written

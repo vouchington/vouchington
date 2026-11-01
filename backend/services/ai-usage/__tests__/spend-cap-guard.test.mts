@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
-import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
+import type { recordSpendCapBreach as RecordSpendCapBreach } from '@modules/on-error/spend-cap-breach'
 import type { getDailyAiCostTotalMicrounits } from '../daily-total.mts'
 import {
   assertDailySpendCapNotBreached,
@@ -94,7 +94,7 @@ describe('evaluateSpendCapBreach', () => {
 
 describe('assertDailySpendCapNotBreached', () => {
   it('records only a confirmed breach with the caller name', async () => {
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
     await expect(
       assertDailySpendCapNotBreached('test-caller', {
         ...guardDeps(101),
