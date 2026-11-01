@@ -1,18 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestCommunity,
+  insertTestCommunityMember,
+} from '@voucha/test-helpers'
+import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
 import { upsertTestHostnameId } from '@voucha/test-helpers/entities/email-domain-hostname'
-import { canLoadBookmarkCommunity, currentUserCanBookmarkTarget } from './authorization.mts'
+import { currentUserCanBookmarkTarget } from './authorization.mts'
 
 describe('bookmark target authorization', () => {
-  it('treats community not-found as invisible and propagates other errors', async () => {
-    await expect(
-      canLoadBookmarkCommunity(() => Promise.reject(Object.assign(new Error(), { status: 404 }))),
-    ).resolves.toBe(false)
+  it('shows a private community to its owner and hides it from strangers', async () => {
+    const owner = await createTestUser()
+    const stranger = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
 
-    const databaseError = new Error('database unavailable')
-    await expect(canLoadBookmarkCommunity(() => Promise.reject(databaseError))).rejects.toBe(
-      databaseError,
+    await expect(currentUserCanBookmarkTarget(owner, 'community', community.id)).resolves.toBe(true)
+    await expect(currentUserCanBookmarkTarget(stranger, 'community', community.id)).resolves.toBe(
+      false,
     )
+  })
+
+  it('propagates community load failures other than not-found', async () => {
+    const user = await createTestUser()
+    const failure = new Error('database unavailable')
+    const restoreRead = rejectPostgresReadForTest('getCommunityWithViewerById', failure)
+    try {
+      await expect(
+        currentUserCanBookmarkTarget(user, 'community', crypto.randomUUID()),
+      ).rejects.toBe(failure)
+    } finally {
+      restoreRead()
+    }
   })
 
   it('fails closed for relation entity types without bookmark visibility support', async () => {
