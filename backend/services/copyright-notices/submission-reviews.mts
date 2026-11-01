@@ -1,6 +1,9 @@
 /* oxlint-disable max-lines -- Appeal and counter-notice reviews share one atomic moderator boundary. */
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -60,6 +63,17 @@ export async function reviewCopyrightAppeal(
   await transaction(sql`/* reviewCopyrightAppeal:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-appeal-review:${input.submissionId}`}, 0))
   `)
+  const { rows: appealNotices } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* reviewCopyrightAppeal:notice */
+    SELECT copyright_notice_id FROM copyright_notice_submissions
+    WHERE id = ${input.submissionId} AND kind = 'appeal'
+  `)
+  assert(appealNotices[0], 404, 'Copyright appeal not found')
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
+    transaction,
+    appealNotices[0].copyright_notice_id,
+  )
+  assert(lockedNotice, 404, 'Copyright appeal not found')
   const { rows: appealRows } = await transaction<{
     copyright_notice_id: string
     submitted_by_id: string | null
@@ -230,7 +244,7 @@ export async function reviewCopyrightAppeal(
       event: { outcome: 'restriction_reversed_by_appeal', restrictionId },
     })
   }
-  await advanceCopyrightLastLegalActivityAt(transaction, appeal.copyright_notice_id)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(reversalIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)
@@ -249,6 +263,17 @@ export async function reviewCopyrightCounterNotice(input: {
   await transaction(sql`/* reviewCopyrightCounterNotice:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-counter-review:${input.submissionId}`}, 0))
   `)
+  const { rows: counterNotices } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* reviewCopyrightCounterNotice:notice */
+    SELECT copyright_notice_id FROM copyright_notice_submissions
+    WHERE id = ${input.submissionId} AND kind = 'counter_notice'
+  `)
+  assert(counterNotices[0], 404, 'Copyright counter-notice not found')
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
+    transaction,
+    counterNotices[0].copyright_notice_id,
+  )
+  assert(lockedNotice, 404, 'Copyright counter-notice not found')
   const { rows: existingRows } = await transaction<{
     copyright_notice_id: string
     is_accepted: boolean
@@ -290,7 +315,7 @@ export async function reviewCopyrightCounterNotice(input: {
     FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId} AND submission.kind = 'counter_notice'
-    FOR UPDATE OF submission, notice
+    FOR UPDATE OF submission
   `)
   const submission = submissionRows[0]
   assert(submission, 404, 'Copyright counter-notice not found')
@@ -397,7 +422,7 @@ export async function reviewCopyrightCounterNotice(input: {
       },
       transaction,
     )
-  await advanceCopyrightLastLegalActivityAt(transaction, submission.copyright_notice_id)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return { noticeId: submission.copyright_notice_id, assessmentId: assessment.id, deadlineId }
 }

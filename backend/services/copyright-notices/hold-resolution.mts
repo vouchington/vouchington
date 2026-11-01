@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -46,19 +49,19 @@ async function resolveCopyrightLegalHoldInTransaction(
   `)
   assert(identities[0], 404, 'Copyright legal hold assessment not found')
   await lockCopyrightNoticeHoldPlacements(identities[0].copyright_notice_id, transaction)
-  const { rows: assessmentRows } = await transaction<{
-    copyright_notice_id: string
-  }>(sql`/* resolveCopyrightLegalHold:lockAssessment */
-    SELECT submission.copyright_notice_id
-    FROM copyright_notice_legal_hold_assessments assessment
-    JOIN copyright_notice_submissions submission
-      ON submission.id = assessment.copyright_notice_submission_id
-    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
-    WHERE assessment.id = ${input.assessmentId}
-    FOR UPDATE OF notice, assessment
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
+    transaction,
+    identities[0].copyright_notice_id,
+  )
+  assert(lockedNotice, 404, 'Copyright legal hold assessment not found')
+  const { rows: assessmentRows } = await transaction<{ id: string }>(sql`
+    /* resolveCopyrightLegalHold:lockAssessment */
+    SELECT id FROM copyright_notice_legal_hold_assessments
+    WHERE id = ${input.assessmentId}
+    FOR UPDATE
   `)
-  const assessment = assessmentRows[0]
-  assert(assessment, 404, 'Copyright legal hold assessment not found')
+  assert(assessmentRows[0], 404, 'Copyright legal hold assessment not found')
+  const assessment = { copyright_notice_id: lockedNotice.noticeId }
   const { rows } = await transaction(sql`/* resolveCopyrightLegalHold */
     INSERT INTO copyright_notice_legal_hold_resolutions (
       copyright_notice_legal_hold_assessment_id, resolved_at, resolved_by_id, resolution_kind,
@@ -115,11 +118,7 @@ async function resolveCopyrightLegalHoldInTransaction(
     now: input.resolvedAt,
     query: transaction,
   })
-  await advanceCopyrightLastLegalActivityAt(
-    transaction,
-    assessment.copyright_notice_id,
-    input.resolvedAt,
-  )
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, input.resolvedAt)
   return {
     resolution,
     intentIds: [...new Set([...restrictionRows.map(row => row.intent_id), ...replayedIds])],

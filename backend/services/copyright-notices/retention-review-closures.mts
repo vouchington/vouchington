@@ -4,13 +4,16 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 
 /** Explicit case lock shared with evidence erasure and the finite legal-record purge. */
-async function lockWritableCase(query: TransactionQuery, noticeId: string): Promise<void> {
-  const { rows } = await query<{ id: string }>(sql`/* lockCopyrightRetentionReviewCase */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
-  assert(rows[0], 404, 'Copyright notice not found')
+async function lockWritableCase(query: TransactionQuery, noticeId: string) {
+  const locked = await lockCopyrightNoticeForLegalWrite(query, noticeId)
+  assert(locked, 404, 'Copyright notice not found')
+  return locked
 }
 
 /** A reviewer closes an escalation explicitly; acknowledging a notice does not silently close it. */
@@ -21,9 +24,9 @@ export async function closeCopyrightTerritorialEscalation(
 ): Promise<{ closed_at: Date }> {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   await using query = await beginTransaction()
-  await lockWritableCase(query, noticeId)
+  const locked = await lockWritableCase(query, noticeId)
   const { rows } = await query<{ closed_at: Date }>(sql`/* closeCopyrightTerritorialEscalation */
-    UPDATE copyright_territorial_escalations SET closed_at = CURRENT_TIMESTAMP,
+    UPDATE copyright_territorial_escalations SET closed_at = clock_timestamp(),
       closed_by_id = ${currentUser.id}
     WHERE id = ${escalationId} AND copyright_notice_id = ${noticeId} AND closed_at IS NULL
     RETURNING closed_at`)
@@ -35,7 +38,7 @@ export async function closeCopyrightTerritorialEscalation(
     WHERE id = ${escalationId} AND copyright_notice_id = ${noticeId}`)
     ).rows[0]
   assert(result, 404, 'Copyright escalation not found')
-  if (rows[0]) await advanceCopyrightLastLegalActivityAt(query, noticeId)
+  if (rows[0]) await advanceCopyrightLastLegalActivityAt(query, locked)
   await query.commit()
   return result
 }
@@ -48,11 +51,11 @@ export async function resolveCopyrightEuSupervisedComplaint(
 ): Promise<{ resolved_at: Date }> {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   await using query = await beginTransaction()
-  await lockWritableCase(query, noticeId)
+  const locked = await lockWritableCase(query, noticeId)
   const { rows } = await query<{
     resolved_at: Date
   }>(sql`/* resolveCopyrightEuSupervisedComplaint */
-    UPDATE copyright_eu_supervised_complaints SET resolved_at = CURRENT_TIMESTAMP,
+    UPDATE copyright_eu_supervised_complaints SET resolved_at = clock_timestamp(),
       resolved_by_id = ${currentUser.id}
     WHERE id = ${complaintId} AND copyright_notice_id = ${noticeId} AND resolved_at IS NULL
     RETURNING resolved_at`)
@@ -64,7 +67,7 @@ export async function resolveCopyrightEuSupervisedComplaint(
     WHERE id = ${complaintId} AND copyright_notice_id = ${noticeId}`)
     ).rows[0]
   assert(result, 404, 'Copyright supervised complaint not found')
-  if (rows[0]) await advanceCopyrightLastLegalActivityAt(query, noticeId)
+  if (rows[0]) await advanceCopyrightLastLegalActivityAt(query, locked)
   await query.commit()
   return result
 }
@@ -81,12 +84,12 @@ export async function placeCopyrightCasePreservationHold(
     'Invalid preservation reason',
   )
   await using query = await beginTransaction()
-  await lockWritableCase(query, noticeId)
+  const locked = await lockWritableCase(query, noticeId)
   const { rows } = await query<{ id: string }>(sql`/* placeCopyrightCasePreservationHold */
     INSERT INTO copyright_case_preservation_holds (copyright_notice_id, kind, placed_by_id)
     VALUES (${noticeId}, ${kind}::copyright_case_preservation_kinds, ${currentUser.id}) RETURNING id`)
   assert(rows[0], 500, 'Copyright preservation hold was not recorded')
-  await advanceCopyrightLastLegalActivityAt(query, noticeId)
+  await advanceCopyrightLastLegalActivityAt(query, locked)
   await query.commit()
   return rows[0]
 }
@@ -98,12 +101,12 @@ export async function releaseCopyrightCasePreservationHold(
 ): Promise<{ released_at: Date }> {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   await using query = await beginTransaction()
-  await lockWritableCase(query, noticeId)
+  const locked = await lockWritableCase(query, noticeId)
   const { rows } = await query<{ released_at: Date }>(sql`/* releaseCopyrightCasePreservationHold */
-    UPDATE copyright_case_preservation_holds SET released_at = CURRENT_TIMESTAMP, released_by_id = ${currentUser.id}
+    UPDATE copyright_case_preservation_holds SET released_at = clock_timestamp(), released_by_id = ${currentUser.id}
     WHERE id = ${holdId} AND copyright_notice_id = ${noticeId} AND released_at IS NULL RETURNING released_at`)
   assert(rows[0], 409, 'Copyright preservation hold is absent or already released')
-  await advanceCopyrightLastLegalActivityAt(query, noticeId)
+  await advanceCopyrightLastLegalActivityAt(query, locked)
   await query.commit()
   return rows[0]
 }

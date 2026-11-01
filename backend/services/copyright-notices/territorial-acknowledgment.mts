@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -31,6 +34,8 @@ export async function recordTerritorialCopyrightAcknowledgment(
   jurisdiction: TerritorialCopyrightJurisdiction,
 ): Promise<TerritorialCopyrightAcknowledgment> {
   await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, territorialLabels(jurisdiction).noticeNotFound)
   const { rows } = await transaction<TerritorialAcknowledgmentRow>(
     lockTerritorialAcknowledgmentQuery(jurisdiction, noticeId),
   )
@@ -66,7 +71,7 @@ export async function recordTerritorialCopyrightAcknowledgment(
     )
     updated.escalated = true
   }
-  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return updated
 }

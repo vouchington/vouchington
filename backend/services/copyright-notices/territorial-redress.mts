@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { getImagePlacementKey } from '@services/images/placements'
@@ -72,9 +75,8 @@ export async function recordTerritorialCopyrightRedressDecision(
       SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
     `)
   }
-  await transaction(sql`/* recordTerritorialCopyrightRedressDecision:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, labels.noticeNotFound)
   const { rows: currentRequests } = await transaction<{ decision_is_live: boolean }>(
     selectTerritorialRedressRequest(jurisdiction, redressId, noticeId),
   )
@@ -146,7 +148,7 @@ export async function recordTerritorialCopyrightRedressDecision(
   )
   if (redressNotice) deliveries.push(redressNotice)
   await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction)
-  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(restoreIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)

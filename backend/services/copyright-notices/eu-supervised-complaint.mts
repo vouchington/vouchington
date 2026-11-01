@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -28,6 +31,8 @@ export async function recordEuCopyrightSupervisedComplaint(
   )
   const explanation = assertBoundedText(input.explanation, 50_000, 'explanation is required')
   await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, 'EU copyright notice not found')
   const { rows: receipts } = await transaction<{ requester_user_id: string | null }>(
     sql`/* recordEuCopyrightSupervisedComplaint:receipt */
     SELECT requester_user_id FROM copyright_territorial_notice_receipts
@@ -96,7 +101,7 @@ export async function recordEuCopyrightSupervisedComplaint(
   )
   const escalation = escalations[0]
   assert(escalation, 500, 'Failed to record EU supervised complaint')
-  await advanceCopyrightLastLegalActivityAt(transaction, noticeId)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return { id: complaint.id, escalation_id: escalation.id, is_duplicate: false }
 }

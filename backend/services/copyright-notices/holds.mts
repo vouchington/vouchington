@@ -12,6 +12,10 @@ import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 
@@ -47,15 +51,18 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   `)
   assert(identities[0], 404, 'Copyright legal-hold submission not found')
   await lockCopyrightNoticeHoldPlacements(identities[0].copyright_notice_id, transaction)
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
+    transaction,
+    identities[0].copyright_notice_id,
+  )
+  assert(lockedNotice, 404, 'Copyright legal-hold submission not found')
   const { rows: submissionRows } = await transaction<{
     kind: string
     copyright_notice_id: string
-  }>(sql`/* appendCopyrightLegalHoldAssessment:lockNotice */
-    SELECT s.kind, s.copyright_notice_id
-    FROM copyright_notice_submissions s
-    JOIN copyright_notices n ON n.id = s.copyright_notice_id
-    WHERE s.id = ${input.submissionId}
-    FOR UPDATE OF n, s
+  }>(sql`/* appendCopyrightLegalHoldAssessment:lockSubmission */
+    SELECT kind, copyright_notice_id FROM copyright_notice_submissions
+    WHERE id = ${input.submissionId}
+    FOR UPDATE
   `)
   assert(submissionRows[0], 404, 'Copyright legal-hold submission not found')
   assert(
@@ -113,14 +120,12 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     )
   }
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
-    WITH recorded_event AS (INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_legal_hold_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
-      ${assessment.id}) RETURNING copyright_notice_id)
-    UPDATE copyright_notices SET last_legal_activity_at =
-      GREATEST(last_legal_activity_at, ${input.assessedAt}, clock_timestamp())
-    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
+      ${assessment.id})
   `)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, input.assessedAt)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: submissionRows[0].copyright_notice_id,
     intentIds: await selectBlockedCopyrightRestoreIntentIds(

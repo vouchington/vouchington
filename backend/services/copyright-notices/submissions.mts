@@ -1,3 +1,7 @@
+import {
+  advanceCopyrightLastLegalActivityAt,
+  lockCopyrightNoticeForLegalWrite,
+} from './last-legal-activity.mts'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
@@ -110,12 +114,9 @@ async function createAuthenticatedCopyrightSubmission(
     await transaction.commit()
     return { submission: existing, isDuplicate: true }
   }
-  const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
-    /* createCopyrightSubmission:jurisdiction */
-    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
-  assert(notices[0], 404, 'Copyright notice not found')
-  assert(notices[0].jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, 'Copyright notice not found')
+  assert(lockedNotice.jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
   const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
     SELECT target.id
     FROM copyright_notice_targets target
@@ -157,16 +158,12 @@ async function createAuthenticatedCopyrightSubmission(
       INSERT INTO copyright_notice_submission_requests (
         copyright_notice_submission_id, requester_user_id, idempotency_key, request_sha256
       ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKey}, ${requestSha256})
-    ), recorded_event AS (
-      INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
-      ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
-      RETURNING copyright_notice_id
     )
-    UPDATE copyright_notices SET last_legal_activity_at =
-      GREATEST(last_legal_activity_at, clock_timestamp())
-    WHERE id IN (SELECT copyright_notice_id FROM recorded_event)
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
+    ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
   `)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await createCopyrightDeliveryIntent(
     {
       noticeId,
