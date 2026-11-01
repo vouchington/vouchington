@@ -2,7 +2,7 @@ import { createServer, request as httpRequest } from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@jongleberry/api-server'
 import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
-import { createVouchaApiApp } from '../app.mts'
+import { createVouchaApiApp } from '../create-voucha-api-app.mts'
 import { startSSE } from '../sse-helpers.mts'
 
 describe('SSE response listener budget', () => {

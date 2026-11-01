@@ -1,6 +1,6 @@
 import { Agent, createServer, type IncomingHttpHeaders } from 'node:http'
 import { describe, expect, it } from 'vitest'
-import { createVouchaApiApp } from './app.mts'
+import { createVouchaApiApp } from './create-voucha-api-app.mts'
 import {
   closeServer,
   listen,

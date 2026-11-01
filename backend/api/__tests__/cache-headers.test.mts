@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import request from 'supertest'
-import { createVouchaApiApp } from '../app.mts'
+import { createVouchaApiApp } from '../create-voucha-api-app.mts'
 import { setAnonymousPublicCacheHeaders } from '../cache-headers.mts'
 
 describe('anonymous public cache headers', () => {

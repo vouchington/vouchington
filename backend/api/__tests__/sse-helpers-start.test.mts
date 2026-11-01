@@ -7,7 +7,7 @@ import {
   MAX_SSE_CYCLE_DURATION_MS,
   startSSE,
 } from '../sse-helpers.mts'
-import { createVouchaApiApp } from '../app.mts'
+import { createVouchaApiApp } from '../create-voucha-api-app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
