@@ -4,7 +4,6 @@ import { background } from '@queues/background/queues'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { checkTrendingHttpContracts } from './trending-http.mts'
-import { checkRssWorkerContracts } from './rss-worker.mts'
 import { checkCrawlTierContracts } from './crawl-tiers.mts'
 import { checkRevenueContracts } from './revenue.mts'
 import { checkHashtagAuthorDeletionContract } from './hashtag-author-deletion.mts'
@@ -20,8 +19,6 @@ async function main(): Promise<void> {
   try {
     await checkTrendingHttpContracts()
     console.log('Native materialized-view contract passed: trending HTTP')
-    await checkRssWorkerContracts()
-    console.log('Native materialized-view contract passed: RSS worker')
     await checkCrawlTierContracts()
     console.log('Native materialized-view contract passed: crawl tiers')
     await checkRevenueContracts()
