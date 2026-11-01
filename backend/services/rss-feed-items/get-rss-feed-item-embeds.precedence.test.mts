@@ -86,7 +86,7 @@ describe('getRssFeedItemEmbedsByItems safe text', () => {
       description: 'Historical normalized description',
       provider: 'Historical publisher',
     })
-    const historicalAt = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000)
+    const historicalAt = earlierCrawlInstant()
     await insertTestCrawl({
       id: uuidv7({ msecs: historicalAt.getTime() }),
       urlId,
@@ -208,7 +208,21 @@ describe('getRssFeedItemEmbedsByItems safe text', () => {
       ).toMatchObject(expected)
     }
   })
+
+  it('places the older preview crawl in the previous UTC month', () => {
+    const now = new Date('2026-11-01T00:22:01.673Z')
+    const historicalAt = earlierCrawlInstant(now)
+    const previousMonthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)
+    const currentMonthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    expect(historicalAt.getTime()).toBeGreaterThanOrEqual(previousMonthStart)
+    expect(historicalAt.getTime()).toBeLessThan(currentMonthStart)
+  })
 })
+
+/** Previous UTC month, which monthly crawl partition creation always includes. */
+function earlierCrawlInstant(now = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12))
+}
 
 function makeEmbed(
   index: number,
