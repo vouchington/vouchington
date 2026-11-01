@@ -69,7 +69,7 @@ _none_
 **Indexes:**
 
 - `idx_membership_operations__binding_id`: `CREATE INDEX idx_membership_operations__binding_id ON public.membership_operations USING btree (membership_lineage_binding_id, id DESC)`
-- `idx_membership_operations__completed_at_id`: `CREATE INDEX idx_membership_operations__completed_at_id ON public.membership_operations USING btree (completed_at, id) WHERE (completed_at IS NOT NULL)`
+- `idx_membership_operations__completed_at_id`: `CREATE INDEX idx_membership_operations__completed_at_id ON public.membership_operations USING btree (completed_at, id) WHERE ((completed_at IS NOT NULL) AND (operation_kind = ANY (ARRAY['cancel_source'::membership_operation_kinds, 'administrator_refund'::membership_operation_kinds])))`
 - `idx_membership_operations__currency_code`: `CREATE INDEX idx_membership_operations__currency_code ON public.membership_operations USING btree (currency_code)`
 - `idx_membership_operations__id_context`: `CREATE UNIQUE INDEX idx_membership_operations__id_context ON public.membership_operations USING btree (id, membership_provider_context_id)`
 - `idx_membership_operations__id_source`: `CREATE UNIQUE INDEX idx_membership_operations__id_source ON public.membership_operations USING btree (id, membership_source_id)`

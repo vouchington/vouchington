@@ -37,7 +37,6 @@ _none_
 **Indexes:**
 
 - `idx_stripe_events__customer_id`: `CREATE INDEX idx_stripe_events__customer_id ON public.stripe_events USING btree (customer_id, id DESC) WHERE (customer_id IS NOT NULL)`
-- `idx_stripe_events__occurred_at_id`: `CREATE INDEX idx_stripe_events__occurred_at_id ON public.stripe_events USING btree (occurred_at, id)`
 - `idx_stripe_events__stripe_event_type_id`: `CREATE INDEX idx_stripe_events__stripe_event_type_id ON public.stripe_events USING btree (stripe_event_type_id, id DESC)`
 - `idx_stripe_events__subscription_id`: `CREATE INDEX idx_stripe_events__subscription_id ON public.stripe_events USING btree (subscription_id, id DESC) WHERE (subscription_id IS NOT NULL)`
 - `stripe_events_pkey`: `CREATE UNIQUE INDEX stripe_events_pkey ON public.stripe_events USING btree (id)`
