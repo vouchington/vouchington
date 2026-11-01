@@ -31,7 +31,7 @@ Not every submission counts the same. A vote is weighted by who cast it. Account
 
 ## Where to sign up
 
-Referral programs are topics, and members attach links to them. You see links ordered by your relationship to each owner: mutual follows first, then people you follow, then everyone else. Voucha's own link is labeled as official. Links do not change how a program or card ranks. [How Voucha Makes Money](./how-voucha-makes-money.md) explains the details, and [Credit Card Referral Links Explained](./credit-card-referral-links-explained.md) covers cards.
+Referral programs are topics, and members attach links to them. You see links ordered by your relationship to each owner: links from people in your network come first, and Voucha's own link, labeled as official, appears after them. Links do not change how a program or card ranks. [How Voucha Makes Money](./how-voucha-makes-money.md) explains the details, and [Credit Card Referral Links Explained](./credit-card-referral-links-explained.md) covers cards.
 
 ## What this page does not cover
 

@@ -24,16 +24,16 @@ Neither ads nor referral links change rankings or trust. Nobody can pay to rank 
 
 When you look at a referral program, you see a list of links. The order depends on your relationship to each link's owner.
 
-1. Voucha's official links, labeled as official.
-2. Mutual follows.
-3. People you follow.
-4. People who referred you.
-5. Authors you rated positively.
+1. Mutual follows.
+2. People you follow.
+3. People who referred you.
+4. Authors you upvoted.
+5. Voucha's own link, labeled as official.
 6. Everyone else.
 
 Inside a group, people who have posted data points and reviews on that program come first. Links from anyone you have muted or blocked are left out. This is the idea behind "referral links from your inner circle": the person whose link you use is someone you already trust.
 
-Voucha's own link sits at the top in a group of its own, so you always know which one is ours. It shows an Official Voucha badge. Pick someone else's link if you prefer. The list is there so you can choose.
+Links from people in your network come first. Voucha's own link appears after them, in a group of its own, so you always know which one is ours. It shows an Official Voucha badge. Pick whichever link you prefer. The list is there so you can choose.
 
 The longer version for credit cards is in [Credit Card Referral Links Explained](./credit-card-referral-links-explained.md).
 
