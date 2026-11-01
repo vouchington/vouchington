@@ -17,46 +17,60 @@ import { checkHashtagRootVisibilityContracts } from './hashtag-root-visibility.m
 import { checkHashtagSearchRankingContracts } from './hashtag-search-ranking.mts'
 import { checkHashtagSearchRssContracts } from './hashtag-search-rss.mts'
 
-const contracts: ReadonlyArray<readonly [string, () => Promise<void>]> = [
-  ['trending HTTP', checkTrendingHttpContracts],
-  ['trending service', checkTrendingServiceContracts],
-  ['RSS worker paged', checkRssWorkerPagedContracts],
-  ['RSS worker sparse lane', checkRssWorkerSparseLane],
-  ['RSS worker', checkRssWorkerContracts],
-  ['crawl tiers', checkCrawlTierContracts],
-  ['revenue', checkRevenueContracts],
-  ['hashtag author deletion', checkHashtagAuthorDeletionContract],
-  ['hashtag community', checkHashtagCommunityContracts],
-  ['hashtag eligibility', checkHashtagEligibilityContracts],
-  ['hashtag root visibility', checkHashtagRootVisibilityContracts],
-  ['hashtag search ranking', checkHashtagSearchRankingContracts],
-  ['hashtag search RSS', checkHashtagSearchRssContracts],
-]
-
 async function main(): Promise<void> {
   let failed = false
   let failure: unknown
   try {
-    for (const [name, check] of contracts) {
-      await check()
-      console.log(`Native materialized-view contract passed: ${name}`)
-    }
+    await checkTrendingHttpContracts()
+    console.log('Native materialized-view contract passed: trending HTTP')
+    await checkTrendingServiceContracts()
+    console.log('Native materialized-view contract passed: trending service')
+    await checkRssWorkerPagedContracts()
+    console.log('Native materialized-view contract passed: RSS worker paged')
+    await checkRssWorkerSparseLane()
+    console.log('Native materialized-view contract passed: RSS worker sparse lane')
+    await checkRssWorkerContracts()
+    console.log('Native materialized-view contract passed: RSS worker')
+    await checkCrawlTierContracts()
+    console.log('Native materialized-view contract passed: crawl tiers')
+    await checkRevenueContracts()
+    console.log('Native materialized-view contract passed: revenue')
+    await checkHashtagAuthorDeletionContract()
+    console.log('Native materialized-view contract passed: hashtag author deletion')
+    await checkHashtagCommunityContracts()
+    console.log('Native materialized-view contract passed: hashtag community')
+    await checkHashtagEligibilityContracts()
+    console.log('Native materialized-view contract passed: hashtag eligibility')
+    await checkHashtagRootVisibilityContracts()
+    console.log('Native materialized-view contract passed: hashtag root visibility')
+    await checkHashtagSearchRankingContracts()
+    console.log('Native materialized-view contract passed: hashtag search ranking')
+    await checkHashtagSearchRssContracts()
+    console.log('Native materialized-view contract passed: hashtag search RSS')
   } catch (err) {
     failed = true
     failure = err
   }
   const cleanupErrors: unknown[] = []
-  for (const close of [
-    () => rssFeedCrawlConfig.close(),
-    () => pagedDispatchConfig.close(),
-    () => closeAndUnregisterGlideMQInstance(background),
-    () => shutdownDataStoresForOneOffCommand(),
-  ]) {
-    try {
-      await close()
-    } catch (err) {
-      cleanupErrors.push(err)
-    }
+  try {
+    await rssFeedCrawlConfig.close()
+  } catch (err) {
+    cleanupErrors.push(err)
+  }
+  try {
+    await pagedDispatchConfig.close()
+  } catch (err) {
+    cleanupErrors.push(err)
+  }
+  try {
+    await closeAndUnregisterGlideMQInstance(background)
+  } catch (err) {
+    cleanupErrors.push(err)
+  }
+  try {
+    await shutdownDataStoresForOneOffCommand()
+  } catch (err) {
+    cleanupErrors.push(err)
   }
   if (failed && cleanupErrors.length > 0) {
     throw new AggregateError(
