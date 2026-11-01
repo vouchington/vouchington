@@ -1,9 +1,10 @@
-import { read } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import { createTestTimedDsaReportAction } from '@voucha/test-helpers/dsa-report-timed-action'
-import { readEuTransparencyReportMethod } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
+import {
+  readEuFactRecordedAt,
+  readEuTransparencyReportMethod,
+} from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
 import {
@@ -59,9 +60,7 @@ describe('closed EU report snapshot', () => {
       imposedAt: new Date(start.getTime() + 2_000),
       completedAt: new Date(start.getTime() + 3_000),
     })
-    const { rows } = await read<{ recorded_at: Date }>(sql`/* readRecordedNoticeTime */
-      SELECT uuid_extract_timestamp(id) AS recorded_at FROM copyright_notices WHERE id = ${noticeId}`)
-    const recordedAt = rows[0]?.recorded_at ?? end
+    const recordedAt = await readEuFactRecordedAt('notice', noticeId)
     const [arrival, recorded] = await Promise.all([
       readDsaCopyrightNoticeFigures(start, end, [noticeId]),
       readDsaCopyrightNoticeFigures(recordedAt, new Date(recordedAt.getTime() + 1), [noticeId]),
