@@ -36,10 +36,12 @@ async function runCopyrightCaseChildPage(
   const phase = COPYRIGHT_CASE_PURGE_PHASES[phaseIndex] as Phase | undefined
   if (!phase) return { processed: 0, nextPhaseIndex: phaseIndex, childFrames: [], blocked: false }
   const path = phase[1]
-  const frames: Frame[] = inputFrames?.map(frame => ({
-    values: { ...frame.values },
-    after: frame.after ? { ...frame.after } : null,
-  })) ?? [{ values: { id: noticeId }, after: null }]
+  const frames: Frame[] = inputFrames?.length
+    ? inputFrames.map(frame => ({
+        values: { ...frame.values },
+        after: frame.after ? { ...frame.after } : null,
+      }))
+    : [{ values: { id: noticeId }, after: null }]
   if (frames.length < 1 || frames.length > path.length || frames[0]?.values.id !== noticeId)
     throw new Error('Invalid copyright purge child path')
 
