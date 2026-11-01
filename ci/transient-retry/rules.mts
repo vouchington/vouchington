@@ -1,3 +1,4 @@
+import { actionResolveSetupRetryRule } from './action-resolve-rules.mts'
 import {
   backendImageAttestationEmptyPersistErrorRule,
   webImageAttestationTlogFetchErrorRule,
@@ -29,6 +30,7 @@ import { webVitestSigsegvRule } from './web-vitest-rules.mts'
 export type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 export const rules: TransientRetryRule[] = [
+  actionResolveSetupRetryRule,
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
   lintLinksGithub5xxRule,
