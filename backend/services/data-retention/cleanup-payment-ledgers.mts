@@ -62,15 +62,16 @@ async function cleanupStripeEventPage(
   recordIds?: readonly string[],
 ) {
   await using query = await beginTransaction()
-  const scopeIds = recordIds ? [...recordIds] : null
-  const { rows } = await query<{ id: string }>(sql`/* selectExpiredStripeEventLedgerPage */
+  const statement = sql`/* selectExpiredStripeEventLedgerPage */
     SELECT event.id FROM stripe_events event
-    WHERE (${scopeIds}::uuid[] IS NULL OR event.id = ANY(${scopeIds}::uuid[]))
-      AND event.occurred_at < ${fiscalCutoff}
+    WHERE event.occurred_at < ${fiscalCutoff}`
+  if (recordIds) statement.append(sql` AND event.id = ANY(${[...recordIds]}::uuid[])`)
+  statement.append(sql`
       AND NOT EXISTS (SELECT 1 FROM stripe_event_processing_work_items work
         WHERE work.stripe_event_id = event.id)
     ORDER BY event.occurred_at, event.id
     LIMIT ${pageSize + 1} FOR UPDATE OF event SKIP LOCKED`)
+  const { rows } = await query<{ id: string }>(statement)
   const ids = rows.slice(0, pageSize).map(row => row.id)
   let deleted = 0
   if (ids.length > 0) {
@@ -98,13 +99,13 @@ async function cleanupMembershipOperationPage(
   await query(
     sql`/* permitExpiredMembershipOperationDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
   )
-  const scopeIds = recordIds ? [...recordIds] : null
-  const { rows } = await query<{ id: string }>(sql`/* selectExpiredMembershipOperationLedgerPage */
+  const statement = sql`/* selectExpiredMembershipOperationLedgerPage */
     SELECT operation.id FROM membership_operations operation
-    WHERE (${scopeIds}::uuid[] IS NULL OR operation.id = ANY(${scopeIds}::uuid[]))
-      AND operation.completed_at IS NOT NULL
+    WHERE operation.completed_at IS NOT NULL
       AND operation.operation_kind IN ('cancel_source', 'administrator_refund')
-      AND operation.completed_at < ${fiscalCutoff}
+      AND operation.completed_at < ${fiscalCutoff}`
+  if (recordIds) statement.append(sql` AND operation.id = ANY(${[...recordIds]}::uuid[])`)
+  statement.append(sql`
       AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
         WHERE work.membership_operation_id = operation.id)
       AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
@@ -119,6 +120,7 @@ async function cleanupMembershipOperationPage(
           AND (NOT request.is_cancel_requested OR refund.has_revoked_access)))
     ORDER BY operation.completed_at, operation.id
     LIMIT 2 FOR UPDATE OF operation SKIP LOCKED`)
+  const { rows } = await query<{ id: string }>(statement)
   const operationId = rows[0]?.id
   let deleted = 0
   let rootDeleted = 0
