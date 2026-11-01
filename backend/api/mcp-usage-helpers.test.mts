@@ -1,4 +1,4 @@
-import { createServer, type ServerResponse } from 'node:http'
+import { createServer, request as httpRequest, type ServerResponse } from 'node:http'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Context } from '@jongleberry/api-server'
 import type { ApiScope } from '@modules/scopes'
@@ -62,10 +62,21 @@ async function unitsFor(
     if (address === null || typeof address === 'string') {
       throw new Error('MCP message meter probe is not listening')
     }
-    await settleMeteredMcpResponses(async () => {
-      const response = await fetch(`http://127.0.0.1:${address.port}/`)
-      await response.arrayBuffer()
-    })
+    await settleMeteredMcpResponses(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const request = httpRequest(
+            { hostname: '127.0.0.1', port: address.port, path: '/' },
+            response => {
+              response.on('data', () => undefined)
+              response.on('end', () => resolve())
+              response.on('error', reject)
+            },
+          )
+          request.on('error', reject)
+          request.end()
+        }),
+    )
     if (failure instanceof Error) throw failure
     if (failure !== undefined) throw new Error('MCP message meter probe failed')
     const [row, ...rest] = await readApiUsageRows(owner.id)
