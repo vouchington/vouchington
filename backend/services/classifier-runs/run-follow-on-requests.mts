@@ -55,7 +55,7 @@ export async function hasCompletedClassifierRun(
       subject.postId !== null
         ? sql`first_run.post_id = ${subject.postId}`
         : sql`first_run.rss_feed_item_id = ${subject.rssFeedItemId}`,
-    ),
+    ).append(' LIMIT 1'),
   )
   return rows.length > 0
 }

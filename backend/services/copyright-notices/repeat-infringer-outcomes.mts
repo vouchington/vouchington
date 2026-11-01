@@ -107,6 +107,7 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       ) AS account_is_active
       FROM copyright_repeat_infringer_incidents
       WHERE account_user_id = ${review.account_user_id} AND is_operative
+      LIMIT 2
       FOR UPDATE
     `)
     assert(
