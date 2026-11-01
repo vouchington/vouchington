@@ -66,9 +66,11 @@ async function cleanupStripeEventPage(
     SELECT event.id FROM stripe_events event
     WHERE event.occurred_at < ${fiscalCutoff}`
   if (recordIds) statement.append(sql` AND event.id = ANY(${[...recordIds]}::uuid[])`)
+  // Keep the work check as an indexed scalar probe. A generic plan otherwise hashes
+  // the entire work table and sorts a sequential scan of current Stripe events.
   statement.append(sql`
-      AND NOT EXISTS (SELECT 1 FROM stripe_event_processing_work_items work
-        WHERE work.stripe_event_id = event.id)
+      AND (SELECT work.stripe_event_id FROM stripe_event_processing_work_items work
+        WHERE work.stripe_event_id = event.id LIMIT 1) IS NULL
     ORDER BY event.occurred_at, event.id
     LIMIT ${pageSize + 1} FOR UPDATE OF event SKIP LOCKED`)
   const { rows } = await query<{ id: string }>(statement)
