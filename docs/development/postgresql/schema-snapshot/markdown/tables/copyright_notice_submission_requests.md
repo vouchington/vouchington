@@ -6,21 +6,19 @@ Idempotency records for authenticated appeal and counter-notice submissions.
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission admitted for this idempotent request.                                                |
-| `requester_user_id`              | `uuid`                     | yes      |                              |          |           |           | Authenticated affected poster making the request.                                               |
-| `idempotency_key`                | `uuid`                     | yes      |                              |          |           |           | Raw caller UUID cleared after 30 days; the digest preserves exact replay while the case exists. |
-| `idempotency_key_sha256`         | `bytea`                    | no       |                              |          |           |           | Digest of the canonical caller UUID used to match retries after raw-key expiry.                 |
-| `request_sha256`                 | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key.                                  |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                        |
+| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission admitted for this idempotent request.                                       |
+| `requester_user_id`              | `uuid`                     | yes      |                              |          |           |           | Authenticated affected poster making the request.                                      |
+| `idempotency_key_sha256`         | `bytea`                    | no       |                              |          |           |           | Digest of the canonical caller UUID used to match exact retries while the case exists. |
+| `request_sha256`                 | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key.                         |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_copyr_notic_submi_reques__requester_user_id__idempotency_key`: `UNIQUE (requester_user_id, idempotency_key)`
 - `uq_copyright_notice_submission_requests__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 - `uq_copyright_submission_requests__requester__key_digest`: `UNIQUE (requester_user_id, idempotency_key_sha256)`
 
@@ -37,8 +35,6 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `copyright_notice_submission_requests_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_requests_pkey ON public.copyright_notice_submission_requests USING btree (id)`
-- `idx_copyright_notice_submission_requests__uncleared_key_age`: `CREATE INDEX idx_copyright_notice_submission_requests__uncleared_key_age ON public.copyright_notice_submission_requests USING btree (id) WHERE (idempotency_key IS NOT NULL)`
-- `uq_copyr_notic_submi_reques__requester_user_id__idempotency_key`: `CREATE UNIQUE INDEX uq_copyr_notic_submi_reques__requester_user_id__idempotency_key ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key)`
 - `uq_copyright_notice_submission_requests__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_submission_requests__submission_id ON public.copyright_notice_submission_requests USING btree (copyright_notice_submission_id)`
 - `uq_copyright_submission_requests__requester__key_digest`: `CREATE UNIQUE INDEX uq_copyright_submission_requests__requester__key_digest ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key_sha256)`
 
