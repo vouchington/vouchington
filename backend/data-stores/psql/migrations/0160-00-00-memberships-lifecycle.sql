@@ -673,6 +673,9 @@ CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_o
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_operations__completed_at_id ON membership_operations (completed_at, id)
+  WHERE completed_at IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 COMMENT ON COLUMN membership_operations.fiscal_retention_started_at IS
   'One-way finite child-drain progress fact on an expired terminal operation; the operation and this marker are deleted together.';
@@ -1080,6 +1083,8 @@ COMMENT ON COLUMN stripe_event_processing_work_items.attempt_count IS 'Number of
 COMMENT ON COLUMN stripe_event_processing_work_items.available_at IS 'Earliest time this event may be processed.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__stripe_event_type_id ON stripe_events (stripe_event_type_id, id DESC);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_stripe_events__occurred_at_id ON stripe_events (occurred_at, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_events__stripe_event_id ON stripe_events (stripe_event_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

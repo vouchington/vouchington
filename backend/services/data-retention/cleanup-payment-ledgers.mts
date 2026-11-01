@@ -27,12 +27,14 @@ export async function cleanupPaymentLedgers(
     throw new RangeError('Payment ledger retention requires positive limits')
   if (recordIds && recordIds.length > limits.batchSize)
     throw new RangeError('Scoped payment ledger cleanup must fit one page')
+  // A UTC fiscal year becomes erasable after the next seven whole years have ended.
+  const fiscalCutoff = new Date(Date.UTC(new Date().getUTCFullYear() - 7, 0, 1))
   const results: PaymentLedgerCleanupPage[] = []
   for (const family of ['stripe_event', 'membership_operation'] as const) {
     const result: PaymentLedgerCleanupPage = { family, scanned: 0, deleted: 0, hasMore: false }
     for (let batch = 0; batch < (recordIds ? 1 : limits.maxBatches); batch++) {
       // oxlint-disable-next-line no-await-in-loop -- each bounded transaction commits before the next oldest-id page.
-      const page = await cleanupPaymentLedgerPage(family, limits.batchSize, recordIds) // no-mistakes-disable-line query-reached-per-item: two fixed families each commit at most maxBatches transactions; each page locks at most two parent IDs and deletes at most batchSize physical rows.
+      const page = await cleanupPaymentLedgerPage(family, limits.batchSize, fiscalCutoff, recordIds) // no-mistakes-disable-line query-reached-per-item: two fixed families each commit at most maxBatches transactions; each page locks at most two parent IDs and deletes at most batchSize physical rows.
       result.scanned += page.scanned
       result.deleted += page.deleted
       result.hasMore = page.hasMore
@@ -46,24 +48,29 @@ export async function cleanupPaymentLedgers(
 function cleanupPaymentLedgerPage(
   family: PaymentLedgerFamily,
   pageSize: number,
+  fiscalCutoff: Date,
   recordIds?: readonly string[],
 ) {
   return family === 'stripe_event'
-    ? cleanupStripeEventPage(pageSize, recordIds)
-    : cleanupMembershipOperationPage(pageSize, recordIds)
+    ? cleanupStripeEventPage(pageSize, fiscalCutoff, recordIds)
+    : cleanupMembershipOperationPage(pageSize, fiscalCutoff, recordIds)
 }
 
-async function cleanupStripeEventPage(pageSize: number, recordIds?: readonly string[]) {
+async function cleanupStripeEventPage(
+  pageSize: number,
+  fiscalCutoff: Date,
+  recordIds?: readonly string[],
+) {
   await using query = await beginTransaction()
   const scopeIds = recordIds ? [...recordIds] : null
   const { rows } = await query<{ id: string }>(sql`/* selectExpiredStripeEventLedgerPage */
     SELECT event.id FROM stripe_events event
     WHERE (${scopeIds}::uuid[] IS NULL OR event.id = ANY(${scopeIds}::uuid[]))
-      AND date_trunc('year', event.occurred_at AT TIME ZONE 'UTC') + INTERVAL '8 years'
-        <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+      AND event.occurred_at < ${fiscalCutoff}
       AND NOT EXISTS (SELECT 1 FROM stripe_event_processing_work_items work
         WHERE work.stripe_event_id = event.id)
-    ORDER BY event.id LIMIT ${pageSize + 1} FOR UPDATE OF event SKIP LOCKED`)
+    ORDER BY event.occurred_at, event.id
+    LIMIT ${pageSize + 1} FOR UPDATE OF event SKIP LOCKED`)
   const ids = rows.slice(0, pageSize).map(row => row.id)
   let deleted = 0
   if (ids.length > 0) {
@@ -82,7 +89,11 @@ async function cleanupStripeEventPage(pageSize: number, recordIds?: readonly str
   return { scanned: ids.length, deleted, hasMore: !recordIds && rows.length > pageSize }
 }
 
-async function cleanupMembershipOperationPage(pageSize: number, recordIds?: readonly string[]) {
+async function cleanupMembershipOperationPage(
+  pageSize: number,
+  fiscalCutoff: Date,
+  recordIds?: readonly string[],
+) {
   await using query = await beginTransaction()
   await query(
     sql`/* permitExpiredMembershipOperationDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
@@ -93,8 +104,7 @@ async function cleanupMembershipOperationPage(pageSize: number, recordIds?: read
     WHERE (${scopeIds}::uuid[] IS NULL OR operation.id = ANY(${scopeIds}::uuid[]))
       AND operation.completed_at IS NOT NULL
       AND operation.operation_kind IN ('cancel_source', 'administrator_refund')
-      AND date_trunc('year', operation.completed_at AT TIME ZONE 'UTC') + INTERVAL '8 years'
-        <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+      AND operation.completed_at < ${fiscalCutoff}
       AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
         WHERE work.membership_operation_id = operation.id)
       AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
@@ -107,7 +117,8 @@ async function cleanupMembershipOperationPage(pageSize: number, recordIds?: read
         JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
         WHERE request.membership_operation_id = operation.id
           AND (NOT request.is_cancel_requested OR refund.has_revoked_access)))
-    ORDER BY operation.id LIMIT 2 FOR UPDATE OF operation SKIP LOCKED`)
+    ORDER BY operation.completed_at, operation.id
+    LIMIT 2 FOR UPDATE OF operation SKIP LOCKED`)
   const operationId = rows[0]?.id
   let deleted = 0
   let rootDeleted = 0

@@ -40,6 +40,7 @@ import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-
 import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membership-provider-recovery.mts'
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
+import { runPaymentLedgerRetentionScenarios } from './run-scenarios/payment-ledger-retention.mts'
 import { runMembershipRenewalSelectionScenario } from './run-scenarios/membership-renewal-selection.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
@@ -165,6 +166,7 @@ async function main() {
     await runStep(runCopyrightRetentionCandidate.name, runCopyrightRetentionCandidate())
     await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios())
     await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario())
+    await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios())
     const runMembershipRenewalSelection = runMembershipRenewalSelectionScenario
     await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection())
     const runErrors: unknown[] = []

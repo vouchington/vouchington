@@ -31,6 +31,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'membership-microsoft-source-recovery',
   'membership-google-acknowledgement-recovery',
   'membership-stripe-event-recovery',
+  'membership-stripe-event-retention-idle',
+  'membership-operation-retention-idle',
   'membership-renewal-selection',
   'media-delivery-staging-page',
   'media-delivery-staging-global-page',
