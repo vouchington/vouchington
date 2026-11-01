@@ -1,4 +1,3 @@
-import { assertSafeSqlIdentifier } from '@vouchington/postgres/partitions'
 import { CLASSIFIER_RESULT_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
@@ -6,9 +5,7 @@ import {
   matchesClassifierPartitionBound,
 } from './classifier-partition-range.mts'
 
-export const CLASSIFIER_RESULT_TABLES = CLASSIFIER_RESULT_PARTITION_TABLES.map(table =>
-  assertSafeSqlIdentifier(table),
-)
+export const CLASSIFIER_RESULT_TABLES = CLASSIFIER_RESULT_PARTITION_TABLES
 
 export type ClassifierChild = {
   parent_table: string | null

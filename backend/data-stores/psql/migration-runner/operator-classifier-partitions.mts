@@ -1,4 +1,6 @@
 /* oxlint-disable no-await-in-loop -- each partition DDL step depends on the prior step on one transaction connection. */
+import { classifierResultTable } from './partition-identifier-catalog.mts'
+import { releaseDetachedCandidateReferences } from './classifier-detached-candidate-references.mts'
 import { beginBoundedTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { getPartitionDropAgeRefusal } from './partition-drop-guard.mts'
@@ -21,10 +23,6 @@ import {
 const CONNECTION_TIMEOUT_MS = 5_000
 const STATEMENT_TIMEOUT_MS = 15_000
 const CANDIDATE_TABLE = 'classifier_decision_batch_candidates'
-const CANDIDATE_REFERENCING_TABLES = [
-  'topic_classifier_results',
-  'story_classifier_results',
-] as const
 
 function candidateFirst(): string[] {
   return [CANDIDATE_TABLE, ...TABLES.filter(table => table !== CANDIDATE_TABLE)]
@@ -33,17 +31,6 @@ function candidateFirst(): string[] {
 async function lockClassifierRangeParentRelations(query: QueryExecutor): Promise<void> {
   await lockClassifierResultFkTargets(query)
   await lockClassifierResultParents(query)
-}
-
-/** A detached result child has an independent FK copy that would pin the candidate child. */
-async function releaseDetachedCandidateReferences(
-  query: QueryExecutor,
-  table: string,
-  child: string,
-) {
-  if (!CANDIDATE_REFERENCING_TABLES.some(candidateTable => candidateTable === table)) return
-  await query(`/* releaseDetachedCandidateReferences */
-    ALTER TABLE ${child} DROP CONSTRAINT fk_${table}__batch_candidate`)
 }
 
 /** Reuse the four physical DEFAULT tables as one aligned range; never move immutable rows. */
@@ -94,7 +81,7 @@ export async function guardAndCreateClassifierResultRange(
   for (const table of TABLES) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four catalog-validated DEFAULT children detach serially within one transaction before their names can change.
     await query(`/* createClassifierResultRange:detach */
-      ALTER TABLE ${table} DETACH PARTITION ${table}__default`)
+      ALTER TABLE ${classifierResultTable(table)} DETACH PARTITION ${classifierResultTable(table)}__default`)
     // Reattaching the child reinstalls the parent's validated FK in this transaction.
     // no-mistakes-disable-next-line query-reached-per-item: at most four fixed catalog-validated children must release detached FK copies serially on this DDL transaction.
     await releaseDetachedCandidateReferences(query, table, `${table}__default`)
@@ -102,18 +89,18 @@ export async function guardAndCreateClassifierResultRange(
   for (const table of TABLES) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four detached DEFAULT children are renamed serially before any range is attached.
     await query(`/* createClassifierResultRange:rename */
-      ALTER TABLE ${table}__default RENAME TO ${table}__${range.nameSuffix}`)
+      ALTER TABLE ${classifierResultTable(table)}__default RENAME TO ${classifierResultTable(table)}__${range.nameSuffix}`)
   }
   for (const table of candidateFirst()) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four renamed children attach in one DDL transaction after all original DEFAULT children are detached.
     await query(`/* createClassifierResultRange:attach */
-      ALTER TABLE ${table} ATTACH PARTITION ${table}__${range.nameSuffix}
+      ALTER TABLE ${classifierResultTable(table)} ATTACH PARTITION ${classifierResultTable(table)}__${range.nameSuffix}
       FOR VALUES FROM ('${range.fromId}') TO ('${range.toId}')`)
   }
   for (const table of TABLES) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four new DEFAULT children are created serially after all range attachments in the same transaction.
     await query(`/* createClassifierResultRange:newDefault */
-      CREATE TABLE ${table}__default PARTITION OF ${table} DEFAULT`)
+      CREATE TABLE ${classifierResultTable(table)}__default PARTITION OF ${classifierResultTable(table)} DEFAULT`)
   }
 }
 
@@ -168,7 +155,7 @@ export async function guardAndRetireClassifierResultRange(
   for (const table of TABLES) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four fixed children require serial ACCESS EXCLUSIVE locks in deterministic order on this transaction client.
     await query(`/* retireClassifierResultRange:lockChild */
-      LOCK TABLE ${table}__${range.nameSuffix} IN ACCESS EXCLUSIVE MODE`)
+      LOCK TABLE ${classifierResultTable(table)}__${range.nameSuffix} IN ACCESS EXCLUSIVE MODE`)
   }
   await query(`/* retireClassifierResultRange:lockRuns */
     LOCK TABLE classifier_runs IN SHARE MODE NOWAIT`)
@@ -185,12 +172,14 @@ export async function guardAndRetireClassifierResultRange(
   for (const table of TABLES) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four catalog-validated child detaches run serially in this guarded DDL transaction.
     await query(`/* retireClassifierResultRange:detach */
-      ALTER TABLE ${table} DETACH PARTITION ${table}__${range.nameSuffix}`)
+      ALTER TABLE ${classifierResultTable(table)} DETACH PARTITION ${classifierResultTable(table)}__${range.nameSuffix}`)
     // no-mistakes-disable-next-line query-reached-per-item: at most four fixed catalog-validated children must release detached FK copies serially on this DDL transaction.
     await releaseDetachedCandidateReferences(query, table, `${table}__${range.nameSuffix}`)
   }
   for (const table of TABLES) {
     // no-mistakes-disable-next-line query-reached-per-item: exactly four detached children are dropped serially so one failure rolls back the whole guarded transaction.
-    await query(`/* retireClassifierResultRange:drop */ DROP TABLE ${table}__${range.nameSuffix}`)
+    await query(
+      `/* retireClassifierResultRange:drop */ DROP TABLE ${classifierResultTable(table)}__${range.nameSuffix}`,
+    )
   }
 }

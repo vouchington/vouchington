@@ -219,7 +219,7 @@ describe('partition drop guard', () => {
       partition: 'rss_feed_crawls__p_2025_01',
       upperBound: new Date('2025-02-01'),
     }
-    const policy = { minimumRetentionDays: 30, inFlightPredicates: ['id IS NOT NULL'] }
+    const policy = { minimumRetentionDays: 30, inFlightPredicates: ['completed_at IS NULL'] }
     await expect(
       guardAndRetireMonthlyPartition(transaction, oldCandidate, policy, now, 500),
     ).resolves.toBe('in-flight')

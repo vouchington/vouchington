@@ -42,12 +42,12 @@ export const USER_DATA_REQUEST_PARTITION_TABLES = [
  * separate parents. All result families range by the UUIDv7 decision batch so batch-scoped replay
  * and retention share one time key. Topic and story lookups also have entity-leading indexes.
  */
-export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
+export const CLASSIFIER_RESULT_PARTITION_TABLES = [
   'topic_classifier_results',
   'story_classifier_results',
   'community_prompt_classifier_results',
   'classifier_decision_batch_candidates',
-]
+] as const
 
 /**
  * Session tables - partitioned by UUIDv7 JWT sid/id

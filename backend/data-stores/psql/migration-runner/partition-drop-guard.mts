@@ -5,6 +5,7 @@ import {
 import type { PartitionDropPolicy } from '../config-driven/utils/partition-drop-policies.mts'
 import type { QueryExecutor } from '../types.mts'
 import { copyrightHistoryHoldProbe } from './copyright-history-hold-probe.mts'
+import { inFlightPredicate } from './partition-identifier-catalog.mts'
 
 export type PartitionDropRefusal =
   | 'no-declared-retention'
@@ -154,7 +155,7 @@ export async function getPartitionDropRefusal(
     const predicate = inFlightPredicates[index]
     if (!predicate) return false
     const { rows } = await query(`/* getPartitionDropRefusal:inFlight */
-      SELECT 1 FROM ${partition} WHERE ${predicate} LIMIT 1`)
+      SELECT 1 FROM ${partition} WHERE ${inFlightPredicate(predicate)} LIMIT 1`)
     return rows.length > 0 || hasInFlightAt(index + 1)
   }
   if (await hasInFlightAt(0)) return 'in-flight'

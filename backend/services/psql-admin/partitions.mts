@@ -59,7 +59,7 @@ export async function getPartitionStatus(): Promise<PartitionStatus> {
     throw err
   }
 
-  const classifierTables = new Set(CLASSIFIER_RESULT_PARTITION_TABLES)
+  const classifierTables = new Set<string>(CLASSIFIER_RESULT_PARTITION_TABLES)
   const requestTables = new Set<string>(USER_DATA_REQUEST_PARTITION_TABLES)
   const candidates = rows.map(row => {
     const table = row.parent_table as string
