@@ -24,7 +24,7 @@ Older media worked differently. A radio host played a song you would never have 
 
 A recommendation from a person comes with a reason. "Watch this one for the second half." "Skip the intro." You can weigh that. You can also stop listening to that person when their picks stop working.
 
-That is the idea behind your circle of trust on Voucha. You choose whose posts you see. You follow people, join [communities](/communities), and follow [topics](/topics). What you get comes from people and sources you trust, not from a model's guess about you.
+That is the idea behind your circle of trust on Voucha. You choose whose posts you see. You follow people, join [communities](https://voucha.ai/communities), and follow [topics](https://voucha.ai/topics). What you get comes from people and sources you trust, not from a model's guess about you.
 
 ## Friends are not taste-mates
 
@@ -32,17 +32,17 @@ One commenter made a point that is easy to miss. The people you call friends are
 
 So the useful unit is not "people I know." It is "people who are good at one thing."
 
-Communities handle that today. Each one is built around a subject, and its owners and moderators can keep [community-curated lists](/communities?has_list_items=true) of topics, sources, posts, domains and URLs. Join the community that fits Bach and skip the one that fits politics, even if the same person posts in both. For the basics, read [Voucha Communities](./communities-explained.md).
+Communities handle that today. Each one is built around a subject, and its owners and moderators can keep [community-curated lists](https://voucha.ai/communities?has_list_items=true) of topics, sources, posts, domains and URLs. Join the community that fits Bach and skip the one that fits politics, even if the same person posts in both. For the basics, read [Voucha Communities](./communities-explained.md).
 
 ## Breadth on purpose
 
-Curated does not mean narrow. To leave your own bubble, join a community that reads differently from you. Follow a few [news sources](/news) you would not normally pick. Mute the ones that turn out to be noise. You can mute topics, users, feeds, domains and communities, and the muting stays personal to you.
+Curated does not mean narrow. To leave your own bubble, join a community that reads differently from you. Follow a few [news sources](https://voucha.ai/news) you would not normally pick. Mute the ones that turn out to be noise. You can mute topics, users, feeds, domains and communities, and the muting stays personal to you.
 
 The difference is who holds the controls. You do.
 
 ## Where to start
 
-1. Join two or three [communities](/communities) in subjects you care about.
+1. Join two or three [communities](https://voucha.ai/communities) in subjects you care about.
 2. Follow a few people whose posts you would have wanted a year ago.
 3. Add the RSS feeds of YouTube channels and podcasts you already trust. See [RSS Is Back](./rss-feeds-comeback.md).
 4. Mute anything that wastes your time.

@@ -14,11 +14,11 @@ A list with no readers is a notebook. To get an audience you need a place where 
 
 ## A community is that place
 
-On Voucha, a [community](/communities) is a group around a subject with its own members and moderators. Make one for your subject, or offer your list to one that exists. See [Voucha for Community Creators](./for-community-creators.md) for setup, roles and how people join.
+On Voucha, a [community](https://voucha.ai/communities) is a group around a subject with its own members and moderators. Make one for your subject, or offer your list to one that exists. See [Voucha for Community Creators](./for-community-creators.md) for setup, roles and how people join.
 
 ## Community lists
 
-Owners and moderators can keep [community-curated lists](/communities?has_list_items=true). A list can hold:
+Owners and moderators can keep [community-curated lists](https://voucha.ai/communities?has_list_items=true). A list can hold:
 
 - topics
 - sources, meaning RSS feeds such as blogs, YouTube channels and podcasts

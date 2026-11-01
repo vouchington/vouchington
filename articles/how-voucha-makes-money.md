@@ -12,9 +12,9 @@ Any site that recommends things should say how it gets paid. Here is how it work
 
 ## Three sources
 
-**Paid memberships.** Voucha is free to join and explore. Paid plans, called Plus and Pro, add things like higher contribution limits and tools for communities. See the [plans page](/plans) for the current list.
+**Paid memberships.** Voucha is free to join and explore. Paid plans, called Plus and Pro, add things like higher contribution limits and tools for communities. See the [plans page](https://voucha.ai/plans) for the current list.
 
-**Referral links.** Some programs pay when someone signs up through a link. Voucha has [referral programs](/referral-programs) for these, and both members and Voucha itself can attach links to them.
+**Referral links.** Some programs pay when someone signs up through a link. Voucha has [referral programs](https://voucha.ai/referral-programs) for these, and both members and Voucha itself can attach links to them.
 
 **Ads, as policy.** Free accounts will see ads. Paid members will not. Ads are not live yet, so this is our policy and not a feature you can use today.
 

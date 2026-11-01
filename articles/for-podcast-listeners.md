@@ -28,9 +28,9 @@ You can mute a show, a topic, a domain or a user. A muted show stops appearing i
 
 Search by what you want to know about, then look at who recommends it.
 
-- Join a [community](/communities) in a subject you care about. Owners and moderators keep [community-curated lists](/communities?has_list_items=true) of sources, and podcasts can be on them.
+- Join a [community](https://voucha.ai/communities) in a subject you care about. Owners and moderators keep [community-curated lists](https://voucha.ai/communities?has_list_items=true) of sources, and podcasts can be on them.
 - Follow people whose taste fits yours. Their posts and links show up in your feed.
-- Browse [news](/news) sources and feeds, and follow the shows that look right.
+- Browse [news](https://voucha.ai/news) sources and feeds, and follow the shows that look right.
 
 A recommendation on Voucha is a post with a vote behind it. A vote from a long-standing, verified account counts for more than one from a day-old account. That keeps a popular show with a loud fan club from burying a smaller one. See [Mentioned Is Not Recommended](./mentioned-vs-recommended.md).
 

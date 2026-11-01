@@ -32,7 +32,7 @@ Even when the counts are right, they measure fame. Famous things get mentioned m
 
 ## What a vote does differently
 
-On Voucha, a vote is a deliberate act. Someone looks at a [post](/posts) and votes up or down. A link inside a comment is not a vote. A downvote is a downvote.
+On Voucha, a vote is a deliberate act. Someone looks at a [post](https://voucha.ai/posts) and votes up or down. A link inside a comment is not a vote. A downvote is a downvote.
 
 Votes are also weighted by voter. A voter's weight reflects things like account age, how many sign-in methods they have verified, whether they verified their identity, and any penalties for abuse. A brand new account counts for little. A long-standing, verified account counts for more. The same rules apply to everyone.
 

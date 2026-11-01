@@ -47,7 +47,7 @@ When a feed or a topic keeps bringing up something you do not want, mute it. You
 
 ## 5. Let someone else do the curating
 
-You do not have to find every channel yourself. Join a [community](/communities) around the subject your parent likes. Its moderators keep [community-curated lists](/communities?has_list_items=true) of sources, so you can follow a list someone else vetted. You can also follow the people whose picks you trust and see what they add.
+You do not have to find every channel yourself. Join a [community](https://voucha.ai/communities) around the subject your parent likes. Its moderators keep [community-curated lists](https://voucha.ai/communities?has_list_items=true) of sources, so you can follow a list someone else vetted. You can also follow the people whose picks you trust and see what they add.
 
 ## The honest limit
 

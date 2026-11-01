@@ -26,7 +26,7 @@ Add each as a source. YouTube channels use an address of the form `https://www.y
 
 ## Let communities do the first pass
 
-A [community](/communities) is a group built around a subject, such as astronomy, woodworking or machine learning. Its owners and moderators can keep [community-curated lists](/communities?has_list_items=true) of sources, topics, posts and domains. A good list is a reading list someone already filtered.
+A [community](https://voucha.ai/communities) is a group built around a subject, such as astronomy, woodworking or machine learning. Its owners and moderators can keep [community-curated lists](https://voucha.ai/communities?has_list_items=true) of sources, topics, posts and domains. A good list is a reading list someone already filtered.
 
 Join the communities for your subjects. Open their lists. Follow the sources you like and skip the rest.
 

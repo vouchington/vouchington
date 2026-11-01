@@ -22,7 +22,7 @@ Voucha does some of this today. Here is the part that exists.
 
 ## See the HN thread next to the link
 
-Turn on related Hacker News discussions in your preferences. Voucha will then look up the page you are reading, whether it is a [post](/posts) or a news item, and show matching HN threads in a side panel with points and comment counts. The lookup runs in your browser against the public HN search service, and it is off until you opt in.
+Turn on related Hacker News discussions in your preferences. Voucha will then look up the page you are reading, whether it is a [post](https://voucha.ai/posts) or a news item, and show matching HN threads in a side panel with points and comment counts. The lookup runs in your browser against the public HN search service, and it is off until you opt in.
 
 ## RSS in and out
 
@@ -30,7 +30,7 @@ Voucha reads RSS and Atom. Add blogs, podcasts and YouTube channels as sources, 
 
 ## Communities with curated lists
 
-A [community](/communities) is a group built around one subject, with owners and moderators. They can keep lists of topics, sources, posts, domains and URLs. Join one that matches your field. Subscribe to its sources. See [Voucha Communities](./communities-explained.md).
+A [community](https://voucha.ai/communities) is a group built around one subject, with owners and moderators. They can keep lists of topics, sources, posts, domains and URLs. Join one that matches your field. Subscribe to its sources. See [Voucha Communities](./communities-explained.md).
 
 ## Votes with weights
 
@@ -50,4 +50,4 @@ We are candid about it: [How Voucha Makes Money](./how-voucha-makes-money.md).
 
 ## Where to start
 
-Join a few [communities](/communities), add some sources from [news](/news), and turn on the HN panel. Then read [How to Use Voucha](./how-to-use-voucha.md).
+Join a few [communities](https://voucha.ai/communities), add some sources from [news](https://voucha.ai/news), and turn on the HN panel. Then read [How to Use Voucha](./how-to-use-voucha.md).

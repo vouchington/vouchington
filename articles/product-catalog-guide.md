@@ -12,7 +12,7 @@ When you research a card, a program or a piece of hardware, you want two things.
 
 ## Topics
 
-Everything you can compare is a [topic](/topics). Credit cards, rewards programs, referral programs, banks, retailers and spending categories are all topics. A topic has its own page, a name other people can search for, and the reviews and posts people attach to it.
+Everything you can compare is a [topic](https://voucha.ai/topics). Credit cards, rewards programs, referral programs, banks, retailers and spending categories are all topics. A topic has its own page, a name other people can search for, and the reviews and posts people attach to it.
 
 Retailers are topics too. A retailer topic records the countries it operates in. Because a retailer is a topic, you can read what members say about it just as you would for a product.
 
