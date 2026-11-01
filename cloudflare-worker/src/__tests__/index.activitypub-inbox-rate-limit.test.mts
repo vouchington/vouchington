@@ -160,7 +160,8 @@ describe('ActivityPub inbox edge rate-limit ownership', () => {
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
-      RATE_LIMITER_MUTATING: rejectingRateLimiter(),
+      // Allow the earlier anonymous bucket so only the bot bucket can reject.
+      RATE_LIMITER_MUTATING: { limit: async ({ key }) => ({ success: !key.startsWith('bot:') }) },
     }
 
     const response = await worker.fetch(
