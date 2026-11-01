@@ -777,22 +777,22 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
-        "id": "copyright-evidence-retention",
+        "description": "Admit bounded copyright case purge pages after the legal retention window",
+        "id": "copyright-case-purge-admission",
         "kind": "scheduled-jobs",
-        "schedule": "17 * * * *",
+        "schedule": "17 4 * * *",
         "trigger": "[function]",
       },
     ],
     "queueName": "background",
     "registration": "parallel",
     "repeat": {
-      "pattern": "17 * * * *",
+      "pattern": "17 4 * * *",
     },
-    "schedulerId": "copyright-evidence-retention",
+    "schedulerId": "copyright-case-purge-admission",
     "template": {
       "data": {},
-      "name": "notifications.processSweepCopyrightEvidenceRetention",
+      "name": "notifications.processCopyrightCasePurgeAdmission",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -3252,12 +3252,12 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueCheckCopyrightReviewTarget",
   },
   {
-    "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
-    "id": "copyright-evidence-retention",
-    "job_name": "notifications.processSweepCopyrightEvidenceRetention",
+    "description": "Admit bounded copyright case purge pages after the legal retention window",
+    "id": "copyright-case-purge-admission",
+    "job_name": "notifications.processCopyrightCasePurgeAdmission",
     "queue_name": "background",
-    "schedule": "17 * * * *",
-    "triggerName": "enqueueSweepCopyrightEvidenceRetention",
+    "schedule": "17 4 * * *",
+    "triggerName": "enqueueCopyrightCasePurgeAdmission",
   },
   {
     "description": "Dispatch RSS feed fetching",

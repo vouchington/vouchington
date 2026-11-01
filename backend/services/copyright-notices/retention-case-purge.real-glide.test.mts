@@ -1,18 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
-import type { CopyrightCasePurgeJobData } from '@queues/psql/types'
+import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import {
   COPYRIGHT_CASE_PURGE_JOB_NAME,
   copyrightCasePurgeJobId,
   getCopyrightCasePurgeJobOptions,
-} from '@queues/psql/config'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+} from '../../queues/psql/config.mts'
+import {
+  workerQueueConnection,
+  workerQueuePrefix,
+} from '../../data-stores/valkey-core/glide-mq-client.mts'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { installS3TestCredentials } from '@voucha/test-helpers/s3-test-environment'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
-import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
 import {
   advanceCopyrightCasePurgeFixtureClock,
   publishCopyrightCasePurgeCoverage,
@@ -123,13 +125,11 @@ describe('copyright case purge pages', () => {
   })
   useAutomaticProvisionalWithholding()
   const bucket = useFakeCopyrightEvidenceBucket()
-  const configureRetention = useCopyrightRetentionConfig()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed email fixture, bounded PostgreSQL pages, and native worker continuation
   it('carries a durable proof across bounded pages, deletes every evidence version, then removes the case', async () => {
     expect.hasAssertions()
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     await setPageSize(1)
     const entry = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
@@ -199,7 +199,6 @@ describe('copyright case purge pages', () => {
 
   // no-mistakes-timeout-reason: reviewed email fixture and PostgreSQL preservation transaction
   it('stops the next page when a case preservation hold lands between pages', async () => {
-    await configureRetention({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     await setPageSize(1)
     const entry = await createRetentionEmailCase()
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
