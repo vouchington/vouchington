@@ -1,5 +1,5 @@
-import { beginTransaction, read } from '@data-stores/psql'
-import { createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import { readCopyrightLegalClockForTest } from '@voucha/test-helpers/services/copyright-notices/last-legal-activity-clock'
 import { describe, expect, it } from 'vitest'
 import { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 import { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
@@ -32,13 +32,7 @@ describe('legal-write lock order', () => {
         goodFaithStatement: true,
       },
     )
-    const readClock = async () =>
-      (
-        await read<{ at: Date }>(
-          `/* readLegalClock */ SELECT last_legal_activity_at AS at FROM copyright_notices WHERE id = $1`,
-          [receipt.notice_id],
-        )
-      ).rows[0]!.at
+    const readClock = () => readCopyrightLegalClockForTest(receipt.notice_id)
     const before = await readClock()
 
     // Both writers queue behind this transaction's notice lock, then run against each other.

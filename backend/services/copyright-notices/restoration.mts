@@ -132,6 +132,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   `)
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
+  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle event insert must precede the clock advance in this locked transaction.
   await recordCounterNoticeRestoration(transaction, input)
   await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes
