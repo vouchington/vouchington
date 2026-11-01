@@ -1,5 +1,3 @@
-import { readdirSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { describe, expect, it, vi } from 'vitest'
 import * as bloomEnqueues from '@queues/bloom-filters/enqueues'
 import { getSourceCacheHeaders } from '@services/urls-domains-blacklist/sources'
@@ -11,6 +9,7 @@ import {
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
 } from '@voucha/test-helpers'
+import * as diffDirectory from './diff-directory.mts'
 import * as diffFiles from './diff-files.mts'
 import * as domainDiff from './sync-db-domain-diff.mts'
 import * as replicaSourceVersion from './replica-source-version.mts'
@@ -31,7 +30,7 @@ describe('blocklist membership faults', () => {
       url: 'https://example.com/stale-snapshot.txt',
     })
     await insertTestDomainBlacklist(kept, name)
-    const before = new Set(diffDirectories())
+    const diffDirectories = watchBlocklistDiffDirectories()
     let sawCopyClient = false
     const version = vi
       .spyOn(replicaSourceVersion, 'readReplicaSourceVersionFromClient')
@@ -47,9 +46,11 @@ describe('blocklist membership faults', () => {
       expect(sawCopyClient).toBe(true)
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([kept])
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeNull()
-      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
+      expect(diffDirectories.createdCount()).toBeGreaterThan(0)
+      expect(diffDirectories.leftovers()).toEqual([])
     } finally {
       version.mockRestore()
+      diffDirectories.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -64,7 +65,7 @@ describe('blocklist membership faults', () => {
       url: 'https://example.com/comm-fail.txt',
     })
     await insertTestDomainBlacklist(kept, name)
-    const before = new Set(diffDirectories())
+    const diffDirectories = watchBlocklistDiffDirectories()
     const comm = vi.spyOn(diffFiles, 'writeCommDiff').mockImplementation(async () => {
       throw new Error('comm failed')
     })
@@ -75,9 +76,11 @@ describe('blocklist membership faults', () => {
       expect(await countBlacklistEntriesBySource(sourceId)).toBe(1)
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([kept])
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeNull()
-      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
+      expect(diffDirectories.createdCount()).toBeGreaterThan(0)
+      expect(diffDirectories.leftovers()).toEqual([])
     } finally {
       comm.mockRestore()
+      diffDirectories.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -92,7 +95,7 @@ describe('blocklist membership faults', () => {
       url: 'https://example.com/persist-fail.txt',
     })
     await insertTestDomainBlacklist(kept, name)
-    const before = new Set(diffDirectories())
+    const diffDirectories = watchBlocklistDiffDirectories()
     const persist = vi
       .spyOn(domainDiff, 'persistDomainDiff')
       .mockImplementation(async (query, id, sourceType) => {
@@ -110,9 +113,11 @@ describe('blocklist membership faults', () => {
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([kept])
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeNull()
       await expect(getSourceCacheHeaders(sourceId)).resolves.toMatchObject({ etag: null })
-      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
+      expect(diffDirectories.createdCount()).toBeGreaterThan(0)
+      expect(diffDirectories.leftovers()).toEqual([])
     } finally {
       persist.mockRestore()
+      diffDirectories.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -128,7 +133,7 @@ describe('blocklist membership faults', () => {
       url: 'https://example.com/bloom-fail.txt',
     })
     await insertTestDomainBlacklist(kept, name)
-    const before = new Set(diffDirectories())
+    const diffDirectories = watchBlocklistDiffDirectories()
     const enqueue = vi.spyOn(bloomEnqueues, 'enqueueRebuildBloomFilter').mockImplementation(() => {
       throw new Error('bloom enqueue failed')
     })
@@ -145,9 +150,11 @@ describe('blocklist membership faults', () => {
       )
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeNull()
       await expect(getSourceCacheHeaders(sourceId)).resolves.toMatchObject({ etag: null })
-      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
+      expect(diffDirectories.createdCount()).toBeGreaterThan(0)
+      expect(diffDirectories.leftovers()).toEqual([])
     } finally {
       enqueue.mockRestore()
+      diffDirectories.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -159,8 +166,36 @@ function precedingSourceVersion(version: string | null): string {
   return previous === 0n ? '4294967295' : previous.toString()
 }
 
-function diffDirectories(): string[] {
-  return readdirSync(tmpdir()).filter(name => name.startsWith(`blocklist-diff-${process.pid}-`))
+// syncDomainsWithDatabase removes its own directory in finally. Record that pair of calls
+// instead of listing the shared temporary directory.
+function watchBlocklistDiffDirectories(): {
+  createdCount: () => number
+  leftovers: () => string[]
+  restore: () => void
+} {
+  const created: string[] = []
+  const removed = new Set<string>()
+  const createBlocklistDiffDirectory = diffDirectory.createBlocklistDiffDirectory
+  const removeBlocklistDiffDirectory = diffDirectory.removeBlocklistDiffDirectory
+  const create = vi.spyOn(diffDirectory, 'createBlocklistDiffDirectory').mockImplementation(() => {
+    const directory = createBlocklistDiffDirectory()
+    created.push(directory)
+    return directory
+  })
+  const remove = vi
+    .spyOn(diffDirectory, 'removeBlocklistDiffDirectory')
+    .mockImplementation(directory => {
+      removed.add(directory)
+      removeBlocklistDiffDirectory(directory)
+    })
+  return {
+    createdCount: () => created.length,
+    leftovers: () => created.filter(directory => !removed.has(directory)),
+    restore() {
+      create.mockRestore()
+      remove.mockRestore()
+    },
+  }
 }
 
 function sourceNameSuffix(): string {

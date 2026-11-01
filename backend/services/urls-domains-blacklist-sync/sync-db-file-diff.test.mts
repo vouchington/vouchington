@@ -1,7 +1,7 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   beginTransaction,
   countBlacklistEntriesBySource,
@@ -13,6 +13,7 @@ import {
   observeTestPostgresClientQueries,
 } from '@voucha/test-helpers'
 import { ADDED_DOMAINS_TABLE } from './sync-cache.mts'
+import * as diffDirectory from './diff-directory.mts'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
 import { syncDomainsWithDatabase } from './sync-db.mts'
 import { stageBothDiffFiles } from './membership-diff-stage.mts'
@@ -99,14 +100,16 @@ describe('blocklist file diff', () => {
       name: `interrupt-${suffix}`,
       url: 'https://example.com/interrupt.txt',
     })
-    const before = new Set(diffDirectories())
+    const diffDirectories = watchBlocklistDiffDirectories()
     try {
       await expect(syncDomainsWithDatabase(sourceId, interruptedDownload(), 'url')).rejects.toThrow(
         Error,
       )
       expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
-      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
+      expect(diffDirectories.createdCount()).toBeGreaterThan(0)
+      expect(diffDirectories.leftovers()).toEqual([])
     } finally {
+      diffDirectories.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -169,8 +172,36 @@ function interruptedDownload(): Response {
   )
 }
 
-function diffDirectories(): string[] {
-  return readdirSync(tmpdir()).filter(name => name.startsWith(`blocklist-diff-${process.pid}-`))
+// syncDomainsWithDatabase removes its own directory in finally. Record that pair of calls
+// instead of listing the shared temporary directory.
+function watchBlocklistDiffDirectories(): {
+  createdCount: () => number
+  leftovers: () => string[]
+  restore: () => void
+} {
+  const created: string[] = []
+  const removed = new Set<string>()
+  const createBlocklistDiffDirectory = diffDirectory.createBlocklistDiffDirectory
+  const removeBlocklistDiffDirectory = diffDirectory.removeBlocklistDiffDirectory
+  const create = vi.spyOn(diffDirectory, 'createBlocklistDiffDirectory').mockImplementation(() => {
+    const directory = createBlocklistDiffDirectory()
+    created.push(directory)
+    return directory
+  })
+  const remove = vi
+    .spyOn(diffDirectory, 'removeBlocklistDiffDirectory')
+    .mockImplementation(directory => {
+      removed.add(directory)
+      removeBlocklistDiffDirectory(directory)
+    })
+  return {
+    createdCount: () => created.length,
+    leftovers: () => created.filter(directory => !removed.has(directory)),
+    restore() {
+      create.mockRestore()
+      remove.mockRestore()
+    },
+  }
 }
 
 function sourceNameSuffix(): string {
