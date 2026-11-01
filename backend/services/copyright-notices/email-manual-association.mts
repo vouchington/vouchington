@@ -62,8 +62,8 @@ export async function associateCopyrightEmailIntakeWithNotice(
   // committed while this association waited and fences a new marker until commit.
   const { rows: erased } = await transaction(sql`
     /* associateCopyrightEmailIntakeWithNotice:erasure */
-    SELECT 1 FROM copyright_notice_retention_erasures
-    WHERE copyright_notice_id = ${noticeId} LIMIT 1
+    SELECT 1 FROM copyright_notices
+    WHERE id = ${noticeId} AND evidence_erased_at IS NOT NULL LIMIT 1
   `)
   assert(!erased[0], 404, 'Copyright notice not found')
   observeSharedDbScope(

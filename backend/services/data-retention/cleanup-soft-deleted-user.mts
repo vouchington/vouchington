@@ -10,8 +10,7 @@ import {
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
 import onError from '@modules/on-error'
-
-const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@services/users/final-purge-lock'
 
 export async function cleanupSoftDeletedUser(
   targetId: string,
@@ -60,6 +59,10 @@ export async function cleanupSoftDeletedUser(
       ...(preserved.userPurge ? { userPurge: preserved.userPurge } : {}),
     }
   }
+  // Account finalization changes the legal clock of every linked copyright case. The gate
+  // serializes its dirty signal with each bounded case purge page.
+  await query(sql`/* lockCopyrightCaseClockSyncAtFinalUserPurge */
+    SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const deleted = await deletePurgedUser(query, targetId)
   budget.remainingRows -= deleted
   await query.commit()
@@ -78,7 +81,10 @@ async function deletePurgedUser(query: TransactionQuery, targetId: string): Prom
       RETURNING id
     ), clocked AS (
       UPDATE retained_user_identities identity
-      SET purged_at = clock_timestamp()
+      SET purged_at = clock_timestamp(),
+        is_copyright_case_clock_sync_pending = identity.is_copyright_case_clock_sync_pending
+          OR EXISTS (SELECT 1 FROM copyright_notice_party_identities party
+            WHERE party.account_user_id = identity.id LIMIT 1)
       FROM removed WHERE identity.id = removed.id
       RETURNING identity.id
     )

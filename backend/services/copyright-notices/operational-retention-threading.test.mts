@@ -37,7 +37,7 @@ describe('copyright operational thread retention', () => {
     const ancestor = await createRetentionParsedEmail('thread-ancestor')
     const reply = await createRetentionParsedEmail('thread-reply', { reply: true })
     await linkTestCopyrightEmailIntake(ancestor.id, notice.noticeId)
-    await linkTestCopyrightEmailIntake(reply.id, notice.noticeId)
+    await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
     await seedTestCopyrightAncestorEdge(reply.id, ancestor.id)
     const before = await readCopyrightThreadReferenceState(reply.id)
     expect(before.referenceCount).toBeGreaterThan(0)
@@ -112,7 +112,7 @@ describe('copyright operational thread retention', () => {
     const first = await createRetentionParsedEmail('thread-reviewed-first')
     const second = await createRetentionParsedEmail('thread-reviewed-second')
     await linkTestCopyrightEmailIntake(first.id, notice.noticeId)
-    await linkTestCopyrightEmailIntake(second.id, notice.noticeId)
+    await linkTestCopyrightEmailIntake(second.id, notice.noticeId, 'thread', notice.moderator.id)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
     const firstBefore = await readCopyrightThreadReferenceState(first.id)
     const options = { now: future(181), replyDays: 180, batchSize: 1, maxBatches: 1 }

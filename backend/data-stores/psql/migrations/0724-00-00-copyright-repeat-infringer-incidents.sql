@@ -177,6 +177,7 @@ CREATE INDEX idx_copyright_repeat_infringer_reviews__outcome_by
 CREATE FUNCTION fn_reject_copyright_repeat_infringer_incident()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';
   END IF;

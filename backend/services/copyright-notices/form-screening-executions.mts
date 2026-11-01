@@ -148,8 +148,8 @@ export async function completeCopyrightFormScreening(
     WHERE intake.id = ${attempt.intakeId}
       AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
       AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_retention_erasures erased
-        WHERE erased.copyright_notice_id = intake.copyright_notice_id
+        SELECT 1 FROM copyright_notices erased
+        WHERE erased.id = intake.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
       )
     RETURNING id
   `)

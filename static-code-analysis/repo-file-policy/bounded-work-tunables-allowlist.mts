@@ -11,7 +11,7 @@ export const workTunableAllowlistFile =
 
 export const workTunableAllowlist: readonly WorkTunableAllowEntry[] = [
   {
-    file: 'backend/services/copyright-notices/retention-erasure-s3.mts',
+    file: 'backend/services/copyright-notices/evidence-object-version-page.mts',
     ruleId: 'bounded-work-literal',
     identifier: 'DELETE_BATCH_SIZE',
     value: '1000',

@@ -19,8 +19,8 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        JOIN copyright_notice_retention_erasures erased
-          ON erased.copyright_notice_id = link.copyright_notice_id
+        JOIN copyright_notices erased
+          ON erased.id = link.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         WHERE link.copyright_notice_email_intake_id = intake.id
       )
       UNION ALL
@@ -32,8 +32,8 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       WHERE (execution.state = 'failed' OR (execution.state = 'pending'
         AND (execution.execution_started_at IS NULL OR EXISTS (SELECT 1 FROM copyright_notice_form_screening_work_items work WHERE work.attempt_id = execution.id AND work.lease_expires_at <= clock_timestamp()))))
         AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_retention_erasures erased
-          WHERE erased.copyright_notice_id = intake.copyright_notice_id
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = intake.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         )
       UNION ALL
       SELECT 'form-effect'::text AS kind, intake.copyright_notice_submission_id AS id
@@ -61,8 +61,8 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       ) current_assessment ON true
       WHERE submission.source_kind = 'signed_in_form'
         AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_retention_erasures erased
-          WHERE erased.copyright_notice_id = intake.copyright_notice_id
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = intake.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         )
         AND notice.jurisdiction = 'us_dmca'
         AND char_length(notice.claimant_contact_ciphertext) > 0
@@ -123,8 +123,8 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       WHERE submission.kind = 'appeal'
         AND submission.body_ciphertext <> 'erased'
         AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_retention_erasures erased
-          WHERE erased.copyright_notice_id = submission.copyright_notice_id
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         )
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_appeal_recommendations recommendation
@@ -136,8 +136,8 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       WHERE submission.kind IN ('counter_notice', 'court_or_ccb_hold')
         AND submission.body_ciphertext <> 'erased'
         AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_retention_erasures erased
-          WHERE erased.copyright_notice_id = submission.copyright_notice_id
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         )
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_submission_guidance guidance

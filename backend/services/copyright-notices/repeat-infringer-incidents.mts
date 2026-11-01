@@ -15,6 +15,7 @@ import {
 } from './restriction-reversal-sources-sql.mts'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { recordCopyrightRepeatInfringerTargetProvenance } from './repeat-infringer-target-provenance.mts'
+import { retainCopyrightCaseIncidentParties } from './retention-parties-admission.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
@@ -97,7 +98,12 @@ export async function syncCopyrightRepeatInfringerIncidents(
     UNION ALL
     SELECT account_user_id, false FROM cleared
   `)
-  await transaction(statement)
+  const { rows: changedIncidents } = await transaction<{ account_user_id: string }>(statement)
+  await retainCopyrightCaseIncidentParties(
+    transaction,
+    noticeId,
+    changedIncidents.map(row => row.account_user_id),
+  )
   await recordCopyrightRepeatInfringerTargetProvenance(noticeId, transaction)
   if (accountIds.length === 0) return
   await transaction(sql`
@@ -145,14 +151,11 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
     SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents
     WHERE id = ${input.incidentId}
   `)
-  const identity = identities[0]
-  assert(identity, 404, 'Copyright repeat-infringer incident not found')
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
-    transaction,
-    identity.copyright_notice_id,
-  )
+  const noticeId = identities[0]?.copyright_notice_id
+  assert(noticeId, 404, 'Copyright repeat-infringer incident not found')
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, 'Copyright repeat-infringer incident not found')
-  await lockCopyrightRepeatInfringerNoticeAccounts(identity.copyright_notice_id, transaction)
+  await lockCopyrightRepeatInfringerNoticeAccounts(noticeId, transaction)
   const { rows } = await transaction<{
     copyright_notice_id: string
     current_disposition: CopyrightRepeatInfringerDisposition | null

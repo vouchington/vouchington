@@ -1,0 +1,187 @@
+/** Reviewed FK paths for fourteen case-owned child tables. */
+export const COPYRIGHT_CASE_PURGE_PATH_4 = [
+  [
+    'copyright_notice_target_images',
+    [
+      ['copyright_notice_targets', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      [
+        'copyright_notice_target_images',
+        ['copyright_notice_target_id'],
+        ['id'],
+        ['copyright_notice_target_id'],
+        ['copyright_notice_target_id'],
+        ['copyright_notice_target_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_notice_thread_blocker_generations',
+    [
+      [
+        'copyright_notice_thread_blocker_generations',
+        ['copyright_notice_id'],
+        ['id'],
+        ['copyright_notice_id'],
+        ['copyright_notice_id'],
+        ['copyright_notice_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_notice_thread_party_generations',
+    [
+      [
+        'copyright_notice_thread_party_generations',
+        ['copyright_notice_id'],
+        ['id'],
+        ['copyright_notice_id'],
+        ['copyright_notice_id'],
+        ['copyright_notice_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_notice_thread_retention_activities',
+    [
+      [
+        'copyright_notice_thread_retention_activities',
+        ['copyright_notice_id'],
+        ['id'],
+        ['copyright_notice_id'],
+        ['copyright_notice_id'],
+        ['copyright_notice_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_notice_urgent_filings',
+    [
+      ['copyright_notice_submissions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      [
+        'copyright_notice_urgent_filings',
+        ['copyright_notice_submission_id'],
+        ['id'],
+        ['copyright_notice_submission_id'],
+        ['copyright_notice_submission_id'],
+        ['copyright_notice_submission_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_repeat_infringer_dispositions',
+    [
+      [
+        'copyright_repeat_infringer_incidents',
+        ['copyright_notice_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+      [
+        'copyright_repeat_infringer_dispositions',
+        ['copyright_repeat_infringer_incident_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_repeat_infringer_incident_targets',
+    [
+      [
+        'copyright_repeat_infringer_incidents',
+        ['copyright_notice_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+      [
+        'copyright_repeat_infringer_incident_targets',
+        ['copyright_repeat_infringer_incident_id'],
+        ['id'],
+        ['copyright_repeat_infringer_incident_id', 'copyright_notice_target_id'],
+        ['copyright_repeat_infringer_incident_id', 'copyright_notice_target_id'],
+        ['copyright_notice_target_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_repeat_infringer_incidents',
+    [
+      [
+        'copyright_repeat_infringer_incidents',
+        ['copyright_notice_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_restriction_administrator_lifts',
+    [
+      ['copyright_restrictions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      [
+        'copyright_restriction_administrator_lifts',
+        ['copyright_restriction_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_staydown_matches',
+    [
+      ['copyright_restrictions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      ['copyright_staydown_entries', ['copyright_restriction_id'], ['id'], ['id'], ['id'], ['id']],
+      [
+        'copyright_staydown_matches',
+        ['copyright_staydown_entry_id'],
+        ['id'],
+        ['id'],
+        ['id', 'image_id', 'uploaded_by_id'],
+        ['image_id', 'uploaded_by_id'],
+      ],
+    ],
+    null,
+  ],
+  [
+    'copyright_staydown_entries',
+    [
+      ['copyright_restrictions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      ['copyright_staydown_entries', ['copyright_restriction_id'], ['id'], ['id'], ['id'], ['id']],
+    ],
+    null,
+  ],
+  [
+    'copyright_restrictions',
+    [['copyright_restrictions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']]],
+    null,
+  ],
+  [
+    'copyright_notice_targets',
+    [['copyright_notice_targets', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']]],
+    null,
+  ],
+  [
+    'copyright_territorial_decisions',
+    [['copyright_territorial_decisions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']]],
+    null,
+  ],
+] as const

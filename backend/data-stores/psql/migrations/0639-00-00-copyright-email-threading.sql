@@ -137,6 +137,88 @@ CREATE TABLE copyright_notice_email_intake_notice_links (
         AND correspondence_submission_id IS NULL AND correspondence_message_id IS NULL
         AND correspondence_reviewed_at IS NOT NULL AND correspondence_reviewed_by_id IS NOT NULL))))
 );
+CREATE FUNCTION fn_reject_copyright_email_link_storage_owner()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  object_id uuid;
+  intake_id uuid;
+  terminal_review boolean;
+BEGIN
+  IF TG_OP = 'INSERT' THEN intake_id := NEW.copyright_notice_email_intake_id;
+  ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;
+  SELECT raw_storage_object_id INTO object_id FROM copyright_notice_email_intakes
+    WHERE id = intake_id;
+  IF TG_OP = 'INSERT' AND NEW.link_kind = 'thread' THEN
+    SELECT review_decision IS NOT NULL INTO terminal_review
+      FROM copyright_notice_email_intake_receipts WHERE id = intake_id FOR UPDATE;
+    IF COALESCE(terminal_review, false) THEN
+      RAISE EXCEPTION 'reviewed copyright email intake cannot be linked as thread correspondence'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    PERFORM 1 FROM copyright_notices notice
+      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL
+      FOR UPDATE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  IF object_id IS NULL THEN
+    IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;
+    RETURN OLD;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    PERFORM 1 FROM copyright_notice_storage_objects
+      WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'copyright evidence object deletion has started'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+  -- A claimed object must keep its case link until physical deletion has cleared the intake FK.
+  PERFORM 1 FROM copyright_notice_storage_objects
+    WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'claimed copyright evidence cannot lose its case link'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN OLD;
+END;
+$$;
+CREATE FUNCTION fn_update_copyright_email_link_storage_generation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE intake_id uuid;
+BEGIN
+  IF TG_OP = 'INSERT' THEN intake_id := NEW.copyright_notice_email_intake_id;
+  ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;
+  UPDATE copyright_notice_storage_objects object SET reference_generation = reference_generation + 1
+  FROM copyright_notice_email_intakes intake
+  WHERE intake.id = intake_id AND object.id = intake.raw_storage_object_id;
+  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;
+  RETURN OLD;
+END;
+$$;
+CREATE FUNCTION fn_update_copyright_email_link_case_clock()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE copyright_notices SET last_legal_activity_at =
+    GREATEST(last_legal_activity_at, clock_timestamp())
+    WHERE id = NEW.copyright_notice_id;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_fence_copyright_email_link_storage_owner
+  BEFORE INSERT OR DELETE ON copyright_notice_email_intake_notice_links
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_storage_owner();
+CREATE TRIGGER trigger_bump_copyright_email_link_storage_generation
+  AFTER INSERT OR DELETE ON copyright_notice_email_intake_notice_links
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_email_link_storage_generation();
+CREATE TRIGGER trigger_advance_copyright_email_link_case_clock
+  AFTER INSERT ON copyright_notice_email_intake_notice_links
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_email_link_case_clock();
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice
@@ -186,6 +268,9 @@ CREATE INDEX idx_copyright_notice_correspondence_messages__email_intake
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_notice_links__notice
   ON copyright_notice_email_intake_notice_links(copyright_notice_id, id);
+-- One email intake creates the case; later linked messages are thread correspondence.
+CREATE UNIQUE INDEX idx_copyright_notice_email_intake_notice_links__initial_case
+  ON copyright_notice_email_intake_notice_links(copyright_notice_id) WHERE link_kind = 'initial';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_correspondence_reviews__notice
@@ -224,6 +309,7 @@ CREATE TRIGGER trigger_copyright_email_thread_tokens_immutable
 CREATE FUNCTION fn_reject_copyright_email_link_current_decision()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'case email links remain legal scope records' USING ERRCODE = 'check_violation';
   END IF;

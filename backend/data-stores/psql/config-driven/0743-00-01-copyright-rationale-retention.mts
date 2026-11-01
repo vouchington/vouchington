@@ -20,8 +20,7 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
       SELECT 1 FROM copyright_notices notice WHERE notice.id = rationale.copyright_notice_id
         AND (
           (notice.jurisdiction = 'us_dmca' AND rationale.rationale_ciphertext = 'erased'
-            AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-              WHERE erasure.copyright_notice_id = notice.id))
+            AND notice.evidence_erased_at IS NOT NULL)
           OR (notice.jurisdiction IN ('eu_dsa', 'uk') AND NOT EXISTS (
             SELECT 1 FROM preserved_cases held
             WHERE held.notice_id = notice.id AND held.released_at IS NULL))
@@ -33,8 +32,8 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
           WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
           WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
-            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-              WHERE erasure.copyright_notice_id = link.copyright_notice_id)))
+            AND NOT EXISTS (SELECT 1 FROM copyright_notices erasure
+              WHERE erasure.id = link.copyright_notice_id AND erasure.evidence_erased_at IS NOT NULL)))
       OR (EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
           JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
           WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
@@ -43,8 +42,7 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
           JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
           WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
             AND ((notice.jurisdiction = 'us_dmca' AND NOT (rationale.rationale_ciphertext = 'erased'
-              AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-                WHERE erasure.copyright_notice_id = notice.id)))
+              AND notice.evidence_erased_at IS NOT NULL))
               OR EXISTS (SELECT 1 FROM preserved_cases held
               WHERE held.notice_id = notice.id AND held.released_at IS NULL))))
       OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link

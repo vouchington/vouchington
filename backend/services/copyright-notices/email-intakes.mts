@@ -4,7 +4,7 @@ import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
-import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './email-erased-key.mts'
 import { upsertCopyrightStorageObjectId } from './storage-objects.mts'
 
 export type CopyrightEmailAttachmentInput = {
@@ -107,6 +107,9 @@ export async function createCopyrightEmailIntake(input: {
     await transaction.commit()
     return { intake: existing, isNew: false }
   }
+  // Reserve and lock the canonical key before copying bytes so an in-flight purge cannot
+  // claim the same object between the upload and the intake reference.
+  const rawStorageObjectId = await upsertCopyrightStorageObjectId(input.rawStorageKey, transaction)
   if (input.preserveRawEvidence) {
     const copiedKey = await input.preserveRawEvidence()
     assert(
@@ -116,7 +119,6 @@ export async function createCopyrightEmailIntake(input: {
     )
   }
   const rawMediaTypeId = await upsertMediaTypes(input.rawMimeType, { query: transaction })
-  const rawStorageObjectId = await upsertCopyrightStorageObjectId(input.rawStorageKey, transaction)
   const { sesVerdicts } = input
   const { rows } = await transaction<CopyrightEmailIntake>(sql`/* createCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intakes (

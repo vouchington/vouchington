@@ -68,9 +68,13 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     )
     SELECT descendant.intake_id, ${input.noticeId}, 'thread', 'pending'
     FROM descendants descendant
+    JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = descendant.intake_id
     WHERE NOT EXISTS (
       SELECT 1 FROM blocked blocked_intake WHERE blocked_intake.intake_id = descendant.intake_id
     )
+      AND receipt.review_decision IS NULL
+      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links existing_link
+        WHERE existing_link.copyright_notice_email_intake_id = descendant.intake_id)
     ORDER BY descendant.intake_id
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)

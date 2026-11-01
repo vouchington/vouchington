@@ -42,7 +42,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_territorial_escalations_pkey`: `CREATE UNIQUE INDEX copyright_territorial_escalations_pkey ON public.copyright_territorial_escalations USING btree (id)`
 - `idx_copyright_territorial_escalations__closed_by`: `CREATE INDEX idx_copyright_territorial_escalations__closed_by ON public.copyright_territorial_escalations USING btree (closed_by_id) WHERE (closed_by_id IS NOT NULL)`
-- `idx_copyright_territorial_escalations__notice`: `CREATE INDEX idx_copyright_territorial_escalations__notice ON public.copyright_territorial_escalations USING btree (copyright_notice_id, jurisdiction)`
+- `idx_copyright_territorial_escalations__notice`: `CREATE INDEX idx_copyright_territorial_escalations__notice ON public.copyright_territorial_escalations USING btree (copyright_notice_id, jurisdiction, id)`
 - `idx_copyright_territorial_escalations__open`: `CREATE INDEX idx_copyright_territorial_escalations__open ON public.copyright_territorial_escalations USING btree (copyright_notice_id) WHERE (closed_at IS NULL)`
 - `uq_copyright_territoria_escalations__eu_supervised_complaint_id`: `CREATE UNIQUE INDEX uq_copyright_territoria_escalations__eu_supervised_complaint_id ON public.copyright_territorial_escalations USING btree (copyright_eu_supervised_complaint_id)`
 - `uq_copyright_territorial_escalations__notice_acknowledgment_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_escalations__notice_acknowledgment_id ON public.copyright_territorial_escalations USING btree (copyright_territorial_notice_acknowledgment_id)`

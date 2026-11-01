@@ -19,6 +19,8 @@ export type PsqlJobs =
   | 'continueAgentModerationRetentionCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
+  | 'copyright.case-purge'
+  | 'copyright.account-clock-sync'
 
 export const PSQL_MANUAL_ONLY_ADMIN_JOB_TYPES = [
   'runMigrations',
@@ -89,6 +91,41 @@ export const COPYRIGHT_RETENTION_FAMILIES = [
 ] as const
 
 export type CopyrightRetentionFamily = (typeof COPYRIGHT_RETENTION_FAMILIES)[number]
+
+export type CopyrightCasePurgeJobData = {
+  noticeId: string
+  phase:
+    | 'parties'
+    | 'verify_parties'
+    | 'verify_children'
+    | 'coverage'
+    | 'evidence'
+    | 'pointers'
+    | 'children'
+    | 'final'
+    | 'residual_parties'
+  phaseIndex: number
+  afterId: string | null
+  legalClockAt: string | null
+  proofVersion: string | null
+  evidenceOwner?: {
+    objectId: string
+    generation: string
+    family: 'artifacts' | 'intakes'
+    afterId: string | null
+  }
+  /** The selected FK ancestors and primary-key cursors for one child path. */
+  childFrames?: Array<{
+    values: Record<string, string | number>
+    after: Record<string, string | number> | null
+  }>
+}
+
+export type CopyrightAccountClockSyncJobData = {
+  accountUserId: string
+  afterNoticeId: string | null
+  sourceVersion: string | null
+}
 
 /** UTC calendar boundaries for one operator-managed, half-open UUIDv7 batch range. */
 export type ClassifierPartitionRange = {

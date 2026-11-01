@@ -11,9 +11,16 @@ import {
   admitPendingTerminalActivityRetention,
   createTerminalActivityRetentionProcessor,
 } from './processors/activitypub-terminal-retention.mts'
-import { TERMINAL_ACTIVITY_RETENTION_JOB_NAME, QUEUE_NAME } from '@queues/psql/config'
+import {
+  COPYRIGHT_CASE_PURGE_JOB_NAME,
+  COPYRIGHT_ACCOUNT_CLOCK_SYNC_JOB_NAME,
+  TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
+  QUEUE_NAME,
+} from '@queues/psql/config'
 import type {
   AIRetentionContinuationData,
+  CopyrightAccountClockSyncJobData,
+  CopyrightCasePurgeJobData,
   ModerationRetentionJobData,
   PsqlJobs,
   PsqlPartitionJobData,
@@ -28,6 +35,8 @@ import processPsql from './processors.mts'
 import { processModerationRetentionCleanup } from './processors/moderation-retention.mts'
 import { createAIRetentionContinuationProcessor } from './processors/retention-continuation.mts'
 import type { Job } from 'glide-mq'
+import { processCopyrightCasePurge } from './processors/copyright-case-purge.mts'
+import { processCopyrightAccountClockSync } from './processors/copyright-account-clock-sync.mts'
 
 const processTerminalActivityRetention = createTerminalActivityRetentionProcessor(
   cleanupActivityPubTerminalIdentities,
@@ -39,6 +48,12 @@ const operationalTombstoneRetention = createOperationalTombstoneRetentionHandler
 )
 
 async function processPsqlJob(job: Job): Promise<unknown> {
+  if (job.name === COPYRIGHT_ACCOUNT_CLOCK_SYNC_JOB_NAME) {
+    return processCopyrightAccountClockSync(job as Job<CopyrightAccountClockSyncJobData>)
+  }
+  if (job.name === COPYRIGHT_CASE_PURGE_JOB_NAME) {
+    return processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>)
+  }
   if (job.name === TERMINAL_ACTIVITY_RETENTION_JOB_NAME) {
     return processTerminalActivityRetention(job as Job<TerminalActivityRetentionData>)
   }

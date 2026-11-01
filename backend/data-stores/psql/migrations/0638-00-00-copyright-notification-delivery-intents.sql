@@ -75,6 +75,8 @@ CREATE TABLE copyright_notice_delivery_attempts (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   UNIQUE(work_item_id, attempt_number), UNIQUE(work_item_id, lease_token)
 );
+CREATE INDEX idx_copyright_notice_delivery_attempts__work_item_id
+  ON copyright_notice_delivery_attempts (work_item_id, id);
 CREATE TABLE copyright_notice_delivery_attempt_results (
   attempt_id uuid PRIMARY KEY REFERENCES copyright_notice_delivery_attempts(id) ON DELETE CASCADE,
   sent_at timestamptz,
@@ -153,6 +155,9 @@ ALTER TABLE copyright_notice_lifecycle_changes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice
   ON copyright_notice_delivery_work_items (copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_delivery_work_items__email_intake_receipt
+  ON copyright_notice_delivery_work_items (copyright_notice_email_intake_receipt_id, id)
+  WHERE copyright_notice_email_intake_receipt_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice_updated
   ON copyright_notice_delivery_work_items (copyright_notice_id, updated_at);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

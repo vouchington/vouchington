@@ -14,6 +14,11 @@ import { copyrightPlacementPartiesSql } from './copyright-placement-parties.mts'
  * preserved: the retention clock waits from that time.
  */
 export const COPYRIGHT_PRESERVATION_PARTIES_SQL = sql`
+      SELECT party.copyright_notice_id AS notice_id, hold.released_at
+      FROM user_legal_preservation_holds hold
+      JOIN copyright_notice_party_identities party ON party.account_user_id = hold.account_user_id
+      JOIN copyright_notices notice ON notice.id = party.copyright_notice_id
+      UNION ALL
       SELECT notice.id AS notice_id, hold.released_at
       FROM user_legal_preservation_holds hold
       JOIN copyright_notices notice ON notice.claimant_user_id = hold.account_user_id

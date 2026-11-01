@@ -45,7 +45,7 @@ import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
 import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/classifier-human-vote-comparison.mts'
 import { runCopyrightDeliveryBatchScenarios } from './run-scenarios/copyright-delivery-batches.mts'
-import { runCopyrightRetentionCandidateScenario } from './run-scenarios/copyright-retention-candidates.mts'
+import { runCopyrightCasePurgeScenarios } from './run-scenarios/copyright-case-purge.mts'
 import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runImportRequestRetentionScenarios } from './run-scenarios/import-request-retention.mts'
@@ -135,6 +135,7 @@ async function main() {
     await runStep(runClassifierHumanVoteComparison.name, runClassifierHumanVoteComparison())
     await runStep(runCopyrightStatementFactsScenarios.name, runCopyrightStatementFactsScenarios())
     await runStep(runCopyrightDeliveryBatchScenarios.name, runCopyrightDeliveryBatchScenarios())
+    await runStep(runCopyrightCasePurgeScenarios.name, runCopyrightCasePurgeScenarios())
     await runStep(seedMediaDeliveryReplay.name, seedMediaDeliveryReplay())
     await runStep(runMediaDeliveryReplayScenarios.name, runMediaDeliveryReplayScenarios())
     await runStep(runMediaDeliveryScopedPageScenarios.name, runMediaDeliveryScopedPageScenarios())
@@ -161,8 +162,6 @@ async function main() {
     await runStep(runDenseTopicViewerCountsScenario.name, runDenseTopicViewerCountsScenario())
     await runStep(runTopicAliasCategoryWorkScenarios.name, runTopicAliasCategoryWorkScenarios())
     await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios())
-    const runCopyrightRetentionCandidate = runCopyrightRetentionCandidateScenario
-    await runStep(runCopyrightRetentionCandidate.name, runCopyrightRetentionCandidate())
     await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios())
     await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario())
     const runMembershipRenewalSelection = runMembershipRenewalSelectionScenario

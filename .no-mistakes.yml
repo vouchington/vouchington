@@ -1074,16 +1074,8 @@ rules:
             callee: 'createCopyrightStatementDeliveryInTransaction',
           }
         - {
-            file: backend/services/copyright-notices/retention-erasure-case.mts,
-            callee: 'transaction',
-          }
-        - {
             file: backend/services/copyright-notices/retention-erasure-preservation.mts,
             callee: 'transaction',
-          }
-        - {
-            file: backend/services/copyright-notices/retention-erasure.mts,
-            callee: 'eraseCopyrightRetentionCase',
           }
         - {
             file: backend/services/copyright-notices/statutory-restoration-schedule.mts,

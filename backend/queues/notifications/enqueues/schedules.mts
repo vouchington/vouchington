@@ -9,7 +9,7 @@ import {
   NOTIFICATIONS_RECONCILE_DSA_JOB,
   NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
-  NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
+  NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import {
@@ -19,7 +19,7 @@ import {
   enqueueReconcileCopyrightDeliveryIntents,
   enqueueReconcileMediaDeliveryRegistry,
   enqueueReconcileNotificationPushIntents,
-  enqueueSweepCopyrightEvidenceRetention,
+  enqueueCopyrightCasePurgeAdmission,
   enqueueReconcileDsaStatementSubmissions,
 } from '../enqueues.mts'
 
@@ -103,17 +103,16 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_
     ],
   },
   {
-    schedulerId: 'copyright-evidence-retention',
-    repeat: { pattern: '17 * * * *' },
-    template: scheduleTemplate(NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB),
+    schedulerId: 'copyright-case-purge-admission',
+    repeat: { pattern: '17 4 * * *' },
+    template: scheduleTemplate(NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB),
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'copyright-evidence-retention',
-        schedule: '17 * * * *',
-        description:
-          'Erase evidence and personal data of copyright cases past retention; no-op while off',
-        trigger: enqueueSweepCopyrightEvidenceRetention,
+        id: 'copyright-case-purge-admission',
+        schedule: '17 4 * * *',
+        description: 'Admit bounded copyright case purge pages after the legal retention window',
+        trigger: enqueueCopyrightCasePurgeAdmission,
       },
     ],
   },
