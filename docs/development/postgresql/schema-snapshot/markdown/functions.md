@@ -27,6 +27,24 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_decision_rationale_retention_elig
  STABLE
 ```
 
+## `fn_copyright_receipt_review_retirement_allowed(old_row copyright_notice_email_intake_receipts, new_row copyright_notice_email_intake_receipts)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_receipt_review_retirement_allowed(old_row copyright_notice_email_intake_receipts, new_row copyright_notice_email_intake_receipts)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+```
+
+## `fn_copyright_receipt_review_retirement_eligible(receipt_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_receipt_review_retirement_eligible(receipt_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+```
+
 ## `fn_copyright_retention_erasable_columns(table_name text)`
 
 ```sql
@@ -881,6 +899,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_link_current_decisio
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_receipt_current_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_email_receipt_hold_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_receipt_hold_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

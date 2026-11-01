@@ -73,6 +73,14 @@ export type CopyrightEmailLegalProcessRequest = {
   reason: string
 }
 
+export type CopyrightEmailReceiptHoldRequest = {
+  kind: 'litigation_threat' | 'regulator_request' | 'court_request'
+}
+
+export type CopyrightEmailReceiptHoldReleaseRequest = {
+  hold_id: ApiUuidContract
+}
+
 export type CopyrightCounterNoticeRequest = {
   name: string
   address: string

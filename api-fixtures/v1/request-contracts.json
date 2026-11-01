@@ -49226,6 +49226,50 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-email-intakes/:id/preservation-holds": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["litigation_threat", "regulator_request", "court_request"],
+            "type": "string"
+          }
+        },
+        "required": ["kind"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/preservation-holds/releases": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "hold_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["hold_id"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
       "body": {
         "$ref": "#/components/schemas/CopyrightEmailRejectionRequest"

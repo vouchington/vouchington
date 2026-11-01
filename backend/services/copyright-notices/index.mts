@@ -94,6 +94,11 @@ export { getCopyrightReviewTargetMinutes } from './config.mts'
 export { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
 export { sweepCopyrightOperationalRetention } from './operational-retention.mts'
 export { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
+export { sweepCopyrightReceiptReviews } from './retention-receipt-reviews.mts'
+export {
+  placeCopyrightEmailReceiptPreservationHold,
+  releaseCopyrightEmailReceiptPreservationHold,
+} from './retention-receipt-preservation.mts'
 export { sweepCopyrightCaseThreads } from './operational-retention-threading.mts'
 export {
   currentUserCanApproveCopyrightJurisdictionPolicy,

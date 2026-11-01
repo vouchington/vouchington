@@ -8,6 +8,7 @@ import { providerTableConfigs } from '@services/oauth/providers'
 import {
   sweepCopyrightOperationalRetention,
   sweepUnlinkedCopyrightEmailIntakes,
+  sweepCopyrightReceiptReviews,
   sweepCopyrightCaseThreads,
 } from '@services/copyright-notices'
 import { getMinUUIDv7ForDate } from '@modules/utils'
@@ -274,6 +275,7 @@ type DataRetentionCleanupResult = {
   copyrightDeliveryAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightGuestCapabilities?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightUnlinkedEmailIntakes?: { scanned: number; erased: number; hasMore: boolean }
+  copyrightReceiptReviews?: { scanned: number; retired: number; hasMore: boolean }
   copyrightCaseThreads?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightOrphanEmailThreadTokens?: { scanned: number; deleted: number; hasMore: boolean }
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
@@ -369,6 +371,7 @@ export type CopyrightRetentionFamily =
   | 'copyrightDeliveryAttempts'
   | 'copyrightGuestCapabilities'
   | 'copyrightUnlinkedEmailIntakes'
+  | 'copyrightReceiptReviews'
   | 'copyrightCaseThreads'
   | 'copyrightOrphanEmailThreadTokens'
 
@@ -422,6 +425,8 @@ export async function runCopyrightOperationalRetentionCleanup(
       maxBatches: limits.maxBatches,
       retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
     })
+  if (active('copyrightReceiptReviews'))
+    result.copyrightReceiptReviews = await sweepCopyrightReceiptReviews(limits)
   if (active('copyrightCaseThreads'))
     result.copyrightCaseThreads = await sweepCopyrightCaseThreads({
       batchSize: limits.batchSize,

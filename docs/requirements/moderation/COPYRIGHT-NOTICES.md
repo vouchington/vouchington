@@ -167,9 +167,15 @@ intake loses its original object and private MIME parse and attachment data afte
 minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
 the first object-version delete, and the receipt blocks new processing while bounded cleanup
 continues. Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
-intake. Final legal and staff outcomes live on their owning case, receipt, or redress request for
-that owner's lifetime, including the decision, retained decider identity, decision time, and final
-redress result. The six-year policy includes EU and UK lifecycle and staff-review history and
+intake. A standalone unlinked email receipt keeps its final review decision, reviewer, time, and
+encrypted explanation for six years from the latest receipt, review, delivery, or preservation
+release activity. An active legal preservation hold, a linked case, live private intake, or pending
+delivery blocks that erasure. The receipt then keeps only its SES identity and original replay checks.
+Any dependent attempted-rationale legal record retires first so its review context remains intact.
+Staff may place a hold while the standalone final review still exists, even after the private
+intake is erased. A hold is its own row; releasing it takes the hold id returned on placement, so a
+stale release cannot clear a later hold. Release restarts the legal-record window.
+Final case and redress outcomes remain on their owners while those owners exist. The six-year policy includes EU and UK lifecycle and staff-review history and
 records advisor review with owner approval.
 Detailed lifecycle, assessment, recommendation, and review history expires through guarded monthly partition
 retirement after the owner-approved six-year window. Recommendation history also expires when
