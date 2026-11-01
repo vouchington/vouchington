@@ -1,4 +1,6 @@
 import type { Response } from 'undici'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   beginTransaction,
@@ -18,7 +20,6 @@ import {
 } from './sync-cache.mts'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
-import { createBlocklistDiffDirectory, removeBlocklistDiffDirectory } from './diff-directory.mts'
 import { writeSortedDesiredDomains } from './diff-files.mts'
 import { stageBothDiffFiles, type MembershipDiffPaths } from './membership-diff-stage.mts'
 import { applyWithPreparedMembership, lockSourceForDiff } from './membership-version.mts'
@@ -27,6 +28,9 @@ type MembershipCacheHeaders = { etag: string | null; lastModifiedAt: Date | null
 
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 
+// Pid keeps an interrupted run's directory distinct from another worker's live diff.
+const BLOCKLIST_DIFF_DIRECTORY_PREFIX = `blocklist-diff-${process.pid}-`
+
 export async function syncDomainsWithDatabase(
   sourceId: DomainBlacklistSourceId,
   response: Response,
@@ -34,7 +38,7 @@ export async function syncDomainsWithDatabase(
   cacheHeaders?: MembershipCacheHeaders,
 ): Promise<SyncBlacklistSourceResult> {
   await entityCacheWorkConfig.waitForInitialization()
-  const directory = createBlocklistDiffDirectory()
+  const directory = mkdtempSync(join(tmpdir(), BLOCKLIST_DIFF_DIRECTORY_PREFIX))
   const desiredPath = join(directory, 'desired')
   const membershipPath = join(directory, 'membership')
   const addedPath = join(directory, 'added')
@@ -63,7 +67,7 @@ export async function syncDomainsWithDatabase(
     await recordRebuildAndValidators(sourceId, sourceType, cacheHeaders)
     return result
   } finally {
-    removeBlocklistDiffDirectory(directory)
+    rmSync(directory, { recursive: true, force: true })
   }
 }
 

@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { expectRemovedBlocklistDiffDirectories } from '@voucha/test-helpers/blocklist-diff-directories'
 import {
   beginTransaction,
   countBlacklistEntriesBySource,
@@ -13,12 +14,16 @@ import {
   observeTestPostgresClientQueries,
 } from '@voucha/test-helpers'
 import { ADDED_DOMAINS_TABLE } from './sync-cache.mts'
-import * as diffDirectory from './diff-directory.mts'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
 import { syncDomainsWithDatabase } from './sync-db.mts'
 import { stageBothDiffFiles } from './membership-diff-stage.mts'
 import { sourceMembershipOrderSql } from './membership-copy-sql.mts'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
+
+vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => {
+  const fs = await importOriginal()
+  return { ...fs, mkdtempSync: vi.fn<VitestLooseMock>(fs.mkdtempSync) }
+})
 
 describe('blocklist file diff', () => {
   it('reads membership from the replica and stages only the diff', async () => {
@@ -100,16 +105,14 @@ describe('blocklist file diff', () => {
       name: `interrupt-${suffix}`,
       url: 'https://example.com/interrupt.txt',
     })
-    const diffDirectories = watchBlocklistDiffDirectories()
     try {
+      vi.mocked(mkdtempSync).mockClear()
       await expect(syncDomainsWithDatabase(sourceId, interruptedDownload(), 'url')).rejects.toThrow(
         Error,
       )
       expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
-      expect(diffDirectories.createdCount()).toBeGreaterThan(0)
-      expect(diffDirectories.leftovers()).toEqual([])
+      expectRemovedBlocklistDiffDirectories(1)
     } finally {
-      diffDirectories.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -170,38 +173,6 @@ function interruptedDownload(): Response {
       },
     }),
   )
-}
-
-// syncDomainsWithDatabase removes its own directory in finally. Record that pair of calls
-// instead of listing the shared temporary directory.
-function watchBlocklistDiffDirectories(): {
-  createdCount: () => number
-  leftovers: () => string[]
-  restore: () => void
-} {
-  const created: string[] = []
-  const removed = new Set<string>()
-  const createBlocklistDiffDirectory = diffDirectory.createBlocklistDiffDirectory
-  const removeBlocklistDiffDirectory = diffDirectory.removeBlocklistDiffDirectory
-  const create = vi.spyOn(diffDirectory, 'createBlocklistDiffDirectory').mockImplementation(() => {
-    const directory = createBlocklistDiffDirectory()
-    created.push(directory)
-    return directory
-  })
-  const remove = vi
-    .spyOn(diffDirectory, 'removeBlocklistDiffDirectory')
-    .mockImplementation(directory => {
-      removed.add(directory)
-      removeBlocklistDiffDirectory(directory)
-    })
-  return {
-    createdCount: () => created.length,
-    leftovers: () => created.filter(directory => !removed.has(directory)),
-    restore() {
-      create.mockRestore()
-      remove.mockRestore()
-    },
-  }
 }
 
 function sourceNameSuffix(): string {
