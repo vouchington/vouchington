@@ -4,7 +4,7 @@ import { createCodedError } from '@vouchington/sentry'
 import assert from 'http-assert'
 
 type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
-  Record<'is_deleted' | 'is_merged', boolean>
+  Record<'is_deleted' | 'is_merged' | 'has_pending_slug_alias', boolean>
 
 /** Serialize identity assignment so admission_position orders committed reservations. */
 export async function lockTopicMergeAdmission(query: TransactionQuery): Promise<void> {
@@ -22,7 +22,7 @@ export async function lockAndAssertMergeParticipants(
 ): Promise<MergeRow> {
   const { rows } = await query<MergeRow>(
     // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
-    `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
+    `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged, EXISTS (SELECT 1 FROM topic_aliases WHERE alias = topics.slug AND unlink_requested_at IS NOT NULL) AS has_pending_slug_alias FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
     [[sourceTopicId, destinationTopicId]],
   )
   const sourceRow = rows.find(row => row.id === sourceTopicId)
@@ -31,21 +31,10 @@ export async function lockAndAssertMergeParticipants(
   assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
   assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
+  // A pending unlink owns its slug until bounded deletion finishes; a merge must not relink it.
+  assert(!sourceRow.has_pending_slug_alias, 409, 'Topic alias unlink is in progress')
   assertLockedTopicMergeTypes(sourceRow, destinationRow)
   return sourceRow
-}
-
-/** A pending unlink owns its alias until bounded deletion finishes; a merge must not relink it. */
-export async function assertSourceSlugAliasClaimable(
-  query: TransactionQuery,
-  sourceSlug: string,
-): Promise<void> {
-  const { rows } = await query<{ id: string }>(
-    `/* assertSourceSlugAliasClaimable */ SELECT id FROM topic_aliases
-      WHERE alias = $1 AND unlink_requested_at IS NOT NULL`,
-    [sourceSlug],
-  )
-  assert(rows.length === 0, 409, 'Topic alias unlink is in progress')
 }
 
 export async function lockTopicMergeLifecycles(

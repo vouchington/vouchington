@@ -1,4 +1,4 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { TopicAliasUnlinkPage } from '../../queues/rss-feed-maintenance/types.mts'
 import { clearTopicAliasUnlinkCategoryPage } from '../../services/rss-feed-items/clear-unlinked-topic-alias-categories.mts'
@@ -60,4 +60,29 @@ export async function finishTopicAliasUnlinkForTest(aliasId: string): Promise<vo
     if (!result.hasMore) return
   }
   throw new Error('Test alias category reconciliation exceeded twenty pages')
+}
+
+/** Puts a linked alias into the accepted-unlink state without running the bounded deletion. */
+export async function markTopicAliasPendingUnlinkForTest(
+  alias: string,
+  topicId: string,
+): Promise<void> {
+  await write(
+    `/* markTopicAliasPendingUnlinkForTest */ UPDATE topic_aliases
+      SET topic_id = NULL, unlink_requested_at = CURRENT_TIMESTAMP, unlink_topic_id = $2::uuid
+      WHERE alias = $1`,
+    [alias, topicId],
+  )
+}
+
+/** Returns the pending-unlink alias row, or null when the alias is not pending. */
+export async function getPendingTopicAliasForTest(
+  alias: string,
+): Promise<{ topic_id: string | null; unlink_topic_id: string | null } | null> {
+  const { rows } = await read<{ topic_id: string | null; unlink_topic_id: string | null }>(
+    `/* getPendingTopicAliasForTest */ SELECT topic_id, unlink_topic_id
+      FROM topic_aliases WHERE alias = $1 AND unlink_requested_at IS NOT NULL`,
+    [alias],
+  )
+  return rows[0] ?? null
 }
