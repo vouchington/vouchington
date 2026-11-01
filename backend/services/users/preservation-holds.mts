@@ -10,7 +10,6 @@ import { isAdminUser } from './authorization.mts'
 import { parsePreservationHoldReference } from './preservation-hold-reference.mts'
 import type { PrivateUser } from './types.mts'
 
-export { parsePreservationHoldReference } from './preservation-hold-reference.mts'
 const HISTORY_LIMIT = 100
 
 type HoldRow = {

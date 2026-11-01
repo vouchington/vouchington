@@ -11,11 +11,6 @@ export const COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER = [
   'copyright_territorial_decision_identities',
   'copyright_notices',
 ] as const
-export const COPYRIGHT_CASE_FINAL_POINTER_CUT = [
-  'current_territorial_decision_identity_id',
-  'territorial_authorizing_assessment_identity_id',
-] as const
-
 /**
  * The admission anchors are unique by case and kind, and territorial receipts
  * are unique by case and the two territorial jurisdictions. They stay intact
