@@ -31,6 +31,7 @@ Not partitioned — growth: unbounded.
 - `topic_aliases_alias_check1`: `CHECK ((alias = lower(alias)))`
 - `topic_aliases_alias_check2`: `CHECK ((alias = TRIM(BOTH FROM alias)))`
 - `topic_aliases_check`: `CHECK (((unlink_requested_at IS NULL) = (unlink_topic_id IS NULL)))`
+- `topic_aliases_check1`: `CHECK (((unlink_requested_at IS NULL) OR (topic_id IS NULL)))`
 
 **Foreign keys:**
 

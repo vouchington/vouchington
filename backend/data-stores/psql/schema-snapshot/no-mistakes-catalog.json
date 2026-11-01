@@ -132518,6 +132518,10 @@
         "topic_aliases_check": {
           "definition": "CHECK (((unlink_requested_at IS NULL) = (unlink_topic_id IS NULL)))",
           "validated": true
+        },
+        "topic_aliases_check1": {
+          "definition": "CHECK (((unlink_requested_at IS NULL) OR (topic_id IS NULL)))",
+          "validated": true
         }
       },
       "columns": {

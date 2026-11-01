@@ -146,7 +146,8 @@ async function ensureSourceSlugAlias(
         (SELECT id FROM users WHERE id = $3::uuid AND deleted_at IS NULL),
         (SELECT id FROM users WHERE id = $3::uuid AND deleted_at IS NULL))
       ON CONFLICT (alias) DO UPDATE SET topic_id = EXCLUDED.topic_id, updated_by_id = EXCLUDED.updated_by_id
-      WHERE topic_aliases.topic_id IS NULL OR topic_aliases.topic_id = $1::uuid OR topic_aliases.topic_id = $4::uuid
+      WHERE (topic_aliases.topic_id IS NULL AND topic_aliases.unlink_requested_at IS NULL)
+        OR topic_aliases.topic_id = $1::uuid OR topic_aliases.topic_id = $4::uuid
       RETURNING id, alias, topic_id`,
     [destinationId, sourceSlug, mergerId, sourceId],
   )
