@@ -18,4 +18,12 @@ export const workTunableAllowlist: readonly WorkTunableAllowEntry[] = [
     reason:
       'S3 DeleteObjects accepts at most 1,000 keys: https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html',
   },
+  {
+    file: 'backend/entrypoints/api/schema-reset.mts',
+    ruleId: 'bounded-work-literal',
+    identifier: 'DROP_BATCH_SIZE',
+    value: '25',
+    reason:
+      'PostgreSQL shares max_locks_per_transaction (64 by default) times max_connections lock slots across all transactions, so one DROP may lock only a bounded number of relations: https://www.postgresql.org/docs/current/runtime-config-locks.html. The bound follows the database server lock settings, not a runtime tunable.',
+  },
 ]
