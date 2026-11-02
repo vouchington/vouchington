@@ -918,14 +918,16 @@ BEGIN
           <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
         AND NOT EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
           WHERE work.membership_operation_id = operation.id)
-        AND (operation.fiscal_retention_started_at IS NOT NULL OR CASE
-          WHEN operation.operation_kind = 'administrator_refund' THEN EXISTS (
-            SELECT 1 FROM membership_administrator_refund_operation_requests request
-            JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
-            WHERE request.membership_operation_id = operation.id
-              AND (NOT request.is_cancel_requested OR refund.has_revoked_access))
-          WHEN operation.operation_kind IN ('ineligible_purchase_reversal', 'collision_resolution') THEN fn_membership_reversal_case_closed(operation.membership_lineage_binding_id)
-          ELSE TRUE END));
+        AND CASE
+          WHEN operation.operation_kind = 'administrator_refund' THEN
+            operation.fiscal_retention_started_at IS NOT NULL OR EXISTS (
+              SELECT 1 FROM membership_administrator_refund_operation_requests request
+              JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
+              WHERE request.membership_operation_id = operation.id
+                AND (NOT request.is_cancel_requested OR refund.has_revoked_access))
+          WHEN operation.operation_kind IN ('ineligible_purchase_reversal', 'collision_resolution')
+            THEN fn_membership_reversal_case_closed(operation.membership_lineage_binding_id)
+          ELSE TRUE END);
 END $$;
 COMMENT ON FUNCTION fn_membership_operation_fiscal_retention_due(UUID) IS
   'Permits bounded deletion only after seven full years following the completed operation UTC fiscal year, without live work, once any requested administrator cancellation revoked access, and once a reversal or collision operation case has no unfinished sibling operation or open verification cycle.';
