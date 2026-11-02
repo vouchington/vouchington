@@ -43,6 +43,27 @@ export async function drainExpiredMembershipOperationChildren(
   remaining -= refunds.rowCount ?? 0
   if (remaining === 0) return pageSize
 
+  const receipts = await query(sql`/* deleteExpiredMembershipAutomaticRefundReceipts */
+    WITH pending AS (
+      SELECT receipt.id FROM membership_automatic_refund_receipts receipt
+      WHERE receipt.membership_operation_id = ${operationId}
+      ORDER BY receipt.id LIMIT ${remaining} FOR UPDATE OF receipt
+    ) DELETE FROM membership_automatic_refund_receipts receipt USING pending WHERE receipt.id = pending.id`)
+  remaining -= receipts.rowCount ?? 0
+  if (remaining === 0) return pageSize
+
+  const caseLinks = await query(sql`/* deleteExpiredMembershipReversalCaseLinks */
+    WITH pending AS (
+      SELECT link.membership_ineligible_purchase_reversal_case_id AS case_id
+      FROM membership_ineligible_purchase_reversal_case_operations link
+      WHERE link.membership_operation_id = ${operationId}
+      ORDER BY link.membership_ineligible_purchase_reversal_case_id LIMIT ${remaining} FOR UPDATE OF link
+    ) DELETE FROM membership_ineligible_purchase_reversal_case_operations link USING pending
+      WHERE link.membership_operation_id = ${operationId}
+        AND link.membership_ineligible_purchase_reversal_case_id = pending.case_id`)
+  remaining -= caseLinks.rowCount ?? 0
+  if (remaining === 0) return pageSize
+
   const requests = await query(sql`/* deleteExpiredMembershipAdministratorRefundRequests */
     WITH pending AS (
       SELECT request.id FROM membership_administrator_refund_operation_requests request
