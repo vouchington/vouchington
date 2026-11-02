@@ -4,9 +4,8 @@ import '@backend/service-registrations'
 
 const runtime = await initializeWorkerRuntime()
 
-const startWorkerRuntime = runtime.startWorkerRuntime
-
-if (!process.env.NODE_PREWARM) await startWorkerRuntime()
-
+// Starting the runtime is the process entrypoint's job (serve.mts), so importing this module
+// only builds the worker collections.
+export const startWorkerRuntime = runtime.startWorkerRuntime
 export const sqsConsumers = runtime.sqsConsumers
 export default runtime.workers

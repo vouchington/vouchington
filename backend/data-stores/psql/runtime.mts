@@ -36,7 +36,7 @@ export const psql: Psql = createPsql({
   errorHandler: onError,
   onQueryTiming: recordQueryTiming,
   onBeforeQuery: maybeCaptureQuery,
-  vector: !process.env.NODE_PREWARM,
+  vector: true,
   migrationExtensions: vouchaMigrationExtensions,
 })
 export const writePool = psql.writePool
@@ -80,7 +80,6 @@ const poolStatsSampler = createPoolStatsSampler()
 poolStatsSampler.startConfiguredPoolStatsSampler(
   { ...psql, jobSerializationPool },
   poolConfiguration,
-  Boolean(process.env.NODE_PREWARM),
 )
 
 export { Pool }

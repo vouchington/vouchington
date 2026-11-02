@@ -72,7 +72,7 @@ checks it every day, so an issue closed elsewhere is still caught. It skips loca
   PR never depends on landing order; deleting it keeps the repeat from returning.
 - **Find stale scopes** from one complete local pass or complete Backend workflow run with
   `VITEST_DIAGNOSTICS=1`. Combine all backend-unit shard logs from that pass into one file, then run
-  `NODE_ENV=test NODE_PREWARM=1 node backend/test-helpers/api/request-query-profile-stale.mts <run-log>`.
+  `NODE_ENV=test node backend/test-helpers/api/request-query-profile-stale.mts <run-log>`.
   Use the worktree's `WORKTREE_DIR`, `DATABASE_URL`, and `VALKEY_URL` printed by
   `./dev/initialize backend` inline with the command. The reader loads the API entrypoint's
   registrations without serving requests and uses the public route matcher to canonicalize
