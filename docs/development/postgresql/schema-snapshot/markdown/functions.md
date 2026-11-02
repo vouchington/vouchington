@@ -1161,14 +1161,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_requ
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_administrator_refund_request_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_reject_membership_context_provider_mismatch`
 
 ```sql
