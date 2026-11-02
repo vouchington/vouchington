@@ -339,6 +339,15 @@ CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_i
  STABLE PARALLEL SAFE
 ```
 
+## `fn_membership_operation_fiscal_retention_due(operation_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_membership_operation_fiscal_retention_due(operation_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_membership_renewal_snapshot_changed(old_observation_id uuid, new_observation_id uuid)`
 
 ```sql
@@ -1143,6 +1152,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_requ
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_membership_administrator_refund_request_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_membership_context_provider_mismatch`
 
 ```sql
@@ -1371,6 +1388,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_role_user_is_not_system()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_rss_feed_child_reference()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_stripe_event_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_stripe_event_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

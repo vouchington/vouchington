@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type Stripe from 'stripe'
@@ -13,8 +13,17 @@ export async function insertStripeEvent(
 ): Promise<InsertStripeEventResult> {
   const normalized = normalizeStripeEvent(event)
   const payload = JSON.stringify(event)
+  await using query = await beginTransaction()
 
-  const inserted = await write(
+  // Retention takes FOR UPDATE on an expired row. Hold a conflicting key-share lock
+  // through the replay read so the row cannot disappear before we return it.
+  const existing = await findStripeEventForReplay(event.id, query)
+  if (existing) {
+    await query.commit()
+    return hydrateStripeEventRecord({ ...existing, is_new: false })
+  }
+
+  const inserted = await query(
     sql`/* insertStripeEvent */
       WITH registered_type AS (
         INSERT INTO stripe_event_types (stripe_event_type) VALUES (${event.type})
@@ -64,6 +73,7 @@ export async function insertStripeEvent(
   )
 
   if (inserted.rows.length > 0) {
+    await query.commit()
     return hydrateStripeEventRecord({
       ...(inserted.rows[0] as StripeEventRow),
       is_new: true,
@@ -75,19 +85,28 @@ export async function insertStripeEvent(
   // start -- a fallback SELECT folded into the same statement as the INSERT (e.g. a CTE) can
   // still miss the winner's just-committed row and return zero rows. Running the fallback as
   // its own statement gives it a fresh snapshot that is guaranteed to see the committed winner.
-  const existing = await write(
-    sql`/* insertStripeEvent (conflict fallback) */
+  // A concurrent insert can win after the first read. Its insert and work row
+  // commit together; this fresh statement locks the winner for the replay.
+  const raced = await findStripeEventForReplay(event.id, query)
+  assert(raced, 500, `stripe_events row missing after conflict: ${event.id}`)
+  await query.commit()
+  return hydrateStripeEventRecord({ ...raced, is_new: false })
+}
+
+async function findStripeEventForReplay(
+  stripeEventId: string,
+  query: TransactionQuery,
+): Promise<StripeEventRow | null> {
+  const existing = await query(
+    sql`/* findStripeEventForReplay */
       SELECT
     `.append(stripeEventColumns()).append(sql`
       FROM stripe_events event
       LEFT JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
       JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
-      WHERE event.stripe_event_id = ${event.id}
+      WHERE event.stripe_event_id = ${stripeEventId}
+      FOR KEY SHARE OF event
     `),
   )
-  assert(existing.rows.length === 1, 500, `stripe_events row missing after conflict: ${event.id}`)
-  return hydrateStripeEventRecord({
-    ...(existing.rows[0] as StripeEventRow),
-    is_new: false,
-  })
+  return (existing.rows[0] as StripeEventRow | undefined) ?? null
 }

@@ -1460,6 +1460,7 @@
 
 - `stripe_event_work`
 - `purchase_intent`
+- `stripe_event_ledger`
 
 ## `platform_account_kinds`
 

@@ -4,6 +4,8 @@ import {
   rewriteTestImmutableStripeEvent,
 } from '@voucha/test-helpers/stripe-event-work'
 import { makeStripeEventRecoverableForTest } from '@voucha/test-helpers/entities/stripe-events'
+import { removeTerminalStripeWorkForRetention } from '@voucha/test-helpers/payment-ledger-retention'
+import { cleanupPaymentLedgers } from '../data-retention/cleanup-payment-ledgers.mts'
 import { insertStripeEvent } from './insert-event.mts'
 import {
   getStripeEventById,
@@ -21,6 +23,42 @@ describe('immutable Stripe events and current worker ownership', () => {
     expect(replay.is_new).toBe(false)
     await expect(rewriteTestImmutableStripeEvent(first.id)).rejects.toMatchObject({ code: '23514' })
     expect((await getStripeEventById(first.id))?.payload).toEqual(event)
+  })
+
+  it('admits one ledger row when the same fresh Stripe event arrives concurrently', async () => {
+    const event = createTestStripeDeletionEvent()
+    const admitted = await Promise.all(Array.from({ length: 6 }, () => insertStripeEvent(event)))
+    expect(admitted.filter(row => row.is_new)).toHaveLength(1)
+    expect(new Set(admitted.map(row => row.id)).size).toBe(1)
+    expect(admitted.every(row => row.stripe_event_id === event.id)).toBe(true)
+  })
+
+  it('keeps exact replay until fiscal retirement and accepts the event anew afterward', async () => {
+    const occurredAt = new Date(Date.UTC(new Date().getUTCFullYear() - 8, 11, 31, 12))
+    const event = {
+      ...createTestStripeDeletionEvent(),
+      created: Math.floor(occurredAt.getTime() / 1000),
+    }
+    const first = await insertStripeEvent(event)
+    expect(first.is_new).toBe(true)
+    await expect(
+      cleanupPaymentLedgers({ batchSize: 1, maxBatches: 1 }, [first.id]),
+    ).resolves.toContainEqual({
+      family: 'stripe_event',
+      scanned: 1,
+      deleted: 0,
+      hasMore: false,
+    })
+    await markStripeEventProcessing(first.id, first.lease_token)
+    await markStripeEventCompleted(first.id, 'processed', first.lease_token)
+    await removeTerminalStripeWorkForRetention(first.id)
+
+    const replay = await insertStripeEvent(event)
+    expect(replay).toMatchObject({ id: first.id, is_new: false, status: 'retained' })
+    await cleanupPaymentLedgers({ batchSize: 1, maxBatches: 1 }, [first.id])
+    const receivedAgain = await insertStripeEvent(event)
+    expect(receivedAgain).toMatchObject({ is_new: true, status: 'received' })
+    expect(receivedAgain.id).not.toBe(first.id)
   })
 
   it('rejects expired and superseded finalization without changing successor work', async () => {
