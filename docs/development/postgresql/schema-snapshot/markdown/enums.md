@@ -1461,6 +1461,7 @@
 - `stripe_event_work`
 - `purchase_intent`
 - `stripe_event_ledger`
+- `membership_operation_ledger`
 
 ## `platform_account_kinds`
 

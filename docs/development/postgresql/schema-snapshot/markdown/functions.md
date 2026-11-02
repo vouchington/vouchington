@@ -339,12 +339,12 @@ CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_i
  STABLE PARALLEL SAFE
 ```
 
-## `fn_membership_operation_fiscal_retention_due(operation_id uuid)`
+## `fn_membership_operation_fiscal_retention_due(target_operation_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_membership_operation_fiscal_retention_due(operation_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_membership_operation_fiscal_retention_due(target_operation_id uuid)
  RETURNS boolean
- LANGUAGE sql
+ LANGUAGE plpgsql
  STABLE
 ```
 
@@ -354,6 +354,15 @@ CREATE OR REPLACE FUNCTION public.fn_membership_operation_fiscal_retention_due(o
 CREATE OR REPLACE FUNCTION public.fn_membership_renewal_snapshot_changed(old_observation_id uuid, new_observation_id uuid)
  RETURNS boolean
  LANGUAGE sql
+ STABLE
+```
+
+## `fn_membership_reversal_case_closed(target_binding_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_membership_reversal_case_closed(target_binding_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
  STABLE
 ```
 
@@ -1196,6 +1205,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_grant_mutation()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_membership_lineage_binding_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_operation_child_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_operation_child_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
