@@ -174,10 +174,12 @@ runs:
         IMAGE="$IMAGE_REPOSITORY/api:$IMAGE_TAG"
         PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)
         SERVER_CONTAINER="voucha-api-server-$$"
+        POSTGRES_CONTAINER="voucha-api-postgres-$$"
 
         cleanup() {
           docker stop "$SERVER_CONTAINER" 2>/dev/null || true
           docker rm "$SERVER_CONTAINER" 2>/dev/null || true
+          docker rm -f "$POSTGRES_CONTAINER" 2>/dev/null || true
         }
         trap cleanup EXIT
 
@@ -245,6 +247,41 @@ runs:
           ([.observedFlushTargetKeyCounts[]] | all(type == "number" and . >= 0 and floor == .)))
         ' >/dev/null
         echo "✓ Deployed Valkey diagnostic returned schema-version 1 JSON"
+
+        # The infrastructure one-off tasks run these entrypoints from the compiled image, so run
+        # both against a disposable database that exists only for this step.
+        echo "Starting disposable PostgreSQL for the schema reset and migrate entrypoints..."
+        POSTGRES_PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)
+        docker run -d --name "$POSTGRES_CONTAINER" -p "127.0.0.1:$POSTGRES_PORT:5432" \
+          -e POSTGRES_USER=postgres -e POSTGRES_DB=postgres -e POSTGRES_HOST_AUTH_METHOD=trust \
+          ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 >/dev/null
+        for i in $(seq 1 60); do
+          if docker exec "$POSTGRES_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
+            break
+          fi
+          if [ "$i" -eq 60 ]; then
+            echo "✗ Disposable PostgreSQL did not become ready within 30s. Logs:"
+            docker logs "$POSTGRES_CONTAINER"
+            exit 1
+          fi
+          sleep 0.5
+        done
+        RESET_DATABASE_URL="postgres://postgres@127.0.0.1:$POSTGRES_PORT/postgres"
+        # The second reset runs over the fully migrated schema at PostgreSQL's default lock
+        # settings, which is where an unbatched DROP SCHEMA CASCADE runs out of shared memory.
+        for ENTRYPOINT in schema-reset.mts schema-reset.mts migrate.mts; do
+          docker run --rm --network host \
+            -e NODE_ENV=staging -e ENVIRONMENT=staging -e ALLOW_STAGING_SCHEMA_RESET=true \
+            -e DATABASE_URL="$RESET_DATABASE_URL" -e VALKEY_URL \
+            "$IMAGE" "$ENTRYPOINT"
+          echo "✓ $ENTRYPOINT exited 0"
+        done
+        MIGRATED=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d postgres -Atc "SELECT to_regclass('public.users') IS NOT NULL")
+        if [ "$MIGRATED" != "t" ]; then
+          echo "✗ public.users is missing after schema-reset.mts and migrate.mts"
+          exit 1
+        fi
+        echo "✓ schema-reset.mts (twice) and migrate.mts ran on the compiled image and public.users exists"
         echo "✓ API smoke test passed"
 
     - name: Run worker-cpu smoke test
