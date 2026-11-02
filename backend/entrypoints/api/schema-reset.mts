@@ -4,6 +4,7 @@
 // connects to a database.
 import { assertStagingSchemaResetAllowed } from './schema-reset-guard.mts'
 
+/* c8 ignore start -- process entrypoint exercised by the infrastructure staging reset task. */
 // The deploy gives the reset task 150 seconds; failing at 120 reports the overrun as an error
 // instead of the platform stopping the task partway through.
 const DEADLINE_MS = 120 * 1000
@@ -23,7 +24,6 @@ const RELATION_KINDS = [
   { relkind: 'p', drop: 'DROP TABLE' },
 ] as const
 
-/* c8 ignore start -- process entrypoint exercised by the infrastructure staging reset task. */
 assertStagingSchemaResetAllowed()
 const deadline = setTimeout(() => {
   throw new Error('staging reset deadline exceeded')
