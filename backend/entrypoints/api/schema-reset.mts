@@ -4,7 +4,9 @@
 // connects to a database.
 import { assertStagingSchemaResetAllowed } from './schema-reset-guard.mts'
 
-const DEADLINE_MS = 20 * 60 * 1000
+// The deploy gives the reset task 150 seconds; failing at 120 reports the overrun as an error
+// instead of the platform stopping the task partway through.
+const DEADLINE_MS = 120 * 1000
 // One DROP statement is one transaction, and it locks every dropped table, its indexes, TOAST
 // relation and the tables its foreign keys touch (roughly 10 to 20 locks per table). PostgreSQL
 // shares max_locks_per_transaction (64 by default) times max_connections (100) lock slots, so one

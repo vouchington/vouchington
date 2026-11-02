@@ -43,15 +43,20 @@ module.exports = [
   {
     name: 'no-data-stores-imports-entrypoint-api',
     comment:
-      'backend/entrypoints/api/ may only import @data-stores/graceful-shutdown and ' +
-      '@data-stores/psql/migrate (ECS migration task entry).',
+      'backend/entrypoints/api/ may only import @data-stores/graceful-shutdown, ' +
+      '@data-stores/psql/migrate (ECS migration task entry) and the @data-stores/psql index ' +
+      '(ECS staging schema reset task entry).',
     severity: 'error',
     from: {
       path: '^backend/entrypoints/api/',
     },
     to: {
       path: '^backend/data-stores/',
-      pathNot: ['^backend/data-stores/graceful-shutdown', '^backend/data-stores/psql/migrate'],
+      pathNot: [
+        '^backend/data-stores/graceful-shutdown',
+        '^backend/data-stores/psql/migrate',
+        '^backend/data-stores/psql/index\\.mts$',
+      ],
     },
   },
 
