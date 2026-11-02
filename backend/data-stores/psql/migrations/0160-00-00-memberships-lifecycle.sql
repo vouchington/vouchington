@@ -1001,14 +1001,17 @@ END $$;
 CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE FUNCTION fn_reject_membership_administrator_refund_request_mutation()
+-- Settled operation children stay append-only until their operation is due for fiscal deletion.
+CREATE FUNCTION fn_reject_membership_operation_child_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' AND fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)
     THEN RETURN OLD; END IF;
-  RAISE EXCEPTION 'administrator refund request is immutable' USING ERRCODE = 'check_violation';
+  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';
 END $$;
-CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation();
+COMMENT ON FUNCTION fn_reject_membership_operation_child_mutation() IS
+  'Rejects every update and every delete except the bounded fiscal-retention delete of a due operation child.';
+CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_operation_child_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_invalid_membership_refund_operation_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
