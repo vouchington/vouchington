@@ -51,6 +51,7 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
   partyCount: number
   submissionCount: number
   artifactCount: number
+  rationaleIds: string[]
 }> {
   const { rows } = await read<{
     live: boolean
@@ -58,6 +59,7 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
     party_count: number
     submission_count: number
     artifact_count: number
+    rationale_ids: string[]
   }>(sql`/* readCopyrightCasePurgeFixture */
     SELECT
       EXISTS (SELECT 1 FROM copyright_notices WHERE id = ${noticeId}::uuid) AS live,
@@ -67,7 +69,13 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
       (SELECT count(*)::int FROM copyright_notice_submissions
         WHERE copyright_notice_id = ${noticeId}::uuid) AS submission_count,
       (SELECT count(*)::int FROM copyright_notice_evidence_artifacts
-        WHERE copyright_notice_id = ${noticeId}::uuid) AS artifact_count`)
+        WHERE copyright_notice_id = ${noticeId}::uuid) AS artifact_count,
+      (SELECT COALESCE(array_agg(rationale.id), '{}') FROM copyright_decision_rationales rationale
+        WHERE rationale.copyright_notice_id = ${noticeId}::uuid
+          OR rationale.copyright_notice_email_intake_receipt_id IN (
+            SELECT link.copyright_notice_email_intake_id
+            FROM copyright_notice_email_intake_notice_links link
+            WHERE link.copyright_notice_id = ${noticeId}::uuid)) AS rationale_ids`)
   const row = rows[0]!
   return {
     live: row.live,
@@ -75,6 +83,7 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
     partyCount: row.party_count,
     submissionCount: row.submission_count,
     artifactCount: row.artifact_count,
+    rationaleIds: row.rationale_ids,
   }
 }
 

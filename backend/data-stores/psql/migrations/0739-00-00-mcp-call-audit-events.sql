@@ -98,11 +98,9 @@ ON copyright_decision_rationales (account_user_id, id)
 WHERE account_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__recorded_by
 ON copyright_decision_rationales (recorded_by_id);
-CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__erased_retention
-ON copyright_decision_rationales (id) WHERE rationale_ciphertext = 'erased';
 CREATE INDEX IF NOT EXISTS idx_copyright_decision_rationales__noncase_retention
 ON copyright_decision_rationales (id)
-WHERE copyright_notice_id IS NULL AND rationale_ciphertext <> 'erased';
+WHERE copyright_notice_id IS NULL;
 
 CREATE OR REPLACE TRIGGER trigger_copyright_decision_rationales_immutable
 BEFORE UPDATE OR DELETE ON copyright_decision_rationales
@@ -183,7 +181,7 @@ CREATE TRIGGER trigger_copyright_email_correspondence_review_active_receipt
 CREATE TYPE security_retention_sources AS ENUM (
   'oauth_events', 'oauth_native_mints', 'oauth_grants', 'oauth_grant_anchors', 'oauth_clients', 'api_keys_revoked',
   'api_keys_expired', 'facebook_friends', 'github_friends', 'x_friends',
-  'copyright_rationales_erased', 'copyright_rationales_attempts'
+  'copyright_rationales_attempts'
 );
 
 CREATE TABLE IF NOT EXISTS security_retention_cleanup_cursors (

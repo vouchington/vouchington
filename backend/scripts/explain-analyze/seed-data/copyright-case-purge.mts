@@ -1,4 +1,6 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
+import { encryptSecret } from '@modules/token-secrets/encryption'
+import { copyrightSubmissionPurpose } from '@services/copyright-notices/submissions'
 import { seedUser } from '../run-support.mts'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
@@ -46,9 +48,79 @@ export async function seedPurgeCases(): Promise<string> {
     SELECT unnest($1::uuid[]), NOW() ON CONFLICT DO NOTHING`,
     [[1, 2, 3].map(index => seedUuid(index, 'c1'))],
   )
+  await seedDueCaseEvidence(dueId)
   await write(
     `/* seedExplainCopyrightPurgeCases:analyze */
     ANALYZE copyright_notices, retained_copyright_notice_identities`,
   )
   return dueId
+}
+
+/** One evidence artifact and one linked email intake, each behind its own registry row. */
+async function seedDueCaseEvidence(dueId: string): Promise<void> {
+  const submissionId = seedUuid(0, 'c4')
+  const artifactObjectId = seedUuid(0, 'c5')
+  const emailObjectId = seedUuid(0, 'c6')
+  const emailId = seedUuid(0, 'c7')
+  const { rows } = await read<{ id: string }>(
+    `/* seedExplainCopyrightPurgeCases:mediaType */ SELECT id::text FROM media_types LIMIT 1`,
+  )
+  const mediaTypeId = rows[0]?.id
+  if (!mediaTypeId) throw new Error('Development seed must include a media type')
+  await write(
+    `/* seedExplainCopyrightPurgeCases:objects */
+    INSERT INTO copyright_notice_storage_objects (id, storage_key)
+    VALUES ($1::uuid, 'explain-purge-artifact'), ($2::uuid, 'explain-purge-email')
+    ON CONFLICT (id) DO NOTHING`,
+    [artifactObjectId, emailObjectId],
+  )
+  await write(
+    `/* seedExplainCopyrightPurgeCases:submission */
+    INSERT INTO copyright_notice_submissions
+      (id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
+    VALUES ($1::uuid, $2::uuid, 'supplement', NOW() - INTERVAL '2700 days', 'staff', $3::text)
+    ON CONFLICT (id) DO NOTHING`,
+    [submissionId, dueId, encryptSecret('{}', copyrightSubmissionPurpose(submissionId))],
+  )
+  await write(
+    `/* seedExplainCopyrightPurgeCases:artifact */
+    INSERT INTO copyright_notice_evidence_artifacts
+      (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
+    VALUES ($1::uuid, $2::uuid, decode(repeat('22', 32), 'hex'), $3::bigint, 1)
+    ON CONFLICT (copyright_notice_submission_id, storage_object_id) DO NOTHING`,
+    [submissionId, artifactObjectId, mediaTypeId],
+  )
+  await write(
+    `/* seedExplainCopyrightPurgeCases:emailReceipt */
+    INSERT INTO copyright_notice_email_intake_receipts
+      (id, amazon_ses_message_id, raw_sha256, raw_storage_key_sha256, raw_byte_size)
+    VALUES ($1::uuid, 'explain-purge-email', decode(repeat('33', 32), 'hex'),
+      sha256(convert_to('explain-purge-email', 'UTF8')), 1) ON CONFLICT (id) DO NOTHING`,
+    [emailId],
+  )
+  await write(
+    `/* seedExplainCopyrightPurgeCases:email */
+    INSERT INTO copyright_notice_email_intakes
+      (id, amazon_ses_message_id, received_at, raw_storage_object_id, raw_sha256,
+       raw_media_type_id, raw_byte_size, spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict,
+       virus_verdict)
+    VALUES ($1::uuid, 'explain-purge-email', NOW() - INTERVAL '2700 days', $2::uuid,
+      decode(repeat('33', 32), 'hex'), $3::bigint, 1,'pass', 'pass', 'pass', 'pass', 'pass')
+    ON CONFLICT (id) DO NOTHING`,
+    [emailId, emailObjectId, mediaTypeId],
+  )
+  await write(
+    `/* seedExplainCopyrightPurgeCases:emailLink */
+    INSERT INTO copyright_notice_email_intake_notice_links
+      (copyright_notice_email_intake_id, copyright_notice_id, link_kind)
+    VALUES ($1::uuid, $2::uuid, 'initial') ON CONFLICT DO NOTHING`,
+    [emailId, dueId],
+  )
+  // Filing the submission and link advanced the case's legal activity to now; the case must stay due.
+  await write(
+    `/* seedExplainCopyrightPurgeCases:dueActivity */
+    UPDATE copyright_notices SET last_legal_activity_at = NOW() - INTERVAL '2700 days'
+    WHERE id = $1::uuid`,
+    [dueId],
+  )
 }

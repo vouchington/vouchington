@@ -1677,7 +1677,6 @@
 - `facebook_friends`
 - `github_friends`
 - `x_friends`
-- `copyright_rationales_erased`
 - `copyright_rationales_attempts`
 
 ## `spending_frequencies`

@@ -21,7 +21,7 @@ describe('security evidence preservation', () => {
       sourcePlan('copyright_rationales_attempts', new Date('2032-02-29T12:34:56.000Z')).cutoffAt,
     ).toEqual(new Date('2026-02-28T12:34:56.000Z'))
     expect(
-      sourcePlan('copyright_rationales_erased', new Date('2030-03-01T12:34:56.000Z')).cutoffAt,
+      sourcePlan('copyright_rationales_attempts', new Date('2030-03-01T12:34:56.000Z')).cutoffAt,
     ).toEqual(new Date('2024-03-01T12:34:56.000Z'))
   })
 

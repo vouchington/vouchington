@@ -95,8 +95,9 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
   registerScenarioContract('copyright-case-purge-evidence-reads', {
     expectations: [],
     seededRows: {
-      copyright_notice_evidence_artifacts: 100,
-      copyright_notice_email_intake_notice_links: 100,
+      copyright_notice_evidence_artifacts: 1,
+      copyright_notice_email_intake_notice_links: 1,
+      copyright_notice_email_intakes: 8,
     },
   })
   await runAndCapture(
@@ -120,14 +121,20 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
         10,
       )
       await transaction.rollback()
-      assert.equal(artifacts.nextSourceIndex, 1)
-      assert.equal(emails.nextSourceIndex, 2)
+      // Each source holds one live registry object, so the page claims it and stays on the source.
+      assert.equal(artifacts.nextSourceIndex, 0)
+      assert.equal(emails.nextSourceIndex, 1)
+      assert.ok(artifacts.hasMore && emails.hasMore)
     },
     undefined,
     ['readCopyrightCaseEvidenceArtifact', 'readCopyrightCaseEmailEvidence'],
   )
 
-  const nested = COPYRIGHT_CASE_PURGE_PHASES.findIndex(([, path]) => path.length > 1)
+  // The first two-edge path under the seeded email link: its ancestor lookup reads the real link.
+  const nested = COPYRIGHT_CASE_PURGE_PHASES.findIndex(
+    ([, path]) =>
+      path.length === 2 && path[0]?.[0] === 'copyright_notice_email_intake_notice_links',
+  )
   const direct = COPYRIGHT_CASE_PURGE_PHASES.findIndex(([, path]) => path.length === 1)
   assert.ok(nested >= 0 && direct >= 0, 'The purge needs a nested and a direct child path')
   registerScenarioContract('copyright-case-purge-ancestor', { expectations: [] })
@@ -141,7 +148,13 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
     undefined,
     'selectCopyrightCasePurgeAncestor',
   )
-  registerScenarioContract('copyright-case-purge-child-verify', { expectations: [] })
+  registerScenarioContract('copyright-case-purge-child-verify', {
+    expectations: [],
+    crossPartition: {
+      copyright_notice_email_correspondence_reviews:
+        'The case key is not the partition key, and the notice id leads the index in every leaf.',
+    },
+  })
   await runAndCapture(
     'copyright-case-purge-child-verify',
     async () => {

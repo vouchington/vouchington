@@ -38,7 +38,7 @@ export function copyrightCasePurgeAdmissionStatement(
     FROM copyright_notices notice
     WHERE notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
       AND notice.last_legal_activity_at <=
-        ((clock_timestamp() AT TIME ZONE 'UTC')
+        ((transaction_timestamp() AT TIME ZONE 'UTC')
           - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC' `.append(
     cursor,
   ).append(sql`

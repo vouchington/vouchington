@@ -16,6 +16,13 @@ import {
 import { createCopyrightFormIntake } from './form-intakes.mts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+import { beginTransaction, read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+import {
+  insertTestCopyrightDecisionRationaleForCase,
+  insertTestCopyrightDecisionRationaleForIntake,
+} from '@voucha/test-helpers/data-stores/psql/copyright-decision-rationale'
+import { testRationaleRetentionEligible } from '@voucha/test-helpers/security-retention'
 
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
 
@@ -87,6 +94,22 @@ describe('initial copyright submission replay during case purge', () => {
   it('replays the original email before evidence deletion and rejects the same SES message after erasure', async () => {
     await setPageSize(20)
     const email = await createRetentionEmailCase()
+    const aged = new Date(Date.UTC(new Date().getUTCFullYear() - 8, 0, 15))
+    const agedCaseRationale = await insertTestCopyrightDecisionRationaleForCase(
+      email.noticeId,
+      email.moderator.id,
+      aged,
+    )
+    await insertTestCopyrightDecisionRationaleForIntake(email.intakeId, email.moderator.id)
+    {
+      // A US case rationale is never retired by the rationale retention sweep; only the purge removes it.
+      await using eligibility = await beginTransaction()
+      expect(await testRationaleRetentionEligible(eligibility, agedCaseRationale, new Date())).toBe(
+        false,
+      )
+    }
+    const before = await readCopyrightCasePurgeFixture(email.noticeId)
+    expect(before.rationaleIds.length).toBeGreaterThanOrEqual(3)
     await settleCopyrightCasePurgeFixtureActions(email.noticeId)
     await publishCopyrightCasePurgeCoverage(email.noticeId)
     for (const key of email.evidenceKeys) bucket.put(key)
@@ -103,5 +126,9 @@ describe('initial copyright submission replay during case purge', () => {
     await expect(createCopyrightEmailIntake(input)).rejects.toBeInstanceOf(
       ErasedCopyrightEmailIntakeReplay,
     )
+    const { rows: remaining } = await read<{ id: string }>(
+      sql`/* readPurgedRationales */ SELECT id FROM copyright_decision_rationales WHERE id = ANY(${before.rationaleIds}::uuid[])`,
+    )
+    expect(remaining).toEqual([])
   }, 30_000)
 })

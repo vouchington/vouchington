@@ -117,12 +117,14 @@ async function runMessagingEligibility(): Promise<void> {
 }
 
 // The staff queue page loads every listed notice's sections with one statement per section. The
-// fixture is the development seed's notices plus one EXPLAIN evidence artifact:
+// fixture is the development seed's notices (chosen through their form intakes, so the purge
+// fixture's old cases never become the listed ids) plus one EXPLAIN evidence artifact:
 // the harness rejects a plan that returns no rows, so the other section statements are not
 // captured here.
 async function runCopyrightStaffCases(): Promise<void> {
   const { rows } = await read<{ id: string }>(
-    `/* findCopyrightStaffCaseBatchNotices */ SELECT id FROM copyright_notices ORDER BY id LIMIT 25`,
+    `/* findCopyrightStaffCaseBatchNotices */ SELECT copyright_notice_id AS id
+     FROM copyright_notice_form_intakes ORDER BY copyright_notice_id LIMIT 25`,
   )
   if (rows.length === 0)
     throw new Error(
@@ -130,6 +132,8 @@ async function runCopyrightStaffCases(): Promise<void> {
     )
   registerScenarioContract('copyright-staff-case-batch', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'copyright_notices', max: 100 }],
+    // The development seed, the review-target breach and the purge fixture leave a handful of intakes.
+    seededRows: { copyright_notice_email_intakes: 8 },
   })
   await runAndCapture(
     'copyright-staff-case-batch',
