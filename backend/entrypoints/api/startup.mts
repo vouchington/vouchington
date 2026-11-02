@@ -24,14 +24,21 @@ export async function startApiServer(
   port: number,
   { exitWithFailure, flushErrorReporting, logError, logListening, reportError }: ApiStartupDeps,
 ): Promise<void> {
-  await assertBackendSessionJwtConfiguration()
-  if (shouldRejectPlaywrightTest())
-    throw new Error('PLAYWRIGHT_TEST must not be enabled in a deployed environment')
-
   function handleServerStartupError(error: Error) {
+    // Console first: a deployed process with Sentry disabled has no other output, so a fatal
+    // boot error must never depend on the reporter to be visible.
     logError(error)
     reportError(error)
     exitAfterErrorReporting(flushErrorReporting, exitWithFailure)
+  }
+
+  try {
+    await assertBackendSessionJwtConfiguration()
+    if (shouldRejectPlaywrightTest())
+      throw new Error('PLAYWRIGHT_TEST must not be enabled in a deployed environment')
+  } catch (err) {
+    handleServerStartupError(err as Error)
+    return
   }
 
   server.once('error', handleServerStartupError)

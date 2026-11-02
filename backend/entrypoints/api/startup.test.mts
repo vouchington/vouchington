@@ -65,8 +65,15 @@ describe('startApiServer', () => {
       const { server } = makeServer()
       const deps = makeStartupDeps()
 
-      await expect(startApiServer(server, 4321, deps)).rejects.toThrow('must be configured')
+      await startApiServer(server, 4321, deps)
+
+      expect(deps.logError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('must be configured') }),
+      )
+      expect(deps.reportError).toHaveBeenCalledOnce()
       expect(server.listen).not.toHaveBeenCalled()
+      await Promise.resolve()
+      expect(deps.exitWithFailure).toHaveBeenCalledOnce()
     },
   )
 
@@ -78,8 +85,14 @@ describe('startApiServer', () => {
       const { server } = makeServer()
       const deps = makeStartupDeps()
 
-      await expect(startApiServer(server, 4321, deps)).rejects.toThrow('PLAYWRIGHT_TEST')
+      await startApiServer(server, 4321, deps)
+
+      expect(deps.logError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('PLAYWRIGHT_TEST') }),
+      )
       expect(server.listen).not.toHaveBeenCalled()
+      await Promise.resolve()
+      expect(deps.exitWithFailure).toHaveBeenCalledOnce()
     },
   )
 
