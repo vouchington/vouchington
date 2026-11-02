@@ -24,7 +24,7 @@ _none_
 
 **Indexes:**
 
-- `idx_retained_copyright_notice_identities_residual`: `CREATE INDEX idx_retained_copyright_notice_identities_residual ON public.retained_copyright_notice_identities USING btree (id) WHERE (case_deleted_at IS NOT NULL)`
+- `idx_retained_copyright_notice_identities__residual`: `CREATE INDEX idx_retained_copyright_notice_identities__residual ON public.retained_copyright_notice_identities USING btree (id) WHERE (case_deleted_at IS NOT NULL)`
 - `retained_copyright_notice_identities_pkey`: `CREATE UNIQUE INDEX retained_copyright_notice_identities_pkey ON public.retained_copyright_notice_identities USING btree (id)`
 
 **Triggers:**

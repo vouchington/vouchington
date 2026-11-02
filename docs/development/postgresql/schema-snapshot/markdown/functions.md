@@ -348,14 +348,6 @@ CREATE OR REPLACE FUNCTION public.fn_lock_oauth_friend_targets(target_provider t
  LANGUAGE plpgsql
 ```
 
-## `fn_mark_retained_copyright_notice_identity_residual`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_mark_retained_copyright_notice_identity_residual()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_membership_grant_remaining_duration(grant_id uuid)`
 
 ```sql
@@ -1122,6 +1114,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_terminal_fact_
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_erased_copyright_decision_rationale`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_erased_copyright_decision_rationale()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_follower_distribution_recipient_bounds`
 
 ```sql
@@ -1816,6 +1816,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_post_moderation_version_retention()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_retained_copyright_notice_identity_residual`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
