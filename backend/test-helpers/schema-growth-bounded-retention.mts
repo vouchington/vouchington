@@ -20,6 +20,22 @@ export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
     'Live subscription and native launch replays remain; unlaunched, failed, ownerless, or provider-expired intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
   ],
   [
+    'membership_operations',
+    'Bounded keyset cleanup deletes every completed operation, with its children first, once its UTC fiscal year is eight years past and no live case or work needs it.',
+  ],
+  [
+    'membership_automatic_refund_receipts',
+    'Deleted with their operation by the bounded fiscal-retention cleanup before the operation row.',
+  ],
+  [
+    'membership_ineligible_purchase_reversal_case_operations',
+    'Deleted with their operation by the bounded fiscal-retention cleanup before the operation row.',
+  ],
+  [
+    'membership_administrator_refund_operation_requests',
+    'Deleted with their operation by the bounded fiscal-retention cleanup before the operation row.',
+  ],
+  [
     'payment_operational_cleanup_cursors',
     'One persisted keyset position per payment operational cleanup stream.',
   ],
