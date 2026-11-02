@@ -49,5 +49,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_territorial_escalations_delete`: `CREATE TRIGGER trigger_copyright_territorial_escalations_delete BEFORE DELETE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_copyright_territorial_escalations_source`: `CREATE TRIGGER trigger_copyright_territorial_escalations_source BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation()`
 - `trigger_copyright_territorial_escalations_terminal`: `CREATE TRIGGER trigger_copyright_territorial_escalations_terminal BEFORE UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()`

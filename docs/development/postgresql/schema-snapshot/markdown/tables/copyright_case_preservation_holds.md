@@ -41,4 +41,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_copyright_case_preservation_holds_delete`: `CREATE TRIGGER trigger_copyright_case_preservation_holds_delete BEFORE DELETE ON public.copyright_case_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_copyright_case_preservation_holds_release`: `CREATE TRIGGER trigger_copyright_case_preservation_holds_release BEFORE UPDATE ON public.copyright_case_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_case_preservation_hold_update()`

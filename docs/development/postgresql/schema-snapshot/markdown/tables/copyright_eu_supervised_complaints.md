@@ -52,4 +52,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_eu_supervised_complaints_delete`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_delete BEFORE DELETE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_copyright_eu_supervised_complaints_terminal`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_terminal BEFORE UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()`
