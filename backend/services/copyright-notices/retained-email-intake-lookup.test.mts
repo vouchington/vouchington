@@ -138,24 +138,32 @@ describe('retained copyright email intake lookup', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
-  it('returns linked case IDs and respects original erasure', async () => {
+  it('keeps linked case IDs and sender matches when a purge leaves the raw pointer NULL', async () => {
     const scene = await createRetentionMinimalCase()
     const address = `claimant-${crypto.randomUUID()}@example.test`
     const linked = await createParsedCopyrightEmailIntake(new Date(), address)
-    const rawOnly = await createParsedCopyrightEmailIntake(new Date(), address)
+    const parsedNoRaw = await createParsedCopyrightEmailIntake(new Date(), address)
+    const senderless = await createUnparsedCopyrightEmailIntake()
     await linkCopyrightEmailIntakeToNotice({
       intakeId: linked.id,
       noticeId: scene.noticeId,
       linkKind: 'initial',
     })
-    await eraseTestCopyrightEmailIntakeOriginal(rawOnly.id)
+    await eraseTestCopyrightEmailIntakeOriginal(parsedNoRaw.id)
+    await eraseTestCopyrightEmailIntakeOriginal(senderless.id)
     const result = await lookupRetainedCopyrightEmailIntakes(scene.moderator, {
       senderAddress: address,
       limit: 100,
-      intakeIds: [linked.id, rawOnly.id],
+      intakeIds: [linked.id, parsedNoRaw.id, senderless.id],
     })
-    expect(result.matches).toEqual([{ id: linked.id, linked_notice_id: scene.noticeId }])
-    expect(result.raw_review_candidates).toEqual([{ id: rawOnly.id, linked_notice_id: null }])
-    expect(result.scanned_count).toBe(2)
+    const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id)
+    expect(result.matches.toSorted(byId)).toEqual(
+      [
+        { id: linked.id, linked_notice_id: scene.noticeId },
+        { id: parsedNoRaw.id, linked_notice_id: null },
+      ].toSorted(byId),
+    )
+    expect(result.raw_review_candidates).toEqual([])
+    expect(result.scanned_count).toBe(3)
   })
 })
