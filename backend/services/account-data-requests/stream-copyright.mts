@@ -15,8 +15,8 @@ type CopyrightExportRows = AsyncGenerator<Record<string, unknown>>
 
 /**
  * Streams the notices the user filed as a signed-in claimant, decrypted in full: legal name,
- * contact, work description, statements, signature and the target references as submitted. Text
- * the retention sweep has erased reads as an explicit erased marker, not as a failure.
+ * contact, work description, statements, signature and the target references as submitted.
+ * Plaintext columns of a case whose evidence was erased read as an explicit erased marker.
  */
 export async function* streamCopyrightFiledNotices(userId: string): CopyrightExportRows {
   for await (const row of createAsyncGeneratorFromCursor<FiledNoticeRow>(

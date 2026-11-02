@@ -3,7 +3,6 @@ import { isUUID } from '@modules/utils'
 import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightSubmissionPurpose } from './submissions.mts'
-import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 
 type CopyrightAppealRecommendationInput = {
   appeal: {
@@ -99,7 +98,6 @@ async function appendCopyrightAppealRecommendation(input: {
     SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model}, ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-appeal:${input.submissionId}`)}
     FROM copyright_notice_submissions submission
     WHERE submission.id = ${input.submissionId}
-      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notices erased
         WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL

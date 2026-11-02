@@ -1,9 +1,7 @@
-import {
-  EXPORT_COPYRIGHT_ERASED_TEXT,
-  decryptExportedCopyrightJson,
-  decryptExportedCopyrightText,
-  erasedExportFields,
-} from './stream-copyright-erased.mts'
+import { decryptSecret } from '@modules/token-secrets'
+
+/** Written into an export cell whose plaintext the case's evidence erasure removed. */
+export const EXPORT_COPYRIGHT_ERASED_TEXT = '[erased by the retention policy]'
 
 export type FiledNoticeRow = {
   notice_id: string
@@ -38,16 +36,15 @@ export type CounterNoticeBody = {
 /**
  * One row of `copyright-notices-filed.csv`. These purposes mirror `copyrightFormSecretPurpose` and
  * `copyrightSubmissionPurpose`; a decrypt failure throws, so a record is never silently omitted.
- * Plaintext is marked erased only when the case has an evidence-erased marker; ciphertext uses
- * the sweep sentinel. Every erased column reads as an explicit marker, and the row
- * keeps the same columns either way, because the CSV header comes from the first row.
+ * Plaintext columns read as an explicit marker once the case has an evidence-erased marker;
+ * ciphertext columns always decrypt. The row keeps the same columns either way, because the CSV
+ * header comes from the first row.
  */
 export function filedNoticeExportRow(row: FiledNoticeRow): Record<string, unknown> {
   const purpose = `copyright-form:${row.idempotency_key}`
-  const body = decryptExportedCopyrightJson<{ claimant_targets?: unknown }>(
-    row.body_ciphertext,
-    purpose,
-  )
+  const body = JSON.parse(decryptSecret(row.body_ciphertext, purpose)) as {
+    claimant_targets?: unknown
+  }
   return {
     notice_id: row.notice_id,
     received_at: row.received_at,
@@ -56,61 +53,37 @@ export function filedNoticeExportRow(row: FiledNoticeRow): Record<string, unknow
       row.erased_by_retention_at !== null
         ? EXPORT_COPYRIGHT_ERASED_TEXT
         : row.claimant_display_name,
-    claimant_contact: decryptExportedCopyrightText(row.claimant_contact_ciphertext, purpose),
+    claimant_contact: decryptSecret(row.claimant_contact_ciphertext, purpose),
     work_description:
       row.erased_by_retention_at !== null ? EXPORT_COPYRIGHT_ERASED_TEXT : row.work_description,
     has_good_faith_belief: row.has_good_faith_belief,
     has_accuracy_authority_under_penalty_of_perjury:
       row.has_accuracy_authority_under_penalty_of_perjury,
-    electronic_signature: decryptExportedCopyrightText(
-      row.electronic_signature_ciphertext,
-      purpose,
-    ),
-    claimant_targets: body ? (body.claimant_targets ?? []) : EXPORT_COPYRIGHT_ERASED_TEXT,
+    electronic_signature: decryptSecret(row.electronic_signature_ciphertext, purpose),
+    claimant_targets: body.claimant_targets ?? [],
   }
 }
 
-/** One row of `copyright-appeals.csv`; `body` is null once the retention sweep erased the appeal. */
-export function appealExportRow(
-  ids: SubmissionIds,
-  body: AppealBody | null,
-): Record<string, unknown> {
-  return {
-    ...ids,
-    ...(body
-      ? { reason: body.reason, target_ids: body.targetIds }
-      : erasedExportFields(['reason', 'target_ids'])),
-  }
+/** One row of `copyright-appeals.csv`. */
+export function appealExportRow(ids: SubmissionIds, body: AppealBody): Record<string, unknown> {
+  return { ...ids, reason: body.reason, target_ids: body.targetIds }
 }
 
-/** One row of `copyright-counter-notices.csv`; `body` is null once the sweep erased the notice. */
+/** One row of `copyright-counter-notices.csv`. */
 export function counterNoticeExportRow(
   ids: SubmissionIds,
-  body: CounterNoticeBody | null,
+  body: CounterNoticeBody,
 ): Record<string, unknown> {
   return {
     ...ids,
-    ...(body
-      ? {
-          name: body.name,
-          address: body.address,
-          telephone: body.telephone,
-          consent_to_federal_jurisdiction: body.consentToFederalJurisdiction,
-          consent_to_service_of_process: body.consentToServiceOfProcess,
-          good_faith_misidentification_under_penalty_of_perjury:
-            body.goodFaithMisidentificationUnderPenaltyOfPerjury,
-          electronic_signature: body.electronicSignature,
-          target_ids: body.targetIds,
-        }
-      : erasedExportFields([
-          'name',
-          'address',
-          'telephone',
-          'consent_to_federal_jurisdiction',
-          'consent_to_service_of_process',
-          'good_faith_misidentification_under_penalty_of_perjury',
-          'electronic_signature',
-          'target_ids',
-        ])),
+    name: body.name,
+    address: body.address,
+    telephone: body.telephone,
+    consent_to_federal_jurisdiction: body.consentToFederalJurisdiction,
+    consent_to_service_of_process: body.consentToServiceOfProcess,
+    good_faith_misidentification_under_penalty_of_perjury:
+      body.goodFaithMisidentificationUnderPenaltyOfPerjury,
+    electronic_signature: body.electronicSignature,
+    target_ids: body.targetIds,
   }
 }

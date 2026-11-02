@@ -6,7 +6,6 @@ import {
   type CopyrightFormGuidance,
   parseCopyrightFormGuidance,
 } from './form-screening-guidance.mts'
-import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 
 type Transaction = Awaited<ReturnType<typeof beginTransaction>>
 export type CopyrightFormScreeningAttempt = {
@@ -146,7 +145,6 @@ export async function completeCopyrightFormScreening(
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
     WHERE intake.id = ${attempt.intakeId}
-      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notices erased
         WHERE erased.id = intake.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL

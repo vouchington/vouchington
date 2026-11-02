@@ -1,8 +1,8 @@
+import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { readClaimantMisuseSummaries } from './claimant-misuse-summary.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
-import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { copyrightFormSecretPurpose } from './form-intakes.mts'
 import { selectStaffTerritorialCases } from './read-models-staff-territorial.mts'
 import { territorialLabels } from './territorial-labels.mts'
@@ -114,7 +114,7 @@ export async function getPendingCopyrightStaffCases(
           jurisdiction: notice.jurisdiction,
           claimant: {
             display_name: notice.claimant_display_name,
-            contact: decryptCopyrightText(notice.claimant_contact_ciphertext, contactPurpose),
+            contact: decryptSecret(notice.claimant_contact_ciphertext, contactPurpose),
             misuse: notice.claimant_user_id ? misuse.get(notice.claimant_user_id)! : null,
           },
           work_description: notice.work_description,

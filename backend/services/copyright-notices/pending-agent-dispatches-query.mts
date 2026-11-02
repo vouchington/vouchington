@@ -121,7 +121,6 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       SELECT 'appeal'::text AS kind, submission.id
       FROM copyright_notice_submissions submission
       WHERE submission.kind = 'appeal'
-        AND submission.body_ciphertext <> 'erased'
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notices erased
           WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
@@ -134,7 +133,6 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
       SELECT 'submission-guidance'::text AS kind, submission.id
       FROM copyright_notice_submissions submission
       WHERE submission.kind IN ('counter_notice', 'court_or_ccb_hold')
-        AND submission.body_ciphertext <> 'erased'
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notices erased
           WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL

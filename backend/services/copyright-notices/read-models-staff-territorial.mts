@@ -1,6 +1,6 @@
+import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { decryptCopyrightText } from './erased-ciphertext.mts'
 import type { CopyrightStaffTerritorialCase } from './read-models-staff-territorial-types.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
@@ -100,14 +100,14 @@ export async function selectStaffTerritorialCases(
         noticeId,
         {
           hosted_use_url: row.hosted_use_url,
-          grounds: decryptCopyrightText(
+          grounds: decryptSecret(
             row.grounds_ciphertext,
             `${labels.noticePurpose}:${row.idempotency_key}:grounds`,
           ),
           notifier: {
             name: row.notifier_name,
             email: row.notifier_email_ciphertext
-              ? decryptCopyrightText(
+              ? decryptSecret(
                   row.notifier_email_ciphertext,
                   `${labels.noticePurpose}:${row.idempotency_key}:notifier_email`,
                 )
@@ -136,11 +136,11 @@ export async function selectStaffTerritorialCases(
                   id: row.decision_id,
                   outcome: row.outcome,
                   decided_at: row.decided_at,
-                  rationale: decryptCopyrightText(
+                  rationale: decryptSecret(
                     row.rationale_ciphertext,
                     `${labels.decisionPurpose}:${noticeId}`,
                   ),
-                  public_explanation: decryptCopyrightText(
+                  public_explanation: decryptSecret(
                     row.public_explanation_ciphertext,
                     `${labels.publicExplanationPurpose}:${noticeId}`,
                   ),

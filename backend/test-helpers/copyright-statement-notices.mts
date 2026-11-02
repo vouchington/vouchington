@@ -1,5 +1,5 @@
 import { createCopyrightPosterNoticesInTransaction } from '../services/copyright-notices/restriction-poster-notices.mts'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { copyrightCorrespondencePurpose } from '../services/copyright-notices/correspondence.mts'
@@ -92,13 +92,6 @@ export async function replayTestCopyrightClaimantDecision(
   await using transaction = await beginTransaction()
   await createCopyrightClaimantDecisionNoticeInTransaction({ noticeId, event }, transaction)
   await transaction.commit()
-}
-
-export async function eraseTestCopyrightStatementBody(intentId: string): Promise<void> {
-  await write(sql`/* eraseTestCopyrightStatementBody */
-    UPDATE copyright_notice_correspondence_messages SET body_ciphertext = 'erased'
-    WHERE id = (SELECT copyright_notice_correspondence_message_id FROM copyright_notice_delivery_work_items WHERE id = ${intentId})
-  `)
 }
 
 /** Seeds an ended-event obligation to exercise each transport without calling external media delivery. */

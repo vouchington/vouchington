@@ -1,8 +1,8 @@
+import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { buildPageInfo } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
-import { decryptCopyrightText } from './erased-ciphertext.mts'
 import {
   complaintWindowRequests,
   getTerritorialInformedWindows,
@@ -159,7 +159,7 @@ function toComplaintPage(
       filed_by: row.filed_by,
       submitted_by_id: row.submitted_by_id,
       received_at: row.received_at,
-      explanation: decryptCopyrightText(
+      explanation: decryptSecret(
         row.explanation_ciphertext,
         `${labels.redressPurpose}:${row.idempotency_key}`,
       ),
@@ -174,7 +174,7 @@ function toComplaintPage(
               id: row.redress_decision_id,
               decided_at: row.redress_decided_at,
               staff_disposition: row.staff_disposition,
-              rationale: decryptCopyrightText(
+              rationale: decryptSecret(
                 row.rationale_ciphertext,
                 `${labels.redressDecisionPurpose}:${row.id}`,
               ),

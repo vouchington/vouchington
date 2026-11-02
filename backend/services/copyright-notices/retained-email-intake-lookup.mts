@@ -11,7 +11,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
-import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 
 /** One bounded scan page, independent of staff decisions and delivery states. */
 export async function lookupRetainedCopyrightEmailIntakes(
@@ -71,7 +70,7 @@ export async function lookupRetainedCopyrightEmailIntakes(
   const matches: Array<{ id: string; linked_notice_id: string | null }> = []
   const rawReviewCandidates: Array<{ id: string; linked_notice_id: string | null }> = []
   for (const intake of page) {
-    const ciphertext = liveCopyrightCiphertext(intake.sender_email_ciphertext)
+    const ciphertext = intake.sender_email_ciphertext
     const reference = { id: intake.id, linked_notice_id: intake.linked_notice_id }
     if (ciphertext === null) {
       // These are candidates, never matches: staff must inspect the retained MIME's From header.

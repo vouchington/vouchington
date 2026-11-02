@@ -5,7 +5,6 @@ import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
-import { COPYRIGHT_ERASED_CIPHERTEXT, liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { stripPersonalDetails } from './contact-redaction.mts'
 
@@ -64,10 +63,8 @@ export async function getCopyrightSubmissionGuidanceSource(
   `)
   const row = rows[0]
   if (!row) return null
-  const ciphertext = liveCopyrightCiphertext(row.body_ciphertext)
-  if (!ciphertext) return null
   const body: unknown = JSON.parse(
-    decryptSecret(ciphertext, copyrightSubmissionPurpose(submissionId)),
+    decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(submissionId)),
   )
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null
   const fields = body as Record<string, unknown>
@@ -171,7 +168,6 @@ export async function appendCopyrightSubmissionGuidance(input: {
       ${encryptSecret(JSON.stringify(input.guidance), `copyright-submission-guidance:${input.submissionId}`)}
     FROM copyright_notice_submissions submission
     WHERE submission.id = ${input.submissionId}
-      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notices erased
         WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
