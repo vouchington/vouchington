@@ -31,7 +31,6 @@ const deadline = setTimeout(() => {
 try {
   const { write, onGracefulShutdown } = await import('@data-stores/psql')
   const { runMigrations, runConfigDriven, runViews } = await import('@data-stores/psql/migrate')
-  // ast-grep-ignore: no-three-sequential-awaits -- the schema must be emptied, dropped, recreated, granted and rebuilt in order
   for (const { relkind, drop } of RELATION_KINDS) {
     for (;;) {
       // oxlint-disable-next-line no-await-in-loop -- each batch is its own transaction and the next listing depends on it
@@ -58,6 +57,7 @@ try {
       )
     }
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- the schema must be dropped, recreated, granted and rebuilt in order
   await write('/* resetStagingSchemaDropPublicSchema */ DROP SCHEMA IF EXISTS public CASCADE')
   await write('/* resetStagingSchemaCreatePublicSchema */ CREATE SCHEMA public')
   await write(
