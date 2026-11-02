@@ -1,5 +1,6 @@
 import { randomInt } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import { testRationaleRetentionEligible } from '../../security-retention.mts'
 import sql from 'sql-template-strings'
 import { afterEach } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '../../dynamic-config.mts'
@@ -144,4 +145,18 @@ export async function readCopyrightCasePurgeFixtureObject(key: string): Promise<
   return rows[0]
     ? { claimed: rows[0].is_deletion_claimed, generation: rows[0].reference_generation }
     : null
+}
+
+/** Whether the rationale retention sweep could retire this rationale as of now. */
+export async function isCopyrightRationaleRetentionEligibleNow(id: string): Promise<boolean> {
+  await using transaction = await beginTransaction()
+  return await testRationaleRetentionEligible(transaction, id, new Date())
+}
+
+/** The subset of these rationale ids that still exist. */
+export async function readExistingCopyrightRationaleIds(ids: string[]): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(
+    sql`/* readExistingCopyrightRationaleIds */ SELECT id FROM copyright_decision_rationales WHERE id = ANY(${ids}::uuid[])`,
+  )
+  return rows.map(row => row.id)
 }
