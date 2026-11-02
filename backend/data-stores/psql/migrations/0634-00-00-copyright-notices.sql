@@ -25,9 +25,9 @@ CREATE TABLE retained_copyright_notice_identities (
 );
 COMMENT ON TABLE retained_copyright_notice_identities IS 'Finite identity owner for case-party links during bounded post-root purge cleanup; it never authorizes a deleted notice.';
 COMMENT ON COLUMN retained_copyright_notice_identities.case_deleted_at IS 'Time the live case row was deleted; set only while party-link cleanup is still pending, so crash recovery reads only these rows.';
-CREATE INDEX idx_retained_copyright_notice_identities_residual
+CREATE INDEX idx_retained_copyright_notice_identities__residual
   ON retained_copyright_notice_identities(id) WHERE case_deleted_at IS NOT NULL;
-CREATE FUNCTION fn_mark_retained_copyright_notice_identity_residual()
+CREATE FUNCTION fn_update_retained_copyright_notice_identity_residual()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE retained_copyright_notice_identities SET case_deleted_at = clock_timestamp() WHERE id = OLD.id;
@@ -86,7 +86,7 @@ CREATE TRIGGER trigger_register_retained_copyright_notice_identity
   EXECUTE FUNCTION fn_register_retained_copyright_notice_identity();
 CREATE TRIGGER trigger_mark_retained_copyright_notice_identity_residual
   AFTER DELETE ON copyright_notices FOR EACH ROW
-  EXECUTE FUNCTION fn_mark_retained_copyright_notice_identity_residual();
+  EXECUTE FUNCTION fn_update_retained_copyright_notice_identity_residual();
 
 -- Keeps hold participants after evidence redaction clears live user references. This finite
 -- relation is owned by the case and is removed with the case at final retention expiry.

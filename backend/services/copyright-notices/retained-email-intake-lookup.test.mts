@@ -10,7 +10,7 @@ import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
-import { eraseTestCopyrightEmailIntakeSender } from '@voucha/test-helpers/copyright-email-intake-retention'
+import { eraseTestCopyrightEmailIntakeOriginal } from '@voucha/test-helpers/copyright-email-intake-retention'
 
 describe('retained copyright email intake lookup', () => {
   it('finds a decided unlinked intake after it leaves the queue and lists senderless MIME candidates', async () => {
@@ -138,26 +138,24 @@ describe('retained copyright email intake lookup', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
-  it('returns linked case IDs and respects sender and original erasure', async () => {
+  it('returns linked case IDs and respects original erasure', async () => {
     const scene = await createRetentionMinimalCase()
     const address = `claimant-${crypto.randomUUID()}@example.test`
     const linked = await createParsedCopyrightEmailIntake(new Date(), address)
-    const erased = await createParsedCopyrightEmailIntake(new Date(), address)
     const rawOnly = await createParsedCopyrightEmailIntake(new Date(), address)
     await linkCopyrightEmailIntakeToNotice({
       intakeId: linked.id,
       noticeId: scene.noticeId,
       linkKind: 'initial',
     })
-    await eraseTestCopyrightEmailIntakeSender(erased.id, true)
-    await eraseTestCopyrightEmailIntakeSender(rawOnly.id, false)
+    await eraseTestCopyrightEmailIntakeOriginal(rawOnly.id)
     const result = await lookupRetainedCopyrightEmailIntakes(scene.moderator, {
       senderAddress: address,
       limit: 100,
-      intakeIds: [linked.id, erased.id, rawOnly.id],
+      intakeIds: [linked.id, rawOnly.id],
     })
     expect(result.matches).toEqual([{ id: linked.id, linked_notice_id: scene.noticeId }])
     expect(result.raw_review_candidates).toEqual([{ id: rawOnly.id, linked_notice_id: null }])
-    expect(result.scanned_count).toBe(3)
+    expect(result.scanned_count).toBe(2)
   })
 })

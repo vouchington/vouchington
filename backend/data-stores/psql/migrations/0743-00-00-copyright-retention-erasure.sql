@@ -46,3 +46,38 @@ BEFORE UPDATE OR DELETE ON copyright_decision_rationales
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation();
 
 COMMENT ON FUNCTION fn_reject_copyright_decision_rationale_mutation() IS 'Permits only case-purge deletion or bounded retention deletion of eligible legal rationale.';
+
+-- A decision attempt can be admitted just as the case erasure worker commits. Hold the same
+-- notice row lock that its FOR UPDATE conflicts with, then read the erasure fact in a fresh
+-- statement. Return NULL for an erased case so its security audit still commits without new
+-- legal ciphertext.
+CREATE OR REPLACE FUNCTION fn_reject_erased_copyright_decision_rationale()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE case_id UUID;
+BEGIN
+  FOR case_id IN
+    SELECT notice.id FROM copyright_notices notice
+    WHERE notice.id = NEW.copyright_notice_id
+      OR notice.id IN (
+        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)
+    ORDER BY notice.id
+  LOOP
+    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM copyright_notices erased
+    WHERE erased.evidence_erased_at IS NOT NULL
+      AND (erased.id = NEW.copyright_notice_id
+        OR erased.id IN (
+          SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
+          WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id))) THEN
+    RETURN NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_copyright_decision_rationales_skip_erased
+BEFORE INSERT ON copyright_decision_rationales
+FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale();
+COMMENT ON FUNCTION fn_reject_erased_copyright_decision_rationale() IS 'Serializes with case erasure and suppresses fresh legal rationale ciphertext once the case records evidence_erased_at, without suppressing the security attempt.';

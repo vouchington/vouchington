@@ -45,7 +45,7 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['idx_retained_copyright_notice_identities_residual'],
+        indexes: ['idx_retained_copyright_notice_identities__residual'],
         noSort: true,
       },
       { kind: 'maxProcessedRows', relation: 'retained_copyright_notice_identities', max: PAGE },
