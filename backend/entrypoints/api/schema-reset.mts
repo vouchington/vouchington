@@ -5,9 +5,10 @@
 import { assertStagingSchemaResetAllowed } from './schema-reset-guard.mts'
 
 /* c8 ignore start -- process entrypoint exercised by the infrastructure staging reset task. */
-// The deploy gives the reset task 150 seconds; failing at 120 reports the overrun as an error
-// instead of the platform stopping the task partway through.
-const DEADLINE_MS = 120 * 1000
+// The deploy waits 240 seconds for the reset task; failing at 180 leaves about 60 seconds for task
+// launch (an estimate, not measured) and reports the overrun as an error instead of the platform
+// stopping the task partway through.
+const DEADLINE_MS = 180 * 1000
 // One DROP statement is one transaction, and it locks every dropped table, its indexes, TOAST
 // relation and the tables its foreign keys touch (roughly 10 to 20 locks per table). PostgreSQL
 // shares max_locks_per_transaction (64 by default) times max_connections (100) lock slots, so one
