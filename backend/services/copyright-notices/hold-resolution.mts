@@ -118,7 +118,7 @@ async function resolveCopyrightLegalHoldInTransaction(
     now: input.resolvedAt,
     query: transaction,
   })
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, input.resolvedAt)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   return {
     resolution,
     intentIds: [...new Set([...restrictionRows.map(row => row.intent_id), ...replayedIds])],

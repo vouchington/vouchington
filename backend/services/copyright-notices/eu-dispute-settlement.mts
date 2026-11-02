@@ -130,7 +130,7 @@ export async function recordEuDisputeSettlementOutcome(
   `)
   const outcome = outcomes[0]
   assert(outcome, 409, 'EU dispute settlement outcome already recorded')
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, input.decidedAt)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return outcome
 }
@@ -176,7 +176,7 @@ export async function recordEuDisputeSettlementImplementation(
     WHERE id = ${outcome.id} RETURNING id, result, implemented_at
   `)
   assert(updated[0], 500, 'EU dispute settlement implementation was not recorded')
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, implementedAt)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return updated[0]
 }

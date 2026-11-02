@@ -26,15 +26,17 @@ export async function lockCopyrightNoticeForLegalWrite(
     : null
 }
 
-/** Called in the transaction that writes a substantive case fact, after the notice lock. */
+/**
+ * Called in the transaction that writes a substantive case fact, after the notice lock. Only the
+ * database clock moves the retention clock; caller-supplied dates must never reach it.
+ */
 export async function advanceCopyrightLastLegalActivityAt(
   query: TransactionQuery,
   locked: LockedCopyrightNotice,
-  at: Date = new Date(),
 ): Promise<void> {
   await query(sql`/* advanceCopyrightLastLegalActivityAt */
     UPDATE copyright_notices
-    SET last_legal_activity_at = GREATEST(last_legal_activity_at, ${at}, clock_timestamp())
+    SET last_legal_activity_at = GREATEST(last_legal_activity_at, clock_timestamp())
     WHERE id = ${locked.noticeId}`)
 }
 

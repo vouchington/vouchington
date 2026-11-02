@@ -126,7 +126,7 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
       ${assessment.id})
   `)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice, input.assessedAt)
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: submissionRows[0].copyright_notice_id,
     intentIds: await selectBlockedCopyrightRestoreIntentIds(

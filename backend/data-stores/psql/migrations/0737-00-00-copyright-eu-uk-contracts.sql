@@ -422,6 +422,9 @@ $$;
 CREATE TRIGGER trigger_copyright_case_preservation_holds_release
   BEFORE UPDATE ON copyright_case_preservation_holds
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_case_preservation_hold_update();
+CREATE TRIGGER trigger_copyright_case_preservation_holds_delete
+  BEFORE DELETE ON copyright_case_preservation_holds
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE INDEX idx_copyright_case_preservation_holds__notice ON copyright_case_preservation_holds(copyright_notice_id, id);
 CREATE INDEX idx_copyright_case_preservation_holds__open ON copyright_case_preservation_holds(copyright_notice_id) WHERE released_at IS NULL;
 CREATE INDEX idx_copyright_case_preservation_holds__placed_by ON copyright_case_preservation_holds(placed_by_id);
@@ -1011,6 +1014,11 @@ CREATE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_TABLE_NAME = 'copyright_eu_supervised_complaints' THEN
+    -- Deleting the recording account may only null its ON DELETE SET NULL reference.
+    IF OLD.recorded_by_id IS NOT NULL AND NEW.recorded_by_id IS NULL
+      AND (to_jsonb(NEW) - 'recorded_by_id') IS NOT DISTINCT FROM (to_jsonb(OLD) - 'recorded_by_id') THEN
+      RETURN NEW;
+    END IF;
     IF OLD.resolved_at IS NOT NULL OR NEW.resolved_at IS NULL
       OR (to_jsonb(NEW) - ARRAY['resolved_at', 'resolved_by_id'])
         IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['resolved_at', 'resolved_by_id']) THEN
@@ -1029,6 +1037,9 @@ $$;
 CREATE TRIGGER trigger_copyright_eu_supervised_complaints_terminal
   BEFORE UPDATE ON copyright_eu_supervised_complaints
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation();
+CREATE TRIGGER trigger_copyright_eu_supervised_complaints_delete
+  BEFORE DELETE ON copyright_eu_supervised_complaints
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_dispute_settlement_referrals
@@ -1042,6 +1053,9 @@ CREATE TRIGGER trigger_copyright_territorial_escalations_source
 CREATE TRIGGER trigger_copyright_territorial_escalations_terminal
   BEFORE UPDATE ON copyright_territorial_escalations
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_terminal_fact_mutation();
+CREATE TRIGGER trigger_copyright_territorial_escalations_delete
+  BEFORE DELETE ON copyright_territorial_escalations
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_transparency_reports
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
