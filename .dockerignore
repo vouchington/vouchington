@@ -25,9 +25,6 @@
 !localization/**
 !dev/localization/
 !dev/localization/**
-!static-code-analysis/
-!static-code-analysis/docker-deploy/
-!static-code-analysis/docker-deploy/**
 !ts-shared/
 !ts-shared/**
 !web/

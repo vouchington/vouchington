@@ -21,6 +21,24 @@ describe('selectExecutableEntrypoint', () => {
     })
   })
 
+  it.each(['migrate.mts', 'valkey-admin.mts'])(
+    'selects %s from the exact ECS command override of the infrastructure one-off tasks',
+    name => {
+      const argv = [
+        'bun',
+        '/app/api',
+        '--experimental-strip-types',
+        '--disable-warning=ExperimentalWarning',
+        name,
+        'diagnose',
+      ]
+      expect(selectExecutableEntrypoint(argv, entrypoints, 'serve.mts')).toEqual({
+        entrypoint: name,
+        argv: ['bun', '/app/api', 'diagnose'],
+      })
+    },
+  )
+
   it('ignores an entrypoint name in the executable path positions', () => {
     const argv = ['migrate.mts', 'serve.mts', 'valkey-admin.mts', 'diagnose']
     expect(selectExecutableEntrypoint(argv, entrypoints, 'serve.mts')).toEqual({

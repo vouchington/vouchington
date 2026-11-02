@@ -77,9 +77,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       'build-backend',
     )
 
-    expect(buildBackendFilter).toContain(
-      "'static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts'",
-    )
+    expect(buildBackendFilter).toContain("'backend/**'")
   })
 
   it('publishes separate trusted and dependency-bot test contexts', () => {
