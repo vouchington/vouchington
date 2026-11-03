@@ -134,12 +134,13 @@ describe('abandonIdentityVerificationProviderSession', () => {
   it('leaves a consumed attempt untouched', async () => {
     const { checkoutSessionId } = await attachedAttempt()
     await beginIdentityVerificationProviderSession(checkoutSessionId)
-    await consumeIdentityVerificationAttempt(checkoutSessionId, 'vs_abandon_consumed')
+    const providerSessionId = `vs_${v7()}`
+    await consumeIdentityVerificationAttempt(checkoutSessionId, providerSessionId)
 
     await abandonIdentityVerificationProviderSession(checkoutSessionId)
 
     const state = await lifecycleOf(checkoutSessionId)
-    expect(state).toMatchObject({ provider_session_id: 'vs_abandon_consumed' })
+    expect(state).toMatchObject({ provider_session_id: providerSessionId })
     expect(state!.provider_creation_started_at).toBeInstanceOf(Date)
     expect(state!.consumed_at).toBeInstanceOf(Date)
   })

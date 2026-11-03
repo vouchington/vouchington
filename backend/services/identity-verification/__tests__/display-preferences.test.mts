@@ -81,7 +81,9 @@ describe('updateDisplayPreferences', () => {
     'stores the %s public name display',
     async value => {
       const user = await createVerifiedUser()
-      await setUserVerificationFields(user.id, { publicVerifiedNameDisplay: 'full_name' })
+      await setUserVerificationFields(user.id, {
+        publicVerifiedNameDisplay: value === 'hidden' ? 'full_name' : 'hidden',
+      })
       vi.spyOn(invalidate, 'users').mockResolvedValue()
 
       await updateDisplayPreferences(user.id, { public_verified_name_display: value })
