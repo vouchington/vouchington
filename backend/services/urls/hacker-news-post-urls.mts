@@ -4,8 +4,10 @@ import { HACKER_NEWS_RELATED_URLS_PER_POST_MAX } from './hacker-news-references-
 
 /**
  * The URLs a post can show Hacker News references for: its own link URL plus its live,
- * positively voted related URLs (the same predicate `getPostIdsByUrlIds` uses), at most
- * HACKER_NEWS_RELATED_URLS_PER_POST_MAX related URLs per post, best first. One read.
+ * positively voted related URLs, at most HACKER_NEWS_RELATED_URLS_PER_POST_MAX related URLs
+ * per post, best first. The reference filter (`buildPostHasHackerNewsReferences`) accepts any
+ * positively voted related URL, so a post can match it yet show nothing when its only
+ * referenced URL ranks below that cap. One read.
  */
 export async function getHackerNewsUrlIdsByPostIds(
   postIds: readonly string[],
