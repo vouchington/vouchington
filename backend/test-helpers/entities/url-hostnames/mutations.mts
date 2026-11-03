@@ -116,3 +116,12 @@ function buildInsertUrlHostnameQuery(
     .append(sql`)`)
   return returningId ? query.append(sql` RETURNING id`) : query
 }
+
+export async function setTestHostnameRequestsPerSecondLimit(
+  hostnameId: string,
+  limit: number,
+): Promise<void> {
+  await write(sql`/* setTestHostnameRequestsPerSecondLimit */
+    UPDATE url_hostnames SET requests_per_second_limit = ${limit} WHERE id = ${hostnameId}
+  `)
+}

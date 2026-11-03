@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { getUrlById } from '@services/urls/get'
+import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { dispatchReferralLinkCrawls } from './dispatch.mts'
 
 describe('referral dispatcher hostname flags', () => {
@@ -33,22 +34,12 @@ describe('referral dispatcher hostname flags', () => {
       if (!url) throw new Error('Expected owned URL')
       if (flag === 'blocked') await updateUrlHostnameBlocked(url.hostname.id, true)
       else await updateUrlHostnameCrawlable(url.hostname.id, false)
-      const enqueue = vi
-        .fn<
-          NonNullable<
-            NonNullable<
-              Parameters<typeof dispatchReferralLinkCrawls>[0]
-            >['enqueueBulkCrawlReferralLinks']
-          >
-        >()
-        .mockResolvedValue(undefined)
-      const result = await dispatchReferralLinkCrawls({
-        referralLinkIds: [link.id],
-        computeHostnameRateLimitMs: async () => 1,
-        enqueueBulkCrawlReferralLinks: enqueue,
-      })
+      const addBulk = vi.spyOn(crawlReferralLinksQueue, 'addBulk')
+      const result = await dispatchReferralLinkCrawls({ referralLinkIds: [link.id] }).finally(() =>
+        addBulk.mockRestore(),
+      )
       expect(result.count).toBe(0)
-      expect(enqueue).not.toHaveBeenCalled()
+      expect(addBulk).not.toHaveBeenCalled()
     },
   )
 })

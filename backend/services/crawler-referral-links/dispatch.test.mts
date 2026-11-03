@@ -1,4 +1,4 @@
-import { it, beforeAll, describe } from 'vitest'
+import { it, beforeAll, afterAll, describe, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import {
   createTestUser,
@@ -10,25 +10,47 @@ import {
   setReferralLinkLastCrawlSuccessAtRecent,
   softDeleteReferralLink,
 } from '@voucha/test-helpers/entities/referral-links'
-import { setHostnameAsValidForCrawlSearch } from '@voucha/test-helpers/entities/url-hostnames'
+import {
+  setHostnameAsValidForCrawlSearch,
+  setTestHostnameRequestsPerSecondLimit,
+} from '@voucha/test-helpers/entities/url-hostnames'
+import {
+  deleteTestRobotsTxtCache,
+  setTestRobotsTxtCache,
+} from '@voucha/test-helpers/entities/dispatch'
+import {
+  assertFailedAdmission,
+  failOwnedBulkAdmission,
+} from '@voucha/test-helpers/referral-dispatch-failures'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { deactivateUserReferralLink } from '@services/user-referral-program-links/activate'
 import { getUrlById } from '@services/urls/get'
 import type { PrivateUser } from '@services/users/types'
 import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from './dispatch.mts'
 import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
-import { CRAWLER_USER_AGENT } from '@voucha/config'
 import { getDateFromUUIDv7 } from '@modules/utils'
 
+// Only the crawler's product token gets 8s; the wildcard group would give 3s.
+const ROBOTS_CRAWL_DELAY_8S =
+  'User-agent: voucha-bot\nCrawl-delay: 8\n\nUser-agent: *\nAllow: /\nCrawl-delay: 3'
+const ROBOTS_RATE_LIMIT_MS = 8_000
+
 describe('dispatch', () => {
+  const seededHostnames: string[] = []
   let user: PrivateUser
   let referralProgramId: string
   let testHostname: string
+
+  async function seedRobots(hostname: string) {
+    seededHostnames.push(hostname)
+    await setTestRobotsTxtCache(hostname, ROBOTS_CRAWL_DELAY_8S)
+  }
 
   beforeAll(async () => {
     user = await createTestUser()
     const randomSuffix = Math.random().toString(36).slice(2, 10)
     testHostname = `dispatch-ref-${randomSuffix}.com`
+    await seedRobots(testHostname)
 
     const fixture = await createReferralProgramFixture({
       createdById: user.id,
@@ -49,6 +71,8 @@ describe('dispatch', () => {
       await setHostnameAsValidForCrawlSearch(url.hostname.id)
     }
   })
+
+  afterAll(() => deleteTestRobotsTxtCache(...seededHostnames))
 
   function createActiveLink(suffix: string) {
     return createUserReferralLink(user, WEB_PROVENANCE, {
@@ -72,16 +96,9 @@ describe('dispatch', () => {
     const url = await getUrlById(first.url_id)
     assert.ok(url)
     const ownedIds = [first.id, second.id, recent.id, deleted.id, deactivated.id]
-    let rateLimitCalls = 0
-    const rateLimitMs = 731
-
     const result = await dispatchReferralLinkCrawls({
       referralLinkIds: ownedIds,
       now: getDateFromUUIDv7(ownedIds.toSorted().at(-1)!)!,
-      computeHostnameRateLimitMs: async () => {
-        rateLimitCalls += 1
-        return rateLimitMs
-      },
     })
 
     assert.deepEqual(result, { count: 2, hasMore: false })
@@ -103,10 +120,9 @@ describe('dispatch', () => {
       [first, second].map(() => ({
         key: `crawl:${url.hostname.id}`,
         concurrency: 1,
-        rateLimit: { max: 1, duration: rateLimitMs },
+        rateLimit: { max: 1, duration: ROBOTS_RATE_LIMIT_MS },
       })),
     )
-    assert.equal(rateLimitCalls, 1)
   })
 
   it('scopes a scheduled enqueue failure to the selected referral link', async () => {
@@ -128,6 +144,7 @@ describe('dispatch', () => {
     await setHostnameAsValidForCrawlSearch(unrelatedUrl.hostname.id)
 
     const targetHostname = `dispatch-target-${suffix}.com`
+    await seedRobots(targetHostname)
     const targetFixture = await createReferralProgramFixture({
       createdById: user.id,
       randomSuffix: `target${suffix}`,
@@ -148,40 +165,22 @@ describe('dispatch', () => {
     const matchingJobsBefore = jobsBefore.filter(
       job => (job.data as { linkId?: string } | null | undefined)?.linkId === targetLink.id,
     )
-    let computeCount = 0
-    let enqueueCount = 0
-    const rateLimitMs = 731
+    const failure = failOwnedBulkAdmission(targetLink.id, enqueueError)
 
-    await assert.rejects(
-      dispatchReferralLinkCrawls({
-        referralLinkIds: [targetLink.id],
-        computeHostnameRateLimitMs: async (hostname, requestsPerSecondLimit, userAgent) => {
-          computeCount += 1
-          assert.equal(hostname, targetHostname)
-          assert.equal(requestsPerSecondLimit, 1)
-          assert.equal(userAgent, CRAWLER_USER_AGENT)
-          return rateLimitMs
-        },
-        enqueueBulkCrawlReferralLinks: async (entries, options) => {
-          enqueueCount += 1
-          assert.deepEqual(entries, [
-            {
-              linkId: targetLink.id,
-              urlId: targetLink.url_id,
-              referralProgramId: targetFixture.referralProgramId,
-            },
-          ])
-          assert.deepEqual(options, {
-            hostnameId: targetUrl.hostname.id,
-            rateLimitMs,
-          })
-          throw enqueueError
-        },
-      }),
-      enqueueError,
-    )
-    assert.equal(computeCount, 1)
-    assert.equal(enqueueCount, 1)
+    try {
+      await assert.rejects(
+        dispatchReferralLinkCrawls({ referralLinkIds: [targetLink.id] }),
+        enqueueError,
+      )
+    } finally {
+      failure.restore()
+    }
+    assertFailedAdmission(failure.owned, ROBOTS_RATE_LIMIT_MS, {
+      linkId: targetLink.id,
+      urlId: targetLink.url_id,
+      referralProgramId: targetFixture.referralProgramId,
+      hostnameId: targetUrl.hostname.id,
+    })
 
     const jobsAfter = await readAllQueueJobs(crawlReferralLinksQueue)
     const matchingJobsAfter = jobsAfter.filter(
@@ -191,27 +190,55 @@ describe('dispatch', () => {
   })
 
   it('returns zero without dispatching when the referral link selection is empty', async () => {
-    let computeCount = 0
-    let enqueueCount = 0
+    const addBulk = vi.spyOn(crawlReferralLinksQueue, 'addBulk')
 
-    const dispatchedCount = await dispatchReferralLinkCrawls({
-      referralLinkIds: [],
-      computeHostnameRateLimitMs: async () => {
-        computeCount += 1
-        throw new Error('rate limit computation must not run for an empty selection')
-      },
-      enqueueBulkCrawlReferralLinks: async () => {
-        enqueueCount += 1
-        throw new Error('enqueue must not run for an empty selection')
-      },
-    })
-
-    assert.deepEqual(dispatchedCount, { count: 0, hasMore: false })
-    assert.equal(computeCount, 0)
-    assert.equal(enqueueCount, 0)
+    try {
+      assert.deepEqual(await dispatchReferralLinkCrawls({ referralLinkIds: [] }), {
+        count: 0,
+        hasMore: false,
+      })
+      assert.equal(addBulk.mock.calls.length, 0)
+    } finally {
+      addBulk.mockRestore()
+    }
   })
 
-  it('uses a deterministic rate limit for a URL-specific enqueue failure', async () => {
+  it('applies the hostname requests_per_second_limit to the enqueue rate limit', async () => {
+    const suffix = Math.random().toString(36).slice(2, 8)
+    const hostname = `dispatch-rps-${suffix}.com`
+    seededHostnames.push(hostname)
+    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+    const fixture = await createReferralProgramFixture({
+      createdById: user.id,
+      randomSuffix: `rps${suffix}`,
+      hostname,
+      pathname: '/ref/%',
+    })
+    const link = await createUserReferralLink(user, WEB_PROVENANCE, {
+      user_id: user.id,
+      referral_program_id: fixture.referralProgramId,
+      url: `https://${hostname}/ref/rps`,
+    })
+    const url = await getUrlById(link.url_id)
+    assert.ok(url)
+    await setHostnameAsValidForCrawlSearch(url.hostname.id)
+    await setTestHostnameRequestsPerSecondLimit(url.hostname.id, 2)
+
+    assert.deepEqual(await dispatchReferralLinkCrawls({ referralLinkIds: [link.id] }), {
+      count: 1,
+      hasMore: false,
+    })
+
+    const jobs = (await readAllQueueJobs(crawlReferralLinksQueue)).filter(
+      job => (job.data as { linkId?: string } | null | undefined)?.linkId === link.id,
+    )
+    assert.deepEqual(
+      jobs.map(job => job.opts.ordering?.rateLimit),
+      [{ max: 1, duration: 500 }],
+    )
+  })
+
+  it('surfaces a URL-specific enqueue failure with the robots Crawl-delay rate limit', async () => {
     const suffix = Math.random().toString(36).slice(2, 8)
     const link = await createActiveLink(`enqueue-failure-${suffix}`)
     const url = await getUrlById(link.url_id)
@@ -222,39 +249,19 @@ describe('dispatch', () => {
       job => (job.data as { linkId?: string } | null | undefined)?.linkId === link.id,
     )
     const enqueueError = new Error(`sentinel enqueue failure ${suffix}`)
-    let computeCount = 0
-    let enqueueCount = 0
-    const rateLimitMs = 947
+    const failure = failOwnedBulkAdmission(link.id, enqueueError)
 
-    await assert.rejects(
-      enqueueReferralLinkCrawlsForUrlId(link.url_id, {
-        computeHostnameRateLimitMs: async (hostname, requestsPerSecondLimit, userAgent) => {
-          computeCount += 1
-          assert.equal(hostname, testHostname)
-          assert.equal(requestsPerSecondLimit, 1)
-          assert.equal(userAgent, CRAWLER_USER_AGENT)
-          return rateLimitMs
-        },
-        enqueueBulkCrawlReferralLinks: async (entries, options) => {
-          enqueueCount += 1
-          assert.deepEqual(entries, [
-            {
-              linkId: link.id,
-              urlId: link.url_id,
-              referralProgramId,
-            },
-          ])
-          assert.deepEqual(options, {
-            hostnameId: url.hostname.id,
-            rateLimitMs,
-          })
-          throw enqueueError
-        },
-      }),
-      enqueueError,
-    )
-    assert.equal(computeCount, 1)
-    assert.equal(enqueueCount, 1)
+    try {
+      await assert.rejects(enqueueReferralLinkCrawlsForUrlId(link.url_id), enqueueError)
+    } finally {
+      failure.restore()
+    }
+    assertFailedAdmission(failure.owned, ROBOTS_RATE_LIMIT_MS, {
+      linkId: link.id,
+      urlId: link.url_id,
+      referralProgramId,
+      hostnameId: url.hostname.id,
+    })
 
     const jobsAfter = await readAllQueueJobs(crawlReferralLinksQueue)
     const matchingJobsAfter = jobsAfter.filter(

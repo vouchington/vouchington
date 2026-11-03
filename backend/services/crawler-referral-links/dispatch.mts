@@ -6,11 +6,7 @@ import {
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueByHostname } from './dispatch-hostnames.mts'
-import { computeHostnameRateLimitMs } from '@services/urls-domains-robots'
-import {
-  enqueueBulkCrawlReferralLinks,
-  enqueueCrawlReferralLinksDispatcher,
-} from '@queues/crawl-referral-links/enqueues'
+import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
 
 import { getMaxUUIDv7ForDate } from '@modules/utils'
 import type {
@@ -18,12 +14,7 @@ import type {
   ReferralCrawlDispatchCursor,
 } from '@queues/crawl-referral-links/types'
 
-type EnqueueBulkCrawlReferralLinks = typeof enqueueBulkCrawlReferralLinks
-type ComputeHostnameRateLimitMs = typeof computeHostnameRateLimitMs
-
 type ReferralLinkDispatchDependencies = {
-  enqueueBulkCrawlReferralLinks?: EnqueueBulkCrawlReferralLinks
-  computeHostnameRateLimitMs?: ComputeHostnameRateLimitMs
   now?: Date
 }
 
@@ -106,12 +97,7 @@ export async function dispatchReferralLinkCrawls(
         row => row.host_eligible && (options.urlId || row.retry_eligible),
       )
       total += eligible.length
-      await enqueueByHostname(eligible, {
-        enqueueBulkCrawlReferralLinks:
-          options.enqueueBulkCrawlReferralLinks ?? enqueueBulkCrawlReferralLinks,
-        computeHostnameRateLimitMs:
-          options.computeHostnameRateLimitMs ?? computeHostnameRateLimitMs,
-      })
+      await enqueueByHostname(eligible)
       const last = rows.at(-1)!
       await options.saveProgress?.({
         ...scope,

@@ -3,11 +3,6 @@ import onError from '@modules/on-error'
 import { enqueueBulkCrawlReferralLinks } from '@queues/crawl-referral-links/enqueues'
 import { computeHostnameRateLimitMs } from '@services/urls-domains-robots'
 
-type ReferralLinkDispatchDependencies = {
-  enqueueBulkCrawlReferralLinks: typeof enqueueBulkCrawlReferralLinks
-  computeHostnameRateLimitMs: typeof computeHostnameRateLimitMs
-}
-
 export async function enqueueByHostname(
   rows: {
     link_id: string
@@ -17,7 +12,6 @@ export async function enqueueByHostname(
     hostname: string
     requests_per_second_limit: number | null
   }[],
-  dependencies: Required<ReferralLinkDispatchDependencies>,
 ): Promise<void> {
   const byHostname = new Map<
     string,
@@ -44,7 +38,7 @@ export async function enqueueByHostname(
     let rateLimitMs: number | undefined
     try {
       // oxlint-disable-next-line no-await-in-loop -- serialize robots checks to preserve provider backpressure across hostnames
-      rateLimitMs = await dependencies.computeHostnameRateLimitMs(
+      rateLimitMs = await computeHostnameRateLimitMs(
         hostname,
         requestsPerSecondLimit,
         CRAWLER_USER_AGENT,
@@ -53,6 +47,6 @@ export async function enqueueByHostname(
       onError(err instanceof Error ? err : new Error(String(err)))
     }
     // oxlint-disable-next-line no-await-in-loop -- awaited dispatch preserves hostname queue backpressure
-    await dependencies.enqueueBulkCrawlReferralLinks(entries, { hostnameId, rateLimitMs })
+    await enqueueBulkCrawlReferralLinks(entries, { hostnameId, rateLimitMs })
   }
 }
