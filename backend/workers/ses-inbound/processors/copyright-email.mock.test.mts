@@ -206,6 +206,29 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     })
   })
 
+  it('keeps an email whose sender name exceeds the intake limit as a failed intake', async () => {
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
+    const data = messageIdentity()
+    const raw = noticeEmail({ messageId: `<${data.sesMessageId}@example.test>` }).replace(
+      'From: Copyright claimant <claimant@example.test>',
+      `From: ${'a'.repeat(501)} <claimant@example.test>`,
+    )
+    const s3Calls = stubSesInboundS3ForTest({ objects: { [data.objectKey]: raw } })
+    const enqueuedIntakeIds = watchIntakeEnqueues()
+
+    await processSesInboundEmail(data)
+
+    const intakeId = (await readCopyrightEmailIntakeIdForTest(data.sesMessageId))!
+    expect(await readCopyrightEmailParseFailureForTest(intakeId, data.sesMessageId)).toBe(
+      'The original email could not be parsed as RFC 5322 MIME.',
+    )
+    expect(enqueuedIntakeIds()).toEqual([])
+    expect(s3Calls.at(-1)).toEqual({
+      command: 'DeleteObjectCommand',
+      input: { Bucket: 'ses-inbound-test', Key: data.objectKey },
+    })
+  })
+
   it('keeps malformed MIME as a staff-visible failed intake before cleanup', async () => {
     vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     const data = messageIdentity()

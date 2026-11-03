@@ -1,7 +1,9 @@
+import dns from 'node:dns'
+import net from 'node:net'
 import { onTestFinished, vi } from 'vitest'
+import undici from 'undici'
 import { verifySignature } from '@modules/http-signatures'
 import { createRemoteActorFixture } from './ap-inbox-activity-fixtures.mts'
-import * as activityPubDelivery from '../services/activitypub-delivery/index.mts'
 import {
   getEntityRelationMetadataOrThrow,
   upsertEntityRelation,
@@ -15,30 +17,43 @@ export type CapturedActivityPubRequest = {
 }
 
 /**
- * Replaces only the outbound socket under the real `deliverActivityToInbox`: the SSRF lookup
- * resolves to a public address and the POST is recorded instead of sent. Signing, error
+ * Replaces only the network under the real `deliverActivityToInbox`: DNS answers a public address
+ * for non-IP hostnames and the POST is recorded instead of sent. The SSRF guard, signing, error
  * classification and Retry-After parsing still run in production code. Restored when the test ends.
  */
 export function stubActivityPubSocketForTest(
   respond: () => Response = () => new Response(null, { status: 202 }),
 ): CapturedActivityPubRequest[] {
   const captured: CapturedActivityPubRequest[] = []
-  const deliver = activityPubDelivery.deliverActivityToInbox
-  const spy = vi.spyOn(activityPubDelivery, 'deliverActivityToInbox').mockImplementation(input =>
-    deliver(input, {
-      validateUrl: async () => [{ address: '93.184.216.34', family: 4 }],
-      fetch: vi.fn<VitestLooseMock>(async (url: string, init: Record<string, unknown>) => {
-        captured.push({
-          url,
-          body: init.body as string,
-          headers: init.headers as Record<string, string>,
-        })
-        return respond()
-      }),
-    }),
-  )
-  onTestFinished(() => spy.mockRestore())
+  stubPublicDnsForTest()
+  const originalFetch = undici.fetch
+  const fetchSpy = vi.spyOn(undici, 'fetch').mockImplementation((async (
+    url: string,
+    init?: Record<string, unknown>,
+  ) => {
+    if (init?.method !== 'POST') return originalFetch(url, init as never)
+    captured.push({
+      url,
+      body: init.body as string,
+      headers: init.headers as Record<string, string>,
+    })
+    return respond()
+  }) as never)
+  onTestFinished(() => fetchSpy.mockRestore())
   return captured
+}
+
+/** Resolves every non-IP hostname to a public address; real IP literals skip DNS in the guard. */
+export function stubPublicDnsForTest(): void {
+  const lookup = dns.promises.lookup as (hostname: string, options?: unknown) => Promise<unknown>
+  const spy = vi.spyOn(dns.promises, 'lookup').mockImplementation((async (
+    hostname: string,
+    options?: unknown,
+  ) => {
+    if (net.isIP(hostname)) return lookup.call(dns.promises, hostname, options)
+    return [{ address: '93.184.216.34', family: 4 }]
+  }) as never)
+  onTestFinished(() => spy.mockRestore())
 }
 
 /** Remote actors that follow `sourceUserId`, created through the real inbound relation path. */

@@ -1,45 +1,29 @@
-import type {
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
-} from '@services/copyright-notices'
+import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import { ErasedCopyrightEmailIntakeReplay } from '@services/copyright-notices/email-intakes'
-import type { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
+import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import type { SesInboundProcessJobData } from '@ts-shared/ses-inbound-contract'
-import { SesInboundTerminalError, type parseSesInboundMime } from './mime.mts'
-import type {
+import { SesInboundTerminalError, parseSesInboundMime } from './mime.mts'
+import {
   copySesInboundObjectToCopyrightEvidence,
   loadSesInboundObjectAndHash,
   loadSesInboundObjectVersion,
 } from './s3.mts'
 import { copyrightEvidenceEmailKey as evidenceKey } from './evidence-key.mts'
 
-export type CopyrightEmailDependencies = {
-  copySesInboundObjectToCopyrightEvidence: typeof copySesInboundObjectToCopyrightEvidence
-  createCopyrightEmailIntake: typeof createCopyrightEmailIntake
-  enqueueCopyrightEmailIntake: typeof enqueueCopyrightEmailIntake
-  loadSesInboundObjectAndHash: typeof loadSesInboundObjectAndHash
-  loadSesInboundObjectVersion: typeof loadSesInboundObjectVersion
-  parseSesInboundMime: typeof parseSesInboundMime
-  recordCopyrightEmailParse: typeof recordCopyrightEmailParse
-}
-
-export async function processCopyrightInboundEmail(
-  data: SesInboundProcessJobData,
-  dependencies: CopyrightEmailDependencies,
-): Promise<void> {
+export async function processCopyrightInboundEmail(data: SesInboundProcessJobData): Promise<void> {
   let preserved: Awaited<ReturnType<typeof preserveCopyrightEvidence>>
   try {
-    preserved = await preserveCopyrightEvidence(data, dependencies)
+    preserved = await preserveCopyrightEvidence(data)
   } catch (err) {
     if (err instanceof ErasedCopyrightEmailIntakeReplay) return
     throw err
   }
   const { intake, sourceIdentity } = preserved
   try {
-    const email = await dependencies.parseSesInboundMime(
-      await dependencies.loadSesInboundObjectVersion(data.objectKey, sourceIdentity),
+    const email = await parseSesInboundMime(
+      await loadSesInboundObjectVersion(data.objectKey, sourceIdentity),
     )
-    await dependencies.recordCopyrightEmailParse(intake, {
+    await recordCopyrightEmailParse(intake, {
       status: 'succeeded',
       fromEmail: email.fromEmail,
       ...(email.fromName ? { fromName: email.fromName } : {}),
@@ -64,7 +48,7 @@ export async function processCopyrightInboundEmail(
     if (err instanceof ErasedCopyrightEmailIntakeReplay) return
     if (!(err instanceof SesInboundTerminalError) && !isUntrustedShapeError(err)) throw err
     try {
-      await dependencies.recordCopyrightEmailParse(intake, {
+      await recordCopyrightEmailParse(intake, {
         status: 'failed',
         error: 'The original email could not be parsed as RFC 5322 MIME.',
       })
@@ -74,22 +58,20 @@ export async function processCopyrightInboundEmail(
     }
     return
   }
-  await dependencies.enqueueCopyrightEmailIntake(intake.id)
+  await enqueueCopyrightEmailIntake(intake.id)
 }
 
-async function preserveCopyrightEvidence(
-  data: SesInboundProcessJobData,
-  dependencies: CopyrightEmailDependencies,
-): Promise<{
+async function preserveCopyrightEvidence(data: SesInboundProcessJobData): Promise<{
   intake: Awaited<ReturnType<typeof createCopyrightEmailIntake>>['intake']
   sourceIdentity: Awaited<ReturnType<typeof loadSesInboundObjectAndHash>>['sourceIdentity']
 }> {
-  const { rawMime, digest, receivedAt, sourceIdentity } =
-    await dependencies.loadSesInboundObjectAndHash(data.objectKey)
+  const { rawMime, digest, receivedAt, sourceIdentity } = await loadSesInboundObjectAndHash(
+    data.objectKey,
+  )
   rawMime.resume()
   const raw = await digest
   const rawStorageKey = evidenceKey(data.sesMessageId, raw.sha256)
-  const { intake } = await dependencies.createCopyrightEmailIntake({
+  const { intake } = await createCopyrightEmailIntake({
     sesMessageId: data.sesMessageId,
     receivedAt,
     rawStorageKey,
@@ -98,7 +80,7 @@ async function preserveCopyrightEvidence(
     rawByteSize: raw.byteSize,
     sesVerdicts: raw.sesVerdicts,
     preserveRawEvidence: () =>
-      dependencies.copySesInboundObjectToCopyrightEvidence(
+      copySesInboundObjectToCopyrightEvidence(
         data.objectKey,
         data.sesMessageId,
         raw.sha256,

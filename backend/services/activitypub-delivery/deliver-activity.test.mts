@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { UnsafeUrlError } from 'ssrf-guard/node'
+import dns from 'node:dns'
+import undici from 'undici'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { deliverActivityToInbox } from './deliver-activity.mts'
 
@@ -23,35 +24,33 @@ function responseWithRejectedCancellation(error: Error): Response {
 }
 
 describe('deliverActivityToInbox', () => {
-  const validateUrl = vi.fn<VitestLooseMock>()
-  const fetch = vi.fn<VitestLooseMock>()
+  let lookup: MockInstance<typeof dns.promises.lookup>
+  let fetch: MockInstance<typeof undici.fetch>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    validateUrl.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
-    fetch.mockResolvedValue(okResponse())
+    lookup = vi.spyOn(dns.promises, 'lookup')
+    fetch = vi.spyOn(undici, 'fetch')
+    lookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as never)
+    fetch.mockResolvedValue(okResponse() as never)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
   })
 
   it('signs and POSTs the activity JSON to the inbox', async () => {
-    await deliverActivityToInbox(
-      {
-        inboxUrl: INBOX_URL,
-        activity: { type: 'Follow' },
-        keyId: KEY_ID,
-        privateKeyPem,
-      },
-      { validateUrl, fetch },
-    )
+    await deliverActivityToInbox({
+      inboxUrl: INBOX_URL,
+      activity: { type: 'Follow' },
+      keyId: KEY_ID,
+      privateKeyPem,
+    })
 
-    expect(validateUrl).toHaveBeenCalledWith(INBOX_URL, { timeoutMs: expect.any(Number) })
-    const [, dnsOptions] = validateUrl.mock.calls[0] as [string, { timeoutMs: number }]
-    expect(dnsOptions.timeoutMs).toBeGreaterThan(0)
+    expect(lookup).toHaveBeenCalledTimes(1)
+    expect(lookup.mock.calls[0]![0]).toBe('remote.example')
     expect(fetch).toHaveBeenCalledTimes(1)
-    const [url, options] = fetch.mock.calls[0]!
+    const [url, options] = fetch.mock.calls[0] as [string, Record<string, any>]
     expect(url).toBe(INBOX_URL)
     expect(options.method).toBe('POST')
     expect(options.body).toBe(JSON.stringify({ type: 'Follow' }))
@@ -64,40 +63,32 @@ describe('deliverActivityToInbox', () => {
   })
 
   it('rejects an SSRF-unsafe inbox URL without fetching', async () => {
-    validateUrl.mockRejectedValueOnce(
-      new UnsafeUrlError('https://internal.local/inbox', 'IP address is private'),
-    )
-
     await expect(
-      deliverActivityToInbox(
-        { inboxUrl: 'https://internal.local/inbox', activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      ),
+      deliverActivityToInbox({
+        inboxUrl: 'https://10.0.0.1/inbox',
+        activity: {},
+        keyId: KEY_ID,
+        privateKeyPem,
+      }),
     ).rejects.toThrow(/unsafe/i)
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it('throws on a rate-limit (429) response', async () => {
     fetch.mockResolvedValueOnce(
-      new Response(null, { status: 429, headers: { 'retry-after': '30' } }),
+      new Response(null, { status: 429, headers: { 'retry-after': '30' } }) as never,
     )
 
     await expect(
-      deliverActivityToInbox(
-        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      ),
+      deliverActivityToInbox({ inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem }),
     ).rejects.toThrow(/rate limited/i)
   })
 
   it('throws on a server error (500) response', async () => {
-    fetch.mockResolvedValueOnce(new Response(null, { status: 500 }))
+    fetch.mockResolvedValueOnce(new Response(null, { status: 500 }) as never)
 
     await expect(
-      deliverActivityToInbox(
-        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      ),
+      deliverActivityToInbox({ inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem }),
     ).rejects.toThrow(/server error/i)
   })
 
@@ -105,13 +96,10 @@ describe('deliverActivityToInbox', () => {
     const cancellationError = new Error('response body cancellation failed')
     const reportError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.stubEnv('NODE_ENV', 'development')
-    fetch.mockResolvedValueOnce(responseWithRejectedCancellation(cancellationError))
+    fetch.mockResolvedValueOnce(responseWithRejectedCancellation(cancellationError) as never)
 
     await expect(
-      deliverActivityToInbox(
-        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      ),
+      deliverActivityToInbox({ inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem }),
     ).rejects.toThrow(/server error/i)
     await new Promise<void>(queueMicrotask)
 
@@ -119,37 +107,33 @@ describe('deliverActivityToInbox', () => {
   })
 
   it('throws on a permanent client error (410 Gone) response', async () => {
-    fetch.mockResolvedValueOnce(new Response(null, { status: 410 }))
+    fetch.mockResolvedValueOnce(new Response(null, { status: 410 }) as never)
 
     await expect(
-      deliverActivityToInbox(
-        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      ),
+      deliverActivityToInbox({ inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem }),
     ).rejects.toThrow(/410/)
   })
 
   it('does not throw on a 2xx response', async () => {
-    fetch.mockResolvedValueOnce(new Response(null, { status: 200 }))
+    fetch.mockResolvedValueOnce(new Response(null, { status: 200 }) as never)
 
     await expect(
-      deliverActivityToInbox(
-        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      ),
+      deliverActivityToInbox({ inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem }),
     ).resolves.toBeUndefined()
   })
 
   it('keeps a DNS resolution timeout status-less and retryable, unlike an SSRF-unsafe rejection', async () => {
     const dnsTimeout = Object.assign(new Error('aborted'), { name: 'AbortError' })
-    validateUrl.mockRejectedValueOnce(dnsTimeout)
+    lookup.mockRejectedValueOnce(dnsTimeout)
 
     let caught: unknown
     try {
-      await deliverActivityToInbox(
-        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
-        { validateUrl, fetch },
-      )
+      await deliverActivityToInbox({
+        inboxUrl: INBOX_URL,
+        activity: {},
+        keyId: KEY_ID,
+        privateKeyPem,
+      })
     } catch (err) {
       caught = err
     }
