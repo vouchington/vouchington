@@ -43,8 +43,6 @@
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
-    "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^",
-    "http-errors": "^2.0.1"
+    "@voucha/test-helpers": "workspace:^"
   }
 }
