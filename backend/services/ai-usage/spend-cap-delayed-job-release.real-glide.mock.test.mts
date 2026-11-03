@@ -13,7 +13,8 @@ import {
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-const AI_AGENTS_QUEUE_NAME = 'ai_agents'
+// A private queue: real workers on the shared ai_agents queue would consume these jobs.
+const AI_AGENTS_QUEUE_NAME = `ai_agents_spend_cap_release_${randomUUID()}`
 type SpendCapTestJobData = { spendCapDelayedDay?: string }
 
 describe('AI spend-cap atomic promotion with real GlideMQ', () => {
