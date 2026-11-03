@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createLocalTestUser } from './data-stores/psql/users.mts'
 import { createTestPersistedReversalCaseFixture } from './data-stores/psql/membership-reversal-cases.mts'
@@ -100,4 +100,23 @@ export async function positionReversalCaseLedgerCursor(caseId: string | null): P
   await write(sql`/* positionReversalCaseLedgerCursor */
     UPDATE payment_operational_cleanup_cursors SET cursor_id = ${caseId}
     WHERE kind = 'membership_reversal_case_ledger'`)
+}
+
+/** Attempts a direct delete with retention delete mode on; the transaction is never committed. */
+export async function attemptRetentionModeReversalCaseDelete(
+  caseId: string,
+  target: 'case' | 'observation',
+): Promise<void> {
+  await using query = await beginTransaction()
+  await query(sql`/* permitReversalCaseDelete */ SET LOCAL app.billing_retention_delete = 'on'`)
+  await query(
+    target === 'case'
+      ? sql`/* deleteReversalCase */
+          DELETE FROM membership_ineligible_purchase_reversal_cases WHERE id = ${caseId}`
+      : sql`/* deleteReversalObservation */
+          DELETE FROM membership_ineligible_purchase_reversal_refund_observations observation
+          USING membership_ineligible_purchase_reversal_refund_scans scan
+          WHERE scan.id = observation.membership_ineligible_purchase_reversal_refund_scan_id
+            AND scan.membership_ineligible_purchase_reversal_case_id = ${caseId}`,
+  )
 }
