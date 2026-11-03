@@ -75,9 +75,10 @@ export function getMyReferralLinksClient(
 
 export function getAllReferralLinks(
   referralProgramId: string,
+  after?: string,
 ): Promise<PrioritizedReferralLinksResponse> {
   return clientApi.get<PrioritizedReferralLinksResponse>(
     `/api/v1/topics/${referralProgramId}/prioritized-referral-links`,
-    { searchParams: { all: true } },
+    { searchParams: { all: true, ...(after ? { after } : {}) } },
   )
 }

@@ -22,12 +22,14 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
     "@services/official-referral-program-links": "workspace:^",
-    "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

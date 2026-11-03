@@ -17265,7 +17265,17 @@
                   "description": "Topic id, slug, or exact name"
                 },
                 "all": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "List every visible link newest first, paged by after and limit."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "With all: defaults to 25; clamped to 100."
+                },
+                "after": {
+                  "type": "string",
+                  "description": "With all: the page_info.end_cursor of the previous page."
                 }
               },
               "required": ["topic_id"],
@@ -17295,14 +17305,7 @@
                             "type": "string"
                           },
                           "label": {
-                            "anyOf": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
+                            "$ref": "#/$defs/S1"
                           },
                           "priority_group": {
                             "type": "number"
@@ -17311,14 +17314,7 @@
                             "type": "string"
                           },
                           "display_name": {
-                            "anyOf": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
+                            "$ref": "#/$defs/S1"
                           }
                         },
                         "required": [
@@ -17331,6 +17327,22 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "end_cursor": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["success", "referral_program_id", "links"],
@@ -17349,7 +17361,19 @@
                   "required": ["success", "error"],
                   "additionalProperties": false
                 }
-              ]
+              ],
+              "$defs": {
+                "S1": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
             },
             "annotations": {
               "readOnlyHint": true,

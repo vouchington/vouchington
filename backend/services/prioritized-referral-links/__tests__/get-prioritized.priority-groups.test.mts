@@ -1,17 +1,13 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import {
   createReferralProgramFixture,
   createRandomString,
   createTestUser,
-  createTestMembership,
   insertPostElectionVote,
   insertSessionReferralAttribution,
   insertTestLocalFollow,
   insertTestPost,
-  insertTestPostReview,
-  insertTestDataPoint,
-  setPostVotesScoreUp,
   archivePostForTopHashtagTest,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -39,8 +35,9 @@ async function createUserWithLink(
   return { user, linkId: link.id }
 }
 
-describe('get-prioritized prioritized referral priority groups', () => {
-  beforeAll(async () => {
+describe('get-prioritized in-network priority groups', () => {
+  // Each test gets its own program so the shared out-of-network list holds only its own links.
+  beforeEach(async () => {
     const testUser = await createTestUser({ administrator: true })
     if (!testUser) throw new Error('Failed to create test admin user')
     admin = testUser
@@ -56,7 +53,7 @@ describe('get-prioritized prioritized referral priority groups', () => {
     referralProgramId = fixture.referralProgramId
   })
 
-  it('returns empty array when no links exist', async () => {
+  it('returns empty arrays when no links exist', async () => {
     const viewer = await createTestUser()
     const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
@@ -64,7 +61,7 @@ describe('get-prioritized prioritized referral priority groups', () => {
     expect(Object.keys(result.users)).toHaveLength(0)
   })
 
-  it('assigns priority groups correctly', async () => {
+  it('assigns the four network tiers and leaves strangers out', async () => {
     const [
       viewer,
       { user: mutualFriend },
@@ -81,55 +78,95 @@ describe('get-prioritized prioritized referral priority groups', () => {
       createUserWithLink('pg-stranger'),
     ])
 
-    const sessionId = crypto.randomUUID()
     const suffix = createRandomString(8)
 
     await Promise.all([
-      // Group 1: mutual follow
-      insertTestLocalFollow(viewer!.id, mutualFriend.id),
-      insertTestLocalFollow(mutualFriend.id, viewer!.id),
-      // Group 2: one-way follow
-      insertTestLocalFollow(viewer!.id, followed.id),
-      // Group 3: referrer
-      insertSessionReferralAttribution(sessionId, referrer.id, 'https://example.com/', viewer!.id),
-      // Group 4: upvoted author
+      insertTestLocalFollow(viewer.id, mutualFriend.id),
+      insertTestLocalFollow(mutualFriend.id, viewer.id),
+      insertTestLocalFollow(viewer.id, followed.id),
+      insertSessionReferralAttribution(
+        crypto.randomUUID(),
+        referrer.id,
+        'https://example.com/',
+        viewer.id,
+      ),
       insertTestPost({
         title: `Test Post ${suffix}`,
         slug: `test-post-${suffix}`,
         createdById: upvotedAuthor.id,
         markdown: 'content',
-      }).then(postId => insertPostElectionVote(viewer!.id, postId, 1)),
+      }).then(postId => insertPostElectionVote(viewer.id, postId, 1)),
     ])
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId)
+    const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
     const byUser = Object.fromEntries(result.links.map(l => [l.user_id, l.priority_group]))
     expect(byUser[mutualFriend.id]).toBe(1)
     expect(byUser[followed.id]).toBe(2)
     expect(byUser[referrer.id]).toBe(3)
     expect(byUser[upvotedAuthor.id]).toBe(4)
-    expect(byUser[stranger.id]).toBe(5)
+    expect(byUser[stranger.id]).toBeUndefined()
+    expect(result.links.map(l => l.priority_group)).toEqual([1, 2, 3, 4])
   })
 
-  it('deduplicates: user qualifying for multiple groups appears in highest only', async () => {
+  it('lists a user who qualifies for several tiers once, in the highest', async () => {
     const [viewer, { user: multiUser }] = await Promise.all([
       createTestUser(),
       createUserWithLink('dedup'),
     ])
 
-    const sessionId = crypto.randomUUID()
-    // Make them mutual follow (group 1) AND referrer (group 3)
     await Promise.all([
-      insertTestLocalFollow(viewer!.id, multiUser.id),
-      insertTestLocalFollow(multiUser.id, viewer!.id),
-      insertSessionReferralAttribution(sessionId, multiUser.id, 'https://example.com/', viewer!.id),
+      insertTestLocalFollow(viewer.id, multiUser.id),
+      insertTestLocalFollow(multiUser.id, viewer.id),
+      insertSessionReferralAttribution(
+        crypto.randomUUID(),
+        multiUser.id,
+        'https://example.com/',
+        viewer.id,
+      ),
     ])
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId)
+    const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
     const userLinks = result.links.filter(l => l.user_id === multiUser.id)
     expect(userLinks).toHaveLength(1)
     expect(userLinks[0].priority_group).toBe(1)
+  })
+
+  it('caps the network at five links, best tier first', async () => {
+    const viewer = await createTestUser()
+    const mutuals = await Promise.all(
+      Array.from({ length: 3 }, () => createUserWithLink('cap-mutual')),
+    )
+    const follows = await Promise.all(
+      Array.from({ length: 4 }, () => createUserWithLink('cap-follow')),
+    )
+    await Promise.all(
+      mutuals.map(async ({ user }) => {
+        await insertTestLocalFollow(viewer.id, user.id)
+        await insertTestLocalFollow(user.id, viewer.id)
+      }),
+    )
+    await Promise.all(follows.map(({ user }) => insertTestLocalFollow(viewer.id, user.id)))
+
+    const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
+
+    expect(result.links.map(l => l.priority_group)).toEqual([1, 1, 1, 2, 2])
+    const mutualIds = new Set(mutuals.map(m => m.user.id))
+    expect(result.links.slice(0, 3).every(l => mutualIds.has(l.user_id!))).toBe(true)
+  })
+
+  it('replaces the shared list with the network when the viewer has one', async () => {
+    const [viewer, { user: friend }] = await Promise.all([
+      createTestUser(),
+      createUserWithLink('replace-friend'),
+    ])
+    await insertTestLocalFollow(viewer.id, friend.id)
+    await Promise.all(Array.from({ length: 6 }, () => createUserWithLink('replace-stranger')))
+
+    const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
+
+    expect(result.links.map(l => l.user_id)).toEqual([friend.id])
   })
 
   it('does not prioritize an author from an upvote on an ineligible post', async () => {
@@ -143,154 +180,11 @@ describe('get-prioritized prioritized referral priority groups', () => {
       createdById: author.id,
       markdown: 'content',
     })
-    await insertPostElectionVote(viewer!.id, postId, 1)
+    await insertPostElectionVote(viewer.id, postId, 1)
     await archivePostForTopHashtagTest(postId, author.id)
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, { limit: 100 })
+    const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
     expect(result.links.find(link => link.user_id === author.id)?.priority_group).toBe(5)
-  })
-
-  it('sorts by contribution rank within a group', async () => {
-    const [viewer, { user: bothUser }, { user: oneUser }, { user: noneUser }] = await Promise.all([
-      createTestUser(),
-      createUserWithLink('contrib-both'),
-      createUserWithLink('contrib-one'),
-      createUserWithLink('contrib-none'),
-    ])
-
-    const suffix = createRandomString(8)
-
-    // bothUser has data point + review for this referral program
-    await insertTestDataPoint({
-      title: `DP ${suffix}`,
-      slug: `dp-${suffix}`,
-      createdById: bothUser.id,
-      topicId: referralProgramId,
-    })
-    const reviewId = await insertTestPost({
-      title: `Review ${suffix}`,
-      slug: `review-${suffix}`,
-      createdById: bothUser.id,
-      markdown: 'review',
-      postType: 'review',
-    })
-    await insertTestPostReview(reviewId, referralProgramId)
-
-    // oneUser has only data point
-    await insertTestDataPoint({
-      title: `DP2 ${suffix}`,
-      slug: `dp2-${suffix}`,
-      createdById: oneUser.id,
-      topicId: referralProgramId,
-    })
-
-    // Use a high limit to ensure all users appear despite other test data in the DB
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
-
-    const group5 = result.links.filter(l => l.priority_group === 5)
-    const bothLink = group5.find(l => l.user_id === bothUser.id)
-    const oneLink = group5.find(l => l.user_id === oneUser.id)
-    const noneLink = group5.find(l => l.user_id === noneUser.id)
-
-    expect(bothLink).toBeDefined()
-    expect(oneLink).toBeDefined()
-    expect(noneLink).toBeDefined()
-
-    // both (rank 1) before one (rank 2) before none (rank 3)
-    expect(bothLink!.contribution_rank).toBe(1)
-    expect(oneLink!.contribution_rank).toBe(2)
-    expect(noneLink!.contribution_rank).toBe(3)
-
-    const bothIdx = group5.findIndex(l => l.user_id === bothUser.id)
-    const oneIdx = group5.findIndex(l => l.user_id === oneUser.id)
-    const noneIdx = group5.findIndex(l => l.user_id === noneUser.id)
-    expect(bothIdx).toBeLessThan(oneIdx)
-    expect(oneIdx).toBeLessThan(noneIdx)
-  })
-
-  it('sorts by membership tier rank within same contribution rank', async () => {
-    const [viewer, { user: proUser }, { user: plusUser }, { user: freeUser }] = await Promise.all([
-      createTestUser(),
-      createUserWithLink('tier-pro'),
-      createUserWithLink('tier-plus'),
-      createUserWithLink('tier-free'),
-    ])
-
-    await Promise.all([
-      createTestMembership({ user_id: proUser.id, plan: 'pro' }),
-      createTestMembership({ user_id: plusUser.id, plan: 'plus' }),
-    ])
-
-    // Use a high limit to ensure all users appear
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
-
-    const group5 = result.links.filter(l => l.priority_group === 5)
-    const proLink = group5.find(l => l.user_id === proUser.id)
-    const plusLink = group5.find(l => l.user_id === plusUser.id)
-    const freeLink = group5.find(l => l.user_id === freeUser.id)
-
-    expect(proLink).toBeDefined()
-    expect(plusLink).toBeDefined()
-    expect(freeLink).toBeDefined()
-
-    expect(proLink!.tier_rank).toBe(1)
-    expect(plusLink!.tier_rank).toBe(2)
-    expect(freeLink!.tier_rank).toBe(3)
-
-    const proIdx = group5.findIndex(l => l.user_id === proUser.id)
-    const plusIdx = group5.findIndex(l => l.user_id === plusUser.id)
-    const freeIdx = group5.findIndex(l => l.user_id === freeUser.id)
-    expect(proIdx).toBeLessThan(plusIdx)
-    expect(plusIdx).toBeLessThan(freeIdx)
-  })
-
-  it('sorts by best score within same contribution and tier rank', async () => {
-    const [viewer, { user: highUser }, { user: lowUser }] = await Promise.all([
-      createTestUser(),
-      createUserWithLink('score-high'),
-      createUserWithLink('score-low'),
-    ])
-
-    const suffix = createRandomString(8)
-
-    // Both users have a data point for this referral program (same contribution_rank = 2)
-    const [highPostId] = await Promise.all([
-      insertTestDataPoint({
-        title: `High Score ${suffix}`,
-        slug: `high-score-${suffix}`,
-        createdById: highUser.id,
-        topicId: referralProgramId,
-      }),
-      insertTestDataPoint({
-        title: `Low Score ${suffix}`,
-        slug: `low-score-${suffix}`,
-        createdById: lowUser.id,
-        topicId: referralProgramId,
-      }),
-    ])
-
-    // Directly set votes_score_up for highUser's post (votes_score_net = votes_score_up - votes_score_down)
-    await setPostVotesScoreUp(highPostId, 10)
-
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
-
-    const group5 = result.links.filter(l => l.priority_group === 5)
-    const highLink = group5.find(l => l.user_id === highUser.id)
-    const lowLink = group5.find(l => l.user_id === lowUser.id)
-
-    expect(highLink).toBeDefined()
-    expect(lowLink).toBeDefined()
-    expect(highLink!.best_score).toBeGreaterThan(lowLink!.best_score)
-
-    const highIdx = group5.findIndex(l => l.user_id === highUser.id)
-    const lowIdx = group5.findIndex(l => l.user_id === lowUser.id)
-    expect(highIdx).toBeLessThan(lowIdx)
   })
 })

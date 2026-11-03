@@ -2,6 +2,7 @@ import { write, type QueryOptions } from '@data-stores/psql'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
+import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import sql from 'sql-template-strings'
 import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
@@ -56,5 +57,6 @@ export async function insertChildReferralLinkRows(
         { query },
       ),
   )
+  await clearPrioritizedLinksCache(rowsToInsert.map(input => input.referralProgramId))
   return rows
 }

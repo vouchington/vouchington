@@ -75,5 +75,18 @@ describe('prioritized referral links routes', () => {
         .get(`/api/v1/topics/${referralProgramId}/prioritized-referral-links?all=not-a-boolean`)
         .expect(422)
     })
+
+    it('pages all links newest first for signed-in viewers', async () => {
+      const viewer = await createTestUser()
+      const request = createRequest()
+      await request.authenticateAs(viewer)
+
+      const first = await request
+        .get(`/api/v1/topics/${referralProgramId}/prioritized-referral-links?all=true&limit=1`)
+        .expect(200)
+
+      expect(first.body.links).toHaveLength(1)
+      expect(first.body.page_info).toMatchObject({ has_next_page: false })
+    })
   })
 })

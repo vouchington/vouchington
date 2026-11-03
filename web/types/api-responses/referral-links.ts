@@ -49,6 +49,8 @@ export type ReferralLinkFeedResponse = {
 export interface PrioritizedReferralLinksResponse {
   links: PrioritizedReferralLink[]
   users: Record<string, ReferralLinkUser>
+  /** Present only for the `all` listing, which pages newest first. */
+  page_info?: PageInfo
 }
 
 export interface UserReferralLinkWithDetails {

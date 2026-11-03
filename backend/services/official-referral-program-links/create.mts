@@ -10,6 +10,7 @@ import { validateUUID } from '@modules/utils'
 import { currentUserCanManageOfficialReferralLink } from './authorization.mts'
 import type { OfficialReferralLink } from './types.mts'
 import { officialReferralLinkColumns } from './columns.mts'
+import { clearPrioritizedLinksCache } from '@services/user-referral-program-links/prioritized-links-cache'
 import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 export async function createOfficialReferralLink(
@@ -84,5 +85,6 @@ export async function createOfficialReferralLink(
 
   assert(rows.length > 0, 409, 'An active official link for this URL already exists')
 
+  await clearPrioritizedLinksCache([data.referral_program_id])
   return { ...rows[0], url: data.url }
 }

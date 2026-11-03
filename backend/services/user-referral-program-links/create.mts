@@ -7,6 +7,7 @@ import { validateUUID } from '@modules/utils'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import { addUrl } from '@services/urls/upsert'
 import { assertCurrentUserCanCreateUserReferralLink } from './authorization.mts'
+import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
@@ -106,5 +107,6 @@ export async function createUserReferralLink(
     throw err
   }
 
+  await clearPrioritizedLinksCache([data.referral_program_id])
   return rows[0]
 }

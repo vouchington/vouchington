@@ -6,6 +6,7 @@ import { validateUUID } from '@modules/utils'
 import { currentUserCanUpdateUserReferralLink } from './authorization.mts'
 import { getUserReferralLink } from './get.mts'
 import { softDeleteChildrenOfParent } from './children.mts'
+import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import { assertUserReferralLinkScope, type UserReferralLinkScope } from './scope.mts'
 
 export async function deleteUserReferralLink(
@@ -40,4 +41,5 @@ export async function deleteUserReferralLink(
     await softDeleteChildrenOfParent(linkId, { query })
   }
   await query.commit()
+  await clearPrioritizedLinksCache([link.referral_program_id])
 }

@@ -22,3 +22,8 @@ export type ReferralLinkUser = {
   username: string
   display_name: string | null
 }
+
+export type ReferralLinksWithUsers = {
+  links: PrioritizedReferralLink[]
+  users: Record<string, ReferralLinkUser>
+}

@@ -13,13 +13,18 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links'
-import { getPrioritizedReferralLinks } from '../get-prioritized.mts'
+import { loadOutOfNetworkLinks } from '../out-of-network.mts'
 
 let admin: PrivateUser
 
 let referralProgramId: string
 
 let testHostname: string
+
+/** The uncached ranking behind the shared out-of-network list. */
+async function rankedLinks() {
+  return (await loadOutOfNetworkLinks(referralProgramId)).others
+}
 
 async function createUserWithLink(
   labelPrefix: string,
@@ -70,10 +75,7 @@ describe('getPrioritizedReferralLinks merged topics', () => {
       }),
     ])
     await setTopicReferralProgramId(linkedTopicId, referralProgramId)
-    const [viewer, { user: contributor }] = await Promise.all([
-      createTestUser(),
-      createUserWithLink(`merged-${suffix}`),
-    ])
+    const [{ user: contributor }] = await Promise.all([createUserWithLink(`merged-${suffix}`)])
     const reviewId = await insertTestPost({
       title: `Merged Review ${suffix}`,
       slug: `merged-review-${suffix}`,
@@ -91,14 +93,14 @@ describe('getPrioritizedReferralLinks merged topics', () => {
       insertTestPostReview(reviewId, linkedTopicId),
     ])
 
-    const before = await getPrioritizedReferralLinks(viewer.id, referralProgramId, { limit: 100 })
+    const before = await rankedLinks()
     const beforeLink = before.links.find(l => l.user_id === contributor.id)
     expect(beforeLink?.contribution_rank).toBe(1)
     expect(beforeLink?.review_post_id).toBe(reviewId)
 
     await mergeTopicForTest(linkedTopicId, destinationTopicId, admin.id)
 
-    const after = await getPrioritizedReferralLinks(viewer.id, referralProgramId, { limit: 100 })
+    const after = await rankedLinks()
     const afterLink = after.links.find(l => l.user_id === contributor.id)
     expect(afterLink).toBeDefined()
     expect(afterLink!.contribution_rank).toBe(3)

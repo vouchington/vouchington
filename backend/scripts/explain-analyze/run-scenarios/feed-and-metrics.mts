@@ -12,12 +12,14 @@ const {
   getConversationMessagesByConversationId,
   getElectionVotesByUser,
   getFriendRecommendations,
+  getAllReferralLinksPage,
   getPostFeedIds,
   getPostIdsByUrlIds,
   getPostMetricsByAny,
   getPostMetricsByAnyBatch,
   getPrioritizedReferralLinks,
   getTopicIds,
+  loadOutOfNetworkLinks,
   getTopicMetricsByAnyBatch,
   getTopicViewerCounts,
   getTopUrlsByHostnameIds,
@@ -55,10 +57,15 @@ export async function runFeedAndMetricScenarios() {
   await runAndCapture('top-urls-by-hostname-ids', () => getTopUrlsByHostnameIds(seedHostnameIds))
   const seedReferralProgramId = `${SEED_PREFIX}-0900-7000-8000-000000000000`
   await runAndCapture('prioritized-referral-links', async () => {
-    await getPrioritizedReferralLinks(seedUser.id, seedReferralProgramId, {
-      limit: 10,
-    })
+    await getPrioritizedReferralLinks(seedUser.id, seedReferralProgramId)
   })
+  await runAndCapture('prioritized-referral-links-all-page', () =>
+    getAllReferralLinksPage(seedUser.id, seedReferralProgramId, { limit: 25 }),
+  )
+  // The cached read hides this ranking on a warm cache, so explain the uncached loader itself.
+  await runAndCapture('prioritized-referral-links-cache-miss', () =>
+    loadOutOfNetworkLinks(seedReferralProgramId),
+  )
   const seedUrlIds = [
     `${SEED_PREFIX}-0300-7000-8000-000000000000`,
     `${SEED_PREFIX}-0300-7000-8000-000000000001`,

@@ -2,31 +2,45 @@ import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { getPrioritizedReferralLinks } from '@services/prioritized-referral-links/get-prioritized'
+import {
+  getAllReferralLinksPage,
+  getPrioritizedReferralLinks,
+} from '@services/prioritized-referral-links'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema } from './route-response-schema.mts'
+import { pageInfoSchema } from './mcp-read-output.mts'
+import { findPageOrNull, INVALID_CURSOR_RESULT, type SearchPageInfo } from './paged-search.mts'
+import { clampToolLimit } from './search-system.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.
 // `priority_group` comes from the documented link; `username` and `display_name` flatten its users.
-const OUTPUT_SCHEMA = outcomeSchema('success', {
-  referral_program_id: { type: 'string' },
-  links: {
-    type: 'array',
-    items: objectSchema({
-      id: { type: 'string' },
-      url: { type: 'string' },
-      label: nullable({ type: 'string' }),
-      priority_group: componentPropertySchema('PrioritizedReferralLink', 'priority_group'),
-      username: { type: 'string' },
-      display_name: nullable({ type: 'string' }),
-    }),
+const OUTPUT_SCHEMA = outcomeSchema(
+  'success',
+  {
+    referral_program_id: { type: 'string' },
+    links: {
+      type: 'array',
+      items: objectSchema({
+        id: { type: 'string' },
+        url: { type: 'string' },
+        label: nullable({ type: 'string' }),
+        priority_group: componentPropertySchema('PrioritizedReferralLink', 'priority_group'),
+        username: { type: 'string' },
+        display_name: nullable({ type: 'string' }),
+      }),
+    },
+    // Present only with `all`, where links page newest first.
+    page_info: pageInfoSchema(),
   },
-})
+  ['page_info'],
+)
 
 type ToolArgs = {
   topic_id: string
   all?: boolean
+  limit?: number
+  after?: string
 }
 
 type ReferralLinkEntry = {
@@ -43,6 +57,7 @@ type ToolResult =
       success: true
       referral_program_id: string
       links: ReferralLinkEntry[]
+      page_info?: SearchPageInfo
     }
   | {
       success: false
@@ -59,7 +74,19 @@ const tool: Tool<ToolArgs, ToolResult> = {
       type: 'object',
       properties: {
         topic_id: topicReferenceSchema,
-        all: { type: 'boolean' },
+        all: {
+          type: 'boolean',
+          description: 'List every visible link newest first, paged by after and limit.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          description: 'With all: defaults to 25; clamped to 100.',
+        },
+        after: {
+          type: 'string',
+          description: 'With all: the page_info.end_cursor of the previous page.',
+        },
       },
       required: ['topic_id'],
     },
@@ -91,11 +118,22 @@ const tool: Tool<ToolArgs, ToolResult> = {
         return { success: false, error: 'No referral program found for this topic' }
       }
 
-      const { links: allLinks, users } = await getPrioritizedReferralLinks(
-        currentUser.id,
-        referralProgramId,
-        { all: args.all },
-      )
+      let result: Awaited<ReturnType<typeof getPrioritizedReferralLinks>>
+      let pageInfo: SearchPageInfo | undefined
+      if (args.all) {
+        const page = await findPageOrNull(args.after, () =>
+          getAllReferralLinksPage(currentUser.id, referralProgramId, {
+            limit: clampToolLimit(args.limit, 25, 100),
+            after: args.after,
+          }),
+        )
+        if (!page) return INVALID_CURSOR_RESULT
+        result = page
+        pageInfo = page.page_info
+      } else {
+        result = await getPrioritizedReferralLinks(currentUser.id, referralProgramId)
+      }
+      const { links: allLinks, users } = result
 
       const links: ReferralLinkEntry[] = await Promise.all(
         allLinks.map(async link => {
@@ -118,6 +156,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         success: true,
         referral_program_id: referralProgramId,
         links,
+        ...(pageInfo ? { page_info: pageInfo } : {}),
       }
     },
 }

@@ -134,5 +134,51 @@ describe('get-referral-links', () => {
       const successResult = result as Extract<typeof result, { success: true }>
       expect(successResult.links[0]).toMatchObject({ id: link.id, label: null })
     })
+
+    it('pages every visible link newest first with all, limit and after', async () => {
+      const user = await createTestUser()
+      const { cardTopicId, referralProgramId, hostname } = await createCardWithReferralProgram(user)
+      const first = await createLinkForProgram({ referralProgramId, hostname })
+      const second = await createLinkForProgram({ referralProgramId, hostname })
+      const execute = getReferralLinksTool.function(user)
+
+      const page1 = (await execute({ topic_id: cardTopicId, all: true, limit: 1 })) as Extract<
+        Awaited<ReturnType<typeof execute>>,
+        { success: true }
+      >
+      expect(page1.links.map(l => l.id)).toEqual([second.link.id])
+      expect(page1.page_info?.has_next_page).toBe(true)
+
+      const page2 = (await execute({
+        topic_id: cardTopicId,
+        all: true,
+        limit: 1,
+        after: page1.page_info!.end_cursor!,
+      })) as Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
+      expect(page2.links.map(l => l.id)).toEqual([first.link.id])
+      expect(page2.page_info?.has_next_page).toBe(false)
+    })
+
+    it('omits page_info without all', async () => {
+      const user = await createTestUser()
+      const { cardTopicId } = await createCardWithReferralProgram(user)
+
+      const result = await getReferralLinksTool.function(user)({ topic_id: cardTopicId })
+
+      expect(result).not.toHaveProperty('page_info')
+    })
+
+    it('rejects a malformed cursor with all', async () => {
+      const user = await createTestUser()
+      const { cardTopicId } = await createCardWithReferralProgram(user)
+
+      const result = await getReferralLinksTool.function(user)({
+        topic_id: cardTopicId,
+        all: true,
+        after: 'not-a-cursor',
+      })
+
+      expect(result.success).toBe(false)
+    })
   })
 })
