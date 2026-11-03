@@ -1,4 +1,10 @@
-import { expect, test, protectPlaywrightHookTimeouts, type Page } from '../../helpers/test.mts'
+import {
+  expect,
+  test,
+  protectPlaywrightHookTimeouts,
+  type Locator,
+  type Page,
+} from '../../helpers/test.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
@@ -83,6 +89,14 @@ test.describe('EU copyright controls with an approved policy', () => {
     return item
   }
 
+  /** The recipients, complaints and settlements open from the summary card in a dialog. */
+  async function openCaseDetails(page: Page, item: Locator) {
+    await item.getByTestId('copyright-staff-territorial-open-details').click()
+    const dialog = page.getByTestId('copyright-staff-territorial-details-dialog')
+    await expect(dialog).toBeVisible()
+    return dialog
+  }
+
   test('the EU notice form is offered', async ({ page }) => {
     await resetAnonymousBrowserStateBeforeNavigation(page)
     await navigateTo(page, '/copyright/eu-notices/new')
@@ -106,11 +120,12 @@ test.describe('EU copyright controls with an approved policy', () => {
   test('staff can review a complaint and refer a dispute', async ({ page }) => {
     const { noticeId } = await seedTerritorialRedress('eu_dsa', actors)
     const item = await openStaffCase(page, noticeId)
+    const dialog = await openCaseDetails(page, item)
     await expect(
-      item.getByTestId('copyright-staff-territorial-complaint-review-submit'),
+      dialog.getByTestId('copyright-staff-territorial-complaint-review-submit'),
     ).toBeAttached()
     await expect(
-      item.getByTestId('copyright-staff-territorial-dispute-referral-submit'),
+      dialog.getByTestId('copyright-staff-territorial-dispute-referral-submit'),
     ).toBeAttached()
   })
 
@@ -123,8 +138,9 @@ test.describe('EU copyright controls with an approved policy', () => {
       referredByUserId: actors.claimant.id,
     })
     const item = await openStaffCase(page, noticeId)
+    const dialog = await openCaseDetails(page, item)
     await expect(
-      item.getByTestId('copyright-staff-territorial-dispute-record-submit'),
+      dialog.getByTestId('copyright-staff-territorial-dispute-record-submit'),
     ).toBeAttached()
   })
 
@@ -142,8 +158,9 @@ test.describe('EU copyright controls with an approved policy', () => {
       decidedAt: referredAt,
     })
     const item = await openStaffCase(page, noticeId)
+    const dialog = await openCaseDetails(page, item)
     await expect(
-      item.getByTestId('copyright-staff-territorial-dispute-implementation-submit'),
+      dialog.getByTestId('copyright-staff-territorial-dispute-implementation-submit'),
     ).toBeAttached()
   })
 })

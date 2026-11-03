@@ -106,10 +106,16 @@ function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: 
     { loadPage: after => listCopyrightTerritorialRecipients(item.id, { after }) },
   )
   const { hasNextPage, loadingMore, fetchError, loadMore } = recipientList
-  // A referral names one poster from this list, so every page loads before the form appears.
+  // A referral names one poster from this list, so every page loads before the form appears. The
+  // walk starts only when staff ask to record a referral: each page computes parties for every
+  // target, so reading the whole list is not free. Retry only clears the error; this effect then
+  // continues, so a retry never starts a second load beside it.
+  const [walking, setWalking] = useState(false)
   useEffect(() => {
-    if (hasNextPage && !loadingMore && !fetchError) void loadMore()
-  }, [hasNextPage, loadingMore, fetchError, loadMore])
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-event-handler -- each arriving page triggers the next, so the walk continues from loaded state, not from the click alone
+    if (walking && hasNextPage && !loadingMore && !fetchError) void loadMore()
+  }, [walking, hasNextPage, loadingMore, fetchError, loadMore])
+  const recipientsStatus = !walking ? 'idle' : fetchError ? 'failed' : 'loading'
   const recipients = recipientList.pages.flatMap(page => page.copyright_territorial_recipients)
   const posterRecipients = recipients.filter(recipient => recipient.role === 'poster')
   return (
@@ -162,6 +168,9 @@ function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: 
           pending={pending}
           recipients={recipients}
           recipientsComplete={!hasNextPage}
+          recipientsStatus={recipientsStatus}
+          onLoadRecipients={() => setWalking(true)}
+          onRetryRecipients={() => recipientList.clearError()}
         />
       ) : null}
     </>

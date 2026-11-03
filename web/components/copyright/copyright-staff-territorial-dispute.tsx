@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import type { CopyrightTerritorialRecipient } from '@/types/copyright-territorial'
 import type { CopyrightEuDisputeSettlementsPage } from '@/lib/api/client/copyright-territorial-redress'
@@ -12,6 +13,9 @@ export function CopyrightStaffTerritorialDispute({
   initialPage,
   recipients,
   recipientsComplete,
+  recipientsStatus,
+  onLoadRecipients,
+  onRetryRecipients,
   pending,
   onReview,
 }: {
@@ -20,6 +24,10 @@ export function CopyrightStaffTerritorialDispute({
   recipients: readonly CopyrightTerritorialRecipient[]
   /** False while recipient pages are still loading; a referral names a poster from this list. */
   recipientsComplete: boolean
+  /** Where the walk through the remaining recipient pages stands; it starts on request. */
+  recipientsStatus: 'idle' | 'loading' | 'failed'
+  onLoadRecipients: () => void
+  onRetryRecipients: () => void
   pending: boolean
   onReview: SubmitReview
 }) {
@@ -42,9 +50,11 @@ export function CopyrightStaffTerritorialDispute({
         pending={pending}
       />
       {territorial.decision && !recipientsComplete ? (
-        <p className='text-sm text-muted-foreground'>
-          Loading every poster before a referral can be recorded…
-        </p>
+        <RecipientsGate
+          status={recipientsStatus}
+          onLoad={onLoadRecipients}
+          onRetry={onRetryRecipients}
+        />
       ) : null}
       {territorial.decision && recipientsComplete ? (
         <CopyrightStaffTerritorialReferralFields
@@ -55,5 +65,47 @@ export function CopyrightStaffTerritorialDispute({
         />
       ) : null}
     </section>
+  )
+}
+
+function RecipientsGate(props: {
+  status: 'idle' | 'loading' | 'failed'
+  onLoad: () => void
+  onRetry: () => void
+}) {
+  if (props.status === 'idle') {
+    return (
+      <Button
+        type='button'
+        variant='outline'
+        onClick={props.onLoad}
+      >
+        Record referral
+      </Button>
+    )
+  }
+  if (props.status === 'failed') {
+    return (
+      <div
+        className='space-y-2'
+        role='alert'
+      >
+        <p className='text-sm text-destructive'>
+          The posters could not all be loaded, so a referral cannot be recorded yet.
+        </p>
+        <Button
+          type='button'
+          variant='outline'
+          onClick={props.onRetry}
+        >
+          Retry
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <p className='text-sm text-muted-foreground'>
+      Loading every poster before a referral can be recorded…
+    </p>
   )
 }

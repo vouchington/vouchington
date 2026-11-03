@@ -95,6 +95,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete={false}
+        recipientsStatus='loading'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     expect(screen.getByText(/Loading every poster/)).toBeVisible()
@@ -110,6 +113,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete
+        recipientsStatus='idle'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -138,6 +144,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete
+        recipientsStatus='idle'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -170,6 +179,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete
+        recipientsStatus='idle'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     fireEvent.click(screen.getByRole('combobox', { name: 'Body outcome' }))
@@ -201,6 +213,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete
+        recipientsStatus='idle'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Record implementation' }))
@@ -223,6 +238,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete
+        recipientsStatus='idle'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     const body = screen.getByLabelText('Dispute settlement body')
@@ -266,6 +284,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
         recipients={recipients}
         recipientsComplete
+        recipientsStatus='idle'
+        onLoadRecipients={() => undefined}
+        onRetryRecipients={() => undefined}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
