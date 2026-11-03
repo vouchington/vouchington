@@ -10,26 +10,11 @@ import {
   recoverExportRequests,
 } from './account-data-requests.mts'
 
-type AccountDataRequestJobProcessors = {
-  processCleanupExpiredExports: typeof processCleanupExpiredExports
-  processExportRequest: typeof processExportRequest
-  recoverExportRequests: typeof recoverExportRequests
-}
-
-const PROCESSORS: AccountDataRequestJobProcessors = {
-  processCleanupExpiredExports,
-  processExportRequest,
-  recoverExportRequests,
-}
-
-export async function processAccountDataRequestJob(
-  job: Job,
-  processors = PROCESSORS,
-): Promise<void> {
+export async function processAccountDataRequestJob(job: Job): Promise<void> {
   if (job.name === ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name) {
     if (!job.data.processingAttemptId) return
     const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1)
-    await processors.processExportRequest(
+    await processExportRequest(
       job.data.requestId,
       job.data.userId,
       job.data.processingAttemptId,
@@ -38,11 +23,11 @@ export async function processAccountDataRequestJob(
     return
   }
   if (job.name === ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name) {
-    await processors.processCleanupExpiredExports()
+    await processCleanupExpiredExports()
     return
   }
   if (job.name === ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name) {
-    await processors.recoverExportRequests()
+    await recoverExportRequests()
     return
   }
   throw new Error(`Unknown job name: ${job.name}`)
