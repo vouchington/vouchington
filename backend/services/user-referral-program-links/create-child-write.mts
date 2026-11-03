@@ -2,7 +2,6 @@ import { write, type QueryOptions } from '@data-stores/psql'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
-import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import sql from 'sql-template-strings'
 import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
@@ -14,7 +13,10 @@ type ResolvedChildReferralLink = {
   label: string | null
 }
 
-/** Validated unfurl candidates, with manual-link conflicts left untouched. */
+/**
+ * Validated unfurl candidates, with manual-link conflicts left untouched. Runs in the caller's
+ * transaction, so the caller clears the prioritized-links cache after commit.
+ */
 export async function insertChildReferralLinkRows(
   provenance: ContentProvenance,
   inputs: ResolvedChildReferralLink[],
@@ -57,6 +59,5 @@ export async function insertChildReferralLinkRows(
         { query },
       ),
   )
-  await clearPrioritizedLinksCache(rowsToInsert.map(input => input.referralProgramId))
   return rows
 }

@@ -18,6 +18,7 @@ import {
   markReferralLinkUnfurlFailed,
 } from '@services/user-referral-program-links'
 import { getAmexCardSlugCatalog, constructChildUrls } from './construct-amex-children.mts'
+import { clearPrioritizedLinksCache } from '@services/user-referral-program-links/prioritized-links-cache'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 /** Serializes concurrent unfurls of the same parent so their reconcile passes can't race. */
@@ -124,6 +125,9 @@ export async function runReferralLinkUnfurl(parentLinkId: string): Promise<void>
     await reconcileChildrenForParent(parentLinkId, keptUrlIds, { query })
   }
   await query.commit()
+  await clearPrioritizedLinksCache([
+    ...new Set(validCandidates.map(candidate => candidate.referralProgramId)),
+  ])
 
   if (keptUrlIds.length === 0) {
     // Graceful zero-child completion (URL-shape drift, bot-blocking, every candidate already
