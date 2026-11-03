@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUrlWithHostname } from '@voucha/test-helpers'
+import { createTestUrlWithHostname, insertHackerNewsReferencesForTest } from '@voucha/test-helpers'
 import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
 } from './hacker-news-references-read.mts'
 import {
-  getHackerNewsDetailForUrlIds,
   getHackerNewsDetailsByEntity,
   getHackerNewsSummariesByEntity,
 } from './hacker-news-references.mts'
-import { replaceHackerNewsReferences } from './hacker-news-references-write.mts'
 import { HACKER_NEWS_STORY_CAP_PER_URL } from './hacker-news-references-types.mts'
 
 const story = (id: number, points = 10) => ({
@@ -25,7 +23,7 @@ const comment = (id: number, postedAt = '2026-02-01T00:00:00.000Z') => ({
 })
 
 describe('Hacker News references', () => {
-  it('stores capped rows, keeps real totals, and reads summaries and details in batches', async () => {
+  it('keeps real totals, caps rows, and reads summaries and details in batches', async () => {
     const [capped, empty, missing] = await Promise.all([
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
@@ -34,15 +32,15 @@ describe('Hacker News references', () => {
     const manyStories = Array.from({ length: HACKER_NEWS_STORY_CAP_PER_URL + 5 }, (_, i) =>
       story(1000 + i, i),
     )
-    await replaceHackerNewsReferences([
-      {
+    await Promise.all([
+      insertHackerNewsReferencesForTest({
         url_id: capped,
         story_count: 80,
         comment_count: 2,
         stories: manyStories,
         comments: [comment(5, '2026-02-01T00:00:00.000Z'), comment(6, '2026-03-01T00:00:00.000Z')],
-      },
-      { url_id: empty, story_count: 0, comment_count: 0, stories: [], comments: [] },
+      }),
+      insertHackerNewsReferencesForTest({ url_id: empty, story_count: 0, comment_count: 0 }),
     ])
 
     const summaries = await getHackerNewsSummariesByEntity({
@@ -52,38 +50,37 @@ describe('Hacker News references', () => {
     })
     expect(summaries).toEqual({ cappedEntity: { story_count: 80, comment_count: 2 } })
 
-    const details = await getHackerNewsDetailsByEntity({ cappedEntity: [capped] })
+    const details = await getHackerNewsDetailsByEntity({
+      cappedEntity: [capped],
+      missingEntity: [missing],
+    })
     const detail = details.cappedEntity!
     expect(detail.stories).toHaveLength(HACKER_NEWS_STORY_CAP_PER_URL)
     expect(detail.stories[0]?.points).toBeGreaterThan(detail.stories[1]!.points)
     expect(detail.comments.map(c => c.hacker_news_item_id)).toEqual([6, 5])
-    expect(await getHackerNewsDetailForUrlIds([missing])).toBeNull()
-    expect(await getHackerNewsDetailForUrlIds([capped])).toEqual(detail)
+    expect(details.missingEntity).toBeUndefined()
   })
 
-  it('replaces earlier rows and dedupes items shared by an entity with several URLs', async () => {
+  it('dedupes items shared by an entity with several URLs', async () => {
     const [first, second] = await Promise.all([
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
     ])
-    await replaceHackerNewsReferences([
-      { url_id: first, story_count: 1, comment_count: 0, stories: [story(1)], comments: [] },
-    ])
-    await replaceHackerNewsReferences([
-      {
+    await Promise.all([
+      insertHackerNewsReferencesForTest({
         url_id: first,
         story_count: 2,
         comment_count: 1,
         stories: [story(2), story(3)],
         comments: [comment(7)],
-      },
-      {
+      }),
+      insertHackerNewsReferencesForTest({
         url_id: second,
         story_count: 1,
         comment_count: 1,
         stories: [story(3)],
         comments: [comment(7)],
-      },
+      }),
     ])
 
     const items = await getHackerNewsItemsByUrlIds([first])
@@ -104,14 +101,7 @@ describe('Hacker News references', () => {
     expect((await getHackerNewsTotalsByUrlIds([first, second])).size).toBe(2)
   })
 
-  it('rejects oversized and duplicate writes and ignores empty batches', async () => {
-    const url = await createTestUrlWithHostname()
-    const result = { url_id: url, story_count: 0, comment_count: 0, stories: [], comments: [] }
-    await expect(replaceHackerNewsReferences([])).resolves.toBeUndefined()
-    await expect(replaceHackerNewsReferences([result, result])).rejects.toThrow('duplicate')
-    await expect(
-      replaceHackerNewsReferences(Array.from({ length: 201 }, () => result)),
-    ).rejects.toThrow('At most')
+  it('reads nothing for empty input', async () => {
     expect(await getHackerNewsSummariesByEntity({})).toEqual({})
     expect((await getHackerNewsItemsByUrlIds([])).size).toBe(0)
   })
