@@ -17,13 +17,20 @@ import {
 import { getMembershipByUserId } from '@services/memberships'
 import { insertStripeEvent } from '@services/stripe/insert-event'
 import * as stripeCustomers from '@modules/stripe/customers'
+import { getStripeInvoice } from '@modules/stripe'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
+import { getTestMembershipRefunds } from '@voucha/test-helpers/entities/membership-refund-event-state'
 import { handleStripeEvent } from './event-handlers.mts'
 
 const { mockGetStripeSubscription } = vi.hoisted(() => ({
   mockGetStripeSubscription: vi.fn<typeof getStripeSubscription>(),
 }))
 const applicationContext = { applicationId: `stripe-event-handlers-${randomUUID()}` }
+
+vi.mock<typeof import('@modules/stripe')>(import('@modules/stripe'), async importActual => ({
+  ...(await importActual()),
+  getStripeInvoice: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock<typeof import('@modules/stripe/subscriptions')>(
   import('@modules/stripe/subscriptions'),
@@ -190,6 +197,66 @@ describe('handleStripeEvent', () => {
 
     expect(result).toBe('processed')
     expect((await getTestMembershipRaw(membership.id))?.status).toBe('cancelled')
+  })
+
+  it.each(['invoice.payment_failed', 'invoice.payment_action_required'])(
+    'moves the active membership to past_due from %s',
+    async type => {
+      const { membership, subscriptionId, customerId } = await seedMembership('past_due')
+      const event = await insertStripeEvent(
+        productionEvent(type, {
+          id: createUniqueStripeId('in', 'handlers'),
+          object: 'invoice',
+          customer: customerId,
+          subscription: subscriptionId,
+        }),
+      )
+
+      const result = await handleStripeEvent(event.payload, applicationContext)
+
+      expect(result).toBe('processed')
+      expect((await getTestMembershipRaw(membership.id))?.status).toBe('past_due')
+    },
+  )
+
+  it('records the refund receipt from charge.refunded', async () => {
+    const user = await createTestUser()
+    const sku = await createTestSku({
+      provider_application_id: applicationContext.applicationId,
+      provider_environment: 'test',
+    })
+    const subscriptionId = createUniqueStripeId('sub', 'refund')
+    await createTestMembership({
+      user_id: user.id,
+      sku_id: sku.id,
+      stripe_subscription_id: subscriptionId,
+      provider_application_id: applicationContext.applicationId,
+      provider_environment: 'test',
+    })
+    vi.mocked(getStripeInvoice).mockResolvedValue({
+      parent: { subscription_details: { subscription: subscriptionId } },
+    } as never)
+    const refundId = createUniqueStripeId('re', 'refund')
+
+    const result = await handleStripeEvent(
+      createStripeEvent('charge.refunded', {
+        id: createUniqueStripeId('ch', 'refund'),
+        invoice: 'in_1',
+        created: 1_700_000_000,
+        refunds: {
+          data: [{ id: refundId, amount: 1000, currency: 'usd', metadata: {} }],
+          has_more: false,
+        },
+      }),
+      applicationContext,
+    )
+
+    expect(result).toBe('processed')
+    expect(
+      (await getTestMembershipRefunds(user.id)).find(
+        refund => refund.stripe_refund_id === refundId,
+      ),
+    ).toMatchObject({ source: 'stripe_dashboard', has_revoked_access: false })
   })
 
   it.each(['customer.subscription.created', 'invoice.finalized', 'payment_intent.created'])(
