@@ -103,6 +103,28 @@ export function rejectRegistryScriptsForTest() {
   return invokeScript
 }
 
+/**
+ * Runs the first registry script for real, as registration does, then rejects every later one with
+ * `error`, as when the reservation abort cannot reach Valkey.
+ */
+export function rejectRegistryScriptsAfterRegistrationForTest(error: Error) {
+  const prototype = commandClientPrototype()
+  const realInvokeScript = prototype.invokeScript
+  let invocations = 0
+  const invokeScript = vi.spyOn(prototype, 'invokeScript').mockImplementation(async function (
+    this: unknown,
+    ...args: unknown[]
+  ) {
+    invocations += 1
+    if (invocations > 1) throw error
+    return realInvokeScript.apply(this, args)
+  })
+  onTestFinished(() => {
+    invokeScript.mockRestore()
+  })
+  return invokeScript
+}
+
 type RegistryScriptOptions = { keys?: unknown[]; args?: unknown[] } | undefined
 
 /**

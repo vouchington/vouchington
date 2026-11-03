@@ -22,10 +22,8 @@ type NativePersistenceState = {
 async function lockAndReadNativePersistenceState(
   input: { flowId: string; userId: string; did: string },
   query: TransactionQuery,
-  afterAuthorizationLock?: () => Promise<void>,
 ): Promise<NativePersistenceState | undefined> {
   await lockBlueskyAuthorizationOwner(input.userId, input.did, input.flowId, query)
-  await afterAuthorizationLock?.()
   return readNativePersistenceState(input, query)
 }
 
@@ -53,23 +51,16 @@ async function readNativePersistenceState(
   return rows[0]
 }
 
-export async function persistNativeBlueskyLinkCompletion(
-  input: {
-    flowId: string
-    userId: string
-    did: string
-    handle: string
-    tokenHash: string
-  },
-  dependencies?: { afterAuthorizationLock?: () => Promise<void> },
-): Promise<void> {
+export async function persistNativeBlueskyLinkCompletion(input: {
+  flowId: string
+  userId: string
+  did: string
+  handle: string
+  tokenHash: string
+}): Promise<void> {
   const expiresAt = new Date(Date.now() + COMPLETION_TTL_MS)
   await using query = await beginTransaction()
-  const persistenceState = await lockAndReadNativePersistenceState(
-    input,
-    query,
-    dependencies?.afterAuthorizationLock,
-  )
+  const persistenceState = await lockAndReadNativePersistenceState(input, query)
   let outcome: 'active' | 'missing' | 'nonmatching' | 'ready' | 'suspended' | 'unclaimable'
   if (!persistenceState) {
     outcome = 'unclaimable'

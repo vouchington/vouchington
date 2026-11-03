@@ -8,6 +8,11 @@ export type CreateBatchResult = { hasMore: boolean } & (
   | { empty: true }
 )
 
+/**
+ * Production always takes the defaults. The seam stays because `createBatch` uploads to S3 and
+ * submits a Bedrock invocation job, and `getBatchCreationLimits` sums in-flight and hourly batch
+ * rows across the whole shared table, so a test cannot make either deterministic on a dirty database.
+ */
 export type BatchCreationDependencies = {
   getBatchCreationLimits: typeof getBatchCreationLimits
   createBatch: typeof createBatch

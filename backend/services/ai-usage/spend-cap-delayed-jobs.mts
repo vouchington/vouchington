@@ -21,7 +21,6 @@ const reopenRegistrationScript = registerWorkerQueueScript(
   loadScript('reopen-spend-cap-registration.lua', import.meta.url),
 )
 
-type RegistryClient = Pick<typeof workerQueueCommandClient, 'hset' | 'invokeScript'>
 type SpendCapDelayData = { spendCapDelayedDay?: string }
 export function spendCapDelayedRegistryKey(day: string): string {
   return `${workerQueuePrefix ?? 'glide'}:{ai_agents}:ai-spend-cap-delayed:${day}`
@@ -59,13 +58,7 @@ async function registerDelayedJob<T extends SpendCapDelayData>(
     await job.updateData({ ...job.data, spendCapDelayedDay: day })
     await workerQueueCommandClient.hset(key, { [field]: MARKED })
   } catch (err) {
-    await abortSpendCapDelayedJobRegistration(
-      key,
-      field,
-      registration.generation,
-      workerQueueCommandClient,
-      err,
-    )
+    await abortSpendCapDelayedJobRegistration(key, field, registration.generation, err)
   }
   return registration
 }
@@ -73,9 +66,8 @@ async function registerDelayedJob<T extends SpendCapDelayData>(
 export async function reopenSpendCapDelayedJobRegistration(
   day: string,
   generation: string,
-  registry: RegistryClient = workerQueueCommandClient,
 ): Promise<boolean> {
-  const reopened = await registry.invokeScript(reopenRegistrationScript, {
+  const reopened = await workerQueueCommandClient.invokeScript(reopenRegistrationScript, {
     keys: [spendCapDelayedRegistryKey(day)],
     args: [generation],
   })
