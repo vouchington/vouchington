@@ -47,9 +47,9 @@ export async function getActiveCommunityBans(
 ): Promise<CommunityBan[]> {
   const { rows } = await read(
     sql`/* getActiveCommunityBans */
-    -- no-mistakes-disable-next-line postgres-bounded-statements: one user may hold several active bans in a community by design; rows are added only by staff actions.
     SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
       created_at, updated_at, lifted_at, lifted_by_id
+    -- no-mistakes-disable-next-line postgres-bounded-statements: one user may hold several active bans in a community by design; rows are added only by staff actions.
     FROM community_bans
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
