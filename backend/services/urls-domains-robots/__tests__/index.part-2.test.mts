@@ -5,10 +5,15 @@ import { fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
+import {
+  pinnedRobotsFetchResult,
+  resolvePublicRobotsAddresses,
+} from '../../../test-helpers/robots-pinned-fetch.mts'
 
-const mockFetchWithTimeoutSimple = vi.fn<VitestLooseMock>()
+const mockFetchWithTimeout = vi.fn<VitestLooseMock>()
 const dependencies = {
-  fetchWithTimeoutSimple: mockFetchWithTimeoutSimple,
+  validateUrl: resolvePublicRobotsAddresses,
+  fetchWithTimeout: mockFetchWithTimeout,
   isNetworkError: vi.fn<VitestLooseMock>(),
   isRetryableError: vi.fn<VitestLooseMock>(),
   readResponseBody: vi.fn<VitestLooseMock>(),
@@ -41,7 +46,7 @@ describe('isUrlCrawlable with ignoreRobotsRules', () => {
 
   it('returns false when robots.txt disallows path and no ignoreRobotsRules flag', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     dependencies.readResponseBody.mockResolvedValue('User-agent: *\nDisallow: /feeds/')
 
     const result = await isUrlCrawlableForTest(`https://${domain}/feeds/videos.xml`, 'Googlebot')
@@ -56,7 +61,7 @@ describe('isUrlCrawlable with ignoreRobotsRules', () => {
     })
 
     expect(result).toBe(true)
-    expect(mockFetchWithTimeoutSimple).not.toHaveBeenCalled()
+    expect(mockFetchWithTimeout).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -71,7 +76,7 @@ describe('isUrlCrawlable with ignoreRobotsRules', () => {
     })
 
     expect(result).toBe(false)
-    expect(mockFetchWithTimeoutSimple).not.toHaveBeenCalled()
+    expect(mockFetchWithTimeout).not.toHaveBeenCalled()
   })
 
   it('respects the hard blacklist through the default dependency path', async () => {
@@ -95,9 +100,9 @@ describe('fetchRobotsTxtCached', () => {
   it('retries retryable fetch errors before returning robots.txt content', async () => {
     const domain = randomDomain()
     const retryableError = new Error('temporary upstream failure')
-    mockFetchWithTimeoutSimple
+    mockFetchWithTimeout
       .mockRejectedValueOnce(retryableError)
-      .mockResolvedValueOnce(robotsResponse())
+      .mockResolvedValueOnce(pinnedRobotsFetchResult(robotsResponse()))
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(true)
     dependencies.readResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
@@ -106,23 +111,25 @@ describe('fetchRobotsTxtCached', () => {
 
     expect(result).toBe('User-agent: *\nAllow: /')
     expect(dependencies.isRetryableError).toHaveBeenCalledWith(retryableError, undefined)
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(2)
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(2)
   })
 
   it('returns complete disallow after exhausting 5xx retries', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 503,
-      statusText: 'Service Unavailable',
-      body: { cancel: () => Promise.resolve() },
-    })
+    mockFetchWithTimeout.mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 503,
+        statusText: 'Service Unavailable',
+        body: { cancel: () => Promise.resolve() },
+      }),
+    )
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(false)
 
     const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(3)
   })
 
   it('returns a fresh Valkey cache hit without fetching', async () => {
@@ -136,42 +143,44 @@ describe('fetchRobotsTxtCached', () => {
 
     try {
       await expect(fetchRobotsTxtCached(domain)).resolves.toBe(cachedRobotsTxt)
-      expect(mockFetchWithTimeoutSimple).not.toHaveBeenCalled()
+      expect(mockFetchWithTimeout).not.toHaveBeenCalled()
     } finally {
       await cache.delete(domain)
     }
   })
 
   it.each([
-    [301, 'Moved Permanently'],
-    [302, 'Found'],
+    [300, 'Multiple Choices'],
+    [304, 'Not Modified'],
   ])('throws for unusual HTTP status %i', async (status, statusText) => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status,
-      statusText,
-      body: { cancel: () => Promise.resolve() },
-    })
+    mockFetchWithTimeout.mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status,
+        statusText,
+        body: { cancel: () => Promise.resolve() },
+      }),
+    )
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(false)
 
     await expect(fetchRobotsTxtCachedForTest(domain)).rejects.toThrow(
       `Failed to fetch robots.txt for ${domain}: ${status} ${statusText}`,
     )
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(1)
   })
 
   it('propagates retryable non-network errors after retries are exhausted', async () => {
     const domain = randomDomain()
     const retryableError = new Error('temporary upstream failure')
-    mockFetchWithTimeoutSimple.mockRejectedValue(retryableError)
+    mockFetchWithTimeout.mockRejectedValue(retryableError)
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(true)
 
     await expect(fetchRobotsTxtCached(domain, { ...dependencies, retryDelayMs: 0 })).rejects.toBe(
       retryableError,
     )
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(3)
     expect(dependencies.readResponseBody).not.toHaveBeenCalled()
   })
 })
@@ -183,7 +192,11 @@ describe('real terminated robots response bodies', () => {
       `https://${domain}/robots.txt`,
       async (transport, requestCount) => {
         const result = await fetchRobotsTxtCached(domain, {
-          fetchWithTimeoutSimple: url => transport(url),
+          validateUrl: resolvePublicRobotsAddresses,
+          fetchWithTimeout: async ({ url }) => ({
+            response: await transport(url),
+            responseSignal: new AbortController().signal,
+          }),
         })
         expect(result).toBe('User-agent: *\nDisallow: /')
         expect(requestCount()).toBe(3)

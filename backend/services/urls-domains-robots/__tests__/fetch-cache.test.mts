@@ -2,6 +2,10 @@ import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock as captureException } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import {
+  pinnedRobotsFetchResult,
+  resolvePublicRobotsAddresses,
+} from '../../../test-helpers/robots-pinned-fetch.mts'
 import { fetchRobotsTxtCached } from '../index.mts'
 
 const ALLOW_ROBOTS_TXT = 'User-agent: *\nAllow: /'
@@ -25,11 +29,10 @@ function robotsCachePair() {
   }
 }
 
-function cachedFetchDependencies(
-  fetchWithTimeoutSimple: ReturnType<typeof vi.fn<VitestLooseMock>>,
-) {
+function cachedFetchDependencies(fetchWithTimeout: ReturnType<typeof vi.fn<VitestLooseMock>>) {
   return {
-    fetchWithTimeoutSimple,
+    validateUrl: resolvePublicRobotsAddresses,
+    fetchWithTimeout,
     checkDomainBlacklisted: async () => false,
     isNetworkError: () => false,
     isRetryableError: () => false,
@@ -41,17 +44,19 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
   it('remembers complete disallow on the short marker without writing the 24-hour rules cache', async () => {
     const domain = randomDomain()
     const { rules, unreachable } = robotsCachePair()
-    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
-      status: 503,
-      statusText: 'Service Unavailable',
-      body: { cancel: () => Promise.resolve() },
-    })
+    const fetchWithTimeout = vi.fn<VitestLooseMock>().mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 503,
+        statusText: 'Service Unavailable',
+        body: { cancel: () => Promise.resolve() },
+      }),
+    )
 
     try {
       await expect(
-        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple)),
+        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout)),
       ).resolves.toBe(DISALLOW_ROBOTS_TXT)
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(3)
       expect(await rules.get(domain)).toBeNull()
       expect(await unreachable.get(domain)).toBe('unreachable')
       const ttlSeconds = await cacheValkeyClient.ttl(unreachable.getKey(domain))
@@ -59,9 +64,9 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
       expect(ttlSeconds).toBeLessThanOrEqual(UNREACHABLE_TTL_SECONDS)
 
       await expect(
-        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple)),
+        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout)),
       ).resolves.toBe(DISALLOW_ROBOTS_TXT)
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(3)
     } finally {
       await rules.delete(domain)
       await unreachable.delete(domain)
@@ -72,25 +77,25 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
     const domain = randomDomain()
     const { rules, unreachable } = robotsCachePair()
     const body = 'User-agent: *\nDisallow: /secret'
-    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>(async () => {
+    const fetchWithTimeout = vi.fn<VitestLooseMock>(async () => {
       await rules.set(domain, body)
-      return {
+      return pinnedRobotsFetchResult({
         status: 503,
         statusText: 'Service Unavailable',
         body: { cancel: () => Promise.resolve() },
-      }
+      })
     })
 
     try {
       await expect(
-        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple)),
+        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout)),
       ).resolves.toBe(body)
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(3)
       expect(await rules.get(domain)).toBe(body)
       expect(await unreachable.get(domain)).toBeNull()
 
-      await fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple))
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+      await fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout))
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(3)
     } finally {
       await rules.delete(domain)
       await unreachable.delete(domain)
@@ -100,21 +105,23 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
   it('reads a cached unreachable marker together with the rules key', async () => {
     const domain = randomDomain()
     const { rules, unreachable } = robotsCachePair()
-    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
-      status: 503,
-      statusText: 'Service Unavailable',
-      body: { cancel: () => Promise.resolve() },
-    })
-    const dependencies = cachedFetchDependencies(fetchWithTimeoutSimple)
+    const fetchWithTimeout = vi.fn<VitestLooseMock>().mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 503,
+        statusText: 'Service Unavailable',
+        body: { cancel: () => Promise.resolve() },
+      }),
+    )
+    const dependencies = cachedFetchDependencies(fetchWithTimeout)
     const mget = vi.spyOn(cacheValkeyClient, 'mget')
 
     try {
       await fetchRobotsTxtCached(domain, dependencies)
-      fetchWithTimeoutSimple.mockClear()
+      fetchWithTimeout.mockClear()
       mget.mockClear()
 
       await expect(fetchRobotsTxtCached(domain, dependencies)).resolves.toBe(DISALLOW_ROBOTS_TXT)
-      expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
+      expect(fetchWithTimeout).not.toHaveBeenCalled()
       expect(mget).toHaveBeenCalledOnce()
       expect(mget.mock.calls[0]?.[0]).toEqual([rules.getKey(domain), unreachable.getKey(domain)])
     } finally {
@@ -127,11 +134,13 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
   it('fetches robots.txt when the combined cache read fails', async () => {
     const domain = randomDomain()
     const { rules, unreachable } = robotsCachePair()
-    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-      body: { cancel: () => Promise.resolve() },
-    })
+    const fetchWithTimeout = vi.fn<VitestLooseMock>().mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 404,
+        statusText: 'Not Found',
+        body: { cancel: () => Promise.resolve() },
+      }),
+    )
     const cacheError = new Error(`robots cache unavailable ${domain}`)
     const rulesKey = rules.getKey(domain)
     const unreachableKey = unreachable.getKey(domain)
@@ -145,9 +154,9 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
 
     try {
       await expect(
-        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple)),
+        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout)),
       ).resolves.toBe(ALLOW_ROBOTS_TXT)
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(1)
       expect(await rules.get(domain)).toBe(ALLOW_ROBOTS_TXT)
       expect(await unreachable.get(domain)).toBeNull()
       expect(captureException.mock.calls.some(([error]) => error === cacheError)).toBe(true)
@@ -161,22 +170,24 @@ describe('fetchRobotsTxtCached unreachable decisions', () => {
   it('caches an HTTP 404 allow decision on the 24-hour rules key', async () => {
     const domain = randomDomain()
     const { rules, unreachable } = robotsCachePair()
-    const fetchWithTimeoutSimple = vi.fn<VitestLooseMock>().mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-      body: { cancel: () => Promise.resolve() },
-    })
+    const fetchWithTimeout = vi.fn<VitestLooseMock>().mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 404,
+        statusText: 'Not Found',
+        body: { cancel: () => Promise.resolve() },
+      }),
+    )
 
     try {
       await expect(
-        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple)),
+        fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout)),
       ).resolves.toBe(ALLOW_ROBOTS_TXT)
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(1)
       expect(await rules.get(domain)).toBe(ALLOW_ROBOTS_TXT)
       expect(await unreachable.get(domain)).toBeNull()
 
-      await fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeoutSimple))
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
+      await fetchRobotsTxtCached(domain, cachedFetchDependencies(fetchWithTimeout))
+      expect(fetchWithTimeout).toHaveBeenCalledTimes(1)
     } finally {
       await rules.delete(domain)
       await unreachable.delete(domain)

@@ -1,13 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, it, expect, describe, vi } from 'vitest'
 import type { RobotsDependencies } from '../fetch-retry.mts'
+import {
+  pinnedRobotsFetchResult,
+  resolvePublicRobotsAddresses,
+  ROBOTS_PUBLIC_ADDRESSES,
+} from '../../../test-helpers/robots-pinned-fetch.mts'
 import { fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { insertTestDomainBlacklist } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
 // Exercise a controlled HTTP 404 through the public API while keeping the real cache.
-const fetchWithTimeoutSimple = vi.fn<RobotsDependencies['fetchWithTimeoutSimple']>()
-const dependencies = { fetchWithTimeoutSimple }
+const fetchWithTimeout = vi.fn<RobotsDependencies['fetchWithTimeout']>()
+const dependencies = { validateUrl: resolvePublicRobotsAddresses, fetchWithTimeout }
 let exampleCom: string
 let exampleNet: string
 let exampleOrg: string
@@ -18,7 +23,9 @@ describe('index.generated', () => {
     exampleCom = `${randomUUID()}.example.com`
     exampleNet = `${randomUUID()}.example.net`
     exampleOrg = `${randomUUID()}.example.org`
-    fetchWithTimeoutSimple.mockReset().mockResolvedValue(new Response(null, { status: 404 }))
+    fetchWithTimeout
+      .mockReset()
+      .mockResolvedValue(pinnedRobotsFetchResult(new Response(null, { status: 404 })))
   })
 
   it('fetchRobotsTxtCached repeats the permissive body for example.net', async () => {
@@ -26,9 +33,11 @@ describe('index.generated', () => {
     const second = await fetchRobotsTxtCached(exampleNet, dependencies)
     expect(first).toBe(PERMISSIVE_ROBOTS_TXT)
     expect(second).toBe(first)
-    expect(fetchWithTimeoutSimple).toHaveBeenCalledExactlyOnceWith(
-      `https://${exampleNet}/robots.txt`,
-      10_000,
+    expect(fetchWithTimeout).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        url: `https://${exampleNet}/robots.txt`,
+        resolvedAddresses: ROBOTS_PUBLIC_ADDRESSES,
+      }),
     )
   })
 
@@ -60,7 +69,7 @@ describe('index.generated', () => {
     const result = await fetchRobotsTxtCached(testDomain, dependencies)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
-    expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
+    expect(fetchWithTimeout).not.toHaveBeenCalled()
   })
 
   it('isUrlCrawlable returns false for blacklisted domains', async () => {
@@ -73,6 +82,6 @@ describe('index.generated', () => {
     const result = await isUrlCrawlable(`https://${testDomain}/page`, 'MyBot/1.0', { dependencies })
 
     expect(result).toBe(false)
-    expect(fetchWithTimeoutSimple).not.toHaveBeenCalled()
+    expect(fetchWithTimeout).not.toHaveBeenCalled()
   })
 })
