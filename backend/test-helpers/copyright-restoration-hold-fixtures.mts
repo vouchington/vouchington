@@ -71,7 +71,7 @@ export async function createCopyrightRestorationHoldFixture(targetCount = 1) {
     idempotencyKey: `copyright-hold-receipt-${crypto.randomUUID()}`,
     recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
   })
-  return { aggregate, assessment, claimant, moderator, notice, postId }
+  return { aggregate, assessment, claimant, moderator, notice }
 }
 
 async function createAssessmentAndReceipt(
