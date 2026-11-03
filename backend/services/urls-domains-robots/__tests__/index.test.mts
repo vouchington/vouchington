@@ -2,13 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isUrlCrawlable, fetchRobotsTxtCached, computeHostnameRateLimitMs } from '../index.mts'
 import { insertTestUrlHostname } from '@voucha/test-helpers'
 import { HttpResponseSizeError } from '@vouchington/sentry'
+import {
+  pinnedRobotsFetchResult,
+  ROBOTS_PUBLIC_ADDRESSES,
+  resolvePublicRobotsAddresses,
+} from '../../../test-helpers/robots-pinned-fetch.mts'
 
-const mockFetchWithTimeoutSimple = vi.fn<VitestLooseMock>()
+const mockFetchWithTimeout = vi.fn<VitestLooseMock>()
 const mockIsNetworkError = vi.fn<VitestLooseMock>()
 const mockIsRetryableError = vi.fn<VitestLooseMock>()
 const mockReadResponseBody = vi.fn<VitestLooseMock>()
 const dependencies = {
-  fetchWithTimeoutSimple: mockFetchWithTimeoutSimple,
+  validateUrl: resolvePublicRobotsAddresses,
+  fetchWithTimeout: mockFetchWithTimeout,
   isNetworkError: mockIsNetworkError,
   isRetryableError: mockIsRetryableError,
   readResponseBody: mockReadResponseBody,
@@ -54,12 +60,12 @@ describe('urls-domains-robots', () => {
     const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
-    expect(mockFetchWithTimeoutSimple).not.toHaveBeenCalled()
+    expect(mockFetchWithTimeout).not.toHaveBeenCalled()
   })
 
   it('fetches robots.txt when hostname is not blocked and not in blacklist', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
 
     const result = await fetchRobotsTxtCachedForTest(domain)
@@ -67,14 +73,19 @@ describe('urls-domains-robots', () => {
     // result is a direct passthrough of readResponseBody's mocked return value, so
     // matching it alone can't distinguish "actually fetched" from a hard-coded shortcut.
     // Assert the not-blocked/not-blacklisted path actually reached the real fetch call.
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledWith(`https://${domain}/robots.txt`, 10_000)
+    expect(mockFetchWithTimeout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `https://${domain}/robots.txt`,
+        resolvedAddresses: ROBOTS_PUBLIC_ADDRESSES,
+      }),
+    )
     expect(result).toBe('User-agent: *\nAllow: /')
   })
 
   it('returns robots.txt content on successful fetch', async () => {
     const robotsContent = 'User-agent: *\nDisallow: /admin\nAllow: /'
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue(robotsContent)
 
     const result = await fetchRobotsTxtCachedForTest(domain)
@@ -94,7 +105,7 @@ describe('urls-domains-robots', () => {
       524_289,
       524_288,
     )
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockRejectedValue(oversizedError)
 
     const result = await fetchRobotsTxtCachedForTest(domain)
@@ -109,11 +120,13 @@ describe('urls-domains-robots', () => {
 
   it('treats a successful empty robots.txt response as allow all', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 200,
-      statusText: 'OK',
-      body: null,
-    })
+    mockFetchWithTimeout.mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 200,
+        statusText: 'OK',
+        body: null,
+      }),
+    )
 
     const result = await fetchRobotsTxtCachedForTest(domain)
 
@@ -124,23 +137,25 @@ describe('urls-domains-robots', () => {
   it('returns complete disallow after network errors are exhausted', async () => {
     const domain = randomDomain()
     const networkError = new Error('Network timeout')
-    mockFetchWithTimeoutSimple.mockRejectedValue(networkError)
+    mockFetchWithTimeout.mockRejectedValue(networkError)
     mockIsNetworkError.mockReturnValue(true)
 
     const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(3)
   })
 
   it('retries on 5xx error and succeeds on retry', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple
-      .mockResolvedValueOnce({
-        status: 503,
-        statusText: 'Service Unavailable',
-      })
-      .mockResolvedValueOnce(robotsResponse())
+    mockFetchWithTimeout
+      .mockResolvedValueOnce(
+        pinnedRobotsFetchResult({
+          status: 503,
+          statusText: 'Service Unavailable',
+        }),
+      )
+      .mockResolvedValueOnce(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
     mockIsNetworkError.mockReturnValue(false)
     mockIsRetryableError.mockReturnValue(true)
@@ -148,15 +163,17 @@ describe('urls-domains-robots', () => {
     const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
-    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(2)
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(2)
   })
 
   it('returns ALLOW on 4xx client errors (RFC 9309)', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 401,
-      statusText: 'Unauthorized',
-    })
+    mockFetchWithTimeout.mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 401,
+        statusText: 'Unauthorized',
+      }),
+    )
 
     const result = await fetchRobotsTxtCachedForTest(domain)
 
@@ -165,7 +182,7 @@ describe('urls-domains-robots', () => {
 
   it('returns false when robots.txt disallows path', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nDisallow: /admin')
 
     const result = await isUrlCrawlableForTest(`https://${domain}/admin/panel`, 'Googlebot')
@@ -175,7 +192,7 @@ describe('urls-domains-robots', () => {
 
   it('returns true when robots.txt allows path', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
 
     const result = await isUrlCrawlableForTest(`https://${domain}/page`, 'Googlebot')
@@ -185,7 +202,7 @@ describe('urls-domains-robots', () => {
 
   it('normalizes null robots.txt content to allow crawling', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue(null)
 
     const result = await isUrlCrawlableForTest(`https://${domain}/page`, 'Googlebot')
@@ -195,7 +212,7 @@ describe('urls-domains-robots', () => {
 
   it('returns false when the URL origin does not match robots.txt', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
 
     const result = await isUrlCrawlableForTest(`http://${domain}/page`, 'Googlebot')
@@ -205,7 +222,7 @@ describe('urls-domains-robots', () => {
 
   it('uses default 1000ms when requestsPerSecondLimit is null', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
 
     const result = await computeHostnameRateLimitMsForTest(domain, null, 'TestBot')
@@ -215,7 +232,7 @@ describe('urls-domains-robots', () => {
 
   it('caps crawl-delay at 60000ms', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nCrawl-delay: 120')
 
     const result = await computeHostnameRateLimitMsForTest(domain, 10, 'TestBot')
@@ -225,7 +242,7 @@ describe('urls-domains-robots', () => {
 
   it('uses crawl-delay when larger than requests-per-second', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nCrawl-delay: 5')
 
     const result = await computeHostnameRateLimitMsForTest(domain, 1, 'TestBot')
@@ -235,7 +252,7 @@ describe('urls-domains-robots', () => {
 
   it('uses requests-per-second when larger than crawl-delay', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue('User-agent: *\nCrawl-delay: 0.1')
 
     const result = await computeHostnameRateLimitMsForTest(domain, 2, 'TestBot')
@@ -245,10 +262,12 @@ describe('urls-domains-robots', () => {
 
   it('ignores crawl-delay when robots.txt fetch fails with 404', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue({
-      status: 404,
-      statusText: 'Not Found',
-    })
+    mockFetchWithTimeout.mockResolvedValue(
+      pinnedRobotsFetchResult({
+        status: 404,
+        statusText: 'Not Found',
+      }),
+    )
 
     const result = await computeHostnameRateLimitMsForTest(domain, 5, 'TestBot')
 

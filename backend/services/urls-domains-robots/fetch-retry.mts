@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { cancelResponseBody, fetchWithTimeout, fetchWithTimeoutSimple } from '@modules/utils/http'
+import { cancelResponseBody, fetchWithTimeout } from '@modules/utils/http'
 import { isNetworkError, isRetryableError } from '@vouchington/http-transport/fetch'
 import { readResponseBody } from '@modules/utils/http-body'
 import { HttpResponseSizeError } from '@vouchington/sentry'
@@ -27,7 +27,6 @@ export type RobotsFetchOutcome = {
 }
 
 export type RobotsDependencies = PinnedRobotsFetchDependencies & {
-  fetchWithTimeoutSimple: typeof fetchWithTimeoutSimple
   readResponseBody: typeof readResponseBody
   isNetworkError: typeof isNetworkError
   isRetryableError: typeof isRetryableError
@@ -36,7 +35,6 @@ export type RobotsDependencies = PinnedRobotsFetchDependencies & {
 }
 
 const defaultRobotsDependencies: RobotsDependencies = {
-  fetchWithTimeoutSimple,
   readResponseBody,
   isNetworkError,
   isRetryableError,
@@ -148,18 +146,9 @@ function fetchRobotsResponse(
   url: string,
   dependencies: RobotsDependencies,
 ): Promise<{ response: Response; bodySignal?: AbortSignal }> {
-  if (dependencies.fetchWithTimeoutSimple !== defaultRobotsDependencies.fetchWithTimeoutSimple) {
-    return plainRobotsResponse(dependencies.fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS))
-  }
   return fetchPinnedRobotsTxt(url, FETCH_TIMEOUT_MS, dependencies)
 }
 
 function releaseUnreadRobotsBody(response: Response, dependencies: RobotsDependencies): void {
   dependencies.cancelResponseBody(response)
-}
-
-function plainRobotsResponse(
-  pending: Promise<Response>,
-): Promise<{ response: Response; bodySignal?: AbortSignal }> {
-  return pending.then(response => ({ response }))
 }

@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CRAWLER_USER_AGENT } from '../../../config/crawler.mts'
 import { computeHostnameRateLimitMs, isUrlCrawlable } from '../index.mts'
+import {
+  pinnedRobotsFetchResult,
+  resolvePublicRobotsAddresses,
+} from '../../../test-helpers/robots-pinned-fetch.mts'
 
-const mockFetchWithTimeoutSimple = vi.fn<VitestLooseMock>()
+const mockFetchWithTimeout = vi.fn<VitestLooseMock>()
 const mockReadResponseBody = vi.fn<VitestLooseMock>()
 const dependencies = {
-  fetchWithTimeoutSimple: mockFetchWithTimeoutSimple,
+  validateUrl: resolvePublicRobotsAddresses,
+  fetchWithTimeout: mockFetchWithTimeout,
   isNetworkError: vi.fn<VitestLooseMock>(),
   isRetryableError: vi.fn<VitestLooseMock>(),
   readResponseBody: mockReadResponseBody,
@@ -31,7 +36,7 @@ describe('robots product token', () => {
     'matches a voucha-bot %s group for the full crawler User-Agent',
     async (_rule, specificRule, wildcardRule, expected) => {
       const domain = randomDomain()
-      mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+      mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
       mockReadResponseBody.mockResolvedValue(
         `User-agent: voucha-bot\n${specificRule}\n\nUser-agent: *\n${wildcardRule}\n`,
       )
@@ -46,7 +51,7 @@ describe('robots product token', () => {
 
   it('uses the voucha-bot Crawl-delay for the full crawler User-Agent', async () => {
     const domain = randomDomain()
-    mockFetchWithTimeoutSimple.mockResolvedValue(robotsResponse())
+    mockFetchWithTimeout.mockResolvedValue(pinnedRobotsFetchResult(robotsResponse()))
     mockReadResponseBody.mockResolvedValue(
       'User-agent: voucha-bot\nCrawl-delay: 8\n\nUser-agent: *\nCrawl-delay: 1\n',
     )
