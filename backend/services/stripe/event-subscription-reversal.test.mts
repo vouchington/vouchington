@@ -1,91 +1,97 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as stripeClientModule from '@modules/stripe/client'
+import { createStripeEventReversalCase } from '@voucha/test-helpers/services/stripe/reversal-case-event-fixtures'
 import { handleInvoicePaymentPaid } from './event-subscription-handlers.mts'
 
+function stubStripeInvoices() {
+  const list = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false })
+  vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({ invoices: { list } } as never)
+  return list
+}
+
 describe('handleInvoicePaymentPaid', () => {
+  afterEach(() => vi.restoreAllMocks())
+
   it('reconciles the immutable reversal case from the paid InvoicePayment invoice', async () => {
-    const reconcile = vi
-      .fn<
-        (options: {
-          originatingInvoiceId: string
-          providerApplicationId?: string
-          providerEnvironment: 'test' | 'production'
-        }) => Promise<boolean>
-      >()
-      .mockResolvedValue(true)
-
-    await handleInvoicePaymentPaid({ invoice: 'in_invoice_payment_paid' }, 'production', {
-      reconcileRecordedIneligibleStripePurchaseReversal: reconcile,
-    })
-
-    expect(reconcile).toHaveBeenCalledWith({
-      originatingInvoiceId: 'in_invoice_payment_paid',
+    const reversal = await createStripeEventReversalCase({
       providerApplicationId: 'voucha-web',
       providerEnvironment: 'production',
     })
+    const list = stubStripeInvoices()
+
+    await expect(
+      handleInvoicePaymentPaid({ invoice: reversal.originatingInvoiceId }, 'production'),
+    ).rejects.toThrow(
+      `Stripe reversal invoice ${reversal.originatingInvoiceId} was not found exactly once`,
+    )
+    expect(list).toHaveBeenCalledWith(
+      expect.objectContaining({ subscription: reversal.subscriptionId }),
+    )
   })
 
   it('does nothing when Stripe omits the InvoicePayment invoice identifier', async () => {
-    const reconcile =
-      vi.fn<
-        (options: {
-          originatingInvoiceId: string
-          providerApplicationId?: string
-          providerEnvironment: 'test' | 'production'
-        }) => Promise<boolean>
-      >()
+    const list = stubStripeInvoices()
 
-    await handleInvoicePaymentPaid({}, 'test', {
-      reconcileRecordedIneligibleStripePurchaseReversal: reconcile,
-    })
+    await expect(handleInvoicePaymentPaid({}, 'test')).resolves.toBeUndefined()
 
-    expect(reconcile).not.toHaveBeenCalled()
+    expect(list).not.toHaveBeenCalled()
   })
 
   it('reconciles from an expanded InvoicePayment invoice', async () => {
-    const reconcile = vi
-      .fn<
-        (options: {
-          originatingInvoiceId: string
-          providerApplicationId?: string
-          providerEnvironment: 'test' | 'production'
-        }) => Promise<boolean>
-      >()
-      .mockResolvedValue(true)
-
-    await handleInvoicePaymentPaid({ invoice: { id: 'in_expanded_invoice_payment' } }, 'test', {
-      reconcileRecordedIneligibleStripePurchaseReversal: reconcile,
-    })
-
-    expect(reconcile).toHaveBeenCalledWith({
-      originatingInvoiceId: 'in_expanded_invoice_payment',
+    const reversal = await createStripeEventReversalCase({
       providerApplicationId: 'voucha-web',
       providerEnvironment: 'test',
     })
+    const list = stubStripeInvoices()
+
+    await expect(
+      handleInvoicePaymentPaid({ invoice: { id: reversal.originatingInvoiceId } }, 'test'),
+    ).rejects.toThrow(
+      `Stripe reversal invoice ${reversal.originatingInvoiceId} was not found exactly once`,
+    )
+    expect(list).toHaveBeenCalledWith(
+      expect.objectContaining({ subscription: reversal.subscriptionId }),
+    )
+  })
+
+  it('looks the reversal case up in the event provider environment', async () => {
+    const reversal = await createStripeEventReversalCase({
+      providerApplicationId: 'voucha-web',
+      providerEnvironment: 'production',
+    })
+    const list = stubStripeInvoices()
+
+    await expect(
+      handleInvoicePaymentPaid({ invoice: reversal.originatingInvoiceId }, 'test'),
+    ).resolves.toBeUndefined()
+
+    expect(list).not.toHaveBeenCalled()
   })
 
   it('uses a custom membership application context for reversal reconciliation', async () => {
-    const reconcile = vi
-      .fn<
-        (options: {
-          originatingInvoiceId: string
-          providerApplicationId?: string
-          providerEnvironment: 'test' | 'production'
-        }) => Promise<boolean>
-      >()
-      .mockResolvedValue(true)
     const applicationContext = { applicationId: 'test-custom-stripe-context' }
-
-    await handleInvoicePaymentPaid(
-      { invoice: 'in_custom_context_invoice_payment' },
-      'test',
-      { reconcileRecordedIneligibleStripePurchaseReversal: reconcile },
-      applicationContext,
-    )
-
-    expect(reconcile).toHaveBeenCalledWith({
-      originatingInvoiceId: 'in_custom_context_invoice_payment',
+    const reversal = await createStripeEventReversalCase({
       providerApplicationId: applicationContext.applicationId,
       providerEnvironment: 'test',
     })
+    const list = stubStripeInvoices()
+
+    await expect(
+      handleInvoicePaymentPaid({ invoice: reversal.originatingInvoiceId }, 'test'),
+    ).resolves.toBeUndefined()
+    expect(list).not.toHaveBeenCalled()
+
+    await expect(
+      handleInvoicePaymentPaid(
+        { invoice: reversal.originatingInvoiceId },
+        'test',
+        applicationContext,
+      ),
+    ).rejects.toThrow(
+      `Stripe reversal invoice ${reversal.originatingInvoiceId} was not found exactly once`,
+    )
+    expect(list).toHaveBeenCalledWith(
+      expect.objectContaining({ subscription: reversal.subscriptionId }),
+    )
   })
 })

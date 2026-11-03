@@ -106,7 +106,6 @@ export async function handleStripeEvent(
       await handleInvoicePaymentPaidEvent(
         eventData,
         event.livemode ? 'production' : 'test',
-        undefined,
         applicationContext,
       )
       return 'processed'
@@ -141,7 +140,6 @@ export async function handleStripeEvent(
       await handleChargeDisputeClosedEvent(
         eventData,
         event.livemode ? 'production' : 'test',
-        undefined,
         applicationContext,
       )
       return 'processed'

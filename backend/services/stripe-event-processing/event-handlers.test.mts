@@ -28,7 +28,6 @@ const mockHandleInvoicePaymentPaid =
     (
       eventData: Record<string, unknown>,
       providerEnvironment: 'test' | 'production',
-      dependencies: undefined,
       applicationContext: { applicationId: string },
     ) => Promise<void>
   >()
@@ -37,7 +36,6 @@ const mockHandleChargeDisputeClosed =
     (
       eventData: Record<string, unknown>,
       providerEnvironment: 'test' | 'production',
-      dependencies: undefined,
       applicationContext: { applicationId: string },
     ) => Promise<void>
   >()
@@ -118,7 +116,6 @@ describe('handleStripeEvent', () => {
     expect(mockHandleInvoicePaymentPaid).toHaveBeenCalledWith(
       eventData,
       'test',
-      undefined,
       DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
     )
   })
@@ -235,7 +232,6 @@ describe('handleStripeEvent', () => {
       expect(mockHandleChargeDisputeClosed).toHaveBeenCalledWith(
         eventData,
         'test',
-        undefined,
         DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
       )
     },
@@ -275,14 +271,12 @@ describe('handleStripeEvent', () => {
     expect(mockHandleInvoicePaymentPaid).toHaveBeenCalledWith(
       invoiceData,
       'test',
-      undefined,
       applicationContext,
     )
     expect(refundHandler).toHaveBeenCalledWith('evt_1', refundData, 'test', applicationContext)
     expect(mockHandleChargeDisputeClosed).toHaveBeenCalledWith(
       disputeData,
       'test',
-      undefined,
       applicationContext,
     )
   })
