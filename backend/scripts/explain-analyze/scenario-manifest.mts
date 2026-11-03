@@ -85,6 +85,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'post-feed-shares-dense-hot-after',
   'post-child-by-post',
   'post-metrics-batch',
+  'post-metrics-single',
   'post-search-best',
   'post-search-data-point-topic',
   'post-search-following-new-heavy-follows',

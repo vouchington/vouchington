@@ -7,5 +7,5 @@ export const getPostMetricsByAny = async (
   options: QueryOptions = {},
 ): Promise<PostMetrics | null> => {
   const [metrics] = await getPostMetricsByAnyBatch([idOrSlug], options)
-  return metrics ?? null
+  return metrics
 }

@@ -9,7 +9,7 @@ import sql from 'sql-template-strings'
 export const getPostMetricsByAnyBatch = async (
   idsOrSlugs: string[],
   options: QueryOptions = {},
-): Promise<Array<PostMetrics | null | undefined>> => {
+): Promise<Array<PostMetrics | null>> => {
   if (idsOrSlugs.length === 0) {
     return []
   }
@@ -35,7 +35,7 @@ export const getPostMetricsByAnyBatch = async (
   const { rows } = await read(query.text, query.values, options)
 
   // Build result array with nulls for missing entries
-  const results: Array<PostMetrics | null | undefined> = new Array(idsOrSlugs.length).fill(null)
+  const results: Array<PostMetrics | null> = new Array(idsOrSlugs.length).fill(null)
 
   for (const row of rows) {
     const { input_order, ...metricsData } = row
