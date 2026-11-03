@@ -32,9 +32,9 @@ export function stubGooglePlayProvider(onRequest?: (url: string) => Promise<void
 
 let servicePrivateKey: string | undefined
 function stubGooglePlayServiceAccount(): void {
-  servicePrivateKey ??= generateKeyPairSync('rsa', { modulusLength: 2048 })
-    .privateKey.export({ format: 'pem', type: 'pkcs8' })
-    .toString()
+  servicePrivateKey ??= generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  }).privateKey.export({ format: 'pem', type: 'pkcs8' })
   vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', `queue-test-${randomUUID()}@example.test`)
   vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', servicePrivateKey)
 }
