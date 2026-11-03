@@ -3,24 +3,16 @@
 /**
  * Forbids relative imports that escape a workspace package root.
  *
- * restore-deployed-workspace-packages.mts relocates every workspace package in
- * the runtime image to workspace-packages/<virtual-store-dir>/<package-name>,
- * which does NOT preserve the package's repo-relative location. A relative
- * import escaping the package root would therefore resolve to a path that
- * does not exist there, causing a runtime ERR_MODULE_NOT_FOUND error.
- *
- * Packages must import siblings by their workspace package name instead,
- * which resolves through the pnpm symlink topology the restore helper
- * preserves.
+ * Each workspace package declares the packages it uses in its own manifest, and the image build
+ * resolves the executables' module graphs through those declarations (the `workspaces` field
+ * below names the same packages). A relative import escaping the package root bypasses the
+ * declaration, so the package root stays a boundary and siblings are imported by package name.
  *
  * One forbidden rule is generated per package listed in backend/package.json's
- * `workspaces` field (the same set restore-deployed-workspace-packages.mts and
- * prune-deployed-runtime-deps.mts relocate/prune), because dependency-cruiser
- * `path` restrictions cannot reference a capture group from `from` inside
- * `to` — each package root needs its own from/to pair. The backend hub
- * itself (backend/package.json's own directory) is not a listed workspace
- * entry and is intentionally excluded: its non-package files are not
- * relocated at deploy time, so they are out of scope for this invariant.
+ * `workspaces` field, because dependency-cruiser `path` restrictions cannot reference a capture
+ * group from `from` inside `to` — each package root needs its own from/to pair. The backend hub
+ * itself (backend/package.json's own directory) is not a listed workspace entry and is
+ * intentionally excluded: its non-package files are out of scope for this invariant.
  */
 
 const fs = require('node:fs')
@@ -34,8 +26,7 @@ const backendDir = path.join(__dirname, '..')
 const repoRoot = path.join(backendDir, '..')
 
 // The dedicated test-helper workspace, test files, and declaration files never ship in the
-// runtime image, so an escaping relative import in one cannot cause a production
-// ERR_MODULE_NOT_FOUND.
+// runtime image, so an escaping relative import in one cannot reach production.
 // dependency-cruiser reports `from.path` as a POSIX repo-relative path regardless of
 // host OS, so this pattern is POSIX-only (`/`) by design — no `[\\/]` alternation needed.
 const NON_RUNTIME_SOURCE_PATTERN =
@@ -94,10 +85,9 @@ module.exports = discoverWorkspacePackageRoots().map(packageRoot => {
   return {
     name: `workspace-package-boundary-${packageRoot.replace(/\//g, '-')}`,
     comment:
-      `${packageRoot} is relocated to workspace-packages/<virtual-store-dir>/<name> in the ` +
-      'runtime image, which does not preserve this repo-relative path. A relative import ' +
-      'escaping the package root would resolve to a path that does not exist there. Import ' +
-      'sibling workspace packages by their package name instead.',
+      `${packageRoot} declares the packages it uses in its own manifest. A relative import ` +
+      'escaping the package root bypasses that declaration. Import sibling workspace ' +
+      'packages by their package name instead.',
     severity: 'error',
     from: {
       path: `^${escapedPrefix}`,

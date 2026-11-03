@@ -54,7 +54,7 @@ describe('image publication intent', () => {
     ['pnpm-lock.yaml', true, true],
     ['backend/services/example.mts', true, false],
     ['localization/catalog/en.json', true, false],
-    ['static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts', true, false],
+    ['backend/scripts/build/compile-backend-binaries.mts', true, false],
     ['web/app/page.tsx', false, true],
     ['.dockerignore', true, true],
     ['backend/services/example.test.mts', false, false],

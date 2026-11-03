@@ -110,6 +110,10 @@ registerProductionApiShutdownCallbacks(server, { log: message => console.log(mes
 // Catch errors that escape route/middleware handlers so they still reach Sentry
 // (e.g. errors thrown in unawaited async work or timer callbacks).
 process.on('uncaughtException', err => {
+  // A fatal exception must be visible even when Sentry is disabled (onError then logs nothing in
+  // a deployed environment).
+  /* v8 ignore next -- fatal process handler. */
+  console.error(err)
   onError(err instanceof Error ? err : new Error(String(err)))
   // Flush pending Sentry events before exiting; bounded to avoid hanging.
   /* v8 ignore next -- fatal process handler exits after Sentry flush. */

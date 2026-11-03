@@ -33,12 +33,7 @@
       "includeEntryExports": false,
     },
     "static-code-analysis": {
-      "entry": [
-        "config-inventory/cli.mts",
-        "docker-deploy/prune-deployed-runtime-deps.mts",
-        "docker-deploy/prune-opentelemetry-alternate-builds.mts",
-        "docker-deploy/restore-deployed-workspace-packages.mts",
-      ],
+      "entry": ["config-inventory/cli.mts"],
       "project": ["**/*.mts"],
       "includeEntryExports": true,
     },
@@ -150,8 +145,6 @@
         // Called by Actions or shell entrypoints rather than imported by another module.
         "validate-vitest-cli-timeouts.mts!",
         "write-coverage-scope.mts!",
-        // Invoked from the backend image build action rather than imported by another module.
-        "check-deployed-worker-native-addons.mjs!",
       ],
       "project": ["**/*.mts", "**/*.mjs"],
       "includeEntryExports": true,
