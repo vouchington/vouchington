@@ -413,3 +413,12 @@ Swift and .NET must carry the fresh proof through the same settings actions and 
 The producer lands first; existing native settings calls
 without a proof are rejected. Shared email request fixtures include the carrier, and native
 behavioral coverage must exercise successful changes, missing proofs, and revoked sessions.
+
+## Community application review rows
+
+`GET /api/v1/communities/:idOrSlug/applications` and MCP `list_applications` return summary rows
+under `community_application_summaries`: applicant, status, a message preview, `answer_count`, and
+`created_at`. Answers and the full message load from `GET .../applications/:id` (MCP
+`read_application`) when a moderator opens a row. Swift and .NET consume the list fixture and must
+move to the summary type with the producer. Client work is dependent and does not gate this
+repository.

@@ -18,3 +18,4 @@ export type {
   CommunityBan,
   CommunityRestriction,
 } from '@voucha/types/entities/community'
+export type { CommunityApplicationSummary } from '@voucha/types/entities/community-application-summary'

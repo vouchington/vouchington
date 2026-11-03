@@ -3035,11 +3035,22 @@
           "items": {
             "additionalProperties": false,
             "properties": {
-              "claimant_display_name": { "type": ["string", "null"] },
-              "id": { "type": "string" },
-              "jurisdiction": { "enum": ["us_dmca", "eu_dsa"], "type": "string" },
-              "received_at": { "type": "string" },
-              "work_description": { "type": "string" }
+              "claimant_display_name": {
+                "type": ["string", "null"]
+              },
+              "id": {
+                "type": "string"
+              },
+              "jurisdiction": {
+                "enum": ["us_dmca", "eu_dsa"],
+                "type": "string"
+              },
+              "received_at": {
+                "type": "string"
+              },
+              "work_description": {
+                "type": "string"
+              }
             },
             "required": [
               "claimant_display_name",
@@ -14063,12 +14074,66 @@
       ],
       "type": "object"
     },
+    "CommunityApplicationResponseBody": {
+      "additionalProperties": false,
+      "properties": {
+        "community_application": {
+          "$ref": "#/components/schemas/CommunityApplication"
+        }
+      },
+      "required": ["community_application"],
+      "type": "object"
+    },
+    "CommunityApplicationSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "__entity_type": {
+          "const": "community_application_summary"
+        },
+        "answer_count": {
+          "type": "number"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message_preview": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "status": {
+          "enum": ["pending", "approved", "rejected"],
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "__entity_type",
+        "answer_count",
+        "created_at",
+        "id",
+        "message_preview",
+        "status",
+        "user_id"
+      ],
+      "type": "object"
+    },
     "CommunityApplicationsResponseBody": {
       "additionalProperties": false,
       "properties": {
-        "community_applications": {
+        "community_application_summaries": {
           "additionalProperties": {
-            "$ref": "#/components/schemas/CommunityApplication"
+            "$ref": "#/components/schemas/CommunityApplicationSummary"
           },
           "type": "object"
         },
@@ -14080,7 +14145,7 @@
             "additionalProperties": false,
             "properties": {
               "__entity_type": {
-                "const": "community_application"
+                "const": "community_application_summary"
               },
               "id": {
                 "type": "string"
@@ -14095,7 +14160,7 @@
           "$ref": "#/components/schemas/Record_string_PublicUser"
         }
       },
-      "required": ["results", "page_info", "community_applications", "users"],
+      "required": ["results", "page_info", "community_application_summaries", "users"],
       "type": "object"
     },
     "CommunityApplicationQuestion": {
@@ -16513,7 +16578,14 @@
           "type": "string"
         },
         "account_username": {
-          "anyOf": [{ "type": "null" }, { "type": "string" }]
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "incident_id": {
           "type": "string"
@@ -40929,6 +41001,20 @@
     }
   },
   "operations": {
+    "GET:/api/v1/communities/:idOrSlug/applications/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "idOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug", "id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-notices/:id/escalations/:escalationId/closures": {
       "path": {
         "properties": {
@@ -43623,8 +43709,14 @@
     "GET:/api/v1/copyright-notices/association-targets": {
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "q": { "type": "string", "minLength": 2, "maxLength": 200 }
+          "after": {
+            "type": "string"
+          },
+          "q": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          }
         },
         "required": ["q"],
         "type": "object"
@@ -51942,6 +52034,9 @@
     }
   },
   "responses": {
+    "GET:/api/v1/communities/:idOrSlug/applications/:id": {
+      "$ref": "#/components/schemas/CommunityApplicationResponseBody"
+    },
     "POST:/api/v1/copyright-notices/:id/escalations/:escalationId/closures": {
       "additionalProperties": false,
       "properties": {

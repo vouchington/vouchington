@@ -1,11 +1,15 @@
 import app from '../../app.mts'
-import type { CommunityApplicationsResponseBody } from '../../response-types/communities.mts'
+import type {
+  CommunityApplicationResponseBody,
+  CommunityApplicationsResponseBody,
+} from '../../response-types/communities.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   loadCommunityForModerator,
+  getCommunityApplication,
   searchApplications,
   createApplication,
   approveApplication,
@@ -46,14 +50,14 @@ app
     const users = await getUserPublicByAnyCachedBatch(result.results.map(a => a.user_id))
 
     const searchResults = result.results.map(a => ({
-      __entity_type: 'community_application' as const,
+      __entity_type: 'community_application_summary' as const,
       id: a.id,
     }))
 
     const output: CommunityApplicationsResponseBody = {
       results: searchResults,
       page_info: result.page_info,
-      community_applications: indexById(result.results),
+      community_application_summaries: indexById(result.results),
       users: indexById(users.filter(user => user !== null)),
     }
 
@@ -99,26 +103,45 @@ app
     ctx.json({ community_application: application })
   })
 
-app.route('/api/v1/communities/:idOrSlug/applications/:id').patch(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/communities/:idOrSlug/applications/:id')
+app
+  .route('/api/v1/communities/:idOrSlug/applications/:id')
+  .get(async (ctx: Context) => {
+    const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/applications/:id')
 
-  const { idOrSlug, id } = ctx.params as { idOrSlug: string; id: string }
-  await loadCommunityForModerator(currentUser, idOrSlug)
+    const { idOrSlug, id } = ctx.params as { idOrSlug: string; id: string }
+    const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/applications/:id', {
+      path: ctx.params,
+    })
 
-  const body = (await parseJsonBody(ctx, '1mb')) as {
-    status: 'approved' | 'rejected'
-    reason?: string
-  }
-  validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/applications/:id', {
-    path: ctx.params,
-    body,
+    const output: CommunityApplicationResponseBody = {
+      community_application: await getCommunityApplication(community.id, id),
+    }
+    ctx.json(output)
   })
+  .patch(async (ctx: Context) => {
+    const currentUser = await requireAuth(
+      ctx,
+      'PATCH:/api/v1/communities/:idOrSlug/applications/:id',
+    )
 
-  if (body.status === 'approved') {
-    await approveApplication(currentUser, id)
-  } else {
-    await rejectApplication(currentUser, id, body.reason)
-  }
+    const { idOrSlug, id } = ctx.params as { idOrSlug: string; id: string }
+    await loadCommunityForModerator(currentUser, idOrSlug)
 
-  ctx.setStatus(204)
-})
+    const body = (await parseJsonBody(ctx, '1mb')) as {
+      status: 'approved' | 'rejected'
+      reason?: string
+    }
+    validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/applications/:id', {
+      path: ctx.params,
+      body,
+    })
+
+    if (body.status === 'approved') {
+      await approveApplication(currentUser, id)
+    } else {
+      await rejectApplication(currentUser, id, body.reason)
+    }
+
+    ctx.setStatus(204)
+  })

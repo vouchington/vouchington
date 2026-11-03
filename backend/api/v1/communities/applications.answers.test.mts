@@ -17,6 +17,9 @@ const applicationResponses = new RuntimeRequestValidatorRegistry({
     'GET:/api/v1/communities/:idOrSlug/applications': {
       body: contracts.responses['GET:/api/v1/communities/:idOrSlug/applications'],
     },
+    'GET:/api/v1/communities/:idOrSlug/applications/:id': {
+      body: contracts.responses['GET:/api/v1/communities/:idOrSlug/applications/:id'],
+    },
   },
 })
 
@@ -87,7 +90,10 @@ describe('community application answer routes', () => {
       .get(`/api/v1/communities/${community.slug}/applications`)
       .expect(200)
     expect(listed.body.results).toEqual([
-      { __entity_type: 'community_application', id: created.body.community_application.id },
+      {
+        __entity_type: 'community_application_summary',
+        id: created.body.community_application.id,
+      },
     ])
     expect(listed.body.page_info.has_next_page).toBe(false)
     expect(listed.body.users[applicant!.id].username).toBe(applicant!.username)
@@ -105,8 +111,22 @@ describe('community application answer routes', () => {
       ),
     ).not.toBeNull()
     expect(
-      listed.body.community_applications[created.body.community_application.id].answers,
-    ).toEqual({ [questionId]: ['Beta', 'Alpha'] })
+      listed.body.community_application_summaries[created.body.community_application.id],
+    ).toMatchObject({ status: 'pending', answer_count: 1 })
+    expect(listed.body).not.toHaveProperty('community_applications')
+
+    const detail = await ownerRequest
+      .get(
+        `/api/v1/communities/${community.slug}/applications/${created.body.community_application.id}`,
+      )
+      .expect(200)
+    expect(detail.body.community_application.answers).toEqual({ [questionId]: ['Beta', 'Alpha'] })
+    expect(
+      applicationResponses.validateBody(
+        'GET:/api/v1/communities/:idOrSlug/applications/:id',
+        detail.body,
+      ),
+    ).toBeNull()
 
     await ownerRequest
       .patch(

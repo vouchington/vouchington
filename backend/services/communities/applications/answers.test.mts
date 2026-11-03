@@ -56,8 +56,8 @@ describe('application answers', () => {
     const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, answers)
     expect(application.answers).toEqual(answers)
     expect(application.answers).not.toHaveProperty(byQuestion.get('Skipped')!.id)
-    const listed = await searchApplications(community.id)
-    expect(listed.results[0]?.answers).toEqual(answers)
+    expect((await searchApplications(community.id)).results[0]).toMatchObject({ answer_count: 5 })
+    expect((await getApplication(application.id))?.answers).toEqual(answers)
   })
   it('stores one row per answered question, keeps explicit null, and cascades with the application', async () => {
     const owner = await createTestUser()

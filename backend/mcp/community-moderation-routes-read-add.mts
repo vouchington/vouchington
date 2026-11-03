@@ -14,6 +14,11 @@ export const communityModerationReadAddRoutes = [
   },
   {
     method: 'GET',
+    path: '/api/v1/communities/:idOrSlug/applications/:id',
+    option: 'read_application',
+  },
+  {
+    method: 'GET',
     path: '/api/v1/communities/:idOrSlug/automod/recent-actions',
     option: 'list_automod_actions',
   },

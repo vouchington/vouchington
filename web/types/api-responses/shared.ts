@@ -38,6 +38,7 @@ export type { EntityRelation } from '@/lib/api/entity-relations'
 export type { ViewRssFeed } from '../rss-feeds'
 export type { RssFeedItem, RssFeedItemElection } from '../rss-feed-items'
 export type { Serialized } from '@voucha/types/serialized'
+export type { CommunityApplicationSummary as BackendCommunityApplicationSummary } from '@voucha/types/entities/community-application-summary'
 export type { ReferralClickLogEntry as BackendReferralClickLogEntry } from '@voucha/types/entities/referral-click-log'
 export type {
   Community as BackendCommunity,

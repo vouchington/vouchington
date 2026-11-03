@@ -9370,6 +9370,31 @@
       "source": "backend/api/v1/communities/applications.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/communities/:communitySlug/applications/:id": {
+      "bodyKind": "content",
+      "hash": "d8af6451a5b26fb7ac2af21ad890ede24f05e8c04859842decb4c287d2d47633",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/communities/:idOrSlug/applications/:id",
+      "schema": {
+        "definitions": {
+          "Record<string,unknown>": {
+            "additionalProperties": {
+              "type": "unknown"
+            },
+            "properties": {},
+            "type": "object"
+          }
+        },
+        "root": {
+          "name": "Record<string,unknown>",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/communities/applications.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/communities/:communitySlug/automod/recent-actions": {
       "bodyKind": "content",
       "hash": "3ae14ccd0a08c90659b455fa79f75b78799cc84ae329e150783fe5152fc59fd9",
@@ -100619,7 +100644,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "64d7f29e9a8a8d4a4cc1a38e3a0cebaac23bf7a5242d39b25ef08f0ad63e1c57",
+        "hash": "978244b9f4d81eb285a93475af94527e1cbabbb24a514272d21f27bf74660eae",
         "key": "web.communities.applications.default"
       },
       "route": {
@@ -100627,6 +100652,31 @@
           "communitySlug": "test-community"
         },
         "routeTemplate": "/api/v1/communities/:communitySlug/applications"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/applications/:id",
+      "bodyFile": "responses/web.communities.application.default.json",
+      "consumers": ["web"],
+      "id": "web.communities.application.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/communities/applications.mts"],
+      "path": "/api/v1/communities/test-community/applications/application-1",
+      "responseSchema": {
+        "hash": "7f630e5486d264e21ede7bd715aa79cdcd37a750efd7d72112994081c13b6af9",
+        "key": "web.communities.application.default"
+      },
+      "route": {
+        "pathParams": {
+          "communitySlug": "test-community",
+          "id": "application-1"
+        },
+        "routeTemplate": "/api/v1/communities/:communitySlug/applications/:id"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"

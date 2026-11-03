@@ -21,6 +21,7 @@ export type {
   CommunityMetrics,
   CommunityApplicationQuestion,
   CommunityApplication,
+  CommunityApplicationSummary,
   CommunityInvite,
 } from '@services/communities/types'
 export type { LandingPage, LandingPageWithItems } from '@services/my/landing-pages/types'

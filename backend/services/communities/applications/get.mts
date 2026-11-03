@@ -4,8 +4,8 @@ import { decodeUuidCursor, encodeCursor, isNameCursor } from '@modules/paginatio
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import type { CommunityApplication } from '../types.mts'
-import { communityApplicationColumns } from './columns.mts'
+import type { CommunityApplication, CommunityApplicationSummary } from '../types.mts'
+import { communityApplicationColumns, communityApplicationSummaryColumns } from './columns.mts'
 
 type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 
@@ -29,6 +29,16 @@ export async function getApplication(
   return (rows[0] as CommunityApplication) ?? null
 }
 
+/** One application of this community, with its answers; 404 when it belongs to another. */
+export async function getCommunityApplication(
+  communityId: string,
+  applicationId: string,
+): Promise<CommunityApplication> {
+  const application = await getApplication(applicationId)
+  assert(application?.community_id === communityId, 404, 'Application not found')
+  return application
+}
+
 export async function searchApplications(
   communityId: string,
   options?: QueryOptions & {
@@ -36,7 +46,7 @@ export async function searchApplications(
     limit?: number
     after?: string
   },
-): Promise<{ results: CommunityApplication[]; page_info: PageInfo }> {
+): Promise<{ results: CommunityApplicationSummary[]; page_info: PageInfo }> {
   const limit = options?.limit ?? 20
   assert(Number.isInteger(limit), 422, 'limit must be an integer')
   assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
@@ -50,7 +60,7 @@ export async function searchApplications(
 
   const query = sql`/* searchApplications */
     SELECT `
-    .append(communityApplicationColumns)
+    .append(communityApplicationSummaryColumns)
     .append(
       sql`
     FROM community_applications
@@ -78,9 +88,9 @@ export async function searchApplications(
   const { rows } = await read(query, options)
 
   const hasNextPage = rows.length > limit
-  const results: CommunityApplication[] = []
+  const results: CommunityApplicationSummary[] = []
   for (let i = 0; i < Math.min(rows.length, limit); i++) {
-    results.push(rows[i]! as CommunityApplication)
+    results.push(rows[i]! as CommunityApplicationSummary)
   }
 
   return {

@@ -1,17 +1,12 @@
 {
-  "community_applications": {
+  "community_application_summaries": {
     "application-1": {
-      "__entity_type": "community_application",
-      "answers": {},
-      "approved_at": null,
-      "community_id": "community-1",
+      "__entity_type": "community_application_summary",
+      "answer_count": 0,
       "created_at": "2026-01-01T00:00:00Z",
       "id": "application-1",
-      "message": "I would like to join.",
-      "rejected_at": null,
-      "rejection_reason": null,
-      "reviewed_at": null,
-      "reviewed_by_id": null,
+      "message_preview": "I would like to join.",
+      "status": "pending",
       "user_id": "user-1"
     }
   },
@@ -22,7 +17,7 @@
   },
   "results": [
     {
-      "__entity_type": "community_application",
+      "__entity_type": "community_application_summary",
       "id": "application-1"
     }
   ],

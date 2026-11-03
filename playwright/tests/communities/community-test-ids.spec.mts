@@ -132,6 +132,7 @@ test.describe('Community interactive controls', () => {
     await navigateTo(page, `/communities/${privateSlug}/settings/applications`)
     await expect(page.getByTestId('application-review-approve')).toBeVisible()
     await expect(page.getByTestId('application-review-reject')).toBeVisible()
+    await expect(page.getByTestId('application-review-toggle-details')).toBeVisible()
     await page.getByTestId('application-review-reject').click()
     await expect(page.getByTestId('application-review-confirm-reject')).toBeVisible()
     await expect(page.getByTestId('application-review-cancel')).toBeVisible()

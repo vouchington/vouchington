@@ -8,6 +8,7 @@ type BackendCommunityMember = Api.BackendCommunityMember
 type BackendCommunityMetrics = Api.BackendCommunityMetrics
 type BackendCommunityApplicationQuestion = Api.BackendCommunityApplicationQuestion
 type BackendCommunityApplication = Api.BackendCommunityApplication
+type BackendCommunityApplicationSummary = Api.BackendCommunityApplicationSummary
 type BackendCommunityBan = Api.BackendCommunityBan
 type BackendCommunityRestriction = Api.BackendCommunityRestriction
 type BackendCommunityInvite = Api.BackendCommunityInvite
@@ -57,6 +58,8 @@ export type CommunityApplicationQuestion = Omit<
 }
 
 export type CommunityApplication = Serialized<BackendCommunityApplication>
+export type CommunityApplicationSummary = Serialized<BackendCommunityApplicationSummary>
+export type CommunityApplicationStatus = CommunityApplicationSummary['status']
 
 export type CommunityBan = Serialized<BackendCommunityBan>
 

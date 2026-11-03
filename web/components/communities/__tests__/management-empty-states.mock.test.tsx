@@ -35,7 +35,7 @@ const pageInfo = { has_next_page: false, end_cursor: null, start_cursor: null }
 const emptyApplicationsData: CommunityApplicationsResponseBody = {
   results: [],
   page_info: pageInfo,
-  community_applications: {},
+  community_application_summaries: {},
   users: {},
 }
 
