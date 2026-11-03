@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { getPostByAny } from '@services/posts/get'
@@ -14,12 +14,13 @@ import {
 import {
   createArticleSyncFixtures,
   seedArticleSyncTimestamp,
+  stubArticleBucket,
   syncOwnedArticles,
+  type ArticleBucketObject,
 } from '../../test-helpers/article-sync-fixtures.mts'
 import { drainOwnedTestAction } from '../../test-helpers/post-commit-completion.mts'
 
 import { syncArticles, syncLocalArticles } from './sync.mts'
-import type { ArticleMarkdownFile } from './storage.mts'
 
 describe('syncArticles', () => {
   let adminUser: PrivateUser
@@ -27,15 +28,11 @@ describe('syncArticles', () => {
   let aboutSlug = ''
   let keyboardSlug = ''
   let ownedSlugs = new Set<string>()
-  const listArticleMarkdownFiles = vi.fn<() => Promise<ArticleMarkdownFile[]>>()
-  const getArticleMarkdown = vi.fn<(article: ArticleMarkdownFile) => Promise<string>>()
+  let objects = new Map<string, ArticleBucketObject>()
+  let fetchedKeys: string[] = []
 
   function syncFixtureArticles(release: () => void = () => {}) {
-    return syncOwnedArticles(
-      ownedSlugs,
-      () => syncArticles(adminUser, { listArticleMarkdownFiles, getArticleMarkdown }),
-      release,
-    )
+    return syncOwnedArticles(ownedSlugs, () => syncArticles(adminUser), release)
   }
 
   beforeAll(async () => {
@@ -48,20 +45,8 @@ describe('syncArticles', () => {
     aboutSlug = fixtures.aboutSlug
     keyboardSlug = fixtures.keyboardSlug
     ownedSlugs = new Set([aboutSlug, keyboardSlug])
-    listArticleMarkdownFiles.mockClear()
-    getArticleMarkdown.mockClear()
-    listArticleMarkdownFiles.mockResolvedValue(
-      [...articleFixtures.keys()].map(file => ({
-        file,
-        key: `articles/${file}`,
-        cacheToken: `${file}:v1`,
-      })),
-    )
-    getArticleMarkdown.mockImplementation(article => {
-      const content = articleFixtures.get(article.file)
-      if (!content) throw new Error(`Missing fixture for ${article.file}`)
-      return Promise.resolve(content)
-    })
+    objects = new Map<string, ArticleBucketObject>(articleFixtures)
+    ;({ fetchedKeys } = stubArticleBucket(objects))
   })
 
   it('syncs articles from markdown files', async () => {
@@ -92,17 +77,11 @@ describe('syncArticles', () => {
   it('prefetches distinct slugs once and processes duplicate slugs in file order', async () => {
     const slug = `ordered-sync-${randomUUID()}`
     ownedSlugs = new Set([slug, keyboardSlug])
-    const files = ['first.md', 'second.md', 'third.md', 'keyboard-shortcuts.md']
-    listArticleMarkdownFiles.mockResolvedValue(
-      files.map(file => ({ file, key: `articles/${file}`, cacheToken: `${file}:v1` })),
-    )
-    const markdown = new Map([
-      ['first.md', `---\ntitle: First\nslug: ${slug}\n---\nFirst body.`],
-      ['second.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`],
-      ['third.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`],
-      ['keyboard-shortcuts.md', articleFixtures.get('keyboard-shortcuts.md')!],
-    ])
-    getArticleMarkdown.mockImplementation(article => Promise.resolve(markdown.get(article.file)!))
+    objects.clear()
+    objects.set('a-first.md', `---\ntitle: First\nslug: ${slug}\n---\nFirst body.`)
+    objects.set('b-second.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`)
+    objects.set('c-third.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`)
+    objects.set('d-keyboard-shortcuts.md', articleFixtures.get('keyboard-shortcuts.md')!)
 
     const { result, queries } = await withCapturedTestQueries(() => syncFixtureArticles())
 
@@ -126,10 +105,8 @@ describe('syncArticles', () => {
 
     function syncOnly(content: string) {
       ownedSlugs.add(slug)
-      listArticleMarkdownFiles.mockResolvedValue([
-        { file: 'relative.md', key: 'articles/relative.md', cacheToken: 'relative:v1' },
-      ])
-      getArticleMarkdown.mockResolvedValue(content)
+      objects.clear()
+      objects.set('relative.md', content)
       return syncFixtureArticles()
     }
 
@@ -195,12 +172,7 @@ describe('syncArticles', () => {
   it('reports an error for unreadable article objects and continues syncing', async () => {
     await syncFixtureArticles()
 
-    getArticleMarkdown.mockImplementation(article => {
-      if (article.file === 'about.md') return Promise.reject(new Error('S3 read failed'))
-      const content = articleFixtures.get(article.file)
-      if (!content) throw new Error(`Missing fixture for ${article.file}`)
-      return Promise.resolve(content)
-    })
+    objects.set('about.md', new Error('S3 read failed'))
 
     const result = await syncFixtureArticles()
 
@@ -217,17 +189,12 @@ describe('syncArticles', () => {
   it('waits for each article before loading the next and preserves error result order', async () => {
     const firstLoad = Promise.withResolvers<string>()
     const firstRequested = Promise.withResolvers<void>()
-    listArticleMarkdownFiles.mockResolvedValue([
-      { file: 'first.md', key: 'articles/first.md', cacheToken: 'first:v1' },
-      { file: 'about.md', key: 'articles/about.md', cacheToken: 'about:v1' },
-    ])
-    getArticleMarkdown.mockImplementation(article => {
-      if (article.file === 'first.md') {
-        firstRequested.resolve()
-        return firstLoad.promise
-      }
-      return Promise.resolve(articleFixtures.get(article.file)!)
+    objects.clear()
+    objects.set('aa-first.md', () => {
+      firstRequested.resolve()
+      return firstLoad.promise
     })
+    objects.set('about.md', articleFixtures.get('about.md')!)
 
     const syncPromise = () =>
       syncFixtureArticles(() => firstLoad.reject(new Error('first load failed')))
@@ -236,15 +203,12 @@ describe('syncArticles', () => {
       () => firstLoad.reject(new Error('first load failed')),
       async () => {
         await firstRequested.promise
-        expect(getArticleMarkdown).toHaveBeenCalledOnce()
-        expect(getArticleMarkdown).toHaveBeenLastCalledWith(
-          expect.objectContaining({ file: 'first.md' }),
-        )
+        expect(fetchedKeys).toEqual(['articles/aa-first.md'])
       },
     )
 
-    expect(getArticleMarkdown).toHaveBeenCalledTimes(2)
-    expect(result.results.map(item => item.file)).toEqual(['first.md', 'about.md'])
+    expect(fetchedKeys).toEqual(['articles/aa-first.md', 'articles/about.md'])
+    expect(result.results.map(item => item.file)).toEqual(['aa-first.md', 'about.md'])
     expect(result.results[0]).toMatchObject({ action: 'error', error: 'first load failed' })
   })
 

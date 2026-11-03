@@ -1,61 +1,48 @@
 import { randomUUID } from 'node:crypto'
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { getPostByAny } from '@services/posts/get'
-import type { Post } from '@services/posts/types'
 import { createTestTopic, createTestUser, hasPostRelatedTopic } from '@voucha/test-helpers'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
 
-import { syncOwnedArticles } from '../../test-helpers/article-sync-fixtures.mts'
+import { stubArticleBucket, syncOwnedArticles } from '../../test-helpers/article-sync-fixtures.mts'
 
 import { syncArticles } from './sync.mts'
 
 describe('article sync decisions', () => {
   it('rejects files without titles or with unsupported post types before lookup', async () => {
     const currentUser = await createTestUser({ administrator: true })
-    const files = ['no-title.md', 'bad-type.md'].map(file => ({
-      file,
-      key: `articles/${file}`,
-      cacheToken: `${file}:v1`,
-    }))
-    const markdown = new Map([
-      ['no-title.md', '---\nslug: no-title\n---\nBody without a heading.'],
-      ['bad-type.md', '---\ntitle: Bad Type\npost_type: comment\n---\nBody.'],
-    ])
-    const prefetchPosts = vi.fn<() => Promise<Map<string, Post>>>(async () => new Map())
+    stubArticleBucket(
+      new Map([
+        ['a-no-title.md', '---\nslug: no-title\n---\nBody without a heading.'],
+        ['b-bad-type.md', '---\ntitle: Bad Type\npost_type: comment\n---\nBody.'],
+      ]),
+    )
 
-    const result = await syncArticles(currentUser, {
-      listArticleMarkdownFiles: async () => files,
-      getArticleMarkdown: async article => markdown.get(article.file)!,
-      prefetchPosts,
-    })
+    const { result, queries } = await withCapturedTestQueries(() => syncArticles(currentUser))
 
     expect(result.results.map(item => item.error)).toEqual([
       'No title found',
       'Invalid post_type "comment". Allowed: article, blog_post',
     ])
     expect(result.summary.errored).toBe(2)
-    expect(prefetchPosts).not.toHaveBeenCalled()
+    expect(countCapturedQueriesByAnnotation(queries, 'prefetchArticlePosts')).toBe(0)
   })
 
   it('reports a post type mismatch after an earlier file creates the slug', async () => {
     const currentUser = await createTestUser({ administrator: true })
     const slug = `type-mismatch-${randomUUID()}`
-    const files = ['article.md', 'blog.md'].map(file => ({
-      file,
-      key: `articles/${file}`,
-      cacheToken: `${file}:v1`,
-    }))
-    const markdown = new Map([
-      ['article.md', `---\ntitle: Article\nslug: ${slug}\npost_type: article\n---\nBody.`],
-      ['blog.md', `---\ntitle: Blog\nslug: ${slug}\npost_type: blog_post\n---\nBody.`],
-    ])
-
-    const result = await syncOwnedArticles(new Set([slug]), () =>
-      syncArticles(currentUser, {
-        listArticleMarkdownFiles: async () => files,
-        getArticleMarkdown: async article => markdown.get(article.file)!,
-      }),
+    stubArticleBucket(
+      new Map([
+        ['article.md', `---\ntitle: Article\nslug: ${slug}\npost_type: article\n---\nBody.`],
+        ['blog.md', `---\ntitle: Blog\nslug: ${slug}\npost_type: blog_post\n---\nBody.`],
+      ]),
     )
+
+    const result = await syncOwnedArticles(new Set([slug]), () => syncArticles(currentUser))
 
     expect(result.results.map(item => item.action)).toEqual(['created', 'error'])
     expect(result.results[1]?.error).toBe(
@@ -76,17 +63,16 @@ describe('article sync decisions', () => {
         }),
       ),
     )
-    const file = { file: 'topic.md', key: 'articles/topic.md', cacheToken: 'topic:v1' }
+    const objects = new Map<string, string>()
+    stubArticleBucket(objects)
 
     for (const [index, topic] of topics.entries()) {
       const title = index === 0 ? 'First title' : 'Updated title'
-      const result = await syncOwnedArticles(new Set([slug]), () =>
-        syncArticles(currentUser, {
-          listArticleMarkdownFiles: async () => [file],
-          getArticleMarkdown: async () =>
-            `---\ntitle: ${title}\nslug: ${slug}\ntopics:\n  - ${topic.slug}\n---\nBody.`,
-        }),
+      objects.set(
+        'topic.md',
+        `---\ntitle: ${title}\nslug: ${slug}\ntopics:\n  - ${topic.slug}\n---\nBody.`,
       )
+      const result = await syncOwnedArticles(new Set([slug]), () => syncArticles(currentUser))
 
       expect(result.results[0]?.action).toBe(['created', 'updated', 'skipped'][index])
       const post = await getPostByAny(slug)

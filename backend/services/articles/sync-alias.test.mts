@@ -6,7 +6,11 @@ import {
   countCapturedQueriesByAnnotation,
   withCapturedTestQueries,
 } from '@voucha/test-helpers/query-capture'
-import { syncOwnedArticles } from '../../test-helpers/article-sync-fixtures.mts'
+import {
+  stubArticleBucket,
+  syncOwnedArticles,
+  type ArticleBucketObject,
+} from '../../test-helpers/article-sync-fixtures.mts'
 import { getPostByAny } from '@services/posts/get'
 
 import { syncArticles } from './sync.mts'
@@ -16,28 +20,19 @@ describe('syncArticles aliases', () => {
     const user = await createTestUser({ administrator: true })
     const slug = `aliased-sync-${randomUUID()}`
     const ownedSlugs = new Set([slug])
-    const files = [{ file: 'seed.md', key: 'articles/seed.md', cacheToken: 'seed:v1' }]
-    const content = new Map([['seed.md', `---\ntitle: Seed\nslug: ${slug}\n---\nSeed body.`]])
-    const sync = () =>
-      syncOwnedArticles(ownedSlugs, () =>
-        syncArticles(user, {
-          listArticleMarkdownFiles: async () => files,
-          getArticleMarkdown: async article => content.get(article.file)!,
-        }),
-      )
+    const objects = new Map<string, ArticleBucketObject>([
+      ['seed.md', `---\ntitle: Seed\nslug: ${slug}\n---\nSeed body.`],
+    ])
+    stubArticleBucket(objects)
+    const sync = () => syncOwnedArticles(ownedSlugs, () => syncArticles(user))
 
     expect((await sync()).results[0]?.action).toBe('created')
     const post = await getPostByAny(slug)
     expect(post).not.toBeNull()
 
-    files.splice(
-      0,
-      files.length,
-      { file: 'slug.md', key: 'articles/slug.md', cacheToken: 'slug:v1' },
-      { file: 'uuid.md', key: 'articles/uuid.md', cacheToken: 'uuid:v1' },
-    )
-    content.set('slug.md', `---\ntitle: Changed\nslug: ${slug}\n---\nChanged body.`)
-    content.set('uuid.md', `---\ntitle: Changed\nslug: ${post!.id}\n---\nChanged body.`)
+    objects.clear()
+    objects.set('slug.md', `---\ntitle: Changed\nslug: ${slug}\n---\nChanged body.`)
+    objects.set('uuid.md', `---\ntitle: Changed\nslug: ${post!.id}\n---\nChanged body.`)
 
     const { result, queries } = await withCapturedTestQueries(sync)
 
