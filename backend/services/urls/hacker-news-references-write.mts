@@ -48,53 +48,45 @@ async function replaceInTransaction(
   const options: QueryOptions = { query }
 
   await write(
-    `/* replaceHackerNewsTotals */
-    INSERT INTO url_hacker_news_totals (url_id, story_count, comment_count, looked_up_at)
-    SELECT t.url_id, t.story_count, t.comment_count, CURRENT_TIMESTAMP
-    FROM unnest($1::uuid[], $2::int[], $3::int[]) AS t(url_id, story_count, comment_count)
-    ORDER BY t.url_id ASC NULLS LAST
-    ON CONFLICT (url_id) DO UPDATE SET
-      story_count = EXCLUDED.story_count,
-      comment_count = EXCLUDED.comment_count,
-      looked_up_at = EXCLUDED.looked_up_at
-  `,
-    [urlIds, results.map(r => r.story_count), results.map(r => r.comment_count)],
-    options,
-  )
-  await write(
-    `/* replaceHackerNewsStories */
-    WITH removed AS (
+    `/* replaceHackerNewsReferences */
+    WITH totals AS (
+      INSERT INTO url_hacker_news_totals (url_id, story_count, comment_count, looked_up_at)
+      SELECT t.url_id, t.story_count, t.comment_count, CURRENT_TIMESTAMP
+      FROM unnest($1::uuid[], $2::int[], $3::int[]) AS t(url_id, story_count, comment_count)
+      ORDER BY t.url_id ASC NULLS LAST
+      ON CONFLICT (url_id) DO UPDATE SET
+        story_count = EXCLUDED.story_count,
+        comment_count = EXCLUDED.comment_count,
+        looked_up_at = EXCLUDED.looked_up_at
+    ),
+    removed_stories AS (
       DELETE FROM url_hacker_news_stories WHERE url_id = ANY($1::uuid[])
-    )
-    INSERT INTO url_hacker_news_stories
-      (url_id, hacker_news_item_id, points, reply_count, posted_at)
-    SELECT s.url_id, s.hacker_news_item_id, s.points, s.reply_count, s.posted_at
-    FROM unnest($2::uuid[], $3::bigint[], $4::int[], $5::int[], $6::timestamptz[])
-      AS s(url_id, hacker_news_item_id, points, reply_count, posted_at)
-  `,
-    [
-      urlIds,
-      stories.map(s => s.url_id),
-      stories.map(s => s.hacker_news_item_id),
-      stories.map(s => s.points),
-      stories.map(s => s.reply_count),
-      stories.map(s => s.posted_at),
-    ],
-    options,
-  )
-  await write(
-    `/* replaceHackerNewsComments */
-    WITH removed AS (
+    ),
+    inserted_stories AS (
+      INSERT INTO url_hacker_news_stories
+        (url_id, hacker_news_item_id, points, reply_count, posted_at)
+      SELECT s.url_id, s.hacker_news_item_id, s.points, s.reply_count, s.posted_at
+      FROM unnest($4::uuid[], $5::bigint[], $6::int[], $7::int[], $8::timestamptz[])
+        AS s(url_id, hacker_news_item_id, points, reply_count, posted_at)
+    ),
+    removed_comments AS (
       DELETE FROM url_hacker_news_comments WHERE url_id = ANY($1::uuid[])
     )
     INSERT INTO url_hacker_news_comments
       (url_id, hacker_news_item_id, parent_story_item_id, posted_at)
     SELECT c.url_id, c.hacker_news_item_id, c.parent_story_item_id, c.posted_at
-    FROM unnest($2::uuid[], $3::bigint[], $4::bigint[], $5::timestamptz[])
+    FROM unnest($9::uuid[], $10::bigint[], $11::bigint[], $12::timestamptz[])
       AS c(url_id, hacker_news_item_id, parent_story_item_id, posted_at)
   `,
     [
       urlIds,
+      results.map(r => r.story_count),
+      results.map(r => r.comment_count),
+      stories.map(s => s.url_id),
+      stories.map(s => s.hacker_news_item_id),
+      stories.map(s => s.points),
+      stories.map(s => s.reply_count),
+      stories.map(s => s.posted_at),
       comments.map(c => c.url_id),
       comments.map(c => c.hacker_news_item_id),
       comments.map(c => c.parent_story_item_id),
