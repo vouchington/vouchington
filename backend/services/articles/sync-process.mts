@@ -6,13 +6,24 @@ import { updatePost } from '@services/posts/update'
 import type { PrivateUser } from '@services/users/types'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
-import { contentHash, lookupKey, type PreparedArticle } from './sync-helpers.mts'
+import { contentHash, lookupKey, prefetchPosts, type PreparedArticle } from './sync-helpers.mts'
 
 export async function processPreparedArticles(
   currentUser: PrivateUser,
   prepared: PreparedArticle[],
-  existingBySlug: Map<string, Post>,
 ): Promise<void> {
+  let existingBySlug: Map<string, Post>
+  try {
+    existingBySlug = await prefetchPosts(prepared.map(article => article.slug))
+  } catch (err) {
+    for (const { item } of prepared) {
+      item.action = 'error'
+      item.error = err instanceof Error ? err.message : String(err)
+    }
+    if (err instanceof Error) onError(err)
+    return
+  }
+
   // Different slugs and UUIDs can resolve to the same post. Keep the current
   // state by ID so every alias sees a preceding file's successful update.
   const currentById = new Map([...existingBySlug.values()].map(post => [post.id, post]))
