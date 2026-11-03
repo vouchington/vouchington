@@ -215,12 +215,12 @@
       },
       "read_my_preferences": {
         "measured": {
-          "list": 3519,
-          "core": 1004
+          "list": 3395,
+          "core": 979
         },
         "max": {
           "list": 4000,
-          "core": 2000
+          "core": 1000
         }
       },
       "read_my_notifications": {
@@ -285,8 +285,8 @@
       },
       "edit_my_preferences": {
         "measured": {
-          "list": 5755,
-          "core": 3195
+          "list": 5487,
+          "core": 3026
         },
         "max": {
           "list": 6000,
@@ -1211,7 +1211,7 @@
       },
       "set_user_suspension": {
         "measured": {
-          "list": 6437,
+          "list": 6378,
           "core": 1020
         },
         "max": {

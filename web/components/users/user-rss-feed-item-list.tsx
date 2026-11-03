@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { EmptyState } from '@/components/shared/empty-state'
 import { NewsItemCard } from '@/components/feed/news-item-card'
+import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
 import { RssItemNavProvider } from '@/lib/rss-item-nav-provider'
 import type { RssFeedItem } from '@/types/rss-feed-items'
+import type { HackerNewsReferenceCounts } from '@/types/hacker-news'
 import type { UrlEmbed } from '@/types/api-responses/posts-topics-and-feeds'
 import {
   RelationManagementAction,
@@ -17,6 +19,7 @@ export function UserRssFeedItemList({
   relationAction,
   thumbnailUrls,
   embeds,
+  hackerNewsReferences,
 }: {
   items: RssFeedItem[]
   emptyTitle: string
@@ -26,6 +29,7 @@ export function UserRssFeedItemList({
   relationAction?: RelationManagementActionConfig
   thumbnailUrls?: Record<string, string>
   embeds?: Record<string, UrlEmbed>
+  hackerNewsReferences?: Record<string, HackerNewsReferenceCounts>
 }) {
   if (items.length === 0) {
     return (
@@ -40,28 +44,30 @@ export function UserRssFeedItemList({
   const orderedItemIds = items.map(item => item.id)
 
   return (
-    <RssItemNavProvider orderedItemIds={orderedItemIds}>
-      <div className='space-y-4'>
-        {items.map(item => (
-          <div
-            key={item.id}
-            className='space-y-2'
-          >
-            <NewsItemCard
-              item={item}
-              thumbnailUrl={thumbnailUrls?.[item.id]}
-              embed={embeds?.[item.id]}
-            />
-            {relationAction ? (
-              <RelationManagementAction
-                entityId={item.id}
-                config={relationAction}
+    <HackerNewsReferencesProvider references={hackerNewsReferences}>
+      <RssItemNavProvider orderedItemIds={orderedItemIds}>
+        <div className='space-y-4'>
+          {items.map(item => (
+            <div
+              key={item.id}
+              className='space-y-2'
+            >
+              <NewsItemCard
+                item={item}
+                thumbnailUrl={thumbnailUrls?.[item.id]}
+                embed={embeds?.[item.id]}
               />
-            ) : null}
-          </div>
-        ))}
-      </div>
-      {children}
-    </RssItemNavProvider>
+              {relationAction ? (
+                <RelationManagementAction
+                  entityId={item.id}
+                  config={relationAction}
+                />
+              ) : null}
+            </div>
+          ))}
+        </div>
+        {children}
+      </RssItemNavProvider>
+    </HackerNewsReferencesProvider>
   )
 }
