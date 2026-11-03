@@ -33,6 +33,10 @@ describe('get.generated', () => {
     await expect(getUrlHostnameByAny(`missing-${suffix}.example.com`)).resolves.toBeNull()
   })
 
+  it('getUrlHostnameByAny rejects an identifier that is neither a UUID nor a hostname', async () => {
+    await expect(getUrlHostnameByAny('invalid!@#')).rejects.toMatchObject({ status: 422 })
+  })
+
   it('getUrlHostnameCrawlerDetailsById supports primary reads', async () => {
     const testHostname = `get-crawler-primary-${suffix}.example.com`
     const hostnamesMap = await upsertUrlHostnames(null, [testHostname])

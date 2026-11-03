@@ -18,7 +18,7 @@ const urlHostnameBatchPartitions: readonly OrderedBatchPartition<'id' | 'hostnam
 export const getUrlHostnamesByAnyBatch = async (
   idsOrHostnames: string[],
   options: QueryOptions = {},
-): Promise<Array<ViewHostname | null | undefined>> =>
+): Promise<Array<ViewHostname | null>> =>
   queryOrderedIdentifierBatch<ViewHostname, 'id' | 'hostname', QueryOptions>(
     idsOrHostnames,
     options,
