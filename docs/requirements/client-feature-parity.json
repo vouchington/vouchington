@@ -2793,7 +2793,7 @@
       "title": "Hacker News references",
       "domain": "Content",
       "intents": [],
-      "requirements": ["docs/requirements/users/PREFERENCES.md"],
+      "requirements": ["docs/requirements/content/HACKER-NEWS-REFERENCES.md"],
       "matrixRows": [
         {
           "table": "B",

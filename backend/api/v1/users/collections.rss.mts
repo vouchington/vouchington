@@ -107,15 +107,20 @@ app.route('/api/v1/users/:idOrSlug/rss-feed-items/:listType').get(async (ctx: Co
   })
   const proxiedResults = collection.results.map(proxyRssFeedItemCoverArt)
 
-  ctx.json({
-    ...collection,
-    results: proxiedResults,
-    rss_feed_item_thumbnail_url: proxyThumbnailUrls(proxiedResults),
-    rss_feed_item_embeds: await getRssFeedItemEmbedsByItems(
+  const [rssFeedItemEmbeds, rssFeedItemHackerNewsReferences] = await Promise.all([
+    getRssFeedItemEmbedsByItems(
       proxiedResults,
       {},
       isAdminUser(resolved.currentUser) ? 'administrator' : 'public',
     ),
-    rss_feed_item_hacker_news_references: await getRssFeedItemHackerNewsSummaries(proxiedResults),
+    getRssFeedItemHackerNewsSummaries(proxiedResults),
+  ])
+
+  ctx.json({
+    ...collection,
+    results: proxiedResults,
+    rss_feed_item_thumbnail_url: proxyThumbnailUrls(proxiedResults),
+    rss_feed_item_embeds: rssFeedItemEmbeds,
+    rss_feed_item_hacker_news_references: rssFeedItemHackerNewsReferences,
   })
 })
