@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyright'
-import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type {
+  CopyrightStaffEuDisputeSettlement,
+  CopyrightTerritorialRecipient,
+} from '@/types/copyright-territorial'
 import {
   recordCopyrightEuDisputeSettlementImplementation,
   recordCopyrightEuDisputeSettlementOutcome,
@@ -25,9 +28,13 @@ const mockOutcome = vi.mocked(recordCopyrightEuDisputeSettlementOutcome)
 const mockImplementation = vi.mocked(recordCopyrightEuDisputeSettlementImplementation)
 const mockList = vi.mocked(listCopyrightEuStaffDisputeSettlements)
 
-type Settlements = NonNullable<CopyrightStaffQueueItem['territorial']>['dispute_settlements']
+type Settlements = CopyrightStaffEuDisputeSettlement[]
+const recipients: CopyrightTerritorialRecipient[] = [
+  { role: 'claimant', user_id: null, informed_at: null, state: null },
+  { role: 'poster', user_id: 'poster-1', informed_at: '2026-09-01T10:00:00Z', state: 'sent' },
+]
 
-function makeItem(outcome: Settlements) {
+function makeItem() {
   return makeCopyrightStaffQueueItem({
     id: 'notice-1',
     jurisdiction: 'eu_dsa',
@@ -53,10 +60,6 @@ function makeItem(outcome: Settlements) {
         exhausted_at: null,
         escalated: false,
       },
-      recipients: [
-        { role: 'claimant', user_id: null, informed_at: null, state: null },
-        { role: 'poster', user_id: 'poster-1', informed_at: '2026-09-01T10:00:00Z', state: 'sent' },
-      ],
       decision: {
         id: 'decision-1',
         outcome: 'restrict',
@@ -65,10 +68,8 @@ function makeItem(outcome: Settlements) {
         public_explanation: 'The image reproduces the photograph.',
       },
       reopened_at: null,
-      complaints: [],
-      complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      dispute_settlements: outcome,
-      dispute_settlements_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      complaint_count: 0,
+      dispute_settlement_count: 0,
     },
   })
 }
@@ -88,10 +89,11 @@ describe('CopyrightStaffTerritorialDispute', () => {
   it('records a guest notifier referral without requiring a user id', async () => {
     render(
       <CopyrightStaffTerritorialDispute
-        item={makeItem([])}
+        item={makeItem()}
         initialPage={makePage([])}
         onReview={submit}
         pending={false}
+        recipients={recipients}
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -114,10 +116,11 @@ describe('CopyrightStaffTerritorialDispute', () => {
   it('uses the notice recipient as poster when target provenance is unavailable', async () => {
     render(
       <CopyrightStaffTerritorialDispute
-        item={makeItem([])}
+        item={makeItem()}
         initialPage={makePage([])}
         onReview={submit}
         pending={false}
+        recipients={recipients}
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -142,13 +145,13 @@ describe('CopyrightStaffTerritorialDispute', () => {
       referred_by_id: 'poster-1',
       outcome: null,
     }
-    const outcomeItem = makeItem([referral])
     const { unmount } = render(
       <CopyrightStaffTerritorialDispute
-        item={outcomeItem}
+        item={makeItem()}
         initialPage={makePage([referral])}
         onReview={submit}
         pending={false}
+        recipients={recipients}
       />,
     )
     fireEvent.click(screen.getByRole('combobox', { name: 'Body outcome' }))
@@ -163,19 +166,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
     })
     unmount()
 
-    const implementedItem = makeItem([
-      {
-        ...referral,
-        outcome: {
-          result: 'decided_for_recipient',
-          decided_at: '2026-09-02T10:00:00Z',
-          implemented_at: null,
-        },
-      },
-    ])
     render(
       <CopyrightStaffTerritorialDispute
-        item={implementedItem}
+        item={makeItem()}
         initialPage={makePage([
           {
             ...referral,
@@ -188,6 +181,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         ])}
         onReview={submit}
         pending={false}
+        recipients={recipients}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Record implementation' }))
@@ -204,10 +198,11 @@ describe('CopyrightStaffTerritorialDispute', () => {
     mockRefer.mockRejectedValueOnce(new Error('Request failed'))
     render(
       <CopyrightStaffTerritorialDispute
-        item={makeItem([])}
+        item={makeItem()}
         initialPage={makePage([])}
         onReview={action => void action().catch(() => undefined)}
         pending={false}
+        recipients={recipients}
       />,
     )
     const body = screen.getByLabelText('Dispute settlement body')
@@ -245,10 +240,11 @@ describe('CopyrightStaffTerritorialDispute', () => {
     }
     render(
       <CopyrightStaffTerritorialDispute
-        item={makeItem([first])}
+        item={makeItem()}
         initialPage={initialPage}
         onReview={submit}
         pending={false}
+        recipients={recipients}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))

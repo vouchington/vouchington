@@ -122,6 +122,7 @@ export {
 export {
   listCopyrightEuSettlements,
   listCopyrightTerritorialComplaints,
+  listCopyrightTerritorialRecipients,
 } from './case-collection-pages.mts'
 
 export {

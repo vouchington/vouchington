@@ -4,6 +4,7 @@ import {
   currentUserCanReviewCopyrightNotices,
   listCopyrightEuSettlements,
   listCopyrightTerritorialComplaints,
+  listCopyrightTerritorialRecipients,
 } from '@services/copyright-notices'
 import { assertNotSuspended } from '@services/users'
 import app from '../../app.mts'
@@ -18,6 +19,7 @@ const parser = createPaginationParser({
   limit: { min: 1, max: 100, default: 25 },
 })
 const complaintsRoute = 'GET:/api/v1/copyright-notices/:id/territorial-complaints'
+const recipientsRoute = 'GET:/api/v1/copyright-notices/:id/territorial-recipients'
 const participantRoute = 'GET:/api/v1/copyright-notices/:id/eu-dispute-settlements'
 const staffRoute = 'GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff'
 
@@ -36,6 +38,26 @@ app.route('/api/v1/copyright-notices/:id/territorial-complaints').get(async (ctx
   ctx.json(
     apiResponse('GET:/api/v1/copyright-notices/:id/territorial-complaints', {
       copyright_territorial_complaints: page.results,
+      page_info: page.page_info,
+    }),
+  )
+})
+
+app.route('/api/v1/copyright-notices/:id/territorial-recipients').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/copyright-notices/:id/territorial-recipients', parser)
+  setPrivateNoStoreCacheHeaders(ctx)
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanReviewCopyrightNotices,
+    recipientsRoute,
+  )
+  assertNotSuspended(currentUser)
+  const noticeId = validateUUIDParam(ctx, 'id')
+  const options = parseAndValidatePaginatedRequest(ctx, recipientsRoute, parser, { path: true })
+  const page = await listCopyrightTerritorialRecipients(currentUser, noticeId, options)
+  ctx.json(
+    apiResponse('GET:/api/v1/copyright-notices/:id/territorial-recipients', {
+      copyright_territorial_recipients: page.results,
       page_info: page.page_info,
     }),
   )

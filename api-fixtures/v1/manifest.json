@@ -17222,6 +17222,164 @@
       "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-recipients": {
+      "bodyKind": "content",
+      "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/territorial-recipients",
+      "schema": {
+        "definitions": {
+          "CopyrightTerritorialStaffRecipient": {
+            "additionalProperties": false,
+            "properties": {
+              "informed_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "role": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "claimant"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "poster"
+                    }
+                  ]
+                }
+              },
+              "state": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "bounced"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "claimed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "sent"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_territorial_recipients": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "CopyrightTerritorialStaffRecipient",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/association-targets": {
       "bodyKind": "content",
       "hash": "3657b68d95d98364fd3b4617681391d023cc6166efe9fa7980ab6d7a3023fa0d",
@@ -17913,21 +18071,10 @@
                   "type": "object"
                 }
               },
-              "complaints": {
+              "complaint_count": {
                 "required": true,
                 "schema": {
-                  "items": {
-                    "name": "CopyrightTerritorialStaffComplaint",
-                    "type": "ref"
-                  },
-                  "type": "array"
-                }
-              },
-              "complaints_page_info": {
-                "required": true,
-                "schema": {
-                  "name": "PageInfo",
-                  "type": "ref"
+                  "type": "number"
                 }
               },
               "decision": {
@@ -17987,132 +18134,10 @@
                   ]
                 }
               },
-              "dispute_settlements": {
+              "dispute_settlement_count": {
                 "required": true,
                 "schema": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "body_name": {
-                        "required": true,
-                        "schema": {
-                          "type": "string"
-                        }
-                      },
-                      "id": {
-                        "required": true,
-                        "schema": {
-                          "type": "string"
-                        }
-                      },
-                      "outcome": {
-                        "required": true,
-                        "schema": {
-                          "type": "union",
-                          "variants": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "decided_at": {
-                                  "required": true,
-                                  "schema": {
-                                    "type": "string"
-                                  }
-                                },
-                                "implemented_at": {
-                                  "required": true,
-                                  "schema": {
-                                    "type": "union",
-                                    "variants": [
-                                      {
-                                        "type": "null"
-                                      },
-                                      {
-                                        "type": "string"
-                                      }
-                                    ]
-                                  }
-                                },
-                                "result": {
-                                  "required": true,
-                                  "schema": {
-                                    "type": "union",
-                                    "variants": [
-                                      {
-                                        "type": "literal",
-                                        "value": "decided_for_platform"
-                                      },
-                                      {
-                                        "type": "literal",
-                                        "value": "decided_for_recipient"
-                                      },
-                                      {
-                                        "type": "literal",
-                                        "value": "no_decision"
-                                      },
-                                      {
-                                        "type": "literal",
-                                        "value": "withdrawn"
-                                      }
-                                    ]
-                                  }
-                                }
-                              },
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "referred_at": {
-                        "required": true,
-                        "schema": {
-                          "type": "string"
-                        }
-                      },
-                      "referred_by_id": {
-                        "required": true,
-                        "schema": {
-                          "type": "union",
-                          "variants": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "referred_by_party": {
-                        "required": true,
-                        "schema": {
-                          "type": "union",
-                          "variants": [
-                            {
-                              "type": "literal",
-                              "value": "notifier"
-                            },
-                            {
-                              "type": "literal",
-                              "value": "poster"
-                            }
-                          ]
-                        }
-                      }
-                    },
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              },
-              "dispute_settlements_page_info": {
-                "required": true,
-                "schema": {
-                  "name": "PageInfo",
-                  "type": "ref"
+                  "type": "number"
                 }
               },
               "grounds": {
@@ -18164,235 +18189,7 @@
                   "type": "object"
                 }
               },
-              "recipients": {
-                "required": true,
-                "schema": {
-                  "items": {
-                    "name": "CopyrightTerritorialStaffRecipient",
-                    "type": "ref"
-                  },
-                  "type": "array"
-                }
-              },
               "reopened_at": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
-            },
-            "type": "object"
-          },
-          "CopyrightTerritorialStaffComplaint": {
-            "additionalProperties": false,
-            "properties": {
-              "decision": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "decided_at": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "id": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "rationale": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "staff_disposition": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "literal",
-                                "value": "maintain"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "revoke"
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "explanation": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "filed_by": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "notifier"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "poster"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "reviewer"
-                    }
-                  ]
-                }
-              },
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "informed_at": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "received_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "submitted_by_id": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "window_ends_at": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
-            },
-            "type": "object"
-          },
-          "CopyrightTerritorialStaffRecipient": {
-            "additionalProperties": false,
-            "properties": {
-              "informed_at": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "role": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "claimant"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "poster"
-                    }
-                  ]
-                }
-              },
-              "state": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "bounced"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "claimed"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "failed"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "pending"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "sent"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "user_id": {
                 "required": true,
                 "schema": {
                   "type": "union",
@@ -96291,6 +96088,30 @@
       "status": 200
     },
     {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/territorial-recipients",
+      "bodyFile": "responses/web.copyright.eu.territorial-recipients.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.territorial-recipients",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/case-collection-routes.mts"],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/territorial-recipients",
+      "responseSchema": {
+        "hash": "29deae540c91b0affa6b5a3562056623659c4038bbce3a8273d45ec3991b3ccd",
+        "key": "web.copyright.eu.territorial-recipients"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001218"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/territorial-recipients"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
+      },
+      "status": 200
+    },
+    {
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements",
       "bodyFile": "responses/web.copyright.eu.dispute-settlements.participant.json",
@@ -107451,7 +107272,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "35086540fa8660873771f630ca6e6b962374ad585b735175422f4107b98ced76",
+        "hash": "aa9ab03c48d8bfe77ab622238860a71745037a160d40997d59b6f596c6236c69",
         "key": "web.copyright.staff-queue.territorial"
       },
       "route": {

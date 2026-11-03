@@ -14,14 +14,15 @@ import {
 } from '@/components/ui/select'
 import { referCopyrightEuDisputeSettlement } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type { CopyrightTerritorialRecipient } from '@/types/copyright-territorial'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 import { dateForInput } from './copyright-staff-territorial-dispute-date'
 
 type PosterOption = { id: string; label: string }
 
-function getPosterOptions(item: CopyrightStaffQueueItem): PosterOption[] {
+function getPosterOptions(recipients: readonly CopyrightTerritorialRecipient[]): PosterOption[] {
   const posters = new Map<string, string>()
-  for (const recipient of item.territorial?.recipients ?? []) {
+  for (const recipient of recipients) {
     if (recipient.role === 'poster' && recipient.user_id && !posters.has(recipient.user_id)) {
       posters.set(recipient.user_id, `Poster ${posters.size + 1}`)
     }
@@ -31,17 +32,17 @@ function getPosterOptions(item: CopyrightStaffQueueItem): PosterOption[] {
 
 export function CopyrightStaffTerritorialReferralFields({
   item,
+  recipients,
   onReview,
   pending,
 }: {
   item: CopyrightStaffQueueItem
+  recipients: readonly CopyrightTerritorialRecipient[]
   onReview: SubmitReview
   pending: boolean
 }) {
-  const posterOptions = getPosterOptions(item)
-  const notifierId = item.territorial?.recipients.find(
-    recipient => recipient.role === 'claimant',
-  )?.user_id
+  const posterOptions = getPosterOptions(recipients)
+  const notifierId = recipients.find(recipient => recipient.role === 'claimant')?.user_id
   const [bodyName, setBodyName] = useState('')
   const [referredAt, setReferredAt] = useState(() => dateForInput())
   const [party, setParty] = useState<'' | 'poster' | 'notifier'>('')

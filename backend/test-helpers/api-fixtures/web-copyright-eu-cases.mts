@@ -141,6 +141,20 @@ export const webCopyrightEuApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: ['backend/api/v1/copyright-notices/case-collection-routes.mts'],
   },
   {
+    id: 'web.copyright.eu.territorial-recipients',
+    method: 'GET',
+    path: `/api/v1/copyright-notices/${noticeId}/territorial-recipients`,
+    route: {
+      routeTemplate: '/api/v1/copyright-notices/:id/territorial-recipients',
+      pathParams: { id: noticeId },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: { copyright_territorial_recipients: [], page_info: pageInfo },
+    consumers: ['web'],
+    migratedFrom: ['backend/api/v1/copyright-notices/case-collection-routes.mts'],
+  },
+  {
     id: 'web.copyright.eu.dispute-settlements.participant',
     method: 'GET',
     path: `/api/v1/copyright-notices/${noticeId}/eu-dispute-settlements`,

@@ -16613,14 +16613,8 @@
           ],
           "type": "object"
         },
-        "complaints": {
-          "items": {
-            "$ref": "#/components/schemas/CopyrightTerritorialStaffComplaint"
-          },
-          "type": "array"
-        },
-        "complaints_page_info": {
-          "$ref": "#/components/schemas/PageInfo"
+        "complaint_count": {
+          "type": "number"
         },
         "decision": {
           "anyOf": [
@@ -16652,84 +16646,8 @@
             }
           ]
         },
-        "dispute_settlements": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "body_name": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "outcome": {
-                "anyOf": [
-                  {
-                    "additionalProperties": false,
-                    "properties": {
-                      "decided_at": {
-                        "type": "string"
-                      },
-                      "implemented_at": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "result": {
-                        "enum": [
-                          "decided_for_platform",
-                          "decided_for_recipient",
-                          "no_decision",
-                          "withdrawn"
-                        ],
-                        "type": "string"
-                      }
-                    },
-                    "required": ["decided_at", "implemented_at", "result"],
-                    "type": "object"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "referred_at": {
-                "type": "string"
-              },
-              "referred_by_id": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              },
-              "referred_by_party": {
-                "enum": ["notifier", "poster"],
-                "type": "string"
-              }
-            },
-            "required": [
-              "body_name",
-              "id",
-              "outcome",
-              "referred_at",
-              "referred_by_id",
-              "referred_by_party"
-            ],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "dispute_settlements_page_info": {
-          "$ref": "#/components/schemas/PageInfo"
+        "dispute_settlement_count": {
+          "type": "number"
         },
         "grounds": {
           "type": "string"
@@ -16764,12 +16682,6 @@
           "required": ["email", "name"],
           "type": "object"
         },
-        "recipients": {
-          "items": {
-            "$ref": "#/components/schemas/CopyrightTerritorialStaffRecipient"
-          },
-          "type": "array"
-        },
         "reopened_at": {
           "anyOf": [
             {
@@ -16783,15 +16695,12 @@
       },
       "required": [
         "acknowledgment",
-        "complaints",
-        "complaints_page_info",
+        "complaint_count",
         "decision",
-        "dispute_settlements",
-        "dispute_settlements_page_info",
+        "dispute_settlement_count",
         "grounds",
         "hosted_use_url",
         "notifier",
-        "recipients",
         "reopened_at"
       ],
       "type": "object"
@@ -42052,17 +41961,14 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
+    "GET:/api/v1/admin/landing-pages/:pageId": {
       "path": {
         "properties": {
-          "username": {
-            "type": "string"
-          },
-          "slug": {
+          "pageId": {
             "type": "string"
           }
         },
-        "required": ["username", "slug"],
+        "required": ["pageId"],
         "type": "object"
       }
     },
@@ -42199,6 +42105,20 @@
           }
         },
         "required": ["userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
+      "path": {
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["username", "slug"],
         "type": "object"
       }
     },
@@ -43490,6 +43410,47 @@
             "type": "integer"
           }
         },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id/territorial-recipients": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/association-targets": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "q": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          }
+        },
+        "required": ["q"],
         "type": "object"
       }
     },
@@ -45502,6 +45463,20 @@
             "type": "string"
           }
         },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "runId"],
         "type": "object"
       }
     },
@@ -48065,16 +48040,6 @@
         "$ref": "#/components/schemas/LogoutRequest"
       }
     },
-    "POST:/api/v1/auth/native/email-address/login": {
-      "body": {
-        "$ref": "#/components/schemas/EmailAddressLoginBody"
-      }
-    },
-    "POST:/api/v1/auth/native/email-address/tokens": {
-      "body": {
-        "$ref": "#/components/schemas/EmailAddressTokenBody"
-      }
-    },
     "POST:/api/v1/auth/mfa/passkeys/authentication/options": {
       "body": {
         "additionalProperties": false,
@@ -48132,6 +48097,16 @@
           }
         },
         "type": "object"
+      }
+    },
+    "POST:/api/v1/auth/native/email-address/login": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressLoginBody"
+      }
+    },
+    "POST:/api/v1/auth/native/email-address/tokens": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressTokenBody"
       }
     },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
@@ -48198,6 +48173,130 @@
           }
         },
         "type": "object"
+      }
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/options": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["passkey_id"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/verification": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "response": {
+            "type": "object"
+          }
+        },
+        "required": ["passkey_id", "flow_id", "response"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/authorizations": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["facebook", "x", "linkedin", "microsoft", "github"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "callback_mode": {
+            "type": "string",
+            "enum": ["web", "native"]
+          },
+          "completion_proof_challenge": {
+            "type": "string"
+          }
+        },
+        "required": ["callback_mode"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/challenges": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["apple", "google"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/proofs": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["facebook", "x", "linkedin", "microsoft", "github"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["flow_id"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/verification": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["apple", "google"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "credential": {
+            "type": "string"
+          }
+        },
+        "required": ["flow_id", "credential"],
+        "additionalProperties": false
       }
     },
     "POST:/api/v1/auth/totp": {
@@ -49403,6 +49502,22 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-notices/:id/escalations/:escalationId/closures": {
+      "path": {
+        "properties": {
+          "escalationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "escalationId"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
       "body": {
         "$ref": "#/components/schemas/CopyrightGuestCapabilityIssueRequest"
@@ -49471,6 +49586,45 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-notices/:id/preservation-holds": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["litigation_threat", "regulator_request", "court_request"],
+            "type": "string"
+          }
+        },
+        "required": ["kind"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/preservation-holds/:holdId/releases": {
+      "path": {
+        "properties": {
+          "holdId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "holdId"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts": {
       "body": {
         "$ref": "#/components/schemas/CopyrightRestrictionLiftRequest"
@@ -49516,6 +49670,22 @@
           }
         },
         "required": ["id", "matchId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/supervised-complaints/:complaintId/resolutions": {
+      "path": {
+        "properties": {
+          "complaintId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "complaintId"],
         "type": "object"
       }
     },
@@ -50695,20 +50865,6 @@
         "$ref": "#/components/schemas/CreateModerationReportRequest"
       }
     },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "runId": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "runId"],
-        "type": "object"
-      }
-    },
     "POST:/api/v1/reports/:id/judgements": {
       "path": {
         "properties": {
@@ -51643,17 +51799,6 @@
           }
         },
         "required": ["userId"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/admin/landing-pages/:pageId": {
-      "path": {
-        "properties": {
-          "pageId": {
-            "type": "string"
-          }
-        },
-        "required": ["pageId"],
         "type": "object"
       }
     }

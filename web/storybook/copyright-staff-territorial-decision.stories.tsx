@@ -10,11 +10,6 @@ const undecided = makeCopyrightStaffQueueItem({
     hosted_use_url: 'https://voucha.ai/discussion/photograph',
     grounds: 'A photograph in this post reproduces the notified work.',
     notifier: { name: 'Photo Rights', email: 'rights@example.test' },
-    recipients: [],
-    complaints: [],
-    complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    dispute_settlements: [],
-    dispute_settlements_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     acknowledgment: {
       attempt_count: 1,
       last_attempt_at: '2026-10-04T10:00:00Z',
@@ -23,6 +18,8 @@ const undecided = makeCopyrightStaffQueueItem({
       escalated: false,
     },
     reopened_at: null,
+    complaint_count: 0,
+    dispute_settlement_count: 0,
     decision: null,
   },
 })

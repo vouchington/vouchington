@@ -14,20 +14,10 @@ const territorial = {
     exhausted_at: null,
     escalated: false,
   },
-  recipients: [
-    {
-      role: 'poster' as const,
-      user_id: '019f0000-0000-7000-8000-000000000191',
-      informed_at: '2026-10-01T10:00:00Z',
-      state: 'sent' as const,
-    },
-  ],
   decision: null,
   reopened_at: null,
-  complaints: [],
-  complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-  dispute_settlements: [],
-  dispute_settlements_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+  complaint_count: 1,
+  dispute_settlement_count: 0,
 }
 
 const item = makeCopyrightStaffQueueItem({
@@ -58,7 +48,7 @@ export const UndecidedNotice: Story = {
   },
 }
 
-export const DecisionAndPosterDelivery: Story = {
+export const DecisionAndCaseDetails: Story = {
   args: {
     item: {
       ...item,
@@ -78,6 +68,9 @@ export const DecisionAndPosterDelivery: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByText('Current decision: restrict')).toBeVisible()
     await expect(canvas.getByText(/Internal rationale:/)).toBeVisible()
-    await expect(canvas.getByText(/Poster 1: sent; informed/)).toBeVisible()
+    await expect(canvas.getByText('1 complaint, 0 dispute settlements.')).toBeVisible()
+    await expect(
+      canvas.getByRole('button', { name: 'Show deliveries, complaints and settlements' }),
+    ).toBeEnabled()
   },
 }

@@ -31,7 +31,6 @@ const item = makeCopyrightStaffQueueItem({
       exhausted_at: null,
       escalated: false,
     },
-    recipients: [],
     decision: {
       id: 'decision-1',
       outcome: 'restrict',
@@ -40,10 +39,8 @@ const item = makeCopyrightStaffQueueItem({
       public_explanation: 'The image reproduces the photograph.',
     },
     reopened_at: null,
-    complaints,
-    complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    dispute_settlements: [],
-    dispute_settlements_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    complaint_count: 1,
+    dispute_settlement_count: 0,
   },
 })
 const initialPage: CopyrightTerritorialComplaintsPage = {

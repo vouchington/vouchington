@@ -1,18 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { recordCopyrightTerritorialAcknowledgmentFailure } from '@/lib/api/client/copyright-territorial-decisions'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffTerritorialDecision } from './copyright-staff-territorial-decision'
-import { CopyrightStaffTerritorialComplaintList } from './copyright-staff-territorial-complaint-list'
-import { CopyrightStaffTerritorialDispute } from './copyright-staff-territorial-dispute'
+import { CopyrightStaffTerritorialCollections } from './copyright-staff-territorial-collections'
 import type { SubmitReview } from './copyright-staff-review-buttons'
-import type {
-  CopyrightEuDisputeSettlementsPage,
-  CopyrightTerritorialComplaintsPage,
-} from '@/lib/api/client/copyright-territorial-redress'
 import { ExternalLink } from '@/components/ui/external-link'
 export function CopyrightStaffTerritorial({
   item,
@@ -24,31 +19,12 @@ export function CopyrightStaffTerritorial({
   onReview: SubmitReview
 }) {
   const territorial = item.territorial
-  const complaints = territorial?.complaints
-  const complaintsPageInfo = territorial?.complaints_page_info
-  const disputeSettlements = territorial?.dispute_settlements
-  const disputeSettlementsPageInfo = territorial?.dispute_settlements_page_info
-  const complaintPage = useMemo<CopyrightTerritorialComplaintsPage | null>(() => {
-    if (!complaints || !complaintsPageInfo) return null
-    return {
-      copyright_territorial_complaints: complaints,
-      page_info: complaintsPageInfo,
-    }
-  }, [complaints, complaintsPageInfo])
-  const disputePage = useMemo<CopyrightEuDisputeSettlementsPage | null>(() => {
-    if (!disputeSettlements || !disputeSettlementsPageInfo) return null
-    return {
-      copyright_eu_dispute_settlements: disputeSettlements,
-      page_info: disputeSettlementsPageInfo,
-    }
-  }, [disputeSettlements, disputeSettlementsPageInfo])
+  const [showDetails, setShowDetails] = useState(false)
   if (!territorial || item.jurisdiction === 'us_dmca') return null
-  if (!complaintPage || !disputePage) return null
   const jurisdiction = item.jurisdiction
   const acknowledgmentTerminal =
     territorial.acknowledgment.acknowledged_at !== null ||
     territorial.acknowledgment.exhausted_at !== null
-  const posterRecipients = territorial.recipients.filter(recipient => recipient.role === 'poster')
   return (
     <section
       aria-label='Territorial notice review'
@@ -146,51 +122,39 @@ export function CopyrightStaffTerritorial({
         <p className='text-sm'>Complaint upheld. Reopened {formatDate(territorial.reopened_at)}.</p>
       ) : null}
 
-      <section
-        aria-label='Poster delivery status'
-        className='space-y-1'
-      >
-        <h4 className='font-medium'>Poster notice delivery</h4>
-        {posterRecipients.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>No poster delivery is recorded.</p>
-        ) : (
-          <ul className='space-y-1 text-sm'>
-            {posterRecipients.map((recipient, index) => (
-              <li key={`${recipient.role}:${recipient.user_id ?? 'guest'}`}>
-                Poster {index + 1}: {recipient.state ?? 'not sent'}; informed{' '}
-                {formatDate(recipient.informed_at)}.
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <CopyrightStaffTerritorialDecision
         item={item}
         onReview={onReview}
         pending={pending}
       />
       <section
-        aria-label='Territorial complaints'
-        className='space-y-4'
-        data-pw='copyright-staff-territorial-redress'
+        aria-label='Case details'
+        className='space-y-3'
       >
-        <h3 className='font-semibold'>Complaints</h3>
-        <CopyrightStaffTerritorialComplaintList
-          item={item}
-          initialPage={complaintPage}
-          onReview={onReview}
-          pending={pending}
-        />
+        <p className='text-sm'>
+          {territorial.complaint_count} complaint{territorial.complaint_count === 1 ? '' : 's'}
+          {item.jurisdiction === 'eu_dsa'
+            ? `, ${territorial.dispute_settlement_count} dispute settlement${territorial.dispute_settlement_count === 1 ? '' : 's'}`
+            : ''}
+          .
+        </p>
+        {showDetails ? (
+          <CopyrightStaffTerritorialCollections
+            item={item}
+            onReview={onReview}
+            pending={pending}
+          />
+        ) : (
+          <Button
+            data-pw='copyright-staff-territorial-show-details'
+            onClick={() => setShowDetails(true)}
+            size='touchSm'
+            type='button'
+          >
+            Show deliveries, complaints and settlements
+          </Button>
+        )}
       </section>
-      {item.jurisdiction === 'eu_dsa' ? (
-        <CopyrightStaffTerritorialDispute
-          initialPage={disputePage}
-          item={item}
-          onReview={onReview}
-          pending={pending}
-        />
-      ) : null}
     </section>
   )
 }

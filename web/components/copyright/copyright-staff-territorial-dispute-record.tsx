@@ -17,6 +17,7 @@ import {
   type CopyrightEuDisputeSettlementResult,
 } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type { CopyrightStaffEuDisputeSettlement } from '@/types/copyright-territorial'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 import { dateForInput } from './copyright-staff-territorial-dispute-date'
 import { CopyrightStaffTerritorialImplementationFields } from './copyright-staff-territorial-dispute-implementation'
@@ -35,7 +36,7 @@ export function CopyrightStaffTerritorialSettlementRecord({
   pending,
 }: {
   item: CopyrightStaffQueueItem
-  referral: NonNullable<CopyrightStaffQueueItem['territorial']>['dispute_settlements'][number]
+  referral: CopyrightStaffEuDisputeSettlement
   onReview: SubmitReview
   pending: boolean
 }) {

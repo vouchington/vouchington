@@ -1,5 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
-import { decodeScopedUuidCursor } from '@modules/pagination'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import { buildPageInfo, decodeScopedAliasCursor, decodeScopedUuidCursor } from '@modules/pagination'
+import { isUUID } from '@modules/utils'
 import { assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -15,6 +17,34 @@ import {
   selectTerritorialStaffComplaints,
   territorialComplaintCursorScope,
 } from './read-models-staff-territorial-complaints.mts'
+import {
+  selectTerritorialStaffRecipients,
+  territorialRecipientAlias,
+  territorialRecipientCursorScope,
+} from './read-models-staff-territorial-recipients.mts'
+
+type TerritorialParent = {
+  jurisdiction: 'eu_dsa' | 'uk'
+  decision_id: string | null
+  decided_at: Date | null
+}
+
+async function selectTerritorialParent(
+  noticeId: string,
+  transaction: TransactionQuery,
+): Promise<TerritorialParent> {
+  const { rows } =
+    await transaction<TerritorialParent>(sql`/* listCopyrightTerritorialComplaints:case */
+    SELECT notice.jurisdiction,
+      notice.current_territorial_decision_identity_id AS decision_id,
+      notice.territorial_decided_at AS decided_at
+    FROM copyright_notices notice
+    JOIN copyright_territorial_notice_receipts receipt
+      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
+    WHERE notice.id = ${noticeId} AND notice.jurisdiction IN ('eu_dsa', 'uk')`)
+  assert(rows[0], 404, 'Territorial copyright notice not found')
+  return rows[0]
+}
 
 export async function listCopyrightTerritorialComplaints(
   currentUser: PrivateUser,
@@ -24,20 +54,7 @@ export async function listCopyrightTerritorialComplaints(
   assertNotSuspended(currentUser)
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Copyright review staff required')
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    jurisdiction: 'eu_dsa' | 'uk'
-    decision_id: string | null
-    decided_at: Date | null
-  }>(sql`/* listCopyrightTerritorialComplaints:case */
-    SELECT notice.jurisdiction,
-      notice.current_territorial_decision_identity_id AS decision_id,
-      notice.territorial_decided_at AS decided_at
-    FROM copyright_notices notice
-    JOIN copyright_territorial_notice_receipts receipt
-      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
-    WHERE notice.id = ${noticeId} AND notice.jurisdiction IN ('eu_dsa', 'uk')`)
-  const parent = rows[0]
-  assert(parent, 404, 'Territorial copyright notice not found')
+  const parent = await selectTerritorialParent(noticeId, transaction)
   if (options.after) assert(parent.decision_id, 400, 'Invalid cursor format')
   const afterId = options.after
     ? decodeScopedUuidCursor(
@@ -56,6 +73,50 @@ export async function listCopyrightTerritorialComplaints(
   )
   await transaction.commit()
   return page
+}
+
+/** One page of the recipients of the notice's live decision, for staff. */
+export async function listCopyrightTerritorialRecipients(
+  currentUser: PrivateUser,
+  noticeId: string,
+  options: { limit: number; after?: string },
+) {
+  assertNotSuspended(currentUser)
+  assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Copyright review staff required')
+  await using transaction = await beginTransaction()
+  const { decision_id: decisionId, decided_at: decidedAt } = await selectTerritorialParent(
+    noticeId,
+    transaction,
+  )
+  if (options.after) assert(decisionId, 400, 'Invalid cursor format')
+  const scope = decisionId ? territorialRecipientCursorScope(noticeId, decisionId) : ''
+  const after = options.after
+    ? parseRecipientAlias(
+        decodeScopedAliasCursor(options.after, scope, 'Invalid cursor format').alias,
+      )
+    : undefined
+  const page =
+    decisionId && decidedAt
+      ? await selectTerritorialStaffRecipients({ noticeId, decisionId, decidedAt }, transaction, {
+          limit: options.limit,
+          after,
+        })
+      : { results: [], hasNextPage: false }
+  await transaction.commit()
+  return {
+    results: page.results,
+    page_info: buildPageInfo(page.results, {
+      hasNextPage: page.hasNextPage,
+      getCursor: item => ({ alias: territorialRecipientAlias(item), scope }),
+    }),
+  }
+}
+
+function parseRecipientAlias(alias: string): { role: string; userId: string | null } {
+  const [role, userId = ''] = alias.split(':')
+  assert(role === 'claimant' || role === 'poster', 400, 'Invalid cursor format')
+  assert(userId === '' || isUUID(userId), 400, 'Invalid cursor format')
+  return { role, userId: userId || null }
 }
 
 export function listCopyrightEuSettlements(

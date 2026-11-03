@@ -1,6 +1,7 @@
 'use client'
 
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type { CopyrightTerritorialRecipient } from '@/types/copyright-territorial'
 import type { CopyrightEuDisputeSettlementsPage } from '@/lib/api/client/copyright-territorial-redress'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 import { CopyrightStaffTerritorialReferralFields } from './copyright-staff-territorial-dispute-referral'
@@ -9,11 +10,13 @@ import { CopyrightStaffTerritorialDisputeList } from './copyright-staff-territor
 export function CopyrightStaffTerritorialDispute({
   item,
   initialPage,
+  recipients,
   pending,
   onReview,
 }: {
   item: CopyrightStaffQueueItem
   initialPage: CopyrightEuDisputeSettlementsPage
+  recipients: readonly CopyrightTerritorialRecipient[]
   pending: boolean
   onReview: SubmitReview
 }) {
@@ -40,6 +43,7 @@ export function CopyrightStaffTerritorialDispute({
           item={item}
           onReview={onReview}
           pending={pending}
+          recipients={recipients}
         />
       ) : null}
     </section>

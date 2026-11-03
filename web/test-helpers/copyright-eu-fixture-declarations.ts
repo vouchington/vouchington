@@ -3,6 +3,7 @@ import webCopyrightEuDisputeSettlementsStaff from '../../api-fixtures/v1/respons
 import webCopyrightEuJurisdictionAvailability from '../../api-fixtures/v1/responses/web.copyright.eu.jurisdiction-availability.json'
 import webCopyrightEuParticipantNoActionComplaint from '../../api-fixtures/v1/responses/web.copyright.eu.participant.no-action-complaint.json'
 import webCopyrightEuTerritorialComplaints from '../../api-fixtures/v1/responses/web.copyright.eu.territorial-complaints.json'
+import webCopyrightEuTerritorialRecipients from '../../api-fixtures/v1/responses/web.copyright.eu.territorial-recipients.json'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices'
 import type {
@@ -59,6 +60,12 @@ export const COPYRIGHT_EU_DECLARATIONS = [
     'web.copyright.eu.participant.no-action-complaint',
     webCopyrightEuParticipantNoActionComplaint.copyright_notice,
     context => context.server.copyrightNotices.getCopyrightParticipantNoticeServer(noticeId),
+  ),
+  defineWebApiFixture<{
+    copyright_territorial_recipients: readonly unknown[]
+    page_info: PageInfo
+  }>()('web.copyright.eu.territorial-recipients', webCopyrightEuTerritorialRecipients, context =>
+    context.rawServer.get(`/api/v1/copyright-notices/${noticeId}/territorial-recipients`),
   ),
   defineWebApiFixture<TerritorialComplaintsPage>()(
     'web.copyright.eu.territorial-complaints',
