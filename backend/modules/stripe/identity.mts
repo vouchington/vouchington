@@ -135,6 +135,11 @@ export const stripeIdentityProvider: IdentityVerificationProvider = {
       },
     })
     if (result.outcome === 'verified') return result
-    return { outcome: result.outcome === 'processing' ? 'failed' : result.outcome }
+    return {
+      outcome:
+        result.outcome === 'requires_input' || result.outcome === 'canceled'
+          ? result.outcome
+          : 'failed',
+    }
   },
 }

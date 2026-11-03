@@ -1,6 +1,5 @@
 import satori from 'satori'
 import sharp from 'sharp'
-import { authorizeDependencyStates } from '@vouchington/utils/url-signing'
 import type { PlacementSourcePolicy } from '@ts-shared/url-signing'
 import type { EnvironmentConfig } from '../config.mts'
 import type { createS3Client, fetchImageFromS3 } from '../s3/index.mts'
@@ -69,7 +68,7 @@ async function authorizedAvatarDataUri(
   try {
     const { states, cacheable } = await dependencies.authorizeDependencies(params.dependencies)
     if (states.length !== params.dependencies.length) return { cacheable: false }
-    if (authorizeDependencyStates(states) !== 'allow') return { cacheable }
+    if (!states.every(state => state === 'allow')) return { cacheable }
     const avatarDataUri = await resolveAvatarDataUri(
       params.dependencies[0]!.imageId,
       config,
