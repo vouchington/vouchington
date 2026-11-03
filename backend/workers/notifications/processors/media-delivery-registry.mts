@@ -19,22 +19,16 @@ import {
 
 type MediaDeliveryRegistryProcessorDependencies = {
   listRecoverableMediaDeliveryRegistryIds: typeof listRecoverableMediaDeliveryRegistryIds
-  processMediaDeliveryRegistryRecord: typeof processMediaDeliveryRegistryRecord
   stageImagePlacementDeliveryRecordPage: typeof stageImagePlacementDeliveryRecordPage
   reconcileMediaDeliveryRepairMarkers: typeof reconcileMediaDeliveryRepairMarkers
-  now: () => Date
   failExpiredExhaustedMediaDeliveryRegistryRecords: typeof failExpiredExhaustedMediaDeliveryRegistryRecords
   getMediaDeliveryRegistryScanBefore: typeof getMediaDeliveryRegistryScanBefore
 }
 
-export async function processApplyMediaDeliveryRegistryRecord(
-  data: { mediaDeliveryRegistryRecordId: string },
-  dependencies: Partial<MediaDeliveryRegistryProcessorDependencies> = {},
-): Promise<'completed' | 'not_claimed'> {
-  const process =
-    dependencies.processMediaDeliveryRegistryRecord ?? processMediaDeliveryRegistryRecord
-  const now = dependencies.now ?? (() => new Date())
-  return process(data.mediaDeliveryRegistryRecordId, now())
+export async function processApplyMediaDeliveryRegistryRecord(data: {
+  mediaDeliveryRegistryRecordId: string
+}): Promise<'completed' | 'not_claimed'> {
+  return processMediaDeliveryRegistryRecord(data.mediaDeliveryRegistryRecordId, new Date())
 }
 
 export async function processReconcileMediaDeliveryRegistry(

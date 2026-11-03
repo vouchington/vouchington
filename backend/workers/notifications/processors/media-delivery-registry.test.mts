@@ -4,10 +4,19 @@ import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/w
 import { readTestAppliedMediaRegistryJobs } from '@voucha/test-helpers/media-delivery-recovery'
 import type {
   listRecoverableMediaDeliveryRegistryIds,
-  processMediaDeliveryRegistryRecord,
   stageImagePlacementDeliveryRecordPage,
   reconcileMediaDeliveryRepairMarkers,
 } from '@services/media-delivery-safety'
+import {
+  createTestUser,
+  insertTestImage,
+  insertTestTopic,
+  getTestImageSurfacePlacements,
+  setTestTopicSurfaceImages,
+} from '@voucha/test-helpers'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
+import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers/entities/media-delivery-retry'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   processApplyMediaDeliveryRegistryRecord,
   processReconcileMediaDeliveryRegistry,
@@ -15,33 +24,39 @@ import {
 
 describe('media delivery registry processors', () => {
   it('does not claim a record when registry publication is disabled', async () => {
-    const { processMediaDeliveryRegistryRecord } = await import('@services/media-delivery-safety')
     await expect(
-      processMediaDeliveryRegistryRecord(
-        'image-placement:00000000-0000-7000-8000-000000000001:0:00000000-0000-7000-8000-000000000002',
-      ),
+      processApplyMediaDeliveryRegistryRecord({
+        mediaDeliveryRegistryRecordId:
+          'image-placement:00000000-0000-7000-8000-000000000001:0:00000000-0000-7000-8000-000000000002',
+      }),
     ).resolves.toBe('not_claimed')
   })
 
-  it('passes one staged delivery key to the durable processor', async () => {
-    const process = vi
-      .fn<typeof processMediaDeliveryRegistryRecord>()
-      .mockResolvedValue('completed')
-    const now = new Date('2026-07-01T12:00:00.000Z')
+  it('publishes the owned staged record whose id it was given', async () => {
+    const user = await createTestUser({ administrator: true })
+    const imageId = await insertTestImage(user.id)
+    const topicId = await insertTestTopic({
+      name: `apply-${crypto.randomUUID()}`,
+      slug: `apply-${crypto.randomUUID()}`,
+      createdById: user.id,
+    })
+    await setTestTopicSurfaceImages(topicId, { logoImageId: imageId })
+    const [placement] = await getTestImageSurfacePlacements({ topicId })
+    const mediaDeliveryRegistryRecordId = await getTestMediaDeliveryRegistryRecordId({
+      placementId: placement!.placement_id,
+      revision: placement!.placement_revision,
+      imageId,
+    })
+    installTestMediaDeliveryEdge()
 
     await expect(
-      processApplyMediaDeliveryRegistryRecord(
-        {
-          mediaDeliveryRegistryRecordId:
-            'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
-        },
-        { processMediaDeliveryRegistryRecord: process, now: () => now },
-      ),
+      processApplyMediaDeliveryRegistryRecord({
+        mediaDeliveryRegistryRecordId: mediaDeliveryRegistryRecordId!,
+      }),
     ).resolves.toBe('completed')
-    expect(process).toHaveBeenCalledWith(
-      'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
-      now,
-    )
+    expect(await getTestMediaDeliveryRecordSnapshot(mediaDeliveryRegistryRecordId!)).toMatchObject({
+      state: 'completed',
+    })
   })
 
   it.each([100, 1])(
@@ -72,7 +87,6 @@ describe('media delivery registry processors', () => {
               listRecoverableMediaDeliveryRegistryIds: list,
               stageImagePlacementDeliveryRecordPage: stage,
               reconcileMediaDeliveryRepairMarkers: repair,
-              now: () => now,
               getMediaDeliveryRegistryScanBefore: async () => now.toISOString(),
               failExpiredExhaustedMediaDeliveryRegistryRecords: async () => 0,
             },
