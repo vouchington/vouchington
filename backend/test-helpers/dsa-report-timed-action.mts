@@ -5,7 +5,6 @@ import { getTestPostImagePlacement } from './entities/post-images.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
-import { createTestCopyrightDeliveryDependencies } from './copyright-delivery-dependencies.mts'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
@@ -70,8 +69,7 @@ export async function createTestTimedDsaReportAction(input: {
     UPDATE copyright_notice_action_work_items SET available_at = ${input.imposedAt}
     WHERE id = ${withholdId} AND state = 'pending' AND attempt_count = 0
   `)
-  const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
-  const result = await processCopyrightActionIntent(withholdId, input.completedAt, dependencies)
+  const result = await processCopyrightActionIntent(withholdId, input.completedAt)
   if (result !== 'applied') throw new Error(`Timed report action was ${result}`)
   return notice.id
 }

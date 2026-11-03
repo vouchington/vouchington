@@ -1,9 +1,10 @@
 import {
-  createTestCopyrightDeliveryDependencies,
-  type CopyrightTestDeliveryPublisher,
-} from '@voucha/test-helpers/copyright-delivery-dependencies'
+  acceptTestMediaDeliveryEdgeWrites,
+  rejectTestMediaDeliveryEdgeState,
+} from '@voucha/test-helpers/copyright-delivery-edge'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { processCopyrightActionIntent } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import {
@@ -25,7 +26,13 @@ async function createFixture() {
 }
 
 describe('copyright notice restoration retries', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('fails closed after restore delivery rejects, then republishes allow and completes on retry', async () => {
+    const edge = installTestMediaDeliveryEdge()
     const { aggregate, noticeAssessment, claimant, moderator, notice } = await createFixture()
     const target = aggregate.targets[0]!
     const restriction = await acceptCopyrightNoticeAndImposeRestriction({
@@ -35,10 +42,7 @@ describe('copyright notice restoration retries', () => {
       imposedAt: new Date('2026-07-01T12:00:00.000Z'),
       imposedById: moderator.id,
     })
-    await deliverInitialCopyrightWithhold(
-      notice.id,
-      createTestCopyrightDeliveryDependencies(async () => undefined),
-    )
+    await deliverInitialCopyrightWithhold(notice.id)
     const { now: restorationAt, restore } = await createCounterNoticeRestoreIntent({
       claimant,
       noticeId: notice.id,
@@ -47,32 +51,26 @@ describe('copyright notice restoration retries', () => {
       restrictionId: restriction.id,
       placementRevision: target.placement_revision,
     })
-    let rejectFirstAllow = true
-    const publishedStates: string[] = []
-    const publish: CopyrightTestDeliveryPublisher = async input => {
-      publishedStates.push(input.state)
-      if (input.state === 'allow' && rejectFirstAllow) {
-        rejectFirstAllow = false
-        throw new Error('edge allow outage')
-      }
-    }
-    await expect(
-      processCopyrightActionIntent(restore.id, restorationAt, {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).rejects.toThrow('edge allow outage')
-    expect(publishedStates).toEqual(['allow', 'withheld'])
+    edge.put.mockClear()
+    rejectTestMediaDeliveryEdgeState(edge, 'allow', new Error('edge allow outage'))
+    await expect(processCopyrightActionIntent(restore.id, restorationAt)).rejects.toThrow(
+      'edge allow outage',
+    )
+    expect(edge.put.mock.calls.map(([record]) => record.state)).toEqual(['allow', 'withheld'])
     expect(
       (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
         intent => intent.id === restore.id,
       ),
     ).toEqual(expect.objectContaining({ state: 'pending' }))
+    acceptTestMediaDeliveryEdgeWrites(edge)
     await expect(
-      processCopyrightActionIntent(restore.id, new Date(restorationAt.getTime() + 2 * 60_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(restore.id, new Date(restorationAt.getTime() + 2 * 60_000)),
     ).resolves.toBe('applied')
-    expect(publishedStates).toEqual(['allow', 'withheld', 'allow'])
+    expect(edge.put.mock.calls.map(([record]) => record.state)).toEqual([
+      'allow',
+      'withheld',
+      'allow',
+    ])
     expect(
       (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
         intent => intent.id === restore.id,

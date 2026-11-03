@@ -17,7 +17,6 @@ import {
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 
 export async function appendCopyrightLegalHoldAssessment(input: {
   currentUser: PrivateUser
@@ -31,10 +30,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   sameMaterial: boolean
   targetIds: string[]
   rationale: string
-  dependencies?: {
-    assertLegalEnforcementEnabled?: () => void
-    publishPlacement?: typeof prepublishImagePlacementDenial
-  }
 }): Promise<CopyrightLegalHoldAssessmentRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.targetIds.length > 0, 422, 'A legal hold must identify at least one target')
@@ -116,7 +111,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       input.targetIds,
       input.receivedByDesignatedAgentAt!,
       transaction,
-      input.dependencies,
     )
   }
   // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle event insert must precede the clock advance in this locked transaction.

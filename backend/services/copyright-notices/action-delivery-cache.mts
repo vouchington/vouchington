@@ -5,14 +5,13 @@ import {
   invalidateTopicStrict,
   invalidateCommunityStrict,
 } from '@services/entity-cache/invalidate-strict'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import { getImagePlacementCopyrightOwner } from '@services/images/placements'
 
 export async function invalidateCopyrightPlacementCache(
   placementId: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
-  dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<void> {
-  const owner = await dependencies.getImagePlacementCopyrightOwner(placementId, { query })
+  const owner = await getImagePlacementCopyrightOwner(placementId, { query })
   if (!owner) return
   switch (owner.kind) {
     case 'post':

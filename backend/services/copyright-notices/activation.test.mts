@@ -1,8 +1,6 @@
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { assertCopyrightIntakeEnabled } from './activation.mts'
-import { getCopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 
 const completeEnvironment: NodeJS.ProcessEnv = {
   COPYRIGHT_INTAKE_ENABLED: 'true',
@@ -22,9 +20,8 @@ describe('copyright intake activation', () => {
   it('refuses a legal edge action when publication is disabled', async () => {
     vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
-    const publish = getCopyrightActionDeliveryDependencies({}).prepublishImagePlacementDenial
     await expect(
-      publish(
+      prepublishCopyrightImagePlacementDenial(
         {
           placementId: '00000000-0000-7000-8000-000000000001',
           revision: 1,
@@ -42,24 +39,6 @@ describe('copyright intake activation', () => {
         MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'report',
       }),
     ).toThrow('Copyright media delivery enforcement is not configured')
-  })
-
-  it('keeps injected edge publishers usable in isolated action tests', async () => {
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
-    const dependencies = getCopyrightActionDeliveryDependencies({
-      ...createTestCopyrightDeliveryDependencies(publish),
-    })
-    await dependencies.prepublishImagePlacementDenial(
-      {
-        placementId: '00000000-0000-7000-8000-000000000001',
-        revision: 1,
-        imageId: '00000000-0000-7000-8000-000000000002',
-      },
-      {},
-    )
-    expect(publish).toHaveBeenCalledOnce()
   })
 
   it('accepts a fully configured legal delivery boundary', () => {

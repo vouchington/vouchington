@@ -1,7 +1,8 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { rejectTestMediaDeliveryEdgeState } from '@voucha/test-helpers/copyright-delivery-edge'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { appendCopyrightLegalHoldAssessment, processCopyrightActionIntent } from './index.mts'
 import type { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
@@ -9,14 +10,25 @@ import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-res
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('late legal-hold edge publication', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('rolls back every late-hold record when the edge provider rejects the denial', async () => {
+    const edge = installTestMediaDeliveryEdge()
     const restored = await restorePlacementForLateHold()
     const before = await getCopyrightNoticePrivateAggregate(restored.noticeId)
-    const publish = vi
-      .fn<typeof prepublishImagePlacementDenial>()
-      .mockRejectedValue(new Error('DynamoDB denied the legal withholding write'))
+    const restoredPlacement = await getImagePlacementForCopyright(restored.placementId)
+    if (!restoredPlacement) throw new Error('restored placement disappeared')
+    edge.put.mockClear()
+    rejectTestMediaDeliveryEdgeState(
+      edge,
+      'withheld',
+      new Error('DynamoDB denied the legal withholding write'),
+    )
 
-    await expect(appendLateHold(restored, publish)).rejects.toThrow(
+    await expect(appendLateHold(restored)).rejects.toThrow(
       'DynamoDB denied the legal withholding write',
     )
 
@@ -27,29 +39,41 @@ describe('late legal-hold edge publication', () => {
     await expect(getImagePlacementForCopyright(restored.placementId)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
-    expect(publish).toHaveBeenCalledWith(
-      expect.objectContaining({ imageId: expect.any(String), revision: expect.any(Number) }),
-      expect.any(Object),
-    )
+    expect(edge.put.mock.calls.map(([record]) => record)).toEqual([
+      expect.objectContaining({
+        deliveryKey: getImagePlacementDeliveryKey({
+          placementId: restoredPlacement.placementId,
+          revision: restoredPlacement.revision,
+          imageId: restoredPlacement.imageId,
+        }),
+        state: 'withheld',
+      }),
+    ])
   })
 
   it('publishes the denial before it makes the restored placement withheld in PostgreSQL', async () => {
+    const edge = installTestMediaDeliveryEdge()
     const restored = await restorePlacementForLateHold()
     const withheldStatesAtPublication: boolean[] = []
-    const publish = vi
-      .fn<typeof prepublishImagePlacementDenial>()
-      .mockImplementation(async input => {
-        const placement = await getImagePlacementForCopyright(restored.placementId)
-        if (!placement) throw new Error('restored placement disappeared')
-        expect(input).toEqual({
-          placementId: placement.placementId,
-          revision: placement.revision,
-          imageId: placement.imageId,
-        })
-        withheldStatesAtPublication.push(placement.withheld)
-      })
+    edge.put.mockImplementation(async input => {
+      const placement = await getImagePlacementForCopyright(restored.placementId)
+      if (!placement) throw new Error('restored placement disappeared')
+      expect(input).toEqual(
+        expect.objectContaining({
+          deliveryKey: getImagePlacementDeliveryKey({
+            placementId: placement.placementId,
+            revision: placement.revision,
+            imageId: placement.imageId,
+          }),
+          state: 'withheld',
+        }),
+      )
+      withheldStatesAtPublication.push(placement.withheld)
+      edge.accept(input)
+      return { $metadata: {} }
+    })
 
-    await appendLateHold(restored, publish)
+    await appendLateHold(restored)
 
     expect(withheldStatesAtPublication).toEqual([false])
     await expect(getImagePlacementForCopyright(restored.placementId)).resolves.toEqual(
@@ -65,13 +89,8 @@ async function restorePlacementForLateHold(): Promise<{
   restorationAt: Date
   targetId: string
 }> {
-  const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
-  const { moderator, notice, restorationAt, restore, target } = await openHeldCounterNoticeRestore(
-    createTestCopyrightDeliveryDependencies(publish),
-  )
-  await processCopyrightActionIntent(restore.id, restorationAt, {
-    ...createTestCopyrightDeliveryDependencies(publish),
-  })
+  const { moderator, notice, restorationAt, restore, target } = await openHeldCounterNoticeRestore()
+  await processCopyrightActionIntent(restore.id, restorationAt)
   return {
     moderator,
     noticeId: notice.id,
@@ -81,10 +100,7 @@ async function restorePlacementForLateHold(): Promise<{
   }
 }
 
-async function appendLateHold(
-  restored: Awaited<ReturnType<typeof restorePlacementForLateHold>>,
-  publishPlacement: typeof prepublishImagePlacementDenial,
-) {
+async function appendLateHold(restored: Awaited<ReturnType<typeof restorePlacementForLateHold>>) {
   const submission = await appendTestCopyrightNoticeSubmission({
     noticeId: restored.noticeId,
     kind: 'court_or_ccb_hold',
@@ -105,6 +121,5 @@ async function appendLateHold(
     sameMaterial: true,
     targetIds: [restored.targetId],
     rationale: 'Verified qualifying federal court filing before restoration.',
-    dependencies: { assertLegalEnforcementEnabled: () => {}, publishPlacement },
   })
 }

@@ -1,7 +1,7 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -13,15 +13,21 @@ import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-res
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright notice restoration holds', () => {
+  let edge: ReturnType<typeof installTestMediaDeliveryEdge>
+
+  beforeEach(() => {
+    edge = installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('re-restricts an exact restored tuple for a hold received before restoration, then restores only after resolution', async () => {
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     const { initialWithhold, moderator, notice, restorationAt, restore, restriction, target } =
-      await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
-    await expect(
-      processCopyrightActionIntent(restore.id, restorationAt, {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('applied')
+      await openHeldCounterNoticeRestore()
+    await expect(processCopyrightActionIntent(restore.id, restorationAt)).resolves.toBe('applied')
     const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
@@ -42,10 +48,6 @@ describe('copyright notice restoration holds', () => {
       sameMaterial: true,
       targetIds: [target.id],
       rationale: 'Verified qualifying federal court filing.',
-      dependencies: {
-        assertLegalEnforcementEnabled: () => {},
-        publishPlacement: publish,
-      },
     })
     const holdWithhold = (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
       intent => intent.action === 'withhold' && intent.id !== initialWithhold.id,
@@ -65,9 +67,7 @@ describe('copyright notice restoration holds', () => {
     )
     if (!holdWithhold) throw new Error('hold withhold intent disappeared')
     await expect(
-      processCopyrightActionIntent(holdWithhold.id, new Date(restorationAt.getTime() + 120_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(holdWithhold.id, new Date(restorationAt.getTime() + 120_000)),
     ).resolves.toBe('applied')
     await resolveCopyrightLegalHold({
       currentUser: moderator,
@@ -82,11 +82,19 @@ describe('copyright notice restoration holds', () => {
     expect(holdRestore).toEqual(expect.objectContaining({ state: 'pending' }))
     if (!holdRestore) throw new Error('hold restore intent disappeared')
     await expect(
-      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 240_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 240_000)),
     ).resolves.toBe('applied')
-    expect(publish).toHaveBeenLastCalledWith(expect.objectContaining({ state: 'allow' }))
+    const restoredPlacement = await getImagePlacementForCopyright(target.placement_id)
+    if (!restoredPlacement) throw new Error('restored placement disappeared')
+    expect(
+      edge.records.get(
+        getImagePlacementDeliveryKey({
+          placementId: restoredPlacement.placementId,
+          revision: restoredPlacement.revision,
+          imageId: restoredPlacement.imageId,
+        }),
+      )?.state,
+    ).toBe('allow')
 
     const beforeLateReceipt = await getCopyrightNoticePrivateAggregate(notice.id)
     const lateSubmission = await appendTestCopyrightNoticeSubmission({
@@ -109,10 +117,6 @@ describe('copyright notice restoration holds', () => {
       sameMaterial: true,
       targetIds: [target.id],
       rationale: 'Receipt was outside the statutory hold window.',
-      dependencies: {
-        assertLegalEnforcementEnabled: () => {},
-        publishPlacement: publish,
-      },
     })
     const afterLateReceipt = await getCopyrightNoticePrivateAggregate(notice.id)
     expect(afterLateReceipt?.actionIntents).toHaveLength(

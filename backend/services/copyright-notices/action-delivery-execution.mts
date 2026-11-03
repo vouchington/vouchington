@@ -1,7 +1,13 @@
 import { beginTransaction } from '@data-stores/psql'
+import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
+import {
+  getImagePlacementForCopyright,
+  type CopyrightImagePlacement,
+} from '@services/images/placements'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
+import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import {
   finalizeCopyrightActionAfterDelivery,
   lockCopyrightActionPlacement,
@@ -36,7 +42,7 @@ export async function executeCopyrightActionIntent(
   let restorePublishedTuple: { placementId: string; revision: number; imageId: string } | null =
     null
   try {
-    const prepared = await prepareCopyrightAction(intent, now, dependencies)
+    const prepared = await prepareCopyrightAction(intent, now)
     if (typeof prepared === 'string') return prepared
     const { legal, placement, mediaDeliveryRegistryRecordId } = prepared
     const tuple = {
@@ -47,28 +53,26 @@ export async function executeCopyrightActionIntent(
     if (legal.action === 'restore') restorePublishedTuple = tuple
     if (mediaDeliveryRegistryRecordId)
       await dependencies.publishStagedMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
-    else await dependencies.prepublishImagePlacementDenial({ ...tuple })
+    else await prepublishCopyrightImagePlacementDenial({ ...tuple })
     const finalized = await finalizeCopyrightActionAfterDelivery(
       intent.id,
       intent.lease_token,
       legal.action,
       now,
-      dependencies,
     )
     if (legal.action === 'restore' && !finalized) {
-      await dependencies.prepublishImagePlacementDenial({ ...tuple })
+      await prepublishCopyrightImagePlacementDenial({ ...tuple })
       return 'stale'
     }
     return finalized ? 'applied' : 'stale'
   } catch (err) {
-    return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, dependencies, err)
+    return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, err)
   }
 }
 
 async function prepareCopyrightAction(
   intent: CopyrightClaimedActionIntent,
   now: Date,
-  dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<
   | 'applied'
   | 'stale'
@@ -76,9 +80,7 @@ async function prepareCopyrightAction(
   | 'not_claimed'
   | {
       legal: NonNullable<Awaited<ReturnType<typeof lockCopyrightActionDelivery>>>
-      placement: NonNullable<
-        Awaited<ReturnType<CopyrightActionDeliveryDependencies['getImagePlacementForCopyright']>>
-      >
+      placement: CopyrightImagePlacement
       mediaDeliveryRegistryRecordId: string | null
     }
 > {
@@ -103,7 +105,7 @@ async function prepareCopyrightAction(
     })
     return await commitOutcome(transaction, 'stale')
   }
-  const current = await dependencies.getImagePlacementForCopyright(legal.placement_id, {
+  const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
   })
   if (legal.action === 'restore' && current?.deleted) {
@@ -112,7 +114,6 @@ async function prepareCopyrightAction(
       legal,
       now,
       query: transaction,
-      dependencies,
     })
     await transaction.commit()
     return 'applied'
@@ -128,13 +129,12 @@ async function prepareCopyrightAction(
     })
     return await commitOutcome(transaction, 'stale')
   }
-  dependencies.assertMediaDeliveryLegalEnforcementEnabled()
+  assertMediaDeliveryLegalEnforcementEnabled()
   if (await hasCopyrightActionBlocker(legal, now, transaction)) {
     await publishRestoreBlockerWithhold({
       legal,
       placement: current,
       query: transaction,
-      dependencies,
     })
     await completeCopyrightActionIntentInTransaction({
       intentId: intent.id,
@@ -147,7 +147,7 @@ async function prepareCopyrightAction(
     })
     return await commitOutcome(transaction, 'blocked')
   }
-  await prepublishWithholdIfNeeded({ legal, placement: current, query: transaction, dependencies })
+  await prepublishWithholdIfNeeded({ legal, placement: current, query: transaction })
   if (legal.action === 'restore') {
     const retained = await completeRestoreRetainingPlacement({
       intentId: intent.id,
@@ -162,7 +162,6 @@ async function prepareCopyrightAction(
     legal,
     current,
     now,
-    dependencies,
     query: transaction,
   })
   if ('terminal' in mutation) return await commitOutcome(transaction, mutation.terminal)

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -9,9 +9,17 @@ import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 
 describe('restoration notices with another active restriction', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('records the lift without claiming that an independently restricted image is visible', async () => {
-    const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
-    const scene = await openHeldCounterNoticeRestore(dependencies)
+    const scene = await openHeldCounterNoticeRestore()
     const other = await createCopyrightNoticeAggregate({
       jurisdiction: 'us_dmca',
       receivedAt: new Date(),
@@ -49,9 +57,9 @@ describe('restoration notices with another active restriction', () => {
       imposedAt: new Date(),
       imposedById: scene.moderator.id,
     })
-    expect(
-      await processCopyrightActionIntent(scene.restore.id, scene.restorationAt, dependencies),
-    ).toBe('applied')
+    expect(await processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).toBe(
+      'applied',
+    )
     const statements = (await readTestCopyrightStatementIntents(scene.notice.id)).filter(
       row => row.delivery_kind === 'poster_restoration_notice',
     )

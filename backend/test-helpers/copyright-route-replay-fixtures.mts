@@ -1,4 +1,4 @@
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { withFailingTestMediaDeliveryEdge } from '@voucha/test-helpers/copyright-delivery-edge'
 // Route replay assertions are service-owned test support, not route registration.
 import { expect, onTestFinished, vi } from 'vitest'
 import * as mediaReplayEnqueues from '@queues/notifications/enqueues/media-delivery-registry'
@@ -102,29 +102,25 @@ export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
 
 export async function exhaustCopyrightActionIntent(intentId: string): Promise<void> {
   const startedAt = new Date()
-  const failedPublish = async () => Promise.reject(new Error('provider outage'))
-  await expectCopyrightActionDeliveryFailures(intentId, startedAt, failedPublish, [0, 20, 40, 60])
-  await expect(
-    processCopyrightActionIntent(intentId, new Date(startedAt.getTime() + 80 * 60_000), {
-      ...createTestCopyrightDeliveryDependencies(failedPublish),
-    }),
-  ).resolves.toBe('blocked')
+  await withFailingTestMediaDeliveryEdge(new Error('provider outage'), async () => {
+    await expectCopyrightActionDeliveryFailures(intentId, startedAt, [0, 20, 40, 60])
+    await expect(
+      processCopyrightActionIntent(intentId, new Date(startedAt.getTime() + 80 * 60_000)),
+    ).resolves.toBe('blocked')
+  })
 }
 
 async function expectCopyrightActionDeliveryFailures(
   intentId: string,
   startedAt: Date,
-  failedPublish: () => Promise<never>,
   offsets: number[],
 ): Promise<void> {
   const [offsetMinutes, ...remainingOffsets] = offsets
   if (offsetMinutes === undefined) return
   await expect(
-    processCopyrightActionIntent(intentId, new Date(startedAt.getTime() + offsetMinutes * 60_000), {
-      ...createTestCopyrightDeliveryDependencies(failedPublish),
-    }),
+    processCopyrightActionIntent(intentId, new Date(startedAt.getTime() + offsetMinutes * 60_000)),
   ).rejects.toThrow('provider outage')
-  await expectCopyrightActionDeliveryFailures(intentId, startedAt, failedPublish, remainingOffsets)
+  await expectCopyrightActionDeliveryFailures(intentId, startedAt, remainingOffsets)
 }
 
 async function expectOneReplayAudit(

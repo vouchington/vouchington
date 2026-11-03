@@ -1,6 +1,7 @@
 import { readEuFactRecordedAt } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { insertTestHistoricalTerritorialComplaint } from '@voucha/test-helpers/copyright-territorial-historical-complaint'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { createTestTimedDsaReportAction } from '@voucha/test-helpers/dsa-report-timed-action'
 import { createTestHistoricalEuDecisionWindow } from '@voucha/test-helpers/copyright-territorial-historical-window'
@@ -14,6 +15,15 @@ const ARRIVED_AT = new Date('2024-01-31T23:59:59.999Z')
 const after = (at: Date, ms: number) => new Date(at.getTime() + ms)
 
 describe('DSA copyright half-open recorded-time windows', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   useCopyrightIntakeEnvironment()
 
   it('counts a notice and its restriction by when Voucha recorded them, not by arrival', async () => {

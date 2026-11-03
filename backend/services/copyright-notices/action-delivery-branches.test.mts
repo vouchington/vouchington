@@ -1,13 +1,33 @@
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { describe, expect, it } from 'vitest'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import type { CopyrightImagePlacement } from '@services/images/placements'
+import { rejectTestMediaDeliveryEdgeState } from '@voucha/test-helpers/copyright-delivery-edge'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { markImageModerationFlagged } from '@voucha/test-helpers'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  getImagePlacementForCopyright,
+  restoreImagePlacementForCopyright,
+  withholdImagePlacementForCopyright,
+} from '@services/images/placements'
 import { processCopyrightActionIntent } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+import {
+  createCopyrightRestorationHoldFixture,
+  createCounterNoticeRestoreIntent,
+} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright action delivery branches', () => {
+  let edge: ReturnType<typeof installTestMediaDeliveryEdge>
+
+  beforeEach(() => {
+    edge = installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('marks a withhold stale when the placement transition is no longer current', async () => {
     const { aggregate, assessment, moderator, notice } =
       await createCopyrightRestorationHoldFixture()
@@ -20,14 +40,27 @@ describe('copyright action delivery branches', () => {
       imposedById: moderator.id,
     })
     const withhold = (await getActionIntent(notice.id, 'withhold'))!
-    const placement = currentPlacement(target)
     await expect(
-      processCopyrightActionIntent(withhold.id, new Date(), {
-        getImagePlacementForCopyright: async () => placement,
-        withholdImagePlacementForCopyright: async () => ({ status: 'stale', placement }),
-        ...createTestCopyrightDeliveryDependencies(async () => undefined),
+      withholdImagePlacementForCopyright({
+        placementId: target.placement_id,
+        expectedRevision: target.placement_revision,
       }),
-    ).resolves.toBe('stale')
+    ).resolves.toMatchObject({ status: 'applied' })
+    await expect(
+      restoreImagePlacementForCopyright({
+        placementId: target.placement_id,
+        expectedRevision: target.placement_revision + 1,
+      }),
+    ).resolves.toMatchObject({ status: 'applied' })
+    edge.put.mockClear()
+
+    await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('stale')
+
+    await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toMatchObject({
+      withheld: false,
+      revision: target.placement_revision + 2,
+    })
+    expect(edge.put).not.toHaveBeenCalled()
   })
 
   it('completes an unavailable restore without projecting a deleted placement', async () => {
@@ -48,13 +81,12 @@ describe('copyright action delivery branches', () => {
       restrictionId: restriction.id,
       target,
     })
-    await expect(
-      processCopyrightActionIntent(restore.id, restore.now, {
-        getImagePlacementForCopyright: async () => ({ ...currentPlacement(target), deleted: true }),
-        clearUnavailableImagePlacementCopyrightWithholding: async () => undefined,
-        ...createTestCopyrightDeliveryDependencies(async () => undefined),
-      }),
-    ).resolves.toBe('applied')
+    await markImageModerationFlagged(target.image_id)
+    edge.put.mockClear()
+
+    await expect(processCopyrightActionIntent(restore.id, restore.now)).resolves.toBe('applied')
+
+    expect(edge.put).not.toHaveBeenCalled()
     const statements = (await readTestCopyrightStatementIntents(notice.id)).filter(
       row => row.delivery_kind === 'poster_restoration_notice',
     )
@@ -68,9 +100,7 @@ describe('copyright action delivery branches', () => {
     expect(statements.find(row => row.channel === 'email')?.text).not.toContain(
       'A person made this decision',
     )
-    await processCopyrightActionIntent(restore.id, restore.now, {
-      ...createTestCopyrightDeliveryDependencies(async () => undefined),
-    })
+    await processCopyrightActionIntent(restore.id, restore.now)
     expect(
       (await readTestCopyrightStatementIntents(notice.id)).filter(
         row => row.delivery_kind === 'poster_restoration_notice',
@@ -90,11 +120,7 @@ describe('copyright action delivery branches', () => {
       imposedById: moderator.id,
     })
     const withhold = (await getActionIntent(notice.id, 'withhold'))!
-    await expect(
-      processCopyrightActionIntent(withhold.id, new Date(), {
-        ...createTestCopyrightDeliveryDependencies(async () => undefined),
-      }),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('applied')
     const restore = await createRestoreIntent({
       claimant,
       moderator,
@@ -102,31 +128,23 @@ describe('copyright action delivery branches', () => {
       restrictionId: restriction.id,
       target,
     })
-    let lookups = 0
+    rejectTestMediaDeliveryEdgeState(edge, 'withheld', new Error('rollback outage'))
+
     await expect(
       processCopyrightActionIntent(restore.id, restore.now, {
-        getImagePlacementForCopyright: async () => {
-          lookups += 1
-          const placement = {
-            ...currentPlacement(target),
-            withheld: lookups === 1,
-            revision: target.placement_revision + 1,
-          }
-          return lookups === 1 ? placement : { ...placement, imageId: crypto.randomUUID() }
+        // Withholds the placement again between preparation and finalization, so finalization sees
+        // a placement whose withheld state no longer matches the restore.
+        publishStagedMediaDeliveryRecord: async () => {
+          const current = await getImagePlacementForCopyright(target.placement_id)
+          if (!current) throw new Error('restored placement disappeared')
+          await withholdImagePlacementForCopyright({
+            placementId: current.placementId,
+            expectedRevision: current.revision,
+          })
         },
-        restoreImagePlacementForCopyright: async () => ({
-          status: 'already_applied',
-          placement: {
-            ...currentPlacement(target),
-            withheld: false,
-            revision: target.placement_revision + 1,
-          },
-        }),
-        ...createTestCopyrightDeliveryDependencies(async input => {
-          if (input.state === 'withheld') throw new Error('rollback outage')
-        }),
       }),
     ).rejects.toThrow('rollback outage')
+
     const statements = (await readTestCopyrightStatementIntents(notice.id)).filter(
       row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
     )
@@ -143,21 +161,6 @@ async function getActionIntent(noticeId: string, action: 'withhold' | 'restore')
   )
 }
 
-function currentPlacement(target: {
-  placement_id: string
-  placement_revision: number
-  image_id: string
-}): CopyrightImagePlacement {
-  return {
-    placementId: target.placement_id,
-    revision: target.placement_revision,
-    imageId: target.image_id,
-    deleted: false,
-    withheld: false,
-    safetyBlocked: false,
-  }
-}
-
 async function createRestoreIntent(input: {
   claimant: { id: string; roles: readonly string[] }
   moderator: { id: string; roles: readonly string[] }
@@ -165,8 +168,6 @@ async function createRestoreIntent(input: {
   restrictionId: string
   target: { id: string; placement_revision: number }
 }) {
-  const { createCounterNoticeRestoreIntent } =
-    await import('@voucha/test-helpers/copyright-restoration-hold-fixtures')
   const { now, restore } = await createCounterNoticeRestoreIntent({
     claimant: input.claimant as never,
     noticeId: input.noticeId,

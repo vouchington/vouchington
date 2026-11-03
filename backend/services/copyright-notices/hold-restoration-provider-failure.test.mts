@@ -1,7 +1,7 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { notifications } from '@queues/notifications/queues'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { replayTestAutomaticCopyrightRestore } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
@@ -22,13 +22,8 @@ import {
 import { createCounterNoticeRestoreIntent } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-const publish = async () => undefined
-
 async function exhaustedRestoreWithSibling() {
-  const scene = await openHeldCounterNoticeRestore(
-    createTestCopyrightDeliveryDependencies(publish),
-    2,
-  )
+  const scene = await openHeldCounterNoticeRestore(2)
   for (const attempt of [1, 2, 3, 4, 5]) {
     const attemptedAt = new Date(scene.restorationAt.getTime() + attempt * 60 * 60 * 1000)
     const claim = await claimCopyrightActionIntent(scene.restore.id, attemptedAt)
@@ -60,6 +55,15 @@ async function exhaustedRestoreWithSibling() {
 }
 
 describe('automatic hold restoration preserves provider failures', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it.each(['resolution', 'assessment'] as const)(
     '%s leaves a failed sibling unchanged',
     async transition => {
@@ -67,11 +71,10 @@ describe('automatic hold restoration preserves provider failures', () => {
       let blockedResult: string
       const batches: Array<{ name: string; data: unknown }[]> = []
       if (transition === 'resolution') {
-        const hold = await recordOrdinaryCopyrightHold(scene, publish, [scene.other.id])
+        const hold = await recordOrdinaryCopyrightHold(scene, [scene.other.id])
         blockedResult = await processCopyrightActionIntent(
           scene.sibling.restore.id,
           scene.sibling.now,
-          createTestCopyrightDeliveryDependencies(publish),
         )
         const ownedIntentIds = new Set([scene.restore.id, scene.sibling.restore.id])
         const admissions: Promise<unknown>[] = []
@@ -116,7 +119,6 @@ describe('automatic hold restoration preserves provider failures', () => {
         blockedResult = await processCopyrightActionIntent(
           scene.sibling.restore.id,
           scene.sibling.now,
-          createTestCopyrightDeliveryDependencies(publish),
         )
         await appendCopyrightLegalHoldAssessment({
           currentUser: scene.moderator,

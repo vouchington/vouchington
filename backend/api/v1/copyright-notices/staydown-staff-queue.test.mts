@@ -62,7 +62,7 @@ async function createMatchedCase() {
     .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
     .expect(200)
   // Acceptance records an intent; execute its normal delivery path before asserting withheld media.
-  await deliverInitialCopyrightWithhold(noticeId, {})
+  await deliverInitialCopyrightWithhold(noticeId)
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   const imageId = aggregate!.targets[0]!.image_id
   const uploader = await createTestUser()

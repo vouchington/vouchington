@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestUser } from '@voucha/test-helpers'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { useAutomaticWithholdingSwitch } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import {
   admitTestCopyrightEmailWithdrawal,
@@ -13,7 +13,6 @@ import {
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getPrivateUserByAny } from '@services/users/get'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { readTestClaimantMisuseSummary } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
@@ -67,6 +66,15 @@ async function restrict(
 
 describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state, on) => {
   const switchOn = useAutomaticWithholdingSwitch()
+
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   async function setSwitch(): Promise<void> {
     if (on) await switchOn()
@@ -152,10 +160,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
 
   it('records a restriction that a counter-notice restoration reverses', async () => {
     await setSwitch()
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
-    const scene = await openHeldCounterNoticeRestore(
-      createTestCopyrightDeliveryDependencies(publish),
-    )
+    const scene = await openHeldCounterNoticeRestore()
 
     await expect(readTestClaimantMisuseSummary(scene.claimant.id)).resolves.toEqual({
       ...none,
@@ -165,6 +170,15 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
 })
 
 describe('claimant misuse ledger scope', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('records nothing for an accepted notice and never suspends a claimant by itself', async () => {
     const claimant = await createTestUser()
     const moderator = await createTestCopyrightStaff()

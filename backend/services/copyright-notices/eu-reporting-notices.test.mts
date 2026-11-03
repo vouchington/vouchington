@@ -1,5 +1,5 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
@@ -12,7 +12,6 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { readCopyrightNoticeTargetIds } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { createTestTimedDsaReportAction } from '@voucha/test-helpers/dsa-report-timed-action'
 import {
   COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA,
@@ -40,6 +39,10 @@ const period = () => ({
 
 describe('DSA copyright notice aggregates', () => {
   useCopyrightIntakeEnvironment()
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
@@ -57,7 +60,6 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('counts every pipeline but only in-area flaggers for trusted figures', async () => {
-    installTestMediaDeliveryEdge()
     const { start, end } = period()
     const us = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
@@ -199,11 +201,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('includes a court-hold reimposition as a separate law action', async () => {
-    const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
-    const scene = await openHeldCounterNoticeRestore(dependencies)
-    await expect(
-      processCopyrightActionIntent(scene.restore.id, scene.restorationAt, dependencies),
-    ).resolves.toBe('applied')
+    const scene = await openHeldCounterNoticeRestore()
+    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+      'applied',
+    )
     const { start, end } = period()
     const foreign = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
@@ -211,7 +212,7 @@ describe('DSA copyright notice aggregates', () => {
     const ownedIds = [scene.notice.id]
     expect(ownedIds).not.toContain(foreign.noticeId)
     const before = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
-    await recordOrdinaryCopyrightHold(scene, dependencies.prepublishImagePlacementDenial)
+    await recordOrdinaryCopyrightHold(scene)
     const after = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
     expect(after.actions_on_law_count - before.actions_on_law_count).toBe(1)
     expect(after.actions_on_terms_count).toBe(0)

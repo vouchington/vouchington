@@ -3,14 +3,14 @@ import {
   readTestDsaReceiptApproval,
 } from '@voucha/test-helpers/dsa-approval-withdrawal-fixtures'
 import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { copyrightSweepConfig } from './work-limits.mts'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
   countTestDsaSubmissionsForRestriction,
   liftTestCopyrightRestriction,
@@ -39,6 +39,15 @@ async function restrictionIdFor(noticeId: string): Promise<string> {
 }
 
 describe('DSA statement submission materialization', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('reports remaining materialization work through the configured sweep and resumes next tick', async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(copyrightSweepConfig, { batch_size: 1 }))
     const from = new Date('2026-07-01T00:00:00.000Z')
@@ -118,12 +127,11 @@ describe('DSA statement submission materialization', () => {
       outcome: 'restrict',
       targets: uk.targets,
     })
-    const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
-    const court = await openHeldCounterNoticeRestore(dependencies)
-    await expect(
-      processCopyrightActionIntent(court.restore.id, court.restorationAt, dependencies),
-    ).resolves.toBe('applied')
-    await recordOrdinaryCopyrightHold(court, dependencies.prepublishImagePlacementDenial)
+    const court = await openHeldCounterNoticeRestore()
+    await expect(processCopyrightActionIntent(court.restore.id, court.restorationAt)).resolves.toBe(
+      'applied',
+    )
+    await recordOrdinaryCopyrightHold(court)
     const courtRestrictions =
       (await getCopyrightNoticePrivateAggregate(court.notice.id))?.restrictions ?? []
     expect(courtRestrictions).toHaveLength(2)

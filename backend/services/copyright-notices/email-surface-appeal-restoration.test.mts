@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import {
@@ -18,12 +18,20 @@ import { admitCopyrightEmailCorrespondence } from './email-correspondence-admiss
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 describe('email appeal restoration for a surface image', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('restores a community image after staff admit and reverse an emailed appeal', async () => {
     const fixture = await createTestCopyrightImageFixture('community-profile-image')
     const restricted = await createTestCopyrightRestrictionForImage(fixture)
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
-    const delivery = createTestCopyrightDeliveryDependencies(async () => undefined)
-    await processCopyrightActionIntent(restricted.withholdIntentId, new Date(), delivery)
+    await processCopyrightActionIntent(restricted.withholdIntentId, new Date())
 
     const sesMessageId = `ses-surface-appeal-${crypto.randomUUID()}`
     const { intake } = await createCopyrightEmailIntake({
@@ -76,9 +84,7 @@ describe('email appeal restoration for a surface image', () => {
       row => row.copyright_restriction_id === restricted.restrictionId && row.action === 'restore',
     )
     if (!restore) throw new Error('Surface appeal restore intent missing')
-    await expect(processCopyrightActionIntent(restore.id, new Date(), delivery)).resolves.toBe(
-      'applied',
-    )
+    await expect(processCopyrightActionIntent(restore.id, new Date())).resolves.toBe('applied')
     expect(await getImagePlacementForCopyright(fixture.placementId)).toMatchObject({
       withheld: false,
     })
