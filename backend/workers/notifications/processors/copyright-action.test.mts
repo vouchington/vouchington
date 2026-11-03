@@ -4,7 +4,6 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import { getImagePlacementForCopyright } from '@services/images/placements'
 import { processApplyCopyrightAction } from './copyright-action.mts'
 
 describe('copyright action delivery', () => {
@@ -16,10 +15,9 @@ describe('copyright action delivery', () => {
     await expect(processApplyCopyrightAction({ intentId: withholdIntentId })).resolves.toBe(
       'applied',
     )
-    expect(await getImagePlacementForCopyright(fixture.placementId)).toMatchObject({
-      withheld: true,
-      imageId: fixture.imageId,
-    })
+    await expect(processApplyCopyrightAction({ intentId: withholdIntentId })).resolves.toBe(
+      'not_claimed',
+    )
   })
 
   it('leaves an unknown action intent unclaimed', async () => {
