@@ -1,4 +1,4 @@
-import { it, expect, beforeAll, describe, vi } from 'vitest'
+import { it, expect, beforeAll, afterEach, describe, vi } from 'vitest'
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from './assign.mts'
 import { getStoryItemIds } from './get.mts'
@@ -22,7 +22,9 @@ import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
-import { invalidateStories } from './cache-invalidation.mts'
+import { rejectPostgresWriteForTest, rejectQuery } from '@voucha/test-helpers/injected-failures'
+import { trackAgentQueueAdds } from '../../test-helpers/services/stories/story-post-agent-adds.mts'
+import * as cacheInvalidation from './cache-invalidation.mts'
 import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import { drainStoryPostRelatedUrlProjection } from '../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -32,17 +34,7 @@ describe('assign', () => {
     return createHash('sha256').update(JSON.stringify(data)).digest()
   }
   async function makeTestItem(): Promise<string> {
-    const feed = await createTestRssFeed({})
-    const urlId = await createTestUrlWithHostname()
-    const random = Math.random().toString(36).slice(2, 10)
-    const itemData = { title: `Assign Test Item ${random}`, link: `https://example.com/${random}` }
-    return insertTestRssFeedItem({
-      rssFeedId: feed.id,
-      urlId,
-      guid: `assign-test-${random}`,
-      itemData,
-      contentSha256: sha256(itemData),
-    })
+    return makeTestItemForUrl(await createTestUrlWithHostname())
   }
   async function makeTestItemForUrl(urlId: string): Promise<string> {
     const feed = await createTestRssFeed({})
@@ -75,6 +67,10 @@ describe('assign', () => {
     // Pre-warm the DB connection by creating one item at setup
     await makeTestItem()
   })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
   it('adminAssignItemToStory assigns item and sets story_locked_at', async () => {
     const story = await insertTestStory()
     const newItemId = await makeTestItem()
@@ -83,16 +79,44 @@ describe('assign', () => {
     const ids = await getStoryItemIds(story.id)
     expect(ids).toContain(newItemId)
   })
-  it('rolls back the assignment when transactional relation refresh fails', async () => {
-    const story = await insertTestStory()
+  it('rolls back a caller-owned transaction when the relation refresh fails', async () => {
+    const [firstUrlId, secondUrlId] = await Promise.all([
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+    ])
+    const { story } = await createStoryWithPost([firstUrlId, secondUrlId])
     const itemId = await makeTestItem()
     await expect(
-      adminAssignItemToStory(storyPostUser.id, story.id, itemId, {
-        refreshStoryPostForStory: async () => {
-          throw new Error('refresh failed')
-        },
-      }),
+      (async () => {
+        await using transaction = await beginTransaction()
+        const query = rejectQuery(
+          transaction,
+          statement => statement.includes('markStoryPostRelatedUrlProjection'),
+          'refresh failed',
+        )
+        return await adminAssignItemToStory(storyPostUser.id, story.id, itemId, { query })
+      })(),
     ).rejects.toThrow('refresh failed')
+    await expect(getStoryItemIds(story.id)).resolves.not.toContain(itemId)
+  })
+  it('rolls back its own transaction when the relation refresh fails', async () => {
+    const [firstUrlId, secondUrlId] = await Promise.all([
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+    ])
+    const { story } = await createStoryWithPost([firstUrlId, secondUrlId])
+    const itemId = await makeTestItem()
+    const restore = rejectPostgresWriteForTest(
+      'refreshStoryPostForStory:pruneTopics',
+      new Error('refresh failed'),
+    )
+    try {
+      await expect(adminAssignItemToStory(storyPostUser.id, story.id, itemId)).rejects.toThrow(
+        'refresh failed',
+      )
+    } finally {
+      restore()
+    }
     await expect(getStoryItemIds(story.id)).resolves.not.toContain(itemId)
   })
   it('adminAssignItemToStory overrides existing lock', async () => {
@@ -112,23 +136,20 @@ describe('assign', () => {
     const itemId = await makeTestItem()
     const topic = await createTestTopic({ name: `Story capture order ${randomUUID()}` })
     await addCategoryToRssFeedItem(itemId, topic.id)
-    const enqueuedPostIds: string[] = []
+    const agent = trackAgentQueueAdds()
     const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
-      adminAssignItemToStory(storyPostUser.id, story.id, itemId, {
-        refreshStoryPostForStory: async (refreshedStoryId, refreshOptions, refreshBehavior) => {
-          expect(refreshBehavior?.enqueueAgent).toBe(false)
-          expect(refreshedStoryId).toBe(story.id)
-          if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')
-          return refreshStoryPostForStory(refreshedStoryId, refreshOptions, refreshBehavior)
-        },
-        enqueueStoryPostAgent: async postId => {
-          enqueuedPostIds.push(postId)
-        },
-      }),
+      adminAssignItemToStory(storyPostUser.id, story.id, itemId),
     )
+    await Promise.all(agent.admissions)
     await settleStoryPostTopicVoteCapture(post.id, topic.id)
     await drainStoryPostRelatedUrlProjection(post.id)
-    expect(enqueuedPostIds).toEqual([post.id])
+    expect(
+      agent.calls.filter(call => {
+        const data = call.data as { post_id?: string; force?: boolean } | undefined
+        // Post creation may enqueue its own unforced run for this post; only the forced one is the assignment's.
+        return data?.post_id === post.id && data.force === true
+      }),
+    ).toEqual([{ name: 'story-post', data: { post_id: post.id, force: true } }])
     await expect(getPostCategoryTopicIds(post.id)).resolves.toContain(topic.id)
     expect(jobs.map(job => job.reason)).toEqual(
       expect.arrayContaining(['post_updated', 'post_topics_changed']),
@@ -212,20 +233,24 @@ describe('assign', () => {
     const topic = await createTestTopic({ name: `Story move ordering ${randomUUID()}` })
     await addCategoryToRssFeedItem(movedItemId, topic.id)
     await refreshStoryPostForStory(prior.story.id)
-    const completedRefreshes = new Set<string>()
-    await adminAssignItemToStory(storyPostUser.id, target.story.id, movedItemId, {
-      refreshStoryPostForStory: async (storyId, refreshOptions, refreshBehavior) => {
-        expect(refreshBehavior?.enqueueAgent).toBe(false)
-        const result = await refreshStoryPostForStory(storyId, refreshOptions, refreshBehavior)
-        completedRefreshes.add(storyId)
-        return result
-      },
-      invalidateStories: async (...storyIds) => {
-        expect(completedRefreshes).toEqual(new Set([prior.story.id, target.story.id]))
-        expect(await getPostCategoryTopicIds(target.post.id)).toContain(topic.id)
-        await invalidateStories(...storyIds)
-      },
-    })
+    const realInvalidateStories = cacheInvalidation.invalidateStories
+    const topicsAtInvalidation: Array<{ prior: string[]; target: string[] }> = []
+    const invalidateSpy = vi
+      .spyOn(cacheInvalidation, 'invalidateStories')
+      .mockImplementation(async (...storyIds) => {
+        // Only the assignment invalidates a moved item's new and prior story together.
+        if (storyIds.length === 2)
+          topicsAtInvalidation.push({
+            prior: await getPostCategoryTopicIds(prior.post.id),
+            target: await getPostCategoryTopicIds(target.post.id),
+          })
+        await realInvalidateStories(...storyIds)
+      })
+    await adminAssignItemToStory(storyPostUser.id, target.story.id, movedItemId)
+    expect(invalidateSpy).toHaveBeenCalledWith(target.story.id, prior.story.id)
+    expect(topicsAtInvalidation).toHaveLength(1)
+    expect(topicsAtInvalidation[0]!.prior).not.toContain(topic.id)
+    expect(topicsAtInvalidation[0]!.target).toContain(topic.id)
     await Promise.all([
       drainStoryPostRelatedUrlProjection(prior.post.id),
       drainStoryPostRelatedUrlProjection(target.post.id),
@@ -244,22 +269,26 @@ describe('assign', () => {
     await addCategoryToRssFeedItem(itemIds[0]!, removedTopic.id)
     await refreshStoryPostForStory(story.id)
     await settleStoryPostTopicVoteCapture(post.id, removedTopic.id)
-    const completedRefreshes = new Set<string>()
+    const realInvalidateStories = cacheInvalidation.invalidateStories
+    const observed: Array<{ itemIds: string[]; topicIds: string[] }> = []
+    const invalidateSpy = vi
+      .spyOn(cacheInvalidation, 'invalidateStories')
+      .mockImplementation(async (...storyIds) => {
+        // The post-created recovery worker may also invalidate this story; each observation records
+        // whether the removal had committed when it ran.
+        observed.push({
+          itemIds: await getStoryItemIds(story.id),
+          topicIds: await getPostCategoryTopicIds(post.id),
+        })
+        await realInvalidateStories(...storyIds)
+      })
     const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
-      adminRemoveItemFromStory(storyPostUser.id, itemIds[0]!, {
-        refreshStoryPostForStory: async (storyId, refreshOptions, refreshBehavior) => {
-          expect(refreshBehavior?.enqueueAgent).toBe(false)
-          if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')
-          const result = await refreshStoryPostForStory(storyId, refreshOptions, refreshBehavior)
-          completedRefreshes.add(storyId)
-          return result
-        },
-        invalidateStories: async (...storyIds) => {
-          expect(completedRefreshes).toEqual(new Set([story.id]))
-          await invalidateStories(...storyIds)
-        },
-      }),
+      adminRemoveItemFromStory(storyPostUser.id, itemIds[0]!),
     )
+    expect(invalidateSpy).toHaveBeenCalledWith(story.id)
+    const afterRemoval = observed.filter(entry => !entry.itemIds.includes(itemIds[0]!))
+    expect(afterRemoval.length).toBeGreaterThanOrEqual(1)
+    for (const entry of afterRemoval) expect(entry.topicIds).not.toContain(removedTopic.id)
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.not.toContain(removedUrlId)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toContain(retainedUrlId)

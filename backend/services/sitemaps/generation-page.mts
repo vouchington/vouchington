@@ -25,9 +25,9 @@ export type GenerationPageResult = {
 export async function generateSitemapPage<T extends SourceEntry>(
   maxRows: number,
   dependencies: GenerationPageDependencies<T>,
-  now = new Date(),
   expectedGenerationId?: string,
 ): Promise<GenerationPageResult> {
+  const now = new Date()
   let progress = await dependencies.getProgress()
   const publishedManifest = await dependencies.getManifest()
   if (expectedGenerationId && progress?.generation_id !== expectedGenerationId) {

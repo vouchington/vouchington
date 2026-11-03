@@ -33,7 +33,7 @@ export async function processUpdatePostDaySitemap({
   /** Set only on a continuation; it no-ops when that generation is gone or replaced. */
   generationId?: string
 }): Promise<void> {
-  const result = await generatePostDaySitemapFiles(postType, day, undefined, generationId)
+  const result = await generatePostDaySitemapFiles(postType, day, generationId)
   if (result.stale) return
   if (result.hasMore && result.continuationId && result.generationId) {
     await enqueuePostDaySitemapContinuation(
@@ -70,7 +70,7 @@ export async function processUpdateFamilySitemap({
   /** Set only on a continuation; it no-ops when that generation is gone or replaced. */
   generationId?: string
 }): Promise<void> {
-  const result = await generateSitemapFamilyFiles(family, undefined, generationId)
+  const result = await generateSitemapFamilyFiles(family, generationId)
   if (result.stale) return
   if (result.hasMore && result.continuationId && result.generationId) {
     await enqueueFamilySitemapContinuation(family, result.generationId, result.continuationId)

@@ -4,14 +4,8 @@ import {
   STORY_POST_RELATED_URL_PROJECTION_LEASE_RENEWAL_MS,
 } from './story-post-related-url-projection-work.mts'
 
-type LeaseRenewalDependencies = {
-  renewalMs?: number
-  renew?: typeof renewStoryPostRelatedUrlProjectionWorkLease
-}
-
 type LeaseRenewalState = {
   work: ProjectionWork
-  renew: typeof renewStoryPostRelatedUrlProjectionWorkLease
   ownershipLost: boolean
   renewalError: Error | undefined
   renewal: Promise<void> | undefined
@@ -20,22 +14,23 @@ type LeaseRenewalState = {
 export async function runWithStoryPostRelatedUrlProjectionLeaseRenewal<T>(
   work: ProjectionWork,
   operation: (work: ProjectionWork) => Promise<T>,
-  dependencies: LeaseRenewalDependencies = {},
 ): Promise<{ value: T } | null> {
   const state: LeaseRenewalState = {
     work,
-    renew: dependencies.renew ?? renewStoryPostRelatedUrlProjectionWorkLease,
     ownershipLost: false,
     renewalError: undefined,
     renewal: undefined,
   }
-  const renewalMs = dependencies.renewalMs ?? STORY_POST_RELATED_URL_PROJECTION_LEASE_RENEWAL_MS
 
   await renewStoryPostRelatedUrlProjectionLeaseNow(state)
   assertNoRenewalError(state)
   if (state.ownershipLost) return null
 
-  const timer = setInterval(renewStoryPostRelatedUrlProjectionLeaseOnInterval, renewalMs, state)
+  const timer = setInterval(
+    renewStoryPostRelatedUrlProjectionLeaseOnInterval,
+    STORY_POST_RELATED_URL_PROJECTION_LEASE_RENEWAL_MS,
+    state,
+  )
   timer.unref()
   try {
     const value = await operation(work)
@@ -73,7 +68,7 @@ async function performStoryPostRelatedUrlProjectionLeaseRenewal(
   state: LeaseRenewalState,
 ): Promise<void> {
   try {
-    const accepted = await state.renew(state.work)
+    const accepted = await renewStoryPostRelatedUrlProjectionWorkLease(state.work)
     if (!accepted) state.ownershipLost = true
   } catch (err) {
     state.ownershipLost = true

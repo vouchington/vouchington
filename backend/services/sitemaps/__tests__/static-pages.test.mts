@@ -1,23 +1,41 @@
-import { readFile } from 'node:fs/promises'
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { buffer } from 'node:stream/consumers'
+import type { Readable } from 'node:stream'
 import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { S3Buckets } from '@modules/aws'
 import { generateStaticPagesSitemap } from '../static-pages.mts'
 
 let uploadedXml = ''
+let uploads: Array<{
+  key: string | undefined
+  bucket: string | undefined
+  contentType: string | undefined
+  contentEncoding: string | undefined
+}> = []
 
 describe('static pages sitemap', () => {
-  const putSitemapObjectFile = vi.fn<VitestLooseMock>()
-
   beforeEach(() => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://test.com')
+    vi.stubEnv('SITEMAP_S3_PREFIX', '')
     uploadedXml = ''
-    putSitemapObjectFile.mockReset()
-    putSitemapObjectFile.mockImplementation(async (_key: string, filePath: string) => {
-      uploadedXml = gunzipSync(await readFile(filePath)).toString()
+    uploads = []
+    vi.spyOn(S3Client.prototype, 'send').mockImplementation(async command => {
+      if (!(command instanceof PutObjectCommand)) throw new Error('Unexpected S3 command')
+      const input = command.input
+      uploads.push({
+        key: input.Key,
+        bucket: input.Bucket,
+        contentType: input.ContentType,
+        contentEncoding: input.ContentEncoding,
+      })
+      uploadedXml = gunzipSync(await buffer(input.Body as Readable)).toString()
+      return {} as never
     })
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
@@ -50,7 +68,7 @@ describe('static pages sitemap', () => {
       '/rewards-program-statuses',
       '/videos',
     ]
-    await generateStaticPagesSitemap({ putSitemapObjectFile })
+    await generateStaticPagesSitemap()
     const locs = [...uploadedXml.matchAll(/<loc>([^<]+)<\/loc>/g)].flatMap(match =>
       match[1] === undefined ? [] : [match[1]],
     )
@@ -65,20 +83,16 @@ describe('static pages sitemap', () => {
   })
 
   it('writes a gzip urlset sitemap containing the static pages', async () => {
-    await generateStaticPagesSitemap({ putSitemapObjectFile })
+    await generateStaticPagesSitemap()
 
-    expect(putSitemapObjectFile).toHaveBeenCalledTimes(1)
-    const [key, _filePath, options] = putSitemapObjectFile.mock.calls[0] as [
-      string,
-      string,
-      { contentType: string; contentEncoding?: string },
-    ]
-
-    expect(key).toBe('sitemaps/static.xml')
-    expect(options).toEqual({
-      contentType: 'application/xml; charset=utf-8',
-      contentEncoding: 'gzip',
-    })
+    expect(uploads).toEqual([
+      {
+        key: 'sitemaps/static.xml',
+        bucket: S3Buckets.sitemaps,
+        contentType: 'application/xml; charset=utf-8',
+        contentEncoding: 'gzip',
+      },
+    ])
 
     expect(uploadedXml).toContain('<?xml version="1.0" encoding="UTF-8"?>')
     expect(uploadedXml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
