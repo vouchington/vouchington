@@ -1,19 +1,19 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { insertTextEmbeddingForRetentionTest } from './entities/ai-retention.mts'
-import { createIsolatedRetentionWindow } from './retention-window.mts'
+import { createExactRetentionWindow } from './retention-window.mts'
 
 /** Committed, uniquely owned hashes exercise the cleanup's normal transaction resource. */
 export async function createCommittedRetentionCacheFixture() {
-  const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+  const { aged, ...window } = createExactRetentionWindow(90)
   await using setup = await beginTransaction()
   const contentHashes = await Promise.all([
-    insertTextEmbeddingForRetentionTest(setup, at(122)),
-    insertTextEmbeddingForRetentionTest(setup, at(122)),
-    insertTextEmbeddingForRetentionTest(setup, now),
+    insertTextEmbeddingForRetentionTest(setup, aged),
+    insertTextEmbeddingForRetentionTest(setup, aged),
+    insertTextEmbeddingForRetentionTest(setup, window.now),
   ])
   const buffers = contentHashes.map(hash => Buffer.from(hash, 'hex'))
   const fixture = {
-    options: { now, lowerBoundDate, batchSize: 1, maxBatches: 1 },
+    options: { ...window, batchSize: 1, maxBatches: 1 },
     state: async () => {
       const { rows } = await read<{ content_sha256: string }>(
         `/* readCommittedRetentionCacheFixture */
