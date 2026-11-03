@@ -13,10 +13,7 @@ import {
   enqueueBulkDistributeActivity,
 } from '@queues/activitypub/enqueues/delivery'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
-import {
-  markActivityDistributionComplete,
-  type deliverActivityToInbox,
-} from '@services/activitypub-delivery'
+import { markActivityDistributionComplete } from '@services/activitypub-delivery'
 import { distributeActivity, deliverActivity } from './processors/delivery.mts'
 import { resumeDistributionPage } from '@queues/activitypub/enqueues/distribution-recovery'
 
@@ -29,7 +26,7 @@ export async function processDistributeActivityJob(
     target: background,
     targetName: 'background',
     readAndDispatch: async pageSize => {
-      const result = await distributeActivity(job.data, undefined, pageSize)
+      const result = await distributeActivity(job.data, pageSize)
       return {
         result,
         ...(!result.completed
@@ -96,9 +93,6 @@ function nextDistributionPage(
 
 export async function processDeliverActivityJob(
   job: Pick<Job<DeliverActivityData>, 'data' | 'timestamp' | 'moveToDelayed'>,
-  dependencies: { deliverActivityToInbox?: typeof deliverActivityToInbox } = {},
 ): Promise<unknown> {
-  return boundRateLimitDeferral(job, async () =>
-    deliverActivity(job.data, dependencies.deliverActivityToInbox ? dependencies : {}),
-  )
+  return boundRateLimitDeferral(job, async () => deliverActivity(job.data))
 }

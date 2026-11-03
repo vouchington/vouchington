@@ -18,68 +18,40 @@ import {
 } from '@ts-shared/ses-inbound-contract'
 import { getSesInboundReconcileMaxPagesPerRun } from '@queues/ses-inbound/config'
 import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.mts'
-import {
-  processCopyrightInboundEmail,
-  type CopyrightEmailDependencies,
-} from './processors/copyright-email.mts'
+import { processCopyrightInboundEmail } from './processors/copyright-email.mts'
 import {
   deleteSesInboundObject,
   copySesInboundObjectToCopyrightEvidence,
   listCopyrightSesInboundObjects,
   loadSesInboundObjectAndHash,
   loadSesInboundObjectVersion,
-  loadSesInboundObject,
   moveSesInboundObjectToFailed,
   readSesInboundBucket,
-  type SesInboundObjectPage,
 } from './processors/s3.mts'
 
-type ProcessDependencies = CopyrightEmailDependencies & {
-  deleteSesInboundObject: typeof deleteSesInboundObject
-  loadSesInboundObject: typeof loadSesInboundObject
-  moveSesInboundObjectToFailed: typeof moveSesInboundObjectToFailed
-  parseSesInboundMime: typeof parseSesInboundMime
-}
-
-type ReconcileDependencies = {
-  enqueueOrRetryBulkSesInboundProcess: typeof enqueueOrRetryBulkSesInboundProcess
-  enqueueSesInboundReconcileContinuation: typeof enqueueSesInboundReconcileContinuation
-  listCopyrightSesInboundObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>
-  readRetainedFailedSesInboundProcessJobs: () => Promise<RetryableSesInboundJob[]>
-}
-
-export async function processSesInboundEmail(
-  data: SesInboundProcessJobData,
-  dependencies?: Partial<ProcessDependencies>,
-): Promise<void> {
+export async function processSesInboundEmail(data: SesInboundProcessJobData): Promise<void> {
   assertSesInboundProcessJobData(data)
-  const deps = {
-    copySesInboundObjectToCopyrightEvidence,
-    createCopyrightEmailIntake,
-    deleteSesInboundObject,
-    enqueueCopyrightEmailIntake,
-    loadSesInboundObject,
-    loadSesInboundObjectAndHash,
-    loadSesInboundObjectVersion,
-    moveSesInboundObjectToFailed,
-    parseSesInboundMime,
-    recordCopyrightEmailParse,
-    ...dependencies,
-  }
 
   try {
-    await processCopyrightInboundEmail(data, deps)
-    await deps.deleteSesInboundObject(data.objectKey)
+    await processCopyrightInboundEmail(data, {
+      copySesInboundObjectToCopyrightEvidence,
+      createCopyrightEmailIntake,
+      enqueueCopyrightEmailIntake,
+      loadSesInboundObjectAndHash,
+      loadSesInboundObjectVersion,
+      parseSesInboundMime,
+      recordCopyrightEmailParse,
+    })
+    await deleteSesInboundObject(data.objectKey)
   } catch (err) {
     if (!(err instanceof SesInboundTerminalError)) throw err
-    await deps.moveSesInboundObjectToFailed(data.objectKey, data.sesMessageId)
+    await moveSesInboundObjectToFailed(data.objectKey, data.sesMessageId)
     throw new UnrecoverableError(err.message)
   }
 }
 
 export async function reconcileSesInboundEmails(
   data: SesInboundReconcileJobData = {},
-  dependencies?: Partial<ReconcileDependencies>,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   assertSesInboundReconcileJobData(data)
   // The sweep has nothing to scan without the bucket. Skip loudly (local dev has none) instead of
@@ -89,50 +61,36 @@ export async function reconcileSesInboundEmails(
     recordScheduledJobConfigMissing(SES_INBOUND_RECONCILE_JOB.name, 'S3_BUCKET_SES_INBOUND')
     return { enqueued: 0, hasMore: false }
   }
-  const listCopyrightObjects =
-    dependencies?.listCopyrightSesInboundObjects ?? listCopyrightSesInboundObjects
-  const enqueueOrRetry =
-    dependencies?.enqueueOrRetryBulkSesInboundProcess ?? enqueueOrRetryBulkSesInboundProcess
-  const enqueueContinuation =
-    dependencies?.enqueueSesInboundReconcileContinuation ?? enqueueSesInboundReconcileContinuation
-  const readFailedJobs =
-    dependencies?.readRetainedFailedSesInboundProcessJobs ?? readRetainedFailedSesInboundProcessJobs
-  const failedJobs = await readFailedJobs()
+  const failedJobs = await readRetainedFailedSesInboundProcessJobs()
   return enqueueAllInboundPages(
     data.continuationToken,
     getSesInboundReconcileMaxPagesPerRun(),
-    listCopyrightObjects,
     failedJobs,
-    enqueueOrRetry,
-    enqueueContinuation,
   )
 }
 
 async function enqueueAllInboundPages(
   initialToken: string | undefined,
   maxPages: number,
-  listObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>,
   failedJobs: RetryableSesInboundJob[],
-  enqueueOrRetry: typeof enqueueOrRetryBulkSesInboundProcess,
-  enqueueContinuation: typeof enqueueSesInboundReconcileContinuation,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   let continuationToken = initialToken
   let enqueued = 0
   for (let pageNumber = 0; pageNumber < maxPages; pageNumber++) {
     // oxlint-disable-next-line no-await-in-loop -- each S3 page supplies the next continuation token.
-    const page = await listObjects(continuationToken)
+    const page = await listCopyrightSesInboundObjects(continuationToken)
     const jobs = page.objectKeys.map(objectKey => ({
       sesMessageId: getSesMessageIdFromObjectKey(objectKey),
       objectKey,
     }))
     if (jobs.length > 0) {
       // oxlint-disable-next-line no-await-in-loop -- the next S3 page starts after this page is enqueued.
-      await enqueueOrRetry(jobs, failedJobs)
+      await enqueueOrRetryBulkSesInboundProcess(jobs, failedJobs)
     }
     enqueued += jobs.length
     continuationToken = page.nextContinuationToken
     if (!continuationToken) return { enqueued, hasMore: false }
   }
-  await enqueueContinuation(continuationToken!)
+  await enqueueSesInboundReconcileContinuation(continuationToken!)
   return { enqueued, hasMore: true }
 }

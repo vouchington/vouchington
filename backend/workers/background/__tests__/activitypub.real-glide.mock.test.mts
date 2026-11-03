@@ -1,6 +1,5 @@
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { randomUUID } from 'node:crypto'
-import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { getActorUri } from '@modules/activitypub-uris'
@@ -11,7 +10,6 @@ import {
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
 } from '@queues/background/enqueues/activitypub-jobs'
 import { background } from '@queues/background/queues'
-import { deliverActivityToInbox } from '@services/activitypub-delivery'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
 import { dispatchInboundActivity } from '@services/ap-inbox-activities'
 import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
@@ -21,37 +19,16 @@ import {
   processDistributeActivityJob,
 } from '@workers/activitypub/processors'
 import { createTestUserDirect, readAllQueueJobs } from '@voucha/test-helpers'
+import { stubActivityPubSocketForTest } from '@voucha/test-helpers/activitypub-outbound-fixtures'
 import {
   startBackgroundHarness,
   type BackgroundHarness,
 } from '@voucha/test-helpers/real-glide-background'
 import { createBackgroundProcessor } from '../processors.mts'
 
-type DeliverActivityToInboxInput = Parameters<typeof deliverActivityToInbox>[0]
-
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-
-type CapturedRequest = { url: string; body: string; headers: Record<string, string> }
-
-function networkBoundary(captured: CapturedRequest[], status = 202) {
-  return (input: DeliverActivityToInboxInput) =>
-    deliverActivityToInbox(input, {
-      validateUrl: async () => [{ address: '93.184.216.34', family: 4 }],
-      fetch: vi.fn<VitestLooseMock>(async (url: string, init: Record<string, unknown>) => {
-        captured.push({
-          url,
-          body: init.body as string,
-          headers: init.headers as Record<string, string>,
-        })
-        return new Response(null, {
-          status,
-          ...(status === 429 ? { headers: { 'Retry-After': '120' } } : {}),
-        })
-      }),
-    })
-}
 
 async function createFederatedUser() {
   const user = await createTestUserDirect()
@@ -95,9 +72,7 @@ describe('activitypub through the production background processor', () => {
     harness = undefined
   })
 
-  async function startWith(
-    deliver: (job: Job) => unknown = job => processDeliverActivityJob(job),
-  ): Promise<BackgroundHarness> {
+  async function start(): Promise<BackgroundHarness> {
     processed = Promise.withResolvers<void>()
     harness = await startBackgroundHarness({
       connection,
@@ -113,7 +88,7 @@ describe('activitypub through the production background processor', () => {
       },
       bodies: {
         [ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name]: job => processDistributeActivityJob(job),
-        [ACTIVITYPUB_DELIVER_ACTIVITY_JOB.name]: deliver,
+        [ACTIVITYPUB_DELIVER_ACTIVITY_JOB.name]: job => processDeliverActivityJob(job),
       },
     })
     return harness
@@ -136,12 +111,8 @@ describe('activitypub through the production background processor', () => {
     const target = await createFederatedUser()
     const remote = await createRemoteFollower(source.id)
     const activityId = mintUUIDv7()
-    const captured: CapturedRequest[] = []
-    const started = await startWith(job =>
-      processDeliverActivityJob(job, {
-        deliverActivityToInbox: networkBoundary(captured),
-      }),
-    )
+    const captured = stubActivityPubSocketForTest()
+    const started = await start()
     const distribute = await started.add(
       ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
       { activityId, activityType: 'Follow', sourceUserId: source.id, targetUserId: target.id },
@@ -190,10 +161,10 @@ describe('activitypub through the production background processor', () => {
   it('defers a remote 429 through the shared worker without consuming an attempt', async () => {
     const source = await createFederatedUser()
     await getOrCreateActorKeyPair(source.id)
-    const captured: CapturedRequest[] = []
-    const started = await startWith(job =>
-      processDeliverActivityJob(job, { deliverActivityToInbox: networkBoundary(captured, 429) }),
+    const captured = stubActivityPubSocketForTest(
+      () => new Response(null, { status: 429, headers: { 'Retry-After': '120' } }),
     )
+    const started = await start()
     const job = await started.add(
       ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
       {
@@ -216,7 +187,7 @@ describe('activitypub through the production background processor', () => {
   })
 
   it('runs a delivery job through its processor', async () => {
-    const started = await startWith()
+    const started = await start()
     const job = await started.add(
       ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
       {

@@ -1,300 +1,233 @@
-import { Readable } from 'node:stream'
-import { describe, expect, it, vi } from 'vitest'
-import type {
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
-} from '@services/copyright-notices'
-import { ErasedCopyrightEmailIntakeReplay } from '@services/copyright-notices/email-intakes'
-import type {
-  copySesInboundObjectToCopyrightEvidence,
-  loadSesInboundObjectAndHash,
-  loadSesInboundObjectVersion,
-} from './s3.mts'
-import { parseSesInboundMime, SesInboundTerminalError } from './mime.mts'
-import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
+import { createHash, randomUUID } from 'node:crypto'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { ai_agents } from '@queues/ai-agents/queues'
+import { getCopyrightEmailIntakeForAgent } from '@services/copyright-notices/email-intake-parses'
+import { eraseTestCopyrightEmailIntakeOriginal } from '@voucha/test-helpers/copyright-email-intake-retention'
+import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
+import {
+  SES_INBOUND_TEST_RECEIVED_AT,
+  readCopyrightEmailAncestorKindForTest,
+  readCopyrightEmailIntakeIdForTest,
+  readCopyrightEmailIntakeVerdictsForTest,
+  readCopyrightEmailParseFailureForTest,
+  readCopyrightEmailThreadHeadersForTest,
+  stubSesInboundS3ForTest,
+} from '@voucha/test-helpers/ses-inbound-s3'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { processSesInboundEmail, reconcileSesInboundEmails } from '../processors.mts'
-
-type ParsedSesInboundEmail = Awaited<ReturnType<typeof parseSesInboundMime>>
+import { processSesInboundEmail } from '../processors.mts'
 
 vi.mock<typeof import('mailparser')>(import('mailparser'), async importOriginal => importOriginal())
+
+const SES_HEADERS = [
+  'X-SES-Spam-Verdict: PASS',
+  'X-SES-Virus-Verdict: PROCESSING_FAILED',
+  'Authentication-Results: amazonses.com; spf=fail; dkim=pass; dmarc=neutral;',
+  'X-SES-RECEIPT: AEFBQUFBQUFBQUFH',
+]
+
+const PDF_BYTES = Buffer.from('%PDF-1.4 evidence')
+
+function noticeEmail(options: { messageId: string; inReplyTo?: string }): string {
+  return [
+    ...SES_HEADERS,
+    'From: Copyright claimant <claimant@example.test>',
+    'To: dmca@inbound.voucha.ai',
+    'Subject: Copyright notice',
+    `Message-ID: ${options.messageId}`,
+    ...(options.inReplyTo ? [`In-Reply-To: ${options.inReplyTo}`] : []),
+    'References: <prior@example.test>',
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/mixed; boundary="notice-boundary"',
+    '',
+    '--notice-boundary',
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    'Notice body',
+    '--notice-boundary',
+    'Content-Type: application/pdf; name="evidence.pdf"',
+    'Content-Disposition: attachment; filename="evidence.pdf"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    PDF_BYTES.toString('base64'),
+    '--notice-boundary--',
+    '',
+  ].join('\r\n')
+}
+
+function senderlessEmail(): string {
+  return [
+    ...SES_HEADERS,
+    'To: dmca@inbound.voucha.ai',
+    'Subject: Unattributable',
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    'No sender header.',
+  ].join('\r\n')
+}
+
+function messageIdentity() {
+  const sesMessageId = `ses-copyright-${randomUUID()}`
+  return { sesMessageId, objectKey: `copyright-incoming/${sesMessageId}` }
+}
+
+function watchIntakeEnqueues() {
+  const add = vi.spyOn(ai_agents, 'add')
+  onTestFinished(() => add.mockRestore())
+  return () => add.mock.calls.map(([, data]) => (data as { intake_id: string }).intake_id)
+}
+
+const sha256Hex = (raw: string) => createHash('sha256').update(raw).digest('hex')
 
 // The intake switch gates decisions, not ingest (#1443): every test below runs with it off.
 describe('SES copyright inbound routing while intake is switched off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
 
   it('finishes an erased SES replay without recopying evidence or recreating work', async () => {
-    const copy = vi.fn<typeof copySesInboundObjectToCopyrightEvidence>()
-    const parse = vi.fn<typeof recordCopyrightEmailParse>()
-    const enqueue = vi.fn<(intakeId: string) => Promise<void>>()
-    const deleteSource = vi.fn<(key: string) => Promise<void>>().mockResolvedValue(undefined)
-    await processSesInboundEmail(
-      {
-        sesMessageId: 'erased-ses-message',
-        objectKey: 'copyright-incoming/erased-ses-message',
-      },
-      {
-        loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
-          rawMime: Readable.from([Buffer.from('raw')]),
-          digest: Promise.resolve({
-            sha256: Buffer.alloc(32, 1),
-            byteSize: 3,
-            sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-          }),
-          receivedAt: new Date(),
-          sourceIdentity: { eTag: 'etag', versionId: 'version' },
-        }),
-        loadSesInboundObjectVersion: vi.fn<typeof loadSesInboundObjectVersion>(),
-        copySesInboundObjectToCopyrightEvidence: copy,
-        createCopyrightEmailIntake: vi
-          .fn<typeof createCopyrightEmailIntake>()
-          .mockRejectedValue(new ErasedCopyrightEmailIntakeReplay()),
-        parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>(),
-        recordCopyrightEmailParse: parse,
-        enqueueCopyrightEmailIntake: enqueue,
-        deleteSesInboundObject: deleteSource,
-      },
-    )
-    expect(copy).not.toHaveBeenCalled()
-    expect(parse).not.toHaveBeenCalled()
-    expect(enqueue).not.toHaveBeenCalled()
-    expect(deleteSource).toHaveBeenCalledWith('copyright-incoming/erased-ses-message')
-  })
-
-  it('reconciles every copyright evidence page', async () => {
     vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const listCopyrightObjects = vi
-      .fn<
-        (
-          continuationToken?: string,
-        ) => Promise<{ objectKeys: string[]; nextContinuationToken?: string }>
-      >()
-      .mockResolvedValueOnce({
-        objectKeys: ['copyright-incoming/ses-copyright-a'],
-        nextContinuationToken: 'next',
-      })
-      .mockResolvedValueOnce({ objectKeys: ['copyright-incoming/ses-copyright-b'] })
-    type ReconcileDependencies = NonNullable<Parameters<typeof reconcileSesInboundEmails>[1]>
-    const enqueueOrRetry = vi
-      .fn<NonNullable<ReconcileDependencies['enqueueOrRetryBulkSesInboundProcess']>>()
-      .mockResolvedValue(0)
+    const data = messageIdentity()
+    const raw = noticeEmail({ messageId: `<${data.sesMessageId}@example.test>` })
+    const s3Calls = stubSesInboundS3ForTest({ objects: { [data.objectKey]: raw } })
+    const enqueuedIntakeIds = watchIntakeEnqueues()
+    await processSesInboundEmail(data)
+    const intakeId = (await readCopyrightEmailIntakeIdForTest(data.sesMessageId))!
+    await eraseTestCopyrightEmailIntakeOriginal(intakeId)
+    const firstRunCalls = s3Calls.length
 
-    await expect(
-      reconcileSesInboundEmails(
-        {},
-        {
-          listCopyrightSesInboundObjects: listCopyrightObjects,
-          enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
-          readRetainedFailedSesInboundProcessJobs: async () => [],
-        },
-      ),
-    ).resolves.toEqual({ enqueued: 2, hasMore: false })
+    await processSesInboundEmail(data)
 
-    expect(listCopyrightObjects).toHaveBeenNthCalledWith(1, undefined)
-    expect(listCopyrightObjects).toHaveBeenNthCalledWith(2, 'next')
-    expect(enqueueOrRetry).toHaveBeenNthCalledWith(
-      1,
-      [
-        {
-          sesMessageId: 'ses-copyright-a',
-          objectKey: 'copyright-incoming/ses-copyright-a',
-        },
-      ],
-      [],
-    )
-    expect(enqueueOrRetry).toHaveBeenNthCalledWith(
-      2,
-      [
-        {
-          sesMessageId: 'ses-copyright-b',
-          objectKey: 'copyright-incoming/ses-copyright-b',
-        },
-      ],
-      [],
-    )
+    expect(s3Calls.slice(firstRunCalls).map(call => call.command)).toEqual([
+      'GetObjectCommand',
+      'DeleteObjectCommand',
+    ])
+    expect(s3Calls.at(-1)!.input).toEqual({ Bucket: 'ses-inbound-test', Key: data.objectKey })
+    expect(enqueuedIntakeIds()).toEqual([intakeId])
+    expect(await readCopyrightIntakeRetentionState(intakeId)).toMatchObject({
+      intakeExists: true,
+      receiptExists: true,
+      hasRawObject: false,
+      parseCount: 1,
+    })
   })
 
   it('ingests a notice and a reply, preserving the raw email before source cleanup', async () => {
-    const data = {
-      sesMessageId: 'ses-copyright-message',
-      objectKey: 'copyright-incoming/ses-copyright-message',
-    }
-    const sesVerdicts = {
-      spf: 'fail',
-      dkim: 'pass',
-      dmarc: 'gray',
-      spam: 'unknown',
-      virus: 'processing_failed',
-    } as const
-    const deleteObject = vi.fn<(objectKey: string) => Promise<void>>().mockResolvedValue(undefined)
-    const intakeResult = {
-      intake: {
-        id: 'intake-id',
-        amazon_ses_message_id: data.sesMessageId,
-        received_at: new Date(),
-        raw_storage_key: 'email/ses-copyright-message/original.eml',
-        raw_storage_object_id: 'object-id',
-        raw_sha256: Buffer.alloc(32, 7),
-        raw_media_type_id: '1',
-        raw_mime_type: 'message/rfc822',
-        raw_byte_size: 3,
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
+    const notice = messageIdentity()
+    const noticeMessageId = `<${notice.sesMessageId}@example.test>`
+    const noticeRaw = noticeEmail({ messageId: noticeMessageId })
+    const reply = messageIdentity()
+    const replyRaw = noticeEmail({
+      messageId: `<${reply.sesMessageId}@example.test>`,
+      inReplyTo: noticeMessageId,
+    })
+    const s3Calls = stubSesInboundS3ForTest({
+      objects: { [notice.objectKey]: noticeRaw, [reply.objectKey]: replyRaw },
+    })
+    const enqueuedIntakeIds = watchIntakeEnqueues()
+
+    await processSesInboundEmail(notice)
+
+    const noticeEvidenceKey = `email/${notice.sesMessageId}/${sha256Hex(noticeRaw)}.eml`
+    expect(s3Calls).toEqual([
+      {
+        command: 'GetObjectCommand',
+        input: { Bucket: 'ses-inbound-test', Key: notice.objectKey },
       },
-      isNew: true,
-    }
-    const createIntake = vi
-      .fn<typeof createCopyrightEmailIntake>()
-      .mockImplementation(async input => {
-        await input.preserveRawEvidence?.()
-        return intakeResult
-      })
-    const enqueue = vi.fn<(intakeId: string) => Promise<void>>().mockResolvedValue(undefined)
-    const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
-    const parsed: ParsedSesInboundEmail = {
-      fromEmail: 'claimant@example.test',
-      fromName: 'Copyright claimant',
+      {
+        command: 'CopyObjectCommand',
+        input: {
+          Bucket: 'copyright-evidence-test',
+          Key: noticeEvidenceKey,
+          CopySource: `ses-inbound-test/${notice.objectKey}?versionId=version-1`,
+          CopySourceIfMatch: '"etag-1"',
+          MetadataDirective: 'COPY',
+        },
+      },
+      {
+        command: 'GetObjectCommand',
+        input: { Bucket: 'ses-inbound-test', Key: notice.objectKey, VersionId: 'version-1' },
+      },
+      {
+        command: 'DeleteObjectCommand',
+        input: { Bucket: 'ses-inbound-test', Key: notice.objectKey },
+      },
+    ])
+    const noticeIntakeId = (await readCopyrightEmailIntakeIdForTest(notice.sesMessageId))!
+    expect(await getCopyrightEmailIntakeForAgent(noticeIntakeId)).toMatchObject({
+      id: noticeIntakeId,
+      received_at: SES_INBOUND_TEST_RECEIVED_AT,
+      raw_storage_key: noticeEvidenceKey,
+      raw_sha256: createHash('sha256').update(noticeRaw).digest(),
+      raw_mime_type: 'message/rfc822',
+      raw_byte_size: Buffer.byteLength(noticeRaw),
+      senderEmail: 'claimant@example.test',
+      senderName: 'Copyright claimant',
       subject: 'Copyright notice',
       bodyText: 'Notice body',
-      emailMessageId: '<copyright@example.test>',
-      inReplyTo: [],
-      references: ['<prior@example.test>'],
-      recipientEmails: ['dmca@inbound.voucha.ai'],
       attachments: [
         {
           filename: 'evidence.pdf',
           contentId: null,
           mimeType: 'application/pdf',
-          byteSize: 12,
-          sha256: Buffer.alloc(32, 9),
+          byteSize: PDF_BYTES.length,
+          sha256: createHash('sha256').update(PDF_BYTES).digest(),
         },
       ],
-    }
+    })
+    expect(await readCopyrightEmailIntakeVerdictsForTest(noticeIntakeId)).toEqual({
+      spf: 'fail',
+      dkim: 'pass',
+      dmarc: 'gray',
+      spam: 'pass',
+      virus: 'processing_failed',
+    })
+    expect(enqueuedIntakeIds()).toEqual([noticeIntakeId])
+    expect(
+      await readCopyrightEmailThreadHeadersForTest(noticeIntakeId, notice.sesMessageId),
+    ).toEqual({ messageId: noticeMessageId, inReplyTo: [], references: ['<prior@example.test>'] })
 
-    await processSesInboundEmail(data, {
-      parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
-      loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
-        rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3, sesVerdicts }),
-        receivedAt: new Date('2026-07-01T12:00:00.000Z'),
-        sourceIdentity: { eTag: '"etag-1"', versionId: 'version-1' },
-      }),
-      loadSesInboundObjectVersion: vi
-        .fn<typeof loadSesInboundObjectVersion>()
-        .mockResolvedValue(Readable.from([Buffer.from('raw')])),
-      copySesInboundObjectToCopyrightEvidence: vi
-        .fn<typeof copySesInboundObjectToCopyrightEvidence>()
-        .mockResolvedValue(
-          `email/ses-copyright-message/${Buffer.alloc(32, 7).toString('hex')}.eml`,
-        ),
-      createCopyrightEmailIntake: createIntake,
-      recordCopyrightEmailParse: recordParse,
-      enqueueCopyrightEmailIntake: enqueue,
-      deleteSesInboundObject: deleteObject,
-    })
+    await processSesInboundEmail(reply)
 
-    expect(createIntake).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sesMessageId: data.sesMessageId,
-        rawStorageKey: `email/ses-copyright-message/${Buffer.alloc(32, 7).toString('hex')}.eml`,
-        rawSha256: Buffer.alloc(32, 7),
-        receivedAt: new Date('2026-07-01T12:00:00.000Z'),
-        sesVerdicts,
-      }),
+    const replyIntakeId = (await readCopyrightEmailIntakeIdForTest(reply.sesMessageId))!
+    expect(replyIntakeId).not.toBe(noticeIntakeId)
+    expect(enqueuedIntakeIds()).toEqual([noticeIntakeId, replyIntakeId])
+    expect(await readCopyrightEmailThreadHeadersForTest(replyIntakeId, reply.sesMessageId)).toEqual(
+      {
+        messageId: `<${reply.sesMessageId}@example.test>`,
+        inReplyTo: [noticeMessageId],
+        references: ['<prior@example.test>'],
+      },
     )
-    expect(enqueue).toHaveBeenCalledWith('intake-id')
-    expect(recordParse).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'intake-id' }),
-      expect.objectContaining({
-        status: 'succeeded',
-        fromEmail: 'claimant@example.test',
-        fromName: 'Copyright claimant',
-        messageId: '<copyright@example.test>',
-        inReplyTo: [],
-        replyReferences: ['<prior@example.test>'],
-        attachments: [expect.objectContaining({ filename: 'evidence.pdf' })],
-      }),
+    expect(await readCopyrightEmailAncestorKindForTest(replyIntakeId, noticeIntakeId)).toBe(
+      'in_reply_to',
     )
-    expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
-    recordParse.mockResolvedValue({
-      noticeId: 'notice-id',
-      matchedIntakeId: 'prior-intake-id',
-      matchedReference: '<prior@example.test>',
+    expect(s3Calls.at(-1)).toEqual({
+      command: 'DeleteObjectCommand',
+      input: { Bucket: 'ses-inbound-test', Key: reply.objectKey },
     })
-    await processSesInboundEmail(data, {
-      parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
-      loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
-        rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3, sesVerdicts }),
-        receivedAt: new Date('2026-07-01T12:00:00.000Z'),
-        sourceIdentity: { eTag: '"etag-1"', versionId: 'version-1' },
-      }),
-      loadSesInboundObjectVersion: vi
-        .fn<typeof loadSesInboundObjectVersion>()
-        .mockResolvedValue(Readable.from([Buffer.from('raw')])),
-      copySesInboundObjectToCopyrightEvidence: vi
-        .fn<typeof copySesInboundObjectToCopyrightEvidence>()
-        .mockResolvedValue('evidence-key'),
-      createCopyrightEmailIntake: createIntake,
-      recordCopyrightEmailParse: recordParse,
-      enqueueCopyrightEmailIntake: enqueue,
-      deleteSesInboundObject: deleteObject,
-    })
-    expect(enqueue).toHaveBeenCalledTimes(2)
   })
 
   it('keeps malformed MIME as a staff-visible failed intake before cleanup', async () => {
-    const data = {
-      sesMessageId: 'ses-malformed-copyright',
-      objectKey: 'copyright-incoming/ses-malformed-copyright',
-    }
-    const intake = {
-      id: 'failed-intake-id',
-      amazon_ses_message_id: data.sesMessageId,
-      received_at: new Date(),
-      raw_storage_key: 'email/ses-malformed-copyright/evidence.eml',
-      raw_storage_object_id: 'object-id',
-      raw_sha256: Buffer.alloc(32, 8),
-      raw_media_type_id: '1',
-      raw_mime_type: 'message/rfc822',
-      raw_byte_size: 3,
-    }
-    const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
-    const deleteObject = vi.fn<(key: string) => Promise<void>>().mockResolvedValue(undefined)
-    const enqueue = vi.fn<(intakeId: string) => Promise<void>>()
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
+    const data = messageIdentity()
+    const s3Calls = stubSesInboundS3ForTest({ objects: { [data.objectKey]: senderlessEmail() } })
+    const enqueuedIntakeIds = watchIntakeEnqueues()
 
-    await processSesInboundEmail(data, {
-      loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
-        rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({
-          sha256: Buffer.alloc(32, 8),
-          byteSize: 3,
-          sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-        }),
-        receivedAt: new Date('2026-07-01T12:00:00.000Z'),
-        sourceIdentity: { eTag: '"etag-2"' },
-      }),
-      copySesInboundObjectToCopyrightEvidence: vi
-        .fn<typeof copySesInboundObjectToCopyrightEvidence>()
-        .mockResolvedValue(intake.raw_storage_key),
-      createCopyrightEmailIntake: vi.fn<typeof createCopyrightEmailIntake>().mockResolvedValue({
-        intake,
-        isNew: true,
-      }),
-      loadSesInboundObjectVersion: vi
-        .fn<typeof loadSesInboundObjectVersion>()
-        .mockResolvedValue(Readable.from([Buffer.from('raw')])),
-      parseSesInboundMime: vi
-        .fn<() => Promise<ParsedSesInboundEmail>>()
-        .mockRejectedValue(new SesInboundTerminalError('invalid MIME')),
-      recordCopyrightEmailParse: recordParse,
-      enqueueCopyrightEmailIntake: enqueue,
-      deleteSesInboundObject: deleteObject,
-    })
+    await processSesInboundEmail(data)
 
-    expect(recordParse).toHaveBeenCalledWith(intake, {
-      status: 'failed',
-      error: 'The original email could not be parsed as RFC 5322 MIME.',
+    const intakeId = (await readCopyrightEmailIntakeIdForTest(data.sesMessageId))!
+    expect(await readCopyrightEmailParseFailureForTest(intakeId, data.sesMessageId)).toBe(
+      'The original email could not be parsed as RFC 5322 MIME.',
+    )
+    expect(await readCopyrightIntakeRetentionState(intakeId)).toMatchObject({
+      intakeExists: true,
+      hasRawObject: true,
+      parseCount: 1,
+      attachmentCount: 0,
     })
-    expect(enqueue).not.toHaveBeenCalled()
-    expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
+    expect(enqueuedIntakeIds()).toEqual([])
+    expect(s3Calls.at(-1)).toEqual({
+      command: 'DeleteObjectCommand',
+      input: { Bucket: 'ses-inbound-test', Key: data.objectKey },
+    })
   })
 })
