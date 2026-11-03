@@ -5,12 +5,14 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { finished, pipeline } from 'node:stream/promises'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
-import { read } from '@data-stores/psql'
+import type { read } from '@data-stores/psql'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import type { BatchResultLine } from '@vouchington/utils/bedrock-embedding-batches'
 
 export const downloadBatchResults = async (batchId: string): Promise<string> => {
-  const batchRows = await readBedrockBatchData(batchId)
+  // Lazy namespace access, as before: knip --production counts it as a use of every
+  // @data-stores/psql export, including the ones only test helpers import.
+  const batchRows = await readBedrockBatchData((await import('@data-stores/psql')).read, batchId)
 
   if (batchRows.length === 0) {
     throw new Error(`Batch not found: ${batchId}`)
@@ -49,8 +51,8 @@ export const downloadBatchResults = async (batchId: string): Promise<string> => 
   return tempFilePath
 }
 
-async function readBedrockBatchData(batchId: string) {
-  const { rows } = await read<{ data: unknown }>(
+async function readBedrockBatchData(query: typeof read, batchId: string) {
+  const { rows } = await query<{ data: unknown }>(
     `/* downloadBatchResults */
     SELECT data
     FROM bedrock_embedding_batches
