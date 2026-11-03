@@ -141,7 +141,7 @@ export const notificationsHandlers = [
     NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
     processors.processDeliverCopyrightNotice,
   ),
-  backgroundContinuationHandler(
+  backgroundDataHandler(
     NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
     processors.processReconcileCopyrightDeliveryIntents,
   ),
