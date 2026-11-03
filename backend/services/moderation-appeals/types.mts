@@ -63,6 +63,7 @@ export type ModerationAppealResponse = ModerationAppeal & {
 export type ModerationAppealSummary = Pick<
   ModerationAppeal,
   | 'id'
+  | 'appellant_user_id'
   | 'user_warning_id'
   | 'community_ban_id'
   | 'post_id'

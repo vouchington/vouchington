@@ -69,7 +69,10 @@ describe('dispute public projection routes', () => {
     expect(staffDetail.body.dispute.id).toBe(dispute.id)
     expect(memberListDispute?.id).toBe(dispute.id)
     expect(memberDetail.body.dispute.id).toBe(dispute.id)
-    expect(staffListDispute).toHaveProperty('claim_text')
+    // staff list rows are summaries; claim text and context load from the detail route
+    expect(staffListDispute).not.toHaveProperty('claim_text')
+    expect(staffListDispute).toHaveProperty('disputant_user_id')
+    expect(staffDetail.body.dispute).toHaveProperty('claim_text')
     expect(staffDetail.body.dispute).toHaveProperty('staff_context')
     const privateFields = [
       'disputant_user_id',

@@ -37598,6 +37598,9 @@
                               "appellant": {
                                 "$ref": "#/$defs/S4"
                               },
+                              "appellant_user_id": {
+                                "type": "string"
+                              },
                               "approved_at": {
                                 "$ref": "#/$defs/S3"
                               },
@@ -37661,6 +37664,7 @@
                             },
                             "required": [
                               "appellant",
+                              "appellant_user_id",
                               "approved_at",
                               "community_ban_id",
                               "community_id",

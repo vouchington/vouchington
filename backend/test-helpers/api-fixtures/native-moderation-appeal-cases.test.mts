@@ -42,10 +42,14 @@ describe('native moderation appeal and dispute cursor fixtures', () => {
     const first = responseBody('native.moderation.appeals.default') as AppealBody
     const [row] = first.appeals as Array<Record<string, unknown>>
 
-    expect(row).toMatchObject({ appellant: { id: 'user-1' }, has_ai_draft: true, has_draft: false })
+    expect(row).toMatchObject({
+      appellant: { id: 'user-1' },
+      appellant_user_id: 'user-1',
+      has_ai_draft: true,
+      has_draft: false,
+    })
     for (const field of [
       'appeal_reason',
-      'appellant_user_id',
       'internal_notes',
       'ai_public_response',
       'ai_internal_response',

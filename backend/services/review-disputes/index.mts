@@ -1,5 +1,5 @@
 export type { ReviewDisputeReason, ReviewDisputeResolutionAction } from './config.mts'
-export type { ReviewDisputeResponse, ReviewDisputeSummary } from './types.mts'
+export type { ReviewDisputeSummary } from './types.mts'
 export { REVIEW_DISPUTE_STATUSES } from './config.mts'
 export { parseCreateReviewDisputeInput } from './parse.mts'
 export { createReviewDispute } from './create.mts'

@@ -1924,6 +1924,7 @@
     "appeals": [
       {
         "id": "00000000-0000-7000-8000-000000000101",
+        "appellant_user_id": "user-2",
         "user_warning_id": "warning-2",
         "community_ban_id": null,
         "post_id": null,
@@ -2203,6 +2204,7 @@
     "appeals": [
       {
         "id": "00000000-0000-7000-8000-000000000102",
+        "appellant_user_id": "user-1",
         "user_warning_id": null,
         "community_ban_id": null,
         "post_id": "post-1",

@@ -1291,17 +1291,17 @@
       },
       "read_moderation_appeal": {
         "measured": {
-          "list": 10871,
+          "list": 9245,
           "core": 815
         },
         "max": {
-          "list": 12000,
+          "list": 10000,
           "core": 1000
         }
       },
       "read_review_dispute": {
         "measured": {
-          "list": 7459,
+          "list": 7785,
           "core": 814
         },
         "max": {

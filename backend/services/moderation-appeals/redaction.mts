@@ -59,15 +59,21 @@ export function redactModerationAppeal(appeal: ModerationAppealResponse): Redact
 
 export type RedactedModerationAppealSummary = Omit<
   ModerationAppealSummary,
-  'recommended_action' | 'appellant' | 'has_ai_draft' | 'has_draft'
+  'appellant_user_id' | 'recommended_action' | 'appellant' | 'has_ai_draft' | 'has_draft'
 >
 
-/** Member list rows: the staff summary without the appellant, the AI recommendation and draft flags. */
+/** Member list rows: the staff summary without the appellant ids, the AI recommendation and draft flags. */
 export function listRedactedModerationAppeals(
   appeals: ModerationAppealSummary[],
 ): RedactedModerationAppealSummary[] {
   return appeals.map(
-    ({ recommended_action: _ra, appellant: _a, has_ai_draft: _ha, has_draft: _hd, ...rest }) =>
-      rest,
+    ({
+      appellant_user_id: _au,
+      recommended_action: _ra,
+      appellant: _a,
+      has_ai_draft: _ha,
+      has_draft: _hd,
+      ...rest
+    }) => rest,
   )
 }

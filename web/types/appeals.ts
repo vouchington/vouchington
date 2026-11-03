@@ -94,6 +94,7 @@ export interface ModerationAppeal {
 export type ModerationAppealSummary = Pick<
   ModerationAppeal,
   | 'id'
+  | 'appellant_user_id'
   | 'user_warning_id'
   | 'community_ban_id'
   | 'post_id'
@@ -121,6 +122,7 @@ export type ModerationAppealSummary = Pick<
 export function toModerationAppealSummary(appeal: ModerationAppeal): ModerationAppealSummary {
   return {
     id: appeal.id,
+    appellant_user_id: appeal.appellant_user_id,
     user_warning_id: appeal.user_warning_id,
     community_ban_id: appeal.community_ban_id,
     post_id: appeal.post_id,

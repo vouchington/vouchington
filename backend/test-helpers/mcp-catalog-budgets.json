@@ -204,9 +204,9 @@
       "all": {
         "on": {
           "count": 56,
-          "list": 196000,
+          "list": 194000,
           "core": 36000,
-          "output": 184000
+          "output": 182000
         }
       },
       "Reader": {
@@ -228,9 +228,9 @@
       "Reviewer": {
         "on": {
           "count": 8,
-          "list": 58000,
+          "list": 57000,
           "core": 6000,
-          "output": 57000
+          "output": 55000
         }
       },
       "CommunityFree": {

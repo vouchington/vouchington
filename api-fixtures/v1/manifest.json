@@ -4805,6 +4805,12 @@
                   "type": "ref"
                 }
               },
+              "appellant_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "approved_at": {
                 "required": true,
                 "schema": {
@@ -104614,7 +104620,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "c5d7e905ca9ed04e79a6ceabd47fe90715f4193629ad6b0b8a3dc72a0c15609a",
+        "hash": "d2a89869a0c544d876198c1a10579a8abcdfe295564eb586b12ee7e1463b8fd8",
         "key": "native.moderation.appeals.default"
       },
       "route": {
@@ -104640,7 +104646,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "fb1a55723616699843911231f3c9df2448b8c2210011766d0eaa21f73bcc8017",
+        "hash": "ed8c0d8f7236ac85068bec831f7c2adc2e2bab47d2ca5ac97bf0f34a22677f1e",
         "key": "native.moderation.appeals.page-2"
       },
       "route": {

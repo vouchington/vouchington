@@ -1194,6 +1194,9 @@
                   "appellant": {
                     "$ref": "#/components/schemas/ModerationActorSummary"
                   },
+                  "appellant_user_id": {
+                    "type": "string"
+                  },
                   "approved_at": {
                     "anyOf": [
                       {
@@ -1579,6 +1582,7 @@
                 },
                 "required": [
                   "appellant",
+                  "appellant_user_id",
                   "approved_at",
                   "community_ban_id",
                   "community_id",

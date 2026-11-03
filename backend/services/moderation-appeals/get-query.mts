@@ -99,7 +99,7 @@ export const APPEAL_JOINS = sql`
  * sent. The target context is the public description of the decision being appealed.
  */
 export const APPEAL_SUMMARY_SELECT = sql`
-  ma.id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
+  ma.id, ma.appellant_user_id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
   CASE
     WHEN ma.resolved_at IS NULL THEN 'pending'
     WHEN ma.resolution_action = 'deny' THEN 'dismissed'

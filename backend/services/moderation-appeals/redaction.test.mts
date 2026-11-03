@@ -121,6 +121,7 @@ describe('redactModerationAppeal', () => {
 function makeSummary(overrides: Partial<ModerationAppealSummary> = {}): ModerationAppealSummary {
   return {
     id: crypto.randomUUID(),
+    appellant_user_id: crypto.randomUUID(),
     user_warning_id: crypto.randomUUID(),
     community_ban_id: null,
     post_id: null,
@@ -150,11 +151,12 @@ function makeSummary(overrides: Partial<ModerationAppealSummary> = {}): Moderati
 }
 
 describe('listRedactedModerationAppeals', () => {
-  it('drops the appellant, the AI recommendation and the draft flags from every row', () => {
+  it('drops the appellant ids, the AI recommendation and the draft flags from every row', () => {
     const rows = listRedactedModerationAppeals([makeSummary(), makeSummary()])
     expect(rows).toHaveLength(2)
     for (const row of rows) {
       expect(row).not.toHaveProperty('appellant')
+      expect(row).not.toHaveProperty('appellant_user_id')
       expect(row).not.toHaveProperty('recommended_action')
       expect(row).not.toHaveProperty('has_ai_draft')
       expect(row).not.toHaveProperty('has_draft')
