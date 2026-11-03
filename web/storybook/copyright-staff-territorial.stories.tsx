@@ -70,7 +70,7 @@ export const DecisionAndCaseDetails: Story = {
     await expect(canvas.getByText(/Internal rationale:/)).toBeVisible()
     await expect(canvas.getByText('1 complaint, 0 dispute settlements.')).toBeVisible()
     await expect(
-      canvas.getByRole('button', { name: 'Show deliveries, complaints and settlements' }),
+      canvas.getByRole('button', { name: 'View deliveries, complaints and settlements' }),
     ).toBeEnabled()
   },
 }

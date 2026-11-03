@@ -86,6 +86,21 @@ const submit = (action: () => Promise<unknown>) => void action()
 describe('CopyrightStaffTerritorialDispute', () => {
   afterEach(() => vi.clearAllMocks())
 
+  it('holds the referral form back until every recipient page has loaded', () => {
+    render(
+      <CopyrightStaffTerritorialDispute
+        item={makeItem()}
+        initialPage={makePage([])}
+        onReview={submit}
+        pending={false}
+        recipients={recipients}
+        recipientsComplete={false}
+      />,
+    )
+    expect(screen.getByText(/Loading every poster/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Record referral' })).toBeNull()
+  })
+
   it('records a guest notifier referral without requiring a user id', async () => {
     render(
       <CopyrightStaffTerritorialDispute
@@ -94,6 +109,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         onReview={submit}
         pending={false}
         recipients={recipients}
+        recipientsComplete
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -121,6 +137,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         onReview={submit}
         pending={false}
         recipients={recipients}
+        recipientsComplete
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -152,6 +169,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         onReview={submit}
         pending={false}
         recipients={recipients}
+        recipientsComplete
       />,
     )
     fireEvent.click(screen.getByRole('combobox', { name: 'Body outcome' }))
@@ -182,6 +200,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         onReview={submit}
         pending={false}
         recipients={recipients}
+        recipientsComplete
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Record implementation' }))
@@ -203,6 +222,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         onReview={action => void action().catch(() => undefined)}
         pending={false}
         recipients={recipients}
+        recipientsComplete
       />,
     )
     const body = screen.getByLabelText('Dispute settlement body')
@@ -245,6 +265,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         onReview={submit}
         pending={false}
         recipients={recipients}
+        recipientsComplete
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))

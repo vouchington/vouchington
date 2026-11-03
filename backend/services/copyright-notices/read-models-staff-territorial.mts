@@ -52,21 +52,20 @@ export async function selectStaffTerritorialCases(
         notice.territorial_public_explanation_ciphertext AS public_explanation_ciphertext,
         CASE WHEN notice.territorial_decision_outcome = 'no_action'
           THEN reopened.decided_at ELSE NULL END AS reopened_at,
-        (SELECT count(*)::int FROM copyright_territorial_redress_requests complaint
-          WHERE complaint.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
-        ) AS complaint_count,
+        reopened.complaint_count,
         (SELECT count(*)::int FROM copyright_eu_dispute_settlement_referrals referral
           WHERE referral.copyright_notice_id = receipt.copyright_notice_id
         ) AS dispute_settlement_count
+      -- no-mistakes-disable-next-line postgres-bounded-statements: Receipts are read for the notice ids of one review-queue page (ANY of the caller's bounded id array), one receipt per notice and jurisdiction; the count subselects aggregate to one row each.
       FROM copyright_territorial_notice_receipts receipt
       JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
       LEFT JOIN copyright_territorial_notice_acknowledgments acknowledgment
         ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
       LEFT JOIN LATERAL (
-        SELECT min(request.decided_at) AS decided_at
+        SELECT min(request.decided_at) FILTER (WHERE request.staff_disposition = 'revoke') AS decided_at,
+          count(*)::int AS complaint_count
         FROM copyright_territorial_redress_requests request
         WHERE request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
-          AND request.staff_disposition = 'revoke'
       ) reopened ON true
       WHERE receipt.copyright_notice_id = ANY(${noticeIds}::uuid[])
         AND receipt.jurisdiction = notice.jurisdiction

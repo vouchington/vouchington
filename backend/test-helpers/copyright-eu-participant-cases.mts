@@ -11,8 +11,14 @@ import {
 
 export async function createTestEuParticipantCase(
   outcome: 'pending' | 'no_action' | 'restrict' = 'restrict',
+  options: { extraPosts?: number } = {},
 ) {
-  const post = await createHostedImagePost('public')
+  const [post, extraPosts] = await Promise.all([
+    createHostedImagePost('public'),
+    Promise.all(
+      Array.from({ length: options.extraPosts ?? 0 }, () => createHostedImagePost('public')),
+    ),
+  ])
   const [notifier, staff, administrator, stranger] = await Promise.all([
     createTestUser(),
     createTestUser({ extraRoles: ['moderator'] }),
@@ -45,18 +51,16 @@ export async function createTestEuParticipantCase(
       outcome,
       targets:
         outcome === 'restrict'
-          ? [
-              {
-                surfaceKind: 'post-image',
-                postId: post.postId,
-                imageId: post.imageId,
-                hostedUseUrl: `https://example.test/work/${suffix}`,
-              },
-            ]
+          ? [post, ...extraPosts].map(hosted => ({
+              surfaceKind: 'post-image' as const,
+              postId: hosted.postId,
+              imageId: hosted.imageId,
+              hostedUseUrl: `https://example.test/work/${suffix}`,
+            }))
           : [],
     })
   }
-  return { ...post, notifier, staff, administrator, stranger, receipt, suffix }
+  return { ...post, extraPosts, notifier, staff, administrator, stranger, receipt, suffix }
 }
 
 export async function createTestEuParticipantComplaint(input: {

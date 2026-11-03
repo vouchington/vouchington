@@ -56,7 +56,14 @@ const initialPage: CopyrightEuDisputeSettlementsPage = {
 const meta = {
   title: 'Copyright/Staff Territorial Dispute Settlement',
   component: CopyrightStaffTerritorialDispute,
-  args: { item, initialPage, recipients, pending: false, onReview: () => undefined },
+  args: {
+    item,
+    initialPage,
+    recipients,
+    recipientsComplete: true,
+    pending: false,
+    onReview: () => undefined,
+  },
 } satisfies Meta<typeof CopyrightStaffTerritorialDispute>
 
 export default meta

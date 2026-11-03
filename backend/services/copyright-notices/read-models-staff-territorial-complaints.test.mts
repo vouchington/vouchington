@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import sql from 'sql-template-strings'
+import { encodeScopedAliasCursor } from '@modules/pagination'
 import { withTransactionOptions } from '@data-stores/psql'
 import { selectStaffTerritorialCases } from './read-models-staff-territorial.mts'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-participant-cases'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { territorialRecipientCursorScope } from './read-models-staff-territorial-recipients.mts'
 import {
+  listCopyrightTerritorialRecipients,
   recordEuCopyrightRedressDecision,
   recordEuCopyrightStatementOfReasons,
   submitEuCopyrightRedress,
@@ -116,3 +120,50 @@ describe('territorial recipients and queue counts', () => {
     expect(card).not.toHaveProperty('complaints')
   })
 })
+
+describe('territorial recipient cursor walk', () => {
+  useCopyrightIntakeEnvironment()
+
+  it('walks every recipient one at a time and accepts a guest-poster cursor', async () => {
+    const scene = await createTestEuParticipantCase('restrict', { extraPosts: 1 })
+    const noticeId = scene.receipt.notice_id
+    const posters = [scene.poster.id, ...scene.extraPosts.map(extra => extra.poster.id)].toSorted()
+    const walked: Array<{ role: string; user_id: string | null }> = []
+    let after: string | undefined
+    for (let guard = 0; guard < 6; guard++) {
+      const page = await listCopyrightTerritorialRecipients(scene.staff, noticeId, {
+        limit: 1,
+        after,
+      })
+      walked.push(...page.results)
+      if (!page.page_info.has_next_page) break
+      after = page.page_info.end_cursor ?? undefined
+    }
+    expect(walked.map(row => [row.role, row.user_id])).toEqual([
+      ['claimant', scene.notifier.id],
+      ['poster', posters[0]],
+      ['poster', posters[1]],
+    ])
+
+    // A guest poster has no account, so its alias ends in a colon and sorts before any account.
+    const decisionId = await liveDecisionId(noticeId)
+    const guestCursor = encodeScopedAliasCursor(
+      'poster:',
+      territorialRecipientCursorScope(noticeId, decisionId),
+    )
+    const afterGuest = await listCopyrightTerritorialRecipients(scene.staff, noticeId, {
+      limit: 5,
+      after: guestCursor,
+    })
+    expect(afterGuest.results.map(row => row.user_id)).toEqual(posters)
+  })
+})
+
+async function liveDecisionId(noticeId: string): Promise<string> {
+  return withTransactionOptions({}, async query => {
+    const { rows } = await query<{ id: string }>(
+      sql`/* liveTerritorialDecisionId */ SELECT current_territorial_decision_identity_id AS id FROM copyright_notices WHERE id = ${noticeId}`,
+    )
+    return rows[0]!.id
+  })
+}

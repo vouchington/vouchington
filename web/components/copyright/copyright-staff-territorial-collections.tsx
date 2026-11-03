@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Spinner } from '@/components/ui/spinner'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import {
@@ -16,7 +18,12 @@ import { CopyrightStaffTerritorialComplaintList } from './copyright-staff-territ
 import { CopyrightStaffTerritorialDispute } from './copyright-staff-territorial-dispute'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 
-type Props = { item: CopyrightStaffQueueItem; pending: boolean; onReview: SubmitReview }
+type Props = {
+  item: CopyrightStaffQueueItem
+  pending: boolean
+  onReview: SubmitReview
+  onClose: () => void
+}
 type FirstPages = {
   recipients: CopyrightTerritorialRecipientsPage
   complaints: CopyrightTerritorialComplaintsPage
@@ -24,8 +31,8 @@ type FirstPages = {
 }
 
 /**
- * The recipients, complaints and settlements of a territorial case. The queue only counts them, so
- * this reads each collection's first page when staff open the case details.
+ * The recipients, complaints and settlements of a territorial case, in a dialog. The queue card only
+ * counts them, so the parent mounts this while the dialog is open and the first pages load then.
  */
 export function CopyrightStaffTerritorialCollections(props: Props) {
   const { id, jurisdiction } = props.item
@@ -48,15 +55,38 @@ export function CopyrightStaffTerritorialCollections(props: Props) {
       current = false
     }
   }, [id, jurisdiction])
-  if (failed) {
-    return <p className='text-sm text-destructive'>The case details could not be loaded.</p>
-  }
-  if (!pages) return <p className='text-sm text-muted-foreground'>Loading case details…</p>
   return (
-    <LoadedCollections
-      {...props}
-      pages={pages}
-    />
+    <Dialog
+      open
+      onOpenChange={open => {
+        if (!open) props.onClose()
+      }}
+    >
+      <DialogContent
+        aria-describedby={undefined}
+        className='max-h-[90vh] overflow-y-auto'
+        data-pw='copyright-staff-territorial-details-dialog'
+      >
+        <DialogHeader>
+          <DialogTitle>Deliveries, complaints and settlements</DialogTitle>
+        </DialogHeader>
+        {failed ? (
+          <p
+            className='text-sm text-destructive'
+            role='alert'
+          >
+            The case details could not be loaded.
+          </p>
+        ) : pages ? (
+          <LoadedCollections
+            {...props}
+            pages={pages}
+          />
+        ) : (
+          <Spinner />
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -67,6 +97,11 @@ function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: 
     {},
     { loadPage: after => listCopyrightTerritorialRecipients(item.id, { after }) },
   )
+  const { hasNextPage, loadingMore, fetchError, loadMore } = recipientList
+  // A referral names one poster from this list, so every page loads before the form appears.
+  useEffect(() => {
+    if (hasNextPage && !loadingMore && !fetchError) void loadMore()
+  }, [hasNextPage, loadingMore, fetchError, loadMore])
   const recipients = recipientList.pages.flatMap(page => page.copyright_territorial_recipients)
   const posterRecipients = recipients.filter(recipient => recipient.role === 'poster')
   return (
@@ -118,6 +153,7 @@ function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: 
           onReview={onReview}
           pending={pending}
           recipients={recipients}
+          recipientsComplete={!hasNextPage}
         />
       ) : null}
     </>

@@ -94,7 +94,7 @@ describe('CopyrightStaffTerritorial', () => {
     expect(screen.getByText(/attempts are exhausted/)).toBeVisible()
   })
 
-  it('counts the collections and loads them only when staff open the details', async () => {
+  it('counts the collections and loads them in a dialog only when staff open the details', async () => {
     mockRecipients.mockResolvedValue({
       copyright_territorial_recipients: [
         { role: 'poster', user_id: 'poster-1', informed_at: '2026-09-01T10:00:00Z', state: 'sent' },
@@ -115,7 +115,7 @@ describe('CopyrightStaffTerritorial', () => {
     expect(screen.getByText('2 complaints.')).toBeVisible()
     expect(mockRecipients).not.toHaveBeenCalled()
     fireEvent.click(
-      screen.getByRole('button', { name: 'Show deliveries, complaints and settlements' }),
+      screen.getByRole('button', { name: 'View deliveries, complaints and settlements' }),
     )
     expect(await screen.findByText(/Poster 1: sent/)).toBeVisible()
     expect(mockRecipients).toHaveBeenCalledWith('notice-1')
@@ -136,8 +136,10 @@ describe('CopyrightStaffTerritorial', () => {
       />,
     )
     fireEvent.click(
-      screen.getByRole('button', { name: 'Show deliveries, complaints and settlements' }),
+      screen.getByRole('button', { name: 'View deliveries, complaints and settlements' }),
     )
-    expect(await screen.findByText('The case details could not be loaded.')).toBeVisible()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The case details could not be loaded.',
+    )
   })
 })

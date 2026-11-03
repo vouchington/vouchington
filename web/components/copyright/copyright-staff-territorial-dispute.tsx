@@ -11,12 +11,15 @@ export function CopyrightStaffTerritorialDispute({
   item,
   initialPage,
   recipients,
+  recipientsComplete,
   pending,
   onReview,
 }: {
   item: CopyrightStaffQueueItem
   initialPage: CopyrightEuDisputeSettlementsPage
   recipients: readonly CopyrightTerritorialRecipient[]
+  /** False while recipient pages are still loading; a referral names a poster from this list. */
+  recipientsComplete: boolean
   pending: boolean
   onReview: SubmitReview
 }) {
@@ -38,7 +41,12 @@ export function CopyrightStaffTerritorialDispute({
         onReview={onReview}
         pending={pending}
       />
-      {territorial.decision ? (
+      {territorial.decision && !recipientsComplete ? (
+        <p className='text-sm text-muted-foreground'>
+          Loading every poster before a referral can be recorded…
+        </p>
+      ) : null}
+      {territorial.decision && recipientsComplete ? (
         <CopyrightStaffTerritorialReferralFields
           item={item}
           onReview={onReview}

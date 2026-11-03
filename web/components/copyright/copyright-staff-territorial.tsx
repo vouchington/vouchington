@@ -138,22 +138,22 @@ export function CopyrightStaffTerritorial({
             : ''}
           .
         </p>
+        <Button
+          data-pw='copyright-staff-territorial-open-details'
+          onClick={() => setShowDetails(true)}
+          size='touchSm'
+          type='button'
+        >
+          View deliveries, complaints and settlements
+        </Button>
         {showDetails ? (
           <CopyrightStaffTerritorialCollections
             item={item}
+            onClose={() => setShowDetails(false)}
             onReview={onReview}
             pending={pending}
           />
-        ) : (
-          <Button
-            data-pw='copyright-staff-territorial-show-details'
-            onClick={() => setShowDetails(true)}
-            size='touchSm'
-            type='button'
-          >
-            Show deliveries, complaints and settlements
-          </Button>
-        )}
+        ) : null}
       </section>
     </section>
   )
