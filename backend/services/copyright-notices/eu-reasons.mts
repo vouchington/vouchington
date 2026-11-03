@@ -3,7 +3,6 @@ import {
   recordTerritorialCopyrightDecision,
   type TerritorialCopyrightDecisionInput,
 } from './territorial-decision.mts'
-import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 
 export type EuCopyrightStatementOfReasons = {
   id: string
@@ -16,7 +15,6 @@ export async function recordEuCopyrightStatementOfReasons(
   actor: PrivateUser,
   noticeId: string,
   input: TerritorialCopyrightDecisionInput,
-  dependencies: { enforceAssessment?: typeof enforceCopyrightAssessment } = {},
 ): Promise<EuCopyrightStatementOfReasons> {
-  return recordTerritorialCopyrightDecision(actor, 'eu_dsa', noticeId, input, dependencies)
+  return recordTerritorialCopyrightDecision(actor, 'eu_dsa', noticeId, input)
 }

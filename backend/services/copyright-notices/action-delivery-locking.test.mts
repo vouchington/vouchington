@@ -4,6 +4,7 @@ import {
 } from '@voucha/test-helpers/copyright-attempt-history'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import {
   completeTestCopyrightActionClaim,
   createTestUnreadableCopyrightResponse,
@@ -228,15 +229,11 @@ describe('copyright queue lease fencing', () => {
     'keeps the concurrent enforcer result when the first enforcer then %ss',
     async outcome => {
       const { assessment, notice } = await createCopyrightRestorationHoldFixture()
-      await expect(
-        enforceCopyrightAssessment(assessment.id, {
-          imposeRestriction: async input => {
-            await enforceCopyrightAssessment(assessment.id)
-            if (outcome === 'fail') throw new Error('stalled owner resumed')
-            return acceptCopyrightNoticeAndImposeRestriction(input)
-          },
-        }),
-      ).resolves.toBeUndefined()
+      interceptCopyrightImpositionForTest(notice.id, async () => {
+        await enforceCopyrightAssessment(assessment.id)
+        if (outcome === 'fail') throw new Error('stalled owner resumed')
+      })
+      await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
       expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
       await enforceCopyrightAssessment(assessment.id)
       expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
@@ -245,13 +242,10 @@ describe('copyright queue lease fencing', () => {
 
   it('rethrows an imposition failure that leaves the target owed', async () => {
     const { assessment, notice } = await createCopyrightRestorationHoldFixture()
-    await expect(
-      enforceCopyrightAssessment(assessment.id, {
-        imposeRestriction: async () => {
-          throw new Error('provider outage')
-        },
-      }),
-    ).rejects.toThrow('provider outage')
+    interceptCopyrightImpositionForTest(notice.id, async () => {
+      throw new Error('provider outage')
+    })
+    await expect(enforceCopyrightAssessment(assessment.id)).rejects.toThrow('provider outage')
     expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(0)
     await enforceCopyrightAssessment(assessment.id)
     expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)

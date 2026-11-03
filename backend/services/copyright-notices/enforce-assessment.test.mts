@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import { assertLeadingQueryAnnotation } from '@vouchington/postgres'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
@@ -7,7 +8,6 @@ import {
   enforceCopyrightAssessment,
   searchPendingCopyrightEnforcementAssessmentIds,
 } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
@@ -108,24 +108,21 @@ describe('copyright assessment enforcement', () => {
 
   it('settles stale authority discovered while a target is being imposed', async () => {
     const { assessment, moderator, notice, submission } = await createEnforcementFixture()
-    const supersedeBeforeImposing = vi
-      .fn<typeof acceptCopyrightNoticeAndImposeRestriction>()
-      .mockImplementation(async input => {
-        await appendCopyrightSubmissionAssessment({
-          submissionId: submission.id,
-          assessedAt: new Date('2026-07-01T12:00:00.000Z'),
-          currentUser: moderator,
-          substantiallyCompliant: false,
-          supersedesAssessmentId: assessment.id,
-        })
-        await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
-        return acceptCopyrightNoticeAndImposeRestriction(input)
+    let supersessions = 0
+    interceptCopyrightImpositionForTest(notice.id, async () => {
+      supersessions += 1
+      await appendCopyrightSubmissionAssessment({
+        submissionId: submission.id,
+        assessedAt: new Date('2026-07-01T12:00:00.000Z'),
+        currentUser: moderator,
+        substantiallyCompliant: false,
+        supersedesAssessmentId: assessment.id,
       })
+      await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
+    })
 
-    await expect(
-      enforceCopyrightAssessment(assessment.id, { imposeRestriction: supersedeBeforeImposing }),
-    ).resolves.toBeUndefined()
-    expect(supersedeBeforeImposing).toHaveBeenCalledOnce()
+    await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
+    expect(supersessions).toBe(1)
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
   })
 

@@ -38,7 +38,6 @@ export async function recordTerritorialCopyrightDecision(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
   input: TerritorialCopyrightDecisionInput,
-  dependencies: { enforceAssessment?: typeof enforceCopyrightAssessment } = {},
 ): Promise<TerritorialCopyrightDecision> {
   assert(currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
   const labels = territorialLabels(jurisdiction)
@@ -171,7 +170,6 @@ export async function recordTerritorialCopyrightDecision(
     )
   }
   await transaction.commit()
-  if (assessmentId)
-    await (dependencies.enforceAssessment ?? enforceCopyrightAssessment)(assessmentId)
+  if (assessmentId) await enforceCopyrightAssessment(assessmentId)
   return created
 }
