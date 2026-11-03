@@ -8,7 +8,7 @@ topics:
 
 # Personalized Feeds Narrow You. Curators You Chose Widen You.
 
-Two projects went around Hacker News this week. [HackerTube](https://news.ycombinator.com/item?id=50319510) is a browser for videos that Hacker News commenters recommended. [HackerBooks](https://news.ycombinator.com/item?id=50326821) does the same for books. The comment threads under both had a theme that had little to do with video or books.
+Two projects have gone around Hacker News. [HackerTube](https://news.ycombinator.com/item?id=50319510) is a browser for videos that Hacker News commenters mentioned. [HackerBooks](https://news.ycombinator.com/item?id=50326821) does the same for books. The comment threads under both had a theme that had little to do with video or books.
 
 People were tired of being predicted.
 

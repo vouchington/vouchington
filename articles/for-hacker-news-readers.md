@@ -8,7 +8,7 @@ topics:
 
 # Voucha for Hacker News Readers
 
-This week two projects showed how much Hacker News readers like a good recommendation. [HackerTube](https://news.ycombinator.com/item?id=50319510) put 6,400 videos from HN comments into a YouTube-style browser. [HackerBooks](https://news.ycombinator.com/item?id=50326821) did the same for 16,500 books. Voucha has no connection to either project. We read the threads closely, because the complaints and requests in them describe things we also care about.
+Two projects have shown how much Hacker News readers like a good recommendation. [HackerTube](https://news.ycombinator.com/item?id=50319510) put 6,400 videos from HN comments into a YouTube-style browser. [HackerBooks](https://news.ycombinator.com/item?id=50326821) did the same for 16,500 books. Voucha has no connection to either project. We read the threads closely, because the complaints and requests in them describe things we also care about.
 
 ## What the threads asked for
 

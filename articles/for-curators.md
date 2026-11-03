@@ -8,7 +8,7 @@ topics:
 
 # Voucha for Curators
 
-Some people keep a list that is better than anything a site will show you. A spreadsheet of documentaries. A playlist of 4,000 videos. A folder of feeds that took years to gather. Hacker News threads this week were full of them, usually followed by a line like "but nobody sees it."
+Some people keep a list that is better than anything a site will show you. A spreadsheet of documentaries. A playlist of 4,000 videos. A folder of feeds that took years to gather. Hacker News threads are full of them, usually followed by a line like "but nobody sees it."
 
 A list with no readers is a notebook. To get an audience you need a place where people already gather.
 
