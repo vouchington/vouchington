@@ -1,7 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import type { MediaDeliveryDependencies } from './delivery-registry-types.mts'
 import {
   claimMediaDeliveryProjection,
   type MediaDeliveryClaim,
@@ -15,15 +14,13 @@ import {
 
 export async function processMediaDeliveryRegistryRecord(
   mediaDeliveryRegistryRecordId: string,
-  now = new Date(),
-  dependencies: Partial<MediaDeliveryDependencies> = {},
 ): Promise<'completed' | 'not_claimed'> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return 'not_claimed'
+  const now = new Date()
   const record = await claimMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId, now)
   if (!record) return 'not_claimed'
   try {
     await publishStagedMediaDeliveryRecord(record.media_delivery_registry_record_id, {
-      dependencies,
       claim: record,
     })
     return 'completed'

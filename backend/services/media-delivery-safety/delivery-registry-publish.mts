@@ -5,7 +5,7 @@ import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
-import type { ImageDeliveryRecord, MediaDeliveryDependencies } from './delivery-registry-types.mts'
+import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 import {
   claimMediaDeliveryProjection,
   ownsMediaDeliveryProjection,
@@ -56,23 +56,17 @@ export async function prepublishImagePlacementDenial(
 /** Publishes only the immutable tuple already staged by an authority-owning transaction. */
 export async function publishStagedMediaDeliveryRecord(
   mediaDeliveryRegistryRecordId: string,
-  options: { dependencies?: Partial<MediaDeliveryDependencies>; claim?: MediaDeliveryClaim } = {},
+  options: { claim?: MediaDeliveryClaim } = {},
 ): Promise<void> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
   await using transaction = await beginTransaction()
-  await publishCommittedDeliveryRecord(
-    mediaDeliveryRegistryRecordId,
-    transaction,
-    options.dependencies,
-    options.claim,
-  )
+  await publishCommittedDeliveryRecord(mediaDeliveryRegistryRecordId, transaction, options.claim)
   await transaction.commit()
 }
 
 async function publishCommittedDeliveryRecord(
   mediaDeliveryRegistryRecordId: string,
   query: QueryExecutor,
-  dependencies?: Partial<MediaDeliveryDependencies>,
   ownedClaim?: MediaDeliveryClaim,
 ): Promise<void> {
   const { rows } = await query<ImageDeliveryRecord>(sql`
@@ -138,7 +132,7 @@ async function publishCommittedDeliveryRecord(
       : await claimMediaDeliveryProjection(query, mediaDeliveryRegistryRecordId)
   if (!claim)
     throw new Error(`Media delivery projection is already owned ${mediaDeliveryRegistryRecordId}`)
-  await publishPersistedDeliveryRecord(claim, query, dependencies)
+  await publishPersistedDeliveryRecord(claim, query)
 }
 
 async function readCurrentPlacementDeliveryRecord(

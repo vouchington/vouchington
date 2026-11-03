@@ -11,6 +11,7 @@ import {
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
+  scheduleTestMediaDeliveryRetry,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
@@ -86,12 +87,13 @@ describe('media delivery registry processor', () => {
     const retry = await getTestMediaDeliveryRecordSnapshot(mediaDeliveryRegistryRecordId)
     if (typeof retry?.next_attempt_at !== 'string')
       throw new Error('Missing persisted retry due time')
-    await expect(
-      processMediaDeliveryRegistryRecord(
-        mediaDeliveryRegistryRecordId,
-        new Date(retry.next_attempt_at),
-      ),
-    ).resolves.toBe('completed')
+    await scheduleTestMediaDeliveryRetry(
+      mediaDeliveryRegistryRecordId,
+      new Date(Date.now() - 1_000),
+    )
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
+      'completed',
+    )
     expect(put).toHaveBeenCalledTimes(3)
     expect(await getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'withheld',

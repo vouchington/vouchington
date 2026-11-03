@@ -10,15 +10,6 @@ export type ImageDeliveryRecord = {
   generation: string
 }
 
-export type MediaDeliveryDependencies = {
-  putMediaDeliveryRegistryRecord: (input: {
-    deliveryKey: string
-    state: MediaDeliveryRegistryState
-    generation: string
-  }) => Promise<void>
-  invalidateMediaDeliveryPath: (path: string) => Promise<void>
-}
-
 export function getMediaDeliveryPath(record: ImageDeliveryRecord): string {
   return `/images/placements/${record.placement_id}/${record.placement_revision}/${record.image_id}`
 }

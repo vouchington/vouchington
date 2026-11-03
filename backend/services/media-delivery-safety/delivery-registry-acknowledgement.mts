@@ -9,20 +9,18 @@ import {
   ownsMediaDeliveryProjection,
   type MediaDeliveryClaim,
 } from './delivery-registry-claims.mts'
-import { getMediaDeliveryPath, type MediaDeliveryDependencies } from './delivery-registry-types.mts'
+import { getMediaDeliveryPath } from './delivery-registry-types.mts'
 
 export async function publishPersistedDeliveryRecord(
   record: MediaDeliveryClaim,
   query: QueryExecutor,
-  overrides: Partial<MediaDeliveryDependencies> = {},
 ): Promise<void> {
   if (!(await ownsMediaDeliveryProjection(query, record)))
     throw new Error(
       `Media delivery generation changed while publishing ${record.media_delivery_registry_record_id}`,
     )
-  const dependencies = { invalidateMediaDeliveryPath, putMediaDeliveryRegistryRecord, ...overrides }
   // ast-grep-ignore: no-three-sequential-awaits -- invalidate only after edge publication succeeds, then acknowledge only after invalidation succeeds
-  await dependencies.putMediaDeliveryRegistryRecord({
+  await putMediaDeliveryRegistryRecord({
     deliveryKey: getImagePlacementDeliveryKey({
       placementId: record.placement_id,
       revision: record.placement_revision,
@@ -31,7 +29,7 @@ export async function publishPersistedDeliveryRecord(
     state: record.desired_state,
     generation: record.generation,
   })
-  await dependencies.invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
+  await invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
   const { rowCount } = await query(sql`/* markPublishedMediaDeliveryRecord */
     INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, delivery_attempt_count, projected_at, invalidated_at, completed_at)
     SELECT work.media_delivery_registry_record_id, work.generation, 'completed', work.attempt_count, clock_timestamp(), clock_timestamp(), clock_timestamp()

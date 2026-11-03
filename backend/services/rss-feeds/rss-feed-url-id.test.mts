@@ -1,26 +1,17 @@
-import { expect, it, vi, describe } from 'vitest'
+import { expect, it, describe } from 'vitest'
+import { getUrlById } from '@services/urls'
+import { beginTransaction } from '@voucha/test-helpers'
 import { createRssFeedUrlId } from './rss-feed-url-id.mts'
 
 describe('rss-feed-url-id', () => {
-  it('forwards query.client when called inside a transaction', async () => {
-    const client = {} as object
-    const query = Object.assign(vi.fn<(...args: any[]) => any>(), { client })
-    const addUrlImpl = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({ id: 'url-1' })
+  it('writes the url row through the caller transaction', async () => {
+    const rssFeedUrl = `https://feed-${crypto.randomUUID()}.example.com/feed.xml`
+    await using transaction = await beginTransaction()
 
-    const result = await createRssFeedUrlId('https://example.com/feed.xml', {
-      query,
-      addUrlImpl,
-    })
+    const rssFeedUrlId = await createRssFeedUrlId(rssFeedUrl, { query: transaction })
 
-    expect(result).toBe('url-1')
-    expect(addUrlImpl).toHaveBeenCalledWith(
-      null,
-      'https://example.com/feed.xml',
-      expect.objectContaining({
-        content_type: 'application/rss+xml',
-        query,
-        client,
-      }),
-    )
+    expect(await getUrlById(rssFeedUrlId)).toBeNull()
+    await transaction.commit()
+    expect(await getUrlById(rssFeedUrlId)).toMatchObject({ id: rssFeedUrlId, url: rssFeedUrl })
   })
 })
