@@ -23,10 +23,12 @@ import {
   getTestDataRequestAttemptFence,
   updateTestUserUiLocale,
 } from '@voucha/test-helpers'
-import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import {
+  rejectPostgresReadForTest,
+  rejectPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
 import { readZipEntries } from '@voucha/test-helpers/read-zip-entries'
 import { processExportRequest } from './account-data-requests.mts'
-import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
 
 // Only the external S3 provider call is replaced; the database, queues, files and zip are real.
 const mockS3Send = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>())
@@ -60,7 +62,6 @@ describe('processExportRequest', () => {
     s3Send.mockImplementation(async command => {
       const { Body } = (command as SentCommand).input
       if (commandName(command) === 'PutObjectCommand' && Body) {
-        // The temp zip still exists while the provider call runs; read exactly what production sends.
         const chunks: Buffer[] = []
         for await (const chunk of Body as AsyncIterable<Buffer>) chunks.push(chunk)
         uploadedZip = Buffer.concat(chunks)
@@ -230,6 +231,47 @@ describe('processExportRequest', () => {
     },
   )
 
+  it('publishes ready when releasing the settled-upload lease fails', async () => {
+    const { subject, request } = await startRequest()
+    onTestFinished(
+      rejectPostgresWriteForTest('finishDataRequestUpload', new Error('database unavailable')),
+    )
+
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+    ).resolves.toBeUndefined()
+
+    expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
+    expect(publish).toHaveBeenCalledWith(request.id, { status: 'ready' })
+  })
+
+  it.each(['getPrivateUserByAny', 'wasDataRequestMadeBySubject'])(
+    'keeps the export ready when the %s notification lookup rejects',
+    async marker => {
+      const { subject, request } = await startRequest()
+      onTestFinished(rejectPostgresReadForTest(marker, new Error('best-effort failure')))
+
+      await expect(
+        processExportRequest(request.id, subject.id, request.processing_attempt_id),
+      ).resolves.toBeUndefined()
+
+      expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
+      expect(await emails.getJob(`data-export-ready__${request.id}`)).toBeNull()
+    },
+  )
+
+  it('keeps the export ready when the notification enqueue rejects', async () => {
+    const { subject, request } = await startRequest()
+    const add = vi.spyOn(emails, 'add').mockRejectedValue(new Error('best-effort failure'))
+
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+    ).resolves.toBeUndefined()
+
+    expect(add).toHaveBeenCalledOnce()
+    expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
+  })
+
   function sentCommands(requestId: string) {
     return s3Send.mock.calls
       .map(([command]) => command as unknown as SentCommand)
@@ -240,22 +282,6 @@ describe('processExportRequest', () => {
         key: command.input.Key,
       }))
   }
-})
-
-describe('publishTerminalStatus', () => {
-  it('retries the pub/sub publish and reports the terminal failure', async () => {
-    const publish = vi
-      .spyOn(dataRequestPubSub, 'publish')
-      .mockRejectedValue('publish failed' as never)
-    onTestFinished(() => publish.mockRestore())
-
-    await publishTerminalStatus('request-terminal', 'failed')
-
-    expect(publish).toHaveBeenCalledTimes(3)
-    expect(publish).toHaveBeenCalledWith('request-terminal', { status: 'failed' })
-    expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
-    expect(sentryCaptureExceptionMock.mock.calls[0]?.[0]).toEqual(new Error('publish failed'))
-  })
 })
 
 function commandName(command: unknown): string {

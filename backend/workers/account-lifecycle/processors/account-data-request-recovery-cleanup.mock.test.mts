@@ -13,6 +13,9 @@ import {
   getUserDataRequestStatusAndS3KeyForTest,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { dataRequestPubSub } from '@data-stores/valkey-pubsub'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
 import { processCleanupExpiredExports } from './account-data-request-recovery-cleanup.mts'
 
 // Only the external S3 provider call is replaced; the database and the cleanup flow are real.
@@ -86,6 +89,22 @@ describe('processCleanupExpiredExports', () => {
 
     await expect(cleanup(requests)).resolves.toEqual({ hasMore: false })
     expect(mockS3Send).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('publishTerminalStatus', () => {
+  it('retries the pub/sub publish and reports the terminal failure', async () => {
+    const publish = vi
+      .spyOn(dataRequestPubSub, 'publish')
+      .mockRejectedValue('publish failed' as never)
+    onTestFinished(() => publish.mockRestore())
+
+    await publishTerminalStatus('request-terminal', 'failed')
+
+    expect(publish).toHaveBeenCalledTimes(3)
+    expect(publish).toHaveBeenCalledWith('request-terminal', { status: 'failed' })
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
+    expect(sentryCaptureExceptionMock.mock.calls[0]?.[0]).toEqual(new Error('publish failed'))
   })
 })
 
