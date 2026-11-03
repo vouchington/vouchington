@@ -1,5 +1,4 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import * as psql from '@data-stores/psql'
 import {
   createTestUserDirect,
   insertTestStory,
@@ -9,6 +8,7 @@ import {
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createTestStoryProjectionLease } from '../../test-helpers/entities/story-projection-work.mts'
+import { observePostgresWritesForTest } from '../../test-helpers/observed-postgres-writes.mts'
 import { runWithStoryPostRelatedUrlProjectionLeaseRenewal } from './story-post-related-url-projection-lease.mts'
 import { releaseStoryPostRelatedUrlProjectionWork } from './story-post-related-url-projection-work.mts'
 import { prepareStoryPost } from './story-posts.mts'
@@ -42,15 +42,7 @@ describe('story post related URL projection lease renewal', () => {
 
   /** Record each real renewal write so a test can wait for exactly the one it triggered. */
   function trackRenewals(): Promise<unknown>[] {
-    const renewals: Promise<unknown>[] = []
-    const realWrite = psql.write
-    vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
-      const result = realWrite(query, ...rest)
-      const text = typeof query === 'string' ? query : query.text
-      if (text.includes(RENEWAL_MARKER)) renewals.push(result)
-      return result
-    })
-    return renewals
+    return observePostgresWritesForTest(RENEWAL_MARKER).writes
   }
 
   it('renews the exact lease while URL screening is still running', async () => {

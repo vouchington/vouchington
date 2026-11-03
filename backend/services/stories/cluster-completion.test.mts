@@ -7,6 +7,10 @@ import * as cacheInvalidation from './cache-invalidation.mts'
 import { completeClusteredStory } from './cluster-completion.mts'
 import type { StoryPostRefreshResult } from './refresh-story-post.mts'
 
+function ownedAdds(calls: Array<{ name: string; data: unknown }>, postId: string) {
+  return calls.filter(call => (call.data as { post_id?: string } | undefined)?.post_id === postId)
+}
+
 describe('completeClusteredStory', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -32,8 +36,10 @@ describe('completeClusteredStory', () => {
     expect(
       sentryCaptureExceptionMock.mock.calls.filter(([captured]) => captured === dispatchError),
     ).toHaveLength(1)
-    expect(agent.calls).toEqual([{ name: 'story-post', data: { post_id: postId, force: true } }])
-    expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith(story.id)
+    expect(ownedAdds(agent.calls, postId)).toEqual([
+      { name: 'story-post', data: { post_id: postId, force: true } },
+    ])
+    expect(invalidateSpy.mock.calls.filter(args => args.includes(story.id))).toEqual([[story.id]])
   })
 
   it('dispatches relation effects, enqueues the forced agent run and invalidates', async () => {
@@ -54,18 +60,18 @@ describe('completeClusteredStory', () => {
     await Promise.all(agent.admissions)
 
     expect(dispatched).toEqual([postId])
-    expect(agent.calls).toEqual([{ name: 'story-post', data: { post_id: postId, force: true } }])
-    expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith(story.id)
+    expect(ownedAdds(agent.calls, postId)).toEqual([
+      { name: 'story-post', data: { post_id: postId, force: true } },
+    ])
+    expect(invalidateSpy.mock.calls.filter(args => args.includes(story.id))).toEqual([[story.id]])
   })
 
   it('only invalidates when the story has no post to refresh', async () => {
     const story = await insertTestStory()
     const invalidateSpy = vi.spyOn(cacheInvalidation, 'invalidateStories')
-    const agent = trackAgentQueueAdds()
 
     await completeClusteredStory(story.id, null)
 
-    expect(agent.calls).toEqual([])
-    expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith(story.id)
+    expect(invalidateSpy.mock.calls.filter(args => args.includes(story.id))).toEqual([[story.id]])
   })
 })

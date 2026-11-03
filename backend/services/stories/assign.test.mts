@@ -22,7 +22,7 @@ import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
-import { rejectQuery } from '@voucha/test-helpers/injected-failures'
+import { rejectPostgresWriteForTest, rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { trackAgentQueueAdds } from '../../test-helpers/services/stories/story-post-agent-adds.mts'
 import * as cacheInvalidation from './cache-invalidation.mts'
 import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
@@ -34,17 +34,7 @@ describe('assign', () => {
     return createHash('sha256').update(JSON.stringify(data)).digest()
   }
   async function makeTestItem(): Promise<string> {
-    const feed = await createTestRssFeed({})
-    const urlId = await createTestUrlWithHostname()
-    const random = Math.random().toString(36).slice(2, 10)
-    const itemData = { title: `Assign Test Item ${random}`, link: `https://example.com/${random}` }
-    return insertTestRssFeedItem({
-      rssFeedId: feed.id,
-      urlId,
-      guid: `assign-test-${random}`,
-      itemData,
-      contentSha256: sha256(itemData),
-    })
+    return makeTestItemForUrl(await createTestUrlWithHostname())
   }
   async function makeTestItemForUrl(urlId: string): Promise<string> {
     const feed = await createTestRssFeed({})
@@ -89,7 +79,7 @@ describe('assign', () => {
     const ids = await getStoryItemIds(story.id)
     expect(ids).toContain(newItemId)
   })
-  it('rolls back the assignment when transactional relation refresh fails', async () => {
+  it('rolls back a caller-owned transaction when the relation refresh fails', async () => {
     const [firstUrlId, secondUrlId] = await Promise.all([
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
@@ -107,6 +97,26 @@ describe('assign', () => {
         return await adminAssignItemToStory(storyPostUser.id, story.id, itemId, { query })
       })(),
     ).rejects.toThrow('refresh failed')
+    await expect(getStoryItemIds(story.id)).resolves.not.toContain(itemId)
+  })
+  it('rolls back its own transaction when the relation refresh fails', async () => {
+    const [firstUrlId, secondUrlId] = await Promise.all([
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+    ])
+    const { story } = await createStoryWithPost([firstUrlId, secondUrlId])
+    const itemId = await makeTestItem()
+    const restore = rejectPostgresWriteForTest(
+      'refreshStoryPostForStory:pruneTopics',
+      new Error('refresh failed'),
+    )
+    try {
+      await expect(adminAssignItemToStory(storyPostUser.id, story.id, itemId)).rejects.toThrow(
+        'refresh failed',
+      )
+    } finally {
+      restore()
+    }
     await expect(getStoryItemIds(story.id)).resolves.not.toContain(itemId)
   })
   it('adminAssignItemToStory overrides existing lock', async () => {
