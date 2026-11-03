@@ -1,4 +1,4 @@
-import type { Browser, BrowserContext, Page } from 'playwright-core'
+import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core'
 import onError from '@modules/on-error'
 
 export type BrowserSession = {
@@ -7,11 +7,8 @@ export type BrowserSession = {
   page: Page
 }
 
-export async function openBrowserSession(
-  connect: (wsEndpoint: string) => Promise<Browser>,
-  wsEndpoint: string,
-): Promise<BrowserSession> {
-  const browser = await connect(wsEndpoint)
+export async function openBrowserSession(wsEndpoint: string): Promise<BrowserSession> {
+  const browser = await chromium.connectOverCDP(wsEndpoint)
   try {
     const opened = await openBrowserContext(browser)
     return { browser, ...opened }
