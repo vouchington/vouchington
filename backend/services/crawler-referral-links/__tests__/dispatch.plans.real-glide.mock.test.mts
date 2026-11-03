@@ -6,6 +6,11 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { insertTestReferralCrawlPlanLinks } from '@voucha/test-helpers/entities/unfurl-dispatch-plans'
+import {
+  deleteTestRobotsTxtCache,
+  setTestRobotsTxtCache,
+} from '@voucha/test-helpers/entities/dispatch'
+import { withOwnedReferralDispatchAdmissions } from '@voucha/test-helpers/referral-dispatch-admissions'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
@@ -53,13 +58,8 @@ describe('indexed referral crawl candidates', () => {
     })
     const sweepStartedAt = requestedAt
     const ids = [...skipped, ...healthy].toSorted()
-    const queued: string[] = []
-    const dependencies = {
-      computeHostnameRateLimitMs: async () => 0,
-      enqueueBulkCrawlReferralLinks: async (entries: { linkId: string }[]) => {
-        queued.push(...entries.map(row => row.linkId))
-      },
-    }
+    await setTestRobotsTxtCache(base.hostname.hostname, 'User-agent: *\nAllow: /')
+    onTestFinished(() => deleteTestRobotsTxtCache(base.hostname.hostname))
     onTestFinished(
       overrideDynamicConfigFieldsForTest(referralCrawlDispatchConfig, {
         batch_size: 1,
@@ -68,7 +68,6 @@ describe('indexed referral crawl candidates', () => {
     )
     const captured = await withCapturedTestQueries(() =>
       dispatchReferralLinkCrawls({
-        ...dependencies,
         referralLinkIds: skipped,
         cursor: { sweepStartedAt },
       }),
@@ -81,23 +80,21 @@ describe('indexed referral crawl candidates', () => {
         afterWork: { dueAt: '-infinity', id: skipped[0] },
       },
     })
-    queued.length = 0
-    let data: ReferralCrawlDispatchData = { referralLinkIds: ids, cursor: { sweepStartedAt } }
-    const saveProgress = async (next: ReferralCrawlDispatchData) => {
-      data = next
-    }
-    for (const id of ids) {
-      const result = await dispatchReferralLinkCrawls({
-        ...data,
-        ...dependencies,
-        saveProgress,
-      })
-      expect(result.count).toBe(skipped.includes(id) ? 0 : 1)
-      expect(result.hasMore).toBe(id !== ids.at(-1))
-      if (!result.hasMore) break
-      expect(data.referralLinkIds).toEqual(ids)
-      expect(data.cursor?.sweepStartedAt).toBe(sweepStartedAt)
-    }
-    expect(queued.toSorted()).toEqual(healthy)
+    await withOwnedReferralDispatchAdmissions({ linkIds: ids }, async admissions => {
+      let data: ReferralCrawlDispatchData = { referralLinkIds: ids, cursor: { sweepStartedAt } }
+      const saveProgress = async (next: ReferralCrawlDispatchData) => {
+        data = next
+      }
+      for (const id of ids) {
+        const result = await dispatchReferralLinkCrawls({ ...data, saveProgress })
+        expect(result.count).toBe(skipped.includes(id) ? 0 : 1)
+        expect(result.hasMore).toBe(id !== ids.at(-1))
+        if (!result.hasMore) break
+        expect(data.referralLinkIds).toEqual(ids)
+        expect(data.cursor?.sweepStartedAt).toBe(sweepStartedAt)
+      }
+      for (const id of ids)
+        expect(await admissions.crawlJobs(id)).toHaveLength(skipped.includes(id) ? 0 : 1)
+    })
   })
 })

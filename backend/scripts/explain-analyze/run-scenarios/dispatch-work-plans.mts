@@ -76,8 +76,6 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
           sweepStartedAt: referral.sweepStartedAt,
           afterWork: { dueAt: '-infinity', id: referral.skipped[0] },
         },
-        computeHostnameRateLimitMs: async () => 0,
-        enqueueBulkCrawlReferralLinks: async () => {},
         limits: pageLimits,
       })
       if (

@@ -1,9 +1,10 @@
 import { afterAll, describe, expect, it, vi } from 'vitest'
+import { getUrlById } from '@services/urls/get'
 import { getDateFromUUIDv7 } from '@modules/utils'
 import {
   createTestUser,
   insertTestReferralProgram,
-  createTestUrlWithHostname,
+  createTestUrlWithHostname as insertTestUrlWithHostname,
   insertTestUserReferralProgramLink,
 } from '@voucha/test-helpers'
 import {
@@ -11,17 +12,35 @@ import {
   setReferralLinkLastCrawlSuccessAtRecent,
 } from '@voucha/test-helpers/entities/referral-links'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  deleteTestRobotsTxtCache,
+  setTestRobotsTxtCache,
+} from '@voucha/test-helpers/entities/dispatch'
 import { withOwnedReferralDispatchAdmissions } from '@voucha/test-helpers/referral-dispatch-admissions'
 import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
-import { enqueueBulkCrawlReferralLinks } from '@queues/crawl-referral-links/enqueues'
 import type { ReferralCrawlDispatchData } from '@queues/crawl-referral-links/types'
 import { referralCrawlDispatchConfig } from './work-limits.mts'
 import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from './dispatch.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 
+const seededHostnames: string[] = []
+
+/** Rate-limit calculation reads the cached robots.txt, so seeded hosts never touch the network. */
+async function createTestUrlWithHostname() {
+  const urlId = await insertTestUrlWithHostname()
+  const url = await getUrlById(urlId)
+  if (!url) throw new Error('Expected owned URL')
+  seededHostnames.push(url.hostname.hostname)
+  await setTestRobotsTxtCache(url.hostname.hostname, 'User-agent: *\nAllow: /')
+  return urlId
+}
+
 describe('bounded referral crawl dispatch', () => {
-  afterAll(() => crawlReferralLinksQueue.close())
+  afterAll(async () => {
+    await deleteTestRobotsTxtCache(...seededHostnames)
+    await crawlReferralLinksQueue.close()
+  })
 
   it('rejects an invalid event clock before saving dispatch progress', async () => {
     const saveProgress = vi.fn<() => Promise<void>>(async () => {})
@@ -50,12 +69,10 @@ describe('bounded referral crawl dispatch', () => {
         batch_size: 1,
         max_rows_per_run: 1,
       })
-      const computeHostnameRateLimitMs = async () => 1
       const progress: ReferralCrawlDispatchData[] = []
       expect(
         await dispatchReferralLinkCrawls({
           referralLinkIds: ids,
-          computeHostnameRateLimitMs,
           saveProgress: async next => {
             progress.push(next)
           },
@@ -64,14 +81,11 @@ describe('bounded referral crawl dispatch', () => {
       const data = progress.at(-1)!
       expect(data.cursor?.afterWork?.id).toBe(ids[0])
       expect(data.referralLinkIds).toEqual(ids)
-      expect(
-        await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs }),
-      ).toMatchObject({ count: 1, hasMore: true })
+      expect(await dispatchReferralLinkCrawls(data)).toMatchObject({ count: 1, hasMore: true })
       expect(
         await dispatchReferralLinkCrawls({
           ...data,
           cursor: { ...data.cursor!, afterWork: { dueAt: '-infinity', id: ids[1]! } },
-          computeHostnameRateLimitMs,
         }),
       ).toEqual({ count: 1, hasMore: false })
       for (const linkId of ids) expect(await admissions.crawlJobs(linkId)).toHaveLength(1)
@@ -98,10 +112,8 @@ describe('bounded referral crawl dispatch', () => {
         batch_size: 1,
         max_rows_per_run: 1,
       })
-      const computeHostnameRateLimitMs = async () => 1
       expect(
         await enqueueReferralLinkCrawlsForUrlId(urlId, {
-          computeHostnameRateLimitMs,
           now: eventNow,
         }),
       ).toEqual({ count: 1, hasMore: true })
@@ -111,9 +123,10 @@ describe('bounded referral crawl dispatch', () => {
       expect(data.urlId).toBe(urlId)
       expect(data.cursor?.sweepStartedAt).toBe(eventNow.toISOString())
       expect(data.cursor?.afterId).toBe(ids[0])
-      expect(
-        await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs, now: new Date(0) }),
-      ).toMatchObject({ count: 1, hasMore: false })
+      expect(await dispatchReferralLinkCrawls({ ...data, now: new Date(0) })).toMatchObject({
+        count: 1,
+        hasMore: false,
+      })
       for (const linkId of ids) expect(await admissions.crawlJobs(linkId)).toHaveLength(1)
     })
   })
@@ -147,27 +160,20 @@ describe('bounded referral crawl dispatch', () => {
       batch_size: 3,
       max_rows_per_run: 3,
     })
-    const computeHostnameRateLimitMs = async () => 1
-    const enqueuedIds: string[][] = []
-    const enqueueAndRecord: typeof enqueueBulkCrawlReferralLinks = (entries, options) => {
-      enqueuedIds.push(entries.map(entry => entry.linkId))
-      return enqueueBulkCrawlReferralLinks(entries, options)
-    }
     for (const [nowMs, count] of [
       [cutoffMs - 1, 1],
       [cutoffMs, 2],
       [cutoffMs + 1, 3],
     ] as const) {
-      expect(
-        await enqueueReferralLinkCrawlsForUrlId(urlId, {
-          computeHostnameRateLimitMs,
-          enqueueBulkCrawlReferralLinks: enqueueAndRecord,
-          now: new Date(nowMs),
-        }),
-      ).toEqual({ count, hasMore: false })
-      expect(enqueuedIds.at(-1)?.toSorted()).toEqual(ids.slice(0, count).toSorted())
+      await withOwnedReferralDispatchAdmissions({ linkIds: ids, urlId }, async admissions => {
+        expect(await enqueueReferralLinkCrawlsForUrlId(urlId, { now: new Date(nowMs) })).toEqual({
+          count,
+          hasMore: false,
+        })
+        for (const [index, linkId] of ids.entries())
+          expect(await admissions.crawlJobs(linkId)).toHaveLength(index < count ? 1 : 0)
+      })
     }
-    expect(enqueuedIds).toHaveLength(3)
   })
 
   it('keeps an explicit page when shared referral crawl config is larger', async () => {
@@ -193,7 +199,6 @@ describe('bounded referral crawl dispatch', () => {
         await expect(
           dispatchReferralLinkCrawls({
             referralLinkIds: ids,
-            computeHostnameRateLimitMs: async () => 1,
             limits: { batchSize: 1, maxRows: 1 },
           }),
         ).resolves.toMatchObject({ count: 1, hasMore: true })
