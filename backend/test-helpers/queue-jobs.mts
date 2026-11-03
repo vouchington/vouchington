@@ -103,6 +103,18 @@ export async function removeEnqueuedJobs(
 }
 
 /**
+ * The in-memory test queue numbers jobs with a counter shared by the whole fork ("9", then "10"),
+ * and jobs added in one millisecond share a `timestamp`. A string compare puts "10" before "9", so
+ * numeric ids compare as numbers (and sort before custom ids, keeping the order total).
+ */
+function compareJobIds(a: string, b: string): number {
+  const aNumeric = /^\d+$/.test(a)
+  if (aNumeric !== /^\d+$/.test(b)) return aNumeric ? -1 : 1
+  if (aNumeric) return Number(a) - Number(b)
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
+/**
  * Reads every job on a queue across all five states, for assertions with no enqueue return value to
  * read back by id (an INDIRECT side-effect job, or a bulk enqueue whose result has no single `.id`).
  * Sorted by `timestamp` (tiebroken by `id`) so callers can rely on enqueue order regardless of how
@@ -118,7 +130,7 @@ export async function readAllQueueJobs<T extends { id: string; timestamp: number
   const jobsByState = await Promise.all(QUEUE_JOB_STATES.map(state => queue.getJobs(state)))
   return jobsByState
     .flat()
-    .toSorted((a, b) => a.timestamp - b.timestamp || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .toSorted((a, b) => a.timestamp - b.timestamp || compareJobIds(a.id, b.id))
 }
 
 type DelayedJob = {
