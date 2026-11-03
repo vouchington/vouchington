@@ -2,17 +2,9 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 
-type AttemptLifecycleDependencies = {
-  beginTransaction: typeof beginTransaction
-}
-
-export async function releaseIdentityVerificationAttempt(
-  checkoutSessionId: string,
-  dependencies?: Partial<AttemptLifecycleDependencies>,
-): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
-  const { rowCount } = await transaction(sql`/* releaseIdentityVerificationAttempt */
+export async function releaseIdentityVerificationAttempt(checkoutSessionId: string): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* releaseIdentityVerificationAttempt */
       UPDATE identity_verification_attempts
       SET released_at = CURRENT_TIMESTAMP
       WHERE checkout_session_id = ${checkoutSessionId}
@@ -22,17 +14,13 @@ export async function releaseIdentityVerificationAttempt(
         AND released_at IS NULL
     `)
   await transaction.commit()
-  if ((rowCount ?? 0) > 1)
-    throw new Error('Identity verification release affected multiple attempts.')
 }
 
 export async function releaseAttachedIdentityVerificationAttempt(
   attemptId: string,
   checkoutSessionId: string,
-  dependencies?: Partial<AttemptLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rowCount } = await transaction(sql`/* releaseAttachedIdentityVerificationAttempt */
       UPDATE identity_verification_attempts
       SET released_at = CURRENT_TIMESTAMP
@@ -50,10 +38,8 @@ export async function releaseAttachedIdentityVerificationAttempt(
 
 export async function beginIdentityVerificationProviderSession(
   checkoutSessionId: string,
-  dependencies?: Partial<AttemptLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rowCount } = await transaction(sql`/* beginIdentityVerificationProviderSession */
       UPDATE identity_verification_attempts
       SET provider_creation_started_at = CURRENT_TIMESTAMP
@@ -64,7 +50,7 @@ export async function beginIdentityVerificationProviderSession(
     `)
   await transaction.commit()
   if (rowCount === 1) return
-  await using existingTransaction = await begin()
+  await using existingTransaction = await beginTransaction()
   const { rows } =
     await existingTransaction(sql`/* beginIdentityVerificationProviderSession:existing */
       SELECT provider_creation_started_at
@@ -81,10 +67,8 @@ export async function beginIdentityVerificationProviderSession(
 
 export async function abandonIdentityVerificationProviderSession(
   checkoutSessionId: string,
-  dependencies?: Partial<AttemptLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   await transaction(sql`/* abandonIdentityVerificationProviderSession */
       UPDATE identity_verification_attempts
       SET provider_creation_started_at = NULL
@@ -98,10 +82,8 @@ export async function abandonIdentityVerificationProviderSession(
 export async function consumeIdentityVerificationAttempt(
   checkoutSessionId: string,
   providerSessionId: string,
-  dependencies?: Partial<AttemptLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rowCount } = await transaction(sql`/* consumeIdentityVerificationAttempt */
       UPDATE identity_verification_attempts
       SET consumed_at = CURRENT_TIMESTAMP, provider_session_id = ${providerSessionId}
@@ -112,7 +94,7 @@ export async function consumeIdentityVerificationAttempt(
     `)
   await transaction.commit()
   if (rowCount === 1) return
-  await using existingTransaction = await begin()
+  await using existingTransaction = await beginTransaction()
   const { rows } = await existingTransaction(
     sql`/* consumeIdentityVerificationAttempt:existing */
       SELECT provider_session_id FROM identity_verification_attempts

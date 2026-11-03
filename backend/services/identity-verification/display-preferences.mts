@@ -8,11 +8,6 @@ type DisplayPreferencesInput = {
   public_verified_name_display?: PublicVerifiedNameDisplay
 }
 
-type DisplayPreferencesDependencies = {
-  invalidateUsers: typeof invalidate.users
-  beginTransaction: typeof beginTransaction
-}
-
 /**
  * Update a verified user's badge visibility and public name display preference.
  * Invalidates the user entity cache so changes are reflected immediately.
@@ -20,7 +15,6 @@ type DisplayPreferencesDependencies = {
 export async function updateDisplayPreferences(
   userId: string,
   input: DisplayPreferencesInput,
-  dependencies?: Partial<DisplayPreferencesDependencies>,
 ): Promise<void> {
   if (
     input.is_verified_badge_visible === undefined &&
@@ -29,8 +23,7 @@ export async function updateDisplayPreferences(
     return
   }
 
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rowCount } = await transaction(sql`/* updateDisplayPreferences */
       UPDATE users
       SET is_verified_badge_visible = COALESCE(${input.is_verified_badge_visible ?? null}, is_verified_badge_visible),
@@ -43,6 +36,5 @@ export async function updateDisplayPreferences(
 
   if (!rowCount) return
 
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
-  await invalidateUsers(userId)
+  await invalidate.users(userId)
 }

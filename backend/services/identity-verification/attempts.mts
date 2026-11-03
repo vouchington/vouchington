@@ -6,10 +6,6 @@ import createHttpError from 'http-errors'
 export type { IdentityVerificationAttempt } from './attempt-types.mts'
 import type { IdentityVerificationAttempt } from './attempt-types.mts'
 
-type AttemptDependencies = {
-  beginTransaction: typeof beginTransaction
-}
-
 export {
   abandonIdentityVerificationProviderSession,
   beginIdentityVerificationProviderSession,
@@ -25,10 +21,8 @@ export {
  */
 export async function reserveIdentityVerificationAttempt(
   userId: string,
-  dependencies?: Partial<AttemptDependencies>,
 ): Promise<IdentityVerificationAttempt> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   async function reserveAttemptInTransaction(query: TransactionQuery) {
     const { rows: membershipRows } =
       await query(sql`/* reserveIdentityVerificationAttempt:membership */
@@ -139,11 +133,9 @@ export async function reserveIdentityVerificationAttempt(
 export async function attachCheckoutToIdentityVerificationAttempt(
   attemptId: string,
   checkoutSessionId: string,
-  dependencies?: Partial<AttemptDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
   async function attachmentExists() {
-    await using query = await begin()
+    await using query = await beginTransaction()
     const result = await query(sql`/* attachCheckoutToIdentityVerificationAttempt:existing */
         SELECT id
         FROM identity_verification_attempts
@@ -158,7 +150,7 @@ export async function attachCheckoutToIdentityVerificationAttempt(
   }
   let rowCount: number | null | undefined
   try {
-    await using query = await begin()
+    await using query = await beginTransaction()
     const result = await query(sql`/* attachCheckoutToIdentityVerificationAttempt */
       UPDATE identity_verification_attempts
       SET checkout_session_id = ${checkoutSessionId}
@@ -180,12 +172,8 @@ export async function attachCheckoutToIdentityVerificationAttempt(
   throw createHttpError(409, 'Identity verification attempt is no longer available.')
 }
 
-export async function releaseReservedIdentityVerificationAttempt(
-  attemptId: string,
-  dependencies?: Partial<AttemptDependencies>,
-): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using query = await begin()
+export async function releaseReservedIdentityVerificationAttempt(attemptId: string): Promise<void> {
+  await using query = await beginTransaction()
   await query(sql`/* releaseReservedIdentityVerificationAttempt */
       UPDATE identity_verification_attempts
       SET released_at = CURRENT_TIMESTAMP
