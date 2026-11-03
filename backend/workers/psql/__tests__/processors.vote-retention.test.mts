@@ -61,12 +61,12 @@ describe('processPsql vote retention continuations', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({
       name: 'continueVoteRetentionCleanup',
-      data: {
-        voteTables: family === 'ballots' ? ['post_votes'] : [],
-        userAgentStrings: family === 'user agents',
-        voteIntegrityDetails: family === 'integrity details',
-      },
       opts: { jobId: childJobId },
+    })
+    expect(rows[0]!.data).toEqual({
+      voteTables: family === 'ballots' ? ['post_votes'] : [],
+      userAgentStrings: family === 'user agents',
+      voteIntegrityDetails: family === 'integrity details',
     })
   })
 
@@ -123,8 +123,12 @@ describe('processPsql vote retention continuations', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({
       name: 'continueVoteRetentionCleanup',
-      data: next,
       opts: { jobId: 'vote-retention__a0db7a4f62b4a73e46ae2961f8a54bab' },
+    })
+    expect(rows[0]!.data).toEqual({
+      voteTables: ['topic_votes'],
+      userAgentStrings: false,
+      voteIntegrityDetails: false,
     })
 
     await processPsql(
