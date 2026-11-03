@@ -2,17 +2,9 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
-import { detectLanguage } from '../detector.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
-type EntityDetectionDependencies = {
-  detectLanguage: typeof detectLanguage
-}
-
-export async function detectPostLanguage(
-  postId: string,
-  dependencies?: Partial<EntityDetectionDependencies>,
-): Promise<void> {
+export async function detectPostLanguage(postId: string): Promise<void> {
   const { rows } = await read<{
     id: string
     title: string | null
@@ -36,7 +28,7 @@ export async function detectPostLanguage(
   const detectionKey = computeDetectionKey(text, declaredLanguage)
   if (post.lingua_rs_input_sha256?.equals(detectionKey)) return
 
-  const output = await runDetection(text, declaredLanguage, undefined, dependencies)
+  const output = await runDetection(text, declaredLanguage)
   const contentSha256 = computeContentSha256(text)
 
   await write(sql`/* detectPostLanguage:update */

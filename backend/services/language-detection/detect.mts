@@ -1,14 +1,5 @@
 import { createHash } from 'node:crypto'
-import {
-  detectLanguage as linguaDetect,
-  detectLanguageMany as linguaDetectMany,
-  type DetectOptions,
-} from './detector.mts'
-
-type DetectorDependencies = {
-  detectLanguage: typeof linguaDetect
-  detectLanguageMany: typeof linguaDetectMany
-}
+import { detectLanguage, detectLanguageMany, type DetectOptions } from './detector.mts'
 
 export interface DetectionOutput {
   linguaRsDetectedLanguage: string | null
@@ -34,7 +25,6 @@ export async function runDetection(
   text: string,
   declaredLanguage: string | null | undefined,
   opts?: DetectOptions,
-  dependencies?: Partial<DetectorDependencies>,
 ): Promise<DetectionOutput> {
   const contentSha256 = computeContentSha256(text)
   if (declaredLanguage) {
@@ -53,7 +43,6 @@ export async function runDetection(
       source: 'none',
     }
   }
-  const detectLanguage = dependencies?.detectLanguage ?? linguaDetect
   const result = await detectLanguage(Buffer.from(text, 'utf8'), opts)
   const topLang = result.languages[0]?.iso6391 ?? null
   return {
@@ -76,7 +65,6 @@ export interface DetectionInput {
 export async function runDetectionMany(
   inputs: DetectionInput[],
   opts?: DetectOptions,
-  dependencies?: Partial<DetectorDependencies>,
 ): Promise<DetectionOutput[]> {
   const results = new Array<DetectionOutput | undefined>(inputs.length)
   const needDetection: number[] = []
@@ -107,7 +95,6 @@ export async function runDetectionMany(
   // Pass 2: batch detect all remaining texts in one NAPI call
   if (needDetection.length > 0) {
     const buffers = needDetection.map(i => Buffer.from(inputs[i]!.text, 'utf8'))
-    const detectLanguageMany = dependencies?.detectLanguageMany ?? linguaDetectMany
     const detectionResults = await detectLanguageMany(buffers, opts)
     if (detectionResults.length !== needDetection.length) {
       throw new Error(

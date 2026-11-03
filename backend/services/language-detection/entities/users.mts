@@ -1,17 +1,9 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
-import { detectLanguage } from '../detector.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
-type EntityDetectionDependencies = {
-  detectLanguage: typeof detectLanguage
-}
-
-export async function detectUserLanguage(
-  userId: string,
-  dependencies?: Partial<EntityDetectionDependencies>,
-): Promise<void> {
+export async function detectUserLanguage(userId: string): Promise<void> {
   const { rows } = await read<{
     id: string
     markdown: string
@@ -38,7 +30,7 @@ export async function detectUserLanguage(
 
   // Users have no declared language for their bio
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  const output = await runDetection(text, null, undefined, dependencies)
+  const output = await runDetection(text, null)
 
   await write(sql`/* detectUserLanguage:update */
     UPDATE users SET

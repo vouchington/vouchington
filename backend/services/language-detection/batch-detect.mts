@@ -3,16 +3,8 @@ import sql from 'sql-template-strings'
 import { runBatch } from './batch-helpers.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { firstVisibleRssTextField } from '@modules/utils/rss-text-fields'
-import { detectLanguageMany } from './detector.mts'
 
-type BatchDetectDependencies = {
-  detectLanguageMany: typeof detectLanguageMany
-}
-
-export async function detectPostLanguageBatch(
-  ids: string[],
-  dependencies?: Partial<BatchDetectDependencies>,
-): Promise<{ updated: number }> {
+export async function detectPostLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
     id: string
     title: string | null
@@ -54,14 +46,10 @@ export async function detectPostLanguageBatch(
       await write(update)
       await invalidate.posts(id)
     },
-    dependencies,
   )
 }
 
-export async function detectRssFeedItemLanguageBatch(
-  ids: string[],
-  dependencies?: Partial<BatchDetectDependencies>,
-): Promise<{ updated: number }> {
+export async function detectRssFeedItemLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
     id: string
     data: Record<string, unknown>
@@ -131,14 +119,10 @@ export async function detectRssFeedItemLanguageBatch(
       await write(update)
       await invalidate.rss_feed_items(id)
     },
-    dependencies,
   )
 }
 
-export async function detectCrawlLanguageBatch(
-  ids: string[],
-  dependencies?: Partial<BatchDetectDependencies>,
-): Promise<{ updated: number }> {
+export async function detectCrawlLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
     id: string
     title: string | null
@@ -178,6 +162,5 @@ export async function detectCrawlLanguageBatch(
       }
       return write(update)
     },
-    dependencies,
   )
 }

@@ -22,11 +22,6 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   )
   const rssItemId = rssItems[0]?.id
   if (!rssItemId) throw new Error('Missing view-driven RSS language fixture')
-  const linguaResult = {
-    detector: 'lingua',
-    detectorModelVersion: '1.0.0',
-    languages: [{ iso6391: 'en', iso6393: 'eng', confidence: 0.95 }],
-  }
   registerScenarioContract('detect-rss-feed-item-language-batch', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 100 },
@@ -35,10 +30,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   })
   await runAndCapture(
     'detect-rss-feed-item-language-batch',
-    () =>
-      detectRssFeedItemLanguageBatch([rssItemId], {
-        detectLanguageMany: async () => [linguaResult],
-      }),
+    () => detectRssFeedItemLanguageBatch([rssItemId]),
     undefined,
     'detectRssFeedItemLanguageBatch',
   )
@@ -50,7 +42,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   })
   await runAndCapture(
     'detect-rss-feed-item-language',
-    () => detectRssFeedItemLanguage(rssItemId, { detectLanguage: async () => linguaResult }),
+    () => detectRssFeedItemLanguage(rssItemId),
     undefined,
     'detectRssFeedItemLanguage',
   )

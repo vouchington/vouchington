@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
+import { createHash } from 'node:crypto'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
   createTestTopic,
@@ -9,24 +10,17 @@ import {
   insertLanguageDetectionCrawlForTest,
   insertLanguageDetectionPostForTest,
 } from '@voucha/test-helpers'
+import { getLanguageDetectionResultForTest } from '@voucha/test-helpers/sql-language-detection-state'
 import { addUrl } from '@services/urls'
 import type { PrivateUser } from '@services/users/types'
-import type { detectLanguageMany } from '../detector.mts'
 import {
   detectPostLanguageBatch,
   detectRssFeedItemLanguageBatch,
   detectCrawlLanguageBatch,
 } from '../batch-detect.mts'
 
-const mockDetectLanguageMany = vi.fn<typeof detectLanguageMany>()
-
-function makeBatchResult(iso6391: string) {
-  return {
-    detector: 'lingua',
-    detectorModelVersion: '1.0.0',
-    languages: [{ iso6391, iso6393: `${iso6391}x`, confidence: 0.95 }],
-  }
-}
+const ENGLISH = 'The quick brown fox jumps over the lazy dog near the quiet river bank today'
+const GERMAN = 'Die Würde des Menschen ist unantastbar und ihr Schutz ist Verpflichtung aller'
 
 describe('batch-detect — posts, rss-feed-items, crawls', () => {
   let user: PrivateUser
@@ -35,98 +29,74 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
     user = await createTestUser()
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  // ─── posts ───────────────────────────────────────────────────────────────
-
   describe('detectPostLanguageBatch', () => {
     it('returns { updated: 0 } for empty ids array', async () => {
-      const result = await detectPostBatch([])
-      expect(result).toEqual({ updated: 0 })
-      expect(mockDetectLanguageMany).not.toHaveBeenCalled()
+      expect(await detectPostLanguageBatch([])).toEqual({ updated: 0 })
     })
 
     it('detects language for posts and writes results', async () => {
-      mockDetectLanguageMany.mockResolvedValueOnce([makeBatchResult('en')])
-
       const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
         title: `Batch post ${random}`,
-        markdown: 'Hello world English content for batch',
+        markdown: ENGLISH,
       })
 
-      const result = await detectPostBatch([postId])
-      expect(result.updated).toBe(1)
+      expect(await detectPostLanguageBatch([postId])).toEqual({ updated: 1 })
 
       const updated = await getLanguageDetectionStateForTest('posts', postId)
       expect(updated.lingua_rs_detected_language).toBe('en')
-      expect(updated.lingua_rs_input_sha256).not.toBeNull()
+      expect(updated.lingua_rs_input_sha256).toHaveLength(32)
       expect(updated.lingua_rs_detected_at).toBeInstanceOf(Date)
     })
 
     it('skips posts whose sha is already current (returns { updated: 0 })', async () => {
-      mockDetectLanguageMany.mockResolvedValueOnce([makeBatchResult('en')])
-
       const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
         title: `SHA skip post ${random}`,
-        markdown: 'Content to skip',
+        markdown: GERMAN,
       })
 
-      // First batch run sets the sha
-      const first = await detectPostBatch([postId])
-      expect(first.updated).toBe(1)
-      vi.clearAllMocks()
+      expect(await detectPostLanguageBatch([postId])).toEqual({ updated: 1 })
+      const first = await getLanguageDetectionStateForTest('posts', postId)
+      expect(first.lingua_rs_detected_language).toBe('de')
 
-      // Second batch run: sha matches, so no update
-      const second = await detectPostBatch([postId])
-      expect(second.updated).toBe(0)
-      expect(mockDetectLanguageMany).not.toHaveBeenCalled()
+      expect(await detectPostLanguageBatch([postId])).toEqual({ updated: 0 })
+      expect(await getLanguageDetectionStateForTest('posts', postId)).toEqual(first)
     })
 
-    it('handles a post with declared language (no lingua call)', async () => {
+    it('uses the declared language instead of detecting the text', async () => {
       const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
         title: `Declared batch post ${random}`,
-        markdown: 'Bonjour le monde batch',
-        declaredLanguage: 'fr',
+        markdown: ENGLISH,
+        declaredLanguage: 'es',
       })
 
-      const result = await detectPostBatch([postId])
-      expect(result.updated).toBe(1)
-      expect(mockDetectLanguageMany).not.toHaveBeenCalled()
+      expect(await detectPostLanguageBatch([postId])).toEqual({ updated: 1 })
 
-      expect(
-        (await getLanguageDetectionStateForTest('posts', postId)).lingua_rs_detected_language,
-      ).toBe('fr')
+      const result = await getLanguageDetectionResultForTest('posts', postId)
+      expect(result.lingua_rs_detected_language).toBe('es')
+      expect(result.lingua_rs_results).toEqual({ source: 'declared', language: 'es' })
     })
   })
 
-  // ─── crawls ───────────────────────────────────────────────────────────────
-
   describe('detectCrawlLanguageBatch', () => {
     it('returns { updated: 0 } for empty ids array', async () => {
-      const result = await detectCrawlBatch([])
-      expect(result).toEqual({ updated: 0 })
+      expect(await detectCrawlLanguageBatch([])).toEqual({ updated: 0 })
     })
 
     it('detects language for crawls and writes results', async () => {
-      mockDetectLanguageMany.mockResolvedValueOnce([makeBatchResult('en')])
-
       const random = createRandomString(10)
       const crawlId = await insertLanguageDetectionCrawlForTest({
         hostname: `crawl-batch-${random}.example.com`,
         url: `https://crawl-batch-${random}.example.com/page`,
-        markdown: 'English crawl batch content',
+        markdown: ENGLISH,
       })
 
-      const result = await detectCrawlBatch([crawlId])
-      expect(result.updated).toBe(1)
+      expect(await detectCrawlLanguageBatch([crawlId])).toEqual({ updated: 1 })
 
       expect(
         (await getLanguageDetectionStateForTest('crawls', crawlId)).lingua_rs_detected_language,
@@ -134,22 +104,16 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
     })
   })
 
-  // ─── rss_feed_items ───────────────────────────────────────────────────────
-
   describe('detectRssFeedItemLanguageBatch', () => {
     it('returns { updated: 0 } for empty ids array', async () => {
-      const result = await detectRssFeedItemBatch([])
-      expect(result).toEqual({ updated: 0 })
+      expect(await detectRssFeedItemLanguageBatch([])).toEqual({ updated: 0 })
     })
 
-    it('detects language for rss feed items and writes results', async () => {
-      mockDetectLanguageMany.mockResolvedValueOnce([makeBatchResult('en')])
-
+    it('detects language from the first visible rss text field and writes results', async () => {
       const random = createRandomString(10)
       const topic = await createTestTopic()
       const feedId = await insertTestRssFeed({ topicId: topic.id, title: `Batch Feed ${random}` })
       const urlObj = await addUrl(null, `https://rss-batch-${random}.example.com/item`)
-      const contentSha = Buffer.alloc(32, 0)
 
       const itemId = await insertTestRssFeedItem({
         rssFeedId: feedId,
@@ -158,33 +122,18 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
         itemData: {
           title: `Batch Item ${random}`,
           contentSnippet: '<p>&nbsp;</p>',
-          'media:description': 'English batch media description',
+          'media:description': GERMAN,
         },
-        contentSha256: contentSha,
+        contentSha256: Buffer.alloc(32, 0),
       })
 
-      const result = await detectRssFeedItemBatch([itemId])
-      expect(result.updated).toBe(1)
-      expect(mockDetectLanguageMany.mock.calls[0]![0]![0]!.toString()).toContain(
-        'English batch media description',
-      )
+      expect(await detectRssFeedItemLanguageBatch([itemId])).toEqual({ updated: 1 })
 
-      expect(
-        (await getLanguageDetectionStateForTest('rss_feed_items', itemId))
-          .lingua_rs_detected_language,
-      ).toBe('en')
+      const result = await getLanguageDetectionResultForTest('rss_feed_items', itemId)
+      expect(result.lingua_rs_detected_language).toBe('de')
+      expect(result.lingua_rs_content_sha256).toEqual(
+        createHash('sha256').update(`Batch Item ${random}\n\n${GERMAN}`, 'utf8').digest(),
+      )
     })
   })
 })
-
-function detectPostBatch(ids: string[]): Promise<{ updated: number }> {
-  return detectPostLanguageBatch(ids, { detectLanguageMany: mockDetectLanguageMany })
-}
-
-function detectCrawlBatch(ids: string[]): Promise<{ updated: number }> {
-  return detectCrawlLanguageBatch(ids, { detectLanguageMany: mockDetectLanguageMany })
-}
-
-function detectRssFeedItemBatch(ids: string[]): Promise<{ updated: number }> {
-  return detectRssFeedItemLanguageBatch(ids, { detectLanguageMany: mockDetectLanguageMany })
-}

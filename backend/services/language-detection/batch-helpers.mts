@@ -1,6 +1,5 @@
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { computeDetectionKey, runDetectionMany, type DetectionInput } from './detect.mts'
-import { detectLanguageMany } from './detector.mts'
 import type { SQLStatement } from 'sql-template-strings'
 
 export type BatchRow = {
@@ -20,15 +19,7 @@ export type UpdateFn = (
   row: BatchRow,
 ) => Promise<unknown>
 
-type BatchDependencies = {
-  detectLanguageMany: typeof detectLanguageMany
-}
-
-export async function runBatch(
-  rows: BatchRow[],
-  updateFn: UpdateFn,
-  dependencies?: Partial<BatchDependencies>,
-): Promise<{ updated: number }> {
+export async function runBatch(rows: BatchRow[], updateFn: UpdateFn): Promise<{ updated: number }> {
   // Use the declared language in the key so changing a declared language triggers re-detection
   // even when text hasn't changed — matches the single-entity computeDetectionKey convention.
   const pending = rows.filter(row => {
@@ -42,7 +33,7 @@ export async function runBatch(
     text: r.text,
     declaredLanguage: normalizeContentLanguageTag(r.declaredLanguage),
   }))
-  const outputs = await runDetectionMany(inputs, undefined, dependencies)
+  const outputs = await runDetectionMany(inputs)
 
   await Promise.all(
     pending.map((row, i) => {

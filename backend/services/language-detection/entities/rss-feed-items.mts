@@ -2,18 +2,10 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
-import { detectLanguage } from '../detector.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { firstVisibleRssTextField } from '@modules/utils/rss-text-fields'
 
-type EntityDetectionDependencies = {
-  detectLanguage: typeof detectLanguage
-}
-
-export async function detectRssFeedItemLanguage(
-  itemId: string,
-  dependencies?: Partial<EntityDetectionDependencies>,
-): Promise<void> {
+export async function detectRssFeedItemLanguage(itemId: string): Promise<void> {
   const { rows } = await read<{
     id: string
     data: Record<string, unknown>
@@ -86,7 +78,7 @@ export async function detectRssFeedItemLanguage(
   const detectionKey = computeDetectionKey(text, declaredLanguage)
   if (item.lingua_rs_input_sha256?.equals(detectionKey)) return
 
-  const output = await runDetection(text, declaredLanguage, undefined, dependencies)
+  const output = await runDetection(text, declaredLanguage)
   const contentSha256 = computeContentSha256(text)
 
   await write(sql`/* detectRssFeedItemLanguage:update */
