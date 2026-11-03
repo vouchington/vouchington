@@ -7,7 +7,6 @@ type VoteRetentionResult = Awaited<ReturnType<typeof runVoteRetentionCleanupPage
 export async function enqueueVoteRetentionContinuationIfNeeded(
   result: VoteRetentionResult,
   jobId: string | undefined,
-  enqueue: typeof enqueueDataRetentionContinuation = enqueueDataRetentionContinuation,
 ): Promise<void> {
   const next: VoteRetentionContinuationData = {
     voteTables: result.supersededVoteBallots.flatMap(page =>
@@ -18,7 +17,7 @@ export async function enqueueVoteRetentionContinuationIfNeeded(
   }
   if (next.voteTables.length === 0 && !next.userAgentStrings && !next.voteIntegrityDetails) return
   if (!jobId) throw new Error('vote retention job requires an id for continuation')
-  await enqueue(jobId, next)
+  await enqueueDataRetentionContinuation(jobId, next)
 }
 
 export function requireVoteRetentionSelection(

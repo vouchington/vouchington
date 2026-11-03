@@ -18,12 +18,11 @@ export function unfinishedCopyrightFamilies(
 export async function admitCopyrightRetentionContinuation(
   pending: CopyrightRetentionFamily[],
   jobId: string | undefined,
-  enqueue: typeof enqueueDataRetentionCleanupContinuation = enqueueDataRetentionCleanupContinuation,
 ): Promise<void> {
   if (pending.length === 0) return
   if (!jobId) throw new Error('Copyright retention continuation needs the current job ID')
   const runId = createHash('sha256').update(jobId).digest('hex')
-  await enqueue({
+  await enqueueDataRetentionCleanupContinuation({
     runId,
     step: 1,
     activeClassifierSweeps: [],
@@ -35,19 +34,16 @@ export async function admitCopyrightRetentionContinuation(
 
 export async function processCopyrightRetentionContinuation(
   continuation: NonNullable<PsqlRetentionJobData['continuation']>,
-  dependencies: {
-    cleanup?: typeof runCopyrightOperationalRetentionCleanup
-    enqueue?: typeof enqueueDataRetentionCleanupContinuation
-  } = {},
+  cleanup: typeof runCopyrightOperationalRetentionCleanup = runCopyrightOperationalRetentionCleanup,
 ) {
   const copyrightFamilies = continuation.copyrightFamilies ?? []
-  const result = await (dependencies.cleanup ?? runCopyrightOperationalRetentionCleanup)({
+  const result = await cleanup({
     activeFamilies: copyrightFamilies,
     limits: getDataRetentionLimits(),
   })
   const pending = unfinishedCopyrightFamilies(result, copyrightFamilies)
   if (pending.length > 0) {
-    await (dependencies.enqueue ?? enqueueDataRetentionCleanupContinuation)({
+    await enqueueDataRetentionCleanupContinuation({
       runId: continuation.runId,
       step: continuation.step + 1,
       activeClassifierSweeps: [],
