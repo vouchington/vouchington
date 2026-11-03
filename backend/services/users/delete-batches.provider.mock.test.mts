@@ -69,6 +69,21 @@ describe('user deletion provider work', () => {
     ])
   })
 
+  it('completes cache-tag work through the cache purge', async () => {
+    const user = await createTestUser()
+    const request = await createUserDeletionRequest(user.id, user.id)
+    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', [`user:${user.id}`])
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
+
+    await expect(
+      processUserDeletionExternalWork(request.id, request.processingAttemptId),
+    ).resolves.toEqual({ hasMore: true })
+    await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(true)
+    await expect(
+      processUserDeletionExternalWork(request.id, request.processingAttemptId),
+    ).resolves.toEqual({ hasMore: false })
+  })
+
   it('completes Stripe work when the customer is already missing', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
