@@ -7,16 +7,19 @@ const ENTITLEMENT_EFFECTS_JOB = 'deliverMembershipEntitlementEffects'
 /**
  * Observes the real membership queue admission for entitlement effects. The real `add` always
  * runs. `gate` holds its result so a test can prove a caller waits for admission, and
- * `trackingFailure` makes the enqueue metric throw after the add starts.
+ * `trackingFailure` makes the enqueue metric throw after the add starts. `admittedCount` rejects
+ * if a real add rejected, so a best-effort caller swallowing that failure cannot pass as admitted.
  */
 export function spyOnMembershipEntitlementAdmission(
   options: { gate?: Promise<unknown>; trackingFailure?: Error } = {},
 ) {
   const original = memberships.add
   const started = Promise.withResolvers<void>()
+  const admissions: Promise<unknown>[] = []
   const spy = vi.spyOn(memberships, 'add').mockImplementation((name, ...args) => {
     const admission = original.call(memberships, name, ...args)
     if (name !== ENTITLEMENT_EFFECTS_JOB) return admission
+    admissions.push(admission)
     started.resolve()
     if (!options.gate) return admission
     return admission.then(async job => {
@@ -34,8 +37,7 @@ export function spyOnMembershipEntitlementAdmission(
     : undefined
   return {
     started: started.promise,
-    admissionCount: () =>
-      spy.mock.calls.filter(([name]) => name === ENTITLEMENT_EFFECTS_JOB).length,
+    admittedCount: async () => (await Promise.all(admissions)).length,
     restore: () => {
       tracking?.mockRestore()
       spy.mockRestore()

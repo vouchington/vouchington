@@ -91,7 +91,7 @@ describe('revokeMembershipGrant', () => {
         queuedGrantId!,
         'replayed reason is retained',
       )
-      expect(queue.admissionCount()).toBe(1)
+      await expect(queue.admittedCount()).resolves.toBe(1)
     } finally {
       queue.restore()
     }

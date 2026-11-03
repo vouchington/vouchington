@@ -44,7 +44,7 @@ describe('createMembership post-commit entitlement admission', () => {
       expect(settled).toBe(false)
       admission.resolve()
       await expect(creation).resolves.toMatchObject({ projected: true })
-      expect(queue.admissionCount()).toBe(1)
+      await expect(queue.admittedCount()).resolves.toBe(1)
     } finally {
       admission.resolve()
       await creation?.catch(() => undefined)
@@ -65,7 +65,7 @@ describe('createMembership post-commit entitlement admission', () => {
         { query: transaction },
       )
       expect(created.projected).toBe(true)
-      expect(queue.admissionCount()).toBe(0)
+      await expect(queue.admittedCount()).resolves.toBe(0)
 
       let settled = false
       commit = transaction.commit().then(() => {
@@ -82,7 +82,7 @@ describe('createMembership post-commit entitlement admission', () => {
       expect(settled).toBe(false)
       admission.resolve()
       await commit
-      expect(queue.admissionCount()).toBe(1)
+      await expect(queue.admittedCount()).resolves.toBe(1)
     } finally {
       admission.resolve()
       await commit?.catch(() => undefined)
