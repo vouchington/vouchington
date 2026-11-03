@@ -13,49 +13,33 @@ import { invalidatePostsForTopicAliasesPage } from '@services/topics/invalidate-
 import { processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings } from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
 import type { TopicAliasPostInvalidationData } from '@queues/rss-feed-maintenance/types'
 
-type TopicAliasCategoryMappingReconciliationDependencies = {
-  enqueueContinueTopicAliasCategoryMappingReconciliation: typeof enqueueContinueTopicAliasCategoryMappingReconciliation
-  processReconcileTopicAliasCategoryMappings: typeof reconcileTopicAliasCategoryMappings
-}
-
-type TopicAliasPostInvalidationDependencies = {
-  enqueueContinueInvalidatingPostsForTopicAliases: typeof enqueueContinueInvalidatingPostsForTopicAliases
-  invalidatePostsForTopicAliasesPage: typeof invalidatePostsForTopicAliasesPage
-}
-
-export async function processInvalidatePostsForTopicAliases(
-  data: TopicAliasPostInvalidationData,
-  dependencies?: Partial<TopicAliasPostInvalidationDependencies>,
-) {
-  const invalidate =
-    dependencies?.invalidatePostsForTopicAliasesPage ?? invalidatePostsForTopicAliasesPage
-  const enqueueContinuation =
-    dependencies?.enqueueContinueInvalidatingPostsForTopicAliases ??
-    enqueueContinueInvalidatingPostsForTopicAliases
-  const result = await invalidate(data.topicAliasIds, data.changeId, data.afterPostId)
+export async function processInvalidatePostsForTopicAliases(data: TopicAliasPostInvalidationData) {
+  const result = await invalidatePostsForTopicAliasesPage(
+    data.topicAliasIds,
+    data.changeId,
+    data.afterPostId,
+  )
   if (result.hasMore && result.lastPostId)
-    await enqueueContinuation(data.topicAliasIds, data.changeId, result.lastPostId)
+    await enqueueContinueInvalidatingPostsForTopicAliases(
+      data.topicAliasIds,
+      data.changeId,
+      result.lastPostId,
+    )
   return result
 }
 
-export const processReconcileTopicAliasCategoryMappings = async (
-  data: { topicAliasIds?: string[] },
-  dependencies?: Partial<TopicAliasCategoryMappingReconciliationDependencies>,
-) => {
-  const reconcile =
-    dependencies?.processReconcileTopicAliasCategoryMappings ?? reconcileTopicAliasCategoryMappings
-  const enqueueContinuation =
-    dependencies?.enqueueContinueTopicAliasCategoryMappingReconciliation ??
-    enqueueContinueTopicAliasCategoryMappingReconciliation
+export const processReconcileTopicAliasCategoryMappings = async (data: {
+  topicAliasIds?: string[]
+}) => {
   const TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE = getRssFeedsWorkLimit(
     'topic_alias_category_mapping_reconciliation_batch_size',
   )
-  const result = await reconcile(
+  const result = await reconcileTopicAliasCategoryMappings(
     TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE,
     data.topicAliasIds,
   )
   if (result.hasMore) {
-    await enqueueContinuation(data.topicAliasIds)
+    await enqueueContinueTopicAliasCategoryMappingReconciliation(data.topicAliasIds)
   }
   return result
 }

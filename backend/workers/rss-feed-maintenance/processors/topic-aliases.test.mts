@@ -1,10 +1,12 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestPost,
   createTestUser,
+  createTestTopic,
   createTopHashtagPostSourceForTest,
+  getTopicAliasCategoryMappingDirtyRowForTest,
   insertTestRssFeed,
   insertTestTopic,
   readAllQueueJobs,
@@ -17,22 +19,20 @@ import {
   processReconcileTopicAliasCategoryMappings,
   processTopicAliasesUpdate,
 } from './topic-aliases.mts'
-import type { enqueueContinueTopicAliasCategoryMappingReconciliation } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
-import type { processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings } from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { notifications } from '@queues/notifications/queues'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { topicsWorkConfig } from '@services/topics/work-limits'
 
-const mockEnqueueContinuation =
-  vi.fn<typeof enqueueContinueTopicAliasCategoryMappingReconciliation>()
-const mockReconcile = vi.fn<typeof reconcileTopicAliasCategoryMappings>()
+async function ownedMappingJobs(aliasId: string) {
+  return (await readAllQueueJobs(rssFeedMaintenance)).filter(
+    job =>
+      job.name === 'processReconcileTopicAliasCategoryMappings' &&
+      (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(aliasId),
+  )
+}
 
 describe('topic-aliases processors', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('processTopicAliasesUpdate resolves without error for unknown topic', async () => {
     // Non-existent topicId: UPDATE queries affect 0 rows; backfill returns 0.
     await expect(
@@ -84,52 +84,67 @@ describe('topic-aliases processors', () => {
     )
   })
 
-  it('enqueues an immediate serialized continuation after a full reconciliation batch', async () => {
-    mockReconcile.mockResolvedValue({ reconciled: 25, updated: 4, hasMore: true })
-    mockEnqueueContinuation.mockResolvedValue(undefined)
+  it('enqueues an immediate serialized continuation while reconciliation has more', async () => {
+    const topic = await createTestTopic({ slug: `mapping-${randomUUID()}` })
+    const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
 
     await expect(
-      processReconcileTopicAliasCategoryMappings(
-        {},
-        {
-          enqueueContinueTopicAliasCategoryMappingReconciliation: mockEnqueueContinuation,
-          processReconcileTopicAliasCategoryMappings: mockReconcile,
-        },
-      ),
-    ).resolves.toEqual({ reconciled: 25, updated: 4, hasMore: true })
+      processReconcileTopicAliasCategoryMappings({ topicAliasIds: [alias!.id] }),
+    ).resolves.toEqual({ reconciled: 0, updated: 0, hasMore: true })
 
-    expect(mockEnqueueContinuation).toHaveBeenCalledOnce()
+    const jobs = await ownedMappingJobs(alias!.id)
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => job.remove()))
+    })
+    expect(jobs.map(job => job.data)).toEqual([{ topicAliasIds: [alias!.id] }])
   })
 
-  it('does not enqueue a continuation after a partial reconciliation batch', async () => {
-    mockReconcile.mockResolvedValue({ reconciled: 24, updated: 4, hasMore: false })
+  it('does not enqueue a continuation after the final reconciliation page', async () => {
+    const topic = await createTestTopic({ slug: `mapping-${randomUUID()}` })
+    const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
 
-    await expect(
-      processReconcileTopicAliasCategoryMappings(
-        {},
-        {
-          enqueueContinueTopicAliasCategoryMappingReconciliation: mockEnqueueContinuation,
-          processReconcileTopicAliasCategoryMappings: mockReconcile,
-        },
-      ),
-    ).resolves.toEqual({ reconciled: 24, updated: 4, hasMore: false })
+    const data = { topicAliasIds: [alias!.id] }
+    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+      reconciled: 0,
+      updated: 0,
+      hasMore: true,
+    })
+    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+      reconciled: 0,
+      updated: 0,
+      hasMore: true,
+    })
+    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+      reconciled: 1,
+      updated: 0,
+      hasMore: false,
+    })
 
-    expect(mockEnqueueContinuation).not.toHaveBeenCalled()
+    const jobs = await ownedMappingJobs(alias!.id)
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => job.remove()))
+    })
+    expect(jobs.map(job => job.data)).toEqual([data, data])
+    expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeUndefined()
   })
 
-  it('rejects when a full-batch continuation cannot be dispatched', async () => {
-    const enqueueError = new Error('continuation unavailable')
-    mockReconcile.mockResolvedValue({ reconciled: 25, updated: 4, hasMore: true })
-    mockEnqueueContinuation.mockRejectedValue(enqueueError)
+  it('rejects when a reconciliation continuation cannot be dispatched', async () => {
+    const topic = await createTestTopic({ slug: `mapping-${randomUUID()}` })
+    const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
+    const enqueueError = new Error(`continuation unavailable ${alias!.id}`)
+    const originalAdd = rssFeedMaintenance.add
+    const addSpy = vi
+      .spyOn(rssFeedMaintenance, 'add')
+      .mockImplementation((name, data, opts) =>
+        name === 'processReconcileTopicAliasCategoryMappings' &&
+        (data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias!.id)
+          ? Promise.reject(enqueueError)
+          : originalAdd.call(rssFeedMaintenance, name, data, opts),
+      )
+    onTestFinished(() => addSpy.mockRestore())
 
     await expect(
-      processReconcileTopicAliasCategoryMappings(
-        {},
-        {
-          enqueueContinueTopicAliasCategoryMappingReconciliation: mockEnqueueContinuation,
-          processReconcileTopicAliasCategoryMappings: mockReconcile,
-        },
-      ),
+      processReconcileTopicAliasCategoryMappings({ topicAliasIds: [alias!.id] }),
     ).rejects.toBe(enqueueError)
   })
 

@@ -8,26 +8,13 @@ import {
   type RssFeedCrawlTier,
 } from '@services/rss-feeds'
 
-type RssFeedsDispatcherDependencies = {
-  enqueueBulkFetchRssFeeds: typeof enqueueBulkFetchRssFeeds
-  getRssFeedsToFetch: typeof getRssFeedsToFetch
-  getTierSlaMs: typeof getTierSlaMs
-}
-type FetchRssFeedDependencies = {
-  fetchRssFeed: typeof fetchRssFeed
-}
-
-export async function processRssFeedsDispatcher(
-  dependencies?: Partial<RssFeedsDispatcherDependencies>,
-  page?: { cursor?: RssFeedDispatchCursor; asOf: Date; limit: number; rawBudget: number },
-): Promise<{ count: number; rawRowsRead: number; nextCursor?: RssFeedDispatchCursor }> {
-  const deps = {
-    enqueueBulkFetchRssFeeds,
-    getRssFeedsToFetch,
-    getTierSlaMs,
-    ...dependencies,
-  }
-  const result = await deps.getRssFeedsToFetch(
+export async function processRssFeedsDispatcher(page?: {
+  cursor?: RssFeedDispatchCursor
+  asOf: Date
+  limit: number
+  rawBudget: number
+}): Promise<{ count: number; rawRowsRead: number; nextCursor?: RssFeedDispatchCursor }> {
+  const result = await getRssFeedsToFetch(
     page
       ? { limit: page.limit, rawBudget: page.rawBudget, cursor: page.cursor, asOf: page.asOf }
       : {},
@@ -40,7 +27,7 @@ export async function processRssFeedsDispatcher(
 
   for (const feed of feeds) {
     const tier = feed.crawl_tier >= 1 && feed.crawl_tier <= 5 ? feed.crawl_tier : 5
-    const ttl = feed.priority_group === 2 ? undefined : deps.getTierSlaMs(tier as RssFeedCrawlTier)
+    const ttl = feed.priority_group === 2 ? undefined : getTierSlaMs(tier as RssFeedCrawlTier)
     const key = `${tier}:${ttl ?? 'none'}`
 
     const group = groups.get(key)
@@ -53,7 +40,7 @@ export async function processRssFeedsDispatcher(
 
   await Promise.all(
     Array.from(groups.values()).map(({ tier, ttl, ids }) =>
-      deps.enqueueBulkFetchRssFeeds(ids, {
+      enqueueBulkFetchRssFeeds(ids, {
         priority: TIER_PRIORITY[tier] ?? TIER_PRIORITY[5],
         ttl,
       }),
@@ -70,9 +57,7 @@ export async function processRssFeedsDispatcher(
 export async function processFetchRssFeed(
   rssFeedId: string,
   ttl?: number,
-  dependencies?: Partial<FetchRssFeedDependencies>,
 ): Promise<{ rss_feed_id: string; item_count: number }> {
-  const deps = { fetchRssFeed, ...dependencies }
-  const items = await deps.fetchRssFeed(rssFeedId, ttl)
+  const items = await fetchRssFeed(rssFeedId, ttl)
   return { rss_feed_id: rssFeedId, item_count: items.length }
 }
