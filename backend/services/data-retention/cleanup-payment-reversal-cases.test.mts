@@ -1,3 +1,5 @@
+import { beginTransaction } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import {
   countReversalCaseRetentionRows,
@@ -97,5 +99,34 @@ describe('payment ledger fiscal retention of reversal cases', () => {
     await expect(getIneligiblePurchaseReversalCase(lookup(live))).resolves.toMatchObject({
       id: live.caseId,
     })
+  })
+
+  it('rejects a direct delete of a case or its history while the case is not expired', async () => {
+    const openCycle = await createReversalCaseForRetention(expiredAt, 'open_cycle')
+    const withinWindowCase = await createReversalCaseForRetention(withinWindow)
+    const rejectedDelete = async (statement: ReturnType<typeof sql>) => {
+      await using query = await beginTransaction()
+      await query(sql`/* permitReversalCaseDelete */ SET LOCAL app.billing_retention_delete = 'on'`)
+      await query(statement)
+    }
+    const deleteCase = (caseId: string) =>
+      sql`/* deleteReversalCase */ DELETE FROM membership_ineligible_purchase_reversal_cases WHERE id = ${caseId}`
+    const deleteObservation = (caseId: string) =>
+      sql`/* deleteReversalObservation */ DELETE FROM membership_ineligible_purchase_reversal_refund_observations observation
+        USING membership_ineligible_purchase_reversal_refund_scans scan
+        WHERE scan.id = observation.membership_ineligible_purchase_reversal_refund_scan_id
+          AND scan.membership_ineligible_purchase_reversal_case_id = ${caseId}`
+
+    await expect(rejectedDelete(deleteCase(openCycle.caseId))).rejects.toThrow(
+      'rows are append-only',
+    )
+    await expect(rejectedDelete(deleteObservation(openCycle.caseId))).rejects.toThrow(
+      'rows are append-only',
+    )
+    await expect(rejectedDelete(deleteCase(withinWindowCase.caseId))).rejects.toThrow(
+      'rows are append-only',
+    )
+    await expect(countReversalCaseRetentionRows(openCycle.caseId)).resolves.toEqual(intact)
+    await expect(countReversalCaseRetentionRows(withinWindowCase.caseId)).resolves.toEqual(intact)
   })
 })
