@@ -69,6 +69,7 @@ describe('processMembershipJob', () => {
   it.each([
     { attemptsMade: 2, attempts: 3, failed: true },
     { attemptsMade: 1, attempts: 3, failed: false },
+    { attemptsMade: 0, attempts: undefined, failed: true },
   ])(
     'fails a Stripe event only on its last attempt ($attemptsMade of $attempts)',
     async ({ attemptsMade, attempts, failed }) => {
@@ -103,6 +104,32 @@ describe('processMembershipJob', () => {
       expect(event?.failed_at instanceof Date).toBe(failed)
     },
   )
+
+  it('completes a Stripe event that needs no membership change', async () => {
+    const stored = await ingestStripeEvent(
+      createStripeEvent('customer.created', { id: createUniqueStripeId('cus', 'process-job') }),
+    )
+
+    await processMembershipJob({
+      name: 'processStripeEvent',
+      data: {
+        stripeEventRecordId: stored.id,
+        leaseToken: stored.lease_token,
+        stripeSubscriptionId: stored.subscription_id,
+        isLiveMode: stored.is_live_mode,
+      },
+      timestamp: Date.now(),
+      attemptsMade: 0,
+      opts: { attempts: 3 },
+    } as unknown as Job)
+
+    const event = await getTestStripeEventByStripeEventId(stored.stripe_event_id)
+    expect(event?.status).toBe('ignored')
+    expect(event?.ignored_at instanceof Date).toBe(true)
+    expect(event?.processed_at).toBeNull()
+    expect(event?.failed_at).toBeNull()
+    expect(event?.last_error_message).toBeNull()
+  })
 
   it('dispatches due refund reconciliations through the default processor', async () => {
     const [member, administrator] = await Promise.all([createTestUser(), createTestUser()])
