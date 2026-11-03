@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
 import {
@@ -154,21 +155,16 @@ describe('bounded copyright thread blocker proof', () => {
 
   it('clears pending territorial enforcement when staff revokes the restrict decision', async () => {
     const scene = await createTestTerritorialRestrictionScene('eu_dsa')
-    const interrupted = async (_assessmentId: string) => {
+    interceptCopyrightImpositionForTest(scene.noticeId, async () => {
       throw new Error('temporary enforcement interruption')
-    }
+    })
     await expect(
-      recordEuCopyrightStatementOfReasons(
-        scene.staff,
-        scene.noticeId,
-        {
-          text: 'The hosted image reproduces the claimed work.',
-          publicExplanation: 'The hosted image reproduces the claimed work.',
-          outcome: 'restrict',
-          targets: scene.targets,
-        },
-        { enforceAssessment: interrupted },
-      ),
+      recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
+        text: 'The hosted image reproduces the claimed work.',
+        publicExplanation: 'The hosted image reproduces the claimed work.',
+        outcome: 'restrict',
+        targets: scene.targets,
+      }),
     ).rejects.toThrow('temporary enforcement interruption')
     expect((await walkEnforcement(scene.noticeId)).blocked).toBe(true)
 

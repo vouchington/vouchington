@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestTerritorialRestrictionScene,
@@ -16,7 +17,6 @@ import {
   recordUkCopyrightReview,
   searchPendingCopyrightEnforcementAssessmentIds,
 } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
 const determine = {
   eu_dsa: recordEuCopyrightStatementOfReasons,
@@ -47,13 +47,11 @@ describe('territorial restriction commitment and enforcement', () => {
     '%s keeps a failed post-commit enforcement owed for the sweep',
     async jurisdiction => {
       const scene = await createTestTerritorialRestrictionScene(jurisdiction)
-      const interrupted = vi
-        .fn<typeof enforceCopyrightAssessment>()
-        .mockRejectedValueOnce(new Error('temporary enforcement interruption'))
+      interceptCopyrightImpositionForTest(scene.noticeId, async () => {
+        throw new Error('temporary enforcement interruption')
+      })
       await expect(
-        determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput(scene.targets), {
-          enforceAssessment: interrupted,
-        }),
+        determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput(scene.targets)),
       ).rejects.toThrow('temporary enforcement interruption')
       const decisions = await readTestTerritorialDecisions(scene.noticeId)
       expect(decisions).toHaveLength(1)
@@ -132,19 +130,15 @@ describe('territorial restriction commitment and enforcement', () => {
     '%s never imposes a second owed target after revoking the first restriction',
     async jurisdiction => {
       const scene = await createTestTerritorialRestrictionScene(jurisdiction, 2)
-      let attempts = 0
-      const enforceFirstThenInterrupt = async (assessmentId: string) =>
-        enforceCopyrightAssessment(assessmentId, {
-          imposeRestriction: async input => {
-            attempts++
-            if (attempts === 2) throw new Error('second target still owed')
-            return acceptCopyrightNoticeAndImposeRestriction(input)
-          },
-        })
+      interceptCopyrightImpositionForTest(
+        scene.noticeId,
+        async () => {
+          throw new Error('second target still owed')
+        },
+        2,
+      )
       await expect(
-        determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput(scene.targets), {
-          enforceAssessment: enforceFirstThenInterrupt,
-        }),
+        determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput(scene.targets)),
       ).rejects.toThrow('second target still owed')
       const decision = (await readTestTerritorialDecisions(scene.noticeId))[0]
       const assessmentId = decision?.copyright_notice_submission_assessment_identity_id

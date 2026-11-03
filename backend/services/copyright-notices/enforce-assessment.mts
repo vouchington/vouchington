@@ -5,7 +5,6 @@ import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
 type OwedTarget = { target_id: string; notice_id: string; imposed_by_id: string | null }
-type ImposeRestriction = typeof acceptCopyrightNoticeAndImposeRestriction
 
 /**
  * Restricts every target one current compliant notice assessment still owes. Each restriction
@@ -13,26 +12,15 @@ type ImposeRestriction = typeof acceptCopyrightNoticeAndImposeRestriction
  * authority never restricts. A failure leaves the remaining targets owed: the next call or sweep
  * pass recomputes them from the durable restrictions, so there is no claim to expire.
  */
-export async function enforceCopyrightAssessment(
-  assessmentId: string,
-  dependencies: { imposeRestriction?: ImposeRestriction } = {},
-): Promise<void> {
-  await imposeOwedTargets(
-    assessmentId,
-    await getAutomaticEnforcementSince(),
-    dependencies.imposeRestriction ?? acceptCopyrightNoticeAndImposeRestriction,
-  )
+export async function enforceCopyrightAssessment(assessmentId: string): Promise<void> {
+  await imposeOwedTargets(assessmentId, await getAutomaticEnforcementSince())
 }
 
-async function imposeOwedTargets(
-  assessmentId: string,
-  automaticSince: Date | null,
-  imposeRestriction: ImposeRestriction,
-): Promise<void> {
+async function imposeOwedTargets(assessmentId: string, automaticSince: Date | null): Promise<void> {
   const target = await readFirstOwedTarget(assessmentId, automaticSince)
   if (!target) return
   try {
-    await imposeRestriction({
+    await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: target.notice_id,
       targetId: target.target_id,
       assessmentId,
@@ -45,7 +33,7 @@ async function imposeOwedTargets(
     const stillOwed = await readFirstOwedTarget(assessmentId, automaticSince)
     if (stillOwed?.target_id === target.target_id) throw err
   }
-  await imposeOwedTargets(assessmentId, automaticSince, imposeRestriction)
+  await imposeOwedTargets(assessmentId, automaticSince)
 }
 
 async function readFirstOwedTarget(

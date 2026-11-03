@@ -1,5 +1,6 @@
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import {
   completeCopyrightMandatoryHumanReview,
   createCopyrightCounterNotice,
@@ -25,13 +26,13 @@ async function createFixture() {
 describe('copyright notice persistence', () => {
   it('recovers an owed restriction after a post-assessment failure', async () => {
     const { notice, noticeAssessment } = await createFixture()
-    const interrupted = vi
-      .fn<typeof acceptCopyrightNoticeAndImposeRestriction>()
-      .mockRejectedValueOnce(new Error('simulated worker interruption'))
+    interceptCopyrightImpositionForTest(notice.id, async () => {
+      throw new Error('simulated worker interruption')
+    })
 
-    await expect(
-      enforceCopyrightAssessment(noticeAssessment.id, { imposeRestriction: interrupted }),
-    ).rejects.toThrow('simulated worker interruption')
+    await expect(enforceCopyrightAssessment(noticeAssessment.id)).rejects.toThrow(
+      'simulated worker interruption',
+    )
     await expect(getCopyrightNoticePrivateAggregate(notice.id)).resolves.toEqual(
       expect.objectContaining({
         notice: expect.objectContaining({ accepted_at: null }),
