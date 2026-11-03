@@ -5437,6 +5437,10 @@
                         "has_related_posts": {
                           "type": "boolean"
                         },
+                        "has_hacker_news_references": {
+                          "type": "boolean",
+                          "description": "Only items whose URL is seen or mentioned on Hacker News (true) or not (false)."
+                        },
                         "media_types": {
                           "type": "array",
                           "items": {
@@ -6424,6 +6428,10 @@
                         "story_id": {
                           "type": "string",
                           "format": "uuid"
+                        },
+                        "has_hacker_news_references": {
+                          "type": "boolean",
+                          "description": "Only items whose URL is seen or mentioned on Hacker News (true) or not (false)."
                         },
                         "time_range": {
                           "type": "string",
