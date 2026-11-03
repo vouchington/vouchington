@@ -8,6 +8,7 @@ import { buildRssFeedSidecars, proxyRssFeedCoverArt } from '@services/rss-feeds'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { isAdminUser } from '@services/users'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
@@ -115,5 +116,6 @@ app.route('/api/v1/users/:idOrSlug/rss-feed-items/:listType').get(async (ctx: Co
       {},
       isAdminUser(resolved.currentUser) ? 'administrator' : 'public',
     ),
+    rss_feed_item_hacker_news_references: await getRssFeedItemHackerNewsSummaries(proxiedResults),
   })
 })

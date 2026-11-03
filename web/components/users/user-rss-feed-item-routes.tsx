@@ -39,6 +39,7 @@ export async function UserHiddenRssFeedItemsRoute({
         emptyDescription='There are no hidden RSS feed items to show.'
         thumbnailUrls={itemsData.rss_feed_item_thumbnail_url}
         embeds={itemsData.rss_feed_item_embeds}
+        hackerNewsReferences={itemsData.rss_feed_item_hacker_news_references}
         relationAction={await getOwnerRelationAction(
           idOrUsername,
           USER_RELATION_ACTIONS.rssFeedItem.hidden,
@@ -74,6 +75,7 @@ export async function UserSavedRssFeedItemsRoute({
       emptyDescription='There are no saved RSS feed items to show.'
       thumbnailUrls={itemsData.rss_feed_item_thumbnail_url}
       embeds={itemsData.rss_feed_item_embeds}
+      hackerNewsReferences={itemsData.rss_feed_item_hacker_news_references}
       relationAction={await getOwnerRelationAction(
         idOrUsername,
         USER_RELATION_ACTIONS.rssFeedItem.saved,
@@ -108,6 +110,7 @@ export async function UserViewedRssFeedItemsRoute({
       emptyDescription='There are no viewed RSS feed items to show.'
       thumbnailUrls={itemsData.rss_feed_item_thumbnail_url}
       embeds={itemsData.rss_feed_item_embeds}
+      hackerNewsReferences={itemsData.rss_feed_item_hacker_news_references}
     >
       <RssFeedItemModal
         pathname={modalPathname ?? createUserPathname(idOrUsername, '/rss-feed-items/viewed')}
