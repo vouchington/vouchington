@@ -5,6 +5,7 @@ import { selectExecutableEntrypoint } from '@modules/utils/executable-entrypoint
 /* v8 ignore start -- process entrypoint exercised by the compiled image smoke tests. */
 const ENTRYPOINTS: Record<string, () => Promise<unknown>> = {
   'migrate.mts': () => import('./migrate.mts'),
+  'schema-reset.mts': () => import('./schema-reset.mts'),
   'serve.mts': () => import('./serve.mts'),
   'valkey-admin.mts': () => import('./valkey-admin.mts'),
   'verify-ipv6-egress.mts': () => import('./verify-ipv6-egress.mts'),
