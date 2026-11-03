@@ -52,8 +52,5 @@ export function completionDependencies(
     requireUser: vi.fn<CompletionDependencies['requireUser']>(() =>
       user ? Promise.resolve(user) : Promise.reject(new Error('Unexpected completion user lookup')),
     ),
-    runConnectionEffects: vi.fn<CompletionDependencies['runConnectionEffects']>(() =>
-      Promise.resolve(),
-    ),
   }
 }

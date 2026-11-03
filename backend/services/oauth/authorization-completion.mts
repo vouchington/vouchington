@@ -18,7 +18,6 @@ type OAuthAuthorizationCompletionDependencies = {
   createFlowResult: typeof createOAuthFlowResultForUser
   enqueueFriendSync: typeof enqueueOAuthFriendSyncBestEffort
   requireUser: typeof requireCompletionUser
-  runConnectionEffects: typeof runOAuthAccountConnectionPostCommitEffects
 }
 
 const defaultDependencies: OAuthAuthorizationCompletionDependencies = {
@@ -27,7 +26,6 @@ const defaultDependencies: OAuthAuthorizationCompletionDependencies = {
   createFlowResult: createOAuthFlowResultForUser,
   enqueueFriendSync: enqueueOAuthFriendSyncBestEffort,
   requireUser: requireCompletionUser,
-  runConnectionEffects: runOAuthAccountConnectionPostCommitEffects,
 }
 
 export async function completeOAuthAuthorization(
@@ -50,11 +48,8 @@ export async function completeOAuthAuthorization(
       } catch (err) {
         reportPostCommitError(err)
       }
-      try {
-        await dependencies.runConnectionEffects(durableResult.userId)
-      } catch (err) {
-        reportPostCommitError(err)
-      }
+      // Reports its own failures, so it never rejects.
+      await runOAuthAccountConnectionPostCommitEffects(durableResult.userId)
       try {
         await dependencies.enqueueFriendSync(durableResult.provider, durableResult.account)
       } catch (err) {

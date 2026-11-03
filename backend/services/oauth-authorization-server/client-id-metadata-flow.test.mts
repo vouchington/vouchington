@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { expireTestClientIdMetadataClient } from '@voucha/test-helpers/data-stores/psql/oauth-client-metadata'
 import {
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
@@ -89,9 +90,10 @@ describe('Client ID Metadata Document OAuth flow', () => {
       state: randomBytes(12).toString('base64url'),
       userId: user.id,
     }
-    const validated = await validateOAuthAuthorizationRequest(parameters, {
-      safeFetch: async () => responseFor(clientId),
+    await resolveClientIdMetadataDocument(clientId, {
+      safeFetch: async () => responseFor(clientId, { 'cache-control': 'max-age=600' }),
     })
+    const validated = await validateOAuthAuthorizationRequest(parameters)
     const pending = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
     const bindingHash = createOAuthBrowserBindingHash(deviceId, sessionId)
     await expect(
@@ -143,15 +145,17 @@ describe('Client ID Metadata Document OAuth flow', () => {
       state: randomBytes(12).toString('base64url'),
       userId: user.id,
     }
-    const validated = await validateOAuthAuthorizationRequest(parameters, {
+    await resolveClientIdMetadataDocument(clientId, {
       safeFetch: async () =>
         responseFor(
           clientId,
-          { 'cache-control': 'max-age=0' },
+          { 'cache-control': 'max-age=600' },
           { scope: 'mcp.user:read mcp.user:write' },
         ),
     })
+    const validated = await validateOAuthAuthorizationRequest(parameters)
     const pending = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
+    await expireTestClientIdMetadataClient(clientId)
     await resolveClientIdMetadataDocument(clientId, {
       safeFetch: async () => responseFor(clientId, {}, { scope: 'mcp.user:read' }),
     })
@@ -166,13 +170,10 @@ describe('Client ID Metadata Document OAuth flow', () => {
     ).rejects.toMatchObject({ code: 'access_denied' })
   })
 
-  it('reuses one no-store metadata fetch when beginning an already validated request', async () => {
+  it('begins an already validated request from the stored client without refreshing it', async () => {
     const user = await createTestUserDirect()
     const clientId = randomMetadataUrl()
     const verifier = randomBytes(32).toString('base64url')
-    const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>(async () =>
-      responseFor(clientId, { 'cache-control': 'no-store' }),
-    )
     const parameters = {
       clientId,
       codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
@@ -183,14 +184,22 @@ describe('Client ID Metadata Document OAuth flow', () => {
       scope: 'mcp.user:read',
       state: randomBytes(12).toString('base64url'),
     }
-    const validated = await validateOAuthAuthorizationRequest(parameters, { safeFetch })
+    await resolveClientIdMetadataDocument(clientId, {
+      safeFetch: async () => responseFor(clientId, { 'cache-control': 'max-age=600' }),
+    })
+    const validated = await validateOAuthAuthorizationRequest(parameters)
+    await expireTestClientIdMetadataClient(clientId)
 
-    await beginValidatedOAuthAuthorizationRequest(
-      { deviceId: uuidv7(), sessionId: uuidv7(), userId: user.id },
-      validated,
-    )
+    await expect(
+      beginValidatedOAuthAuthorizationRequest(
+        { deviceId: uuidv7(), sessionId: uuidv7(), userId: user.id },
+        validated,
+      ),
+    ).resolves.toEqual({ request_id: expect.any(String) })
 
-    expect(safeFetch).toHaveBeenCalledOnce()
+    const stored = await getOAuthClient(clientId)
+    expect(stored?.metadata_refresh_generation).toBe(validated.client.metadata_refresh_generation)
+    expect(stored?.metadata_refreshed_at).toEqual(validated.client.metadata_refreshed_at)
   })
 
   it('keeps errors local even for a cached external document client', async () => {
@@ -225,26 +234,25 @@ describe('Client ID Metadata Document OAuth flow', () => {
   it('keeps authorization errors local when cached metadata has expired', async () => {
     const clientId = randomMetadataUrl()
     const verifier = randomBytes(32).toString('base64url')
-    const safeFetch: ClientIdMetadataDependencies['safeFetch'] = async () =>
-      responseFor(clientId, { 'cache-control': 'max-age=0' })
+    await resolveClientIdMetadataDocument(clientId, {
+      safeFetch: async () => responseFor(clientId, { 'cache-control': 'max-age=600' }),
+    })
     await expect(
-      validateOAuthAuthorizationRequest(
-        {
-          clientId,
-          codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
-          codeChallengeMethod: 'S256',
-          redirectUri: 'https://app.example/oauth/callback',
-          resource: getOAuthResourceUrl('user'),
-          responseType: 'code',
-          scope: 'mcp.user:read',
-          state: 'opaque-state',
-        },
-        { safeFetch },
-      ),
+      validateOAuthAuthorizationRequest({
+        clientId,
+        codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
+        codeChallengeMethod: 'S256',
+        redirectUri: 'https://app.example/oauth/callback',
+        resource: getOAuthResourceUrl('user'),
+        responseType: 'code',
+        scope: 'mcp.user:read',
+        state: 'opaque-state',
+      }),
     ).rejects.toMatchObject({
       code: 'invalid_request',
       message: 'redirect_uri is not registered for this client',
     })
+    await expireTestClientIdMetadataClient(clientId)
     const redirectInput = {
       clientId,
       redirectUri: 'https://app.example:443/oauth/callback',

@@ -9,6 +9,7 @@ import {
   insertCompletionReadyAuthorization,
   registerCleanup,
 } from '@voucha/test-helpers/services/oauth/authorization-completion'
+import { readOwnedVoteWeightRecalculationJobs } from '@voucha/test-helpers/vote-weight-dirty-marker'
 import { completionDependencies } from '@voucha/test-helpers/oauth-completion-fixtures'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
 import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
@@ -46,6 +47,7 @@ describe('already-linked OAuth connection completion', () => {
       deviceId: actor.session.did,
       sessionId: actor.session.sid,
     }
+    const jobsBefore = await readOwnedVoteWeightRecalculationJobs(user.id)
     await expect(completeOAuthAuthorization(options, dependencies)).resolves.toMatchObject({
       status: 'connected',
     })
@@ -61,7 +63,7 @@ describe('already-linked OAuth connection completion', () => {
       (await getActiveTestUserSessions(user.id)).map(session => session.id).toSorted(),
     ).toEqual([actor.session.sid, other.session.sid].toSorted())
     expect(dependencies.notifyAccountSecurityChange).not.toHaveBeenCalled()
-    expect(dependencies.runConnectionEffects).not.toHaveBeenCalled()
+    expect(await readOwnedVoteWeightRecalculationJobs(user.id)).toEqual(jobsBefore)
     expect(dependencies.enqueueFriendSync).not.toHaveBeenCalled()
   })
 })

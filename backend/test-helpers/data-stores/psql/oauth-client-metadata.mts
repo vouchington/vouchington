@@ -30,6 +30,16 @@ export async function testOAuthClientExists(clientId: string): Promise<boolean> 
   return result.rows[0]?.exists ?? false
 }
 
+/** Makes one cached metadata client stale so the next resolution refreshes it. */
+export async function expireTestClientIdMetadataClient(clientId: string): Promise<void> {
+  await write(
+    `/* expireTestClientIdMetadataClient */ UPDATE oauth_clients
+     SET metadata_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second'
+     WHERE client_id = $1 AND metadata_url = $1`,
+    [clientId],
+  )
+}
+
 export async function revokeTestOAuthClient(clientId: string): Promise<void> {
   await write(
     `/* revokeTestOAuthClient */ UPDATE oauth_clients

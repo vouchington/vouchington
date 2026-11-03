@@ -55,7 +55,7 @@ app.route('/authorize').get(async (ctx: Context) => {
       scope: ctx.query.scope,
       state: ctx.query.state,
     }
-    const validated = await validateOAuthAuthorizationRequest(parameters, {}, client => {
+    const validated = await validateOAuthAuthorizationRequest(parameters, client => {
       errorRedirectClient = client
     })
     if (!currentUser) {
