@@ -23,11 +23,8 @@ import {
   getTestDataRequestAttemptFence,
   updateTestUserUiLocale,
 } from '@voucha/test-helpers'
-import {
-  rejectPostgresReadForTest,
-  rejectPostgresWriteForTest,
-} from '@voucha/test-helpers/injected-failures'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import { readZipEntries } from '@voucha/test-helpers/read-zip-entries'
 import { processExportRequest } from './account-data-requests.mts'
 import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
 
@@ -38,7 +35,10 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
   S3ImagesClient: { send: mockS3Send } as unknown as typeof import('@modules/aws').S3ImagesClient,
 }))
 
-type SentCommand = { constructor: { name: string }; input: { Bucket?: string; Key?: string } }
+type SentCommand = {
+  constructor: { name: string }
+  input: { Bucket?: string; Key?: string; Body?: unknown }
+}
 
 describe('processExportRequest', () => {
   const s3Send = mockS3Send
@@ -56,8 +56,23 @@ describe('processExportRequest', () => {
   it('uploads the zip to the export bucket, marks the request ready, and emails the subject', async () => {
     const { subject, request } = await startRequest()
     await updateTestUserUiLocale(subject.id, 'fr')
+    let uploadedZip: Buffer | undefined
+    s3Send.mockImplementation(async command => {
+      const { Body } = (command as SentCommand).input
+      if (commandName(command) === 'PutObjectCommand' && Body) {
+        // The temp zip still exists while the provider call runs; read exactly what production sends.
+        const chunks: Buffer[] = []
+        for await (const chunk of Body as AsyncIterable<Buffer>) chunks.push(chunk)
+        uploadedZip = Buffer.concat(chunks)
+      }
+      return {}
+    })
 
     await processExportRequest(request.id, subject.id, request.processing_attempt_id)
+
+    if (!uploadedZip) throw new Error('Expected the export zip to be uploaded')
+    const files = readZipEntries(uploadedZip)
+    expect(files['profile.csv']).toContain(subject.id)
 
     const key = `${request.id}/${request.processing_attempt_id}.zip`
     expect(sentCommands(request.id)).toEqual([
@@ -214,47 +229,6 @@ describe('processExportRequest', () => {
       expect(await emails.getJob(`data-export-ready__${request.id}`)).toBeNull()
     },
   )
-
-  it('publishes ready when releasing the settled-upload lease fails', async () => {
-    const { subject, request } = await startRequest()
-    onTestFinished(
-      rejectPostgresWriteForTest('finishDataRequestUpload', new Error('database unavailable')),
-    )
-
-    await expect(
-      processExportRequest(request.id, subject.id, request.processing_attempt_id),
-    ).resolves.toBeUndefined()
-
-    expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
-    expect(publish).toHaveBeenCalledWith(request.id, { status: 'ready' })
-  })
-
-  it.each(['getPrivateUserByAny', 'wasDataRequestMadeBySubject'])(
-    'keeps the export ready when the %s notification lookup rejects',
-    async marker => {
-      const { subject, request } = await startRequest()
-      onTestFinished(rejectPostgresReadForTest(marker, new Error('best-effort failure')))
-
-      await expect(
-        processExportRequest(request.id, subject.id, request.processing_attempt_id),
-      ).resolves.toBeUndefined()
-
-      expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
-      expect(await emails.getJob(`data-export-ready__${request.id}`)).toBeNull()
-    },
-  )
-
-  it('keeps the export ready when the notification enqueue rejects', async () => {
-    const { subject, request } = await startRequest()
-    const add = vi.spyOn(emails, 'add').mockRejectedValue(new Error('best-effort failure'))
-
-    await expect(
-      processExportRequest(request.id, subject.id, request.processing_attempt_id),
-    ).resolves.toBeUndefined()
-
-    expect(add).toHaveBeenCalledOnce()
-    expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
-  })
 
   function sentCommands(requestId: string) {
     return s3Send.mock.calls

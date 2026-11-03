@@ -115,7 +115,8 @@ describe('user-deletions processor', () => {
 
     const advanced = await getUserDeletionRequestForTest(request.id)
     expect(advanced?.processingAttempts).toBe(1)
-    expect(advanced?.currentPhase).not.toBe('posts')
+    expect(advanced?.currentPhase).toBe('votes')
+    expect(advanced?.processingAttemptId).not.toBe(request.processingAttemptId)
     const successor = await accountLifecycle.getJob(
       `user-deletion__${request.id}__${advanced?.processingAttemptId}`,
     )
@@ -125,24 +126,15 @@ describe('user-deletions processor', () => {
     })
   })
 
-  it.each([
-    { isFinalAttempt: true, rotatesToken: true },
-    { isFinalAttempt: false, rotatesToken: false },
-  ])(
-    'passes isFinalAttempt=$isFinalAttempt to the failed-attempt release',
-    async ({ isFinalAttempt, rotatesToken }) => {
-      const user = await createTestUser()
-      const request = await createUserDeletionRequest(user.id, user.id)
-      onTestFinished(rejectNextPostgresTransactionForTest(new Error('provider unavailable')))
+  it('rotates the processing attempt when the failed attempt is final', async () => {
+    const { request, released } = await failFirstTransaction(true)
+    expect(released?.processingAttemptId).not.toBe(request.processingAttemptId)
+  })
 
-      await expect(
-        processUserDeletion(request.id, request.processingAttemptId, { isFinalAttempt }),
-      ).rejects.toThrow('provider unavailable')
-
-      const released = await getUserDeletionRequestForTest(request.id)
-      expect(released?.processingAttemptId === request.processingAttemptId).toBe(!rotatesToken)
-    },
-  )
+  it('keeps the processing attempt when the failed attempt is not final', async () => {
+    const { request, released } = await failFirstTransaction(false)
+    expect(released?.processingAttemptId).toBe(request.processingAttemptId)
+  })
 
   it('recovers durable requests and enqueues their recoverable attempts', async () => {
     const user = await createTestUser()
@@ -181,4 +173,16 @@ function job(
   attempts = 3,
 ): Job {
   return { name, data, attemptsMade, opts: { attempts } } as Job
+}
+
+async function failFirstTransaction(isFinalAttempt: boolean) {
+  const user = await createTestUser()
+  const request = await createUserDeletionRequest(user.id, user.id)
+  onTestFinished(rejectNextPostgresTransactionForTest(new Error('provider unavailable')))
+
+  await expect(
+    processUserDeletion(request.id, request.processingAttemptId, { isFinalAttempt }),
+  ).rejects.toThrow('provider unavailable')
+
+  return { request, released: await getUserDeletionRequestForTest(request.id) }
 }
