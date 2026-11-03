@@ -75,7 +75,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
     // The dispatcher scans every hostname in id order, so an earliest-possible id keeps this fixture first.
     const hostnameId = await insertTestUrlHostname({
       id: getMinUUIDv7ForDate(
-        new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 3), 16)),
+        new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
       ),
       hostname,
     })
