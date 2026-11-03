@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
 import {
   claimRecoverableDataRequests,
@@ -6,6 +6,7 @@ import {
   getDataRequestById,
 } from '@services/account-data-requests'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import {
   ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
@@ -36,18 +37,11 @@ describe('processAccountDataRequestJob', () => {
   })
 
   it('routes a recovery job to the recovery sweep', async () => {
-    const user = await createTestUser()
-    const request = await createDataRequest(user.id, user.id)
-    await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
+    onTestFinished(rejectNextPostgresTransactionForTest(new Error('recovery sweep reached')))
 
-    await processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name))
-
-    const queued = await accountLifecycle.getJob(exportJobId(request))
-    expect(queued?.data).toEqual({
-      requestId: request.id,
-      userId: user.id,
-      processingAttemptId: request.processing_attempt_id,
-    })
+    await expect(
+      processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name)),
+    ).rejects.toThrow('recovery sweep reached')
   })
 })
 

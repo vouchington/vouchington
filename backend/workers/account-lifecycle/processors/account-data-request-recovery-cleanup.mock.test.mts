@@ -12,6 +12,7 @@ import {
   expireUserDataRequestForTest,
   getUserDataRequestStatusAndS3KeyForTest,
 } from '@voucha/test-helpers'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { dataRequestPubSub } from '@data-stores/valkey-pubsub'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -97,19 +98,18 @@ describe('processCleanupExpiredExports', () => {
 
 describe('processAccountDataRequestJob cleanup', () => {
   it('routes a cleanup job to the expiry sweep', async () => {
-    mockS3Send.mockReset()
-    mockS3Send.mockResolvedValue({})
-    const requests = await createExpiredRequests(1)
+    onTestFinished(
+      rejectPostgresWriteForTest('expireDataRequests', new Error('expiry sweep reached')),
+    )
 
-    await processAccountDataRequestJob({
-      name: ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name,
-      data: {},
-      attemptsMade: 0,
-      opts: {},
-    } as Job)
-
-    expect(deletedKeys(requests)).toEqual([keyOf(requests[0]!)])
-    expect(await statuses(requests)).toEqual([{ status: 'expired', s3_key: null }])
+    await expect(
+      processAccountDataRequestJob({
+        name: ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name,
+        data: {},
+        attemptsMade: 0,
+        opts: {},
+      } as Job),
+    ).rejects.toThrow('expiry sweep reached')
   })
 })
 

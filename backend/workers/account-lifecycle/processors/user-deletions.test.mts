@@ -3,7 +3,10 @@ import type { Job } from 'glide-mq'
 import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { createTestUser } from '@voucha/test-helpers'
-import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  rejectNextPostgresTransactionForTest,
+  rejectPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
 import {
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
@@ -68,19 +71,16 @@ describe('user-deletions processor', () => {
   })
 
   it('routes a recovery job to the recovery sweep', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
-
-    await processUserDeletionJob(job(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name))
-
-    const queued = await accountLifecycle.getJob(
-      `user-deletion__${request.id}__${request.processingAttemptId}`,
+    onTestFinished(
+      rejectPostgresWriteForTest(
+        'claimRecoverableUserDeletions',
+        new Error('recovery sweep reached'),
+      ),
     )
-    expect(queued?.data).toEqual({
-      requestId: request.id,
-      processingAttemptId: request.processingAttemptId,
-    })
+
+    await expect(
+      processUserDeletionJob(job(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name)),
+    ).rejects.toThrow('recovery sweep reached')
   })
 
   it('recovers durable requests and enqueues their recoverable attempts', async () => {
