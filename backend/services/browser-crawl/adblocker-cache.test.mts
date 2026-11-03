@@ -85,6 +85,7 @@ describe('adblocker fetch failures', () => {
   let f: Fresh
 
   afterEach(() => {
+    vi.useRealTimers()
     delete process.env.LIGHTPANDA_CDP_URL
     delete process.env.LIGHTPANDA_TOKEN
   })
@@ -124,9 +125,6 @@ describe('adblocker fetch failures', () => {
   it('returns null when the adblocker download reaches its 30s timeout', async () => {
     f = await loadFreshCrawl()
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
     // The timeout timer is registered synchronously right after this stub returns, so advancing
     // from a microtask fires it with no real waiting.
     f.download.mockImplementation(() => {
