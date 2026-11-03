@@ -51,11 +51,9 @@ describe('rss feed item category processors', () => {
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item!.id, categories: [slug] }])
     const topic = await createTestTopic({ slug, name: slug })
 
-    await expect(processBackfillCategoriesForTopicAliases({ topicId: topic.id })).resolves.toEqual({
-      updated: 1,
-      hasMore: true,
-      cursor: expect.any(Object),
-    })
+    const result = await processBackfillCategoriesForTopicAliases({ topicId: topic.id })
+    expect(result).toMatchObject({ updated: 1, hasMore: true })
+    expect(result.cursor).not.toBeNull()
 
     const jobs = await rssFeedMaintenance.searchJobs({
       name: 'processBackfillCategoriesForTopicAliases',
@@ -65,7 +63,7 @@ describe('rss feed item category processors', () => {
       await Promise.all(jobs.map(job => job.remove()))
     })
     expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.data).toEqual({ topicId: topic.id, cursor: expect.any(Object) })
+    expect(jobs[0]!.data).toEqual({ topicId: topic.id, cursor: result.cursor })
     expect(
       (await getTestRssFeedItemCategories(item!.id)).find(row => row.category_text === slug)
         ?.topic_id,
@@ -78,9 +76,9 @@ describe('rss feed item category processors', () => {
     await upsertRssFeedCategories(feed.id, [slug])
     const topic = await createTestTopic({ slug, name: slug })
 
-    await expect(
-      processBackfillRssFeedCategoriesForTopicAlias({ topicId: topic.id }),
-    ).resolves.toMatchObject({ updated: 1 })
+    const result = await processBackfillRssFeedCategoriesForTopicAlias({ topicId: topic.id })
+    expect(result).toMatchObject({ updated: 1, hasMore: true })
+    expect(result.cursor).not.toBeNull()
 
     const jobs = await rssFeedMaintenance.searchJobs({
       name: 'processBackfillRssFeedCategoriesForTopicAlias',
@@ -89,7 +87,7 @@ describe('rss feed item category processors', () => {
     onTestFinished(async () => {
       await Promise.all(jobs.map(job => job.remove()))
     })
-    expect(jobs).toHaveLength(1)
+    expect(jobs.map(job => job.data)).toEqual([{ topicId: topic.id, cursor: result.cursor }])
     expect(
       (await getRssFeedCategories(feed.id)).find(row => row.category_text === slug)?.topic_id,
     ).toBe(topic.id)

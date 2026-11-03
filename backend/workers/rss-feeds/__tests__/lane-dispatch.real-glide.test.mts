@@ -93,6 +93,14 @@ describe('rss feed tier lane dispatch', () => {
           (row.data as { rssFeedId: string }).rssFeedId === newerId,
       )
       if (due.length !== 1) throw new Error('the newer due feed must consume the single run slot')
+      const hotTierJob = {
+        1: { priority: 1, ttl: 5 * 60_000 },
+        2: { priority: 3, ttl: 15 * 60_000 },
+        3: { priority: 7, ttl: 60 * 60_000 },
+        4: { priority: 12, ttl: 2 * 60 * 60_000 },
+      }[newerTier as 1 | 2 | 3 | 4]
+      expect(due[0]!.opts.priority).toBe(hotTierJob.priority)
+      expect((due[0]!.data as { ttl?: number }).ttl).toBe(hotTierJob.ttl)
     } finally {
       restorePage()
       restoreBudget()

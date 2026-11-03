@@ -1,6 +1,6 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestPost,
   createTestUser,
@@ -33,10 +33,6 @@ async function ownedMappingJobs(aliasId: string) {
 }
 
 describe('topic-aliases processors', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('processTopicAliasesUpdate resolves without error for unknown topic', async () => {
     // Non-existent topicId: UPDATE queries affect 0 rows; backfill returns 0.
     await expect(
@@ -107,19 +103,28 @@ describe('topic-aliases processors', () => {
     const topic = await createTestTopic({ slug: `mapping-${randomUUID()}` })
     const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
 
-    let pagesWithMore = 0
-    let result = { reconciled: 0, updated: 0, hasMore: true }
-    for (let page = 0; page < 5 && result.hasMore; page += 1) {
-      result = await processReconcileTopicAliasCategoryMappings({ topicAliasIds: [alias!.id] })
-      if (result.hasMore) pagesWithMore += 1
-    }
+    const data = { topicAliasIds: [alias!.id] }
+    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+      reconciled: 0,
+      updated: 0,
+      hasMore: true,
+    })
+    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+      reconciled: 0,
+      updated: 0,
+      hasMore: true,
+    })
+    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+      reconciled: 1,
+      updated: 0,
+      hasMore: false,
+    })
 
     const jobs = await ownedMappingJobs(alias!.id)
     onTestFinished(async () => {
       await Promise.all(jobs.map(job => job.remove()))
     })
-    expect(result).toEqual({ reconciled: 1, updated: 0, hasMore: false })
-    expect(jobs).toHaveLength(pagesWithMore)
+    expect(jobs.map(job => job.data)).toEqual([data, data])
     expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeUndefined()
   })
 
