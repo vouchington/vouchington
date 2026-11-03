@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { createClassifierRunSweepScope } from '@voucha/test-helpers/classifier-run-worker'
 import {
   autotaggerDispatcherJobFor,
@@ -132,16 +133,10 @@ describe('C6 recovery sweep: request discovery', () => {
 
   it('stops before dispatching anything while the provider spend cap is breached', async () => {
     const fixture = await requested(await createAutotaggerPostFixture())
-    const breached = {
-      evaluateSpendCap: async () => ({
-        reason: 'cap_exceeded' as const,
-        dailyCapMicrounits: 1,
-        day: '2026-09-30',
-        totalMicrounits: 2,
-      }),
-    }
 
-    await expect(sweep(requests, breached)).resolves.toEqual({ kind: 'spend-cap-breach' })
+    await withReservedAiUsageDay(0, async () => {
+      await expect(sweep(requests)).resolves.toEqual({ kind: 'spend-cap-breach' })
+    })
 
     expect(await readClassifierRunDispatcherJobsForTest(fixture.post.id)).toEqual([])
   })

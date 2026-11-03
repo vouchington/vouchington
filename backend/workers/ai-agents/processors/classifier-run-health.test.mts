@@ -4,6 +4,7 @@ import {
   CLASSIFIER_TERMINAL_FAILURE_ALARM_COUNT,
   CLASSIFIER_UNREQUESTED_GRACE_MS,
 } from '@services/classifier-runs'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import {
@@ -213,15 +214,6 @@ describe('classifier receipt health alarms: the scheduled recovery tick (real PG
   )
   const tick = (data = {}, overrides = {}) =>
     processReconcileClassifierRuns(data, scope.dependencies({ readHealth, ...overrides }))
-  const breached = {
-    evaluateSpendCap: async () => ({
-      reason: 'cap_exceeded' as const,
-      dailyCapMicrounits: 1,
-      day: '2026-09-30',
-      totalMicrounits: 2,
-    }),
-  }
-
   let release: (() => Promise<void>) | undefined
   beforeAll(async () => {
     release = await initializePostClassifierExecutionTests()
@@ -239,7 +231,9 @@ describe('classifier receipt health alarms: the scheduled recovery tick (real PG
   })
 
   it('still reads it while the spend cap parks the queue, so a parked backlog is seen', async () => {
-    await expect(tick({}, breached)).resolves.toEqual({ kind: 'spend-cap-breach' })
+    await withReservedAiUsageDay(0, async () => {
+      await expect(tick({})).resolves.toEqual({ kind: 'spend-cap-breach' })
+    })
 
     expect(readHealth).toHaveBeenCalledOnce()
   })
