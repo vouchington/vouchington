@@ -6,18 +6,8 @@ import { getUserIdsBlockedOrMutedEitherWay } from '@services/entity-relations'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
 import type { CreatedNotification } from '@services/notifications/reconcile-batches'
 
-type Dependencies = {
-  enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
-}
-
-async function dispatchPushes(
-  created: CreatedNotification[],
-  dependencies?: Partial<Dependencies>,
-): Promise<void> {
-  const enqueue =
-    dependencies?.enqueueBulkDeliverNotificationPushIntents ??
-    enqueueBulkDeliverNotificationPushIntents
-  await enqueue(
+async function dispatchPushes(created: CreatedNotification[]): Promise<void> {
+  await enqueueBulkDeliverNotificationPushIntents(
     created.map(notification => ({
       userId: notification.user_id,
       notificationId: notification.id,
@@ -25,14 +15,11 @@ async function dispatchPushes(
   )
 }
 
-export async function processConversationMessageNotification(
-  data: {
-    conversationId: string
-    messageId: string
-    senderId: string
-  },
-  dependencies?: Partial<Dependencies>,
-) {
+export async function processConversationMessageNotification(data: {
+  conversationId: string
+  messageId: string
+  senderId: string
+}) {
   const context = await getConversationNotificationContext(data.conversationId, data.senderId)
   if (!context) return
 
@@ -44,7 +31,7 @@ export async function processConversationMessageNotification(
   }
 
   if (eligibleUserIds.length === 0) {
-    await dispatchPushes([], dependencies)
+    await dispatchPushes([])
     return
   }
   let allCreated: CreatedNotification[]
@@ -67,5 +54,5 @@ export async function processConversationMessageNotification(
     default:
       throw new UnrecoverableError(`unknown channel_type: ${String(context.channel_type)}`)
   }
-  await dispatchPushes(allCreated, dependencies)
+  await dispatchPushes(allCreated)
 }

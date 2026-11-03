@@ -4,7 +4,6 @@ import webpush from 'web-push'
 import {
   processReconcilePostNotifications,
   processReconcileRssFeedItemNotifications,
-  processConversationMessageNotification,
   processDeliverNotificationPushIntent,
   processReconcileNotificationPushIntents,
   processFollowNotification,
@@ -17,15 +16,7 @@ import type {
   enqueueDeliverNotificationPushIntent,
 } from '@queues/notifications/enqueues'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
-import {
-  createTestUser,
-  createTestUserDirect,
-  createTestDirectConversation,
-  insertTestCommunity,
-  insertTestCommunityMember,
-  insertTestBlock,
-} from '@voucha/test-helpers'
-import { openModmailThread } from '@services/modmail/threads'
+import { createTestUser, createTestUserDirect, insertTestBlock } from '@voucha/test-helpers'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { listNotifications } from '@services/notifications/list'
 
@@ -34,68 +25,6 @@ const mockReconcileNotificationsForRssFeedItem =
   vi.fn<typeof reconcileNotificationsForRssFeedItem>()
 const mockEnqueueBulkDeliverNotificationPushIntents =
   vi.fn<typeof enqueueBulkDeliverNotificationPushIntents>()
-describe('processConversationMessageNotification', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockEnqueueBulkDeliverNotificationPushIntents.mockResolvedValue(undefined)
-  })
-
-  it('returns early and does not enqueue when conversation does not exist', async () => {
-    await runConversationMessageNotification({
-      conversationId: '00000000-0000-7000-8000-000000000001',
-      messageId: 'msg-1',
-      senderId: '00000000-0000-7000-8000-000000000002',
-    })
-
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).not.toHaveBeenCalled()
-  })
-
-  it('creates DM notification for recipient and enqueues push delivery (real DB)', async () => {
-    const sender = await createTestUser()
-    const recipient = await createTestUser()
-    const conversation = await createTestDirectConversation({
-      user1Id: sender.id,
-      user2Id: recipient.id,
-    })
-
-    await runConversationMessageNotification({
-      conversationId: conversation.id,
-      messageId: 'msg-dm-1',
-      senderId: sender.id,
-    })
-
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).toHaveBeenCalled()
-    const allArgs = mockEnqueueBulkDeliverNotificationPushIntents.mock.calls.flat(2) as Array<{
-      userId: string
-    }>
-    const userIds = allArgs.map(a => a.userId)
-    expect(userIds).toContain(recipient.id)
-    expect(userIds).not.toContain(sender.id)
-  })
-
-  it('creates modmail notification for subject user and enqueues push delivery (real DB)', async () => {
-    const owner = await createTestUser()
-    const subject = await createTestUser()
-    const community = await insertTestCommunity({ createdById: owner.id })
-    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
-    const thread = await openModmailThread(subject.id, community.id, subject.id)
-
-    await runConversationMessageNotification({
-      conversationId: thread.id,
-      messageId: 'msg-mod-1',
-      senderId: owner.id,
-    })
-
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).toHaveBeenCalled()
-    const allArgs = mockEnqueueBulkDeliverNotificationPushIntents.mock.calls.flat(2) as Array<{
-      userId: string
-    }>
-    const userIds = allArgs.map(a => a.userId)
-    expect(userIds).toContain(subject.id)
-    expect(userIds).not.toContain(owner.id)
-  })
-})
-
 describe('processFollowNotification', () => {
   it('does not notify a user blocked by the follower', async () => {
     const followee = await createTestUser()
@@ -260,16 +189,6 @@ describe('notification push-intent recovery', () => {
     })
   })
 })
-function runConversationMessageNotification(data: {
-  conversationId: string
-  messageId: string
-  senderId: string
-}) {
-  return processConversationMessageNotification(data, {
-    enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
-  })
-}
-
 function runReconcilePostNotifications(data: { postId: string; afterUserId?: string }) {
   return processReconcilePostNotifications(data, {
     enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
