@@ -4,6 +4,7 @@ import {
   createTestPost,
   createTestUrlWithHostname,
   createTestUser,
+  insertHackerNewsReferencesForTest,
   insertTestRssFeed,
   insertTestRssFeedItem,
   insertTestTopic,
@@ -11,7 +12,6 @@ import {
 import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
 import { getPostIds } from '../posts/search/get-ids.mts'
 import { searchRssFeedItems } from '../rss-feed-items/search.mts'
-import { replaceHackerNewsReferences } from './hacker-news-references-write.mts'
 import {
   getPostHackerNewsDetails,
   getRssFeedItemHackerNewsSummaries,
@@ -21,8 +21,6 @@ const lookup = (url_id: string, story_count: number, comment_count: number) => (
   url_id,
   story_count,
   comment_count,
-  stories: [],
-  comments: [],
 })
 
 describe('has_hacker_news_references', () => {
@@ -50,7 +48,10 @@ describe('has_hacker_news_references', () => {
         }),
       ),
     )
-    await replaceHackerNewsReferences([lookup(seenUrl, 1, 0), lookup(plainUrl, 0, 0)])
+    await Promise.all([
+      insertHackerNewsReferencesForTest(lookup(seenUrl, 1, 0)),
+      insertHackerNewsReferencesForTest(lookup(plainUrl, 0, 0)),
+    ])
 
     const withRefs = await searchRssFeedItems({
       rss_feed_ids: [feedId],
@@ -82,7 +83,10 @@ describe('has_hacker_news_references', () => {
     ])
     await createEntityRelationWithElection(viaRelation.id, relatedUrl, user!.id, 1)
     await createEntityRelationWithElection(unrelated.id, otherUrl, user!.id, 1)
-    await replaceHackerNewsReferences([lookup(relatedUrl, 0, 2), lookup(otherUrl, 0, 0)])
+    await Promise.all([
+      insertHackerNewsReferencesForTest(lookup(relatedUrl, 0, 2)),
+      insertHackerNewsReferencesForTest(lookup(otherUrl, 0, 0)),
+    ])
 
     const page = await getPostIds(undefined, {
       user_id: user!.id,

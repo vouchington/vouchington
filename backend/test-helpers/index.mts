@@ -96,6 +96,10 @@ export {
   countEnabledRssFeedsForTest,
   getRssFeedItemTitleByGuidForTest,
 } from './sql-rss-feeds.mts'
+export {
+  insertHackerNewsReferencesForTest,
+  type SeedHackerNewsReferences,
+} from './hacker-news-references.mts'
 export { getPublicBaseTableNamesForTest } from './sql-postgres.mts'
 export {
   getPostShareRecipientIdsForTest,

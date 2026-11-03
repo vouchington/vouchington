@@ -119,12 +119,3 @@ export async function getHackerNewsDetailsByEntity(
     HackerNewsReferenceDetail
   >
 }
-
-/** Detail for one entity: a thin wrapper over the batch read. */
-export async function getHackerNewsDetailForUrlIds(
-  urlIds: readonly string[],
-  options: QueryOptions = {},
-): Promise<HackerNewsReferenceDetail | null> {
-  const details = await getHackerNewsDetailsByEntity({ entity: urlIds }, options)
-  return details.entity ?? null
-}
