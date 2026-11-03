@@ -65,7 +65,6 @@ export async function processSpendCapRecheckJob(job: Job<SpendCapRecheckJobData>
     day,
     lease,
     ai_agents,
-    undefined,
     job.data.cursor ?? '0',
     Date.now() >= dayEnd,
   )

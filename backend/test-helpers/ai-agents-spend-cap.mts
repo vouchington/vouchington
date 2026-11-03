@@ -102,3 +102,26 @@ export function rejectRegistryScriptsForTest() {
   })
   return invokeScript
 }
+
+type RegistryScriptOptions = { keys?: unknown[]; args?: unknown[] } | undefined
+
+/**
+ * Runs the real registry scripts but reports each invocation's options first, so a test can read
+ * the exact keys and args production sent, or change state between classification and promotion.
+ */
+export function interceptRegistryScriptsForTest(
+  before: (options: RegistryScriptOptions) => Promise<void> | void,
+) {
+  const prototype = commandClientPrototype()
+  const realInvokeScript = prototype.invokeScript
+  const invokeScript = vi
+    .spyOn(prototype, 'invokeScript')
+    .mockImplementation(async function (this: unknown, ...args: unknown[]) {
+      await before(args[1] as RegistryScriptOptions)
+      return realInvokeScript.apply(this, args)
+    })
+  onTestFinished(() => {
+    invokeScript.mockRestore()
+  })
+  return invokeScript
+}

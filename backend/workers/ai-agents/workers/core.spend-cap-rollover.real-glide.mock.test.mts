@@ -200,7 +200,7 @@ describe('daily AI spend-cap rollover with real GlideMQ', () => {
       if (!lease) throw new Error('Expected release lease')
 
       await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', false),
+        releaseSpendCapDelayedJobs(day, lease, queue, '0', false),
       ).resolves.toEqual({
         released: 0,
         hasPending: true,
@@ -209,7 +209,7 @@ describe('daily AI spend-cap rollover with real GlideMQ', () => {
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(5)
 
       await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', true),
+        releaseSpendCapDelayedJobs(day, lease, queue, '0', true),
       ).resolves.toEqual({
         released: 0,
         hasPending: false,
@@ -248,12 +248,12 @@ describe('daily AI spend-cap rollover with real GlideMQ', () => {
       if (!lease) throw new Error('Expected release lease')
 
       await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', false),
+        releaseSpendCapDelayedJobs(day, lease, queue, '0', false),
       ).resolves.toEqual({ released: 0, hasPending: true, cursor: '0' })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(5)
 
       await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', true),
+        releaseSpendCapDelayedJobs(day, lease, queue, '0', true),
       ).resolves.toEqual({ released: 0, hasPending: false, cursor: '0' })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(3)
     } finally {
