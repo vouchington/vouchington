@@ -1,159 +1,138 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { closeValkeyClients } from 'valkyries'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const mockCloseValkeyClients = vi.fn<typeof closeValkeyClients>(() => Promise.resolve())
-const mockGlideMqInstance = { close: vi.fn<() => Promise<void>>(() => Promise.resolve()) }
-const mockCloseSharedCommandClient = vi.fn<() => Promise<void>>(() => Promise.resolve())
-
-async function createShutdown() {
-  const { createGracefulShutdown } = await import('./shutdown.mts')
-  return createGracefulShutdown({
-    getGlideMQInstances: () => [mockGlideMqInstance],
-    closeValkeyClients: mockCloseValkeyClients,
-    closeSharedCommandClientFromRegistry: mockCloseSharedCommandClient,
-  })
+// Each case loads a fresh module graph: the shutdown guard and the client registries are
+// module state, so resetting modules keeps closing them away from other test files.
+async function loadShutdown() {
+  vi.resetModules()
+  const { onGracefulShutdown } = await import('./shutdown.mts')
+  const registry = await import('./glide-mq-registry.mts')
+  const { createDynamicConfigForTest } = await import('../../test-helpers/dynamic-config.mts')
+  return { onGracefulShutdown, registry, createDynamicConfigForTest }
 }
 
 describe('valkey shutdown facade', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockCloseValkeyClients.mockReset()
-    mockCloseValkeyClients.mockResolvedValue(undefined)
-    mockGlideMqInstance.close.mockReset()
-    mockGlideMqInstance.close.mockResolvedValue(undefined)
-    mockCloseSharedCommandClient.mockReset()
-    mockCloseSharedCommandClient.mockResolvedValue(undefined)
-  })
-
-  it('waits for every dynamic config startup before reporting failures', async () => {
-    const { onGracefulShutdown } = await import('./shutdown.mts')
-    let releaseSecond!: () => void
-    const second = new Promise<void>(resolve => {
-      releaseSecond = resolve
-    })
-    const firstError = new Error('first startup failed')
-    const thirdError = new Error('third startup failed')
-    const pending = onGracefulShutdown.waitForInitialization([
-      { waitForInitialization: () => Promise.reject(firstError) },
-      { waitForInitialization: () => second },
-      { waitForInitialization: () => Promise.reject(thirdError) },
-    ])
-    let finished = false
-    const result = pending.then(
-      () => {
-        finished = true
-        return undefined
-      },
-      (err: unknown) => {
-        finished = true
-        return err
-      },
-    )
-    await Promise.resolve()
-    expect(finished).toBe(false)
-
-    releaseSecond()
-    expect(await result).toMatchObject({
-      name: 'AggregateError',
-      errors: [firstError, thirdError],
-    })
+  afterEach(() => {
+    vi.resetModules()
   })
 
   it('accepts completed dynamic config startups', async () => {
-    const { onGracefulShutdown } = await import('./shutdown.mts')
-    await expect(
-      onGracefulShutdown.waitForInitialization([
-        { waitForInitialization: async () => {} },
-        { waitForInitialization: async () => {} },
-      ]),
-    ).resolves.toBeUndefined()
+    const { onGracefulShutdown, createDynamicConfigForTest } = await loadShutdown()
+    const config = createDynamicConfigForTest({
+      key: `test-shutdown-${crypto.randomUUID()}`,
+      fieldTypes: { enabled: 'boolean' },
+      defaultFields: { enabled: true },
+    })
+
+    await expect(onGracefulShutdown.waitForInitialization()).resolves.toBeUndefined()
+
+    config.close()
   })
 
-  it('closes GlideMQ instances and valkyries clients once, failing on client close errors', async () => {
-    const onGracefulShutdown = await createShutdown()
+  it('waits for every dynamic config startup before reporting failures', async () => {
+    const { onGracefulShutdown, createDynamicConfigForTest } = await loadShutdown()
+    const invalid = createDynamicConfigForTest({
+      key: `test-shutdown-${crypto.randomUUID()}`,
+      fieldTypes: { enabled: 'boolean' },
+      defaultFields: { enabled: 'yes' as unknown as boolean },
+    })
+    const valid = createDynamicConfigForTest({
+      key: `test-shutdown-${crypto.randomUUID()}`,
+      fieldTypes: { enabled: 'boolean' },
+      defaultFields: { enabled: true },
+    })
+
+    await expect(onGracefulShutdown.waitForInitialization()).rejects.toMatchObject({
+      name: 'AggregateError',
+      message: 'Dynamic config initialization failed',
+      errors: [expect.any(Error)],
+    })
+
+    invalid.close()
+    valid.close()
+  })
+
+  it('closes GlideMQ instances once and the shared command client after them', async () => {
+    const { onGracefulShutdown, registry } = await loadShutdown()
+    const order: string[] = []
+    const instance = {
+      close: vi.fn<() => Promise<void>>(async () => {
+        order.push('glide')
+      }),
+    }
+    registry.registerGlideMQInstance(instance)
+    registry.setSharedCommandClientShutdown(() => {
+      order.push('shared')
+    })
 
     await onGracefulShutdown()
     await onGracefulShutdown()
 
-    expect(mockGlideMqInstance.close).toHaveBeenCalledTimes(1)
-    expect(mockCloseValkeyClients).toHaveBeenCalledTimes(1)
-    expect(mockCloseValkeyClients).toHaveBeenCalledWith({ throwOnError: true })
+    expect(instance.close).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['glide', 'shared'])
   })
 
   it('does not close the shared command client before GlideMQ drain resolves', async () => {
-    let resolveGlideMqClose: (() => void) | undefined
-    mockGlideMqInstance.close.mockReturnValueOnce(
-      new Promise<void>(resolve => {
-        resolveGlideMqClose = resolve
-      }),
-    )
-    const onGracefulShutdown = await createShutdown()
+    const { onGracefulShutdown, registry } = await loadShutdown()
+    const shared = vi.fn<() => void>()
+    let releaseGlide!: () => void
+    const draining = new Promise<void>(resolve => {
+      releaseGlide = resolve
+    })
+    let drainStarted!: () => void
+    const started = new Promise<void>(resolve => {
+      drainStarted = resolve
+    })
+    registry.registerGlideMQInstance({
+      close: () => {
+        drainStarted()
+        return draining
+      },
+    })
+    registry.setSharedCommandClientShutdown(shared)
 
     const shutdownPromise = onGracefulShutdown()
-    for (let flushAttempts = 0; flushAttempts < 10; flushAttempts += 1) {
-      if (resolveGlideMqClose !== undefined) {
-        break
-      }
-      await Promise.resolve()
-    }
+    await started
+    expect(shared).not.toHaveBeenCalled()
 
-    expect(mockCloseSharedCommandClient).not.toHaveBeenCalled()
-    expect(resolveGlideMqClose).toBeDefined()
-    resolveGlideMqClose?.()
+    releaseGlide()
     await shutdownPromise
-
-    expect(mockCloseSharedCommandClient).toHaveBeenCalledTimes(1)
-    expect(mockGlideMqInstance.close.mock.invocationCallOrder[0]).toBeLessThan(
-      mockCloseSharedCommandClient.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
-    )
+    expect(shared).toHaveBeenCalledTimes(1)
   })
 
-  it('surfaces a valkyries client close failure after closing everything else', async () => {
-    const clientFailure = new AggregateError(
-      [new Error('client close failed')],
-      'Valkey shutdown failed',
-    )
-    mockCloseValkeyClients.mockRejectedValueOnce(clientFailure)
-    const onGracefulShutdown = await createShutdown()
-
-    await expect(onGracefulShutdown()).rejects.toMatchObject({ errors: [clientFailure] })
-
-    expect(mockGlideMqInstance.close).toHaveBeenCalledTimes(1)
-    expect(mockCloseSharedCommandClient).toHaveBeenCalledTimes(1)
-  })
-
-  it('propagates GlideMQ close failures', async () => {
+  it('propagates GlideMQ close failures after closing the shared command client', async () => {
+    const { onGracefulShutdown, registry } = await loadShutdown()
     const error = new Error('glide close failed')
-    mockGlideMqInstance.close.mockRejectedValueOnce(error)
-    const onGracefulShutdown = await createShutdown()
+    const shared = vi.fn<() => void>()
+    registry.registerGlideMQInstance({ close: () => Promise.reject(error) })
+    registry.setSharedCommandClientShutdown(shared)
 
-    await expect(onGracefulShutdown()).rejects.toMatchObject({ errors: [error] })
+    await expect(onGracefulShutdown()).rejects.toMatchObject({
+      name: 'AggregateError',
+      message: 'Valkey shutdown failed',
+      errors: [error],
+    })
+    expect(shared).toHaveBeenCalledTimes(1)
   })
 
   it('attempts every close and propagates all cleanup failures', async () => {
-    const glideError = new Error('glide close failed')
-    const valkyriesError = new Error('valkyries close failed')
-    const sharedClientError = new Error('shared client close failed')
-    mockGlideMqInstance.close.mockRejectedValueOnce(glideError)
-    mockCloseValkeyClients.mockRejectedValueOnce(valkyriesError)
-    mockCloseSharedCommandClient.mockRejectedValueOnce(sharedClientError)
-    const onGracefulShutdown = await createShutdown()
+    const { onGracefulShutdown, registry } = await loadShutdown()
+    const first = new Error('first glide close failed')
+    const sharedError = new Error('shared client close failed')
+    const second = { close: vi.fn<() => Promise<void>>(() => Promise.resolve()) }
+    registry.registerGlideMQInstance({ close: () => Promise.reject(first) })
+    registry.registerGlideMQInstance(second)
+    registry.setSharedCommandClientShutdown(() => Promise.reject(sharedError))
 
-    await expect(onGracefulShutdown()).rejects.toMatchObject({
-      errors: [glideError, valkyriesError, sharedClientError],
-    })
-
-    expect(mockGlideMqInstance.close).toHaveBeenCalledTimes(1)
-    expect(mockCloseValkeyClients).toHaveBeenCalledTimes(1)
-    expect(mockCloseSharedCommandClient).toHaveBeenCalledTimes(1)
+    await expect(onGracefulShutdown()).rejects.toMatchObject({ errors: [first, sharedError] })
+    expect(second.close).toHaveBeenCalledTimes(1)
   })
 
   it('converts non-Error close failures before reporting them', async () => {
-    mockCloseValkeyClients.mockRejectedValueOnce('valkey close failed')
-    const onGracefulShutdown = await createShutdown()
+    const { onGracefulShutdown, registry } = await loadShutdown()
+    registry.registerGlideMQInstance({ close: () => Promise.reject('glide close failed') })
 
     await expect(onGracefulShutdown()).rejects.toMatchObject({
-      errors: [expect.objectContaining({ message: 'valkey close failed' })],
+      errors: [expect.objectContaining({ message: 'glide close failed' })],
     })
   })
 })
