@@ -52,7 +52,7 @@ export function MediaItemListingView({
         {headerActions}
       </div>
       <div className='flex flex-wrap items-start justify-between gap-2 sm:items-center'>
-        <NewsFilters />
+        <NewsFilters showHackerNewsFilter />
         <FeedViewToggle />
       </div>
       {feed}
