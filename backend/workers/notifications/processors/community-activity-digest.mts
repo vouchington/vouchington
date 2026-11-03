@@ -17,7 +17,6 @@ type WindowJob = Pick<
 
 type Dependencies = {
   createCommunityActivityDigestBatch: typeof createCommunityActivityDigestBatch
-  enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   advanceCommunityActivityDigestCursor: typeof advanceCommunityActivityDigestCursor
   isCommunityActivityDigestWindowComplete: typeof isCommunityActivityDigestWindowComplete
 }
@@ -44,9 +43,6 @@ export async function processCommunityActivityDigestDispatch(
 
   const createBatch =
     dependencies.createCommunityActivityDigestBatch ?? createCommunityActivityDigestBatch
-  const enqueuePushes =
-    dependencies.enqueueBulkDeliverNotificationPushIntents ??
-    enqueueBulkDeliverNotificationPushIntents
   const advance =
     dependencies.advanceCommunityActivityDigestCursor ?? advanceCommunityActivityDigestCursor
   return processRetainedSweep<CommunityActivityDigestDispatchData, { hasMore: boolean }>(
@@ -57,7 +53,7 @@ export async function processCommunityActivityDigestDispatch(
         windowEnd: end,
         afterUserId: job.data.afterUserId,
       })
-      await enqueuePushes(
+      await enqueueBulkDeliverNotificationPushIntents(
         result.created.map(item => ({ userId: item.userId, notificationId: item.notificationId })),
       )
       if (result.nextUserId) {
