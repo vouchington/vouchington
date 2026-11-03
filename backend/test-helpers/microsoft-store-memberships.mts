@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function getTestPendingMicrosoftStoreVerification(options: {
@@ -71,4 +71,29 @@ export async function getTestMicrosoftStoreCredentials(options: {
       AND context.environment = 'test'
       AND context.application_id = ${options.applicationId}`)
   return rows[0] ?? null
+}
+
+export type TestMicrosoftStoreRecoveryCursor = {
+  cursor: string | null
+  upperBound: string | null
+}
+
+export async function getTestMicrosoftStoreRecoveryCursor(): Promise<TestMicrosoftStoreRecoveryCursor | null> {
+  const { rows } = await read<{ cursor: string | null; upperBound: string | null }>(sql`
+    /* getTestMicrosoftStoreRecoveryCursor */ SELECT cursor_source_id AS cursor,
+      sweep_upper_bound_source_id AS "upperBound"
+    FROM membership_microsoft_store_recovery_cursors
+    WHERE is_singleton`)
+  return rows[0] ?? null
+}
+
+export async function setTestMicrosoftStoreRecoveryCursor(
+  position: TestMicrosoftStoreRecoveryCursor,
+): Promise<void> {
+  await write(sql`
+    /* setTestMicrosoftStoreRecoveryCursor */ INSERT INTO membership_microsoft_store_recovery_cursors
+      (is_singleton, cursor_source_id, sweep_upper_bound_source_id)
+    VALUES (TRUE, ${position.cursor}::UUID, ${position.upperBound}::UUID)
+    ON CONFLICT (is_singleton) DO UPDATE SET cursor_source_id = EXCLUDED.cursor_source_id,
+      sweep_upper_bound_source_id = EXCLUDED.sweep_upper_bound_source_id`)
 }
