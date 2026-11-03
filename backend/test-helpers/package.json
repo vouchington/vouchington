@@ -52,7 +52,6 @@
     "@modules/worker-queue-inventory": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/content-analysis": "workspace:^",
-    "@queues/image-uploads": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
     "@sentry/node": "^11.10.0",
