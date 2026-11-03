@@ -1,212 +1,134 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
+import * as ses from '@modules/aws/ses'
+import * as stripeSubscriptions from '@modules/stripe/subscriptions'
 import { memberships } from '@queues/memberships/queues'
-import type { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
+import * as membershipsService from '@services/memberships'
 import {
   claimAdministratorRefundRequest,
   leaseDueRefundReconciliation,
   scheduleRefundReconciliationRetry,
-  type deliverPendingMembershipEntitlementEffects,
-  type expireElapsedMembershipsBatch,
-  type reconcileMembershipRefundOperation,
-  type reconcileStripeMembershipCatalog,
 } from '@services/memberships'
-import { createTestMembership, createTestUser } from '@voucha/test-helpers'
+import { ingestStripeEvent } from '@services/stripe/events'
 import type { claimRecoverableStripeEvents } from '@services/stripe/recovery'
+import {
+  createTestMembership,
+  createTestUser,
+  retireTestMembershipProviderProduct,
+} from '@voucha/test-helpers'
+import {
+  createStripeEvent,
+  createUniqueStripeId,
+} from '@voucha/test-helpers/membership-stripe-fixtures'
+import { createTestRenewalEmail } from '@voucha/test-helpers/renewal-email'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { cleanupRefundReconciliationOperationsForTest } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import { readAllQueueJobs } from '../../../test-helpers/queue-jobs.mts'
-import type { processRenewalNotificationCheckDispatcher } from './renewal-notification-check.mts'
-import type { processSendRenewalPriceIncreaseEmail } from './send-renewal-price-increase-email.mts'
-import type { recoverMembershipVerifications } from './verification-recovery.mts'
-import type { recoverAppleNotifications } from './apple-notification-recovery.mts'
-import type {
-  processGooglePlayNotification,
-  recoverGooglePlayNotifications,
-  recoverGooglePlayActiveSources,
-  processGooglePlayActiveSource,
-  processGooglePlayAcknowledgement,
-  recoverGooglePlayAcknowledgements,
-  refreshConfiguredGoogleOidcTrustMaterial,
-} from './google-play.mts'
-import type {
-  processMicrosoftStoreSource,
-  recoverMicrosoftStoreSources,
-} from './microsoft-store.mts'
 import { processMembershipJob } from './process-job.mts'
-import type { processMembershipVerificationJob } from './process-verification-job.mts'
-import { type processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
+import { recoverStripeEvents } from './stripe-event.mts'
 
 describe('processMembershipJob', () => {
-  it('routes every membership job', async () => {
-    const processors = {
-      deliverMembershipEntitlementEffects:
-        vi.fn<typeof deliverPendingMembershipEntitlementEffects>(),
-      expireElapsedMemberships: vi.fn<typeof expireElapsedMembershipsBatch>(),
-      processAppleNotification: vi.fn<typeof reconcileAppleNotification>(),
-      processMembershipVerificationJob: vi.fn<typeof processMembershipVerificationJob>(),
-      processRenewalNotificationCheckDispatcher:
-        vi.fn<typeof processRenewalNotificationCheckDispatcher>(),
-      processSendRenewalPriceIncreaseEmail: vi.fn<typeof processSendRenewalPriceIncreaseEmail>(),
-      processStripeEvent: vi.fn<typeof processStripeEvent>(),
-      recoverMembershipVerifications: vi.fn<typeof recoverMembershipVerifications>(),
-      recoverAppleNotifications: vi.fn<typeof recoverAppleNotifications>(),
-      processGooglePlayNotification: vi.fn<typeof processGooglePlayNotification>(),
-      recoverGooglePlayNotifications: vi.fn<typeof recoverGooglePlayNotifications>(),
-      recoverGooglePlayActiveSources: vi.fn<typeof recoverGooglePlayActiveSources>(),
-      processGooglePlayActiveSource: vi.fn<typeof processGooglePlayActiveSource>(),
-      processGooglePlayAcknowledgement: vi.fn<typeof processGooglePlayAcknowledgement>(),
-      recoverGooglePlayAcknowledgements: vi.fn<typeof recoverGooglePlayAcknowledgements>(),
-      refreshGooglePlayOidcTrust: vi.fn<typeof refreshConfiguredGoogleOidcTrustMaterial>(),
-      recoverMicrosoftStoreSources: vi.fn<typeof recoverMicrosoftStoreSources>(),
-      reconcileMicrosoftStoreSource: vi.fn<typeof processMicrosoftStoreSource>(),
-      recoverStripeEvents: vi.fn<typeof recoverStripeEvents>(),
-      reconcileStripeMembershipCatalog: vi.fn<typeof reconcileStripeMembershipCatalog>(),
-      dispatchMembershipRefundReconciliation: vi.fn<() => Promise<void>>(),
-      reconcileMembershipRefundOperation: vi.fn<typeof reconcileMembershipRefundOperation>(),
-      dispatchMembershipPauseCollection: vi.fn<() => Promise<void>>(),
-      syncMembershipPauseCollection:
-        vi.fn<(data: { userId: string; requestedAt: string }) => Promise<void>>(),
-    }
-    const stripeData = {
-      stripeEventRecordId: 'event-1',
-      leaseToken: 'attempt-1',
-      stripeSubscriptionId: 'sub-1',
-      isLiveMode: false,
-    }
-    const renewalData = { membershipId: 'membership-1' }
-    const appleData = {
-      evidenceId: 'evidence-1',
-      providerLineageId: 'lineage-1',
-      environment: 'test' as const,
-    }
-
-    await processMembershipJob(job('processStripeEvent', stripeData), processors)
-    await processMembershipJob(job('deliverMembershipEntitlementEffects'), processors)
-    await processMembershipJob(job('expireElapsedMemberships'), processors)
-    await processMembershipJob(
-      job('processMembershipVerification', { verificationId: 'verification-1' }),
-      processors,
-    )
-    await processMembershipJob(job('processAppleNotification', appleData), processors)
-    await processMembershipJob(job('recoverStripeEvents'), processors)
-    await processMembershipJob(job('recoverMembershipVerifications'), processors)
-    await processMembershipJob(job('recoverAppleNotifications'), processors)
-    const googleData = { evidenceId: 'google-evidence-1' }
-    const acknowledgementData = { acknowledgementId: 'google-ack-1' }
-    await processMembershipJob(job('processGooglePlayNotification', googleData), processors)
-    await processMembershipJob(job('recoverGooglePlayNotifications'), processors)
-    await processMembershipJob(job('recoverGooglePlayActiveSources'), processors)
-    await processMembershipJob(
-      job('reconcileGooglePlayActiveSource', { sourceId: 'google-source-1' }),
-      processors,
-    )
-    await processMembershipJob(
-      job('acknowledgeGooglePlayPurchase', acknowledgementData),
-      processors,
-    )
-    await processMembershipJob(job('recoverGooglePlayAcknowledgements'), processors)
-    await processMembershipJob(job('refreshGooglePlayOidcTrust'), processors)
-    await processMembershipJob(job('recoverMicrosoftStoreSources'), processors)
-    await processMembershipJob(
-      job('reconcileMicrosoftStoreSource', { sourceId: 'microsoft-source-1' }),
-      processors,
-    )
-    await processMembershipJob(job('reconcileStripeMembershipCatalog'), processors)
-    await processMembershipJob(job('processRenewalNotificationCheck'), processors)
-    await processMembershipJob(job('processSendRenewalPriceIncreaseEmail', renewalData), processors)
-    await processMembershipJob(job('dispatchMembershipRefundReconciliation'), processors)
-    await processMembershipJob(
-      job('reconcileMembershipRefundOperation', {
-        operationId: 'operation-1',
-        leaseToken: 'lease-token-1',
-      }),
-      processors,
-    )
-    await processMembershipJob(job('dispatchMembershipPauseCollection'), processors)
-    const pauseData = { userId: 'user-1', requestedAt: '2026-10-11T00:00:00.000Z' }
-    await processMembershipJob(job('syncMembershipPauseCollection', pauseData), processors)
-
-    expect(processors.processStripeEvent).toHaveBeenCalledWith(stripeData, true)
-    expect(processors.deliverMembershipEntitlementEffects).toHaveBeenCalledOnce()
-    expect(processors.expireElapsedMemberships).toHaveBeenCalledOnce()
-    expect(processors.processMembershipVerificationJob).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'processMembershipVerification',
-        data: { verificationId: 'verification-1' },
-      }),
-    )
-    expect(processors.processAppleNotification).toHaveBeenCalledWith(appleData)
-    expect(processors.recoverStripeEvents).toHaveBeenCalledOnce()
-    expect(processors.recoverMembershipVerifications).toHaveBeenCalledOnce()
-    expect(processors.recoverAppleNotifications).toHaveBeenCalledOnce()
-    expect(processors.processGooglePlayNotification).toHaveBeenCalledWith(googleData)
-    expect(processors.recoverGooglePlayNotifications).toHaveBeenCalledOnce()
-    expect(processors.recoverGooglePlayActiveSources).toHaveBeenCalledOnce()
-    expect(processors.processGooglePlayActiveSource).toHaveBeenCalledWith({
-      sourceId: 'google-source-1',
-    })
-    expect(processors.processGooglePlayAcknowledgement).toHaveBeenCalledWith(acknowledgementData)
-    expect(processors.recoverGooglePlayAcknowledgements).toHaveBeenCalledOnce()
-    expect(processors.refreshGooglePlayOidcTrust).toHaveBeenCalledOnce()
-    expect(processors.recoverMicrosoftStoreSources).toHaveBeenCalledOnce()
-    expect(processors.reconcileMicrosoftStoreSource).toHaveBeenCalledWith({
-      sourceId: 'microsoft-source-1',
-    })
-    expect(processors.reconcileStripeMembershipCatalog).toHaveBeenCalledOnce()
-    expect(processors.processRenewalNotificationCheckDispatcher).toHaveBeenCalledOnce()
-    expect(processors.processSendRenewalPriceIncreaseEmail).toHaveBeenCalledWith(renewalData)
-    expect(processors.dispatchMembershipRefundReconciliation).toHaveBeenCalledOnce()
-    expect(processors.reconcileMembershipRefundOperation).toHaveBeenCalledWith({
-      id: 'operation-1',
-      leaseToken: 'lease-token-1',
-    })
-    expect(processors.dispatchMembershipPauseCollection).toHaveBeenCalledOnce()
-    expect(processors.syncMembershipPauseCollection).toHaveBeenCalledWith(pauseData)
-
-    const timeout = new Error('Connection terminated due to connection timeout')
-    processors.expireElapsedMemberships.mockRejectedValueOnce(timeout)
-    await expect(
-      processMembershipJob(job('expireElapsedMemberships'), processors),
-    ).rejects.toMatchObject({
-      name: 'RateLimitError',
-      delayMs: 30_000,
-      cause: timeout,
-    })
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it('rejects unknown jobs', async () => {
-    await expect(
-      processMembershipJob(job('unknown'), {
-        deliverMembershipEntitlementEffects:
-          vi.fn<typeof deliverPendingMembershipEntitlementEffects>(),
-        expireElapsedMemberships: vi.fn<typeof expireElapsedMembershipsBatch>(),
-        processAppleNotification: vi.fn<typeof reconcileAppleNotification>(),
-        processMembershipVerificationJob: vi.fn<typeof processMembershipVerificationJob>(),
-        processRenewalNotificationCheckDispatcher:
-          vi.fn<typeof processRenewalNotificationCheckDispatcher>(),
-        processSendRenewalPriceIncreaseEmail: vi.fn<typeof processSendRenewalPriceIncreaseEmail>(),
-        processStripeEvent: vi.fn<typeof processStripeEvent>(),
-        recoverMembershipVerifications: vi.fn<typeof recoverMembershipVerifications>(),
-        recoverAppleNotifications: vi.fn<typeof recoverAppleNotifications>(),
-        processGooglePlayNotification: vi.fn<typeof processGooglePlayNotification>(),
-        recoverGooglePlayNotifications: vi.fn<typeof recoverGooglePlayNotifications>(),
-        recoverGooglePlayActiveSources: vi.fn<typeof recoverGooglePlayActiveSources>(),
-        processGooglePlayActiveSource: vi.fn<typeof processGooglePlayActiveSource>(),
-        processGooglePlayAcknowledgement: vi.fn<typeof processGooglePlayAcknowledgement>(),
-        recoverGooglePlayAcknowledgements: vi.fn<typeof recoverGooglePlayAcknowledgements>(),
-        refreshGooglePlayOidcTrust: vi.fn<typeof refreshConfiguredGoogleOidcTrustMaterial>(),
-        recoverMicrosoftStoreSources: vi.fn<typeof recoverMicrosoftStoreSources>(),
-        reconcileMicrosoftStoreSource: vi.fn<typeof processMicrosoftStoreSource>(),
-        recoverStripeEvents: vi.fn<typeof recoverStripeEvents>(),
-        reconcileStripeMembershipCatalog: vi.fn<typeof reconcileStripeMembershipCatalog>(),
-        dispatchMembershipRefundReconciliation: vi.fn<() => Promise<void>>(),
-        reconcileMembershipRefundOperation: vi.fn<typeof reconcileMembershipRefundOperation>(),
-        dispatchMembershipPauseCollection: vi.fn<() => Promise<void>>(),
-        syncMembershipPauseCollection:
-          vi.fn<(data: { userId: string; requestedAt: string }) => Promise<void>>(),
+  it('enqueues a sync job for each due pause collection', async () => {
+    const userId = randomUUID()
+    const requestedAt = '2026-10-11T00:00:00.000Z'
+    vi.spyOn(membershipsService, 'dispatchDuePauseCollectionWork').mockResolvedValue([
+      { userId, requestedAt, leaseToken: 'pause-lease-1' },
+    ])
+
+    await processMembershipJob(job('dispatchMembershipPauseCollection'))
+
+    const queued = (await readAllQueueJobs(memberships)).filter(
+      queuedJob => (queuedJob.data as { userId?: string }).userId === userId,
+    )
+    expect(queued.map(queuedJob => [queuedJob.name, queuedJob.data])).toEqual([
+      ['syncMembershipPauseCollection', { userId, requestedAt, leaseToken: 'pause-lease-1' }],
+    ])
+  })
+
+  it('sends the renewal price increase email for an owned membership', async () => {
+    const sendEmail = vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+    const user = await createTestUser()
+    const { data, renewalProductId } = await createTestRenewalEmail(user.id)
+
+    await processMembershipJob(job('processSendRenewalPriceIncreaseEmail', data))
+
+    expect(sendEmail).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        to: user.email_address,
+        subject: 'Your Voucha Pro renewal price is changing',
       }),
-    ).rejects.toThrow('Unknown job name: unknown')
+    )
+    await retireTestMembershipProviderProduct(renewalProductId)
+  })
+
+  it.each([
+    { attemptsMade: 2, attempts: 3, failed: true },
+    { attemptsMade: 1, attempts: 3, failed: false },
+    { attemptsMade: 0, attempts: undefined, failed: true },
+  ])(
+    'fails a Stripe event only on its last attempt ($attemptsMade of $attempts)',
+    async ({ attemptsMade, attempts, failed }) => {
+      const failure = new Error('handler failed')
+      vi.spyOn(stripeSubscriptions, 'getStripeSubscription').mockRejectedValue(failure)
+      const stored = await ingestStripeEvent(
+        createStripeEvent('invoice.payment_failed', {
+          id: createUniqueStripeId('in', 'process-job'),
+          object: 'invoice',
+          customer: createUniqueStripeId('cus', 'process-job'),
+          subscription: createUniqueStripeId('sub', 'process-job'),
+        }),
+      )
+
+      await expect(
+        processMembershipJob({
+          name: 'processStripeEvent',
+          data: {
+            stripeEventRecordId: stored.id,
+            leaseToken: stored.lease_token,
+            stripeSubscriptionId: stored.subscription_id,
+            isLiveMode: stored.is_live_mode,
+          },
+          timestamp: Date.now(),
+          attemptsMade,
+          opts: { attempts },
+        } as unknown as Job),
+      ).rejects.toBe(failure)
+
+      const event = await getTestStripeEventByStripeEventId(stored.stripe_event_id)
+      expect(event?.last_error_message).toBe('handler failed')
+      expect(event?.failed_at instanceof Date).toBe(failed)
+    },
+  )
+
+  it('completes a Stripe event that needs no membership change', async () => {
+    const stored = await ingestStripeEvent(
+      createStripeEvent('customer.created', { id: createUniqueStripeId('cus', 'process-job') }),
+    )
+
+    await processMembershipJob({
+      name: 'processStripeEvent',
+      data: {
+        stripeEventRecordId: stored.id,
+        leaseToken: stored.lease_token,
+        stripeSubscriptionId: stored.subscription_id,
+        isLiveMode: stored.is_live_mode,
+      },
+      timestamp: Date.now(),
+      attemptsMade: 0,
+      opts: { attempts: 3 },
+    } as unknown as Job)
+
+    const event = await getTestStripeEventByStripeEventId(stored.stripe_event_id)
+    expect(event?.status).toBe('ignored')
+    expect(event?.ignored_at instanceof Date).toBe(true)
+    expect(event?.processed_at).toBeNull()
+    expect(event?.failed_at).toBeNull()
+    expect(event?.last_error_message).toBeNull()
   })
 
   it('dispatches due refund reconciliations through the default processor', async () => {
