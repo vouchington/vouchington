@@ -178,6 +178,16 @@ export async function createTestRedirectUrl(options: {
   return { urlString }
 }
 
+/** Get the MIME type stored for a URL row */
+export async function getTestUrlMimeType(urlId: string): Promise<string | null> {
+  const result = await read(
+    sql`/* getTestUrlMimeType */ SELECT media_types.mime_type
+      FROM urls JOIN media_types ON media_types.id = urls.media_type_id
+      WHERE urls.id = ${urlId}`,
+  )
+  return (result.rows[0]?.mime_type as string | undefined) ?? null
+}
+
 /**
  * Get the canonical_url_id for a URL row
  */
