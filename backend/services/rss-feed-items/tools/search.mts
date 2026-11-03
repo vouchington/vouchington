@@ -17,19 +17,13 @@ type ToolsSearchRssFeedItemIdsOptions = {
   similar_topic_id?: string
   similar_rss_feed_item_id?: string
   exclude_for_user_id?: string
-  dependencies?: Partial<ToolsSearchRssFeedItemIdsDependencies>
 }
-type ToolsSearchRssFeedItemIdsDependencies = {
-  getCachedSearchEmbedding: typeof getCachedSearchEmbedding
-}
-const defaultDependencies: ToolsSearchRssFeedItemIdsDependencies = { getCachedSearchEmbedding }
 type SearchRssFeedItemIdResult = {
   id: string
 }
 export async function toolsSearchRssFeedItemIds(
   options: ToolsSearchRssFeedItemIdsOptions = {},
 ): Promise<SearchRssFeedItemIdResult[]> {
-  const dependencies = { ...defaultDependencies, ...options.dependencies }
   if (options.similar_rss_feed_item_id !== undefined && !isUUID(options.similar_rss_feed_item_id)) {
     throw createHttpError(422, 'similar_rss_feed_item_id must be a valid UUID')
   }
@@ -38,9 +32,7 @@ export async function toolsSearchRssFeedItemIds(
   const hasTextSearch = !!textSearchQuery
   let semanticSearchEmbedding: number[] | undefined
   if (options.semantic_search_query?.trim()) {
-    semanticSearchEmbedding = await dependencies.getCachedSearchEmbedding(
-      options.semantic_search_query.trim(),
-    )
+    semanticSearchEmbedding = await getCachedSearchEmbedding(options.semantic_search_query.trim())
   }
   const hasSemanticSearch = semanticSearchEmbedding !== undefined
   const hasSimilarPostSearch = !!options.similar_post_id

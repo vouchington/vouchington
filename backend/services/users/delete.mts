@@ -49,7 +49,6 @@ async function lockUserDeletionLifecycle(
 }
 
 type DeleteUserDependencies = {
-  purgeCacheTags: (tags: readonly string[]) => Promise<unknown>
   onLockContention: LockContentionObserver
 }
 
@@ -124,11 +123,10 @@ function getUserDeletionCacheTags(target: UserDeletionTarget): string[] {
 async function attemptImmediateUserDeletionCacheEviction(
   requestId: string,
   target: UserDeletionTarget,
-  purge: DeleteUserDependencies['purgeCacheTags'],
 ): Promise<void> {
   const tags = getUserDeletionCacheTags(target)
   try {
-    await purge(tags)
+    await purgeCacheTags(tags)
     await settleUserDeletionOperations(
       [completeUserDeletionExternalWorks(requestId, 'cloudflare-cache-tag', tags)],
       'User deletion cache receipts failed',
@@ -172,11 +170,10 @@ export async function deleteUser(
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)
   await query.commit()
 
-  const purge = dependencies.purgeCacheTags ?? purgeCacheTags
   await settleUserDeletionOperations(
     [
       invalidate.users(deletion.target.id, deletion.target.username),
-      attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target, purge),
+      attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target),
     ],
     'User deletion follow-ups failed',
   )

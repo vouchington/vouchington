@@ -17,7 +17,7 @@ type UploaderPurgeClock = {
 
 /** Exercises production deletion and final retention cleanup for one isolated uploader/image. */
 export async function purgeUploaderForTest(user: PrivateUser, imageId: string): Promise<void> {
-  const attempt = await deleteUser(user, user, { purgeCacheTags: async () => undefined })
+  const attempt = await deleteUser(user, user)
   await drainUserDeletionForTest(attempt)
 
   // Read the actual committed lifecycle on the primary; never backdate deletion to qualify it.

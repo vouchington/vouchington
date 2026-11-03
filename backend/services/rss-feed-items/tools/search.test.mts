@@ -1,15 +1,21 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { toolsSearchRssFeedItemIds } from './search.mts'
 import { addDummyEmbeddingToRssFeedItem, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { upsertRssFeedItems } from '../upsert.mts'
+import * as bedrockRequest from '../../bedrock-embeddings/single/request.mts'
 
 // Shared fixtures created once for all tests
 let feedId: string
 let itemId1: string
 let itemId2: string
 let textSearchKey: string
-const getCachedSearchEmbeddingMock = vi.fn<VitestLooseMock>()
-const dependencies = { getCachedSearchEmbedding: getCachedSearchEmbeddingMock }
+
+// The query embedding is cached in Valkey for a day, so every semantic case uses a unique query.
+function stubBedrockEmbedding() {
+  return vi
+    .spyOn(bedrockRequest, 'createBedrockEmbedding')
+    .mockResolvedValue({ embedding: Array(1024).fill(0.1), tokens: 5 })
+}
 
 describe('search', () => {
   beforeAll(async () => {
@@ -40,17 +46,17 @@ describe('search', () => {
   }, 5_000)
 
   describe('toolsSearchRssFeedItemIds', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
+    afterEach(() => {
+      vi.restoreAllMocks()
     })
 
     it('uses search_vector for text search queries without calling embeddings', async () => {
+      const embeddingRequest = stubBedrockEmbedding()
       const results = await toolsSearchRssFeedItemIds({
         text_search_query: ` ${textSearchKey} `,
-        dependencies,
       })
 
-      expect(getCachedSearchEmbeddingMock).not.toHaveBeenCalled()
+      expect(embeddingRequest).not.toHaveBeenCalled()
       expect(Array.isArray(results)).toBe(true)
       // Both test items should appear (they share the unique textSearchKey)
       const ids = results.map(r => r.id)
@@ -59,45 +65,49 @@ describe('search', () => {
     })
 
     it('calls getCachedSearchEmbedding with trimmed query for semantic search', async () => {
-      // Return a 1024-dim embedding matching our dummy items (all 0.1 → zero cosine distance)
-      getCachedSearchEmbeddingMock.mockResolvedValue(Array(1024).fill(0.1))
+      // A 1024-dim embedding matching our dummy items (all 0.1 → zero cosine distance)
+      const embeddingRequest = stubBedrockEmbedding()
+      const query = `ai agents ${Math.random().toString(36).slice(2, 10)}`
 
       const results = await toolsSearchRssFeedItemIds({
-        semantic_search_query: '  ai agents  ',
+        semantic_search_query: `  ${query.toUpperCase()}  `,
         limit: 3,
-        dependencies,
       })
 
-      expect(getCachedSearchEmbeddingMock).toHaveBeenCalledWith('ai agents')
+      expect(embeddingRequest).toHaveBeenCalledExactlyOnceWith(
+        query,
+        expect.objectContaining({ entityType: 'search' }),
+      )
       expect(Array.isArray(results)).toBe(true)
       // Semantic search should return items with embeddings that pass the distance threshold
       expect(results.length).toBeGreaterThan(0)
     })
 
     it('excludes the source item from similar rss feed item search', async () => {
+      const embeddingRequest = stubBedrockEmbedding()
       const results = await toolsSearchRssFeedItemIds({
         similar_rss_feed_item_id: itemId1,
-        dependencies,
       })
 
-      expect(getCachedSearchEmbeddingMock).not.toHaveBeenCalled()
+      expect(embeddingRequest).not.toHaveBeenCalled()
       // Source item must not appear in results
       const ids = results.map(r => r.id)
       expect(ids).not.toContain(itemId1)
     })
 
     it('rejects malformed similar_rss_feed_item_id values', async () => {
+      const embeddingRequest = stubBedrockEmbedding()
       await expect(
         toolsSearchRssFeedItemIds({
           similar_rss_feed_item_id: 'not-a-uuid',
-          dependencies,
         }),
       ).rejects.toThrow('must be a valid UUID')
 
-      expect(getCachedSearchEmbeddingMock).not.toHaveBeenCalled()
+      expect(embeddingRequest).not.toHaveBeenCalled()
     })
 
     it('returns results ordered by published_at DESC for text-only search', async () => {
+      const embeddingRequest = stubBedrockEmbedding()
       const rand = Math.random().toString(36).slice(2, 10)
       const orderKey = `orderkw${rand}`
       const feed = await insertTestRssFeedDirect({})
@@ -123,10 +133,9 @@ describe('search', () => {
       const results = await toolsSearchRssFeedItemIds({
         text_search_query: orderKey,
         limit: 10,
-        dependencies,
       })
 
-      expect(getCachedSearchEmbeddingMock).not.toHaveBeenCalled()
+      expect(embeddingRequest).not.toHaveBeenCalled()
       expect(results.length).toBe(2)
       // Newer item (2025) should come before older item (2024)
       expect(results[0].id).toBe(newItemId)
@@ -135,12 +144,11 @@ describe('search', () => {
 
     it('caps results at 25 for tool-facing callers', async () => {
       // beforeAll seeds 30 items with dummy embeddings; semantic search matches all of them.
-      getCachedSearchEmbeddingMock.mockResolvedValue(Array(1024).fill(0.1))
+      stubBedrockEmbedding()
 
       const results = await toolsSearchRssFeedItemIds({
-        semantic_search_query: 'anything',
+        semantic_search_query: `anything ${Math.random().toString(36).slice(2, 10)}`,
         limit: 999,
-        dependencies,
       })
 
       // The service always enforces a 25-result cap regardless of requested limit

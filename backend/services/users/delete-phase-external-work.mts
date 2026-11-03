@@ -17,33 +17,21 @@ import {
 import { hasTopHashtagVoteTarget } from './top-hashtag-vote-targets.mts'
 import { mapRelationImpactRow } from './relation-impact-targets.mts'
 
-type ExternalWorkDependencies = {
-  deleteExportFromS3: (s3Key: string) => Promise<unknown>
-  purgeCacheTags: (tags: readonly string[]) => Promise<unknown>
-  sanitizeStripeCustomer: (
-    stripeCustomerId: string,
-    deps?: Parameters<typeof sanitizeStripeCustomer>[1],
-    idempotencyKey?: string,
-  ) => Promise<unknown>
-}
-
 export async function processUserDeletionExternalWork(
   requestId: string,
   processingAttemptId: string,
-  dependencies: Partial<ExternalWorkDependencies> = {},
 ): Promise<{ hasMore: boolean }> {
   const work = await getPendingExternalWork(requestId)
   if (!work) return { hasMore: false }
-  const deps = { deleteExportFromS3, purgeCacheTags, sanitizeStripeCustomer, ...dependencies }
   try {
     await runWithUserDeletionAttemptHeartbeat(requestId, processingAttemptId, async () => {
       if (work.work_kind === 'cloudflare-cache-tag') {
-        await deps.purgeCacheTags([work.work_key])
+        await purgeCacheTags([work.work_key])
       } else if (work.work_kind === 's3-export') {
-        await deps.deleteExportFromS3(work.work_key)
+        await deleteExportFromS3(work.work_key)
       } else if (work.work_kind === 'stripe-customer') {
         try {
-          await deps.sanitizeStripeCustomer(
+          await sanitizeStripeCustomer(
             work.stripe_customer_id,
             undefined,
             `user-deletion__${requestId}__stripe__${work.stripe_customer_id}`,
