@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   connectTestOAuthAccount,
   createTestUser,
@@ -47,10 +47,12 @@ describe('processFindYourFriendsDispatcher', () => {
     const window = createTestOAuthAccountSweepWindow()
     const accountIds = [window.firstId, window.secondId, window.upperId]
     for (const accountId of accountIds) await insertEligibleAccount('facebook', accountId)
-    overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-      batch_size: 2,
-      max_rows_per_provider_per_run: 10,
-    })
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
+        batch_size: 2,
+        max_rows_per_provider_per_run: 10,
+      }),
+    )
     const saved: FriendsDispatchData[] = []
 
     const result = await processFindYourFriendsDispatcher(
@@ -85,10 +87,12 @@ describe('processFindYourFriendsDispatcher', () => {
   })
 
   it('counts accounts across all providers', async () => {
-    overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-      batch_size: 2,
-      max_rows_per_provider_per_run: 10,
-    })
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
+        batch_size: 2,
+        max_rows_per_provider_per_run: 10,
+      }),
+    )
     const windows = {
       facebook: createTestOAuthAccountSweepWindow(),
       x: createTestOAuthAccountSweepWindow(),
@@ -125,10 +129,12 @@ describe('processFindYourFriendsDispatcher', () => {
   it('starts a sweep by reading each provider upper id', async () => {
     const window = createTestOAuthAccountSweepWindow()
     await insertEligibleAccount('facebook', window.upperId)
-    overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-      batch_size: 1,
-      max_rows_per_provider_per_run: 1,
-    })
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
+        batch_size: 1,
+        max_rows_per_provider_per_run: 1,
+      }),
+    )
     const saved: FriendsDispatchData[] = []
 
     await processFindYourFriendsDispatcher({}, async next => {
