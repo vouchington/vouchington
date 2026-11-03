@@ -106,7 +106,6 @@ app
         input,
         archive as boolean,
         membership,
-        undefined,
         community,
       )
     } else if (archive === undefined) {

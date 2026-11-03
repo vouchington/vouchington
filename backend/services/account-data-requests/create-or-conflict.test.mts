@@ -1,93 +1,61 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { UserDataRequest } from './types.mts'
-import { createDataRequestOrConflict } from './create-or-conflict.mts'
+import { randomUUID } from 'node:crypto'
 
-const buildRequest = (overrides: Partial<UserDataRequest> = {}): UserDataRequest => ({
-  id: '019c8390-0000-7000-8000-000000000001',
-  user_id: '00000000-0000-7000-8000-000000000001',
-  requested_by_id: '00000000-0000-7000-8000-000000000001',
-  queued_at: new Date('2026-02-22T00:00:00.000Z'),
-  processing_attempt_id: '019c8390-0000-7000-8000-000000000002',
-  dispatched_at: new Date('2026-02-22T00:00:00.000Z'),
-  processing_attempts: 0,
-  processing_started_at: null,
-  completed_at: null,
-  failed_at: null,
-  last_error_message: null,
-  s3_key: null,
-  expires_at: null,
-  status: 'pending',
-  created_at: new Date('2026-02-22T00:00:00.000Z'),
-  updated_at: new Date('2026-02-22T00:00:00.000Z'),
-  ...overrides,
-})
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import * as psql from '@data-stores/psql'
+import { createTestUser } from '@voucha/test-helpers/entities/users'
+import { createDataRequest } from './create.mts'
+import { createDataRequestOrConflict } from './create-or-conflict.mts'
+import { getLatestDataRequest } from './get.mts'
+import { markDataRequestFailed } from './update.mts'
+
+/** Make the first `getLatestDataRequest` read miss (as if it ran before a racing insert), then
+ * answer each later one from `laterReads`, falling back to the real database. */
+function missFirstLatestDataRequestRead(laterReads: Record<string, unknown>[][] = []): void {
+  const realRead = psql.read
+  const resultOf = (rows: Record<string, unknown>[]) =>
+    Promise.resolve({ command: 'SELECT', rowCount: rows.length, oid: 0, fields: [], rows })
+  let latestReads = 0
+  const spy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
+    const text = typeof query === 'string' ? query : query.text
+    if (!text.includes('/* getLatestDataRequest */')) return realRead(query, ...rest)
+    latestReads += 1
+    if (latestReads === 1) return resultOf([])
+    const rows = laterReads[latestReads - 2]
+    return rows ? resultOf(rows) : realRead(query, ...rest)
+  })
+  onTestFinished(() => spy.mockRestore())
+}
 
 describe('createDataRequestOrConflict', () => {
   it('returns conflict when insert races and hits active unique index (23505)', async () => {
-    const existing = buildRequest({ status: 'pending' })
-    const getLatestDataRequest = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(existing)
-    const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce({
-      code: '23505',
-      constraint: 'active_user_data_request_claims_pkey',
-    })
+    const subject = await createTestUser()
+    const existing = await createDataRequest(subject.id, subject.id)
+    missFirstLatestDataRequestRead()
 
-    const result = await createDataRequestOrConflict(existing.user_id!, existing.requested_by_id!, {
-      createDataRequest,
-      getLatestDataRequest,
-    })
+    const result = await createDataRequestOrConflict(subject.id, subject.id)
 
     expect(result).toEqual({ type: 'conflict', existing })
-    expect(getLatestDataRequest).toHaveBeenCalledTimes(2)
-    expect(getLatestDataRequest).toHaveBeenNthCalledWith(
-      2,
-      existing.user_id,
-      existing.requested_by_id,
-    )
-    expect(createDataRequest).toHaveBeenCalledExactlyOnceWith(
-      existing.user_id,
-      existing.requested_by_id,
-    )
   })
 
   it('returns null conflict metadata when the follow-up read is no longer active', async () => {
-    const latest = buildRequest({
-      status: 'failed',
-      failed_at: new Date('2026-02-22T00:01:00.000Z'),
-    })
-    const getLatestDataRequest = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(latest)
-    const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce({
-      code: '23505',
-      constraint: 'active_user_data_request_claims_pkey',
-    })
+    const subject = await createTestUser()
+    const failed = await createDataRequest(subject.id, subject.id)
+    await markDataRequestFailed(failed.id)
+    const failedLatest = await getLatestDataRequest(subject.id, subject.id)
+    expect(failedLatest).toMatchObject({ id: failed.id, status: 'failed' })
+    await createDataRequest(subject.id, subject.id)
+    missFirstLatestDataRequestRead([[{ ...failedLatest }]])
 
-    const result = await createDataRequestOrConflict(latest.user_id!, latest.requested_by_id!, {
-      createDataRequest,
-      getLatestDataRequest,
-    })
+    const result = await createDataRequestOrConflict(subject.id, subject.id)
 
     expect(result).toEqual({ type: 'conflict', existing: null })
-    expect(getLatestDataRequest).toHaveBeenCalledTimes(2)
   })
 
   it('rethrows non-conflict insert errors', async () => {
-    const getLatestDataRequest = vi.fn<VitestLooseMock>().mockResolvedValueOnce(null)
-    const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce(new Error('boom'))
+    const subject = await createTestUser()
 
-    await expect(
-      createDataRequestOrConflict(
-        '00000000-0000-7000-8000-000000000002',
-        '00000000-0000-7000-8000-000000000003',
-        {
-          createDataRequest,
-          getLatestDataRequest,
-        },
-      ),
-    ).rejects.toThrow('boom')
+    await expect(createDataRequestOrConflict(subject.id, randomUUID())).rejects.toMatchObject({
+      code: '23503',
+    })
   })
 })

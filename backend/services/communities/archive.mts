@@ -16,17 +16,6 @@ import {
   recordPostPublicationChangeBatch,
 } from '@services/post-publication'
 
-type UpdateCommunityAndSetArchiveStateDependencies = {
-  invalidateCommunities: typeof invalidate.communities
-  enqueueCommunityMemberMetricInvalidationBestEffort: typeof enqueueCommunityMemberMetricInvalidationBestEffort
-}
-
-const updateCommunityAndSetArchiveStateDependencies: UpdateCommunityAndSetArchiveStateDependencies =
-  {
-    invalidateCommunities: invalidate.communities,
-    enqueueCommunityMemberMetricInvalidationBestEffort,
-  }
-
 /** Archives every active community in one UPDATE and one publication-fence statement. */
 export async function archiveCommunities(
   communityIds: readonly string[],
@@ -124,7 +113,6 @@ export async function updateCommunityAndSetArchiveState(
   input: UpdateCommunityInput,
   archive: boolean,
   membership?: CommunityMember | null,
-  dependencies: Partial<UpdateCommunityAndSetArchiveStateDependencies> = updateCommunityAndSetArchiveStateDependencies,
   loadedCommunity?: CommunityWithOwner,
 ): Promise<CommunityWithOwner> {
   await using transaction = await beginTransaction()
@@ -145,14 +133,11 @@ export async function updateCommunityAndSetArchiveState(
   )
   await transaction.commit()
   await Promise.all([
-    (dependencies.invalidateCommunities ?? invalidate.communities)(currentCommunity, updated),
+    invalidate.communities(currentCommunity, updated),
     input.visibility !== undefined ||
     input.member_roster_visibility !== undefined ||
     Boolean(currentCommunity.archived_at) !== Boolean(updated.archived_at)
-      ? (
-          dependencies.enqueueCommunityMemberMetricInvalidationBestEffort ??
-          enqueueCommunityMemberMetricInvalidationBestEffort
-        )(communityId)
+      ? enqueueCommunityMemberMetricInvalidationBestEffort(communityId)
       : Promise.resolve(),
   ])
   if (

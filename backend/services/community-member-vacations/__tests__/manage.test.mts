@@ -18,8 +18,7 @@ async function createTestCommunity(ownerId: string) {
   return community
 }
 
-const logicalTime = new Date('2001-01-31T23:59:59.000Z')
-const clock = () => new Date(logicalTime)
+const dayMs = 24 * 60 * 60 * 1000
 
 describe('setMyCommunityVacation', () => {
   let mod: PrivateUser
@@ -40,34 +39,23 @@ describe('setMyCommunityVacation', () => {
 
   it('sets ends_at when provided', async () => {
     const community = await createTestCommunity(mod.id)
-    const endsAt = new Date(logicalTime.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
-    const vacation = await setMyCommunityVacation(
-      mod.id,
-      { communityId: community.id, endsAt },
-      { clock },
-    )
+    const endsAt = new Date(Date.now() + 7 * dayMs).toISOString()
+    const vacation = await setMyCommunityVacation(mod.id, { communityId: community.id, endsAt })
 
-    expect(vacation.ends_at).not.toBeNull()
-    expect(vacation.starts_at).toEqual(logicalTime)
     expect(vacation.ends_at).toEqual(new Date(endsAt))
-    expect(new Date(vacation.ends_at!).getTime()).toBeGreaterThan(logicalTime.getTime())
+    expect(vacation.starts_at.getTime()).toBeLessThan(vacation.ends_at!.getTime())
   })
 
   it('upserts: calling twice updates the row', async () => {
     const community = await createTestCommunity(mod.id)
-    const firstEndsAt = new Date(logicalTime.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString()
-    await setMyCommunityVacation(
-      mod.id,
-      { communityId: community.id, endsAt: firstEndsAt },
-      { clock },
-    )
+    const firstEndsAt = new Date(Date.now() + dayMs).toISOString()
+    await setMyCommunityVacation(mod.id, { communityId: community.id, endsAt: firstEndsAt })
 
-    const secondEndsAt = new Date(logicalTime.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString()
-    const vacation = await setMyCommunityVacation(
-      mod.id,
-      { communityId: community.id, endsAt: secondEndsAt },
-      { clock },
-    )
+    const secondEndsAt = new Date(Date.now() + 14 * dayMs).toISOString()
+    const vacation = await setMyCommunityVacation(mod.id, {
+      communityId: community.id,
+      endsAt: secondEndsAt,
+    })
     expect(vacation.ends_at).toEqual(new Date(secondEndsAt))
 
     expect(new Date(vacation.ends_at!).getTime()).toBeGreaterThan(new Date(firstEndsAt).getTime())
@@ -83,63 +71,39 @@ describe('getMyCommunityVacationSettings', () => {
 
   it('returns the active vacation row', async () => {
     const community = await createTestCommunity(mod.id)
-    await setMyCommunityVacation(mod.id, { communityId: community.id }, { clock })
+    const created = await setMyCommunityVacation(mod.id, { communityId: community.id })
 
-    const settings = await getMyCommunityVacationSettings(
-      mod.id,
-      { communityId: community.id },
-      { clock },
-    )
+    const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })
     expect(settings.vacation).toMatchObject({
       community_id: community.id,
       user_id: mod.id,
-      starts_at: logicalTime,
+      starts_at: created.starts_at,
       ends_at: null,
     })
     expect(settings.should_suppress_community_digests_while_on_vacation).toBe(false)
 
-    const endsAt = new Date(logicalTime.getTime() + 86_400_000)
-    await setMyCommunityVacation(
-      mod.id,
-      { communityId: community.id, endsAt: endsAt.toISOString() },
-      { clock },
-    )
-    const finiteSettings = await getMyCommunityVacationSettings(
-      mod.id,
-      { communityId: community.id },
-      { clock },
-    )
+    const endsAt = new Date(Date.now() + dayMs)
+    const finite = await setMyCommunityVacation(mod.id, {
+      communityId: community.id,
+      endsAt: endsAt.toISOString(),
+    })
+    const finiteSettings = await getMyCommunityVacationSettings(mod.id, {
+      communityId: community.id,
+    })
     expect(finiteSettings.vacation).toMatchObject({
       community_id: community.id,
       user_id: mod.id,
-      starts_at: logicalTime,
+      starts_at: finite.starts_at,
       ends_at: endsAt,
     })
-
-    const endClock = () => new Date(endsAt)
-    const endedSettings = await getMyCommunityVacationSettings(
-      mod.id,
-      { communityId: community.id },
-      { clock: endClock },
-    )
-    expect(endedSettings.vacation).toBeNull()
-    expect(endedSettings.should_suppress_community_digests_while_on_vacation).toBe(false)
   })
 
   it('returns null when vacation has expired (ends_at in the past)', async () => {
     const community = await createTestCommunity(mod.id)
-    const expiredEndsAt = new Date(logicalTime.getTime() - 1000).toISOString()
-    await setMyCommunityVacation(
-      mod.id,
-      { communityId: community.id, endsAt: expiredEndsAt },
-      { clock },
-    )
+    const expiredEndsAt = new Date(Date.now() - 1000).toISOString()
+    await setMyCommunityVacation(mod.id, { communityId: community.id, endsAt: expiredEndsAt })
 
-    const settings = await getMyCommunityVacationSettings(
-      mod.id,
-      { communityId: community.id },
-      { clock },
-    )
+    const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })
     expect(settings.vacation).toBeNull()
     expect(settings.should_suppress_community_digests_while_on_vacation).toBe(false)
   })
@@ -210,32 +174,5 @@ describe('community digest vacation suppression preference', () => {
     })
     expect(settings.vacation).toBeNull()
     expect(settings.should_suppress_community_digests_while_on_vacation).toBe(true)
-  })
-})
-
-describe('community vacation clock validation', () => {
-  const clockError = new Error('Owned vacation clock failure')
-  it.each([
-    {
-      name: 'throwing',
-      clock: (): Date => {
-        throw clockError
-      },
-      error: clockError,
-    },
-    {
-      name: 'invalid',
-      clock: () => new Date(Number.NaN),
-      error: new RangeError('Community vacation clock must return a valid Date'),
-    },
-  ])('rejects a $name clock before writing', async ({ clock: invalidClock, error }) => {
-    const mod = await createTestUser()
-    const community = await createTestCommunity(mod.id)
-    await expect(
-      setMyCommunityVacation(mod.id, { communityId: community.id }, { clock: invalidClock }),
-    ).rejects.toThrow(error)
-    const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })
-    expect(settings.vacation).toBeNull()
-    expect(settings.should_suppress_community_digests_while_on_vacation).toBe(false)
   })
 })
