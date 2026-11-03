@@ -140,7 +140,7 @@ export async function fetchRssFeed(
       ? latestCrawl.feed_data_sha256.equals(contentSha256)
       : false
   const shouldPersistFeedData = data.responseCode !== 304
-  await persistFeedMetadataAndReconcileLanguage(
+  const languageChanged = await persistFeedMetadataAndReconcileLanguage(
     rssFeedId,
     parsedFeed,
     rssFeed.title,
@@ -175,7 +175,7 @@ export async function fetchRssFeed(
   }
 
   const [items] = await Promise.all([
-    upsertRssFeedItems(rssFeedId, validItems),
+    upsertRssFeedItems(rssFeedId, validItems, {}, { redetectLanguage: languageChanged }),
     reclassifyRssFeedTypeIfNeeded(
       rssFeedId,
       { url: feedUrl, feed_type: rssFeed.feed_type },

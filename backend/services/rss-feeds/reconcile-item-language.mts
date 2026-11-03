@@ -1,9 +1,3 @@
-import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
-import { read } from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql/types'
-import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
-import onError from '@modules/on-error'
-import { chunkArray } from '@services/rss-feed-items/processing-limits'
 import { updateRssFeedById } from './update.mts'
 import {
   extractFeedTitle,
@@ -16,9 +10,7 @@ import { upsertRssFeedCategories, deleteRssFeedCategories } from './categories.m
 import { createFeedCategoryRelations } from './category-relations.mts'
 
 type ReconcileLanguageDeps = {
-  readImpl?: typeof read
   updateRssFeedByIdImpl?: typeof updateRssFeedById
-  enqueueBulkLanguageDetectionImpl?: typeof enqueueBulkLanguageDetection
   upsertPodcastShowImpl?: typeof upsertPodcastShow
   deletePodcastShowImpl?: typeof deletePodcastShow
   upsertRssFeedCategoriesImpl?: typeof upsertRssFeedCategories
@@ -27,10 +19,10 @@ type ReconcileLanguageDeps = {
 }
 
 /**
- * Persists feed metadata (title, declared_language) and, when declared_language
- * changes to a new non-null value, re-enqueues language detection for all
- * existing items so they pick up the authoritative feed language instead of a
- * stale content-detected result.
+ * Persists feed metadata (title, declared_language) and returns whether
+ * declared_language changed (set, changed, or cleared). The caller passes that
+ * to upsertRssFeedItems so every item in the current XML is re-queued for
+ * language detection.
  *
  * Must be called BEFORE upsertRssFeedItems so language-detection jobs see the
  * updated declared_language.
@@ -42,11 +34,8 @@ export async function persistFeedMetadataAndReconcileLanguage(
   oldDeclaredLanguage: string | null,
   oldFeedType: 'article' | 'podcast' | 'video' | 'mixed' | null = null,
   deps: ReconcileLanguageDeps = {},
-): Promise<void> {
-  const readFn: QueryExecutor = deps.readImpl ?? read
+): Promise<boolean> {
   const updateRssFeedByIdFn = deps.updateRssFeedByIdImpl ?? updateRssFeedById
-  const enqueueBulkLanguageDetectionFn =
-    deps.enqueueBulkLanguageDetectionImpl ?? enqueueBulkLanguageDetection
   const upsertPodcastShowFn = deps.upsertPodcastShowImpl ?? upsertPodcastShow
   const deletePodcastShowFn = deps.deletePodcastShowImpl ?? deletePodcastShow
   const upsertRssFeedCategoriesFn = deps.upsertRssFeedCategoriesImpl ?? upsertRssFeedCategories
@@ -95,48 +84,5 @@ export async function persistFeedMetadataAndReconcileLanguage(
     await deleteRssFeedCategoriesFn(rssFeedId)
   }
 
-  // Re-enqueue existing items if declared_language changed (upsertRssFeedItems may skip unchanged items).
-  void reenqueueItemLanguageDetectionIfNeeded(
-    rssFeedId,
-    declaredLanguage,
-    oldDeclaredLanguage,
-    readFn,
-    enqueueBulkLanguageDetectionFn,
-  ).catch(onError)
-}
-
-/**
- * When a feed's declared_language CHANGES — including being set, changed, or
- * cleared to null — re-enqueue language detection for all existing items so they
- * pick up the new authoritative feed language (or fall back to content detection
- * when cleared) instead of a stale result.
- *
- * This path is rare (declared language only changes when the feed XML changes
- * its <language> element), and affected items are submitted in bounded batches.
- */
-async function reenqueueItemLanguageDetectionIfNeeded(
-  rssFeedId: string,
-  declaredLanguage: string | null,
-  oldDeclaredLanguage: string | null,
-  readFn: QueryExecutor,
-  enqueueBulkLanguageDetectionFn: typeof enqueueBulkLanguageDetection,
-): Promise<void> {
-  const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = getRssFeedItemsWorkLimit('enqueue_batch_size')
-  if (declaredLanguage === oldDeclaredLanguage) return
-
-  const { rows } = await readFn(
-    `/* reenqueueItemLanguageDetectionIfNeeded */
-     SELECT s.rss_feed_item_id AS id
-     FROM rss_feed_item_sources s
-     JOIN rss_feed_items i ON i.id = s.rss_feed_item_id
-     WHERE s.rss_feed_id = $1
-       AND i.deleted_at IS NULL`,
-    [rssFeedId],
-  )
-
-  const itemIds = (rows as { id: string }[]).map(row => row.id)
-  for (const chunk of chunkArray(itemIds, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE)) {
-    // oxlint-disable-next-line no-await-in-loop -- bounded queue batches are submitted serially so a large feed cannot exceed Valkey request limits.
-    await enqueueBulkLanguageDetectionFn('rss_feed_item', chunk).catch(onError)
-  }
+  return declaredLanguage !== oldDeclaredLanguage
 }
