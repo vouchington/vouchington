@@ -10,25 +10,14 @@ import sql from 'sql-template-strings'
 
 type PendingRow = { id: string; row_index: number }
 
-type DispatchAdminTopicImportDependencies = {
-  enqueueContinuation: (batchId: string, cursor: number) => Promise<unknown>
-  enqueueRows: typeof enqueueBulkAdminTopicImportRows
-}
-
-const defaultDependencies: DispatchAdminTopicImportDependencies = {
-  enqueueContinuation: enqueueAdminTopicImportDispatchContinuation,
-  enqueueRows: enqueueBulkAdminTopicImportRows,
-}
-
 /**
  * Puts one page of a batch's pending rows on the queue, then continues from the page's last row.
  * Rows that already finished are not pending, so a repeated run enqueues only what is outstanding.
  */
-export async function dispatchAdminTopicImport(
-  data: { batchId: string; cursor?: number },
-  dependencies: Partial<DispatchAdminTopicImportDependencies> = {},
-): Promise<void> {
-  const { enqueueContinuation, enqueueRows } = { ...defaultDependencies, ...dependencies }
+export async function dispatchAdminTopicImport(data: {
+  batchId: string
+  cursor?: number
+}): Promise<void> {
   if (!isUUID(data.batchId)) throw new UnrecoverableError(`Invalid import batch ${data.batchId}`)
 
   const pageSize = getAdminImportsWorkLimit('dispatch_page_size')
@@ -36,10 +25,13 @@ export async function dispatchAdminTopicImport(
   const page = pending.slice(0, pageSize)
   if (page.length === 0) return
 
-  await enqueueRows(page.map(row => ({ batchId: data.batchId, rowId: row.id })))
+  await enqueueBulkAdminTopicImportRows(page.map(row => ({ batchId: data.batchId, rowId: row.id })))
   // The cursor advances only once the page is on the queue.
   if (pending.length > pageSize) {
-    await enqueueContinuation(data.batchId, page[page.length - 1]!.row_index)
+    await enqueueAdminTopicImportDispatchContinuation(
+      data.batchId,
+      page[page.length - 1]!.row_index,
+    )
   }
 }
 

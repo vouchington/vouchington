@@ -5,24 +5,12 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { finished, pipeline } from 'node:stream/promises'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
-import type { read, QueryExecutor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import type { BatchResultLine } from '@vouchington/utils/bedrock-embedding-batches'
 
-interface DownloadBatchResultsDeps {
-  read?: typeof read
-  listOutputObjectKeys?: typeof listOutputObjectKeys
-  getOutputObject?: typeof getOutputObject
-}
-
-export const downloadBatchResults = async (
-  batchId: string,
-  deps: DownloadBatchResultsDeps = {},
-): Promise<string> => {
-  const readBatch: QueryExecutor = deps.read ?? (await import('@data-stores/psql')).read
-  const listKeys = deps.listOutputObjectKeys ?? listOutputObjectKeys
-  const getObject = deps.getOutputObject ?? getOutputObject
-  const batchRows = await readBedrockBatchData(readBatch, batchId)
+export const downloadBatchResults = async (batchId: string): Promise<string> => {
+  const batchRows = await readBedrockBatchData(batchId)
 
   if (batchRows.length === 0) {
     throw new Error(`Batch not found: ${batchId}`)
@@ -40,10 +28,10 @@ export const downloadBatchResults = async (
 
   try {
     try {
-      const keys = await listKeys(prefix)
+      const keys = await listOutputObjectKeys(prefix)
       for (const key of keys) {
         // oxlint-disable-next-line no-await-in-loop -- result files must be appended to one stream sequentially.
-        const object = await getObject(key)
+        const object = await getOutputObject(key)
         if (!object.Body) continue
         // oxlint-disable-next-line no-await-in-loop -- concurrent writes would interleave JSONL output.
         await pipeline(object.Body as NodeJS.ReadableStream, writeStream, { end: false })
@@ -61,8 +49,8 @@ export const downloadBatchResults = async (
   return tempFilePath
 }
 
-async function readBedrockBatchData(query: QueryExecutor, batchId: string) {
-  const { rows } = await query<{ data: unknown }>(
+async function readBedrockBatchData(batchId: string) {
+  const { rows } = await read<{ data: unknown }>(
     `/* downloadBatchResults */
     SELECT data
     FROM bedrock_embedding_batches

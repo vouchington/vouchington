@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import * as psql from '@data-stores/psql'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { backgroundQueue } from './shared-background-queue.mts'
 
 /** Reject one write made through a caller-owned executor while preserving its transaction. */
 export function rejectQuery<Query extends QueryExecutor>(
@@ -92,6 +93,24 @@ export function answerPostgresReadsForTest(
     const rows = answers[calls++]
     if (!rows) return realRead(query, ...rest)
     return Promise.resolve({ command: 'SELECT', rowCount: rows.length, oid: 0, fields: [], rows })
+  })
+  return () => spy.mockRestore()
+}
+
+/**
+ * Reject the next `add` of one job name on the real shared background queue, then behave
+ * normally. Other jobs added meanwhile (entity listeners, for example) pass through untouched;
+ * returns the restore.
+ */
+export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error): () => void {
+  const realAdd = backgroundQueue.add
+  let rejected = false
+  const spy = vi.spyOn(backgroundQueue, 'add').mockImplementation((name, data, opts) => {
+    if (!rejected && name === jobName) {
+      rejected = true
+      return Promise.reject(error)
+    }
+    return Reflect.apply(realAdd, backgroundQueue, [name, data, opts])
   })
   return () => spy.mockRestore()
 }

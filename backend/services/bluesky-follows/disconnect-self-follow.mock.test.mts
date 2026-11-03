@@ -35,6 +35,7 @@ vi.mock<typeof import('@modules/bluesky-oauth')>(
 createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 
 import { BlueskySessionStore } from '../bluesky-accounts/session-store.mts'
+import { rejectNextBackgroundJobAddForTest } from '@voucha/test-helpers/injected-failures'
 import {
   disconnectAcceptedBlueskyAccountAndCleanupFollows,
   disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue,
@@ -42,12 +43,15 @@ import {
 import { getBlueskyFollowReceipt, saveBlueskyFollowReceipt } from './receipts.mts'
 
 async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promise<void> {
-  return disconnectBlueskyAccountAndEnqueue(userId, {
-    enqueueDisconnectRequested: async () => {
-      throw new Error('queue unavailable')
-    },
-    reportError: () => undefined,
-  })
+  const restore = rejectNextBackgroundJobAddForTest(
+    'bluesky-follow-propagation.disconnectRequested',
+    new Error('queue unavailable'),
+  )
+  try {
+    return await disconnectBlueskyAccountAndEnqueue(userId)
+  } finally {
+    restore()
+  }
 }
 
 describe('Bluesky self-follow disconnect cleanup', () => {

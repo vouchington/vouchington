@@ -13,7 +13,6 @@ import onError from '@modules/on-error'
 import {
   processBatchCreation,
   processImageBatchCreation,
-  type BatchCreationDependencies,
 } from '@services/bedrock-embeddings-batch/utils'
 import { streamPendingTopics } from '@services/bedrock-embeddings-batch/entities/topics'
 import { streamPendingPosts } from '@services/bedrock-embeddings-batch/entities/posts'
@@ -50,7 +49,6 @@ function contentionDelayMs(): number {
 export async function processEmbeddingCreationJob(
   job: EmbeddingCreationJob,
   jobType: BatchJobType,
-  dependencies?: BatchCreationDependencies,
 ) {
   const cursor = parseEmbeddingScanCursor(job.data)
   const ttlMs = Math.max(MIN_CREATION_LEASE_TTL_MS, job.opts.lockDuration ?? 0)
@@ -74,26 +72,20 @@ export async function processEmbeddingCreationJob(
   const work = await (async () => {
     try {
       if (jobType === 'images')
-        return await processImageBatchCreation(
-          {
-            cursor,
-            reEnqueue,
-            isLeaseHeld: () => lease.isHeld,
-            streamPending: options => streamPendingImages({ ...options, cursor }),
-            addImageToBatch,
-          },
-          dependencies,
-        )
-      return await processBatchCreation(
-        {
+        return await processImageBatchCreation({
           cursor,
           reEnqueue,
           isLeaseHeld: () => lease.isHeld,
-          jobType,
-          streamPending: options => textStreams[jobType]({ ...options, cursor }),
-        },
-        dependencies,
-      )
+          streamPending: options => streamPendingImages({ ...options, cursor }),
+          addImageToBatch,
+        })
+      return await processBatchCreation({
+        cursor,
+        reEnqueue,
+        isLeaseHeld: () => lease.isHeld,
+        jobType,
+        streamPending: options => textStreams[jobType]({ ...options, cursor }),
+      })
     } catch (err) {
       if (!(err instanceof BatchCreationDeferredError)) throw err
       await lease.release()

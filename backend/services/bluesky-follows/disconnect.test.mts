@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUserDirect,
-  getTestPostgresAdvisoryLockHolderProcessId,
+  getTestBlueskyLinkedAccountRow,
   insertTestBlueskyLinkedAccount,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
@@ -12,10 +11,7 @@ import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { hasTestPendingBlueskyDisconnect } from '@voucha/test-helpers/bluesky-disconnect-readers'
 import { backgroundQueue as blueskyFollowPropagation } from '@voucha/test-helpers/shared-background-queue'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
-import {
-  disconnectAcceptedBlueskyAccountAndCleanupFollows,
-  disconnectBlueskyAccountAndCleanupFollows,
-} from './disconnect.mts'
+import { disconnectBlueskyAccountAndCleanupFollows } from './disconnect.mts'
 import {
   requestBlueskyDisconnect,
   listPendingBlueskyDisconnectPage,
@@ -24,8 +20,6 @@ type BlueskyDisconnectRequest = Awaited<ReturnType<typeof requestBlueskyDisconne
 
 import { enqueueDisconnectRequested } from '@queues/bluesky-follow-propagation/enqueues'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
-
-const BLUESKY_DISCONNECT_LOCK_NAMESPACE = 0x4253
 
 describe('durable Bluesky disconnect', () => {
   it('persists and queues the exact generation without synchronous cleanup', async () => {
@@ -39,22 +33,13 @@ describe('durable Bluesky disconnect', () => {
     const unrelatedJobOptions = structuredClone(unrelatedJob.opts)
     const user = await createTestUserDirect()
     const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
-    const cleanup =
-      vi.fn<
-        (
-          userId: string,
-          exactGeneration: { blueskyDid: string; linkAuthorizationId: string },
-        ) => Promise<void>
-      >()
-    await disconnectBlueskyAccountAndCleanupFollows(user.id, {
-      disconnectWithoutLock: cleanup,
-    })
+    await disconnectBlueskyAccountAndCleanupFollows(user.id)
     const expected = {
       userId: user.id,
       blueskyDid: linked.bluesky_did,
       linkAuthorizationId: linked.link_authorization_id,
     }
-    expect(cleanup).not.toHaveBeenCalled()
+    expect(await getTestBlueskyLinkedAccountRow(linked.bluesky_did)).not.toBeNull()
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
     expect(await hasTestPendingBlueskyDisconnect(expected)).toBe(true)
     const jobId = `disconnect_${user.id}_${linked.link_authorization_id}`
@@ -78,123 +63,6 @@ describe('durable Bluesky disconnect', () => {
       data: unrelated,
       opts: unrelatedJobOptions,
     })
-  })
-
-  it('preserves a durable request and cleans up synchronously when immediate queueing fails', async () => {
-    const user = await createTestUserDirect()
-    const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
-    const enqueue = vi
-      .fn<typeof enqueueDisconnectRequested>()
-      .mockRejectedValueOnce(new Error('Valkey unavailable'))
-    const reportError = vi.fn<(error: Error) => void>()
-    const cleanup =
-      vi.fn<
-        (
-          userId: string,
-          exactGeneration: { blueskyDid: string; linkAuthorizationId: string },
-        ) => Promise<void>
-      >()
-    const expected = {
-      userId: user.id,
-      blueskyDid: linked.bluesky_did,
-      linkAuthorizationId: linked.link_authorization_id,
-    }
-
-    await disconnectBlueskyAccountAndCleanupFollows(user.id, {
-      enqueueDisconnectRequested: enqueue,
-      reportError,
-      disconnectWithoutLock: cleanup,
-    })
-
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Valkey unavailable' }),
-    )
-    expect(enqueue).toHaveBeenCalledWith(expected)
-    expect(cleanup).toHaveBeenCalledExactlyOnceWith(user.id, expected)
-    expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
-    expect(await hasTestPendingBlueskyDisconnect(expected)).toBe(true)
-    expect(await listPendingFrom(uuidBefore(linked.link_authorization_id))).toContainEqual(expected)
-  })
-
-  it('serializes accepted cleanup for an exact generation', async () => {
-    const user = await createTestUserDirect()
-    const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
-    const generation = {
-      blueskyDid: linked.bluesky_did,
-      linkAuthorizationId: linked.link_authorization_id,
-    }
-    const cleanup = vi
-      .fn<
-        (
-          userId: string,
-          exactGeneration: { blueskyDid: string; linkAuthorizationId: string },
-        ) => Promise<void>
-      >()
-      .mockResolvedValue(undefined)
-    await disconnectAcceptedBlueskyAccountAndCleanupFollows(user.id, generation, {
-      disconnectWithoutLock: cleanup,
-    })
-    expect(cleanup).toHaveBeenCalledExactlyOnceWith(user.id, generation)
-  })
-
-  it('serializes enqueue-failure cleanup and accepted cleanup with a PostgreSQL session lock', async () => {
-    const user = await createTestUserDirect()
-    const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
-    const generation = {
-      blueskyDid: linked.bluesky_did,
-      linkAuthorizationId: linked.link_authorization_id,
-    }
-    const requestGate = Promise.withResolvers<void>()
-    const requestEntered = Promise.withResolvers<void>()
-    const requestCleanup = vi.fn<() => Promise<void>>(async () => {
-      requestEntered.resolve()
-      await requestGate.promise
-    })
-    const acceptedCleanup = vi.fn<() => Promise<void>>(async () => {})
-
-    const requested = disconnectBlueskyAccountAndCleanupFollows(user.id, {
-      enqueueDisconnectRequested: vi
-        .fn<typeof enqueueDisconnectRequested>()
-        .mockRejectedValueOnce(new Error('Valkey unavailable')),
-      reportError: vi.fn<(error: Error) => void>(),
-      disconnectWithoutLock: requestCleanup,
-    })
-    void requested.catch(requestEntered.reject)
-    let managed = false
-    let holderRelease: Promise<void> | undefined
-    const releaseHolder = () => {
-      requestGate.resolve()
-      return (holderRelease ??= requested)
-    }
-    onTestFinished(async () => {
-      if (managed) await Promise.allSettled([releaseHolder()])
-      else await releaseHolder()
-    })
-    await requestEntered.promise
-    const requestHolderProcessId = await getTestPostgresAdvisoryLockHolderProcessId({
-      namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE,
-      key: user.id,
-    })
-    managed = true
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId: requestHolderProcessId,
-        pool: 'advisory',
-        lock: { kind: 'advisory', namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE, key: user.id },
-        queryMarker: 'withBlueskyDisconnectLock:lock',
-        releaseHolder,
-      },
-      async waitForLock => {
-        const accepted = disconnectAcceptedBlueskyAccountAndCleanupFollows(user.id, generation, {
-          disconnectWithoutLock: acceptedCleanup,
-        })
-        await waitForLock(accepted)
-        expect(acceptedCleanup).not.toHaveBeenCalled()
-        await releaseHolder()
-        await accepted
-        expect(acceptedCleanup).toHaveBeenCalledWith(user.id, generation)
-      },
-    )
   })
 
   it('pages pending disconnects by authorization id, never over the page size, covering each once', async () => {
@@ -246,14 +114,3 @@ describe('durable Bluesky disconnect', () => {
     expect(page.hasMore).toBe(true)
   })
 })
-
-async function listPendingFrom(afterId: string): Promise<BlueskyDisconnectRequest[]> {
-  const pending: BlueskyDisconnectRequest[] = []
-  let cursor: string | undefined = afterId
-  for (;;) {
-    const page = await listPendingBlueskyDisconnectPage(cursor)
-    pending.push(...page.requests)
-    if (!page.hasMore) return pending
-    cursor = page.requests.at(-1)!.linkAuthorizationId
-  }
-}
