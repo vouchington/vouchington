@@ -13,6 +13,7 @@ import {
   decideCopyrightTerritorialRedress,
   listCopyrightEuStaffDisputeSettlements,
   listCopyrightTerritorialComplaints,
+  listCopyrightTerritorialRecipients,
   recordCopyrightEuDisputeSettlementImplementation,
   recordCopyrightEuDisputeSettlementOutcome,
   referCopyrightEuDisputeSettlement,
@@ -99,5 +100,31 @@ describe('territorial redress client', () => {
       '/api/v1/copyright-notices/notice-3/eu-dispute-settlements/staff',
       { searchParams: { after: 'settlement-cursor' } },
     )
+  })
+
+  it('reads recipient pages from the first page and from a cursor', async () => {
+    const page = {
+      copyright_territorial_recipients: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: page,
+      call: () => listCopyrightTerritorialRecipients('notice-4'),
+      expectedArgs: [
+        '/api/v1/copyright-notices/notice-4/territorial-recipients',
+        { searchParams: { after: undefined } },
+      ],
+    })
+    mockGet.mockClear()
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: page,
+      call: () => listCopyrightTerritorialRecipients('notice-4', { after: 'poster:user-1' }),
+      expectedArgs: [
+        '/api/v1/copyright-notices/notice-4/territorial-recipients',
+        { searchParams: { after: 'poster:user-1' } },
+      ],
+    })
   })
 })
