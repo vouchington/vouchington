@@ -4915,7 +4915,7 @@
       ]
     },
     "GET:/api/v1/communities/:idOrSlug/applications/:id": {
-      "pullRequest": 2972,
+      "pullRequest": 4882,
       "contracts": [
         {
           "audience": "community_moderation",
