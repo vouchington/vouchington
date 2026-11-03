@@ -6,29 +6,26 @@ import {
   enqueueRecoverMicrosoftStoreSources,
 } from '@queues/memberships/enqueues'
 import { memberships } from '@queues/memberships/queues'
-import {
-  createMembershipVerification,
-  getMembershipByUserId,
-  getMembershipSourceIdByMembershipId,
-} from '@services/memberships'
-import {
-  processMicrosoftStoreMembershipVerification,
-  type MicrosoftStoreClient,
-} from '@services/memberships/microsoft'
-import {
-  createTestNativeMembershipProviderProduct,
-  createTestSku,
-  createTestUser,
-} from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { getEnqueuedJobId, isDeduplicatedEnqueue } from '@voucha/test-helpers/queue-jobs'
-import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
-import { getTestPendingMicrosoftStoreVerification } from '@voucha/test-helpers/microsoft-store-memberships'
+import {
+  getTestMicrosoftStoreRecoveryCursor,
+  getTestPendingMicrosoftStoreVerification,
+  setTestMicrosoftStoreRecoveryCursor,
+  type TestMicrosoftStoreRecoveryCursor,
+} from '@voucha/test-helpers/microsoft-store-memberships'
+import { membershipWorkConfig } from '@services/memberships/work-limits'
+import { createActiveMicrosoftStoreFixture } from '@voucha/test-helpers/microsoft-store-source-fixture'
 import { processMicrosoftStoreSource, recoverMicrosoftStoreSources } from './microsoft-store.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('Microsoft Store source recovery with real GlideMQ', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it('ignores a reconciliation job when its durable source is absent', async () => {
     await expect(processMicrosoftStoreSource({ sourceId: randomUUID() })).resolves.toBeUndefined()
@@ -139,88 +136,135 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
       )
     }
   })
+
+  describe('recovery cursor page protocol', () => {
+    it('chains a continuation after a full page advances the cursor', async () => {
+      await withRecoveryPage(async ({ first, second, jobs }) => {
+        await setTestMicrosoftStoreRecoveryCursor({
+          cursor: uuidBefore(first),
+          upperBound: second,
+        })
+
+        await recoverMicrosoftStoreSources()
+
+        await expect(jobs.reconcileJob(first)).resolves.toMatchObject({ data: { sourceId: first } })
+        await expect(getTestMicrosoftStoreRecoveryCursor()).resolves.toEqual({
+          cursor: first,
+          upperBound: second,
+        })
+        expect(await jobs.continuationCount()).toBe(1)
+      })
+    })
+
+    it('does not chain after the page that completes the sweep', async () => {
+      await withRecoveryPage(async ({ second, jobs }) => {
+        await setTestMicrosoftStoreRecoveryCursor({
+          cursor: uuidBefore(second),
+          upperBound: second,
+        })
+
+        await recoverMicrosoftStoreSources()
+
+        await expect(jobs.reconcileJob(second)).resolves.toMatchObject({
+          data: { sourceId: second },
+        })
+        await expect(getTestMicrosoftStoreRecoveryCursor()).resolves.toEqual({
+          cursor: null,
+          upperBound: null,
+        })
+        expect(await jobs.continuationCount()).toBe(0)
+      })
+    })
+
+    it('does not chain when another recovery moved the cursor first', async () => {
+      await withRecoveryPage(async ({ first, second, jobs }) => {
+        await setTestMicrosoftStoreRecoveryCursor({
+          cursor: uuidBefore(first),
+          upperBound: second,
+        })
+        const movedCursor = { cursor: second, upperBound: second }
+        const enqueueBulk = memberships.addBulk
+        vi.spyOn(memberships, 'addBulk').mockImplementationOnce(async (...args) => {
+          const added = await Reflect.apply(enqueueBulk, memberships, args)
+          await setTestMicrosoftStoreRecoveryCursor(movedCursor)
+          return added
+        })
+
+        await recoverMicrosoftStoreSources()
+
+        await expect(getTestMicrosoftStoreRecoveryCursor()).resolves.toEqual(movedCursor)
+        expect(await jobs.continuationCount()).toBe(0)
+      })
+    })
+
+    it('leaves the cursor in place when the bulk enqueue rejects', async () => {
+      await withRecoveryPage(async ({ first, second, jobs }) => {
+        const before = { cursor: uuidBefore(first), upperBound: second }
+        await setTestMicrosoftStoreRecoveryCursor(before)
+        const failure = new Error('bulk enqueue failed')
+        vi.spyOn(memberships, 'addBulk').mockRejectedValueOnce(failure)
+
+        await expect(recoverMicrosoftStoreSources()).rejects.toBe(failure)
+
+        await expect(getTestMicrosoftStoreRecoveryCursor()).resolves.toEqual(before)
+        expect(await jobs.continuationCount()).toBe(0)
+      })
+    })
+  })
 })
 
-async function createActiveMicrosoftStoreFixture(): Promise<{
-  verificationId: string
-  sourceId: string
-  userId: string
-  applicationId: string
-}> {
-  const user = await createTestUser()
-  const applicationId = `voucha.microsoft.${randomUUID()}`
-  const productId = `9TEST${randomUUID().replaceAll('-', '').slice(0, 12)}`
-  const skuId = '0001'
-  const clientId = `microsoft-client-${randomUUID()}`
-  vi.stubEnv('MICROSOFT_STORE_CLIENT_ID', clientId)
-  const sku = await createTestSku({ plan: 'plus' })
-  await createTestNativeMembershipProviderProduct({
-    membershipProductId: sku.id,
-    provider: 'microsoft_store',
-    environment: 'test',
-    applicationId,
-    providerProductId: productId,
-    skuId,
-  })
-  const expiresAt = new Date(Date.now() + 30 * 86_400_000)
-  const verification = await createMembershipVerification({
-    userId: user.id,
-    provider: 'microsoft_store',
-    purchaseIntentId: null,
-    idempotencyKey: randomUUID(),
-    trustedProviderContext: { environment: 'test', applicationId },
-    evidence: {
-      collections_store_id_key: createTestMicrosoftStoreIdKey({
-        kind: 'collections',
-        clientId,
-        userId: user.id,
-      }),
-      purchase_store_id_key: createTestMicrosoftStoreIdKey({
-        kind: 'purchase',
-        clientId,
-        userId: user.id,
-      }),
-      publisher_user_id: user.id,
-      product_id: productId,
-      sku_id: skuId,
-    },
-  })
-  await processMicrosoftStoreMembershipVerification(verification.id, {
-    client: clientFixture(productId, skuId, expiresAt),
-  })
-  const membership = await getMembershipByUserId(user.id)
-  if (!membership) throw new Error('Microsoft Store fixture was not projected')
-  const sourceId = await getMembershipSourceIdByMembershipId(membership.id)
-  if (!sourceId) throw new Error('Microsoft Store fixture source was not projected')
-  return { verificationId: verification.id, sourceId, userId: user.id, applicationId }
+type RecoveryPageJobs = {
+  reconcileJob: (sourceId: string) => ReturnType<typeof memberships.getJob>
+  continuationCount: () => Promise<number>
 }
 
-function clientFixture(productId: string, skuId: string, expiresAt: Date): MicrosoftStoreClient {
-  const itemId = `collection-${randomUUID()}`
-  const recurrenceId = `recurrence-${randomUUID()}`
-  return {
-    queryCollections: async () => [
-      {
-        id: itemId,
-        recurrenceData: recurrenceId,
-        modifiedDate: new Date().toISOString(),
-        productId,
-        skuId,
-        endDate: expiresAt.toISOString(),
-        status: 'Active',
-      },
-    ],
-    queryRecurrences: async () => [
-      {
-        id: recurrenceId,
-        productId,
-        skuId,
-        startTime: new Date(Date.now() - 86_400_000).toISOString(),
-        expirationTime: expiresAt.toISOString(),
-        lastModified: new Date().toISOString(),
-        recurrenceState: 'Active',
-        autoRenew: true,
-      },
-    ],
+// Runs a case against two owned sources (first < second) with one-source recovery pages, then
+// restores the shared singleton cursor and removes the jobs the case created.
+async function withRecoveryPage(
+  run: (page: { first: string; second: string; jobs: RecoveryPageJobs }) => Promise<void>,
+): Promise<void> {
+  const [first, second] = [
+    (await createActiveMicrosoftStoreFixture()).sourceId,
+    (await createActiveMicrosoftStoreFixture()).sourceId,
+  ].toSorted()
+  if (!first || !second) throw new Error('Expected two recovery sources')
+  const savedCursor: TestMicrosoftStoreRecoveryCursor =
+    (await getTestMicrosoftStoreRecoveryCursor()) ?? {
+      cursor: null,
+      upperBound: null,
+    }
+  const restoreConfig = overrideDynamicConfigFieldsForTest(membershipWorkConfig, {
+    source_recovery_batch_size: 1,
+  })
+  const addSpy = vi.spyOn(memberships, 'add')
+  const addBulkSpy = vi.spyOn(memberships, 'addBulk')
+  const jobIds: string[] = []
+  const collectJobs = async () => {
+    const continuations = addSpy.mock.calls.flatMap((call, index) =>
+      call[0] === 'recoverMicrosoftStoreSources' ? [addSpy.mock.results[index]?.value] : [],
+    )
+    const bulks = addBulkSpy.mock.results.map(result => result.value)
+    const settled = await Promise.allSettled([...continuations, ...bulks])
+    return settled.flatMap(result => (result.status === 'fulfilled' ? result.value : [])).flat()
+  }
+  const jobs: RecoveryPageJobs = {
+    reconcileJob: async sourceId => {
+      const job = (await collectJobs()).find(added => added?.data?.sourceId === sourceId)
+      if (!job) return null
+      jobIds.push(job.id)
+      return memberships.getJob(job.id)
+    },
+    continuationCount: async () =>
+      addSpy.mock.calls.filter(call => call[0] === 'recoverMicrosoftStoreSources').length,
+  }
+  try {
+    await run({ first, second, jobs })
+  } finally {
+    restoreConfig()
+    await setTestMicrosoftStoreRecoveryCursor(savedCursor)
+    const created = (await collectJobs()).map(job => job?.id)
+    await Promise.all(
+      [...jobIds, ...created].map(async id => id && (await memberships.getJob(id))?.remove()),
+    )
   }
 }
