@@ -50,19 +50,13 @@ rated_positively AS (
       sql`
 ),
 network AS (
-  SELECT f.object_id AS user_id,
-    CASE WHEN EXISTS (
-      SELECT 1 FROM relation__user__follow__user back
-      WHERE back.subject_id = f.object_id AND back.object_id = ${viewerId}
-        AND back.deleted_at IS NULL
-    ) THEN 1 ELSE 2 END AS priority_group
+  SELECT f.object_id AS user_id, 2 AS priority_group
   FROM relation__user__follow__user f
   WHERE f.subject_id = ${viewerId} AND f.deleted_at IS NULL
   UNION ALL
   SELECT sra.referrer_user_id, 3
   FROM session_referral_attributions sra
   WHERE sra.user_id = ${viewerId} AND sra.referrer_user_id IS NOT NULL
-    AND sra.id >= fn_min_child_uuidv7(sra.referrer_user_id)
   UNION ALL
   SELECT user_id, 4 FROM rated_positively
 ),
@@ -72,7 +66,13 @@ best_group AS (
 active_links AS (
   SELECT DISTINCT ON (al.user_id)
     al.id, al.user_id, al.referral_program_topic_id, u.url, al.label, al.activated_at,
-    bg.priority_group
+    -- Group 2 here means the viewer follows them; mutual follow is checked only for links that
+    -- survive the program join, not for every followee.
+    CASE WHEN bg.priority_group = 2 AND EXISTS (
+      SELECT 1 FROM relation__user__follow__user back
+      WHERE back.subject_id = al.user_id AND back.object_id = ${viewerId}
+        AND back.deleted_at IS NULL
+    ) THEN 1 ELSE bg.priority_group END AS priority_group
   FROM best_group bg
   JOIN user_referral_program_links al ON al.user_id = bg.user_id
   JOIN urls u ON u.id = al.url_id

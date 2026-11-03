@@ -143,8 +143,12 @@
       "classification": "mixed-discovery-sql"
     },
     {
-      "path": "backend/services/prioritized-referral-links/get-prioritized.mts",
+      "path": "backend/services/prioritized-referral-links/ranking-ctes.mts",
       "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/prioritized-referral-links/in-network.mts",
+      "classification": "viewer-discovery-sql"
     },
     {
       "path": "backend/services/feeds/rss-feed-items/query-utils.mts",
