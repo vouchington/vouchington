@@ -54,10 +54,9 @@ describe('refund reconciliation dispatcher', () => {
     expect(batch.hasMore).toBe(true)
     expect(batch.dispatches.every(item => /^[0-9a-f-]{36}$/.test(item.leaseToken))).toBe(true)
 
-    await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual({
-      dispatches: [expect.objectContaining({ id: third.id })],
-      hasMore: false,
-    })
+    // hasMore counts every due row in the shared table, so only the owned dispatch is asserted.
+    const rest = await dispatchDueRefundReconciliations(1)
+    expect(rest.dispatches).toEqual([expect.objectContaining({ id: third.id })])
   })
 
   it('skips a due row locked by another dispatcher', async () => {
@@ -65,15 +64,11 @@ describe('refund reconciliation dispatcher', () => {
     const available = await createDueOperation()
     await prioritizeRefundReconciliationOperationsForTest([locked.id, available.id])
     await withLockedRefundOperationForTest(locked.id, async () => {
-      await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual({
-        dispatches: [expect.objectContaining({ id: available.id })],
-        hasMore: false,
-      })
+      const whileLocked = await dispatchDueRefundReconciliations(1)
+      expect(whileLocked.dispatches).toEqual([expect.objectContaining({ id: available.id })])
     })
-    await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual({
-      dispatches: [expect.objectContaining({ id: locked.id })],
-      hasMore: false,
-    })
+    const afterUnlock = await dispatchDueRefundReconciliations(1)
+    expect(afterUnlock.dispatches).toEqual([expect.objectContaining({ id: locked.id })])
   })
 
   it('rotates a stale lease so an orphaned child cannot retain ownership', async () => {
