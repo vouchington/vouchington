@@ -26,11 +26,7 @@ export {
   enqueueContinueRecoverMicrosoftStoreSources,
   enqueueRecoverMicrosoftStoreSources,
 } from './enqueues/microsoft-store.mts'
-export {
-  enqueueBulkProcessStripeEvents,
-  enqueueProcessStripeEvent,
-  enqueueRecoverStripeEvents,
-} from './enqueues/stripe-events.mts'
+export { enqueueProcessStripeEvent, enqueueRecoverStripeEvents } from './enqueues/stripe-events.mts'
 export {
   enqueueBulkSendRenewalPriceIncreaseEmail,
   enqueueDeliverMembershipEntitlementEffects,

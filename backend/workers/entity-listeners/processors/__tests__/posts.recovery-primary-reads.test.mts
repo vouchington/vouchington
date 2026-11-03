@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { ai_agents } from '@queues/ai-agents/queues'
 import { getPostRecoverySourceUrlIds } from '@services/posts/create/source-url-relation'
@@ -76,14 +76,21 @@ describe('post-created recovery primary reads', () => {
     })
     await insertTestPostStory(postId, story.id, user.id)
     const enqueueError = new Error('story queue unavailable')
-    const enqueueStoryPostAgent = vi
-      .fn<(postId: string) => Promise<void>>()
-      .mockRejectedValue(enqueueError)
+    const add = vi.spyOn(ai_agents, 'add').mockRejectedValue(enqueueError)
+    onTestFinished(() => {
+      vi.restoreAllMocks()
+    })
 
-    await expect(
-      recoverPostCreatedEffects({ id: postId, post_type: 'story' }, { enqueueStoryPostAgent }),
-    ).rejects.toBe(enqueueError)
-    expect(enqueueStoryPostAgent).toHaveBeenCalledWith(postId)
+    await expect(recoverPostCreatedEffects({ id: postId, post_type: 'story' })).rejects.toBe(
+      enqueueError,
+    )
+    expect(add).toHaveBeenCalledWith(
+      'story-post',
+      { post_id: postId, force: undefined },
+      expect.objectContaining({
+        deduplication: { id: `story_post_agent_${postId}`, mode: 'simple' },
+      }),
+    )
   })
 
   it('does not enqueue story recovery without a committed story-post association', async () => {

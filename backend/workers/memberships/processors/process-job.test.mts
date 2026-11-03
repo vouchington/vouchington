@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import type { enqueueBulkProcessStripeEvents } from '@queues/memberships/enqueues'
 import { memberships } from '@queues/memberships/queues'
 import type { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {
@@ -256,35 +255,37 @@ describe('recoverStripeEvents', () => {
   it('enqueues every claimed database attempt', async () => {
     const events = [
       {
-        stripeEventRecordId: 'event-1',
-        leaseToken: 'attempt-1',
-        stripeSubscriptionId: 'sub-1',
+        stripeEventRecordId: randomUUID(),
+        leaseToken: randomUUID(),
+        stripeSubscriptionId: `sub_${randomUUID()}`,
         isLiveMode: false,
       },
     ]
     const claim = vi.fn<typeof claimRecoverableStripeEvents>().mockResolvedValue(events)
-    const enqueue = vi.fn<typeof enqueueBulkProcessStripeEvents>().mockResolvedValue([])
 
-    await expect(
-      recoverStripeEvents({
-        claimRecoverableStripeEvents: claim,
-        enqueueBulkProcessStripeEvents: enqueue,
-      }),
-    ).resolves.toEqual({ enqueued: 1 })
-    expect(enqueue).toHaveBeenCalledWith(events)
+    await expect(recoverStripeEvents({ claimRecoverableStripeEvents: claim })).resolves.toEqual({
+      enqueued: 1,
+    })
+
+    const queued = (await readAllQueueJobs(memberships)).filter(
+      queuedJob =>
+        (queuedJob.data as { stripeEventRecordId?: string }).stripeEventRecordId ===
+        events[0]!.stripeEventRecordId,
+    )
+    expect(queued.map(queuedJob => [queuedJob.name, queuedJob.data])).toEqual([
+      ['processStripeEvent', events[0]],
+    ])
   })
 
   it('does not enqueue an empty recovery batch', async () => {
     const claim = vi.fn<typeof claimRecoverableStripeEvents>().mockResolvedValue([])
-    const enqueue = vi.fn<typeof enqueueBulkProcessStripeEvents>()
+    const addBulk = vi.spyOn(memberships, 'addBulk')
+    onTestFinished(() => addBulk.mockRestore())
 
-    await expect(
-      recoverStripeEvents({
-        claimRecoverableStripeEvents: claim,
-        enqueueBulkProcessStripeEvents: enqueue,
-      }),
-    ).resolves.toEqual({ enqueued: 0 })
-    expect(enqueue).not.toHaveBeenCalled()
+    await expect(recoverStripeEvents({ claimRecoverableStripeEvents: claim })).resolves.toEqual({
+      enqueued: 0,
+    })
+    expect(addBulk).not.toHaveBeenCalled()
   })
 })
 

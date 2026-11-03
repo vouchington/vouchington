@@ -7,6 +7,7 @@ import { workerQueueConnection } from '@data-stores/valkey-core/glide-mq-client'
 import { imageStatePubSub } from '@data-stores/valkey-pubsub'
 import { BACKGROUND_CPU_QUEUE_NAME as CONTENT_ANALYSIS_QUEUE_NAME } from '@queues/background-cpu/config'
 import { IMAGE_UPLOADS_QUEUE_NAME } from '@queues/image-uploads/config'
+import * as imageStorage from '@services/images/s3'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import {
   insertPendingTestImage,
@@ -84,16 +85,11 @@ describe('image upload worker', () => {
         (await analysis.getJobs('waiting')).length + (await analysis.getJobs('delayed')).length,
       ).toBe(1)
 
-      uploadWorker = createImageUploadsWorker(
-        prefix,
-        {
-          getImageFromS3: async () => ({
-            $metadata: {},
-            Body: Readable.from([jpeg]) as never,
-          }),
-        },
-        { blockTimeout: 100 },
-      )
+      vi.spyOn(imageStorage, 'getImageFromS3').mockImplementation(async () => ({
+        $metadata: {},
+        Body: Readable.from([jpeg]) as never,
+      }))
+      uploadWorker = createImageUploadsWorker(prefix, { blockTimeout: 100 })
       await uploadWorker.waitUntilReady()
       const completed = Promise.withResolvers<{ job: Job; result: unknown }>()
       const failed = Promise.withResolvers<Error>()
@@ -127,6 +123,7 @@ describe('image upload worker', () => {
       await analysis.obliterate({ force: true })
       await analysis.close()
       restoreStaydown()
+      vi.restoreAllMocks()
     }
   })
 })

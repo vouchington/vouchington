@@ -4,29 +4,19 @@ import {
   readCopyrightReviewTargetBreaches,
 } from '@services/copyright-notices'
 
-type CheckCopyrightReviewTargetDeps = {
-  getReviewTargetMinutes: typeof getCopyrightReviewTargetMinutes
-  readBreaches: typeof readCopyrightReviewTargetBreaches
-  recordBreach: typeof recordCopyrightReviewTargetBreach
-}
-
-const defaultDeps: CheckCopyrightReviewTargetDeps = {
-  getReviewTargetMinutes: getCopyrightReviewTargetMinutes,
-  readBreaches: readCopyrightReviewTargetBreaches,
-  recordBreach: recordCopyrightReviewTargetBreach,
-}
-
 /**
  * Pages Sentry once per sweep when copyright cases wait for a moderator past
  * `copyright.reviewTargetMinutes` or an open counter-notice deadline was missed. An unset (0)
- * target pages only for missed deadlines. The job data is always `{}`, so the first argument only
- * carries test overrides.
+ * target pages only for missed deadlines.
+ * The job data is always `{}`, so the first argument only carries the injected breach read: the
+ * production read is an unscoped sweep of the shared table, which a test cannot bound to its own
+ * rows.
  */
 export async function processCheckCopyrightReviewTarget(
-  dependencyOverrides: Partial<CheckCopyrightReviewTargetDeps> = {},
+  dependencyOverrides: { readBreaches?: typeof readCopyrightReviewTargetBreaches } = {},
 ): Promise<{ paged: boolean }> {
-  const deps = { ...defaultDeps, ...dependencyOverrides }
-  const reviewTargetMinutes = await deps.getReviewTargetMinutes()
-  const breaches = await deps.readBreaches({ now: new Date(), reviewTargetMinutes })
-  return { paged: deps.recordBreach({ reviewTargetMinutes, ...breaches }) }
+  const readBreaches = dependencyOverrides.readBreaches ?? readCopyrightReviewTargetBreaches
+  const reviewTargetMinutes = await getCopyrightReviewTargetMinutes()
+  const breaches = await readBreaches({ now: new Date(), reviewTargetMinutes })
+  return { paged: recordCopyrightReviewTargetBreach({ reviewTargetMinutes, ...breaches }) }
 }
