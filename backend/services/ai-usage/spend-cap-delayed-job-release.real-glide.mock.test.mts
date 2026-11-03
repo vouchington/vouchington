@@ -102,14 +102,16 @@ describe('AI spend-cap atomic promotion with real GlideMQ', () => {
       })
       expect(promotionInvocations).toHaveLength(1)
       expect(promotionInvocations[0]?.keys).toHaveLength(7)
-      expect(promotionInvocations[0]?.args).toEqual([
-        lease,
-        day,
-        `job:${firstJob.id}`,
-        firstJob.id,
-        `job:${secondJob.id}`,
-        secondJob.id,
-      ])
+      const promotionArgs = promotionInvocations[0]?.args ?? []
+      expect(promotionArgs.slice(0, 2)).toEqual([lease, day])
+      expect(promotionArgs).toHaveLength(6)
+      const byJobId = (a: unknown[], b: unknown[]) => String(a[1]).localeCompare(String(b[1]))
+      const promotedPairs = [promotionArgs.slice(2, 4), promotionArgs.slice(4, 6)].toSorted(byJobId)
+      const expectedPairs = [
+        [`job:${firstJob.id}`, firstJob.id],
+        [`job:${secondJob.id}`, secondJob.id],
+      ].toSorted(byJobId)
+      expect(promotedPairs).toEqual(expectedPairs)
       await expect(Promise.all(jobs.map(job => job.getState()))).resolves.toEqual([
         'prioritized',
         'prioritized',

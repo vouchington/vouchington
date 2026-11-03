@@ -74,6 +74,18 @@ describe('evaluateSpendCapBreach', () => {
     })
   })
 
+  it('fails open when config cannot be read', async () => {
+    await useSpendCap(true)
+    const waitForInitialization = vi
+      .spyOn(spendCapConfig, 'waitForInitialization')
+      .mockRejectedValueOnce(new Error('config unavailable'))
+    onTestFinished(() => {
+      waitForInitialization.mockRestore()
+    })
+    await expect(evaluateSpendCapBreach(guardDeps(101))).resolves.toBeNull()
+    expect(waitForInitialization).toHaveBeenCalledOnce()
+  })
+
   it('fails open when usage cannot be read', async () => {
     await useSpendCap(true)
     await expect(
