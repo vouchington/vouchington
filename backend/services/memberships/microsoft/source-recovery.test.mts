@@ -14,7 +14,7 @@ import {
   getTestPendingMicrosoftStoreVerification,
 } from '@voucha/test-helpers/microsoft-store-memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
+import { processMicrosoftStoreVerificationAgainst } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import { MicrosoftStoreResponseError } from './response-error.mts'
 import { reconcileMicrosoftStoreSource } from './source-recovery.mts'
 import type { MicrosoftStoreClient } from './types.mts'
@@ -35,7 +35,7 @@ describe('Microsoft Store source recovery', () => {
       trustedProviderContext: { environment: 'test', applicationId: fixture.applicationId },
       evidence: fixture.evidence,
     })
-    await processMicrosoftStoreMembershipVerification(initial.id, { client: fixture.activeClient })
+    await processMicrosoftStoreVerificationAgainst(initial.id, fixture.activeClient)
     const membership = await getMembershipByUserId(fixture.user.id)
     const sourceId = membership && (await getMembershipSourceIdByMembershipId(membership.id))
     if (!sourceId) throw new Error('Microsoft Store source was not projected')
@@ -47,7 +47,7 @@ describe('Microsoft Store source recovery', () => {
     const recoveryContext = { userId: fixture.user.id, applicationId: fixture.applicationId }
     const firstPendingId = await expectQueuedRecoveryVerification(recoveryContext)
     await expect(
-      processMicrosoftStoreMembershipVerification(firstPendingId, { client: unavailable }),
+      processMicrosoftStoreVerificationAgainst(firstPendingId, unavailable),
     ).rejects.toThrow('Microsoft Store API request failed with 503')
     await expect(getMembershipVerification(fixture.user.id, firstPendingId)).resolves.toMatchObject(
       {
@@ -57,7 +57,7 @@ describe('Microsoft Store source recovery', () => {
 
     await reconcileMicrosoftStoreSource({ sourceId })
     await expect(
-      processMicrosoftStoreMembershipVerification(firstPendingId, { client: unavailable }),
+      processMicrosoftStoreVerificationAgainst(firstPendingId, unavailable),
     ).rejects.toThrow('Microsoft Store API request failed with 503')
 
     await expect(getTestPendingMicrosoftStoreVerification(recoveryContext)).resolves.toBe(
@@ -69,9 +69,7 @@ describe('Microsoft Store source recovery', () => {
     await expect(countTestPendingMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(1)
     expect(unavailable.queryCollections).toHaveBeenCalledTimes(2)
 
-    await processMicrosoftStoreMembershipVerification(firstPendingId, {
-      client: fixture.activeClient,
-    })
+    await processMicrosoftStoreVerificationAgainst(firstPendingId, fixture.activeClient)
     await (await memberships.getJob(firstPendingId))?.remove()
     await reconcileMicrosoftStoreSource({ sourceId })
     await expect(memberships.getJob(firstPendingId)).resolves.toBeNull()
@@ -81,9 +79,7 @@ describe('Microsoft Store source recovery', () => {
     await reconcileMicrosoftStoreSource({ sourceId })
     const laterPendingId = await expectQueuedRecoveryVerification(recoveryContext)
     expect(laterPendingId).not.toBe(firstPendingId)
-    await processMicrosoftStoreMembershipVerification(laterPendingId, {
-      client: fixture.activeClient,
-    })
+    await processMicrosoftStoreVerificationAgainst(laterPendingId, fixture.activeClient)
     await (await memberships.getJob(laterPendingId))?.remove()
 
     await expect(countTestPendingMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(0)
@@ -100,7 +96,7 @@ describe('Microsoft Store source recovery', () => {
       trustedProviderContext: { environment: 'test', applicationId: fixture.applicationId },
       evidence: fixture.evidence,
     })
-    await processMicrosoftStoreMembershipVerification(initial.id, { client: fixture.activeClient })
+    await processMicrosoftStoreVerificationAgainst(initial.id, fixture.activeClient)
     const membership = await getMembershipByUserId(fixture.user.id)
     const sourceId = membership && (await getMembershipSourceIdByMembershipId(membership.id))
     if (!sourceId) throw new Error('Microsoft Store source was not projected')
@@ -119,7 +115,7 @@ describe('Microsoft Store source recovery', () => {
       userId: fixture.user.id,
       applicationId: fixture.applicationId,
     })
-    await processMicrosoftStoreMembershipVerification(recoveryId, { client: renewedClient })
+    await processMicrosoftStoreVerificationAgainst(recoveryId, renewedClient)
     await (await memberships.getJob(recoveryId))?.remove()
 
     expect(queryCollections).toHaveBeenCalledOnce()

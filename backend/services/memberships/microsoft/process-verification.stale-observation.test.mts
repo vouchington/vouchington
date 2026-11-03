@@ -13,12 +13,15 @@ import {
   getTestPendingMicrosoftStoreVerification,
 } from '@voucha/test-helpers/microsoft-store-memberships'
 import { createMembershipVerification } from '../verifications.mts'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
+import { processMicrosoftStoreVerificationAgainst } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import { reconcileMicrosoftStoreSource } from './source-recovery.mts'
 import type { MicrosoftStoreClient } from './types.mts'
 
 describe('Microsoft Store stale observations', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it('retains fresh account keys without rolling back current-source metadata', async () => {
     const fixture = await createFixture()
@@ -67,7 +70,7 @@ describe('Microsoft Store stale observations', () => {
       name: 'processMembershipVerification',
       data: { verificationId: recoveryId },
     })
-    await processMicrosoftStoreMembershipVerification(recoveryId, { client: recoveryClient })
+    await processMicrosoftStoreVerificationAgainst(recoveryId, recoveryClient)
     await (await memberships.getJob(recoveryId))?.remove()
 
     expect(collections).toHaveBeenLastCalledWith(
@@ -133,9 +136,10 @@ async function verify(
       ...evidence,
     },
   })
-  await processMicrosoftStoreMembershipVerification(verification.id, {
-    client: client(fixture, expiry, recurrenceId, revision, collectionItemId),
-  })
+  await processMicrosoftStoreVerificationAgainst(
+    verification.id,
+    client(fixture, expiry, recurrenceId, revision, collectionItemId),
+  )
 }
 
 function client(

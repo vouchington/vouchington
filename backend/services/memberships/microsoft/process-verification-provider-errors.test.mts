@@ -8,20 +8,24 @@ import {
 } from '@voucha/test-helpers'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
+import { processMicrosoftStoreVerificationAgainst } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import { MicrosoftStoreResponseError } from './response-error.mts'
 import type { MicrosoftStoreClient } from './types.mts'
 
 describe('Microsoft Store provider verification outcomes', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it('terminalizes a confirmed invalid Store ID key response', async () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: failingClient(new MicrosoftStoreResponseError(401, true)),
-    })
+    await processMicrosoftStoreVerificationAgainst(
+      verification.id,
+      failingClient(new MicrosoftStoreResponseError(401, true)),
+    )
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -30,20 +34,35 @@ describe('Microsoft Store provider verification outcomes', () => {
   })
 
   it.each([
-    ['generic 401 service authentication failure', new MicrosoftStoreResponseError(401, false)],
-    ['generic 403 service authorization failure', new MicrosoftStoreResponseError(403, false)],
-    ['429 throttling response', new MicrosoftStoreResponseError(429, false)],
-    ['5xx service response', new MicrosoftStoreResponseError(503, false)],
-    ['network timeout', new Error('Microsoft Store request timed out')],
-  ] as const)('retries a %s', async (_description, error) => {
+    [
+      'generic 401 service authentication failure',
+      new MicrosoftStoreResponseError(401, false),
+      { status: 401, invalidStoreIdKey: false },
+    ],
+    [
+      'generic 403 service authorization failure',
+      new MicrosoftStoreResponseError(403, false),
+      { status: 403, invalidStoreIdKey: false },
+    ],
+    [
+      '429 throttling response',
+      new MicrosoftStoreResponseError(429, false),
+      { cause: { status: 429 } },
+    ],
+    [
+      '5xx service response',
+      new MicrosoftStoreResponseError(503, false),
+      { status: 503, invalidStoreIdKey: false },
+    ],
+    ['network timeout', new Error('Microsoft Store request timed out'), null],
+  ] as const)('retries a %s', async (_description, error, rejection) => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await expect(
-      processMicrosoftStoreMembershipVerification(verification.id, {
-        client: failingClient(error),
-      }),
-    ).rejects.toBe(error)
+    const rejected = expect(
+      processMicrosoftStoreVerificationAgainst(verification.id, failingClient(error)),
+    ).rejects
+    await (rejection === null ? rejected.toBe(error) : rejected.toMatchObject(rejection))
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -56,22 +75,20 @@ describe('Microsoft Store provider verification outcomes', () => {
     const verification = await fixture.submit()
 
     await expect(
-      processMicrosoftStoreMembershipVerification(verification.id, {
-        client: {
-          queryCollections: async () => [],
-          queryRecurrences: async () => [
-            {
-              id: `recurrence-${randomUUID()}`,
-              productId: fixture.productId,
-              skuId: '0001',
-              startTime: new Date(Date.now() - 86_400_000).toISOString(),
-              expirationTime: new Date(Date.now() + 86_400_000).toISOString(),
-              lastModified: new Date().toISOString(),
-              recurrenceState: 'Active',
-              autoRenew: true,
-            },
-          ],
-        },
+      processMicrosoftStoreVerificationAgainst(verification.id, {
+        queryCollections: async () => [],
+        queryRecurrences: async () => [
+          {
+            id: `recurrence-${randomUUID()}`,
+            productId: fixture.productId,
+            skuId: '0001',
+            startTime: new Date(Date.now() - 86_400_000).toISOString(),
+            expirationTime: new Date(Date.now() + 86_400_000).toISOString(),
+            lastModified: new Date().toISOString(),
+            recurrenceState: 'Active',
+            autoRenew: true,
+          },
+        ],
       }),
     ).rejects.toThrow('Microsoft Store Collections/Recurrence response lag')
 
