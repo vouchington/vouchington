@@ -5,6 +5,7 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
 
   await write(
     `/* finalizeChunksIfCompleteForMany */
+    -- no-mistakes-disable-next-line postgres-bounded-statements: each URL's part covers only its older crawls, usually one; a call covers about 1,000 URLs at most (bedrock-embeddings-batch result-processing group size).
     WITH pairs AS (
       SELECT id AS crawl_id, url_id
       FROM crawls
