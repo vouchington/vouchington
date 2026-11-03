@@ -11,6 +11,10 @@ import {
   pruningDatabaseExists,
   pruningLifecycleConnectionUrl,
 } from './database-lifecycle-scope.mts'
+import {
+  migrationCommandSeconds,
+  migrationControlDeadlineMs,
+} from './migration-control-budget.mts'
 import { migrationCommandFailure } from './migration-command-failure.mts'
 import { assertMigrationServerClientsClosed } from './migration-control-clients.mts'
 import {
@@ -30,7 +34,7 @@ export async function withOwnedMigrationControl(
   environment: NodeJS.ProcessEnv,
   recordReserved: (name: string) => void,
 ): Promise<void> {
-  const deadline = performance.now() + 30_000
+  const deadline = performance.now() + migrationControlDeadlineMs
   const name = createPruningDatabaseName()
   const errors: unknown[] = []
   let reserved = false
@@ -46,7 +50,7 @@ export async function withOwnedMigrationControl(
   // Each launcher includes the canonical wrapper's ten-second TERM allowance in this same clock.
   const bounded = async (file: string, args: string[]) => {
     const remaining = Math.floor(deadline - performance.now())
-    const seconds = Math.floor((remaining - 10_000 - 500 - (cleaning ? 0 : 12_000)) / 1000)
+    const seconds = migrationCommandSeconds(remaining, cleaning)
     assert.ok(seconds >= 1, 'Insufficient migration control budget; retain owned sibling')
     try {
       return await exec('python3', [wrapper, String(seconds), file, ...args], {
@@ -94,7 +98,7 @@ export async function withOwnedMigrationControl(
     evidencePath = join(directory, 'child.json')
     // Keep normal Node flags/coverage and SDK suppliers; only the generated sibling URL changes.
     const remaining = Math.floor(deadline - performance.now())
-    const seconds = Math.floor((remaining - 10_000 - 12_000 - 500) / 1000)
+    const seconds = migrationCommandSeconds(remaining, false)
     assert.ok(seconds >= 1, 'Insufficient migration child budget; retain owned sibling')
     childCommandRegistered = true
     await launchMigrationControlChild(
@@ -178,7 +182,7 @@ export async function withOwnedMigrationControl(
     }
   }
   if (performance.now() >= deadline)
-    errors.push(new Error('Migration control exceeded thirty seconds'))
+    errors.push(new Error('Migration control exceeded forty-five seconds'))
   if (errors.length === 1) throw errors[0]
   if (errors.length > 1)
     throw new AggregateError(
