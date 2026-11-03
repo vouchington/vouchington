@@ -24,13 +24,14 @@ function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
 }
 
 describe('localization route handler', () => {
-  let context: ReturnType<typeof createSampleLocalizationContext>
-  beforeEach(() => {
-    context = createSampleLocalizationContext()
+  let context: Awaited<ReturnType<typeof createSampleLocalizationContext>>
+  beforeEach(async () => {
+    context = await createSampleLocalizationContext()
   })
 
   afterEach(() => {
     context.close()
+    vi.unstubAllEnvs()
   })
 
   it('publishes a required public-consumer enum in both API contracts', () => {

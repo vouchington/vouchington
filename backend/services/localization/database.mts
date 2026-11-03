@@ -9,22 +9,9 @@ export function localizationSqlitePath(): string {
   return process.env.LOCALIZATION_SQLITE_PATH ?? DEFAULT_LOCALIZATION_SQLITE_PATH
 }
 
-export function createLocalizationDatabaseOwner(path: () => string = localizationSqlitePath) {
-  let cached: LocalizationDatabase | undefined
-  function get(): LocalizationDatabase {
-    if (cached) return cached
-    cached = openLocalizationDatabase(path())
-    return cached
-  }
-  function close(): void {
-    cached?.close()
-    cached = undefined
-  }
-  return { get, close }
-}
-
-const localizationDatabaseOwner = createLocalizationDatabaseOwner()
+let cached: LocalizationDatabase | undefined
 
 export function getLocalizationDatabase(): LocalizationDatabase {
-  return localizationDatabaseOwner.get()
+  cached ??= openLocalizationDatabase(localizationSqlitePath())
+  return cached
 }

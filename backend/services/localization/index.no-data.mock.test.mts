@@ -3,17 +3,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
 import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
-import { headerValue, isLocalizationClientError } from './index.mts'
-import { createLocalizationDatabaseOwner, localizationSqlitePath } from './database.mts'
+import { headerValue } from './index.mts'
+import { localizationSqlitePath } from './database.mts'
 
 import { queryValues } from './query.mts'
 
 import { createSampleLocalizationContext } from '@voucha/test-helpers/localization-fixtures'
 
 describe('localization service', () => {
-  const contexts: ReturnType<typeof createSampleLocalizationContext>[] = []
-  function useSampleCatalog(messages?: readonly CatalogMessage[]) {
-    const context = createSampleLocalizationContext(messages)
+  const contexts: Awaited<ReturnType<typeof createSampleLocalizationContext>>[] = []
+  async function useSampleCatalog(messages?: readonly CatalogMessage[]) {
+    const context = await createSampleLocalizationContext(messages)
     contexts.push(context)
     return context
   }
@@ -22,9 +22,10 @@ describe('localization service', () => {
     vi.unstubAllEnvs()
   })
 
-  it('resolves public batches, headers, and client errors', () => {
-    const context = useSampleCatalog()
-    const { localizationBatchPayload, localizationGetResult } = context.resolver
+  it('resolves public batches, headers, and client errors', async () => {
+    const context = await useSampleCatalog()
+    const { localizationBatchPayload, localizationGetResult, isLocalizationClientError } =
+      context.resolver
     const payload = localizationBatchPayload({
       consumer: 'web',
       locales: ['en', 'es'],
@@ -70,37 +71,20 @@ describe('localization service', () => {
         .status,
     ).toBe(304)
     expect(() => localizationGetResult({}, undefined)).toThrow(/consumer is required/)
-    vi.stubEnv('LOCALIZATION_SQLITE_PATH', context.path)
-    const owner = createLocalizationDatabaseOwner()
-    try {
-      expect(owner.get().revision).toBe(payload.revision)
-    } finally {
-      owner.close()
-    }
+    expect(context.getLocalizationDatabase().revision).toBe(payload.revision)
   })
 
-  it('opens the current environment path lazily and caches one owned SQLite handle', () => {
-    const first = useSampleCatalog()
-    const second = useSampleCatalog(boundMessages(1))
+  it('caches one owned SQLite handle per module instance', async () => {
+    const first = await useSampleCatalog()
+    const second = await useSampleCatalog(boundMessages(1))
+    expect(second.database.revision).not.toBe(first.database.revision)
     vi.stubEnv('LOCALIZATION_SQLITE_PATH', first.path)
-    const owner = createLocalizationDatabaseOwner()
-    vi.stubEnv('LOCALIZATION_SQLITE_PATH', second.path)
-    const database = owner.get()
-    try {
-      expect(database.revision).toBe(second.database.revision)
-      expect(database.revision).not.toBe(first.database.revision)
-      vi.stubEnv('LOCALIZATION_SQLITE_PATH', first.path)
-      expect(owner.get()).toBe(database)
-      expect(database.sqlite.isOpen).toBe(true)
-    } finally {
-      owner.close()
-    }
-    expect(database.sqlite.isOpen).toBe(false)
-    expect(() => owner.close()).not.toThrow()
+    expect(second.getLocalizationDatabase()).toBe(second.database)
+    expect(second.database.sqlite.isOpen).toBe(true)
   })
 
-  it('disposes real SQLite and its temporary artifact idempotently', () => {
-    const context = useSampleCatalog()
+  it('disposes real SQLite and its temporary artifact idempotently', async () => {
+    const context = await useSampleCatalog()
     expect(context.database.sqlite.isOpen).toBe(true)
     expect(existsSync(context.path)).toBe(true)
 

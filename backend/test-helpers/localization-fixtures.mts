@@ -3,19 +3,18 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CatalogMessage } from '@vouchington/localization'
 import { compileLocalizationSqlite } from '@vouchington/localization-compiler'
-import { createLocalizationDatabaseOwner } from '../services/localization/database.mts'
-import { createLocalizationResolver } from '../services/localization/resolve.mts'
+import { vi } from 'vitest'
 
-export function createSampleLocalizationContext(
+export async function createSampleLocalizationContext(
   messages: readonly CatalogMessage[] = sampleCatalogMessages(),
 ) {
   const directory = mkdtempSync(join(catalogScratchDirectory(), 'localization-'))
   const path = join(directory, 'catalog.sqlite')
-  const databaseOwner = createLocalizationDatabaseOwner(() => path)
+  let database: { close(): void } | undefined
   let closed = false
   function close(): void {
     if (closed) return
-    databaseOwner.close()
+    database?.close()
     rmSync(directory, { recursive: true, force: true })
     closed = true
   }
@@ -28,11 +27,19 @@ export function createSampleLocalizationContext(
       if (previousTmpdir === undefined) Reflect.deleteProperty(process.env, 'TMPDIR')
       else process.env.TMPDIR = previousTmpdir
     }
-    const database = databaseOwner.get()
+    // The production modules cache one SQLite handle per module instance, so each
+    // context loads fresh instances that open the catalog named by the environment.
+    vi.stubEnv('LOCALIZATION_SQLITE_PATH', path)
+    vi.resetModules()
+    const databaseModule = await import('../services/localization/database.mts')
+    const resolver = await import('../services/localization/resolve.mts')
+    const opened = databaseModule.getLocalizationDatabase()
+    database = opened
     return {
       path,
-      database,
-      resolver: createLocalizationResolver(databaseOwner.get),
+      database: opened,
+      getLocalizationDatabase: databaseModule.getLocalizationDatabase,
+      resolver,
       close,
     }
   } catch (err) {
