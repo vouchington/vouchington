@@ -82,7 +82,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
       throw new Error('Response recovery must settle before processor dispatch')
     case 'reconcile-copyright-agent-dispatches':
       return processReconcileCopyrightAgentDispatches(
-        {},
         job.data as import('@queues/ai-agents/types').CopyrightAgentSweepData,
       )
     default:

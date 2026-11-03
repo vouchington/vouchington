@@ -13,23 +13,12 @@ import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/e
 import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
 type ReconcileCopyrightAgentDispatchesDeps = {
-  enqueueContinuation: typeof enqueueReconcileCopyrightAgentDispatches
+  /** Lets a test scope the sweep to its own rows in a database shared with parallel tests. */
   getPending: typeof getPendingCopyrightAgentDispatches
-  enqueueEmail: typeof enqueueOrRetryCopyrightEmailIntake
-  enqueueForm: typeof enqueueOrRetryCopyrightFormScreening
-  applyFormEffect: typeof applyNonSpamSignedInCopyrightFormScreening
-  enqueueAppeal: typeof enqueueOrRetryCopyrightAppealRecommendation
-  enqueueSubmissionGuidance: typeof enqueueOrRetryCopyrightSubmissionGuidance
 }
 
 const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
-  enqueueContinuation: enqueueReconcileCopyrightAgentDispatches,
   getPending: getPendingCopyrightAgentDispatches,
-  enqueueEmail: enqueueOrRetryCopyrightEmailIntake,
-  enqueueForm: enqueueOrRetryCopyrightFormScreening,
-  applyFormEffect: applyNonSpamSignedInCopyrightFormScreening,
-  enqueueAppeal: enqueueOrRetryCopyrightAppealRecommendation,
-  enqueueSubmissionGuidance: enqueueOrRetryCopyrightSubmissionGuidance,
 }
 
 /**
@@ -41,10 +30,9 @@ const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
  * `form-effect` belong to a case already open, so they run in either state.
  */
 export async function processReconcileCopyrightAgentDispatches(
-  dependencyOverrides: Partial<ReconcileCopyrightAgentDispatchesDeps> = {},
   data: CopyrightAgentSweepData = {},
+  deps: ReconcileCopyrightAgentDispatchesDeps = defaultDeps,
 ): Promise<{ hasMore: boolean }> {
-  const deps = { ...defaultDeps, ...dependencyOverrides }
   const intakeEnabled = isCopyrightIntakeEnabled()
   const errors: unknown[] = []
   const { batchSize, maxBatches } = getCopyrightSweepLimits()
@@ -54,11 +42,11 @@ export async function processReconcileCopyrightAgentDispatches(
     const page = await deps.getPending({ ...(cursor ? { after: cursor } : {}), limit: batchSize })
     const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
     // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once delivery before cursor advance.
-    errors.push(...(await dispatchCopyrightAgentPage(dispatches, deps)))
+    errors.push(...(await dispatchCopyrightAgentPage(dispatches)))
     cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
     if (!cursor) break
   }
-  if (cursor) await deps.enqueueContinuation({ after: cursor })
+  if (cursor) await enqueueReconcileCopyrightAgentDispatches({ after: cursor })
   if (errors.length > 0) {
     throw new AggregateError(errors, 'Copyright agent dispatch reconciliation failed')
   }
@@ -71,10 +59,9 @@ function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {
 
 async function dispatchCopyrightAgentPage(
   pending: readonly CopyrightAgentDispatch[],
-  deps: ReconcileCopyrightAgentDispatchesDeps,
 ): Promise<unknown[]> {
   const enqueues = await Promise.allSettled(
-    pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item, deps)])),
+    pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item)])),
   )
   const errors: unknown[] = enqueues.flatMap(result =>
     result.status === 'rejected' ? [result.reason] : [],
@@ -83,7 +70,7 @@ async function dispatchCopyrightAgentPage(
     if (item.kind !== 'form-effect') continue
     try {
       // oxlint-disable-next-line no-await-in-loop -- each durable legal effect may lock targets.
-      await deps.applyFormEffect(item.submissionId)
+      await applyNonSpamSignedInCopyrightFormScreening(item.submissionId)
     } catch (err) {
       errors.push(err)
     }
@@ -93,10 +80,9 @@ async function dispatchCopyrightAgentPage(
 
 function enqueueDispatch(
   item: Exclude<CopyrightAgentDispatch, { kind: 'form-effect' }>,
-  deps: ReconcileCopyrightAgentDispatchesDeps,
 ): Promise<void> {
-  if (item.kind === 'email') return deps.enqueueEmail(item.intakeId)
-  if (item.kind === 'form-screening') return deps.enqueueForm(item.submissionId)
-  if (item.kind === 'submission-guidance') return deps.enqueueSubmissionGuidance(item.submissionId)
-  return deps.enqueueAppeal(item.submissionId)
+  if (item.kind === 'email') return enqueueOrRetryCopyrightEmailIntake(item.intakeId)
+  if (item.kind === 'form-screening') return enqueueOrRetryCopyrightFormScreening(item.submissionId)
+  if (item.kind === 'submission-guidance') return enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId)
+  return enqueueOrRetryCopyrightAppealRecommendation(item.submissionId)
 }
