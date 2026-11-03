@@ -9,11 +9,10 @@ import {
 } from '@services/copyright-notices/dsa-statement-submission-sweep'
 import { getCopyrightSweepLimits } from '@services/copyright-notices/work-limits'
 
-export async function processSubmitDsaStatementOfReasons(
-  data: { submissionId: string },
-  dependencies: { process?: typeof processDsaStatementSubmission } = {},
-): Promise<ProcessDsaStatementSubmissionResult> {
-  return (dependencies.process ?? processDsaStatementSubmission)(data.submissionId)
+export async function processSubmitDsaStatementOfReasons(data: {
+  submissionId: string
+}): Promise<ProcessDsaStatementSubmissionResult> {
+  return processDsaStatementSubmission(data.submissionId)
 }
 
 /** One bounded page of materialization and one bounded page of enqueue work per tick. */

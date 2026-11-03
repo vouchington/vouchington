@@ -20,29 +20,8 @@ type CopyrightDeliveryChannel = Parameters<
 
 type BulkEnqueue = (intentIds: string[]) => Promise<unknown>
 
-type ReconcileCopyrightDeliveryIntentsDeps = {
-  enqueueContinuation: typeof enqueueReconcileCopyrightDeliveryIntents
-  searchDeliveryIntents: typeof searchRecoverableCopyrightDeliveryIntentIds
-  enqueueBulkDeliverCopyrightNotices: BulkEnqueue
-  enqueueBulkSendCopyrightNoticeEmails: BulkEnqueue
-}
-
-const defaultDeps: ReconcileCopyrightDeliveryIntentsDeps = {
-  enqueueContinuation: enqueueReconcileCopyrightDeliveryIntents,
-  searchDeliveryIntents: searchRecoverableCopyrightDeliveryIntentIds,
-  enqueueBulkDeliverCopyrightNotices,
-  enqueueBulkSendCopyrightNoticeEmails,
-}
-
-export async function processDeliverCopyrightNotice(
-  data: { intentId: string },
-  dependencies: {
-    deliverCopyrightInAppNotification?: typeof deliverCopyrightInAppNotification
-  } = {},
-): Promise<boolean> {
-  const deliver =
-    dependencies.deliverCopyrightInAppNotification ?? deliverCopyrightInAppNotification
-  return deliver(data.intentId)
+export async function processDeliverCopyrightNotice(data: { intentId: string }): Promise<boolean> {
+  return deliverCopyrightInAppNotification(data.intentId)
 }
 
 /**
@@ -52,10 +31,8 @@ export async function processDeliverCopyrightNotice(
  * retry covers what is still pending.
  */
 export async function processReconcileCopyrightDeliveryIntents(
-  dependencyOverrides: Partial<ReconcileCopyrightDeliveryIntentsDeps> = {},
   data: CopyrightSweepContinuation = {},
 ): Promise<{ enqueued: number; hasMore: boolean }> {
-  const deps = { ...defaultDeps, ...dependencyOverrides }
   const cursors = new Map(
     Object.entries(data.cursors ?? {}).map(([key, cursor]) => [
       key === 'email-notices' ? 'email' : key,
@@ -66,8 +43,8 @@ export async function processReconcileCopyrightDeliveryIntents(
   const deferred = new Set<string>()
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
   const enqueueByChannel: Record<CopyrightDeliveryChannel, BulkEnqueue> = {
-    in_app: intentIds => deps.enqueueBulkDeliverCopyrightNotices(intentIds),
-    email: intentIds => deps.enqueueBulkSendCopyrightNoticeEmails(intentIds),
+    in_app: enqueueBulkDeliverCopyrightNotices,
+    email: enqueueBulkSendCopyrightNoticeEmails,
   }
   const channels = Object.keys(enqueueByChannel) as CopyrightDeliveryChannel[]
   const pending = [...(data.pending ?? channels)]
@@ -80,7 +57,7 @@ export async function processReconcileCopyrightDeliveryIntents(
     // oxlint-disable-next-line no-await-in-loop -- rotate channels after each page under the shared job allowance.
     await enqueueBulkCopyrightSweepPages(
       tally,
-      page => deps.searchDeliveryIntents({ channel, ...page }),
+      page => searchRecoverableCopyrightDeliveryIntentIds({ channel, ...page }),
       enqueueByChannel[channel],
       {
         after,
@@ -101,7 +78,7 @@ export async function processReconcileCopyrightDeliveryIntents(
     const continuationCursors = Object.fromEntries(
       [...cursors].map(([key, cursor]) => [key === 'email' ? 'email-notices' : key, cursor]),
     )
-    await deps.enqueueContinuation({ pending, cursors: continuationCursors })
+    await enqueueReconcileCopyrightDeliveryIntents({ pending, cursors: continuationCursors })
   }
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright delivery reconciliation failed')
