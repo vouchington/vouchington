@@ -33,6 +33,7 @@ describe('downloadBatchResults', () => {
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await Promise.all(tempFiles.splice(0).map(path => unlink(path).catch(() => {})))
   })
 
