@@ -1,4 +1,5 @@
-import { describe, it, expect, afterEach, vi, beforeAll } from 'vitest'
+import { afterAll, describe, it, expect, afterEach, beforeEach, vi, beforeAll } from 'vitest'
+import * as moderation from '@modules/openai-utils/moderate'
 import { upsertPostOpenAIModeration } from '../posts.mts'
 import { createPost } from '@services/posts'
 import {
@@ -8,14 +9,14 @@ import {
   updatePostModerationData,
   getPostModerationData,
   WEB_PROVENANCE,
+  createOpenAIModerationResponse,
 } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import { createPostModerationContent } from '@services/posts/content'
-import type { OpenAI } from '@modules/openai-utils'
 import type { PrivateUser } from '@services/users/types'
 
-const createOpenAIModeration = vi.fn<VitestLooseMock>()
-const dependencies = { createOpenAIModeration }
+// The OpenAI call is the provider edge; everything above it runs for real.
+const requestOpenAIModeration = vi.spyOn(moderation, 'requestOpenAIModeration')
 
 describe('posts', () => {
   let user: PrivateUser
@@ -24,63 +25,22 @@ describe('posts', () => {
     user = await createTestUser()
   })
 
+  beforeEach(() => {
+    requestOpenAIModeration.mockReset()
+    requestOpenAIModeration.mockRejectedValue(new Error('Unexpected OpenAI request'))
+  })
+
   afterEach(() => {
-    vi.clearAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  afterAll(() => {
+    // Leave the real provider function in place for later files in this fork.
+    requestOpenAIModeration.mockRestore()
   })
 
   function randomSuffix(): string {
     return Math.random().toString(36).slice(2, 10)
-  }
-
-  function createMockModeration(flagged: boolean): OpenAI.Moderation {
-    return {
-      flagged,
-      categories: {
-        harassment: false,
-        'harassment/threatening': false,
-        hate: false,
-        'hate/threatening': false,
-        illicit: false,
-        'illicit/violent': false,
-        'self-harm': false,
-        'self-harm/instructions': false,
-        'self-harm/intent': false,
-        sexual: false,
-        'sexual/minors': false,
-        violence: false,
-        'violence/graphic': false,
-      },
-      category_scores: {
-        harassment: 0.0,
-        'harassment/threatening': 0.0,
-        hate: 0.0,
-        'hate/threatening': 0.0,
-        illicit: 0.0,
-        'illicit/violent': 0.0,
-        'self-harm': 0.0,
-        'self-harm/instructions': 0.0,
-        'self-harm/intent': 0.0,
-        sexual: 0.0,
-        'sexual/minors': 0.0,
-        violence: 0.0,
-        'violence/graphic': 0.0,
-      },
-      category_applied_input_types: {
-        harassment: ['text'],
-        'harassment/threatening': ['text'],
-        hate: ['text'],
-        'hate/threatening': ['text'],
-        illicit: ['text'],
-        'illicit/violent': ['text'],
-        'self-harm': ['text'],
-        'self-harm/instructions': ['text'],
-        'self-harm/intent': ['text'],
-        sexual: ['text'],
-        'sexual/minors': ['text'],
-        violence: ['text'],
-        'violence/graphic': ['text'],
-      },
-    }
   }
 
   describe('upsertPostOpenAIModeration with mocked API', () => {
@@ -121,11 +81,11 @@ describe('posts', () => {
       expect(moderationData!.openai_omni_moderation_input_sha256).toEqual(content_sha256)
       expect(moderationData!.openai_omni_moderation_content_sha256).toEqual(content_sha256)
 
-      // Verify the mock was not called since we reused existing results
-      expect(createOpenAIModeration).not.toHaveBeenCalled()
+      // Verify the API was not called since we reused existing results
+      expect(requestOpenAIModeration).not.toHaveBeenCalled()
     })
 
-    it('calls mocked OpenAI API when no existing results', async () => {
+    it('calls the OpenAI API when no existing results', async () => {
       const random = randomSuffix()
 
       const post = await createPost(user, WEB_PROVENANCE, {
@@ -133,13 +93,19 @@ describe('posts', () => {
         markdown: `New moderation content ${random}`,
         post_type: 'discussion',
       })
-      const mockResults = [createMockModeration(false)]
-      createOpenAIModeration.mockResolvedValueOnce(mockResults)
+      requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
 
-      const result = await upsertPostOpenAIModeration(post as Post, { dependencies })
+      const result = await upsertPostOpenAIModeration(post as Post)
 
-      expect(result.results).toEqual(mockResults)
-      expect(createOpenAIModeration).toHaveBeenCalledTimes(1)
+      expect(result.results).toMatchObject([{ flagged: false }])
+      expect(result.flagged).toBe(false)
+      expect(requestOpenAIModeration).toHaveBeenCalledExactlyOnceWith(
+        [
+          { type: 'text', text: `New Moderation ${random}` },
+          { type: 'text', text: `New moderation content ${random}` },
+        ],
+        'omni-moderation-latest',
+      )
 
       const moderationData = (await getPostModerationData(post.id)) as {
         openai_omni_moderation_content_sha256: Buffer
@@ -169,8 +135,8 @@ describe('posts', () => {
       expect(result.results).toBeUndefined()
       expect(result.content_sha256).toEqual(content_sha256)
 
-      // Verify the mock was not called since moderation is up to date
-      expect(createOpenAIModeration).not.toHaveBeenCalled()
+      // Verify the API was not called since moderation is up to date
+      expect(requestOpenAIModeration).not.toHaveBeenCalled()
     })
 
     it('skips moderation when no content to moderate', async () => {
@@ -188,8 +154,8 @@ describe('posts', () => {
       expect(result.skipped).toBe(true)
       expect(result.reason).toBe('no_content_to_moderate')
 
-      // Verify the mock was not called since there's no content
-      expect(createOpenAIModeration).not.toHaveBeenCalled()
+      // Verify the API was not called since there's no content
+      expect(requestOpenAIModeration).not.toHaveBeenCalled()
     })
 
     it('handles flagged content correctly', async () => {
@@ -200,13 +166,15 @@ describe('posts', () => {
         markdown: `This content will be flagged ${random}`,
         post_type: 'discussion',
       })
-      const mockResults = [createMockModeration(true)]
-      createOpenAIModeration.mockResolvedValueOnce(mockResults)
+      requestOpenAIModeration.mockResolvedValueOnce(
+        createOpenAIModerationResponse(true, { violence: true }),
+      )
 
-      const result = await upsertPostOpenAIModeration(post as Post, { dependencies })
+      const result = await upsertPostOpenAIModeration(post as Post)
 
-      expect(result.results).toEqual(mockResults)
-      expect(createOpenAIModeration).toHaveBeenCalledTimes(1)
+      expect(result.results).toMatchObject([{ flagged: true, categories: { violence: true } }])
+      expect(result.flagged).toBe(true)
+      expect(requestOpenAIModeration).toHaveBeenCalledOnce()
 
       const moderationData = (await getPostModerationData(post.id)) as {
         is_flagged_by_openai_omni_moderation: boolean
@@ -215,7 +183,9 @@ describe('posts', () => {
 
       expect(moderationData).toBeDefined()
       expect(moderationData!.is_flagged_by_openai_omni_moderation).toBe(true)
-      expect(moderationData!.openai_omni_moderation_results).toEqual({ flagged_categories: [] })
+      expect(moderationData!.openai_omni_moderation_results).toEqual({
+        flagged_categories: ['violence'],
+      })
     })
   })
 
@@ -243,12 +213,9 @@ describe('posts', () => {
     })
     await setPostModerationContentSha256(post.id, content_sha256)
 
-    const result = await upsertPostOpenAIModeration(post as Post, {
-      readOnly: false,
-      dependencies,
-    })
+    const result = await upsertPostOpenAIModeration(post as Post, { readOnly: false })
 
-    expect(createOpenAIModeration).not.toHaveBeenCalled()
+    expect(requestOpenAIModeration).not.toHaveBeenCalled()
     expect(result).toEqual({
       results: [{ flagged: true, categories: { harassment: true } }],
       content_sha256,

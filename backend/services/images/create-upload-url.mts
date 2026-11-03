@@ -11,19 +11,9 @@ const PRESIGNED_URL_EXPIRATION_SECONDS = 3600 // 1 hour
 interface CreateUploadUrlOptions {
   contentType: string
   contentLength: number
-  dependencies?: Partial<CreateImageUploadUrlDependencies>
-}
-
-type CreateImageUploadUrlDependencies = {
-  presignImageUploadUrl: typeof presignImageUploadUrl
-}
-
-const defaultDependencies: CreateImageUploadUrlDependencies = {
-  presignImageUploadUrl,
 }
 
 export async function createImageUploadUrl(user: { id: string }, options: CreateUploadUrlOptions) {
-  const dependencies = { ...defaultDependencies, ...options.dependencies }
   const { contentType: normalizedContentType } = validateImageUpload(options)
   await using transaction = await beginTransaction()
   await lockActiveUserLifecycleForMutation(transaction, user.id)
@@ -31,7 +21,7 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   const imageId = mintUUIDv7()
   const s3Key = imageId
 
-  const uploadUrl = await dependencies.presignImageUploadUrl({
+  const uploadUrl = await presignImageUploadUrl({
     s3Key,
     contentType: normalizedContentType,
     contentLength: options.contentLength,

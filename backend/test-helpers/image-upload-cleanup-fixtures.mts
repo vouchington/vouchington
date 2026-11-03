@@ -12,7 +12,6 @@ export async function createOwnedStagedImage(
   const upload = await createImageUploadUrl(user, {
     contentType: 'image/jpeg',
     contentLength: 1024,
-    dependencies: { presignImageUploadUrl: async () => 'https://example.com/owned-upload' },
   })
   await backdateImageUploadStagedAt(
     upload.image_id,

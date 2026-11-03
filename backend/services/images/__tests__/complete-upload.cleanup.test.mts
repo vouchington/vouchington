@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
+import { chmod, rm, stat } from 'node:fs/promises'
+import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createImageUploadUrl } from '../create-upload-url.mts'
@@ -19,38 +21,46 @@ describe('completeImageUpload temporary-file cleanup', () => {
     vi.restoreAllMocks()
   })
 
-  it('returns the durable processing handoff when temporary-file cleanup fails', async () => {
+  afterAll(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns the durable processing handoff when temporary-file cleanup fails', async context => {
     const { image_id } = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
       contentLength: 1024,
     })
-    const sha256 = createHash('sha256').update(`cleanup ${image_id}`).digest()
-    const cleanup = vi.fn<() => Promise<void>>().mockRejectedValue(new Error('cleanup failed'))
+    const bytes = Buffer.from(`cleanup ${image_id}`)
+    const sha256 = createHash('sha256').update(bytes).digest()
+    let spoolDirectory: string | undefined
+    let spooledFile: string | undefined
+    context.onTestFinished(async () => {
+      if (!spoolDirectory) return
+      await chmod(spoolDirectory, 0o700)
+      await rm(spoolDirectory, { force: true, recursive: true })
+    })
     vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from(['ignored because the frozen file is injected']),
+      Body: Readable.from([bytes]),
     } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
     vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
-    vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockResolvedValue({
-      created: true,
-      s3Key: sha256.toString('hex'),
+    vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(async ({ filename }) => {
+      // A spool directory that is no longer writable makes the real temporary-file removal fail.
+      spooledFile = filename
+      spoolDirectory = dirname(filename)
+      await chmod(spoolDirectory, 0o500)
+      return { created: true, s3Key: sha256.toString('hex') }
     })
     vi.spyOn(s3Module, 'ensureImageDeliveryAliasInS3').mockResolvedValue({
       created: true,
       s3Key: image_id,
     })
 
-    await expect(
-      completeImageUpload(user, image_id, {
-        freezeImageUpload: async () => ({
-          bytes: 1,
-          cleanup,
-          filename: '/unused/frozen-upload',
-          sha256,
-        }),
-      }),
-    ).resolves.toMatchObject({ id: image_id, s3_key: sha256.toString('hex') })
+    await expect(completeImageUpload(user, image_id)).resolves.toMatchObject({
+      id: image_id,
+      s3_key: sha256.toString('hex'),
+    })
 
-    expect(cleanup).toHaveBeenCalledOnce()
+    expect((await stat(spooledFile!)).size).toBe(bytes.byteLength)
     expect((await getImageById(image_id))?.s3_key).toBe(sha256.toString('hex'))
   })
 })

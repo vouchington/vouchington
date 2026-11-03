@@ -12531,9 +12531,6 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../queues/content-analysis
-      '@queues/image-uploads':
-        specifier: workspace:^
-        version: link:../queues/image-uploads
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications

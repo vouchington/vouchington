@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   insertPendingTestImage,
@@ -7,7 +7,8 @@ import {
 } from '@voucha/test-helpers'
 import { createImageUploadUrl } from '../create-upload-url.mts'
 import { completeImageUpload } from '../complete-upload.mts'
-import { getImageByHash, getImageById } from '../get.mts'
+import * as imageReads from '../get.mts'
+import { getImageById } from '../get.mts'
 import { deriveUploadStatus } from '../get-upload-state.mts'
 import * as storageLifecycleLock from '../storage-lifecycle-lock.mts'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
@@ -45,6 +46,10 @@ describe('completeImageUpload - duplicate recovery and races', () => {
         return { created: true, s3Key: imageId }
       },
     )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('allows a fresh upload when an older matching upload failed', async () => {
@@ -138,13 +143,13 @@ describe('completeImageUpload - duplicate recovery and races', () => {
     )
     let hashLookupCompleted!: () => void
     const hashLookup = new Promise<void>(resolve => (hashLookupCompleted = resolve))
-    const completion = completeImageUpload(user, retryImageId, {
-      async getImageByHash(...args) {
-        const image = await getImageByHash(...args)
-        hashLookupCompleted()
-        return image
-      },
+    const realGetImageByHash = imageReads.getImageByHash
+    vi.spyOn(imageReads, 'getImageByHash').mockImplementation(async (...args) => {
+      const image = await realGetImageByHash(...args)
+      hashLookupCompleted()
+      return image
     })
+    const completion = completeImageUpload(user, retryImageId)
     void completion.catch(() => {})
     await hashLookup
     await replacementEnteredLock.promise

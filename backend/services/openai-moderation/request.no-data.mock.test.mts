@@ -1,25 +1,26 @@
-import { afterEach, expect, it, vi, describe } from 'vitest'
-import type { OpenAI } from '@modules/openai-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createOpenAIModerationResponse } from '../../test-helpers/openai.mts'
 import { createOpenAIModeration } from './request.mts'
 
-const requestOpenAIModeration = vi.fn<VitestLooseMock>()
-const dependencies = { requestOpenAIModeration }
+// The OpenAI call is the provider edge; its wire shape is covered by the recorded replay in
+// backend/modules/openai-utils/moderate.replay.no-data.mock.test.mts.
+const requestOpenAIModeration = vi.hoisted(() =>
+  vi.fn<typeof import('@modules/openai-utils/moderate').requestOpenAIModeration>(),
+)
+
+vi.mock<typeof import('@modules/openai-utils/moderate')>(
+  import('@modules/openai-utils/moderate'),
+  async importOriginal => ({ ...(await importOriginal()), requestOpenAIModeration }),
+)
 
 describe('request', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
+  beforeEach(() => {
+    requestOpenAIModeration.mockReset()
+    requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
   })
 
-  const emptyResponse: OpenAI.Moderations.ModerationCreateResponse = {
-    id: 'mod_test',
-    model: 'omni-moderation-latest',
-    results: [],
-  }
-
   it('createOpenAIModeration wraps text inputs as { type: text, text }', async () => {
-    requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
-
-    await createOpenAIModeration(['hello', 'world'], undefined, { dependencies })
+    await createOpenAIModeration(['hello', 'world'])
 
     expect(requestOpenAIModeration).toHaveBeenCalledWith(
       [
@@ -31,9 +32,7 @@ describe('request', () => {
   })
 
   it('createOpenAIModeration wraps image URLs as { type: image_url, image_url: { url } }', async () => {
-    requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
-
-    await createOpenAIModeration([], ['https://example.com/cat.png'], { dependencies })
+    await createOpenAIModeration([], ['https://example.com/cat.png'])
 
     expect(requestOpenAIModeration).toHaveBeenCalledWith(
       [{ type: 'image_url', image_url: { url: 'https://example.com/cat.png' } }],
@@ -42,12 +41,9 @@ describe('request', () => {
   })
 
   it('createOpenAIModeration sends mixed text and image inputs in order', async () => {
-    requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
-
     await createOpenAIModeration(
       ['title', 'body'],
       ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
-      { dependencies },
     )
 
     expect(requestOpenAIModeration).toHaveBeenCalledWith(
@@ -62,9 +58,7 @@ describe('request', () => {
   })
 
   it('createOpenAIModeration handles undefined images_urls', async () => {
-    requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
-
-    await createOpenAIModeration(['only text'], undefined, { dependencies })
+    await createOpenAIModeration(['only text'], undefined)
 
     expect(requestOpenAIModeration).toHaveBeenCalledWith(
       [{ type: 'text', text: 'only text' }],
@@ -73,12 +67,7 @@ describe('request', () => {
   })
 
   it('marks an API safety check for the shorter request deadline', async () => {
-    requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
-
-    await createOpenAIModeration(['only text'], undefined, {
-      dependencies,
-      apiSafetyCheck: true,
-    })
+    await createOpenAIModeration(['only text'], undefined, { apiSafetyCheck: true })
 
     expect(requestOpenAIModeration).toHaveBeenCalledWith(
       [{ type: 'text', text: 'only text' }],

@@ -10,21 +10,13 @@ import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/modera
 
 type OpenAIModerationReadOptions = {
   readOnly?: boolean
-  dependencies?: Partial<PostOpenAIModerationDependencies>
   attempt?: PostModerationAttempt
 }
-
-type PostOpenAIModerationDependencies = {
-  createOpenAIModeration: typeof createOpenAIModeration
-}
-
-const defaultDependencies: PostOpenAIModerationDependencies = { createOpenAIModeration }
 
 export async function upsertPostOpenAIModeration(
   post: Post,
   options: OpenAIModerationReadOptions = {},
 ) {
-  const dependencies = { ...defaultDependencies, ...options.dependencies }
   const { texts, images_urls, content_sha256 } = createPostModerationContent(post)
 
   // Skip moderation API call if there's no content to moderate
@@ -70,7 +62,7 @@ export async function upsertPostOpenAIModeration(
     }
   }
 
-  const results = await dependencies.createOpenAIModeration(texts, images_urls)
+  const results = await createOpenAIModeration(texts, images_urls)
   const flagged = results.some(result => result.flagged)
 
   const applied = await applyPostOpenAIModerationResults(

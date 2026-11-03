@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser, backdateImageUploadStagedAt } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { withRejectedPostgresQueryForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  rejectPostgresWriteForTest,
+  runBeforePostgresStatementForTest,
+} from '@voucha/test-helpers/injected-failures'
 import {
   insertOwnedUploadCleanupCluster,
   makeOwnedUploadCleanupSweep,
@@ -105,35 +108,25 @@ describe('upload cleanup effect checkpoints', () => {
         sweep.windows[name].done = name !== phase
       const storage = installOwnedUploadCleanupStorage(ids)
       const saved: AbandonedUploadSweep[] = []
-      let rejectedMark = false
       const message = `owned ${phase} acknowledgement failure`
-      const operation = withRejectedPostgresQueryForTest(
-        statement => {
-          const match = statement.includes(
-            phase === 'staged'
-              ? '/* cleanupStagedUploadSource:mark */'
-              : '/* markImageUploadSourcesDeleted:update */',
-          )
-          rejectedMark ||= match
-          return match
-        },
-        message,
-        acknowledgementQuery =>
-          cleanupAbandonedUploads(
-            sweep,
-            async next => {
-              saved.push(next)
-            },
-            { acknowledgementQuery },
-          ),
-      )
-      const failure = await operation.then(
+      const restore =
+        phase === 'staged'
+          ? rejectPostgresWriteForTest('/* cleanupStagedUploadSource:mark */', new Error(message))
+          : runBeforePostgresStatementForTest(
+              '/* markImageUploadSourcesDeleted:update */',
+              async () => {
+                throw new Error(message)
+              },
+            )
+      const failure = await cleanupAbandonedUploads(sweep, async next => {
+        saved.push(next)
+      }).then(
         () => null,
         err => err as Error,
       )
+      restore()
       const expectedError = expect.objectContaining({ message })
       expect(failure).toMatchObject(phase === 'staged' ? { errors: [expectedError] } : { message })
-      expect(rejectedMark).toBe(true)
       expect(saved).toEqual([])
       expect(storage.calls.map(call => call.Key)).toEqual([id])
       expect((await getImageByIdFromPrimary(id, true))?.upload_source_deleted_at).toBeNull()

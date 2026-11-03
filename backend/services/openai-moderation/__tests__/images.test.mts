@@ -1,9 +1,14 @@
-import { createTestUser, setImageOpenAIModerationResults } from '@voucha/test-helpers'
+import {
+  createOpenAIModerationResponse,
+  createTestUser,
+  setImageOpenAIModerationResults,
+} from '@voucha/test-helpers'
 import {
   createCompletedModerationImage,
   createImageModerationResult,
 } from '@voucha/test-helpers/services/openai-moderation/image-moderation'
-import { it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
+import { afterAll, it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
+import * as moderation from '@modules/openai-utils/moderate'
 import { upsertImageOpenAIModeration } from '../images.mts'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { getImageByAny } from '@services/images/get'
@@ -12,15 +17,18 @@ import * as s3Lifecycle from '@services/images/s3-upload-lifecycle'
 import * as imageEmbeddingEnqueues from '@queues/bedrock-embeddings-batch/enqueues'
 import type { PrivateUser } from '@services/users/types'
 
-const presignImageUploadUrl = vi.fn<VitestLooseMock>(({ s3Key }: { s3Key: string }) =>
-  Promise.resolve(`https://images.example.test/${s3Key}?signature=fake`),
-)
-const createOpenAIModeration = vi.fn<VitestLooseMock>()
-const presignImageReadUrl = vi.fn<VitestLooseMock>((s3Key: string) =>
-  Promise.resolve(`https://private-images.example.test/${s3Key}?signature=fake`),
-)
-const imageUploadDependencies = { presignImageUploadUrl }
-const imageModerationDependencies = { createOpenAIModeration, presignImageReadUrl }
+// The OpenAI call is the provider edge; everything above it runs for real.
+const requestOpenAIModeration = vi.spyOn(moderation, 'requestOpenAIModeration')
+
+/** The single image URL production sent to the provider, as a parsed private S3 read URL. */
+function sentImageUrl(): URL {
+  expect(requestOpenAIModeration).toHaveBeenCalledOnce()
+  const [input] = requestOpenAIModeration.mock.calls[0]!
+  expect(input).toHaveLength(1)
+  const [image] = input as Array<{ type: string; image_url: { url: string } }>
+  expect(image!.type).toBe('image_url')
+  return new URL(image!.image_url.url)
+}
 
 describe('images', () => {
   let user: PrivateUser
@@ -30,6 +38,8 @@ describe('images', () => {
   })
 
   beforeEach(() => {
+    requestOpenAIModeration.mockReset()
+    requestOpenAIModeration.mockRejectedValue(new Error('Unexpected OpenAI request'))
     vi.spyOn(s3Lifecycle, 'deleteKnownImageStorageFromS3').mockResolvedValue()
   })
 
@@ -38,12 +48,16 @@ describe('images', () => {
     vi.unstubAllEnvs()
   })
 
-  it('upsertImageOpenAIModeration - moderates image and stores results', async () => {
-    const image = await createCompletedModerationImage(user, imageUploadDependencies)
-    // Mock moderation to return not flagged
-    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
+  afterAll(() => {
+    // Leave the real provider function in place for later files in this fork.
+    requestOpenAIModeration.mockRestore()
+  })
 
-    const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
+  it('upsertImageOpenAIModeration - moderates image and stores results', async () => {
+    const image = await createCompletedModerationImage(user)
+    requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
+
+    const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(false)
     expect(result.results).toBeDefined()
@@ -54,30 +68,27 @@ describe('images', () => {
     expect(updated?.is_flagged_by_openai_omni_moderation).toBe(false)
     expect(updated?.openai_omni_moderation_created_at).toBeDefined()
     expect(updated?.deleted_at).toBeNull()
-    expect(createOpenAIModeration).toHaveBeenCalledWith(
-      [],
-      [`https://private-images.example.test/${image.s3_key}?signature=fake`],
-    )
+    const sent = sentImageUrl()
+    expect(sent.pathname.endsWith(`/${image.s3_key}`)).toBe(true)
+    expect(sent.searchParams.get('X-Amz-Expires')).toBe('300')
   })
 
   it('upsertImageOpenAIModeration - uses stored S3 key for direct uploads', async () => {
     const { image_id: imageId } = await createImageUploadUrl(user, {
       contentType: 'image/png',
       contentLength: 1024,
-      dependencies: imageUploadDependencies,
     })
     await markImageComplete(imageId)
     const image = await getImageByAny(imageId)
     if (!image) throw new Error('Expected completed image')
-    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
+    requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
 
-    const result = await upsertImageOpenAIModeration(imageId, imageModerationDependencies)
+    const result = await upsertImageOpenAIModeration(imageId)
 
     expect(result.flagged).toBe(false)
-    expect(createOpenAIModeration).toHaveBeenCalledWith(
-      [],
-      [`https://private-images.example.test/${image.s3_key}?signature=fake`],
-    )
+    const sent = sentImageUrl()
+    expect(sent.pathname.endsWith(`/${image.s3_key}`)).toBe(true)
+    expect(sent.searchParams.get('X-Amz-Expires')).toBe('300')
   })
 
   it('upsertImageOpenAIModeration - handles image embedding enqueue failures', async () => {
@@ -88,10 +99,10 @@ describe('images', () => {
       .mockRejectedValueOnce(new Error('test image embedding enqueue failure'))
 
     try {
-      const image = await createCompletedModerationImage(user, imageUploadDependencies)
-      createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
+      const image = await createCompletedModerationImage(user)
+      requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
 
-      const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
+      const result = await upsertImageOpenAIModeration(image.id)
 
       expect(result.flagged).toBe(false)
       await expect(enqueueSpy.mock.results[0]?.value).rejects.toThrow(
@@ -104,24 +115,23 @@ describe('images', () => {
   })
 
   it('upsertImageOpenAIModeration - uses a private S3 read URL without an image origin', async () => {
-    const image = await createCompletedModerationImage(user, imageUploadDependencies)
-    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
+    const image = await createCompletedModerationImage(user)
+    requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
 
-    const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
+    const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(false)
-    expect(presignImageReadUrl).toHaveBeenCalledWith(image.s3_key)
+    expect(sentImageUrl().pathname.endsWith(`/${image.s3_key}`)).toBe(true)
   })
 
   it('upsertImageOpenAIModeration - deletes flagged image', async () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
-    const image = await createCompletedModerationImage(user, imageUploadDependencies)
-    // Mock moderation to return flagged
-    const flaggedModeration = createImageModerationResult(true)
-    flaggedModeration.categories.sexual = true
-    createOpenAIModeration.mockResolvedValueOnce([flaggedModeration])
+    const image = await createCompletedModerationImage(user)
+    requestOpenAIModeration.mockResolvedValueOnce(
+      createOpenAIModerationResponse(true, { sexual: true }),
+    )
 
-    const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
+    const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(true)
 
@@ -131,17 +141,15 @@ describe('images', () => {
   })
 
   it('upsertImageOpenAIModeration - retries deletion for already-moderated flagged image', async () => {
-    const image = await createCompletedModerationImage(user, imageUploadDependencies)
+    const image = await createCompletedModerationImage(user)
     const flaggedModeration = createImageModerationResult(true)
     await setImageOpenAIModerationResults(image.id, [flaggedModeration], true)
 
-    createOpenAIModeration.mockClear()
-
-    const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
+    const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.skipped).toBe(true)
     expect(result.reason).toBe('already_moderated_flagged')
-    expect(createOpenAIModeration).not.toHaveBeenCalled()
+    expect(requestOpenAIModeration).not.toHaveBeenCalled()
     await expect(getImageByAny(image.id)).resolves.toBeNull()
   })
 
@@ -152,19 +160,17 @@ describe('images', () => {
     // production. The reachable skip path is "this exact image was already
     // moderated" — calling upsertImageOpenAIModeration twice should short-circuit
     // on the second call.
-    const image = await createCompletedModerationImage(user, imageUploadDependencies)
+    const image = await createCompletedModerationImage(user)
 
-    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
-    await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
-
-    // Clear mock to verify it's not called again
-    createOpenAIModeration.mockClear()
+    requestOpenAIModeration.mockResolvedValueOnce(createOpenAIModerationResponse())
+    await upsertImageOpenAIModeration(image.id)
+    expect(requestOpenAIModeration).toHaveBeenCalledOnce()
 
     // Second moderation should detect existing results and skip the API call
-    const result2 = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
+    const result2 = await upsertImageOpenAIModeration(image.id)
 
     expect(result2.skipped).toBe(true)
     expect(result2.reason).toBe('already_moderated')
-    expect(createOpenAIModeration).not.toHaveBeenCalled()
+    expect(requestOpenAIModeration).toHaveBeenCalledOnce()
   })
 })
