@@ -132,7 +132,7 @@ describe('all merged admin MCP options', () => {
     const adminTools = ALL_TOOLS.filter(tool => tool.meta?.audience === 'admin')
     expect(adminTools).toHaveLength(56)
     expect(adminMergedGroups).toHaveLength(27)
-    expect(replacedAdminToolNames.size).toBe(58)
+    expect(replacedAdminToolNames.size).toBe(59)
     for (const name of replacedAdminToolNames) expect(getRegisteredToolByName(name)).toBeUndefined()
     for (const group of adminMergedGroups) expect(getRegisteredToolByName(group.name)).toBeDefined()
   })

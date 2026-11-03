@@ -35244,7 +35244,7 @@
           "tool": {
             "name": "read_report_integrity",
             "title": "Read Report Integrity",
-            "description": "flags: Page integrity flags with optional status.\npenalties: Page account penalties with scoped filters. Pass review_due to page active penalties whose annual review is due; that listing takes only after and limit.",
+            "description": "flags: Page integrity flags with optional status.\nflag: Read one integrity flag with its reporter ids.\npenalties: Page account penalties with scoped filters. Pass review_due to page active penalties whose annual review is due; that listing takes only after and limit.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -35271,6 +35271,27 @@
                         }
                       },
                       "required": [],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["flag"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["id"],
                       "additionalProperties": false
                     }
                   },
@@ -35330,13 +35351,27 @@
                       "additionalProperties": false,
                       "properties": {
                         "end_cursor": {
-                          "$ref": "#/$defs/S2"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "has_next_page": {
                           "type": "boolean"
                         },
                         "start_cursor": {
-                          "$ref": "#/$defs/S2"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
                       },
                       "required": ["end_cursor", "has_next_page", "start_cursor"],
@@ -35344,106 +35379,22 @@
                     },
                     "results": {
                       "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "created_at": {
-                            "type": "string"
-                          },
-                          "details": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "entity_label": {
-                            "type": "string"
-                          },
-                          "flag_type": {
-                            "const": "mass_report_suspected"
-                          },
-                          "hostname": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "hostname_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "new_account_reporter_percent": {
-                            "type": "number"
-                          },
-                          "post_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "reported_user_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "reported_username": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "reporter_count": {
-                            "type": "number"
-                          },
-                          "resolution": {
-                            "anyOf": [
-                              {
-                                "const": "dismissed"
-                              },
-                              {
-                                "const": "penalized"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "resolved_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "resolved_by_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "resolver_display_name": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "resolver_username": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "rss_feed_item_id": {
-                            "$ref": "#/$defs/S2"
-                          }
-                        },
-                        "required": [
-                          "created_at",
-                          "details",
-                          "entity_label",
-                          "flag_type",
-                          "hostname",
-                          "hostname_id",
-                          "id",
-                          "new_account_reporter_percent",
-                          "post_id",
-                          "reported_user_id",
-                          "reported_username",
-                          "reporter_count",
-                          "resolution",
-                          "resolved_at",
-                          "resolved_by_id",
-                          "resolver_display_name",
-                          "resolver_username",
-                          "rss_feed_item_id"
-                        ],
-                        "type": "object"
+                        "$ref": "#/$defs/S2"
                       },
                       "type": "array"
                     }
                   },
                   "required": ["page_info", "results"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "flag": {
+                      "$ref": "#/$defs/S2"
+                    }
+                  },
+                  "required": ["flag"],
                   "type": "object"
                 },
                 {
@@ -35682,14 +35633,171 @@
                   "type": "object"
                 },
                 "S2": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
+                  "additionalProperties": false,
+                  "properties": {
+                    "created_at": {
                       "type": "string"
+                    },
+                    "details": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "entity_label": {
+                      "type": "string"
+                    },
+                    "flag_type": {
+                      "const": "mass_report_suspected"
+                    },
+                    "hostname": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "hostname_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "new_account_reporter_percent": {
+                      "type": "number"
+                    },
+                    "post_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "reported_user_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "reported_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "reporter_count": {
+                      "type": "number"
+                    },
+                    "resolution": {
+                      "anyOf": [
+                        {
+                          "const": "dismissed"
+                        },
+                        {
+                          "const": "penalized"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolved_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolver_display_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolver_username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "rss_feed_item_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
-                  ]
+                  },
+                  "required": [
+                    "created_at",
+                    "details",
+                    "entity_label",
+                    "flag_type",
+                    "hostname",
+                    "hostname_id",
+                    "id",
+                    "new_account_reporter_percent",
+                    "post_id",
+                    "reported_user_id",
+                    "reported_username",
+                    "reporter_count",
+                    "resolution",
+                    "resolved_at",
+                    "resolved_by_id",
+                    "resolver_display_name",
+                    "resolver_username",
+                    "rss_feed_item_id"
+                  ],
+                  "type": "object"
                 }
               }
             },
@@ -35707,6 +35815,10 @@
             {
               "method": "GET",
               "path": "/api/v1/report-integrity/flags"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/report-integrity/flags/:id"
             },
             {
               "method": "GET",

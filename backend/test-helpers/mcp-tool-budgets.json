@@ -1231,11 +1231,11 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 4816,
-          "core": 1162
+          "list": 5499,
+          "core": 1470
         },
         "max": {
-          "list": 5000,
+          "list": 6000,
           "core": 2000
         }
       },

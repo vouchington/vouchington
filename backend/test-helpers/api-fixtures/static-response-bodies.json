@@ -2970,6 +2970,30 @@
       }
     ]
   },
+  "native.moderation.report-integrity.flag": {
+    "flag": {
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "details": {
+        "reporter_user_ids": ["reporter-1", "reporter-2"],
+        "window_minutes": 30
+      },
+      "flag_type": "mass_report_suspected",
+      "hostname_id": null,
+      "id": "report-flag-1",
+      "new_account_reporter_percent": 0.6,
+      "post_id": "post-1",
+      "reported_user_id": null,
+      "reporter_count": 5,
+      "resolution": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "rss_feed_item_id": null,
+      "entity_label": "Reported post",
+      "reported_username": null,
+      "resolver_display_name": null,
+      "resolver_username": null
+    }
+  },
   "native.moderation.report-integrity.resolution.dismissed": {
     "flag": {
       "created_at": "2026-06-01T12:00:00.000Z",

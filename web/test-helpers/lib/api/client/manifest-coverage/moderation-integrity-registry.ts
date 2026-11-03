@@ -53,6 +53,10 @@ export const moderationIntegrityEndpointRegistry: Record<string, ManifestEndpoin
     path: '/api/v1/report-integrity/flags',
     query: { status: 'resolved' },
   },
+  'native.moderation.report-integrity.flag': {
+    method: 'GET',
+    path: '/api/v1/report-integrity/flags/report-flag-1',
+  },
   'native.moderation.report-integrity.resolution.dismissed': {
     method: 'PATCH',
     path: '/api/v1/report-integrity/flags/report-flag-1',

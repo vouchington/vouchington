@@ -7611,6 +7611,16 @@
       "required": ["changed", "namespace"],
       "type": "object"
     },
+    "GET:/api/v1/report-integrity/flags/:id": {
+      "additionalProperties": false,
+      "properties": {
+        "flag": {
+          "$ref": "#/components/schemas/ReportIntegrityFlag"
+        }
+      },
+      "required": ["flag"],
+      "type": "object"
+    },
     "PATCH:/api/v1/report-integrity/flags/:id": {
       "additionalProperties": false,
       "properties": {
