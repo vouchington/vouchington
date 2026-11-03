@@ -25,35 +25,15 @@ type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
 const FETCH_TIMEOUT_MS = 30_000
 const UNCONDITIONAL_NOT_MODIFIED = 'Blocklist source returned 304 to an unconditional request'
 
-type SyncBlacklistDependencies = {
-  getBlacklistSourceById: typeof getBlacklistSourceById
-  getSourceCacheHeaders: typeof getSourceCacheHeaders
-  updateSourceCacheHeaders: typeof updateSourceCacheHeaders
-  fetchBlacklist: typeof fetchBlacklist
-  syncDomainsWithDatabase: typeof syncDomainsWithDatabase
-}
-
-const defaultDependencies: SyncBlacklistDependencies = {
-  getBlacklistSourceById,
-  getSourceCacheHeaders,
-  updateSourceCacheHeaders,
-  fetchBlacklist,
-  syncDomainsWithDatabase,
-}
-
-export async function syncBlacklistSourceById(
-  sourceId: DomainBlacklistSourceId,
-  dependencies: Partial<SyncBlacklistDependencies> = {},
-): Promise<void> {
-  const syncDependencies = { ...defaultDependencies, ...dependencies }
-  const source = await syncDependencies.getBlacklistSourceById(sourceId)
+export async function syncBlacklistSourceById(sourceId: DomainBlacklistSourceId): Promise<void> {
+  const source = await getBlacklistSourceById(sourceId)
   if (!source) {
     onError(createSourceNotFoundError(sourceId))
     return
   }
 
   try {
-    await syncBlacklistSource(sourceId, source.url, source.type, syncDependencies)
+    await syncBlacklistSource(sourceId, source.url, source.type)
   } catch (err) {
     if (err instanceof ReplicaBehindError || err instanceof UnrecoverableError) throw err
     onError(err instanceof Error ? err : createSyncFailedError(source.url, err))
@@ -64,17 +44,15 @@ async function syncBlacklistSource(
   sourceId: DomainBlacklistSourceId,
   url: string,
   sourceType: 'url' | 'email' = 'url',
-  dependencies: Partial<SyncBlacklistDependencies> = {},
 ): Promise<SyncBlacklistSourceResult> {
-  const syncDependencies = { ...defaultDependencies, ...dependencies }
   const id = parseSourceId(sourceId)
-  const cache = await syncDependencies.getSourceCacheHeaders(sourceId)
+  const cache = await getSourceCacheHeaders(sourceId)
   const conditional = hasConditionalValidators(cache)
-  const response = await syncDependencies.fetchBlacklist(url, conditional ? cache : null)
+  const response = await fetchBlacklist(url, conditional ? cache : null)
 
   if (response.status === 304) {
     if (!conditional) return unrecoverable(new Error(UNCONDITIONAL_NOT_MODIFIED))
-    await syncDependencies.updateSourceCacheHeaders(sourceId, {
+    await updateSourceCacheHeaders(sourceId, {
       etag: cache?.etag ?? null,
       lastModifiedAt: cache?.last_modified_at ?? null,
     })
@@ -85,12 +63,7 @@ async function syncBlacklistSource(
     throw createFetchError(response.status, response.statusText)
   }
 
-  return syncDependencies.syncDomainsWithDatabase(
-    id,
-    response,
-    sourceType,
-    getCacheHeadersFromResponse(response),
-  )
+  return syncDomainsWithDatabase(id, response, sourceType, getCacheHeadersFromResponse(response))
 }
 
 function hasConditionalValidators(cache: SourceCacheHeaders | null): boolean {

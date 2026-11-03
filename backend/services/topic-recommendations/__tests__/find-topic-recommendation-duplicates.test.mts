@@ -1,101 +1,98 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestTopic } from '@voucha/test-helpers'
-import { getTopicsByAnyBatch } from '@services/topics/get-batch'
+import { createHash } from 'node:crypto'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestTopic, makeNearbyEmbedding, makeRandomEmbedding } from '@voucha/test-helpers'
+import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
+import { findTopicRecommendationDuplicates } from '../find-topic-recommendation-duplicates.mts'
+import * as bedrockRequest from '../../bedrock-embeddings/single/request.mts'
 
-const mockToolsSearchTopicsSemantic =
-  vi.fn<
-    (
-      query: string,
-      limit: number,
-    ) => Promise<{ id: string; name: string; slug: string; topic_type: string }[]>
-  >()
+let queryEmbedding: number[]
+
+async function seedTopicEmbedding(topicId: string): Promise<void> {
+  await updateTopicEmbeddingData({
+    topicId,
+    inputSha256: createHash('sha256').update(`duplicates:${topicId}`).digest(),
+    embedding: makeNearbyEmbedding(queryEmbedding),
+    tokens: 10,
+  })
+}
 
 describe('findTopicRecommendationDuplicates', () => {
   beforeEach(() => {
-    mockToolsSearchTopicsSemantic.mockReset()
+    queryEmbedding = makeRandomEmbedding()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function stubBedrockEmbedding() {
+    return vi
+      .spyOn(bedrockRequest, 'createBedrockEmbedding')
+      .mockResolvedValue({ embedding: queryEmbedding, tokens: 5 })
+  }
+
   it('populates similar_topics from semantic search results', async () => {
-    const { findTopicRecommendationDuplicates } =
-      await import('../find-topic-recommendation-duplicates.mts')
-    const random = `similar-${Date.now()}`
-    const fakeSimilarTopic = await createTestTopic()
-    const fakeSimilarTopicResult = { ...fakeSimilarTopic, topic_type: 'topic' }
+    stubBedrockEmbedding()
+    const random = `similar-${crypto.randomUUID()}`
+    const similarTopic = await createTestTopic()
+    await seedTopicEmbedding(similarTopic.id)
 
-    mockToolsSearchTopicsSemantic.mockResolvedValueOnce([fakeSimilarTopicResult])
+    const result = await findTopicRecommendationDuplicates({
+      topic_title: `My Topic ${random}`,
+      topic_slug: `my-topic-${random}`,
+    })
 
-    const result = await findTopicRecommendationDuplicates(
+    expect(result.exact_topic).toBeNull()
+    expect(result.similar_topics.filter(t => t.id === similarTopic.id)).toEqual([
       {
-        topic_title: `My Topic ${random}`,
-        topic_slug: `my-topic-${random}`,
+        id: similarTopic.id,
+        name: similarTopic.name,
+        slug: similarTopic.slug,
+        topic_type: 'topic',
       },
-      {},
-      {
-        getTopicsByAnyBatch,
-        toolsSearchTopicsSemantic: mockToolsSearchTopicsSemantic,
-      },
-    )
-
-    expect(result.similar_topics).toHaveLength(1)
-    expect(result.similar_topics[0]).toEqual(fakeSimilarTopicResult)
+    ])
   })
 
   it('excludes exact_topic from similar_topics', async () => {
-    const { findTopicRecommendationDuplicates } =
-      await import('../find-topic-recommendation-duplicates.mts')
+    stubBedrockEmbedding()
     const topic = await createTestTopic()
+    const otherTopic = await createTestTopic()
+    await seedTopicEmbedding(topic.id)
+    await seedTopicEmbedding(otherTopic.id)
 
-    const fakeSimilarTopic = {
+    const result = await findTopicRecommendationDuplicates({
+      topic_title: topic.name,
+      topic_slug: topic.slug,
+    })
+
+    expect(result.exact_topic).toEqual({
       id: topic.id,
       name: topic.name,
       slug: topic.slug,
       topic_type: 'topic',
-    }
-    const otherTopic = await createTestTopic()
-    const otherTopicResult = { ...otherTopic, topic_type: 'topic' }
-
-    mockToolsSearchTopicsSemantic.mockResolvedValueOnce([fakeSimilarTopic, otherTopicResult])
-
-    const result = await findTopicRecommendationDuplicates(
+    })
+    expect(result.similar_topics.filter(t => [topic.id, otherTopic.id].includes(t.id))).toEqual([
       {
-        topic_title: topic.name,
-        topic_slug: topic.slug,
+        id: otherTopic.id,
+        name: otherTopic.name,
+        slug: otherTopic.slug,
+        topic_type: 'topic',
       },
-      {},
-      {
-        getTopicsByAnyBatch,
-        toolsSearchTopicsSemantic: mockToolsSearchTopicsSemantic,
-      },
-    )
-
-    expect(result.exact_topic).not.toBeNull()
-    expect(result.exact_topic?.id).toBe(topic.id)
-    // The exact_topic should be excluded from similar_topics
-    expect(result.similar_topics.every(t => t.id !== topic.id)).toBe(true)
-    expect(result.similar_topics).toHaveLength(1)
-    expect(result.similar_topics[0]?.id).toBe(otherTopic.id)
+    ])
   })
 
   it('returns empty similar_topics when semantic search throws', async () => {
-    const { findTopicRecommendationDuplicates } =
-      await import('../find-topic-recommendation-duplicates.mts')
-    const random = `bedrock-fail-${Date.now()}`
-
-    mockToolsSearchTopicsSemantic.mockRejectedValueOnce(new Error('Bedrock service unavailable'))
-
-    const result = await findTopicRecommendationDuplicates(
-      {
-        topic_title: `Bedrock Fail Topic ${random}`,
-        topic_slug: `bedrock-fail-topic-${random}`,
-      },
-      {},
-      {
-        getTopicsByAnyBatch,
-        toolsSearchTopicsSemantic: mockToolsSearchTopicsSemantic,
-      },
+    vi.spyOn(bedrockRequest, 'createBedrockEmbedding').mockRejectedValue(
+      new Error('Bedrock service unavailable'),
     )
+    const random = `bedrock-fail-${crypto.randomUUID()}`
 
-    expect(result.similar_topics).toHaveLength(0)
+    const result = await findTopicRecommendationDuplicates({
+      topic_title: `Bedrock Fail Topic ${random}`,
+      topic_slug: `bedrock-fail-topic-${random}`,
+    })
+
+    expect(result.similar_topics).toEqual([])
     expect(result.exact_topic).toBeNull()
   })
 })

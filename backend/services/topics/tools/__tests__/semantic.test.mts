@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { afterEach, describe, expect, it, beforeEach, vi } from 'vitest'
 import { toolsSearchTopicsSemantic } from '../semantic.mts'
 import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
 import { createHash } from 'node:crypto'
@@ -10,9 +10,14 @@ import {
 } from '@voucha/test-helpers'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
+import * as bedrockRequest from '../../../bedrock-embeddings/single/request.mts'
 
-const mockGetCachedSearchEmbedding = vi.fn<(query: string) => Promise<number[]>>()
 let queryEmbedding: number[]
+
+// The query embedding is cached in Valkey for a day, so every case uses a unique query.
+function uniqueQuery(baseQuery: string): string {
+  return `${baseQuery} ${crypto.randomUUID()}`
+}
 
 function uniqueTopicName(baseName: string): string {
   return `${baseName} ${crypto.randomUUID().slice(0, 8)}`
@@ -34,7 +39,14 @@ async function seedTopicEmbeddings(topicIds: string[], inputSeed: string): Promi
 describe('toolsSearchTopicsSemantic', () => {
   beforeEach(() => {
     queryEmbedding = makeRandomEmbedding()
-    mockGetCachedSearchEmbedding.mockReset().mockResolvedValue(queryEmbedding)
+    vi.spyOn(bedrockRequest, 'createBedrockEmbedding').mockResolvedValue({
+      embedding: queryEmbedding,
+      tokens: 5,
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('limits results to specified limit', async () => {
@@ -50,11 +62,8 @@ describe('toolsSearchTopicsSemantic', () => {
       'semantic-limit',
     )
 
-    const results = await toolsSearchTopicsSemantic('topic limit coverage', 2, {
-      getCachedSearchEmbedding: mockGetCachedSearchEmbedding,
-    })
-    expect(results.length).toBeGreaterThan(0)
-    expect(results.length).toBeLessThanOrEqual(2)
+    const results = await toolsSearchTopicsSemantic(uniqueQuery('topic limit coverage'), 2)
+    expect(results).toHaveLength(2)
   })
 
   it('respects max limit of 25', async () => {
@@ -70,9 +79,7 @@ describe('toolsSearchTopicsSemantic', () => {
       'semantic-max-limit',
     )
 
-    const results = await toolsSearchTopicsSemantic('topic max limit coverage', 100, {
-      getCachedSearchEmbedding: mockGetCachedSearchEmbedding,
-    })
+    const results = await toolsSearchTopicsSemantic(uniqueQuery('topic max limit coverage'), 100)
     expect(results.length).toBe(25)
   })
 
@@ -92,10 +99,9 @@ describe('toolsSearchTopicsSemantic', () => {
 
     await mergeTopicAliases(admin, fullSource, fullDestination)
 
-    const results = await toolsSearchTopicsSemantic('merged filter coverage', 25, {
-      getCachedSearchEmbedding: mockGetCachedSearchEmbedding,
-    })
+    const results = await toolsSearchTopicsSemantic(uniqueQuery('merged filter coverage'), 25)
     const ids = results.map(r => r.id)
+    expect(ids).toContain(destination.id)
     expect(ids).not.toContain(source.id)
   })
 })

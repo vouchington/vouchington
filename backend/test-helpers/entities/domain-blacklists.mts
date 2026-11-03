@@ -152,3 +152,16 @@ export async function getTestBlacklistMembershipDiffAppliedAt(
   )
   return result.rows[0]?.membership_diff_applied_at ?? null
 }
+
+export async function getTestBlacklistSourceLastFetchedAt(
+  sourceId: DomainBlacklistSourceId,
+): Promise<Date | null> {
+  const result = await read<{ last_fetched_at: Date | null }>(
+    sql`/* getTestBlacklistSourceLastFetchedAt */
+    SELECT last_fetched_at
+    FROM domain_blocklist_sources
+    WHERE id = ${sourceId}
+  `,
+  )
+  return result.rows[0]?.last_fetched_at ?? null
+}

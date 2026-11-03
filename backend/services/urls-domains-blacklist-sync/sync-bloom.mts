@@ -7,36 +7,19 @@ import {
   invalidateEmailBlocklistReadyMarker,
 } from '@services/urls-domains-blacklist/email-bloom-filter'
 
-interface BloomRebuildDependencies {
-  invalidateEmailReadyMarker: () => Promise<unknown>
-  invalidateUrlReadyMarker: () => Promise<unknown>
-  enqueueEmailRebuild: () => Promise<void>
-  enqueueUrlRebuild: () => Promise<void>
-}
-
-export const defaultBloomRebuildDependencies: BloomRebuildDependencies = {
-  invalidateEmailReadyMarker: invalidateEmailBlocklistReadyMarker,
-  invalidateUrlReadyMarker: invalidateUrlBlocklistReadyMarker,
-  enqueueEmailRebuild: enqueueEmailBlocklistRebuildOrThrow,
-  enqueueUrlRebuild: enqueueUrlBlocklistRebuildOrThrow,
-}
-
-export async function rebuildBloomForSource(
-  sourceType: 'url' | 'email',
-  dependencies: BloomRebuildDependencies,
-): Promise<void> {
+export async function rebuildBloomForSource(sourceType: 'url' | 'email'): Promise<void> {
   // A failed bump must not leave the filter unavailable with no rebuild queued.
   if (sourceType === 'email') {
     try {
-      await dependencies.invalidateEmailReadyMarker()
+      await invalidateEmailBlocklistReadyMarker()
     } finally {
-      await dependencies.enqueueEmailRebuild()
+      await enqueueEmailBlocklistRebuildOrThrow()
     }
   } else {
     try {
-      await dependencies.invalidateUrlReadyMarker()
+      await invalidateUrlBlocklistReadyMarker()
     } finally {
-      await dependencies.enqueueUrlRebuild()
+      await enqueueUrlBlocklistRebuildOrThrow()
     }
   }
 }

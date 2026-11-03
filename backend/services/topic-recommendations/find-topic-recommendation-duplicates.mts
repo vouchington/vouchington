@@ -17,16 +17,6 @@ export type FindTopicRecommendationDuplicatesResult = {
   similar_topics: SimilarTopic[]
 }
 
-type FindTopicRecommendationDependencies = {
-  getTopicsByAnyBatch: typeof getTopicsByAnyBatch
-  toolsSearchTopicsSemantic: typeof toolsSearchTopicsSemantic
-}
-
-const defaultFindTopicRecommendationDependencies: FindTopicRecommendationDependencies = {
-  getTopicsByAnyBatch,
-  toolsSearchTopicsSemantic,
-}
-
 export async function findTopicRecommendationDuplicates(
   {
     topic_title,
@@ -50,7 +40,6 @@ export async function findTopicRecommendationDuplicates(
     skipTitleMatchInPending?: boolean
   },
   options: QueryOptions = {},
-  dependencies: FindTopicRecommendationDependencies = defaultFindTopicRecommendationDependencies,
 ): Promise<FindTopicRecommendationDuplicatesResult> {
   const candidateSlugs = [
     ...new Set(
@@ -62,7 +51,7 @@ export async function findTopicRecommendationDuplicates(
     ),
   ]
 
-  const exact_topic = await findExactTopic(candidateSlugs, topic_title, options, dependencies)
+  const exact_topic = await findExactTopic(candidateSlugs, topic_title, options)
 
   const pending_recommendations = exact_topic
     ? []
@@ -74,7 +63,7 @@ export async function findTopicRecommendationDuplicates(
 
   const similar_topics = skipSimilarTopics
     ? []
-    : await findSimilarTopics(topic_title, topic_markdown, exact_topic, dependencies)
+    : await findSimilarTopics(topic_title, topic_markdown, exact_topic)
 
   return { exact_topic, pending_recommendations, similar_topics }
 }
@@ -83,9 +72,8 @@ async function findExactTopic(
   candidateSlugs: string[],
   topic_title: string,
   options: QueryOptions,
-  dependencies: FindTopicRecommendationDependencies,
 ): Promise<ExactTopic | null> {
-  const bySlug = await dependencies.getTopicsByAnyBatch(
+  const bySlug = await getTopicsByAnyBatch(
     candidateSlugs.filter(slug => isUUID(slug) || isSlug(slug)),
     options,
   )
@@ -143,13 +131,12 @@ async function findSimilarTopics(
   topic_title: string,
   topic_markdown: string | undefined,
   exact_topic: ExactTopic | null,
-  dependencies: FindTopicRecommendationDependencies,
 ): Promise<SimilarTopic[]> {
   if (!topic_title) return []
 
   try {
     const query = [topic_title, topic_markdown].filter(Boolean).join(' ').trim().slice(0, 300)
-    const raw = await dependencies.toolsSearchTopicsSemantic(query, 5)
+    const raw = await toolsSearchTopicsSemantic(query, 5)
     const excludeId = exact_topic?.id
     return raw.filter(t => t.id !== excludeId)
   } catch (err) {

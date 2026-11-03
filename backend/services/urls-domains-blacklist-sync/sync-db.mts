@@ -9,7 +9,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import onError from '@modules/on-error'
-import { rebuildBloomForSource, defaultBloomRebuildDependencies } from './sync-bloom.mts'
+import { rebuildBloomForSource } from './sync-bloom.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
@@ -120,7 +120,7 @@ async function recordRebuildAndValidators(
   sourceType: 'url' | 'email',
   cacheHeaders: MembershipCacheHeaders | undefined,
 ): Promise<void> {
-  await rebuildBloomForSource(sourceType, defaultBloomRebuildDependencies)
+  await rebuildBloomForSource(sourceType)
   await recordAppliedMembership(sourceId, cacheHeaders)
 }
 

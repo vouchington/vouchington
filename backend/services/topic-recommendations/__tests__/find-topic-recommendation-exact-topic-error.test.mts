@@ -1,36 +1,22 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { QueryOptions } from '@data-stores/psql/types'
-import type { Topic } from '@voucha/types/entities/topic'
+import { describe, expect, it } from 'vitest'
+import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
+import { findTopicRecommendationDuplicates } from '../find-topic-recommendation-duplicates.mts'
 
 describe('findTopicRecommendationDuplicates (getTopicsByAnyBatch error propagation)', () => {
   it('propagates non-422 errors thrown by getTopicsByAnyBatch', async () => {
-    const { findTopicRecommendationDuplicates } =
-      await import('../find-topic-recommendation-duplicates.mts')
     const dbError = Object.assign(new Error('connection refused'), { status: 500 })
-    const mockGetTopicsByAnyBatch = vi
-      .fn<
-        (idsOrSlugs: string[], options?: QueryOptions) => Promise<Array<Topic | null | undefined>>
-      >()
-      .mockRejectedValue(dbError)
+    const restoreRead = rejectPostgresReadForTest('/* getTopicsByAnyBatch */', dbError)
+    const random = `non-422-error-${crypto.randomUUID()}`
 
-    const random = `non-422-error-${Date.now()}`
-    await expect(
-      findTopicRecommendationDuplicates(
-        {
+    try {
+      await expect(
+        findTopicRecommendationDuplicates({
           topic_title: `Non 422 Error Topic ${random}`,
           topic_slug: `non-422-error-topic-${random}`,
-        },
-        {},
-        {
-          getTopicsByAnyBatch: mockGetTopicsByAnyBatch,
-          toolsSearchTopicsSemantic: vi.fn<
-            (
-              query: string,
-              limit: number,
-            ) => Promise<Array<{ id: string; name: string; slug: string; topic_type: string }>>
-          >(async () => []),
-        },
-      ),
-    ).rejects.toThrow('connection refused')
+        }),
+      ).rejects.toBe(dbError)
+    } finally {
+      restoreRead()
+    }
   })
 })

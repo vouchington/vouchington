@@ -8,18 +8,10 @@ type GatheredFactors = VoteWeightFactors & {
   vote_weight_admin_set_at: Date | null
 }
 
-type GatherFactorDependencies = {
-  read: typeof read
-  write: typeof write
-}
-
 export async function gatherVoteWeightFactors(
   userId: string,
   opts?: { readFromWriter?: boolean },
-  dependencies?: Partial<GatherFactorDependencies>,
 ): Promise<GatheredFactors | null> {
-  const reader = dependencies?.read ?? read
-  const writer = dependencies?.write ?? write
   const execute = (query: QueryExecutor) =>
     query(sql`/* gatherVoteWeightFactors */
     WITH oauth_stats AS (
@@ -91,7 +83,7 @@ export async function gatherVoteWeightFactors(
     WHERE u.id = ${userId}
       AND u.deleted_at IS NULL
   `)
-  const { rows } = await execute(opts?.readFromWriter ? writer : reader)
+  const { rows } = await execute(opts?.readFromWriter ? write : read)
 
   const row = rows[0]
   if (!row) return null

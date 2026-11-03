@@ -119,17 +119,16 @@ describe('imports background domain', () => {
     await Promise.all(
       rowIds.map(rowId => updateRssFeedImportRowFailed(rowId, 'done', { isFinalAttempt: true })),
     )
-    const enqueued: UserRssFeedImportRowData[][] = []
-    await dispatchUserRssFeedImport(
-      { importId: submitted.import.id },
-      {
-        enqueueRows: rows => {
-          enqueued.push(rows)
-          return Promise.resolve([])
-        },
-      },
-    )
-    expect(enqueued).toEqual([])
+    const addBulk = vi.spyOn(backgroundQueue, 'addBulk')
+    onTestFinished(() => addBulk.mockRestore())
+    await dispatchUserRssFeedImport({ importId: submitted.import.id })
+    const ownedRowIds = new Set(rowIds)
+    expect(
+      addBulk.mock.calls
+        .flatMap(([jobs]) => jobs)
+        .map(job => (job.data as { rowId?: string }).rowId)
+        .filter(rowId => ownedRowIds.has(rowId!)),
+    ).toEqual([])
   })
 
   it('pages an admin topic import onto the queue exactly once, and a second run enqueues nothing', async () => {

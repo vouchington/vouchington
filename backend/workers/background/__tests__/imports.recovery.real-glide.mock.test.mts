@@ -1,7 +1,10 @@
 import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { background } from '@queues/background/queues'
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
@@ -20,6 +23,12 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { getRssFeedImportRowIds } from '@voucha/test-helpers/rss-feed-import-rows'
 import { createBackgroundProcessor } from '../processors.mts'
 
+// A random Valkey database gives this file a private `voucha_qdb_<n>` queue namespace.
+vi.hoisted(() => {
+  const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
+  url.pathname = String(crypto.getRandomValues(new Uint32Array(1))[0])
+  vi.stubEnv('VALKEY_WORKER_QUEUE_URL', url.toString())
+})
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
@@ -30,6 +39,7 @@ describe('import recovery on a real shared queue', () => {
   afterEach(async () => {
     await harness?.close()
     harness = undefined
+    await closeAndUnregisterGlideMQInstance(background)
   })
 
   it('re-dispatches an import whose dispatcher failed every attempt, once', async () => {
@@ -49,32 +59,16 @@ describe('import recovery on a real shared queue', () => {
     const allRowsRan = Promise.withResolvers<void>()
     let dispatcherBroken = true
 
-    // The production dispatcher pages the rows; only where its jobs go is swapped, onto the
-    // isolated queue this harness runs.
-    const dispatchOnHarness = (data: { importId: string; cursor?: number }) =>
-      dispatchUserRssFeedImport(data, {
-        enqueueRows: async rows => {
-          const added = []
-          for (const row of rows)
-            added.push(await harness!.add(IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB, row))
-          return added
-        },
-        enqueueContinuation: async (id, cursor) => {
-          await harness!.add(
-            IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
-            { importId: id, cursor },
-            { jobId: `recover_${id}_${cursor}`, removeOnComplete: true },
-          )
-          return undefined
-        },
-      })
+    // The production dispatcher pages the rows onto the production `background` queue, which this
+    // file's private Valkey namespace gives to the harness's worker.
     harness = await startBackgroundHarness({
       connection,
+      queueName: BACKGROUND_QUEUE_NAME,
       createProcessor: createBackgroundProcessor,
       bodies: {
         [IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.name]: job => {
           if (dispatcherBroken) throw new Error('postgres is down')
-          return dispatchOnHarness(job.data as { importId: string; cursor?: number })
+          return dispatchUserRssFeedImport(job.data as { importId: string; cursor?: number })
         },
         [IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB.name]: job => {
           started.push((job.data as UserRssFeedImportRowData).rowId)

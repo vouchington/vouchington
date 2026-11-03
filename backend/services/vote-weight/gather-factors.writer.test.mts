@@ -1,46 +1,38 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { read, write } from '@data-stores/psql'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as psql from '@data-stores/psql'
+import { createTestUserDirect } from '@voucha/test-helpers'
 
 import { gatherVoteWeightFactors } from './gather-factors.mts'
 
-const mockRead = vi.fn<typeof read>()
-const mockWrite = vi.fn<typeof write>()
-
-const factorRow = {
-  current_weight: 1,
-  vote_weight_admin_set_at: null,
-  account_created_at: new Date(),
-  oauth_count: 0,
-  oauth_older_than_1_year: 0,
-  oauth_older_than_5_years: 0,
-  distinct_auth_method_count: 1,
-  membership_plan: null,
-  is_admin: false,
-  penalty_multiplier: 1,
-  is_identity_verified: true,
+function gatherCalls(spy: { mock: { calls: unknown[][] } }): number {
+  return spy.mock.calls.filter(([query]) => {
+    const text = typeof query === 'string' ? query : (query as { text: string }).text
+    return text.includes('/* gatherVoteWeightFactors */')
+  }).length
 }
 
 describe('gatherVoteWeightFactors', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it.each([
-    ['reader', false, mockRead, mockWrite],
-    ['writer', true, mockWrite, mockRead],
-  ])('uses the %s pool when requested', async (_name, readFromWriter, selected, unselected) => {
-    selected.mockResolvedValueOnce({ rows: [factorRow] } as never)
+    ['reader', false, 1, 0],
+    ['writer', true, 0, 1],
+  ])('uses the %s pool when requested', async (_name, readFromWriter, readCalls, writeCalls) => {
+    const user = await createTestUserDirect({
+      username: `test-vote-weight-pool-${crypto.randomUUID().slice(0, 8)}`,
+    })
+    const readSpy = vi.spyOn(psql, 'read')
+    const writeSpy = vi.spyOn(psql, 'write')
 
-    await expect(
-      gatherVoteWeightFactors(
-        'user-1',
-        { readFromWriter },
-        {
-          read: mockRead as never,
-          write: mockWrite as never,
-        },
-      ),
-    ).resolves.toMatchObject({ isIdentityVerified: true })
-    expect(unselected).not.toHaveBeenCalled()
+    await expect(gatherVoteWeightFactors(user!.id, { readFromWriter })).resolves.toMatchObject({
+      oauthCount: 0,
+      isAdmin: false,
+      penaltyMultiplier: 1,
+    })
+
+    expect(gatherCalls(readSpy)).toBe(readCalls)
+    expect(gatherCalls(writeSpy)).toBe(writeCalls)
   })
 })
