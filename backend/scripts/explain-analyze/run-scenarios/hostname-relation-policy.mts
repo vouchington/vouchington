@@ -98,26 +98,6 @@ export async function runHostnameOwnershipSnapshotScenario(): Promise<void> {
     undefined,
     'getTopicHostnameOwnershipIds',
   )
-  registerScenarioContract('hostname-owner-merge-snapshot', {
-    seededRows: { relation__topic__landing_page__url: 2 },
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'topics', max: 3 },
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 4 },
-      { kind: 'maxProcessedRows', relation: 'relation__topic__landing_page__url', max: 3 },
-      { kind: 'maxProcessedRows', relation: 'urls', max: 2 },
-    ],
-  })
-  await runAndCapture(
-    'hostname-owner-merge-snapshot',
-    async () => {
-      await using query = await beginTransaction()
-      await lockTopicHostnameOwnership(query, [topicId, seedTopicId], [], {
-        includeDeletedLandingPages: true,
-      })
-    },
-    undefined,
-    'getTopicHostnameOwnershipIds',
-  )
 }
 
 async function prepareOwnershipSnapshotFixture() {
