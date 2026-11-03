@@ -14,6 +14,8 @@ import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
 import { createReviewDispute } from '@services/review-disputes/create'
+import { listReviewDisputePage } from '@services/review-disputes/list-page'
+import { filterReviewDisputePostContentForViewer } from '@services/posts/filter-review-dispute-post-content'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 
 async function makeDisputeSetup(options?: {
@@ -113,34 +115,15 @@ describe('GET /api/v1/disputes', () => {
     })
     // staff sees private fields
     expect(Object.hasOwn(staffDispute, 'disputant_user_id')).toBe(true)
-    expect(Object.hasOwn(staffDispute, 'claim_text')).toBe(true)
-    expect(staffDispute.staff_context).toMatchObject({
-      disputant: {
-        id: claimant.id,
-        username: claimant.username,
-        verified_display_name: null,
-        profile_image_id: null,
-      },
-      review: {
-        post: {
-          id: postId,
-          title: expect.stringContaining('List API Post'),
-          declared_language: null,
-          lingua_rs_detected_language: null,
-          slug: expect.stringContaining('list-api-post-'),
-          markdown_preview: 'Bad review content for list test.',
-          created_by_id: expect.any(String),
-          created_at: expect.any(String),
-        },
-        topic: {
-          id: topicId,
-          name: expect.stringContaining('List API Topic'),
-          slug: expect.stringContaining('list-api-topic-'),
-          topic_type: expect.any(String),
-        },
-        rating: 1,
-      },
-    })
+    // staff list rows are summaries; claim text and context load from the detail route
+    expect(staffDispute.claim_text).toBeUndefined()
+    expect(staffDispute.staff_context).toBeUndefined()
+    expect(staffDispute.post_slug).toEqual(expect.stringContaining('list-api-post-'))
+    expect(staffDispute.disputant).toMatchObject({ id: claimant.id, username: claimant.username })
+    const staffDetail = await staffRequest.get(`/api/v1/disputes/${dispute.id}`).expect(200)
+    expect(staffDetail.body.dispute.claim_text).toEqual(expect.any(String))
+    expect(staffDetail.body.dispute.staff_context.review.post.id).toBe(postId)
+    expect(staffDetail.body.dispute.staff_context.review.topic.id).toBe(topicId)
 
     const memberRequest = createRequest()
     await memberRequest.authenticateAs(regularUser)
@@ -227,6 +210,18 @@ describe('GET /api/v1/disputes', () => {
       )
     },
   )
+
+  it('clears the post slug with the label and content for a viewer who cannot see the post', async () => {
+    const { dispute, reviewer, staff } = await makeDisputeSetup({ unpublished: true })
+    const page = await listReviewDisputePage({ audience: 'staff', limit: 100 })
+    const row = page.disputes.find(candidate => candidate.id === dispute.id)
+    expect(row?.post_slug).toEqual(expect.stringContaining('list-api-post-'))
+
+    const [hidden] = await filterReviewDisputePostContentForViewer(reviewer, [row!])
+    expect(hidden).toMatchObject({ post_content: null, post_label: 'review', post_slug: null })
+    const [visible] = await filterReviewDisputePostContentForViewer(staff, [row!])
+    expect(visible!.post_slug).toBe(row!.post_slug)
+  })
 
   it('filters by status param (dismissed returns no pending disputes)', async () => {
     const request = createRequest()

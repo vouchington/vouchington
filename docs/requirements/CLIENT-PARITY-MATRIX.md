@@ -114,9 +114,12 @@ new appeals. This changes no response shape or native parity claim.
 Staff `GET /api/v1/disputes` and `GET /api/v1/appeals` rows are summaries. AI drafts, internal
 notes, claim text, appeal reasons, original decisions and previews load from
 `GET /api/v1/disputes/:id` and `GET /api/v1/appeals/:id` when a row is opened, and web shows them in
-a modal. Rows carry `has_ai_draft` and `has_draft` flags instead. Member list rows and the MCP
-`list_my_review_disputes` output are unchanged. Native staff clients should read details the same
-way; that work is a vouchington-clients dependent and gates nothing here.
+a modal. Rows carry `has_ai_draft` and `has_draft` flags instead. The staff MCP
+`read_moderation_appeal` list mode returns the same summary rows as `GET /api/v1/appeals`; by-id
+still returns full detail, so a client that read drafts or notes from the list must read by id.
+Member list rows and the MCP `list_my_review_disputes` output are unchanged. Native staff clients
+should read details the same way; that work is a vouchington-clients dependent and gates nothing
+here.
 
 ## Copyright filing and staff matches
 

@@ -4,6 +4,7 @@ import type { PrivateUser } from '@services/users/types'
 type DisputePostContentFields = {
   post_id: string
   post_label: string
+  post_slug?: string | null
   post_content: unknown
 }
 
@@ -20,7 +21,12 @@ export async function filterReviewDisputePostContentForViewer<T extends DisputeP
   )
   return disputes.map(dispute =>
     !visibility.get(dispute.post_id)
-      ? { ...dispute, post_content: null, post_label: 'review' }
+      ? {
+          ...dispute,
+          post_content: null,
+          post_label: 'review',
+          ...('post_slug' in dispute ? { post_slug: null } : {}),
+        }
       : dispute,
   )
 }
