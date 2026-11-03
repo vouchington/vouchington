@@ -33,13 +33,11 @@ export async function enqueueOrReactivateBulkOAuthAuthorizationExchanges(
     getRecoveryJobs([...authorizationIds], 'failed'),
   ])
   const removableJobs = completedJobs.filter(
-    job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name && authorizationIds.has(job.id),
+    job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
   )
   await Promise.all(removableJobs.map(job => job.remove()))
   await enqueueBulkOAuthAuthorizationExchanges(inputs)
-  const retryableJobs = failedJobs.filter(
-    job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name && authorizationIds.has(job.id),
-  )
+  const retryableJobs = failedJobs.filter(job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name)
   await Promise.all(retryableJobs.map(job => job.retry()))
   return retryableJobs.length
 }
