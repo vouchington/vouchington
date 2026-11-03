@@ -1,6 +1,7 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createHash } from 'node:crypto'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
+import { getDayBounds } from '@ts-shared/utils/dates'
 import {
   createTestUrlWithHostname,
   createTestUserDirect,
@@ -8,15 +9,14 @@ import {
   insertTestStory,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import type { getDailyAiCostTotalMicrounits } from '@services/ai-usage'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '@services/stories/story-posts'
 import type { recordSpendCapBreach as RecordSpendCapBreach } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
+import { cleanUpSpendCapDay, spendCapDelayableJob } from '@voucha/test-helpers/ai-agents-spend-cap'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { processAIAgentWorkerJob } from './core.mts'
-
-type DailyAiCostTotal = Awaited<ReturnType<typeof getDailyAiCostTotalMicrounits>>
 
 // #8773 round-15 finding: `story-post` is spend-producing by default (AI_AGENT_JOB_PRODUCES_SPEND),
 // so unlike the exemptions in core.spend-cap-moderation.test.mts, evaluateSpendCapBreach
@@ -60,22 +60,11 @@ async function makeStoryWithItem() {
   return { story, testUser }
 }
 
-function mockJob(postId: string, force = false): Job<AIAgentJobData> {
-  return {
-    data: { post_id: postId, force } as StoryPostJobData as AIAgentJobData,
-    name: 'story-post',
-    id: randomUUID(),
-    reportTokens: vi.fn<(count: number) => Promise<void>>(),
-    moveToDelayed: vi
-      .fn<(timestamp: number, nextStep?: string) => Promise<never>>()
-      .mockImplementation(async timestamp => {
-        throw new DelayedError(timestamp)
-      }),
-  } as unknown as Job<AIAgentJobData>
-}
-
-function createDailyTotalLoader(totalMicrounits: number): () => Promise<DailyAiCostTotal> {
-  return () => Promise.resolve({ totalMicrounits, day: '2026-08-16' })
+function storyPostJob(postId: string, force = false): Job<AIAgentJobData> {
+  return spendCapDelayableJob('story-post', {
+    post_id: postId,
+    force,
+  } as StoryPostJobData as AIAgentJobData)
 }
 
 describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', () => {
@@ -85,100 +74,77 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     urlId = await createTestUrlWithHostname()
   })
 
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('does not defer a non-force retry once a summary already exists, during a breach', async () => {
-    const { story, testUser } = await makeStoryWithItem()
-    const prepared = await prepareStoryPost(story.id, testUser, {
-      ai_summary_markdown: 'Already set.',
+    await withReservedAiUsageDay(0, async () => {
+      const { story, testUser } = await makeStoryWithItem()
+      const prepared = await prepareStoryPost(story.id, testUser, {
+        ai_summary_markdown: 'Already set.',
+      })
+      await prepared.finalize()
+
+      const job = storyPostJob(prepared.response.post.id)
+      const processAIAgent = vi
+        .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
+        .mockResolvedValue('ok')
+      const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
+
+      await expect(
+        processAIAgentWorkerJob(job, { recordSpendCapBreach, processAIAgent }),
+      ).resolves.toBe('ok')
+
+      expect(processAIAgent).toHaveBeenCalledOnce()
+      expect(job.moveToDelayed).not.toHaveBeenCalled()
+      expect(recordSpendCapBreach).not.toHaveBeenCalled()
     })
-    await prepared.finalize()
-    const result = prepared.response
-
-    const job = mockJob(result.post.id)
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
-    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
-
-    const result2 = await processAIAgentWorkerJob(job, {
-      waitForSpendCapConfig: () => Promise.resolve(),
-      getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-      getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-      recordSpendCapBreach,
-      processAIAgent,
-    })
-
-    expect(result2).toBe('ok')
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(recordSpendCapBreach).not.toHaveBeenCalled()
   })
 
   it('defers an eligible (would call OpenAI) unsummarized post during a breach', async () => {
-    const { story, testUser } = await makeStoryWithItem()
-    const prepared = await prepareStoryPost(story.id, testUser)
-    await prepared.finalize()
-    const result = prepared.response
+    await withReservedAiUsageDay(0, async day => {
+      cleanUpSpendCapDay(day)
+      const { story, testUser } = await makeStoryWithItem()
+      const prepared = await prepareStoryPost(story.id, testUser)
+      await prepared.finalize()
 
-    const job = mockJob(result.post.id)
-    const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
-    const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
+      const job = storyPostJob(prepared.response.post.id)
+      const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
+      const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
 
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-        getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-        recordSpendCapBreach,
-        registerSpendCapRecheck,
-        processAIAgent,
-      }),
-    ).rejects.toThrow(DelayedError)
+      await expect(
+        processAIAgentWorkerJob(job, { recordSpendCapBreach, processAIAgent }),
+      ).rejects.toThrow(DelayedError)
 
-    expect(processAIAgent).not.toHaveBeenCalled()
-    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
-    expect(recordSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
-      agentJobName: 'story-post',
-      dailyTotalMicrounits: 5_000_000,
-      dailyCapMicrounits: 1_000_000,
-      reason: 'cap_exceeded',
+      expect(processAIAgent).not.toHaveBeenCalled()
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+      expect(recordSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
+        agentJobName: 'story-post',
+        dailyTotalMicrounits: 1,
+        dailyCapMicrounits: 0,
+        reason: 'cap_exceeded',
+      })
     })
   })
 
   it('defers a forced retry even once a summary already exists, during a breach', async () => {
-    const { story, testUser } = await makeStoryWithItem()
-    const prepared = await prepareStoryPost(story.id, testUser, {
-      ai_summary_markdown: 'Already set.',
+    await withReservedAiUsageDay(0, async day => {
+      cleanUpSpendCapDay(day)
+      const { story, testUser } = await makeStoryWithItem()
+      const prepared = await prepareStoryPost(story.id, testUser, {
+        ai_summary_markdown: 'Already set.',
+      })
+      await prepared.finalize()
+
+      const job = storyPostJob(prepared.response.post.id, true)
+      const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
+
+      await expect(
+        processAIAgentWorkerJob(job, {
+          recordSpendCapBreach: vi.fn<typeof RecordSpendCapBreach>(),
+          processAIAgent,
+        }),
+      ).rejects.toThrow(DelayedError)
+
+      expect(processAIAgent).not.toHaveBeenCalled()
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
     })
-    await prepared.finalize()
-    const result = prepared.response
-
-    const job = mockJob(result.post.id, true)
-    const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
-    const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
-
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-        getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-        recordSpendCapBreach,
-        registerSpendCapRecheck,
-        processAIAgent,
-      }),
-    ).rejects.toThrow(DelayedError)
-
-    expect(processAIAgent).not.toHaveBeenCalled()
-    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
   })
 })

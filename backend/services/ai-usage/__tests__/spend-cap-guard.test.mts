@@ -92,6 +92,85 @@ describe('evaluateSpendCapBreach', () => {
   })
 })
 
+describe('evaluateSpendCapBreach across a UTC day boundary', () => {
+  // The clock advances while the usage read is in flight, as when midnight passes mid-query.
+  async function evaluateAcrossBoundary(
+    from: string,
+    to: string,
+    totalFor: (day: string) => number,
+  ) {
+    const queriedDays: string[] = []
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(from))
+      const breach = await evaluateSpendCapBreach({
+        ...guardDeps(0),
+        getDailyAiCostTotalMicrounits: (day?: string) => {
+          queriedDays.push(day ?? 'missing')
+          vi.setSystemTime(new Date(to))
+          return Promise.resolve({ totalMicrounits: totalFor(day ?? 'missing'), day: day ?? '' })
+        },
+      })
+      return { breach, queriedDays }
+    } finally {
+      vi.useRealTimers()
+    }
+  }
+
+  it.each([
+    [
+      'midnight',
+      '2026-03-01T23:59:59.999Z',
+      '2026-03-02T00:00:00.000Z',
+      '2026-03-01',
+      '2026-03-02',
+    ],
+    [
+      'month end',
+      '2026-08-31T23:59:59.999Z',
+      '2026-09-01T00:00:00.000Z',
+      '2026-08-31',
+      '2026-09-01',
+    ],
+  ])(
+    'restarts for the new day when %s crosses during the daily-total read',
+    async (_boundary, from, to, oldDay, newDay) => {
+      const { breach, queriedDays } = await evaluateAcrossBoundary(from, to, day =>
+        day === oldDay ? 101 : 0,
+      )
+
+      expect(queriedDays).toEqual([oldDay, newDay])
+      expect(breach).toBeNull()
+    },
+  )
+
+  it('stops restarting after two day changes and admits the call', async () => {
+    const queriedDays: string[] = []
+    const days = [
+      '2026-03-02T00:00:00.000Z',
+      '2026-03-03T00:00:00.000Z',
+      '2026-03-04T00:00:00.000Z',
+    ]
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date('2026-03-01T12:00:00.000Z'))
+      const breach = await evaluateSpendCapBreach({
+        ...guardDeps(0),
+        getDailyAiCostTotalMicrounits: (day?: string) => {
+          queriedDays.push(day ?? 'missing')
+          vi.setSystemTime(new Date(days[queriedDays.length - 1] ?? days[2]!))
+          return Promise.resolve({ totalMicrounits: 101, day: day ?? '' })
+        },
+      })
+
+      expect(queriedDays).toEqual(['2026-03-01', '2026-03-02', '2026-03-03'])
+      expect(breach).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('assertDailySpendCapNotBreached', () => {
   it('records only a confirmed breach with the caller name', async () => {
     const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()

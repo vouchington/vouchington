@@ -11,7 +11,6 @@ import {
   issueCopyrightGuestCapability,
 } from '@services/copyright-notices'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
 
 // The real-Valkey project selects this suffix; keep the transport as the original module.
@@ -72,19 +71,16 @@ describe('copyright submission guidance backlog with new intake off', () => {
           { kind: 'submission-guidance', submissionId },
         ])
         expect(await ai_agents.getJob(jobId(submissionId))).toBeNull()
-        const admittedSubmissionIds: string[] = []
-        await processReconcileCopyrightAgentDispatches({
-          enqueueSubmissionGuidance: async id => {
-            await enqueueOrRetryCopyrightSubmissionGuidance(id)
-            admittedSubmissionIds.push(id)
+        // The helper scopes the production PostgreSQL query to this test's submission.
+        await processReconcileCopyrightAgentDispatches(
+          {},
+          {
+            getPending: async () => ({
+              results: await readTestPendingCopyrightAgentDispatches(submissionId),
+              page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+            }),
           },
-          // The helper scopes the production PostgreSQL query to this test's submission.
-          getPending: async () => ({
-            results: await readTestPendingCopyrightAgentDispatches(submissionId),
-            page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-          }),
-        })
-        expect(admittedSubmissionIds).toEqual([submissionId])
+        )
         const job = await ai_agents.getJob(jobId(submissionId))
         expect(job?.name).toBe('copyright-submission-guidance')
         expect(job?.data).toEqual({ submission_id: submissionId })

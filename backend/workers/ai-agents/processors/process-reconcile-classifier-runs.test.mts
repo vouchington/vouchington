@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'json' }
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import {
   classifierRunDispatcherJobFor,
   classifierRunJobFor,
@@ -277,17 +278,11 @@ describe('classifier run recovery sweep: incomplete runs', () => {
     scope.postIds.add(post.id)
     await requestPostClassifierRun(post, inputSha256)
     removeClassifierRunJobForTest(run.runId)
-    const breached = {
-      evaluateSpendCap: async () => ({
-        reason: 'cap_exceeded' as const,
-        dailyCapMicrounits: 1,
-        day: '2026-09-30',
-        totalMicrounits: 2,
-      }),
-    }
 
-    await expect(sweep({}, breached)).resolves.toEqual({ kind: 'spend-cap-breach' })
-    await expect(sweep(requests, breached)).resolves.toEqual({ kind: 'spend-cap-breach' })
+    await withReservedAiUsageDay(0, async () => {
+      await expect(sweep({})).resolves.toEqual({ kind: 'spend-cap-breach' })
+      await expect(sweep(requests)).resolves.toEqual({ kind: 'spend-cap-breach' })
+    })
 
     expect(await readClassifierRunJobsForTest(run.runId)).toHaveLength(0)
     expect(await readClassifierRunDispatcherJobsForTest(post.id)).toHaveLength(0)

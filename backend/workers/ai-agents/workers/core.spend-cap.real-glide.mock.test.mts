@@ -9,7 +9,13 @@ import {
   processSpendCapRecheckJob,
   registerSpendCapRecheck,
 } from '../processors/spend-cap-recheck.mts'
-import { spendCapDelayedRegistryKey, releaseSpendCapDelayedJobs } from '@services/ai-usage'
+import {
+  registerSpendCapDelayedJob,
+  releaseSpendCapDelayedJobs,
+  spendCapDelayedRegistryKey,
+} from '@services/ai-usage'
+import { ai_agents } from '@queues/ai-agents/queues'
+import { disableSpendCapForTest } from '@voucha/test-helpers/ai-agents-spend-cap'
 
 // This project deliberately restores real GlideMQ instead of the default in-memory worker shim.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -66,7 +72,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
     try {
       const job = await queue.add('report-judgement', {} as AIAgentJobData)
       if (!job) throw new Error('Expected spend-cap registration job')
-      await expect(registerSpendCapRecheck(job, day, Date.now())).resolves.toBe(true)
+      await expect(registerSpendCapRecheck(job, day)).resolves.toBe(true)
       expect(job.data.spendCapDelayedDay).toBe(day)
       const coordinators = await spendCapRechecks.searchJobs({
         name: 'ai-spend-cap.recheck',
@@ -95,22 +101,26 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
   it('uses the production release drain when a coordinator owns a release lease', async () => {
     const day = `${3_000 + Math.floor(Math.random() * 6_000)}-08-16`
     const registryKey = spendCapDelayedRegistryKey(day)
-    const job = {
-      data: { day, generation: `generation-${randomUUID()}` },
-      moveToDelayed: async () => undefined,
-      updateData: async () => undefined,
-    } as unknown as Job<{ day: string; generation: string }>
+    await disableSpendCapForTest()
+    const queued = await ai_agents.add('report-judgement', {} as AIAgentJobData, {
+      delay: 60 * 60 * 1000,
+    })
+    if (!queued) throw new Error('Expected the delayed spend-cap job')
     try {
-      await expect(
-        processSpendCapRecheckJob(job, {
-          waitForSpendCapConfig: async () => undefined,
-          getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
-          beginSpendCapDelayedJobRelease: async () => 'lease-a',
-          completeSpendCapDelayedJobRelease: async () => true,
-        }),
-      ).resolves.toBeUndefined()
+      const registration = await registerSpendCapDelayedJob(queued, day)
+      const job = {
+        data: { day, generation: registration.generation },
+        moveToDelayed: async () => undefined,
+        updateData: async () => undefined,
+      } as unknown as Job<{ day: string; generation: string }>
+
+      await expect(processSpendCapRecheckJob(job)).resolves.toBeUndefined()
+
+      await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(0)
+      await expect(queued.getState()).resolves.toBe('prioritized')
     } finally {
       await workerQueueCommandClient.unlink([registryKey])
+      await queued.remove().catch(() => undefined)
     }
   })
   it('runs a dedicated coordinator while the spend queue is RPM-limited', async () => {

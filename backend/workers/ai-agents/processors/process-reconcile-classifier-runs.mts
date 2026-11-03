@@ -25,7 +25,6 @@ interface ReconcileClassifierRunsDependencies {
   handlerFor: (classifier: string) => ClassifierRunHandler
   /** Lets a test scope each classifier's health read to its own rows. */
   readHealth: ReadClassifierRunHealth
-  evaluateSpendCap: typeof evaluateSpendCapBreach
 }
 
 export type ReconcileClassifierRunsResult =
@@ -38,7 +37,6 @@ const defaultDependencies: ReconcileClassifierRunsDependencies = {
   handlers: listClassifierRunHandlers,
   handlerFor: getClassifierRunHandler,
   readHealth: (handler, now) => handler.health(now),
-  evaluateSpendCap: evaluateSpendCapBreach,
 }
 
 /**
@@ -57,7 +55,7 @@ export async function processReconcileClassifierRuns(
   if (!data.phase) {
     await checkClassifierRunHealth(dependencies.handlers(), new Date(), dependencies.readHealth)
   }
-  if (await dependencies.evaluateSpendCap()) return { kind: 'spend-cap-breach' }
+  if (await evaluateSpendCapBreach()) return { kind: 'spend-cap-breach' }
   if (data.phase === 'requests') {
     if (!data.classifier) throw new Error('A request sweep page needs its classifier')
     return sweepRequests(dependencies.handlerFor(data.classifier), data.after ?? null)

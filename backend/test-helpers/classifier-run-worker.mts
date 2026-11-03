@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { afterEach, beforeEach } from 'vitest'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import type { ClassifierRunJobData } from '../queues/ai-agents/types.mts'
+import { spendCapConfig } from '../services/ai-usage/index.mts'
+import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
 import {
   listIncompleteClassifierRuns,
   type ClassifierRunHealth,
@@ -80,9 +83,19 @@ export function createHealthyClassifierRunHealth(classifier: string): Classifier
  * Parallel test files share one database, so this scopes both discovery queries to the posts and
  * runs a test made: their counters, terminal state and alarms never depend on (or disturb) others.
  * Receipt health is global per classifier too, so it reads as healthy unless a test supplies its
- * own `readHealth`.
+ * own `readHealth`. The daily spend cap is disabled around each test, so ambient usage on the shared
+ * database cannot park a sweep; a test that needs a breach enables it with `withReservedAiUsageDay`.
  */
 export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler) {
+  let restoreSpendCap: (() => void) | undefined
+  beforeEach(async () => {
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
+  })
+  afterEach(() => {
+    restoreSpendCap?.()
+    restoreSpendCap = undefined
+  })
   const postIds = new Set<string>()
   const rssFeedItemIds = new Set<string>()
   const runIds = new Set<string>()
@@ -146,7 +159,6 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
         handlers: () => [handler],
         handlerFor: () => handler,
         readHealth: async healthHandler => createHealthyClassifierRunHealth(healthHandler.slug),
-        evaluateSpendCap: async () => null,
         ...overrides,
       }
     },
