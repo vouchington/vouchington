@@ -33,60 +33,6 @@ import { processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
 import { recoverMembershipVerifications } from './verification-recovery.mts'
 import { processMembershipVerificationJob } from './process-verification-job.mts'
 
-type MembershipJobProcessors = {
-  deliverMembershipEntitlementEffects: typeof deliverPendingMembershipEntitlementEffects
-  expireElapsedMemberships: typeof expireElapsedMembershipsBatch
-  processAppleNotification: typeof reconcileAppleNotification
-  processMembershipVerificationJob: typeof processMembershipVerificationJob
-  processRenewalNotificationCheckDispatcher: typeof processRenewalNotificationCheckDispatcher
-  processSendRenewalPriceIncreaseEmail: typeof processSendRenewalPriceIncreaseEmail
-  processStripeEvent: typeof processStripeEvent
-  recoverMembershipVerifications: typeof recoverMembershipVerifications
-  recoverAppleNotifications: typeof recoverAppleNotifications
-  processGooglePlayNotification: typeof processGooglePlayNotification
-  recoverGooglePlayNotifications: typeof recoverGooglePlayNotifications
-  recoverGooglePlayActiveSources: typeof recoverGooglePlayActiveSources
-  processGooglePlayActiveSource: typeof processGooglePlayActiveSource
-  processGooglePlayAcknowledgement: typeof processGooglePlayAcknowledgement
-  recoverGooglePlayAcknowledgements: typeof recoverGooglePlayAcknowledgements
-  refreshGooglePlayOidcTrust: typeof refreshConfiguredGoogleOidcTrustMaterial
-  recoverMicrosoftStoreSources: typeof recoverMicrosoftStoreSources
-  reconcileMicrosoftStoreSource: typeof processMicrosoftStoreSource
-  recoverStripeEvents: typeof recoverStripeEvents
-  reconcileStripeMembershipCatalog: typeof reconcileStripeMembershipCatalog
-  dispatchMembershipRefundReconciliation: typeof dispatchMembershipRefundReconciliation
-  reconcileMembershipRefundOperation: typeof reconcileMembershipRefundOperation
-  dispatchMembershipPauseCollection: typeof dispatchMembershipPauseCollection
-  syncMembershipPauseCollection: typeof syncMembershipPauseCollection
-}
-
-const PROCESSORS: MembershipJobProcessors = {
-  deliverMembershipEntitlementEffects: deliverPendingMembershipEntitlementEffects,
-  expireElapsedMemberships: expireElapsedMembershipsBatch,
-  processAppleNotification: reconcileAppleNotification,
-  processMembershipVerificationJob,
-  processRenewalNotificationCheckDispatcher,
-  processSendRenewalPriceIncreaseEmail,
-  processStripeEvent,
-  recoverMembershipVerifications,
-  recoverAppleNotifications,
-  processGooglePlayNotification,
-  recoverGooglePlayNotifications,
-  recoverGooglePlayActiveSources,
-  processGooglePlayActiveSource,
-  processGooglePlayAcknowledgement,
-  recoverGooglePlayAcknowledgements,
-  refreshGooglePlayOidcTrust: refreshConfiguredGoogleOidcTrustMaterial,
-  recoverMicrosoftStoreSources,
-  reconcileMicrosoftStoreSource: processMicrosoftStoreSource,
-  recoverStripeEvents,
-  reconcileStripeMembershipCatalog,
-  dispatchMembershipRefundReconciliation,
-  reconcileMembershipRefundOperation,
-  dispatchMembershipPauseCollection,
-  syncMembershipPauseCollection,
-}
-
 async function dispatchMembershipPauseCollection(): Promise<void> {
   const leases = await dispatchDuePauseCollectionWork()
   await Promise.all(leases.map(lease => enqueueSyncMembershipPauseCollection(lease)))
@@ -104,91 +50,86 @@ async function dispatchMembershipRefundReconciliation(): Promise<void> {
   )
 }
 
-export function processMembershipJob(job: Job, processors = PROCESSORS): Promise<void> {
-  return deferPostgresConnectionTimeout(job, () => dispatchMembershipJob(job, processors))
+export function processMembershipJob(job: Job): Promise<void> {
+  return deferPostgresConnectionTimeout(job, () => dispatchMembershipJob(job))
 }
 
-async function dispatchMembershipJob(job: Job, processors: MembershipJobProcessors): Promise<void> {
+async function dispatchMembershipJob(job: Job): Promise<void> {
   switch (job.name as MembershipsJobs) {
     case 'deliverMembershipEntitlementEffects':
-      await processors.deliverMembershipEntitlementEffects()
+      await deliverPendingMembershipEntitlementEffects()
       return
     case 'expireElapsedMemberships':
-      await processors.expireElapsedMemberships()
+      await expireElapsedMembershipsBatch()
       return
     case 'processMembershipVerification':
-      await processors.processMembershipVerificationJob(job)
+      await processMembershipVerificationJob(job)
       return
     case 'processAppleNotification':
-      await processors.processAppleNotification(job.data)
+      await reconcileAppleNotification(job.data)
       return
     case 'recoverMembershipVerifications':
-      await processors.recoverMembershipVerifications(job)
+      await recoverMembershipVerifications(job)
       return
     case 'recoverAppleNotifications':
-      await processors.recoverAppleNotifications()
+      await recoverAppleNotifications()
       return
     case 'processGooglePlayNotification':
-      await processMembershipProviderJob(job, () =>
-        processors.processGooglePlayNotification(job.data),
-      )
+      await processMembershipProviderJob(job, () => processGooglePlayNotification(job.data))
       return
     case 'recoverGooglePlayNotifications':
-      await processors.recoverGooglePlayNotifications()
+      await recoverGooglePlayNotifications()
       return
     case 'recoverGooglePlayActiveSources':
-      await processors.recoverGooglePlayActiveSources()
+      await recoverGooglePlayActiveSources()
       return
     case 'reconcileGooglePlayActiveSource':
-      await processors.processGooglePlayActiveSource(job.data)
+      await processGooglePlayActiveSource(job.data)
       return
     case 'acknowledgeGooglePlayPurchase':
-      await processors.processGooglePlayAcknowledgement(job.data)
+      await processGooglePlayAcknowledgement(job.data)
       return
     case 'recoverGooglePlayAcknowledgements':
-      await processors.recoverGooglePlayAcknowledgements()
+      await recoverGooglePlayAcknowledgements()
       return
     case 'refreshGooglePlayOidcTrust':
-      await processors.refreshGooglePlayOidcTrust()
+      await refreshConfiguredGoogleOidcTrustMaterial()
       return
     case 'recoverMicrosoftStoreSources':
-      await processors.recoverMicrosoftStoreSources()
+      await recoverMicrosoftStoreSources()
       return
     case 'reconcileMicrosoftStoreSource':
-      await processors.reconcileMicrosoftStoreSource(job.data)
+      await processMicrosoftStoreSource(job.data)
       return
     case 'processStripeEvent':
-      await processors.processStripeEvent(
-        job.data,
-        job.attemptsMade + 1 >= (job.opts.attempts ?? 1),
-      )
+      await processStripeEvent(job.data, job.attemptsMade + 1 >= (job.opts.attempts ?? 1))
       return
     case 'recoverStripeEvents':
-      await processors.recoverStripeEvents()
+      await recoverStripeEvents()
       return
     case 'reconcileStripeMembershipCatalog':
-      await processors.reconcileStripeMembershipCatalog()
+      await reconcileStripeMembershipCatalog()
       return
     case 'processRenewalNotificationCheck':
-      await processors.processRenewalNotificationCheckDispatcher(job.data as { afterId?: string })
+      await processRenewalNotificationCheckDispatcher(job.data as { afterId?: string })
       return
     case 'processSendRenewalPriceIncreaseEmail':
-      await processors.processSendRenewalPriceIncreaseEmail(job.data)
+      await processSendRenewalPriceIncreaseEmail(job.data)
       return
     case 'dispatchMembershipRefundReconciliation':
-      await processors.dispatchMembershipRefundReconciliation()
+      await dispatchMembershipRefundReconciliation()
       return
     case 'reconcileMembershipRefundOperation':
-      await processors.reconcileMembershipRefundOperation({
+      await reconcileMembershipRefundOperation({
         id: (job.data as { operationId: string }).operationId,
         leaseToken: (job.data as { leaseToken: string }).leaseToken,
       })
       return
     case 'dispatchMembershipPauseCollection':
-      await processors.dispatchMembershipPauseCollection()
+      await dispatchMembershipPauseCollection()
       return
     case 'syncMembershipPauseCollection':
-      await processors.syncMembershipPauseCollection(job.data)
+      await syncMembershipPauseCollection(job.data)
       return
     default:
       throw new Error(`Unknown job name: ${job.name}`)
