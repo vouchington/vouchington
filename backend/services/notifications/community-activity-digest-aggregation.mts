@@ -11,6 +11,7 @@ export async function aggregateCommunityActivityDigestBatch(input: {
   windowEndId: string
 }): Promise<Array<CommunityActivityDigestCounts & { user_id: string }>> {
   const now = input.now ?? new Date()
+  // no-mistakes-disable-next-line postgres-bounded-statements: weekly digest for owners and moderators only; activity is limited to the week's id window and pending moderation counts are per recipient community; member totals come from the stored community_search_counts.member_count.
   const { rows } = await read<CommunityActivityDigestCounts & { user_id: string }>(sql`
     /* aggregateCommunityActivityDigestBatch */
     WITH eligible AS (
@@ -47,10 +48,9 @@ export async function aggregateCommunityActivityDigestBatch(input: {
       JOIN community_ids c ON c.community_id = p.community_id
       WHERE p.id >= ${input.windowStartId} AND p.id < ${input.windowEndId}
         AND p.deleted_at IS NULL AND u.deleted_at IS NULL GROUP BY p.community_id
-    ), active_members AS (
-      SELECT cm.community_id, count(*)::int AS value FROM community_members cm JOIN users u ON u.id = cm.user_id
-      JOIN community_ids c ON c.community_id = cm.community_id
-      WHERE cm.removed_at IS NULL AND u.deleted_at IS NULL GROUP BY cm.community_id
+    ), total_members AS (
+      SELECT csc.community_id, csc.member_count AS value FROM community_search_counts csc
+      JOIN community_ids c ON c.community_id = csc.community_id
     ), pending_reviews AS (
       SELECT r.community_id, count(*)::int AS pending
       FROM community_post_reviews r JOIN posts p ON p.id = r.post_id AND p.deleted_at IS NULL
@@ -82,18 +82,18 @@ export async function aggregateCommunityActivityDigestBatch(input: {
       SELECT e.user_id, e.community_id, COALESCE(j.value,0) AS joins, COALESCE(d.value,0) AS departures,
         COALESCE(pa.discussions,0) AS discussions, COALESCE(pa.reviews,0) AS reviews,
         COALESCE(pa.data_points,0) AS data_points, COALESCE(pa.comments,0) AS comments,
-        COALESCE(pa.active_posters,0) AS active_posters, COALESCE(am.value,0) AS active_members,
+        COALESCE(pa.active_posters,0) AS active_posters, COALESCE(tm.value,0) AS total_members,
         COALESCE(pr.pending,0)+COALESCE(a.pending,0)+COALESCE(r.pending,0)+COALESCE(be.pending,0) AS moderation_workload,
         t.label AS top_discussion, COALESCE(t.replies,0) AS top_replies
       FROM eligible e LEFT JOIN joins j USING (community_id) LEFT JOIN departures d USING (community_id)
-      LEFT JOIN post_activity pa USING (community_id) LEFT JOIN active_members am USING (community_id)
+      LEFT JOIN post_activity pa USING (community_id) LEFT JOIN total_members tm USING (community_id)
       LEFT JOIN pending_reviews pr USING (community_id) LEFT JOIN applications a USING (community_id)
       LEFT JOIN reports r USING (community_id) LEFT JOIN ban_evaders be USING (community_id)
       LEFT JOIN top_ranked t ON t.community_id=e.community_id AND t.rank=1
     ), active AS (SELECT * FROM activity WHERE joins+departures+discussions+reviews+data_points+comments+active_posters > 0)
     SELECT user_id, count(*)::int AS community_count, sum(joins)::int AS joins, sum(departures)::int AS departures,
       sum(discussions)::int AS discussions, sum(reviews)::int AS reviews, sum(data_points)::int AS data_points,
-      sum(comments)::int AS comments, sum(active_posters)::int AS active_posters, sum(active_members)::int AS active_members,
+      sum(comments)::int AS comments, sum(active_posters)::int AS active_posters, sum(total_members)::int AS total_members,
       sum(moderation_workload)::int AS moderation_workload,
       (array_agg(top_discussion ORDER BY top_replies DESC) FILTER (WHERE top_discussion IS NOT NULL))[1] AS top_discussion
     FROM active GROUP BY user_id

@@ -89,7 +89,7 @@ describe('community activity digest', () => {
       expect(own).toHaveLength(1)
       const notification = (await listNotifications(owner.id)).notifications[own[0]!.notificationId]
       expect(notification?.body).toContain('1 community: 1 joined')
-      expect(notification?.body).toContain('1 total active members')
+      expect(notification?.body).toContain('1 total members')
     }),
   )
 
@@ -168,7 +168,7 @@ describe('community activity digest', () => {
       data_points: 0,
       comments: 1,
       active_posters: 1,
-      active_members: 1,
+      total_members: 1,
       moderation_workload: 0,
       top_discussion: null,
     })
