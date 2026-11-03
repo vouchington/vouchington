@@ -59,7 +59,6 @@ type ProcessPsqlDependencies = PartitionCleanupDependencies &
     enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
     voteRetentionCleanupPage: typeof runVoteRetentionCleanupPage
     enqueueDataRetentionContinuation: typeof enqueueDataRetentionContinuation
-    reconcileVoteDrift: typeof reconcilePostVoteDrift
     refreshMaterializedView: typeof refreshMaterializedView
     runConfigDriven: typeof runConfigDriven
     runMigrations: typeof runMigrations
@@ -167,7 +166,7 @@ export default async function processPsql(
       return (dependencies?.refreshMaterializedView ?? refreshMaterializedView)(data.viewName)
     }
     case 'reconcileVoteDrift':
-      return (dependencies?.reconcileVoteDrift ?? reconcilePostVoteDrift)()
+      return reconcilePostVoteDrift()
     default:
       throw new Error(`Unknown job: ${jobName}`)
   }

@@ -7,7 +7,6 @@ import type { PsqlPartitionJobData } from '@queues/psql/types'
 
 export type PartitionCleanupDependencies = {
   cleanupPartitions: typeof cleanupPartitions
-  enqueueCleanupPartitionsContinuation: typeof enqueueCleanupPartitionsContinuation
 }
 
 export async function processMonthlyPartitionCleanup(
@@ -33,9 +32,7 @@ export async function processMonthlyPartitionCleanup(
   if (partitionResult.hasMore) {
     if (!jobId || !partitionResult.nextCursor)
       throw new Error('Partition cleanup continuation needs a job ID and cursor')
-    await (
-      dependencies?.enqueueCleanupPartitionsContinuation ?? enqueueCleanupPartitionsContinuation
-    )({
+    await enqueueCleanupPartitionsContinuation({
       rootJobId: continuation?.rootJobId ?? createHash('sha256').update(jobId).digest('hex'),
       step: (continuation?.step ?? 0) + 1,
       referenceDate: partitionReferenceDate.toISOString(),
