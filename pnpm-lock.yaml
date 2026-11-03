@@ -2336,9 +2336,6 @@ importers:
       '@vouchington/aws':
         specifier: ^0.1.0
         version: 0.1.0(@aws-sdk/client-cloudwatch@3.1160.0)(@aws-sdk/client-firehose@3.1160.0)(@aws-sdk/client-ses@3.1160.0)(@aws-sdk/client-sqs@3.1160.0)(@smithy/node-http-handler@4.14.0)
-      '@vouchington/http-transport':
-        specifier: ^0.1.1
-        version: 0.1.1
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
