@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { AI_AGENTS_QUEUE_NAME } from '@queues/ai-agents/config'
 import {
   beginSpendCapDelayedJobRelease,
   spendCapDelayedRegistryKey,
@@ -17,8 +16,11 @@ import {
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+// A private queue: real workers on the shared ai_agents queue (process-classifier-run) would
+// otherwise consume these waiting jobs and make changeDelay fail with invalid_state.
+const privateQueueName = `ai_agents_spend_cap_rollover_${randomUUID()}`
 function aiAgentsQueue(): Queue<AIAgentJobData> {
-  return new Queue(AI_AGENTS_QUEUE_NAME, connection)
+  return new Queue(privateQueueName, connection)
 }
 async function removeOwnedJobs(
   queue: Queue<AIAgentJobData>,
