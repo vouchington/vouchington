@@ -55,10 +55,6 @@
       "classification": "public-sql"
     },
     {
-      "path": "backend/services/posts/metrics.mts",
-      "classification": "public-sql"
-    },
-    {
       "path": "backend/services/posts/metrics-batch.mts",
       "classification": "public-sql"
     },
