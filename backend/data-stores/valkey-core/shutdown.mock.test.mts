@@ -1,7 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { closeValkeyClients } from 'valkyries'
 
-// Each case loads a fresh module graph: the shutdown guard and the client registries are
-// module state, so resetting modules keeps closing them away from other test files.
+// Closing the process-wide valkyries clients would break every other file sharing a fork, so
+// this file runs in the isolated mocks project. The spy passes through to the real close.
+const closeValkeyClientsSpy = vi.hoisted(() => vi.fn<typeof closeValkeyClients>())
+
+vi.mock<typeof import('valkyries')>(import('valkyries'), async importOriginal => {
+  const actual = await importOriginal<typeof import('valkyries')>()
+  closeValkeyClientsSpy.mockImplementation(actual.closeValkeyClients)
+  return { ...actual, closeValkeyClients: closeValkeyClientsSpy }
+})
+
+// Each case loads a fresh module graph: the shutdown guard and the client registries are module state.
 async function loadShutdown() {
   vi.resetModules()
   const { onGracefulShutdown } = await import('./shutdown.mts')
@@ -13,6 +23,7 @@ async function loadShutdown() {
 describe('valkey shutdown facade', () => {
   afterEach(() => {
     vi.resetModules()
+    closeValkeyClientsSpy.mockReset()
   })
 
   it('accepts completed dynamic config startups', async () => {
@@ -69,6 +80,23 @@ describe('valkey shutdown facade', () => {
 
     expect(instance.close).toHaveBeenCalledTimes(1)
     expect(order).toEqual(['glide', 'shared'])
+    expect(closeValkeyClientsSpy).toHaveBeenCalledTimes(1)
+    expect(closeValkeyClientsSpy).toHaveBeenCalledWith({ throwOnError: true })
+  })
+
+  it('surfaces a valkyries client close failure after closing everything else', async () => {
+    const { onGracefulShutdown, registry } = await loadShutdown()
+    const clientFailure = new AggregateError([new Error('client close failed')], 'close failed')
+    const instance = { close: vi.fn<() => Promise<void>>(() => Promise.resolve()) }
+    const shared = vi.fn<() => void>()
+    registry.registerGlideMQInstance(instance)
+    registry.setSharedCommandClientShutdown(shared)
+    closeValkeyClientsSpy.mockRejectedValueOnce(clientFailure)
+
+    await expect(onGracefulShutdown()).rejects.toMatchObject({ errors: [clientFailure] })
+
+    expect(instance.close).toHaveBeenCalledTimes(1)
+    expect(shared).toHaveBeenCalledTimes(1)
   })
 
   it('does not close the shared command client before GlideMQ drain resolves', async () => {
