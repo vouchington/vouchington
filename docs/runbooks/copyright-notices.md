@@ -54,6 +54,15 @@ copyright EU reports route as JSON, `csv_notices` (Commission CSV Part 4), or `c
 (Part 7); CSV needs UTC-midnight bounds. GET is read-only; POST records the six EU counts for the period.
 The exports contain aggregate copyright figures only.
 
+Record a durable report only after its period has been closed for at least one day; an earlier
+request returns 422. Facts count by when Voucha recorded them (the row's UUIDv7 id), not by the
+arrival date of the email or complaint, which stays stored and displayed. A fact that arrives or is
+admitted late therefore lands in the period it was recorded in, and a stored report never changes.
+Its EU legal-fact counts cover all EU notices, including those whose policy approval was later
+withdrawn. The broader notice-export figures also include the other copyright intake pipelines
+defined by the reporting population. A filtered investigation is read-only. Keep the immutable
+figures and method snapshot after case deletion.
+
 Publication is the operator's job. Before publishing, add the Service name, merge with the platform's
 other moderation figures, and supply the TOTAL row. An empty Value means not computed; never present
 it as zero or not applicable. The API report contract

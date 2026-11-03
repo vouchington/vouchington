@@ -224,8 +224,8 @@ describe('DSA copyright notice aggregates', () => {
     const imposedAt = new Date(Date.now() - 2 * 3_600_000)
     const receivedAt = new Date(imposedAt.getTime() - 3_600_000)
     const completedAt = new Date(receivedAt.getTime() + 74 * 60_000 + 24_000)
-    const start = new Date(imposedAt.getTime() - 1_000)
-    const end = new Date(imposedAt.getTime() + 1_000)
+    const start = new Date(Date.now() - 1_000)
+    const end = new Date(Date.now() + 60_000)
     const noticeId = await createTestTimedDsaReportAction({ receivedAt, imposedAt, completedAt })
     const foreign = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),

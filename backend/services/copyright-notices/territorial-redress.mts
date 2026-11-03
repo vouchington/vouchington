@@ -8,7 +8,6 @@ import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues
 import { getImagePlacementKey } from '@services/images/placements'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
@@ -85,15 +84,17 @@ export async function recordTerritorialCopyrightRedressDecision(
     selectExistingTerritorialRedressDecision(redressId),
   )
   assert(!existing[0], 409, labels.redressDecisionExists)
-  const decisionId = uuidv7()
   const rationaleCiphertext = encryptSecret(
     rationale,
     `${labels.redressDecisionPurpose}:${redressId}`,
   )
-  await transaction(sql`/* recordTerritorialCopyrightRedressDecision:identity */
+  const { rows: identities } = await transaction<{ id: string }>(sql`
+    /* recordTerritorialCopyrightRedressDecision:identity */
     INSERT INTO copyright_territorial_redress_decision_identities
-      (id, copyright_territorial_redress_request_id)
-    VALUES (${decisionId}, ${redressId})`)
+      (copyright_territorial_redress_request_id)
+    VALUES (${redressId}) RETURNING id`)
+  const decisionId = identities[0]?.id
+  assert(decisionId, 500, labels.redressDecisionFailed)
   const { rows } = await transaction<TerritorialCopyrightRedressDecision>(
     insertTerritorialRedressDecision(
       decisionId,
