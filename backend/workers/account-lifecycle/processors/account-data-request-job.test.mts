@@ -1,70 +1,47 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
-import { claimRecoverableDataRequests, createDataRequest } from '@services/account-data-requests'
+import {
+  claimRecoverableDataRequests,
+  createDataRequest,
+  getDataRequestById,
+} from '@services/account-data-requests'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import {
-  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
   ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
   ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
 } from '@queues/background/enqueues/account-lifecycle-jobs'
-import {
-  type processCleanupExpiredExports,
-  type processExportRequest,
-  recoverExportRequests,
-} from './account-data-requests.mts'
+import { recoverExportRequests } from './account-data-requests.mts'
 import { processAccountDataRequestJob } from './account-data-request-job.mts'
 
 describe('processAccountDataRequestJob', () => {
-  it('routes export, cleanup, and recovery jobs', async () => {
-    const processors = {
-      processCleanupExpiredExports: vi.fn<typeof processCleanupExpiredExports>(),
-      processExportRequest: vi.fn<typeof processExportRequest>(),
-      recoverExportRequests: vi.fn<typeof recoverExportRequests>(),
-    }
-
-    await processAccountDataRequestJob(
-      job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, {
-        requestId: 'request-1',
-        userId: 'user-1',
-        processingAttemptId: 'attempt-1',
-      }),
-      processors,
-    )
-    await processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name), processors)
-    await processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name), processors)
-
-    expect(processors.processExportRequest).toHaveBeenCalledWith(
-      'request-1',
-      'user-1',
-      'attempt-1',
-      true,
-    )
-    expect(processors.processCleanupExpiredExports).toHaveBeenCalledOnce()
-    expect(processors.recoverExportRequests).toHaveBeenCalledOnce()
-  })
-
   it('rejects unknown jobs', async () => {
-    await expect(
-      processAccountDataRequestJob(job('unknown'), {
-        processCleanupExpiredExports: vi.fn<typeof processCleanupExpiredExports>(),
-        processExportRequest: vi.fn<typeof processExportRequest>(),
-        recoverExportRequests: vi.fn<typeof recoverExportRequests>(),
-      }),
-    ).rejects.toThrow('Unknown job name: unknown')
+    await expect(processAccountDataRequestJob(job('unknown'))).rejects.toThrow(
+      'Unknown job name: unknown',
+    )
   })
 
   it('leaves legacy unfenced export jobs for database recovery', async () => {
-    const mockProcessExportRequest = vi.fn<typeof processExportRequest>()
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
+
     await processAccountDataRequestJob(
-      job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, { requestId: 'request-1', userId: 'user-1' }),
-      {
-        processCleanupExpiredExports: vi.fn<typeof processCleanupExpiredExports>(),
-        processExportRequest: mockProcessExportRequest,
-        recoverExportRequests: vi.fn<typeof recoverExportRequests>(),
-      },
+      job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, { requestId: request.id, userId: user.id }),
     )
-    expect(mockProcessExportRequest).not.toHaveBeenCalled()
+
+    expect(await getDataRequestById(user.id, user.id, request.id)).toMatchObject({
+      status: 'pending',
+      last_error_message: null,
+    })
+  })
+
+  it('routes a recovery job to the recovery sweep', async () => {
+    onTestFinished(rejectNextPostgresTransactionForTest(new Error('recovery sweep reached')))
+
+    await expect(
+      processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name)),
+    ).rejects.toThrow('recovery sweep reached')
   })
 })
 

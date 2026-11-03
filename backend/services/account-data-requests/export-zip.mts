@@ -5,23 +5,14 @@ import { pipeline } from 'node:stream/promises'
 import { ZipFile } from 'yazl'
 import { toError } from './export-utils.mts'
 
-type ZipDirDeps = {
-  createWriteStream?: typeof createWriteStream
-}
-
-export async function zipDir(
-  sourceDir: string,
-  destPath: string,
-  deps: ZipDirDeps = {},
-): Promise<void> {
+export async function zipDir(sourceDir: string, destPath: string): Promise<void> {
   const entries = await readdir(sourceDir, { recursive: true, withFileTypes: true })
   const zip = new ZipFile()
-  const writeStream = deps.createWriteStream ?? createWriteStream
   let zipError: unknown
   zip.on('error', (err: unknown) => {
     zipError ??= err
   })
-  const finished = pipeline(zip.outputStream, writeStream(destPath))
+  const finished = pipeline(zip.outputStream, createWriteStream(destPath))
 
   let loopError: unknown
   try {

@@ -1,9 +1,12 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
 import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { createTestUser } from '@voucha/test-helpers'
-import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  rejectNextPostgresTransactionForTest,
+  rejectPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
 import {
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
@@ -13,105 +16,14 @@ import {
   ACCOUNT_LIFECYCLE_USER_DELETION_JOB,
 } from '@queues/background/enqueues/account-lifecycle-jobs'
 import { processUserDeletionJob } from './user-deletion-job.mts'
-import { processUserDeletion, recoverUserDeletions } from './user-deletions.mts'
+import { recoverUserDeletions } from './user-deletions.mts'
 
 describe('user-deletions processor', () => {
-  it('routes a fenced process job with its request and processing attempt', async () => {
-    const processDeletion = vi.fn<typeof processUserDeletion>()
-    const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
-
-    await processUserDeletionJob(
-      job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, {
-        requestId: 'request-1',
-        processingAttemptId: 'attempt-1',
-      }),
-      {
-        processUserDeletion: processDeletion,
-        recoverUserDeletions: recoverDeletions,
-      },
-    )
-
-    expect(processDeletion).toHaveBeenCalledOnce()
-    expect(processDeletion).toHaveBeenCalledWith('request-1', 'attempt-1', {
-      isFinalAttempt: false,
-    })
-    expect(recoverDeletions).not.toHaveBeenCalled()
-  })
-
-  it('passes the final job attempt to the deletion lifecycle', async () => {
-    const processDeletion = vi.fn<typeof processUserDeletion>()
-    const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
-
-    await processUserDeletionJob(
-      job(
-        ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name,
-        { requestId: 'request-1', processingAttemptId: 'attempt-1' },
-        2,
-        3,
-      ),
-      {
-        processUserDeletion: processDeletion,
-        recoverUserDeletions: recoverDeletions,
-      },
-    )
-
-    expect(processDeletion).toHaveBeenCalledWith('request-1', 'attempt-1', {
-      isFinalAttempt: true,
-    })
-  })
-
-  it('treats a missing attempt limit as a final attempt', async () => {
-    const processDeletion = vi.fn<typeof processUserDeletion>()
-    const jobWithoutAttemptLimit = job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, {
-      requestId: 'request-1',
-      processingAttemptId: 'attempt-1',
-    })
-    delete jobWithoutAttemptLimit.opts.attempts
-
-    await processUserDeletionJob(jobWithoutAttemptLimit, {
-      processUserDeletion: processDeletion,
-      recoverUserDeletions: vi.fn<typeof recoverUserDeletions>(),
-    })
-
-    expect(processDeletion).toHaveBeenCalledWith('request-1', 'attempt-1', {
-      isFinalAttempt: true,
-    })
-  })
-
-  it.each([
-    ['request ID', { processingAttemptId: 'attempt-1' }],
-    ['processing attempt ID', { requestId: 'request-1' }],
-  ])('leaves a process job missing its %s for recovery', async (_missingFence, data) => {
-    const processDeletion = vi.fn<typeof processUserDeletion>()
-    const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
-
-    await processUserDeletionJob(job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, data), {
-      processUserDeletion: processDeletion,
-      recoverUserDeletions: recoverDeletions,
-    })
-
-    expect(processDeletion).not.toHaveBeenCalled()
-    expect(recoverDeletions).not.toHaveBeenCalled()
-  })
-
-  it('routes recovery jobs', async () => {
-    const processDeletion = vi.fn<typeof processUserDeletion>()
-    const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
-
-    await processUserDeletionJob(job(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name), {
-      processUserDeletion: processDeletion,
-      recoverUserDeletions: recoverDeletions,
-    })
-
-    expect(recoverDeletions).toHaveBeenCalledOnce()
-    expect(processDeletion).not.toHaveBeenCalled()
-  })
-
-  it('processes one fenced deletion batch and enqueues its successor attempt', async () => {
+  it('routes a fenced process job to one deletion batch and enqueues its successor attempt', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
 
-    await processUserDeletion(request.id, request.processingAttemptId, { isFinalAttempt: true })
+    await processUserDeletionJob(deletionJob(request))
 
     const advanced = await getUserDeletionRequestForTest(request.id)
     expect(advanced?.processingAttempts).toBe(1)
@@ -126,14 +38,49 @@ describe('user-deletions processor', () => {
     })
   })
 
-  it('rotates the processing attempt when the failed attempt is final', async () => {
-    const { request, released } = await failFirstTransaction(true)
+  it('rotates the processing attempt when the failed job attempt is final', async () => {
+    const { request, released } = await failFirstTransaction(2)
     expect(released?.processingAttemptId).not.toBe(request.processingAttemptId)
   })
 
-  it('keeps the processing attempt when the failed attempt is not final', async () => {
-    const { request, released } = await failFirstTransaction(false)
+  it('keeps the processing attempt when the failed job attempt is not final', async () => {
+    const { request, released } = await failFirstTransaction(0)
     expect(released?.processingAttemptId).toBe(request.processingAttemptId)
+  })
+
+  it('treats a missing attempt limit as a final attempt', async () => {
+    const { request, released } = await failFirstTransaction(0, { withoutAttemptLimit: true })
+    expect(released?.processingAttemptId).not.toBe(request.processingAttemptId)
+  })
+
+  it.each([
+    [
+      'request ID',
+      (request: DeletionAttempt) => ({ processingAttemptId: request.processingAttemptId }),
+    ],
+    ['processing attempt ID', (request: DeletionAttempt) => ({ requestId: request.id })],
+  ])('leaves a process job missing its %s for recovery', async (_missingFence, dataFor) => {
+    const user = await createTestUser()
+    const request = await createUserDeletionRequest(user.id, user.id)
+
+    await processUserDeletionJob(job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, dataFor(request)))
+
+    const untouched = await getUserDeletionRequestForTest(request.id)
+    expect(untouched?.processingAttempts).toBe(0)
+    expect(untouched?.processingAttemptId).toBe(request.processingAttemptId)
+  })
+
+  it('routes a recovery job to the recovery sweep', async () => {
+    onTestFinished(
+      rejectPostgresWriteForTest(
+        'claimRecoverableUserDeletions',
+        new Error('recovery sweep reached'),
+      ),
+    )
+
+    await expect(
+      processUserDeletionJob(job(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name)),
+    ).rejects.toThrow('recovery sweep reached')
   })
 
   it('recovers durable requests and enqueues their recoverable attempts', async () => {
@@ -157,14 +104,13 @@ describe('user-deletions processor', () => {
   })
 
   it('rejects unknown job names', async () => {
-    await expect(
-      processUserDeletionJob(job('unknown'), {
-        processUserDeletion: vi.fn<typeof processUserDeletion>(),
-        recoverUserDeletions: vi.fn<typeof recoverUserDeletions>(),
-      }),
-    ).rejects.toThrow('Unknown job name: unknown')
+    await expect(processUserDeletionJob(job('unknown'))).rejects.toThrow(
+      'Unknown job name: unknown',
+    )
   })
 })
+
+type DeletionAttempt = { id: string; processingAttemptId: string }
 
 function job(
   name: string,
@@ -175,14 +121,25 @@ function job(
   return { name, data, attemptsMade, opts: { attempts } } as Job
 }
 
-async function failFirstTransaction(isFinalAttempt: boolean) {
+function deletionJob(request: DeletionAttempt, attemptsMade = 0): Job {
+  return job(
+    ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name,
+    { requestId: request.id, processingAttemptId: request.processingAttemptId },
+    attemptsMade,
+  )
+}
+
+async function failFirstTransaction(
+  attemptsMade: number,
+  options: { withoutAttemptLimit?: boolean } = {},
+) {
   const user = await createTestUser()
   const request = await createUserDeletionRequest(user.id, user.id)
   onTestFinished(rejectNextPostgresTransactionForTest(new Error('provider unavailable')))
+  const queued = deletionJob(request, attemptsMade)
+  if (options.withoutAttemptLimit) delete queued.opts.attempts
 
-  await expect(
-    processUserDeletion(request.id, request.processingAttemptId, { isFinalAttempt }),
-  ).rejects.toThrow('provider unavailable')
+  await expect(processUserDeletionJob(queued)).rejects.toThrow('provider unavailable')
 
   return { request, released: await getUserDeletionRequestForTest(request.id) }
 }
