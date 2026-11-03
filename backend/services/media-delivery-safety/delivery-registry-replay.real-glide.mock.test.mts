@@ -1,5 +1,5 @@
 import { createMediaReplayOrderFixtures } from '@voucha/test-helpers/media-delivery-replay-order-fixtures'
-import { afterAll, vi, describe, expect, it } from 'vitest'
+import { afterAll, vi, describe, expect, it, onTestFinished } from 'vitest'
 import { closeTestDataStores } from '@voucha/test-helpers/close-data-stores'
 import {
   createFailedMediaDeliveryReplayFixture,
@@ -98,20 +98,18 @@ describe('media delivery replay jobs', () => {
       await expect(
         replayFailedMediaDeliveryRegistryRecords({ actorUserId, recordIds, after: recoveryCursor }),
       ).rejects.toThrow('Invalid media replay cursor')
-      const continuations: ReplayMediaDeliveryRegistryData[] = []
       await expect(
         processReplayMediaDeliveryRegistry(
           { actorUserId: first!.nonModerator.id, after: page.after },
-          {
-            replay: input => replayFailedMediaDeliveryRegistryRecords({ ...input, recordIds }),
-            enqueue: async next => {
-              continuations.push(next)
-              return enqueueReplayMediaDeliveryRegistry(next)
-            },
-          },
+          { replay: input => replayFailedMediaDeliveryRegistryRecords({ ...input, recordIds }) },
         ),
       ).rejects.toThrow('Invalid media replay cursor')
-      expect(continuations).toEqual([])
+      expect(
+        await notifications.searchJobs({
+          name: 'notifications.processReplayMediaDeliveryRegistry',
+          data: { actorUserId: first!.nonModerator.id, after: page.after },
+        }),
+      ).toEqual([])
       expect(
         await settleReplayFixtureOperations(recordIds.map(getTestMediaDeliveryRecordSnapshot)),
       ).toEqual(before)
@@ -152,47 +150,51 @@ describe('media delivery replay jobs', () => {
       const accepted: ReplayMediaDeliveryRegistryData[] = []
       const replay = (input: Parameters<typeof replayFailedMediaDeliveryRegistryRecords>[0]) =>
         replayFailedMediaDeliveryRegistryRecords({ ...input, recordIds })
-      const enqueueReplay = async (next: ReplayMediaDeliveryRegistryData) => {
-        // Call through to the real queue, then model loss of its successful acceptance reply.
-        const job = await enqueueReplayMediaDeliveryRegistry(next)
-        if (isDeduplicatedEnqueue(job)) return job
-        const persisted = await readEnqueuedJob(notifications, job)
-        expect(persisted).toMatchObject({
-          name: 'notifications.processReplayMediaDeliveryRegistry',
-          data: next,
+      const originalAdd = notifications.add
+      // Call through to the real queue, then model loss of its successful acceptance reply.
+      const addSpy = vi
+        .spyOn(notifications, 'add')
+        .mockImplementation(async (name, data, options) => {
+          const job = await originalAdd.call(notifications, name, data, options)
+          if (name !== 'notifications.processReplayMediaDeliveryRegistry') return job
+          const next = data as ReplayMediaDeliveryRegistryData
+          if (isDeduplicatedEnqueue(job)) return job
+          const persisted = await readEnqueuedJob(notifications, job)
+          expect(persisted).toMatchObject({
+            name: 'notifications.processReplayMediaDeliveryRegistry',
+            data: next,
+          })
+          expect(
+            await getTestMediaDeliveryRecordSnapshot(
+              decodeScopedUuidCursor(
+                next.after!,
+                JSON.stringify({
+                  operation: 'media-delivery-registry-replay',
+                  order: 'media-delivery-registry-record-id-asc',
+                  recordIds,
+                  actorUserId,
+                }),
+                'Invalid media replay cursor',
+              ).id,
+            ),
+          ).toMatchObject({ state: 'pending' })
+          accepted.push(next)
+          if (accepted.length === 1) throw new Error('Continuation acceptance reply lost')
+          return job
         })
-        expect(
-          await getTestMediaDeliveryRecordSnapshot(
-            decodeScopedUuidCursor(
-              next.after!,
-              JSON.stringify({
-                operation: 'media-delivery-registry-replay',
-                order: 'media-delivery-registry-record-id-asc',
-                recordIds,
-                actorUserId,
-              }),
-              'Invalid media replay cursor',
-            ).id,
-          ),
-        ).toMatchObject({ state: 'pending' })
-        accepted.push(next)
-        if (accepted.length === 1) throw new Error('Continuation acceptance reply lost')
-        return job
-      }
+      onTestFinished(() => addSpy.mockRestore())
       const data = { actorUserId }
-      await expect(
-        processReplayMediaDeliveryRegistry(data, { replay, enqueue: enqueueReplay }),
-      ).rejects.toThrow('Continuation acceptance reply lost')
-      await processReplayMediaDeliveryRegistry(data, { replay, enqueue: enqueueReplay })
+      await expect(processReplayMediaDeliveryRegistry(data, { replay })).rejects.toThrow(
+        'Continuation acceptance reply lost',
+      )
+      await processReplayMediaDeliveryRegistry(data, { replay })
       expect(accepted).toHaveLength(2)
       expect(accepted[0]!.after).not.toBe(accepted[1]!.after)
       expect(isDeduplicatedEnqueue(await enqueueReplayMediaDeliveryRegistry(accepted[0]!))).toBe(
         true,
       )
       await settleReplayFixtureOperations(
-        accepted.map(next =>
-          processReplayMediaDeliveryRegistry(next, { replay, enqueue: enqueueReplay }),
-        ),
+        accepted.map(next => processReplayMediaDeliveryRegistry(next, { replay })),
       )
       for (const [index, fixture] of fixtures.entries()) {
         const history = await getTestMediaDeliveryTransitionHistory(

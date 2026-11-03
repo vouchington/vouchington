@@ -1,20 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUserDirect, readEnqueuedJob, isDeduplicatedEnqueue } from '@voucha/test-helpers'
+import { createTestUserDirect } from '@voucha/test-helpers'
 import { insertTestImage } from '@voucha/test-helpers/entities/images'
 import { setTestUserProfileImage } from '@voucha/test-helpers/entities/media-surface-writes'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import {
+  readTestMediaRegistryReconcileJobs,
   scopedTestMediaRecoveryDependencies,
   withTestMediaRecoveryBacklog,
 } from '@voucha/test-helpers/media-delivery-recovery'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
 import { stageImagePlacementDeliveryRecordPage } from '@services/media-delivery-safety'
-import {
-  enqueueContinueMediaDeliveryRegistryStaging,
-  type ReconcileMediaDeliveryRegistryData,
-} from '@queues/notifications/enqueues'
-import { notifications } from '@queues/notifications/queues'
+import type { ReconcileMediaDeliveryRegistryData } from '@queues/notifications/enqueues'
 import { processReconcileMediaDeliveryRegistry } from './media-delivery-registry.mts'
 
 describe('media registry staging continuation', () => {
@@ -37,9 +34,10 @@ describe('media registry staging continuation', () => {
             image_id: placement.imageId,
           })
           const data = { staging: { scanBefore, after: cursor(ordered[0]!) } }
-          const continuations: Awaited<
-            ReturnType<typeof enqueueContinueMediaDeliveryRegistryStaging>
-          >[] = []
+          const stagingJobs = () =>
+            readTestMediaRegistryReconcileJobs(
+              job => 'staging' in job && job.staging?.scanBefore === scanBefore,
+            )
           const dependencies = {
             ...scopedTestMediaRecoveryDependencies(recordIds),
             stageImagePlacementDeliveryRecordPage: (
@@ -49,20 +47,13 @@ describe('media registry staging continuation', () => {
                 ...input,
                 imageIds: placements.map(row => row.imageId),
               }),
-            enqueueContinueMediaDeliveryRegistryStaging: async (
-              staging: NonNullable<ReconcileMediaDeliveryRegistryData['staging']>,
-            ) => {
-              const result = await enqueueContinueMediaDeliveryRegistryStaging(staging)
-              continuations.push(result)
-              return result
-            },
           }
           await processReconcileMediaDeliveryRegistry(data, dependencies)
           await processReconcileMediaDeliveryRegistry(data, dependencies)
           const next = { staging: { scanBefore, after: cursor(ordered[1]!) } }
-          expect(continuations).toHaveLength(2)
-          expect(isDeduplicatedEnqueue(continuations[1]!)).toBe(true)
-          const job = await readEnqueuedJob(notifications, continuations[0]!)
+          const persisted = await stagingJobs()
+          expect(persisted).toHaveLength(1)
+          const job = persisted[0]!
           expect(job).toMatchObject({
             name: 'notifications.processReconcileMediaDeliveryRegistry',
             data: next,
@@ -74,7 +65,7 @@ describe('media registry staging continuation', () => {
             job.data as ReconcileMediaDeliveryRegistryData,
             dependencies,
           )
-          expect(continuations).toHaveLength(2)
+          expect(await stagingJobs()).toHaveLength(1)
         },
       )
     } finally {
@@ -103,9 +94,10 @@ describe('media registry staging retired raw page', () => {
       expect(retired.retired_at).not.toBeNull()
       expect(active.retired_at).toBeNull()
       const stageResults: Awaited<ReturnType<typeof stageImagePlacementDeliveryRecordPage>>[] = []
-      const continuations: Awaited<
-        ReturnType<typeof enqueueContinueMediaDeliveryRegistryStaging>
-      >[] = []
+      const stagingJobs = () =>
+        readTestMediaRegistryReconcileJobs(
+          job => 'staging' in job && job.staging?.after.placement_id === retired.placement_id,
+        )
       const dependencies = {
         ...scopedTestMediaRecoveryDependencies([]),
         stageImagePlacementDeliveryRecordPage: async (
@@ -113,13 +105,6 @@ describe('media registry staging retired raw page', () => {
         ) => {
           const result = await stageImagePlacementDeliveryRecordPage(input)
           stageResults.push(result)
-          return result
-        },
-        enqueueContinueMediaDeliveryRegistryStaging: async (
-          staging: NonNullable<ReconcileMediaDeliveryRegistryData['staging']>,
-        ) => {
-          const result = await enqueueContinueMediaDeliveryRegistryStaging(staging)
-          continuations.push(result)
           return result
         },
       }
@@ -138,8 +123,9 @@ describe('media registry staging retired raw page', () => {
         dependencies,
       )
       expect(stageResults[0]).toMatchObject({ staged: 0, hasMore: true })
-      expect(continuations).toHaveLength(1)
-      const job = await readEnqueuedJob(notifications, continuations[0]!)
+      const firstJobs = await stagingJobs()
+      expect(firstJobs).toHaveLength(1)
+      const job = firstJobs[0]!
       expect(job).toMatchObject({
         name: 'notifications.processReconcileMediaDeliveryRegistry',
         data: {
@@ -157,21 +143,18 @@ describe('media registry staging retired raw page', () => {
         dependencies,
       )
       expect(stageResults[1]).toMatchObject({ staged: 0, hasMore: true })
-      expect(continuations).toHaveLength(2)
-      const next = await readEnqueuedJob(notifications, continuations[1]!)
-      expect(next).toMatchObject({
-        data: {
-          staging: {
-            scanBefore,
-            after: {
-              placement_id: retired.placement_id,
-              placement_revision: retired.placement_revision,
-              image_id: retiredImageId,
-            },
+      const allJobs = await stagingJobs()
+      expect(allJobs).toHaveLength(2)
+      expect(allJobs.map(({ data }) => data)).toContainEqual({
+        staging: {
+          scanBefore,
+          after: {
+            placement_id: retired.placement_id,
+            placement_revision: retired.placement_revision,
+            image_id: retiredImageId,
           },
         },
       })
-      expect(continuations).toHaveLength(2)
     } finally {
       restore()
     }

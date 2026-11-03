@@ -4,6 +4,9 @@ import { insertTestImage } from './entities/images-insert.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { insertTestPostImage } from './entities/images.mts'
 import { getTestPostImagePlacement } from './entities/post-images.mts'
+import { readAllQueueJobs } from './queue-jobs.mts'
+import { notifications } from '../queues/notifications/queues.mts'
+import type { ReconcileMediaDeliveryRegistryData } from '../queues/notifications/enqueues.mts'
 import {
   failExpiredExhaustedMediaDeliveryRegistryRecords,
   getMediaDeliveryRegistryScanBefore,
@@ -134,4 +137,28 @@ export async function stageTestImagePlacementDeliveryRecordsForImageIds(
   imageIds: readonly string[],
 ): Promise<number> {
   return (await stageImagePlacementDeliveryRecordPage({ imageIds })).staged
+}
+
+/** Apply-record jobs the real bulk enqueue admitted for these owned record ids. */
+export async function readTestAppliedMediaRegistryJobs(recordIds: readonly string[]) {
+  const found = await Promise.all(
+    recordIds.map(mediaDeliveryRegistryRecordId =>
+      notifications.searchJobs({
+        name: 'notifications.processApplyMediaDeliveryRegistryRecord',
+        data: { mediaDeliveryRegistryRecordId },
+      }),
+    ),
+  )
+  return found.flat()
+}
+
+/** Reconciliation continuation jobs whose data match, read back from the real queue. */
+export async function readTestMediaRegistryReconcileJobs(
+  matches: (data: ReconcileMediaDeliveryRegistryData) => boolean,
+) {
+  return (await readAllQueueJobs(notifications)).filter(
+    job =>
+      job.name === 'notifications.processReconcileMediaDeliveryRegistry' &&
+      matches(job.data as ReconcileMediaDeliveryRegistryData),
+  )
 }

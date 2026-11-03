@@ -3,10 +3,7 @@ import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-deliver
 import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { mediaDeliverySafetyWorkConfig } from './work-limits.mts'
-import {
-  enqueueReplayMediaDeliveryRegistry,
-  type ReplayMediaDeliveryRegistryData,
-} from '../../queues/notifications/enqueues.mts'
+import { notifications } from '../../queues/notifications/queues.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   settleReplayFixtureOperations,
@@ -50,16 +47,11 @@ describe('media delivery replay jobs', () => {
           }),
         ),
       )
-      const continuations: ReplayMediaDeliveryRegistryData[] = []
       const pages: Awaited<ReturnType<typeof replayFailedMediaDeliveryRegistryRecords>>[] = []
       const restore = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
         registry_reconciliation_page_size: 1,
       })
       const dependencies = {
-        enqueue: async (data: ReplayMediaDeliveryRegistryData) => {
-          continuations.push(data)
-          return enqueueReplayMediaDeliveryRegistry(data)
-        },
         replay: async (input: Parameters<typeof replayFailedMediaDeliveryRegistryRecords>[0]) => {
           const page = await replayFailedMediaDeliveryRegistryRecords({ ...input, recordIds })
           pages.push(page)
@@ -77,13 +69,23 @@ describe('media delivery replay jobs', () => {
           await processReplayMediaDeliveryRegistry(data, dependencies)
           await processReplayMediaDeliveryRegistry(data, dependencies)
         }
-        expect(continuations).toContainEqual({ ...data, after: keys[0] })
-        expect(continuations.toSorted((a, b) => a.after!.localeCompare(b.after!))).toEqual(
+        const continuationJobs = await Promise.all(
           pages
             .filter(page => page.hasMore && page.after)
-            .map(page => ({ ...data, after: page.after }))
-            .toSorted((a, b) => a.after!.localeCompare(b.after!)),
+            .map(page =>
+              notifications.searchJobs({
+                name: 'notifications.processReplayMediaDeliveryRegistry',
+                data: { ...data, after: page.after },
+              }),
+            ),
         )
+        expect(continuationJobs.every(jobs => jobs.length === 1)).toBe(true)
+        expect(
+          await notifications.searchJobs({
+            name: 'notifications.processReplayMediaDeliveryRegistry',
+            data: { ...data, after: keys[0] },
+          }),
+        ).toHaveLength(1)
         expect(pages.map(page => page.after)).toEqual(
           expect.arrayContaining(keys.slice(0, schedule === 'committed' ? 2 : 1)),
         )

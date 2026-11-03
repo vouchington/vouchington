@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
-import type { enqueueBulkApplyMediaDeliveryRegistryRecords } from '@queues/notifications/enqueues'
+import { readTestAppliedMediaRegistryJobs } from '@voucha/test-helpers/media-delivery-recovery'
 import type {
   listRecoverableMediaDeliveryRegistryIds,
   processMediaDeliveryRegistryRecord,
@@ -51,16 +51,14 @@ describe('media delivery registry processors', () => {
         recovery_page_size: pageSize,
       })
       try {
+        const ownedRecordIds = [
+          `image-placement:${crypto.randomUUID()}:1:${crypto.randomUUID()}`,
+          `image-placement:${crypto.randomUUID()}:0:${crypto.randomUUID()}`,
+        ]
         const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryIds>().mockResolvedValue({
-          results: [
-            'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
-            'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
-          ],
+          results: ownedRecordIds,
           page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
         })
-        const enqueue = vi
-          .fn<typeof enqueueBulkApplyMediaDeliveryRegistryRecords>()
-          .mockResolvedValue([])
         const stage = vi
           .fn<typeof stageImagePlacementDeliveryRecordPage>()
           .mockResolvedValue({ staged: 2, hasMore: false, scanBefore: '2026-07-01T12:00:00.000Z' })
@@ -72,7 +70,6 @@ describe('media delivery registry processors', () => {
             {},
             {
               listRecoverableMediaDeliveryRegistryIds: list,
-              enqueueBulkApplyMediaDeliveryRegistryRecords: enqueue,
               stageImagePlacementDeliveryRecordPage: stage,
               reconcileMediaDeliveryRepairMarkers: repair,
               now: () => now,
@@ -88,9 +85,10 @@ describe('media delivery registry processors', () => {
           scanBefore: now.toISOString(),
           after: undefined,
         })
-        expect(enqueue).toHaveBeenCalledExactlyOnceWith([
-          'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
-          'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
+        const jobs = await readTestAppliedMediaRegistryJobs(ownedRecordIds)
+        expect(jobs.map(job => job.data)).toEqual([
+          { mediaDeliveryRegistryRecordId: ownedRecordIds[0] },
+          { mediaDeliveryRegistryRecordId: ownedRecordIds[1] },
         ])
       } finally {
         restore()
