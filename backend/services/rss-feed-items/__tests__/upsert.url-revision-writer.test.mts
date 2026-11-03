@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { answerPostgresReadsForTest } from '@voucha/test-helpers/injected-failures'
 import {
   createTestUserDirect,
   deleteTestStoryPostProjectionJob,
@@ -54,9 +55,13 @@ describe('RSS URL revision upsert writer state', () => {
       if (!revised) throw new Error('Expected revised RSS feed item')
       await expect(getTestStoryPostProjectionGeneration(postId)).resolves.toBe(2)
 
-      await upsertRssFeedItems(feed.id, [initialInput], {
-        getExistingRssFeedItems: async () => staleRows,
-      })
+      // The existing-items read is the replica read; answer it with the rows from before the revision.
+      const restoreReads = answerPostgresReadsForTest('/* upsertRssFeedItems */', [staleRows])
+      try {
+        await upsertRssFeedItems(feed.id, [initialInput])
+      } finally {
+        restoreReads()
+      }
 
       const returned = await getRssFeedItemById(item.id)
       if (!returned) throw new Error('Expected returned RSS feed item')

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import {
   beginTransaction,
@@ -22,6 +22,7 @@ import { createUserDeletionRequest } from '../user-deletions/create.mts'
 import { deleteUserEntityRelationVotesBatch } from './delete-entity-relation-votes-batches.mts'
 import { recomputeEntityRelationVoteStats } from './delete-entity-relation-votes.mts'
 import { deleteUser } from './delete.mts'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
   deleteUserAndDrainForTest,
   drainUserDeletionForTest,
@@ -242,12 +243,11 @@ describe('deleteUser entity-relation vote cleanup', () => {
 
     const contention = Promise.withResolvers<void>()
     let deletionAccepted = false
-    const deletion = deleteUser(deletingVoter, deletingVoter, {
-      onLockContention: () => {
-        contention.resolve()
-        return undefined
-      },
-    }).then(attempt => {
+    // The blocking `deleteUser:lockUser` statement is issued only after the try-lock lost.
+    const restoreStatements = runBeforePostgresStatementForTest('deleteUser:lockUser', async () => {
+      contention.resolve()
+    })
+    const deletion = deleteUser(deletingVoter, deletingVoter).then(attempt => {
       deletionAccepted = true
       contention.reject(new Error('Deletion completed without lock contention'))
       return attempt
@@ -257,6 +257,8 @@ describe('deleteUser entity-relation vote cleanup', () => {
       await contention.promise
       expect(deletionAccepted).toBe(false)
     } finally {
+      // Drain transactions must not run through the interceptor's wrapped executors.
+      restoreStatements()
       writer.release()
       await Promise.allSettled([writer.completed, deletion])
     }
@@ -277,18 +279,17 @@ describe('deleteUser entity-relation vote cleanup', () => {
     await expect(countTestUserDeletionEntityRelationVotes(deletingVoter.id)).resolves.toBe(0)
   })
 
-  it('rolls back when the synchronous deletion-lock contention observer throws', async () => {
+  it('rolls back when the blocking deletion-lock statement fails', async () => {
     const user = await createTestUser()
     const holder = await startPausedTestUserSoftDeletion(user.id)
-    const observerError = new Error('lock observer failed')
+    const lockError = new Error('lock statement failed')
+    onTestFinished(
+      runBeforePostgresStatementForTest('deleteUser:lockUser', async () => {
+        throw lockError
+      }),
+    )
     try {
-      await expect(
-        deleteUser(user, user, {
-          onLockContention: () => {
-            throw observerError
-          },
-        }),
-      ).rejects.toBe(observerError)
+      await expect(deleteUser(user, user)).rejects.toBe(lockError)
       await expect(countUserDeletionRequestsForTest(user.id)).resolves.toBe(0)
     } finally {
       holder.release()

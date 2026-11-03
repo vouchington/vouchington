@@ -32,18 +32,6 @@ type RssFeedsSearchOptions = {
   category_topic_id?: string
 }
 
-type ParseRssFeedsSearchParamsDeps = {
-  getTopicIdByAnyCached: typeof getTopicIdByAnyCached
-  getTopicIdsByAnyCachedBatch: typeof getTopicIdsByAnyCachedBatch
-  resolveHashtagTopicSearch: typeof resolveHashtagTopicSearch
-}
-
-const defaultDeps: ParseRssFeedsSearchParamsDeps = {
-  getTopicIdByAnyCached,
-  getTopicIdsByAnyCachedBatch,
-  resolveHashtagTopicSearch,
-}
-
 const rssFeedsQueryContract = defineQueryContract({
   q: queryString(),
   text_search_query: queryString(),
@@ -81,9 +69,7 @@ export function prepareRssFeedsSearchParams(query: Record<string, unknown>) {
 
 export async function resolveRssFeedsSearchParams(
   prepared: ReturnType<typeof prepareRssFeedsSearchParams>,
-  deps: Partial<ParseRssFeedsSearchParamsDeps> = {},
 ): Promise<ResolvedSearchParams<RssFeedsSearchOptions>> {
-  const resolvedDeps = { ...defaultDeps, ...deps }
   const {
     feedType,
     topicIdentifier,
@@ -111,18 +97,14 @@ export async function resolveRssFeedsSearchParams(
     resolvedPublisherTypeIds,
     resolvedCategoryTopicId,
   ] = await Promise.all([
-    resolvedDeps.resolveHashtagTopicSearch(q),
-    topicIdentifier
-      ? resolvedDeps.getTopicIdByAnyCached(topicIdentifier)
-      : Promise.resolve(undefined),
-    resolvedDeps.getTopicIdsByAnyCachedBatch(topicIdentifiers),
+    resolveHashtagTopicSearch(q),
+    topicIdentifier ? getTopicIdByAnyCached(topicIdentifier) : Promise.resolve(undefined),
+    getTopicIdsByAnyCachedBatch(topicIdentifiers),
     publisherTypeIdentifier
-      ? resolvedDeps.getTopicIdByAnyCached(publisherTypeIdentifier)
+      ? getTopicIdByAnyCached(publisherTypeIdentifier)
       : Promise.resolve(undefined),
-    resolvedDeps.getTopicIdsByAnyCachedBatch(publisherTypeIdentifiers),
-    categoryIdentifier
-      ? resolvedDeps.getTopicIdByAnyCached(categoryIdentifier)
-      : Promise.resolve(undefined),
+    getTopicIdsByAnyCachedBatch(publisherTypeIdentifiers),
+    categoryIdentifier ? getTopicIdByAnyCached(categoryIdentifier) : Promise.resolve(undefined),
   ])
 
   const shouldReturnEmpty =
@@ -182,11 +164,8 @@ export async function resolveRssFeedsSearchParams(
   return { shouldReturnEmpty, searchOptions }
 }
 
-async function parseRssFeedsSearchParamsImpl(
-  query: Record<string, unknown>,
-  deps: Partial<ParseRssFeedsSearchParamsDeps> = {},
-) {
-  return resolveRssFeedsSearchParams(prepareRssFeedsSearchParams(query), deps)
+async function parseRssFeedsSearchParamsImpl(query: Record<string, unknown>) {
+  return resolveRssFeedsSearchParams(prepareRssFeedsSearchParams(query))
 }
 
 export const parseRssFeedsSearchParams = withQueryContract(

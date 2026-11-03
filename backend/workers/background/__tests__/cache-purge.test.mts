@@ -1,32 +1,26 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as cachePurge from '@services/entity-cache/purge'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
-import { backgroundHandler } from '@queues/background/enqueues/define-handler'
 import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { getBackgroundDomainDefinition } from '@queues/background/enqueues/registry'
 import { background } from '@queues/background/queues'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
-import { createCachePurgeProcessor } from '../../cache-purge/processors.mts'
 import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
 import { createBackgroundWorker } from '../workers/create-worker.mts'
 
-const purgeCacheTags = vi.fn<(tags: readonly string[]) => Promise<unknown>>()
-
-// The real processor over a stub purge boundary: the real handler would call Cloudflare.
-const worker = createBackgroundWorker({
-  handlers: [
-    ...BACKGROUND_HANDLERS.filter(handler => handler.job.domain !== 'cache-purge'),
-    backgroundHandler(CACHE_PURGE_TAGS_JOB, createCachePurgeProcessor({ purgeCacheTags })),
-  ],
-  domains: ['cache-purge'],
-})
+const worker = createBackgroundWorker({ handlers: BACKGROUND_HANDLERS, domains: ['cache-purge'] })
 
 describe('cache-purge background domain', () => {
+  // The real processor over a spied purge boundary: the real purge would call Cloudflare.
+  const purgeCacheTags = vi.spyOn(cachePurge, 'purgeCacheTags')
+
   beforeEach(() => {
     purgeCacheTags.mockReset()
     purgeCacheTags.mockResolvedValue(undefined)
   })
 
   afterAll(async () => {
+    purgeCacheTags.mockRestore()
     await closeAndUnregisterGlideMQInstance(worker)
   })
 

@@ -27,20 +27,13 @@ import {
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 import { lockUserDeletionRows, type UserDeletionTarget } from './delete-row-locks.mts'
 
-type LockContentionObserver = (event: { lock: 'user-lifecycle' }) => undefined
-
-async function lockUserDeletionLifecycle(
-  query: TransactionQuery,
-  userId: string,
-  onLockContention?: LockContentionObserver,
-): Promise<void> {
+async function lockUserDeletionLifecycle(query: TransactionQuery, userId: string): Promise<void> {
   const { rows } = await query<{ acquired: boolean }>(sql`/* deleteUser:tryLockUser */
     SELECT pg_try_advisory_xact_lock(hashtextextended(${userId}, 0)) AS acquired
   `)
   const [lock] = rows
   if (!lock) throw new Error('User lifecycle lock query returned no result')
   if (!lock.acquired) {
-    onLockContention?.({ lock: 'user-lifecycle' })
     await query(sql`/* deleteUser:lockUser */
       SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
     `)
@@ -48,17 +41,12 @@ async function lockUserDeletionLifecycle(
   await lockAuthorPublicationLifecycle(query, userId)
 }
 
-type DeleteUserDependencies = {
-  onLockContention: LockContentionObserver
-}
-
 async function establishUserDeletionRequest(
   query: TransactionQuery,
   user: PrivateUser,
   requestedById: string,
-  onLockContention?: LockContentionObserver,
 ) {
-  const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById, onLockContention)
+  const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById)
   const request = await createUserDeletionRequest(target.id, requestedById, {
     priorUsername: target.username,
     query,
@@ -70,9 +58,8 @@ async function lockAndGetUserDeletionTarget(
   query: TransactionQuery,
   userId: string,
   requestedById: string,
-  onLockContention?: LockContentionObserver,
 ): Promise<UserDeletionTarget> {
-  await lockUserDeletionLifecycle(query, userId, onLockContention)
+  await lockUserDeletionLifecycle(query, userId)
   await lockUserProfileImageOwners([userId], query)
   return lockUserDeletionRows(query, userId, requestedById)
 }
@@ -153,19 +140,13 @@ async function applyUserDeletionPrivacyFence(
 export async function deleteUser(
   currentUser: PrivateUser | null,
   user: PrivateUser,
-  dependencies: Partial<DeleteUserDependencies> = {},
 ): Promise<UserDeletionAttempt> {
   assert(currentUserCanDeleteUser(currentUser, user), 403, 'Forbidden')
   const requestedById = currentUser?.id ?? user.id
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- the copyright check must follow the deletion lock and precede the privacy fence
-  const deletion = await establishUserDeletionRequest(
-    query,
-    user,
-    requestedById,
-    dependencies.onLockContention,
-  )
+  const deletion = await establishUserDeletionRequest(query, user, requestedById)
   await assertCopyrightEvidenceAllowsDeletion(query, user.id)
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)
   await query.commit()

@@ -34,15 +34,11 @@ import {
 import { finishRssFeedItemUpsert, finishUnchangedRssFeedItemUpsert } from './upsert-result.mts'
 import { markStoryPostRelatedUrlProjectionsForStories } from './story-post-related-url-projections.mts'
 import { getExistingRssFeedItems } from './upsert-existing.mts'
-export type UpsertRssFeedItemsDependencies = {
-  getExistingRssFeedItems?: typeof getExistingRssFeedItems
-}
 /** redetectLanguage queues language detection for every item in feedItems, unchanged ones too. */
 export type UpsertRssFeedItemsOptions = { redetectLanguage?: boolean }
 export async function upsertRssFeedItems(
   rssFeedId: string,
   feedItems: RssFeedItemToUpsert[],
-  dependencies: UpsertRssFeedItemsDependencies = {},
   options: UpsertRssFeedItemsOptions = {},
 ) {
   assert(feedItems.length > 0, 400, 'feedItems is required')
@@ -72,11 +68,7 @@ export async function upsertRssFeedItems(
     guids.push(item.feedItem.guid)
     feedItemsByGuid.set(item.feedItem.guid, item.feedItem)
   }
-  const existingRows = await (dependencies.getExistingRssFeedItems ?? getExistingRssFeedItems)(
-    rssFeedId,
-    urlHostnameId,
-    guids,
-  )
+  const existingRows = await getExistingRssFeedItems(rssFeedId, urlHostnameId, guids)
   const existingMap = buildExistingRssFeedItemsMap(existingRows)
   const replicaItemsToUpsert = getRssFeedItemsToUpsert(itemsWithHashes, existingMap)
   const replicaGuidsToUpsert = new Set<string>()

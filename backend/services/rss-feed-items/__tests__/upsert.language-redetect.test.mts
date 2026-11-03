@@ -18,10 +18,10 @@ describe('upsertRssFeedItems language redetection', () => {
     const [created] = await upsertRssFeedItems(feed.id, [item])
     const spy = vi.spyOn(contentAnalysisEnqueues, 'enqueueBulkLanguageDetection')
 
-    await upsertRssFeedItems(feed.id, [item], {}, { redetectLanguage: false })
+    await upsertRssFeedItems(feed.id, [item], { redetectLanguage: false })
     expect(spy).not.toHaveBeenCalled()
 
-    await upsertRssFeedItems(feed.id, [item], {}, { redetectLanguage: true })
+    await upsertRssFeedItems(feed.id, [item], { redetectLanguage: true })
     expect(spy).toHaveBeenCalledOnce()
     expect(spy).toHaveBeenCalledWith('rss_feed_item', [created.id])
   })
