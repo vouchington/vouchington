@@ -21307,6 +21307,19 @@
       "enum": ["30d", "7d", "90d", "all", "today"],
       "type": "string"
     },
+    "HackerNewsReferenceCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "comment_count": {
+          "type": "number"
+        },
+        "story_count": {
+          "type": "number"
+        }
+      },
+      "required": ["comment_count", "story_count"],
+      "type": "object"
+    },
     "HouseholdIndividual": {
       "additionalProperties": false,
       "properties": {
@@ -31433,6 +31446,13 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_HackerNewsReferenceCounts": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/HackerNewsReferenceCounts"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_Notification": {
       "additionalProperties": {
         "$ref": "#/components/schemas/Notification"
@@ -35113,6 +35133,13 @@
           "anyOf": [
             {
               "$ref": "#/components/schemas/Record_string_PostElection"
+            }
+          ]
+        },
+        "post_hacker_news_references": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/Record_string_HackerNewsReferenceCounts"
             }
           ]
         },
