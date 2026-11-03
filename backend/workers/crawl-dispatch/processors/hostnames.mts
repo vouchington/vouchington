@@ -41,8 +41,8 @@ async function dispatchWeeklyHostnameCrawlerRefresh(
   let count = 0
   while (count < limits.maxRows) {
     const pageSize = Math.min(limits.batchSize, limits.maxRows - count)
-    // oxlint-disable-next-line no-await-in-loop -- each page advances the retained cursor after its enqueue succeeds
-    const ids = await searchHostnameIdsNeedingCrawlerRefresh(pageSize, {}, undefined, cursor)
+    // no-mistakes-disable-next-line query-reached-per-item: at most weekly_refresh_max_rows_per_run rows are paged by the retained id cursor, and each page depends on the previous page's enqueue.
+    const ids = await searchHostnameIdsNeedingCrawlerRefresh(pageSize, {}, undefined, cursor) // oxlint-disable-line no-await-in-loop -- each page advances the retained cursor after its enqueue succeeds
     if (ids.length === 0) return { count, hasMore: false }
     // oxlint-disable-next-line no-await-in-loop -- enqueue must commit before the retained cursor advances
     await enqueueBulkRefreshHostnameCrawler(ids)
