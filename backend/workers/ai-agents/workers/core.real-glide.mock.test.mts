@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { ModelProviderError } from '@vouchington/ai/providers'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
+import { disableSpendCapForTest } from '@voucha/test-helpers/ai-agents-spend-cap'
 import { processAIAgentWorkerJob } from './core.mts'
 
 // This project deliberately restores real GlideMQ instead of the default in-memory worker shim.
@@ -18,11 +19,6 @@ const JOB_OPTIONS = {
   removeOnComplete: 100,
   removeOnFail: 100,
 }
-const spendCapDisabled = {
-  waitForSpendCapConfig: () => Promise.resolve(),
-  getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 0 }),
-}
-
 describe('ai_agents provider rate limits with real GlideMQ', () => {
   it.each([
     [
@@ -43,6 +39,7 @@ describe('ai_agents provider rate limits with real GlideMQ', () => {
   ])(
     'parks only the job that hit %s and keeps running provider-free jobs',
     async (_name, createFailure, waitMs) => {
+      disableSpendCapForTest()
       const queueName = `ai_agents_rate_limit_${randomUUID()}`
       const queue = new Queue<AIAgentJobData>(queueName, connection)
       const events = new QueueEvents(queueName, {
@@ -57,7 +54,6 @@ describe('ai_agents provider rate limits with real GlideMQ', () => {
         queueName,
         (job: Job<AIAgentJobData>) =>
           processAIAgentWorkerJob(job, {
-            ...spendCapDisabled,
             processAIAgent: async providerJob => {
               if (providerJob.name === 'report-judgement') throw createFailure()
               reconciled.resolve()

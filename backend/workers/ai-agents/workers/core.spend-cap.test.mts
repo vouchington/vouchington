@@ -1,263 +1,81 @@
-import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
-import type { getDailyAiCostTotalMicrounits } from '@services/ai-usage'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
+import { spendCapDelayedRegistryKey } from '@services/ai-usage'
+import { getDayBounds } from '@ts-shared/utils/dates'
 import type { recordSpendCapBreach as RecordSpendCapBreach } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
+import {
+  cleanUpSpendCapDay,
+  findSpendCapRechecks,
+  spendCapDelayableJob,
+} from '@voucha/test-helpers/ai-agents-spend-cap'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { processAIAgentWorkerJob } from './core.mts'
 
-type DailyAiCostTotal = Awaited<ReturnType<typeof getDailyAiCostTotalMicrounits>>
-
-function mockJob(
-  overrides: { name?: string; data?: Partial<AIAgentJobData> } = {},
-): Job<AIAgentJobData> {
-  return {
-    data: (overrides.data ?? {}) as AIAgentJobData,
-    name: overrides.name ?? 'report-judgement',
-    id: randomUUID(),
-    reportTokens: vi.fn<(count: number) => Promise<void>>(),
-    // Mirrors the real glide-mq job.moveToDelayed(): always throws DelayedError, caught by the
-    // Worker's own processing loop to re-park just this job (base-worker.js's handleMoveToDelayed).
-    moveToDelayed: vi
-      .fn<(timestamp: number, nextStep?: string) => Promise<never>>()
-      .mockImplementation(async timestamp => {
-        throw new DelayedError(timestamp)
-      }),
-  } as unknown as Job<AIAgentJobData>
-}
-
-function createDailyTotalLoader(
-  totalMicrounits: number,
-  day = '2026-08-16',
-): () => Promise<DailyAiCostTotal> {
-  return () => Promise.resolve({ totalMicrounits, day })
+function aiAgentJob(name = 'report-judgement') {
+  return spendCapDelayableJob(name, {} as AIAgentJobData)
 }
 
 describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it.each([
-    {
-      boundary: 'UTC midnight',
-      now: '2026-08-16T23:59:59.999Z',
-      day: '2026-08-16',
-      nextMidnight: '2026-08-17T00:00:00.000Z',
-    },
-    {
-      boundary: 'UTC month end',
-      now: '2026-08-31T23:59:59.999Z',
-      day: '2026-08-31',
-      nextMidnight: '2026-09-01T00:00:00.000Z',
-    },
-    {
-      boundary: 'just after UTC month end',
-      now: '2026-09-01T00:00:00.000Z',
-      day: '2026-09-01',
-      nextMidnight: '2026-09-02T00:00:00.000Z',
-    },
-  ])(
-    'defers a capped job until the next UTC midnight at $boundary',
-    async ({ now, day, nextMidnight }) => {
-      vi.setSystemTime(new Date(now))
-      const job = mockJob()
+  it('defers a capped job until the next UTC midnight and registers it for the coordinator', async () => {
+    await withReservedAiUsageDay(0, async day => {
+      cleanUpSpendCapDay(day)
+      const job = aiAgentJob()
       const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
-      const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
-      const getDailyAiCostTotalMicrounits = vi.fn<(day?: string) => Promise<DailyAiCostTotal>>(
-        createDailyTotalLoader(1_000_001, day),
-      )
 
       await expect(
-        processAIAgentWorkerJob(job, {
-          waitForSpendCapConfig: () => Promise.resolve(),
-          getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-          getDailyAiCostTotalMicrounits,
-          recordSpendCapBreach,
-          registerSpendCapRecheck,
-          processAIAgent,
-        }),
+        processAIAgentWorkerJob(job, { processAIAgent, recordSpendCapBreach }),
       ).rejects.toThrow(DelayedError)
 
       expect(processAIAgent).not.toHaveBeenCalled()
-      expect(getDailyAiCostTotalMicrounits).toHaveBeenCalledExactlyOnceWith(day)
-      expect(registerSpendCapRecheck).toHaveBeenCalledExactlyOnceWith(job, day)
-      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.parse(nextMidnight))
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
       expect(recordSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
         agentJobName: 'report-judgement',
-        dailyTotalMicrounits: 1_000_001,
-        dailyCapMicrounits: 1_000_000,
+        dailyTotalMicrounits: 1,
+        dailyCapMicrounits: 0,
         reason: 'cap_exceeded',
       })
-    },
-  )
+      await expect(
+        workerQueueCommandClient.hget(spendCapDelayedRegistryKey(day), `job:${job.id}`),
+      ).resolves.toBe('marked')
+      await expect(findSpendCapRechecks(day)).resolves.toHaveLength(1)
+    })
+  })
 
   it('dispatches normally when the daily total is below the cap', async () => {
-    const job = mockJob()
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const job = aiAgentJob()
+      const processAIAgent = vi
+        .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
+        .mockResolvedValue('ok')
 
-    const result = await processAIAgentWorkerJob(job, {
-      waitForSpendCapConfig: () => Promise.resolve(),
-      getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-      getDailyAiCostTotalMicrounits: createDailyTotalLoader(100),
-      handleOpenAIRateLimit:
-        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
-      processAIAgent,
-    })
+      await expect(processAIAgentWorkerJob(job, { processAIAgent })).resolves.toBe('ok')
 
-    expect(result).toBe('ok')
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-  })
-
-  it('bypasses the check entirely when disabled, even with a total over the cap', async () => {
-    const job = mockJob()
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
-
-    const getDailyAiCostTotalMicrounits = vi.fn<() => Promise<DailyAiCostTotal>>()
-    const result = await processAIAgentWorkerJob(job, {
-      waitForSpendCapConfig: () => Promise.resolve(),
-      getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1_000_000 }),
-      getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit:
-        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
-      processAIAgent,
-    })
-
-    expect(result).toBe('ok')
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
-  })
-
-  it('skips the check entirely for a reconcile job, even with a total over the cap', async () => {
-    const job = mockJob({ name: 'reconcile-auto-dispatch-judgements' })
-    const getSpendCapFields = vi.fn<() => { enabled: boolean; daily_cap_microunits: number }>()
-    const getDailyAiCostTotalMicrounits = vi.fn<() => Promise<DailyAiCostTotal>>()
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
-
-    const result = await processAIAgentWorkerJob(job, {
-      waitForSpendCapConfig: () => Promise.resolve(),
-      getSpendCapFields,
-      getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit:
-        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
-      processAIAgent,
-    })
-
-    expect(result).toBe('ok')
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(getSpendCapFields).not.toHaveBeenCalled()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
-  })
-
-  it('dispatches when the known priced total is under the cap', async () => {
-    const job = mockJob()
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
-    const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
-    const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
-
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-        getDailyAiCostTotalMicrounits: createDailyTotalLoader(100),
-        recordSpendCapBreach,
-        registerSpendCapRecheck,
-        processAIAgent,
-      }),
-    ).resolves.toBe('ok')
-
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(recordSpendCapBreach).not.toHaveBeenCalled()
-  })
-
-  it('skips the check entirely for an auto-dispatch-judgement job, even with a total over the cap', async () => {
-    const job = mockJob({ name: 'auto-dispatch-judgement' })
-    const getSpendCapFields = vi.fn<() => { enabled: boolean; daily_cap_microunits: number }>()
-    const getDailyAiCostTotalMicrounits = vi.fn<() => Promise<DailyAiCostTotal>>()
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
-
-    const result = await processAIAgentWorkerJob(job, {
-      waitForSpendCapConfig: () => Promise.resolve(),
-      getSpendCapFields,
-      getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit:
-        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
-      processAIAgent,
-    })
-
-    expect(result).toBe('ok')
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(getSpendCapFields).not.toHaveBeenCalled()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    {
-      boundary: 'UTC midnight',
-      before: '2026-03-01T23:59:59.999Z',
-      beforeDay: '2026-03-01',
-      after: '2026-03-02T00:00:00.000Z',
-      afterDay: '2026-03-02',
-    },
-    {
-      boundary: 'UTC month end',
-      before: '2026-08-31T23:59:59.999Z',
-      beforeDay: '2026-08-31',
-      after: '2026-09-01T00:00:00.000Z',
-      afterDay: '2026-09-01',
-    },
-  ])(
-    'restarts the cap check when $boundary crosses during the daily-total read',
-    async ({ before, beforeDay, after, afterDay }) => {
-      vi.setSystemTime(new Date(before))
-      const queriedDays: string[] = []
-      const job = mockJob()
-      const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      processAIAgent.mockResolvedValue('ok')
-      const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
-      const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
-
-      await expect(
-        processAIAgentWorkerJob(job, {
-          waitForSpendCapConfig: () => Promise.resolve(),
-          getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-          getDailyAiCostTotalMicrounits: async (day = afterDay) => {
-            queriedDays.push(day)
-            if (day === beforeDay) vi.setSystemTime(new Date(after))
-            return {
-              totalMicrounits: day === beforeDay ? 2_000_000 : 100,
-              day,
-            }
-          },
-          recordSpendCapBreach,
-          registerSpendCapRecheck,
-          processAIAgent,
-        }),
-      ).resolves.toBe('ok')
-      expect(queriedDays).toEqual([beforeDay, afterDay])
       expect(processAIAgent).toHaveBeenCalledOnce()
       expect(job.moveToDelayed).not.toHaveBeenCalled()
+    })
+  })
+
+  it.each(['reconcile-auto-dispatch-judgements', 'auto-dispatch-judgement'])(
+    'skips the check for a %s job, even during a breach',
+    async name => {
+      await withReservedAiUsageDay(0, async () => {
+        const job = aiAgentJob(name)
+        const processAIAgent = vi
+          .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
+          .mockResolvedValue('ok')
+        const recordSpendCapBreach = vi.fn<typeof RecordSpendCapBreach>()
+
+        await expect(
+          processAIAgentWorkerJob(job, { processAIAgent, recordSpendCapBreach }),
+        ).resolves.toBe('ok')
+
+        expect(processAIAgent).toHaveBeenCalledOnce()
+        expect(job.moveToDelayed).not.toHaveBeenCalled()
+        expect(recordSpendCapBreach).not.toHaveBeenCalled()
+      })
     },
   )
 })

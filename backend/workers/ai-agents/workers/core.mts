@@ -1,6 +1,6 @@
 import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
-import onError, { recordSpendCapBreach } from '@modules/on-error'
+import { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
 import { isOpenAIRateLimitError } from '@vouchington/ai/openai'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
@@ -15,53 +15,26 @@ import {
   CLASSIFIER_RUN_BACKOFF,
   type AIAgentJobName,
 } from '@queues/ai-agents/config'
-import {
-  evaluateSpendCapBreach,
-  getDailyAiCostTotalMicrounits,
-  getSpendCapFields,
-  spendCapConfig,
-  SpendCapBreachError,
-} from '@services/ai-usage'
+import { evaluateSpendCapBreach, SpendCapBreachError } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
 import { handleModelProviderError } from '../processors/provider-failure.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
 import {
   createBackgroundResponseJobContext,
   recoverJobBackgroundResponses,
 } from '../processors/background-response-job.mts'
 
 type AIAgentsWorkerDeps = {
-  createWorker: typeof createWorker
+  /** Stands in for the provider-backed processors, so a test never reaches a paid model. */
   processAIAgent: typeof processAIAgent
-  handleOpenAIRateLimit: (error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>
-  waitForSpendCapConfig: () => Promise<void>
-  getSpendCapFields: typeof getSpendCapFields
-  getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
+  /** Lets a test see the breach context the worker reports, which only reaches a throttled Sentry message. */
   recordSpendCapBreach: typeof recordSpendCapBreach
-  reportSpendCapRegistrationFailure: typeof onError
-  queueName: typeof AI_AGENTS_QUEUE_NAME
-  concurrency: number
-  openAIRateLimitPerMinute: number
-  openAITokenLimitPerMinute: number
-  registerSpendCapRecheck: typeof registerSpendCapRecheck
 }
 
 const defaultDeps: AIAgentsWorkerDeps = {
-  createWorker,
   processAIAgent,
-  handleOpenAIRateLimit: deferJobForOpenAIRateLimit,
-  waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
-  getSpendCapFields,
-  getDailyAiCostTotalMicrounits,
   recordSpendCapBreach,
-  reportSpendCapRegistrationFailure: onError,
-  queueName: AI_AGENTS_QUEUE_NAME,
-  concurrency: getWorkerConcurrency('aiAgents', { baseline: 5 }),
-  openAIRateLimitPerMinute: parseEnvPositiveInt('OPENAI_RPM', 60),
-  openAITokenLimitPerMinute: parseEnvPositiveInt('OPENAI_TPM', 500_000),
-  registerSpendCapRecheck,
 }
 
 export async function processAIAgentWorkerJob(
@@ -73,7 +46,7 @@ export async function processAIAgentWorkerJob(
   try {
     if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
   } catch (err: unknown) {
-    if (isOpenAIRateLimitError(err)) return dependencies.handleOpenAIRateLimit(err, job)
+    if (isOpenAIRateLimitError(err)) return deferJobForOpenAIRateLimit(err, job)
     throw err
   }
 
@@ -81,11 +54,7 @@ export async function processAIAgentWorkerJob(
   // can still cancel orphaned billed responses. A breach parks only this job until the queried day
   // boundary; the marked coordinator promotes it when enforcement relaxes.
   if (jobProducesSpend(job)) {
-    const breach = await evaluateSpendCapBreach({
-      waitForSpendCapConfig: dependencies.waitForSpendCapConfig,
-      getSpendCapFields: dependencies.getSpendCapFields,
-      getDailyAiCostTotalMicrounits: dependencies.getDailyAiCostTotalMicrounits,
-    })
+    const breach = await evaluateSpendCapBreach()
     if (breach && (await jobWouldIncurSpend(job))) {
       dependencies.recordSpendCapBreach({
         agentJobName: job.name,
@@ -93,12 +62,7 @@ export async function processAIAgentWorkerJob(
         dailyCapMicrounits: breach.dailyCapMicrounits,
         reason: breach.reason,
       })
-      await delayForSpendCap(
-        job,
-        breach.day,
-        dependencies.registerSpendCapRecheck,
-        dependencies.reportSpendCapRegistrationFailure,
-      )
+      await delayForSpendCap(job, breach.day)
     }
   }
 
@@ -113,15 +77,10 @@ export async function processAIAgentWorkerJob(
   } catch (err: unknown) {
     if (err instanceof SpendCapBreachError) {
       // Mid-loop recheck already recorded the breach; park like the pre-dispatch path.
-      await delayForSpendCap(
-        job,
-        err.breach.day,
-        dependencies.registerSpendCapRecheck,
-        dependencies.reportSpendCapRegistrationFailure,
-      )
+      await delayForSpendCap(job, err.breach.day)
     }
     if (isModelProviderError(err)) return handleModelProviderError(err, job)
-    return dependencies.handleOpenAIRateLimit(err, job)
+    return deferJobForOpenAIRateLimit(err, job)
   }
 }
 
@@ -139,17 +98,16 @@ async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
   return true
 }
 
-export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Worker {
-  const dependencies = { ...defaultDeps, ...deps }
-  return dependencies.createWorker(
-    dependencies.queueName,
-    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
+export function createAIAgentsWorker(): Worker {
+  return createWorker(
+    AI_AGENTS_QUEUE_NAME,
+    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job),
     {
       dedicatedCommandClient: true,
-      concurrency: dependencies.concurrency,
-      limiter: { max: dependencies.openAIRateLimitPerMinute, duration: 60_000 },
+      concurrency: getWorkerConcurrency('aiAgents', { baseline: 5 }),
+      limiter: { max: parseEnvPositiveInt('OPENAI_RPM', 60), duration: 60_000 },
       tokenLimiter: {
-        maxTokens: dependencies.openAITokenLimitPerMinute,
+        maxTokens: parseEnvPositiveInt('OPENAI_TPM', 500_000),
         duration: 60_000,
         scope: 'queue',
       },

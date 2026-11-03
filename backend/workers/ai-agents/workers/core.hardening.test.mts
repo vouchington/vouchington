@@ -1,85 +1,55 @@
-import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Job } from 'glide-mq'
+import { describe, expect, it, vi } from 'vitest'
+import { DelayedError } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { enqueueSpendCapRecheck } from '@queues/ai-agents/enqueues/spend-cap-recheck'
-import { registerSpendCapDelayedJob } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
-import { processAIAgentWorkerJob } from './core.mts'
+import {
+  cleanUpSpendCapDay,
+  findSpendCapRechecks,
+  spendCapDelayableJob,
+  uniqueSpendCapDay,
+} from '@voucha/test-helpers/ai-agents-spend-cap'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
-import { registerSpendCapRecheck as registerRecheck } from '../processors/spend-cap-recheck.mts'
+import { processAIAgentWorkerJob } from './core.mts'
 
-function delayedJob<T>(data: T): Job<T> {
-  return {
-    data,
-    name: 'report-judgement',
-    id: randomUUID(),
-    reportTokens: vi.fn<(count: number) => Promise<void>>(),
-    updateData: vi.fn<(nextData: T) => Promise<void>>(),
-    moveToDelayed: vi
-      .fn<(timestamp: number) => Promise<void>>()
-      .mockRejectedValue(new Error('delayed')),
-  } as unknown as Job<T>
+function aiAgentJob() {
+  return spendCapDelayableJob('report-judgement', {} as AIAgentJobData)
+}
+
+async function recheckDelays(day: string): Promise<unknown[]> {
+  return (await findSpendCapRechecks(day)).map(recheck => recheck.opts.delay)
 }
 
 describe('AI spend-cap registration timing', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
-  })
-  afterEach(() => vi.useRealTimers())
-
   it('registers the current UTC generation before moving the job to its day end', async () => {
-    const day = '2026-08-16'
-    vi.setSystemTime(new Date('2026-08-16T23:59:30.000Z'))
-    const job = delayedJob({} as AIAgentJobData)
-    const register = vi
-      .fn<typeof registerSpendCapDelayedJob>()
-      .mockResolvedValue({ accepted: true, generation: 'generation-a' })
-    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
+    await withReservedAiUsageDay(0, async day => {
+      cleanUpSpendCapDay(day)
+      vi.setSystemTime(new Date(`${day}T23:59:30.000Z`))
+      const job = aiAgentJob()
 
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
-        registerSpendCapRecheck: (registeredJob, registeredDay) =>
-          registerRecheck(registeredJob, registeredDay, Date.now(), {
-            registerSpendCapDelayedJob: register,
-            enqueueSpendCapRecheck: enqueue,
-          }),
-      }),
-    ).rejects.toThrow('delayed')
+      await expect(
+        processAIAgentWorkerJob(job, { processAIAgent: vi.fn<() => Promise<unknown>>() }),
+      ).rejects.toThrow(DelayedError)
 
-    expect(register).toHaveBeenCalledExactlyOnceWith(job, day)
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 30_000)
-    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+      await expect(recheckDelays(day)).resolves.toEqual([30_000])
+    })
   })
 
   it('queues an expired UTC-day generation for immediate recheck', async () => {
-    vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
-    const day = '2026-08-15'
-    const job = delayedJob({} as AIAgentJobData)
-    const register = vi
-      .fn<typeof registerSpendCapDelayedJob>()
-      .mockResolvedValue({ accepted: true, generation: 'generation-a' })
-    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
+    const day = uniqueSpendCapDay()
+    cleanUpSpendCapDay(day)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(getDayBounds(day).endMs + 12 * 60 * 60 * 1000)
+    const job = aiAgentJob()
 
-    await expect(
-      delayForSpendCap(
-        job,
-        day,
-        (registeredJob, registeredDay) =>
-          registerRecheck(registeredJob, registeredDay, Date.now(), {
-            registerSpendCapDelayedJob: register,
-            enqueueSpendCapRecheck: enqueue,
-          }),
-        vi.fn(),
-      ),
-    ).rejects.toThrow('delayed')
+    try {
+      await expect(delayForSpendCap(job, day)).rejects.toThrow(DelayedError)
+    } finally {
+      vi.useRealTimers()
+    }
 
-    expect(register).toHaveBeenCalledExactlyOnceWith(job, day)
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 0)
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+    await expect(recheckDelays(day)).resolves.toEqual([0])
   })
 })

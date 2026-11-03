@@ -83,6 +83,7 @@ function enqueueDispatch(
 ): Promise<void> {
   if (item.kind === 'email') return enqueueOrRetryCopyrightEmailIntake(item.intakeId)
   if (item.kind === 'form-screening') return enqueueOrRetryCopyrightFormScreening(item.submissionId)
-  if (item.kind === 'submission-guidance') return enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId)
+  if (item.kind === 'submission-guidance')
+    return enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId)
   return enqueueOrRetryCopyrightAppealRecommendation(item.submissionId)
 }

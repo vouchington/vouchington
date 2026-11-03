@@ -1,145 +1,60 @@
-import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Job } from 'glide-mq'
-import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { enqueueSpendCapRecheck } from '@queues/ai-agents/enqueues/spend-cap-recheck'
-import {
-  refreshDailyAiCostTotalMicrounits,
-  registerSpendCapDelayedJob,
-  registerSpendCapDelayedJobAfterFreshBreach,
-} from '@services/ai-usage'
+import { describe, expect, it } from 'vitest'
+import { DelayedError } from 'glide-mq'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
+import { spendCapDelayedRegistryKey } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
-import { processAIAgentWorkerJob } from '../workers/core.mts'
-import { registerSpendCapRecheck } from './spend-cap-recheck.mts'
+import type { AIAgentJobData } from '@queues/ai-agents/types'
+import {
+  cleanUpSpendCapDay,
+  findSpendCapRechecks,
+  seedReleasingSpendCapRegistry,
+  spendCapDelayableJob,
+} from '@voucha/test-helpers/ai-agents-spend-cap'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { delayForSpendCap } from './spend-cap-delay.mts'
 
-function delayedJob(): Job<AIAgentJobData> {
-  return {
-    id: randomUUID(),
-    name: 'report-judgement',
-    data: {} as AIAgentJobData,
-    reportTokens: vi.fn<(count: number) => Promise<void>>(),
-    moveToDelayed: vi
-      .fn<(timestamp: number) => Promise<void>>()
-      .mockRejectedValue(new Error('delayed')),
-  } as unknown as Job<AIAgentJobData>
+function aiAgentJob() {
+  return spendCapDelayableJob('report-judgement', {} as AIAgentJobData)
+}
+
+async function recheckGenerations(day: string): Promise<unknown[]> {
+  return (await findSpendCapRechecks(day)).map(
+    job => (job.data as { generation: unknown }).generation,
+  )
 }
 
 describe('AI spend-cap registration freshness', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
-  })
-  afterEach(() => vi.useRealTimers())
-
   it('keeps a persistent same-day breach parked until midnight after a stale registry rejection', async () => {
-    const day = '2026-08-16'
-    const job = delayedJob()
-    const register = vi
-      .fn<typeof registerSpendCapDelayedJob>()
-      .mockResolvedValue({ accepted: false, generation: 'generation-a' })
-    const registerAfterFreshBreach = vi
-      .fn<typeof registerSpendCapDelayedJobAfterFreshBreach>()
-      .mockResolvedValue({ accepted: true, generation: 'generation-b' })
-    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
-    const evaluateSpendCapBreach = vi
-      .fn<
-        () => Promise<{
-          day: string
-          reason: 'cap_exceeded'
-          totalMicrounits: number
-          dailyCapMicrounits: number
-        }>
-      >()
-      .mockResolvedValue({ reason: 'cap_exceeded', totalMicrounits: 2, dailyCapMicrounits: 1, day })
-    const refresh = vi.fn<typeof refreshDailyAiCostTotalMicrounits>()
+    await withReservedAiUsageDay(0, async day => {
+      cleanUpSpendCapDay(day)
+      const generation = await seedReleasingSpendCapRegistry(day)
+      const job = aiAgentJob()
 
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
-        registerSpendCapRecheck: (registeredJob, registeredDay) =>
-          registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
-            registerSpendCapDelayedJob: register,
-            registerSpendCapDelayedJobAfterFreshBreach: registerAfterFreshBreach,
-            enqueueSpendCapRecheck: enqueue,
-            evaluateSpendCapBreach,
-            refreshDailyAiCostTotalMicrounits: refresh,
-          }),
-      }),
-    ).rejects.toThrow('delayed')
+      await expect(delayForSpendCap(job, day)).rejects.toThrow(DelayedError)
 
-    expect(registerAfterFreshBreach).toHaveBeenCalledExactlyOnceWith(job, day)
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-b', 0)
-    expect(evaluateSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
-      getDailyAiCostTotalMicrounits: refresh,
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+      const registryKey = spendCapDelayedRegistryKey(day)
+      await expect(workerQueueCommandClient.hget(registryKey, `job:${job.id}`)).resolves.toBe(
+        'marked',
+      )
+      await expect(workerQueueCommandClient.hget(registryKey, '__mode')).resolves.toBe('collecting')
+      await expect(recheckGenerations(day)).resolves.toEqual([generation])
     })
-    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
   })
 
   it('uses the short retry only when a stale registry rejection has cleared', async () => {
-    const day = '2026-08-16'
-    const job = delayedJob()
-    const register = vi
-      .fn<typeof registerSpendCapDelayedJob>()
-      .mockResolvedValue({ accepted: false, generation: 'generation-a' })
-    const registerAfterFreshBreach = vi.fn<typeof registerSpendCapDelayedJobAfterFreshBreach>()
-    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
-    const evaluateSpendCapBreach = vi.fn<() => Promise<null>>().mockResolvedValue(null)
-    const refresh = vi.fn<typeof refreshDailyAiCostTotalMicrounits>()
+    await withReservedAiUsageDay(1_000_000, async day => {
+      cleanUpSpendCapDay(day)
+      const generation = await seedReleasingSpendCapRegistry(day)
+      const job = aiAgentJob()
 
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-        getDailyAiCostTotalMicrounits: () => Promise.resolve({ totalMicrounits: 2, day }),
-        registerSpendCapRecheck: (registeredJob, registeredDay) =>
-          registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
-            registerSpendCapDelayedJob: register,
-            registerSpendCapDelayedJobAfterFreshBreach: registerAfterFreshBreach,
-            enqueueSpendCapRecheck: enqueue,
-            evaluateSpendCapBreach,
-            refreshDailyAiCostTotalMicrounits: refresh,
-          }),
-      }),
-    ).rejects.toThrow('delayed')
+      await expect(delayForSpendCap(job, day)).rejects.toThrow(DelayedError)
 
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 0)
-    expect(registerAfterFreshBreach).not.toHaveBeenCalled()
-    expect(evaluateSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
-      getDailyAiCostTotalMicrounits: refresh,
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 1_000)
+      await expect(
+        workerQueueCommandClient.hget(spendCapDelayedRegistryKey(day), `job:${job.id}`),
+      ).resolves.toBeNull()
+      await expect(recheckGenerations(day)).resolves.toEqual([generation])
     })
-    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 1_000)
-  })
-
-  it('fails closed without enqueueing when a fresh breach cannot re-register the delayed job', async () => {
-    const day = '2026-08-16'
-    const job = delayedJob()
-    const register = vi
-      .fn<typeof registerSpendCapDelayedJob>()
-      .mockResolvedValue({ accepted: false, generation: 'generation-a' })
-    const registerAfterFreshBreach = vi
-      .fn<typeof registerSpendCapDelayedJobAfterFreshBreach>()
-      .mockResolvedValue({ accepted: false, generation: 'generation-b' })
-    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
-
-    await expect(
-      registerSpendCapRecheck(job, day, Date.now(), {
-        registerSpendCapDelayedJob: register,
-        registerSpendCapDelayedJobAfterFreshBreach: registerAfterFreshBreach,
-        enqueueSpendCapRecheck: enqueue,
-        evaluateSpendCapBreach: () =>
-          Promise.resolve({
-            reason: 'cap_exceeded',
-            totalMicrounits: 2,
-            dailyCapMicrounits: 1,
-            day,
-          }),
-        refreshDailyAiCostTotalMicrounits: vi.fn<typeof refreshDailyAiCostTotalMicrounits>(),
-      }),
-    ).rejects.toThrow('Fresh AI spend-cap breach did not reopen delayed-job registration')
-
-    expect(registerAfterFreshBreach).toHaveBeenCalledExactlyOnceWith(job, day)
-    expect(enqueue).not.toHaveBeenCalled()
   })
 })

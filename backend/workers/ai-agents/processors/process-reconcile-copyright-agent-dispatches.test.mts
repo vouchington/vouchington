@@ -1,111 +1,25 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import * as psql from '@data-stores/psql'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
-import { createCopyrightAppeal } from '@services/copyright-notices'
-import { createTestUser } from '@voucha/test-helpers'
-import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
+import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import {
-  createClearScreenedForm,
-  createSignedInCopyrightForm,
-} from '@voucha/test-helpers/services/copyright-notices/screened-form'
+  continuationsAfter,
+  failEmailEnqueue,
+  jobFor,
+  jobIds,
+  ownedPages,
+  pendingAppeal,
+  pendingEmail,
+  pendingFormEffect,
+  pendingFormScreening,
+} from '@voucha/test-helpers/copyright-dispatch-reconcile-fixtures'
 import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
-
-type GetPending = NonNullable<
-  Parameters<typeof processReconcileCopyrightAgentDispatches>[1]
->['getPending']
-
-const jobIds = {
-  email: (id: string) => `copyright_email_intake_${id}`,
-  form: (id: string) => `copyright_form_screening_${id}`,
-  appeal: (id: string) => `copyright_appeal_recommendation_${id}`,
-}
-
-/** Pages of this test's own dispatches, read through the production keyset query by owned id. */
-function ownedPages(pages: Array<{ ids: string[]; next: string | null }>) {
-  const calls: Array<Parameters<GetPending>[0]> = []
-  const getPending: GetPending = async options => {
-    calls.push(options)
-    const index = options?.after ? pages.findIndex(page => page.next === options.after) + 1 : 0
-    const page = pages[index]
-    if (!page) throw new Error(`No owned page for ${JSON.stringify(options)}`)
-    const results = (
-      await Promise.all(page.ids.map(id => readTestPendingCopyrightAgentDispatches(id)))
-    ).flat()
-    return {
-      results,
-      page_info: {
-        has_next_page: page.next !== null,
-        start_cursor: null,
-        end_cursor: page.next,
-      },
-    }
-  }
-  return { calls, getPending }
-}
-
-async function pendingEmail() {
-  const intake = await createParsedCopyrightEmailIntake()
-  return intake.id
-}
-
-async function pendingFormScreening() {
-  const { intake } = await createSignedInCopyrightForm()
-  return intake.copyright_notice_submission_id
-}
-
-async function pendingFormEffect() {
-  const { notice } = await createClearScreenedForm()
-  return {
-    submissionId: notice.intake.copyright_notice_submission_id,
-    noticeId: notice.intake.copyright_notice_id,
-  }
-}
-
-async function pendingAppeal() {
-  const poster = await createTestUser()
-  const { intake } = await createSignedInCopyrightForm(1, { poster })
-  const noticeId = intake.copyright_notice_id
-  const targetId = (await getCopyrightNoticePrivateAggregate(noticeId))?.targets[0]?.id
-  if (!targetId) throw new Error('Appeal target missing')
-  const appeal = await createCopyrightAppeal(poster, noticeId, randomUUID(), {
-    reason: 'I created this image.',
-    targetIds: [targetId],
-  })
-  return appeal.submission.id
-}
-
-async function jobFor(id: string) {
-  const job = await ai_agents.getJob(id)
-  return job ? { name: job.name, data: job.data as unknown } : null
-}
-
-/** Fails the enqueue of one owned email intake and passes every other add to the real queue. */
-function failEmailEnqueue(intakeId: string, error: Error) {
-  const realAdd = ai_agents.add.bind(ai_agents)
-  return vi.spyOn(ai_agents, 'add').mockImplementation((name, data, opts) => {
-    if (
-      name === 'copyright-email-intake' &&
-      (data as { intake_id?: string }).intake_id === intakeId
-    )
-      return Promise.reject(error)
-    return realAdd(name, data, opts)
-  })
-}
-
-async function continuationsAfter(cursor: string) {
-  return (await readAllQueueJobs(ai_agents)).filter(
-    job => job.name === 'reconcile-copyright-agent-dispatches' && job.data.after === cursor,
-  )
-}
 
 describe('processReconcileCopyrightAgentDispatches', () => {
   const enqueued: string[] = []
@@ -237,16 +151,11 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       const enqueueFailure = new Error('enqueue failed')
       const effectFailure = new Error('form effect failed')
       failEmailEnqueue(failingEmailId, enqueueFailure)
-      const realWrite = psql.write
-      vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
-        const { text, values } = typeof query === 'string' ? { text: query, values: [] } : query
-        if (
-          text.includes('readAutomaticWithholdingClaimant') &&
-          values.includes(failingEffect.submissionId)
-        )
-          return Promise.reject(effectFailure)
-        return realWrite(query, ...rest)
-      })
+      onTestFinished(
+        rejectPostgresWriteForTest('readAutomaticWithholdingClaimant', effectFailure, values =>
+          values.includes(failingEffect.submissionId),
+        ),
+      )
       const cursor = `first-cursor-${randomUUID()}`
       const { getPending } = ownedPages([
         {
