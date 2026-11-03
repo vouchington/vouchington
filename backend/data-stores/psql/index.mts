@@ -7,11 +7,4 @@ export * from './sql-fragments.mts'
 export * from './transactions.mts'
 export * from './bounded-transaction.mts'
 export * from './unique-violation.mts'
-export type {
-  QueryOptions,
-  PoolClient,
-  QueryExecutor,
-  QueryInput,
-  QueryValues,
-  TransactionQuery,
-} from './types.mts'
+export type { QueryOptions, PoolClient, QueryExecutor, TransactionQuery } from './types.mts'

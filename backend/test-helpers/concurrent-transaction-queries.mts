@@ -1,9 +1,5 @@
-import {
-  beginTransaction,
-  type QueryInput,
-  type QueryValues,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import type { QueryInput, QueryValues } from '@data-stores/psql/types'
 
 /** Run two owned transactions after both have read the absent case. Each commits independently. */
 export async function runTwoTransactionsAfterEmptyReadForTest<Result>(

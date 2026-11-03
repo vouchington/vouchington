@@ -1,10 +1,5 @@
-import {
-  read,
-  beginTransaction,
-  type QueryInput,
-  type QueryValues,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { read, beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import type { QueryInput, QueryValues } from '@data-stores/psql/types'
 import { upsertRecentlyViewed } from '../services/recently-viewed/index.mts'
 import { seedPlaywrightCoreData } from './playwright-seed-core.mts'
 import { seedPlaywrightPostData } from './playwright-seed-posts.mts'

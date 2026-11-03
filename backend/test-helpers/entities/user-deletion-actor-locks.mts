@@ -1,4 +1,5 @@
-import { beginTransaction, write, type QueryInput, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import type { QueryInput } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 import { startPausedTestUserDeletionWriter } from './user-deletion.mts'

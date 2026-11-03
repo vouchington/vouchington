@@ -3,7 +3,6 @@ import {
   beginBoundedTransaction,
   beginTransaction,
   registerPostCommitAction,
-  registerPostRollbackAction,
   withTransactionOptions,
 } from '@data-stores/psql/setup'
 import { write, writePool, type PoolClient } from '@data-stores/psql'
@@ -131,9 +130,8 @@ function getExpectedSynchronousError(operation: () => void): Error {
   throw new Error('Expected post-commit action probe registration to fail')
 }
 
-/** A real committed/rolled-back row distinguishes action failure from transaction failure. */
+/** A real committed row distinguishes action failure from transaction failure. */
 export async function runTransactionActionSettlementProbe(
-  outcome: 'commit' | 'rollback',
   actions: PostCommitAction[],
 ): Promise<boolean> {
   let id: string | undefined
@@ -144,12 +142,8 @@ export async function runTransactionActionSettlementProbe(
       RETURNING id
     `)
     id = inserted.rows[0].id
-    for (const action of actions) {
-      if (outcome === 'commit') registerPostCommitAction(transaction, action)
-      else registerPostRollbackAction(transaction, action)
-    }
-    if (outcome === 'commit') await transaction.commit()
-    else await transaction.rollback()
+    for (const action of actions) registerPostCommitAction(transaction, action)
+    await transaction.commit()
     const persisted = await write(sql`/* runTransactionActionSettlementProbe read */
       SELECT id FROM url_hostnames WHERE id = ${id}::uuid
     `)

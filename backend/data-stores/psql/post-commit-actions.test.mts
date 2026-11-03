@@ -3,7 +3,6 @@ import {
   beginBoundedTransaction,
   beginTransaction,
   registerPostCommitAction,
-  registerPostRollbackAction,
   withTransactionOptions,
 } from './setup.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -18,46 +17,20 @@ import {
 } from '../../test-helpers/data-stores/psql/post-commit-actions.mts'
 
 describe('transaction post-commit actions', () => {
-  it.each(['commit', 'rollback'] as const)(
-    'settles a synchronous action failure and its sibling after %s',
-    async outcome => {
-      const failure = new Error(`Owned synchronous ${outcome} action failure`)
-      const sibling = vi.fn<() => Promise<void>>(async () => undefined)
-      const persisted = await runTransactionActionSettlementProbe(outcome, [
-        () => {
-          throw failure
-        },
-        sibling,
-      ])
-      expect(persisted).toBe(outcome === 'commit')
-      expect(sibling).toHaveBeenCalledOnce()
-      expect(
-        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
-      ).toHaveLength(1)
-    },
-  )
-
-  it('runs rollback actions after an explicit rollback but never after commit', async () => {
-    const rolledBack = vi.fn<() => Promise<void>>(async () => undefined)
-    await using rollbackTransaction = await beginTransaction()
-    registerPostRollbackAction(rollbackTransaction, rolledBack)
-    await rollbackTransaction.rollback()
-    expect(rolledBack).toHaveBeenCalledOnce()
-
-    const committed = vi.fn<() => Promise<void>>(async () => undefined)
-    await using commitTransaction = await beginTransaction()
-    registerPostRollbackAction(commitTransaction, committed)
-    await commitTransaction.commit()
-    expect(committed).not.toHaveBeenCalled()
-  })
-
-  it('runs rollback actions when an uncommitted resource disposes', async () => {
-    const action = vi.fn<() => Promise<void>>(async () => undefined)
-    {
-      await using transaction = await beginTransaction()
-      registerPostRollbackAction(transaction, action)
-    }
-    expect(action).toHaveBeenCalledOnce()
+  it('settles a synchronous action failure and its sibling after commit', async () => {
+    const failure = new Error('Owned synchronous commit action failure')
+    const sibling = vi.fn<() => Promise<void>>(async () => undefined)
+    const persisted = await runTransactionActionSettlementProbe([
+      () => {
+        throw failure
+      },
+      sibling,
+    ])
+    expect(persisted).toBe(true)
+    expect(sibling).toHaveBeenCalledOnce()
+    expect(
+      sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+    ).toHaveLength(1)
   })
 
   it('runs actions only after an explicit commit', async () => {

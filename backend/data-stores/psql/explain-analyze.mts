@@ -12,8 +12,7 @@ import {
   type FunctionCall,
 } from './explain-function-calls.mts'
 
-export { buildExplainPreparedStatementText } from './explain-prepared.mts'
-export { functionCallsSince, type FunctionCall } from './explain-function-calls.mts'
+export { type FunctionCall } from './explain-function-calls.mts'
 export {
   clearCapturedQueries,
   disableQueryCapture,
@@ -149,10 +148,6 @@ export async function explainAnalyze(
     plan_cache_mode: planCacheMode,
     function_calls: functionCalls,
   }
-}
-
-export function buildExplainAnalyzeText(cleanText: string): string {
-  return `EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON) ${cleanText}`
 }
 
 function getExplainJitMode(): 'on' | 'off' {

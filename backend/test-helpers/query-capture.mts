@@ -2,9 +2,9 @@ import {
   clearCapturedQueries,
   disableQueryCapture,
   getCapturedQueries,
-  runWithCapturedQueries,
   write,
 } from '@data-stores/psql'
+import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 
 export { enableQueryCapture } from '@data-stores/psql'
 
