@@ -20,7 +20,8 @@ export function failOwnedVoteWeightEnqueue(userId: string, error: unknown) {
       name === VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name &&
       (data as { userId?: string }).userId === userId
     )
-      return Promise.reject(error)
+      // A non-Error rejection reason is the behavior some callers exercise.
+      return Promise.reject(error as Error)
     return realAdd.call(background, name, data, opts)
   })
 }
