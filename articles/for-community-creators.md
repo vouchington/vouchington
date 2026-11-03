@@ -75,3 +75,7 @@ When a member posts a review inside your community, their trust score weighs the
 Your members' contributions surface to people who follow the associated topics — not just to your community members. Voucha treats community content as a layer on top of the public knowledge graph, not as a silo.
 
 You're not just moderating a forum. You're curating a community where the quality of information compounds over time, backed by the same trust infrastructure that runs the rest of the platform.
+
+## Curators and Audiences
+
+If you already keep a list of videos, podcasts or feeds, a community is where it finds readers. See [Voucha for Curators](./for-curators.md). For communities built around podcasts or learning, see [Voucha for Podcast Listeners](./for-podcast-listeners.md) and [Voucha for Lifelong Learners](./for-lifelong-learners.md). Why people choose curators over feeds: [Personalized Feeds Narrow You](./personalized-vs-curated.md).

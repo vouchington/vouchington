@@ -81,3 +81,7 @@ Data points from other households — "This mesh system reliably covers 2,400 sq
 6. **Create a landing page** — If either partner shares recommendations with friends, a landing page organizes those referral links in one place
 
 Your household is a data source too. The cards you carry, the appliances you've owned, the tech decisions you've made — all of it helps families like yours avoid the same mistakes and find what actually works.
+
+## Video Without the Spiral
+
+Some household decisions are about what a parent or a kid watches. For a practical guide to YouTube for an older parent, see [How to Curate YouTube for an Aging Parent](./curate-youtube-for-aging-parents.md).
