@@ -28,7 +28,7 @@ type MediaDeliveryRegistryProcessorDependencies = {
 export async function processApplyMediaDeliveryRegistryRecord(data: {
   mediaDeliveryRegistryRecordId: string
 }): Promise<'completed' | 'not_claimed'> {
-  return processMediaDeliveryRegistryRecord(data.mediaDeliveryRegistryRecordId, new Date())
+  return processMediaDeliveryRegistryRecord(data.mediaDeliveryRegistryRecordId)
 }
 
 export async function processReconcileMediaDeliveryRegistry(

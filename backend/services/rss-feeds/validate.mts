@@ -16,19 +16,8 @@ import {
 type FeedValidationDeps = {
   crawlerRss?: typeof CrawlerRss
   crawlerRssOptions?: Parameters<typeof CrawlerRss>[1]
-  discoverFeedUrlFromHtml?: typeof discoverFeedUrlFromHtml
-  buildBoundedRssFeedItemsFromFeed?: typeof buildBoundedRssFeedItemsFromFeed
   signal?: AbortSignal
   importRowId?: string
-}
-
-function resolveFeedValidationDeps(deps: FeedValidationDeps = {}) {
-  return {
-    crawlerRss: deps.crawlerRss ?? CrawlerRss,
-    discoverFeedUrlFromHtml: deps.discoverFeedUrlFromHtml ?? discoverFeedUrlFromHtml,
-    buildBoundedRssFeedItemsFromFeed:
-      deps.buildBoundedRssFeedItemsFromFeed ?? buildBoundedRssFeedItemsFromFeed,
-  }
 }
 
 export async function assertRssFeedUrlExists(
@@ -36,7 +25,7 @@ export async function assertRssFeedUrlExists(
   deps: FeedValidationDeps = {},
 ): Promise<void> {
   if (process.env.PLAYWRIGHT_TEST === 'true' && process.env.NODE_ENV === 'test') return
-  const { crawlerRss } = resolveFeedValidationDeps(deps)
+  const crawlerRss = deps.crawlerRss ?? CrawlerRss
   try {
     const result = await crawlerRss(rssFeedUrl)
     // Redirects are not valid feed content for validation purposes
@@ -76,22 +65,14 @@ export async function fetchAndClassifyFeed(
   rssFeedUrl: string,
   deps: FeedValidationDeps = {},
 ): Promise<FeedClassification> {
-  const {
-    crawlerRss,
-    discoverFeedUrlFromHtml: discoverFeedUrlFromHtmlFn,
-    buildBoundedRssFeedItemsFromFeed: buildBoundedRssFeedItemsFromFeedFn,
-  } = resolveFeedValidationDeps(deps)
+  const crawlerRss = deps.crawlerRss ?? CrawlerRss
 
   if (process.env.PLAYWRIGHT_TEST === 'true' && process.env.NODE_ENV === 'test') {
     return { kind: 'feed', title: null, feedType: 'article' }
   }
 
   if (deps.importRowId) {
-    const discovery = await resumeRssFeedImportPageDiscovery(
-      rssFeedUrl,
-      deps.importRowId,
-      discoverFeedUrlFromHtmlFn,
-    )
+    const discovery = await resumeRssFeedImportPageDiscovery(rssFeedUrl, deps.importRowId)
     if (discovery) return discovery
   }
 
@@ -129,7 +110,7 @@ export async function fetchAndClassifyFeed(
       err instanceof CrawlerInvalidContentTypeError &&
       err.contentType.toLowerCase().includes('html')
     ) {
-      const discovered = await discoverFeedUrlFromHtmlFn(rssFeedUrl, deps.importRowId)
+      const discovered = await discoverFeedUrlFromHtml(rssFeedUrl, deps.importRowId)
       if (discovered && discovered !== rssFeedUrl) {
         return { kind: 'redirect', location: discovered, isPermanent: false }
       }
@@ -145,7 +126,7 @@ export async function fetchAndClassifyFeed(
   // normalized items no longer carry the raw feedsmith fields (yt, enclosures, media, itunes).
   // Filter to items with a classified media_type (the field is optional on the type but
   // always set by the builder — the type predicate ensures TS is satisfied).
-  const items = buildBoundedRssFeedItemsFromFeedFn(parsedFeed, rssFeedUrl, {
+  const items = buildBoundedRssFeedItemsFromFeed(parsedFeed, rssFeedUrl, {
     maxItems: Number.POSITIVE_INFINITY,
   }).items.filter(
     (item): item is typeof item & { media_type: 'article' | 'audio' | 'video' } =>

@@ -2,7 +2,7 @@ import { write } from '@data-stores/psql'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import sql from 'sql-template-strings'
 import { RssFeedDiscoveryPendingError } from './discovery-pending.mts'
-import type { discoverFeedUrlFromHtml } from './discover-feed.mts'
+import { discoverFeedUrlFromHtml } from './discover-feed.mts'
 import { createMissingFeedContentError } from './missing-feed-content-error.mts'
 
 type RssFeedImportPageDiscoveryOutcome =
@@ -39,14 +39,13 @@ async function readRssFeedImportPageDiscoveryOutcome(
 export async function resumeRssFeedImportPageDiscovery(
   pageUrl: string,
   importRowId: string,
-  discover: typeof discoverFeedUrlFromHtml,
 ): Promise<{ kind: 'redirect'; location: string; isPermanent: false } | null> {
   const outcome = await readRssFeedImportPageDiscoveryOutcome(pageUrl, importRowId)
   if (outcome?.kind === 'discovered')
     return { kind: 'redirect', location: outcome.feedUrl, isPermanent: false }
   if (outcome?.kind === 'failed') throw createMissingFeedContentError()
   if (outcome?.kind === 'pending') {
-    const discovered = await discover(pageUrl, importRowId)
+    const discovered = await discoverFeedUrlFromHtml(pageUrl, importRowId)
     if (discovered) return { kind: 'redirect', location: discovered, isPermanent: false }
     throw new RssFeedDiscoveryPendingError()
   }

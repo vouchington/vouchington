@@ -9,15 +9,6 @@ import { upsertPodcastShow, deletePodcastShow } from './podcast-show.mts'
 import { upsertRssFeedCategories, deleteRssFeedCategories } from './categories.mts'
 import { createFeedCategoryRelations } from './category-relations.mts'
 
-type ReconcileLanguageDeps = {
-  updateRssFeedByIdImpl?: typeof updateRssFeedById
-  upsertPodcastShowImpl?: typeof upsertPodcastShow
-  deletePodcastShowImpl?: typeof deletePodcastShow
-  upsertRssFeedCategoriesImpl?: typeof upsertRssFeedCategories
-  deleteRssFeedCategoriesImpl?: typeof deleteRssFeedCategories
-  createFeedCategoryRelationsImpl?: typeof createFeedCategoryRelations
-}
-
 /**
  * Persists feed metadata (title, declared_language) and returns whether
  * declared_language changed (set, changed, or cleared). The caller passes that
@@ -33,15 +24,7 @@ export async function persistFeedMetadataAndReconcileLanguage(
   oldTitle: string | null,
   oldDeclaredLanguage: string | null,
   oldFeedType: 'article' | 'podcast' | 'video' | 'mixed' | null = null,
-  deps: ReconcileLanguageDeps = {},
 ): Promise<boolean> {
-  const updateRssFeedByIdFn = deps.updateRssFeedByIdImpl ?? updateRssFeedById
-  const upsertPodcastShowFn = deps.upsertPodcastShowImpl ?? upsertPodcastShow
-  const deletePodcastShowFn = deps.deletePodcastShowImpl ?? deletePodcastShow
-  const upsertRssFeedCategoriesFn = deps.upsertRssFeedCategoriesImpl ?? upsertRssFeedCategories
-  const deleteRssFeedCategoriesFn = deps.deleteRssFeedCategoriesImpl ?? deleteRssFeedCategories
-  const createFeedCategoryRelationsFn =
-    deps.createFeedCategoryRelationsImpl ?? createFeedCategoryRelations
   const metadataUpdates: Parameters<typeof updateRssFeedById>[1] = {}
   if (oldTitle === null) {
     const feedTitle = extractFeedTitle(parsedFeed)
@@ -67,21 +50,21 @@ export async function persistFeedMetadataAndReconcileLanguage(
   }
 
   if (Object.keys(metadataUpdates).length > 0) {
-    await updateRssFeedByIdFn(rssFeedId, metadataUpdates)
+    await updateRssFeedById(rssFeedId, metadataUpdates)
   }
 
   if (showMetadata) {
-    await upsertPodcastShowFn(rssFeedId, showMetadata)
+    await upsertPodcastShow(rssFeedId, showMetadata)
     const categories = extractFeedCategories(parsedFeed)
     if (categories.length > 0) {
-      await upsertRssFeedCategoriesFn(rssFeedId, categories)
-      await createFeedCategoryRelationsFn(rssFeedId)
+      await upsertRssFeedCategories(rssFeedId, categories)
+      await createFeedCategoryRelations(rssFeedId)
     } else {
-      await deleteRssFeedCategoriesFn(rssFeedId)
+      await deleteRssFeedCategories(rssFeedId)
     }
   } else {
-    await deletePodcastShowFn(rssFeedId)
-    await deleteRssFeedCategoriesFn(rssFeedId)
+    await deletePodcastShow(rssFeedId)
+    await deleteRssFeedCategories(rssFeedId)
   }
 
   return declaredLanguage !== oldDeclaredLanguage
