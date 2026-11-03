@@ -21,7 +21,7 @@ describe('AI spend-cap recheck rollover', () => {
     const day = uniqueSpendCapDay()
     const { endMs } = getDayBounds(day)
     cleanUpSpendCapDay(day)
-    disableSpendCapForTest()
+    await disableSpendCapForTest()
     // A waiting job is retained by a drain begun before the boundary and removed by one begun after it.
     const waiting = await ai_agents.add('report-judgement', {
       spendCapDelayedDay: day,

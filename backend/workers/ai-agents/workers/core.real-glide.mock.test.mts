@@ -39,7 +39,7 @@ describe('ai_agents provider rate limits with real GlideMQ', () => {
   ])(
     'parks only the job that hit %s and keeps running provider-free jobs',
     async (_name, createFailure, waitMs) => {
-      disableSpendCapForTest()
+      await disableSpendCapForTest()
       const queueName = `ai_agents_rate_limit_${randomUUID()}`
       const queue = new Queue<AIAgentJobData>(queueName, connection)
       const events = new QueueEvents(queueName, {

@@ -22,14 +22,15 @@ describe('ai-agents workers', () => {
 
   // This suite covers worker construction and OpenAI-429 handling, not the spend cap
   // (core.spend-cap.test.mts) -- disable it so ambient usage on the shared database is ignored.
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
-    disableSpendCapForTest()
+    await disableSpendCapForTest()
   })
 
   it('builds the worker through the factory with a dedicated command client and runtime options', () => {
     vi.stubEnv('OPENAI_RPM', '42')
     vi.stubEnv('OPENAI_TPM', '1234')
+    vi.stubEnv('WORKER_CONCURRENCY_AI_AGENTS', '7')
     const factoryWorker = {} as Worker
     // A real worker would start consuming the shared ai_agents queue, so only the factory call is observed.
     const createWorker = vi.spyOn(glideMq, 'createWorker').mockReturnValue(factoryWorker)
@@ -41,7 +42,7 @@ describe('ai-agents workers', () => {
         expect.any(Function),
         {
           dedicatedCommandClient: true,
-          concurrency: expect.any(Number),
+          concurrency: 7,
           limiter: { max: 42, duration: 60_000 },
           tokenLimiter: { maxTokens: 1234, duration: 60_000, scope: 'queue' },
           lockDuration: 300_000,
@@ -65,11 +66,17 @@ describe('ai-agents workers', () => {
     const job = makeJob()
     mockProcessAIAgent.mockRejectedValue(rateLimitError)
 
-    await expect(
-      processAIAgentWorkerJob(job, { processAIAgent: mockProcessAIAgent as typeof processAIAgent }),
-    ).rejects.toThrow(DelayedError)
-
-    expect(job.moveToDelayed).toHaveBeenCalledOnce()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      await expect(
+        processAIAgentWorkerJob(job, {
+          processAIAgent: mockProcessAIAgent as typeof processAIAgent,
+        }),
+      ).rejects.toThrow(DelayedError)
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 30_000)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('rethrows a provider outage unchanged so the backoff strategy sees its Retry-After', async () => {

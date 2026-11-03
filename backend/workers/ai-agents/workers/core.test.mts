@@ -27,12 +27,24 @@ function usageResponse(inputTokens: number, outputTokens: number) {
 
 // These tests cover the token-accumulator wiring and failure routing, not the spend cap
 // (core.spend-cap.test.mts) -- disable it so they ignore ambient usage on the shared database.
+/** Freezes only Date at the current instant so a rate-limit delay of Date.now() + N is exact. */
+async function withFrozenDate<T>(run: () => Promise<T>): Promise<T> {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    return await run()
+  } finally {
+    vi.useRealTimers()
+  }
+}
+
 function rateLimited() {
   return new RateLimitError(429, {}, 'rate limited', new Headers({ 'retry-after': '30' }))
 }
 
 describe('processAIAgentWorkerJob', () => {
-  beforeEach(() => disableSpendCapForTest())
+  beforeEach(async () => {
+    await disableSpendCapForTest()
+  })
 
   it('reports the summed token count from every recordAgentResponseUsage call the job makes', async () => {
     const job = jobFor()
@@ -73,21 +85,23 @@ describe('processAIAgentWorkerJob', () => {
     const job = jobFor()
     const agentSlug = `token-accumulator-test-${randomUUID()}`
 
-    await expect(
-      processAIAgentWorkerJob(job, {
-        processAIAgent: async () => {
-          await recordAgentResponseUsage({
-            response: usageResponse(30, 10),
-            agentSlug,
-            transport: 'direct',
-          })
-          throw rateLimited()
-        },
-      }),
-    ).rejects.toThrow(DelayedError)
+    await withFrozenDate(async () => {
+      await expect(
+        processAIAgentWorkerJob(job, {
+          processAIAgent: async () => {
+            await recordAgentResponseUsage({
+              response: usageResponse(30, 10),
+              agentSlug,
+              transport: 'direct',
+            })
+            throw rateLimited()
+          },
+        }),
+      ).rejects.toThrow(DelayedError)
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 30_000)
+    })
 
     expect(job.reportTokens).toHaveBeenCalledExactlyOnceWith(40)
-    expect(job.moveToDelayed).toHaveBeenCalledOnce()
   })
 
   it("defers on processAIAgent's original rate limit even when reportTokens rejects", async () => {
@@ -99,20 +113,21 @@ describe('processAIAgentWorkerJob', () => {
 
     // Without the accumulator catching reportTokens' rejection, that rejection would replace
     // the rate limit, so the job would never be deferred on an actual 429.
-    await expect(
-      processAIAgentWorkerJob(job, {
-        processAIAgent: async () => {
-          await recordAgentResponseUsage({
-            response: usageResponse(30, 10),
-            agentSlug,
-            transport: 'direct',
-          })
-          throw rateLimited()
-        },
-      }),
-    ).rejects.toThrow(DelayedError)
-
-    expect(job.moveToDelayed).toHaveBeenCalledOnce()
+    await withFrozenDate(async () => {
+      await expect(
+        processAIAgentWorkerJob(job, {
+          processAIAgent: async () => {
+            await recordAgentResponseUsage({
+              response: usageResponse(30, 10),
+              agentSlug,
+              transport: 'direct',
+            })
+            throw rateLimited()
+          },
+        }),
+      ).rejects.toThrow(DelayedError)
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 30_000)
+    })
   })
 
   it('isolates concurrent jobs -- one job never sees another job in-flight on the same worker', async () => {
@@ -165,7 +180,9 @@ describe('processAIAgentWorkerJob', () => {
 })
 
 describe('processAIAgentWorkerJob model provider failures', () => {
-  beforeEach(() => disableSpendCapForTest())
+  beforeEach(async () => {
+    await disableSpendCapForTest()
+  })
 
   it('routes a provider failure to the model provider handler, not the OpenAI rate limiter', async () => {
     const job = jobFor()
@@ -183,8 +200,8 @@ describe('processAIAgentWorkerJob model provider failures', () => {
 })
 
 describe('processAIAgentWorkerJob response recovery', () => {
-  beforeEach(() => {
-    disableSpendCapForTest()
+  beforeEach(async () => {
+    await disableSpendCapForTest()
     vi.stubEnv('OPENAI_API_KEY', 'recovery-rate-limit-fixture')
   })
   afterEach(() => vi.unstubAllEnvs())
@@ -209,8 +226,11 @@ describe('processAIAgentWorkerJob response recovery', () => {
     const retrieve = vi.spyOn(Responses.prototype, 'retrieve').mockRejectedValue(rateLimit)
     const processAIAgent = vi.fn<() => Promise<unknown>>()
     try {
-      await expect(processAIAgentWorkerJob(job, { processAIAgent })).rejects.toThrow(DelayedError)
-      expect(job.moveToDelayed).toHaveBeenCalledOnce()
+      await withFrozenDate(async () => {
+        await expect(processAIAgentWorkerJob(job, { processAIAgent })).rejects.toThrow(DelayedError)
+        // No Retry-After header, so the default one-minute wait applies.
+        expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 60_000)
+      })
       expect(processAIAgent).not.toHaveBeenCalled()
       expect(job.data.backgroundResponses).toHaveLength(1)
     } finally {

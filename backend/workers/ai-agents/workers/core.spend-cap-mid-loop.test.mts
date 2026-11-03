@@ -63,8 +63,7 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
         processAIAgentWorkerJob(job, { processAIAgent: () => Promise.reject(rateLimit) }),
       ).rejects.toThrow(DelayedError)
 
-      expect(job.moveToDelayed).toHaveBeenCalledOnce()
-      expect(job.moveToDelayed).not.toHaveBeenCalledWith(getDayBounds(day).endMs)
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 30_000)
       await expect(
         workerQueueCommandClient.hget(spendCapDelayedRegistryKey(day), `job:${job.id}`),
       ).resolves.toBeNull()

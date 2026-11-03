@@ -4,6 +4,7 @@ import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import {
   cleanUpSpendCapDay,
+  disableSpendCapForTest,
   findSpendCapRechecks,
   spendCapDelayableJob,
   uniqueSpendCapDay,
@@ -51,5 +52,24 @@ describe('AI spend-cap registration timing', () => {
 
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
     await expect(recheckDelays(day)).resolves.toEqual([0])
+  })
+
+  it('parks a month-end day at the first instant of the next month', async () => {
+    const day = '2026-08-31'
+    cleanUpSpendCapDay(day)
+    await disableSpendCapForTest()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
+    const job = aiAgentJob()
+
+    try {
+      await expect(delayForSpendCap(job, day)).rejects.toThrow(DelayedError)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(
+      Date.parse('2026-09-01T00:00:00.000Z'),
+    )
   })
 })

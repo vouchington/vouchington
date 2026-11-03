@@ -1,17 +1,22 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DelayedError } from 'glide-mq'
 import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
-import { spendCapDelayedRegistryKey } from '@services/ai-usage'
+import { getDailyAiCostTotalMicrounits, spendCapDelayedRegistryKey } from '@services/ai-usage'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import { insertTestAiUsageRecord } from '@voucha/test-helpers/entities/ai-usage'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import {
   cleanUpSpendCapDay,
   findSpendCapRechecks,
+  rejectRegistryScriptsForTest,
   seedReleasingSpendCapRegistry,
   spendCapDelayableJob,
 } from '@voucha/test-helpers/ai-agents-spend-cap'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { delayForSpendCap } from './spend-cap-delay.mts'
+import { registerSpendCapRecheck } from './spend-cap-recheck.mts'
 
 function aiAgentJob() {
   return spendCapDelayableJob('report-judgement', {} as AIAgentJobData)
@@ -55,6 +60,49 @@ describe('AI spend-cap registration freshness', () => {
         workerQueueCommandClient.hget(spendCapDelayedRegistryKey(day), `job:${job.id}`),
       ).resolves.toBeNull()
       await expect(recheckGenerations(day)).resolves.toEqual([generation])
+    })
+  })
+})
+
+describe('AI spend-cap registration after a rejected first attempt', () => {
+  it('re-registers on a fresh total read even when a cached total is still under the cap', async () => {
+    await withReservedAiUsageDay(100, async day => {
+      cleanUpSpendCapDay(day)
+      const generation = await seedReleasingSpendCapRegistry(day)
+      // Prime the cache while the day is still under the cap, then push it over the cap.
+      await expect(getDailyAiCostTotalMicrounits(day)).resolves.toEqual({
+        totalMicrounits: 0,
+        day,
+      })
+      await insertTestAiUsageRecord({
+        id: timestampToUuidv7LowerBound(Date.now()),
+        costMicrounits: 101,
+      })
+      const job = aiAgentJob()
+
+      await expect(registerSpendCapRecheck(job, day)).resolves.toBe(true)
+
+      await expect(
+        workerQueueCommandClient.hget(spendCapDelayedRegistryKey(day), `job:${job.id}`),
+      ).resolves.toBe('marked')
+      await expect(recheckGenerations(day)).resolves.toEqual([generation])
+    })
+  })
+
+  it('fails closed without enqueueing when a fresh breach cannot re-register the delayed job', async () => {
+    await withReservedAiUsageDay(0, async day => {
+      cleanUpSpendCapDay(day)
+      const add = vi.spyOn(backgroundCpu, 'add')
+      const invokeScript = rejectRegistryScriptsForTest()
+      const job = aiAgentJob()
+
+      await expect(registerSpendCapRecheck(job, day)).rejects.toThrow(
+        'Fresh AI spend-cap breach did not reopen delayed-job registration',
+      )
+
+      expect(invokeScript).toHaveBeenCalledTimes(2)
+      expect(add).not.toHaveBeenCalled()
+      await expect(findSpendCapRechecks(day)).resolves.toHaveLength(0)
     })
   })
 })

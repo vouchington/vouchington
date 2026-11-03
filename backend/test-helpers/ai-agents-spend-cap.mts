@@ -28,7 +28,8 @@ export function spendCapDelayableJob<T>(name: string, data: T): Job<T> {
 }
 
 /** Turns the daily spend cap off for the current test so unrelated worker tests ignore ambient usage. */
-export function disableSpendCapForTest(): void {
+export async function disableSpendCapForTest(): Promise<void> {
+  await spendCapConfig.waitForInitialization()
   onTestFinished(overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false }))
 }
 
@@ -58,4 +59,46 @@ export async function seedReleasingSpendCapRegistry(day: string): Promise<string
   const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
   if (!lease) throw new Error('Expected the seeded spend-cap registry to begin releasing')
   return registration.generation
+}
+
+type CommandClientPrototype = {
+  hscan: (this: unknown, ...args: unknown[]) => Promise<[unknown, unknown]>
+  invokeScript: (...args: unknown[]) => Promise<unknown>
+}
+
+// The shared command client is a Proxy that resolves each command on the real client per call,
+// so the real client's prototype is the one place a spy sees the commands it sends to Valkey.
+function commandClientPrototype(): CommandClientPrototype {
+  const clientClass = workerQueueCommandClient.constructor as unknown as {
+    prototype: CommandClientPrototype
+  }
+  return clientClass.prototype
+}
+
+/** Runs the real `HSCAN` but reports `cursor` as the next cursor, so a resumed scan is observable. */
+export function reportRegistryScanCursorForTest(cursor: string) {
+  const prototype = commandClientPrototype()
+  const realHscan = prototype.hscan
+  const hscan = vi.spyOn(prototype, 'hscan').mockImplementation(async function (
+    this: unknown,
+    ...args: unknown[]
+  ) {
+    const [, fields] = await realHscan.apply(this, args)
+    return [cursor, fields]
+  })
+  onTestFinished(() => {
+    hscan.mockRestore()
+  })
+  return hscan
+}
+
+/** Makes every registry script reply "not accepted", as when a newer generation owns the day. */
+export function rejectRegistryScriptsForTest() {
+  const invokeScript = vi
+    .spyOn(commandClientPrototype(), 'invokeScript')
+    .mockResolvedValue([0, 'rejected-generation', 0])
+  onTestFinished(() => {
+    invokeScript.mockRestore()
+  })
+  return invokeScript
 }

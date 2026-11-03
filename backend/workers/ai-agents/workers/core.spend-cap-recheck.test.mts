@@ -10,6 +10,7 @@ import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.se
 import {
   cleanUpSpendCapDay,
   disableSpendCapForTest,
+  reportRegistryScanCursorForTest,
   spendCapDelayableJob,
   uniqueSpendCapDay,
 } from '@voucha/test-helpers/ai-agents-spend-cap'
@@ -44,7 +45,19 @@ describe('AI spend-cap coordinated rechecks', () => {
 
       await expect(delayForSpendCap(job, day)).rejects.toThrow(DelayedError)
 
-      expect(add).toHaveBeenCalled()
+      const generation = await workerQueueCommandClient.hget(
+        spendCapDelayedRegistryKey(day),
+        '__generation',
+      )
+      expect(typeof generation).toBe('string')
+      expect(add).toHaveBeenCalledExactlyOnceWith(
+        'ai-spend-cap.recheck',
+        { day, generation },
+        expect.objectContaining({
+          delay: 60_000,
+          deduplication: { id: `ai-spend-cap:recheck:${day}:${generation}`, mode: 'simple' },
+        }),
+      )
       expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(failure, expect.anything())
       expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
       await expect(
@@ -91,7 +104,7 @@ describe('AI spend-cap coordinated rechecks', () => {
   it('stops when a persisted release lease cannot be acquired', async () => {
     const day = uniqueSpendCapDay()
     cleanUpSpendCapDay(day)
-    disableSpendCapForTest()
+    await disableSpendCapForTest()
     const seed = aiAgentJob()
     await registerSpendCapDelayedJob(seed, day)
     const job = recheckJob(day, 'a-generation-the-registry-never-issued')
@@ -104,10 +117,10 @@ describe('AI spend-cap coordinated rechecks', () => {
     ).resolves.toBe('marked')
   })
 
-  it('keeps draining bounded pages until no registered jobs remain', async () => {
+  it('keeps draining bounded pages from the stored cursor until no registered jobs remain', async () => {
     const day = uniqueSpendCapDay()
     cleanUpSpendCapDay(day)
-    disableSpendCapForTest()
+    await disableSpendCapForTest()
     // A job already waiting before the day ends stays registered, so the drain must continue.
     const waiting = await ai_agents.add('report-judgement', {
       spendCapDelayedDay: day,
@@ -115,29 +128,32 @@ describe('AI spend-cap coordinated rechecks', () => {
     if (!waiting) throw new Error('Expected the waiting spend-cap job')
     onTestFinished(() => waiting.remove())
     const registration = await registerSpendCapDelayedJob(waiting, day)
-    const job = recheckJob(day, registration.generation)
+    const hscan = reportRegistryScanCursorForTest('42')
+    const registryKey = spendCapDelayedRegistryKey(day)
 
-    // Freeze only Date, inside the day so the waiting job stays registered, so the delay is exact.
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
-    try {
-      await expect(processSpendCapRecheckJob(job)).rejects.toThrow(DelayedError)
-      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 1_000)
-    } finally {
-      vi.useRealTimers()
-    }
-    expect(job.updateData).toHaveBeenCalledExactlyOnceWith({
+    const first = recheckJob(day, registration.generation)
+    await expect(processSpendCapRecheckJob(first)).rejects.toThrow(DelayedError)
+
+    expect(hscan).toHaveBeenCalledExactlyOnceWith(registryKey, '0', { count: 100 })
+    expect(first.updateData).toHaveBeenCalledExactlyOnceWith({
       day,
       generation: registration.generation,
-      cursor: '0',
+      cursor: '42',
     })
     await expect(registryFields(day)).resolves.toMatchObject({ mode: 'releasing' })
+
+    // The re-delayed coordinator resumes from the cursor it stored, not from the start.
+    hscan.mockClear()
+    const resumed = recheckJob(day, registration.generation)
+    resumed.data.cursor = '42'
+    await expect(processSpendCapRecheckJob(resumed)).rejects.toThrow(DelayedError)
+    expect(hscan).toHaveBeenCalledExactlyOnceWith(registryKey, '42', { count: 100 })
   })
 
   it('completes after atomically closing an empty releasing registry', async () => {
     const day = uniqueSpendCapDay()
     cleanUpSpendCapDay(day)
-    disableSpendCapForTest()
+    await disableSpendCapForTest()
     const registration = await registerSpendCapDelayedJob(aiAgentJob(), day)
     const job = recheckJob(day, registration.generation)
 

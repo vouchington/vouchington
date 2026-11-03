@@ -101,7 +101,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
   it('uses the production release drain when a coordinator owns a release lease', async () => {
     const day = `${3_000 + Math.floor(Math.random() * 6_000)}-08-16`
     const registryKey = spendCapDelayedRegistryKey(day)
-    disableSpendCapForTest()
+    await disableSpendCapForTest()
     const queued = await ai_agents.add('report-judgement', {} as AIAgentJobData, {
       delay: 60 * 60 * 1000,
     })
@@ -117,7 +117,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
       await expect(processSpendCapRecheckJob(job)).resolves.toBeUndefined()
 
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(0)
-      await expect(queued.getState()).resolves.not.toBe('delayed')
+      await expect(queued.getState()).resolves.toBe('prioritized')
     } finally {
       await workerQueueCommandClient.unlink([registryKey])
       await queued.remove().catch(() => undefined)

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job } from 'glide-mq'
+import { getDayBounds } from '@ts-shared/utils/dates'
 import {
   createTestUrlWithHostname,
   createTestUserDirect,
@@ -113,7 +114,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
       ).rejects.toThrow(DelayedError)
 
       expect(processAIAgent).not.toHaveBeenCalled()
-      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
       expect(recordSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
         agentJobName: 'story-post',
         dailyTotalMicrounits: 1,
@@ -143,7 +144,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
       ).rejects.toThrow(DelayedError)
 
       expect(processAIAgent).not.toHaveBeenCalled()
-      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
     })
   })
 })
