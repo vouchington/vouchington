@@ -28,35 +28,23 @@ export type RetryableSesInboundJob = {
   retry(): Promise<void>
 }
 
-type SesInboundRecoveryDependencies = {
-  enqueueBulk: typeof enqueueBulkSesInboundProcess
-  getFailedJobs(): Promise<RetryableSesInboundJob[]>
-}
-
-const recoveryDependencies: SesInboundRecoveryDependencies = {
-  enqueueBulk: enqueueBulkSesInboundProcess,
-  getFailedJobs: () =>
-    sesInboundQueue.searchJobs({
-      state: 'failed',
-      name: SES_INBOUND_PROCESS_JOB.name,
-      limit: getSesInboundRetainedFailedJobScanLimit(),
-      excludeData: true,
-    }),
-}
-
 export function readRetainedFailedSesInboundProcessJobs(): Promise<RetryableSesInboundJob[]> {
-  return recoveryDependencies.getFailedJobs()
+  return sesInboundQueue.searchJobs({
+    state: 'failed',
+    name: SES_INBOUND_PROCESS_JOB.name,
+    limit: getSesInboundRetainedFailedJobScanLimit(),
+    excludeData: true,
+  })
 }
 
 export async function enqueueOrRetryBulkSesInboundProcess(
   inputs: SesInboundProcessJobData[],
   failedJobs?: RetryableSesInboundJob[],
-  dependencies: SesInboundRecoveryDependencies = recoveryDependencies,
 ): Promise<number> {
-  await dependencies.enqueueBulk(inputs)
+  await enqueueBulkSesInboundProcess(inputs)
   return retryFailedSesInboundProcessJobs(
     inputs,
-    failedJobs ?? (await dependencies.getFailedJobs()),
+    failedJobs ?? (await readRetainedFailedSesInboundProcessJobs()),
   )
 }
 

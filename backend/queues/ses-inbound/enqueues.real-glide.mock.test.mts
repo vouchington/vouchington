@@ -1,7 +1,8 @@
-import { randomUUID } from 'node:crypto'
-import { Queue, Worker } from 'glide-mq'
+import { Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
+import { background } from '@queues/background/queues'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import {
   getSesInboundProcessJobOptions,
@@ -10,22 +11,26 @@ import {
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { enqueueOrRetryBulkSesInboundProcess } from './enqueues.mts'
 
+// A random Valkey database gives this file a private `voucha_qdb_<n>` queue namespace.
+vi.hoisted(() => {
+  const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
+  url.pathname = String(crypto.getRandomValues(new Uint32Array(1))[0])
+  vi.stubEnv('VALKEY_WORKER_QUEUE_URL', url.toString())
+})
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('SES inbound reconciliation through real GlideMQ', () => {
   it('retries a retained failed process job for an object still in S3', async () => {
     const pipeWrapsBefore = countActivePipeWraps()
-    const queueName = `ses_inbound_recovery_test_${randomUUID()}`
-    const ownedConnectionOptions = {
+    // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
+    const workerOptions = {
       connection: workerQueueConnection,
       prefix: workerQueuePrefix,
+      blockTimeout: 1000,
     }
-    // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
-    const workerOptions = { ...ownedConnectionOptions, blockTimeout: 1000 }
-    const queue = new Queue<SesInboundProcessJobData>(queueName, ownedConnectionOptions)
     const failedSettled = Promise.withResolvers<void>()
     const failedWorker = new Worker<SesInboundProcessJobData>(
-      queueName,
+      background.name,
       async () => {
         throw new Error('transient failure')
       },
@@ -39,30 +44,22 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
     let recoveryWorker: Worker<SesInboundProcessJobData> | undefined
 
     try {
-      const options = { ...getSesInboundProcessJobOptions(data), attempts: 1 }
-      const job = await queue.add(SES_INBOUND_PROCESS_JOB.name, data, options)
+      const options = {
+        ...SES_INBOUND_PROCESS_JOB.options,
+        ...getSesInboundProcessJobOptions(data),
+        attempts: 1,
+      }
+      const job = await background.add(SES_INBOUND_PROCESS_JOB.name, data, options)
       if (!job) throw new Error('Expected the failed test job to be created')
       await waitForRealGlideEvent(failedSettled.promise, 'GlideMQ SES inbound failure')
       expect(await job.getState()).toBe('failed')
       await failedWorker.close()
 
-      await expect(
-        enqueueOrRetryBulkSesInboundProcess([data], undefined, {
-          enqueueBulk: async inputs =>
-            queue.addBulk(
-              inputs.map(input => ({
-                name: SES_INBOUND_PROCESS_JOB.name,
-                data: input,
-                opts: getSesInboundProcessJobOptions(input),
-              })),
-            ),
-          getFailedJobs: async () => queue.getJobs('failed', 0, -1, { excludeData: true }),
-        }),
-      ).resolves.toBe(1)
+      await expect(enqueueOrRetryBulkSesInboundProcess([data])).resolves.toBe(1)
 
       const recovered = Promise.withResolvers<void>()
       recoveryWorker = new Worker<SesInboundProcessJobData>(
-        queueName,
+        background.name,
         async () => undefined,
         workerOptions,
       )
@@ -71,8 +68,8 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       expect(await job.getState()).toBe('completed')
     } finally {
       await Promise.allSettled([failedWorker.close(), recoveryWorker?.close()])
-      await queue.obliterate({ force: true })
-      await queue.close()
+      await background.obliterate({ force: true })
+      await closeAndUnregisterGlideMQInstance(background)
     }
 
     expect(countActivePipeWraps()).toBeLessThanOrEqual(pipeWrapsBefore)
