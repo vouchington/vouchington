@@ -2,16 +2,8 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { runBatch } from './batch-helpers.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { detectLanguageMany } from './detector.mts'
 
-type BatchDetectDependencies = {
-  detectLanguageMany: typeof detectLanguageMany
-}
-
-export async function detectCommunityLanguageBatch(
-  ids: string[],
-  dependencies?: Partial<BatchDetectDependencies>,
-): Promise<{ updated: number }> {
+export async function detectCommunityLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
     id: string
     name: string
@@ -52,14 +44,10 @@ export async function detectCommunityLanguageBatch(
       }
       return write(update)
     },
-    dependencies,
   )
 }
 
-export async function detectUserLanguageBatch(
-  ids: string[],
-  dependencies?: Partial<BatchDetectDependencies>,
-): Promise<{ updated: number }> {
+export async function detectUserLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
     id: string
     markdown: string | null
@@ -97,14 +85,10 @@ export async function detectUserLanguageBatch(
       await write(update)
       await invalidate.users(id)
     },
-    dependencies,
   )
 }
 
-export async function detectTopicLanguageBatch(
-  ids: string[],
-  dependencies?: Partial<BatchDetectDependencies>,
-): Promise<{ updated: number }> {
+export async function detectTopicLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
     id: string
     name: string
@@ -145,6 +129,5 @@ export async function detectTopicLanguageBatch(
       await write(update)
       await invalidate.topics(id)
     },
-    dependencies,
   )
 }

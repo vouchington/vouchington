@@ -2,16 +2,8 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
-import { detectLanguage } from '../detector.mts'
 
-type EntityDetectionDependencies = {
-  detectLanguage: typeof detectLanguage
-}
-
-export async function detectCrawlLanguage(
-  crawlId: string,
-  dependencies?: Partial<EntityDetectionDependencies>,
-): Promise<void> {
+export async function detectCrawlLanguage(crawlId: string): Promise<void> {
   const { rows } = await read<{
     id: string
     title: string | null
@@ -33,7 +25,7 @@ export async function detectCrawlLanguage(
   const detectionKey = computeDetectionKey(text, declaredLanguage)
   if (crawl.lingua_rs_input_sha256?.equals(detectionKey)) return
 
-  const output = await runDetection(text, declaredLanguage, undefined, dependencies)
+  const output = await runDetection(text, declaredLanguage)
   const contentSha256 = computeContentSha256(text)
 
   await write(sql`/* detectCrawlLanguage:update */

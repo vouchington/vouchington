@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
+import { createHash } from 'node:crypto'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
   createTestTopic,
@@ -9,22 +10,15 @@ import {
   insertLanguageDetectionTopicForTest,
   insertLanguageDetectionUserForTest,
 } from '@voucha/test-helpers'
+import { getLanguageDetectionResultForTest } from '@voucha/test-helpers/sql-language-detection-state'
 import { addUrl } from '@services/urls'
 import type { PrivateUser } from '@services/users/types'
-import type { detectLanguage } from '../detector.mts'
 import { detectUserLanguage } from '../entities/users.mts'
 import { detectTopicLanguage } from '../entities/topics.mts'
 import { detectRssFeedItemLanguage } from '../entities/rss-feed-items.mts'
 
-const mockDetectLanguage = vi.fn<typeof detectLanguage>()
-
-function makeLinguaResult(iso6391: string) {
-  return {
-    detector: 'lingua',
-    detectorModelVersion: '1.0.0',
-    languages: [{ iso6391, iso6393: `${iso6391}x`, confidence: 0.95 }],
-  }
-}
+const ENGLISH = 'The quick brown fox jumps over the lazy dog near the quiet river bank today'
+const GERMAN = 'Die Würde des Menschen ist unantastbar und ihr Schutz ist Verpflichtung aller'
 
 describe('entity language detection — users, topics, rss-feed-items', () => {
   let user: PrivateUser
@@ -33,111 +27,96 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
     user = await createTestUser()
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  // ─── users ────────────────────────────────────────────────────────────────
-
   describe('detectUserLanguage', () => {
     it('returns early without update when user not found', async () => {
-      await detectUser('00000000-0000-7000-8000-000000000004')
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
+      await expect(detectUserLanguage('00000000-0000-7000-8000-000000000004')).resolves.toBe(
+        undefined,
+      )
     })
 
-    it('calls lingua and writes columns for user with bio', async () => {
-      mockDetectLanguage.mockResolvedValueOnce(makeLinguaResult('en'))
+    it('detects the language and writes columns for user with bio', async () => {
       const random = createRandomString(10)
       const userId = await insertLanguageDetectionUserForTest({
         username: `user-entity-${random}`,
-        markdown: 'Hello this is my English bio text',
+        markdown: ENGLISH,
       })
 
-      await detectUser(userId)
+      await detectUserLanguage(userId)
 
-      expect(mockDetectLanguage).toHaveBeenCalledOnce()
       const updated = await getLanguageDetectionStateForTest('users', userId)
       expect(updated.lingua_rs_detected_language).toBe('en')
-      expect(updated.lingua_rs_input_sha256).not.toBeNull()
+      expect(updated.lingua_rs_input_sha256).toHaveLength(32)
       expect(updated.lingua_rs_detected_at).toBeInstanceOf(Date)
     })
 
     it('skips detection when sha is already current (idempotency)', async () => {
-      mockDetectLanguage.mockResolvedValueOnce(makeLinguaResult('en'))
       const random = createRandomString(10)
       const userId = await insertLanguageDetectionUserForTest({
         username: `user-idem-${random}`,
-        markdown: 'Idempotent bio content',
+        markdown: GERMAN,
       })
 
-      await detectUser(userId)
-      expect(mockDetectLanguage).toHaveBeenCalledTimes(1)
-      vi.clearAllMocks()
+      await detectUserLanguage(userId)
+      const first = await getLanguageDetectionStateForTest('users', userId)
+      expect(first.lingua_rs_detected_language).toBe('de')
 
-      await detectUser(userId)
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
+      await detectUserLanguage(userId)
+      expect(await getLanguageDetectionStateForTest('users', userId)).toEqual(first)
     })
   })
 
-  // ─── topics ───────────────────────────────────────────────────────────────
-
   describe('detectTopicLanguage', () => {
     it('returns early without update when topic not found', async () => {
-      await detectTopic('00000000-0000-7000-8000-000000000005')
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
+      await expect(detectTopicLanguage('00000000-0000-7000-8000-000000000005')).resolves.toBe(
+        undefined,
+      )
     })
 
-    it('calls lingua and writes columns for topic without prior detection', async () => {
-      mockDetectLanguage.mockResolvedValueOnce(makeLinguaResult('en'))
+    it('detects the language and writes columns for topic without prior detection', async () => {
       const random = createRandomString(10)
       const topicId = await insertLanguageDetectionTopicForTest({
         createdById: user.id,
-        name: `Topic entity test ${random}`,
+        name: `${ENGLISH} ${random}`,
         slug: `topic-entity-${random}`,
       })
 
-      await detectTopic(topicId)
+      await detectTopicLanguage(topicId)
 
-      expect(mockDetectLanguage).toHaveBeenCalledOnce()
       const updated = await getLanguageDetectionStateForTest('topics', topicId)
       expect(updated.lingua_rs_detected_language).toBe('en')
-      expect(updated.lingua_rs_input_sha256).not.toBeNull()
+      expect(updated.lingua_rs_input_sha256).toHaveLength(32)
       expect(updated.lingua_rs_detected_at).toBeInstanceOf(Date)
     })
 
     it('skips detection when sha is already current (idempotency)', async () => {
-      mockDetectLanguage.mockResolvedValueOnce(makeLinguaResult('en'))
       const random = createRandomString(10)
       const topicId = await insertLanguageDetectionTopicForTest({
         createdById: user.id,
-        name: `Idempotent Topic ${random}`,
+        name: `${GERMAN} ${random}`,
         slug: `idem-topic-${random}`,
       })
 
-      await detectTopic(topicId)
-      expect(mockDetectLanguage).toHaveBeenCalledTimes(1)
-      vi.clearAllMocks()
+      await detectTopicLanguage(topicId)
+      const first = await getLanguageDetectionStateForTest('topics', topicId)
+      expect(first.lingua_rs_detected_language).toBe('de')
 
-      await detectTopic(topicId)
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
+      await detectTopicLanguage(topicId)
+      expect(await getLanguageDetectionStateForTest('topics', topicId)).toEqual(first)
     })
   })
 
-  // ─── rss_feed_items ───────────────────────────────────────────────────────
-
   describe('detectRssFeedItemLanguage', () => {
     it('returns early without update when item not found', async () => {
-      await detectRssFeedItem('00000000-0000-7000-8000-000000000006')
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
+      await expect(detectRssFeedItemLanguage('00000000-0000-7000-8000-000000000006')).resolves.toBe(
+        undefined,
+      )
     })
 
-    it('calls lingua and writes columns for rss feed item without prior detection', async () => {
-      mockDetectLanguage.mockResolvedValueOnce(makeLinguaResult('en'))
+    it('detects language from the first visible rss text field and writes columns', async () => {
       const random = createRandomString(10)
       const topic = await createTestTopic()
       const feedId = await insertTestRssFeed({ topicId: topic.id, title: `Feed ${random}` })
       const urlObj = await addUrl(null, `https://rss-entity-${random}.example.com/item`)
-      const contentSha = Buffer.alloc(32, 0)
 
       const itemId = await insertTestRssFeedItem({
         rssFeedId: feedId,
@@ -146,57 +125,42 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
         itemData: {
           title: `Item ${random}`,
           contentSnippet: '<p>&nbsp;</p>',
-          'media:description': 'Hello world English media description',
+          'media:description': GERMAN,
         },
-        contentSha256: contentSha,
+        contentSha256: Buffer.alloc(32, 0),
       })
 
-      await detectRssFeedItem(itemId)
+      await detectRssFeedItemLanguage(itemId)
 
-      expect(mockDetectLanguage).toHaveBeenCalledOnce()
-      expect(mockDetectLanguage.mock.calls[0]![0].toString()).toContain(
-        'Hello world English media description',
-      )
-      const updated = await getLanguageDetectionStateForTest('rss_feed_items', itemId)
-      expect(updated.lingua_rs_detected_language).toBe('en')
-      expect(updated.lingua_rs_input_sha256).not.toBeNull()
+      const updated = await getLanguageDetectionResultForTest('rss_feed_items', itemId)
+      expect(updated.lingua_rs_detected_language).toBe('de')
+      expect(updated.lingua_rs_input_sha256).toHaveLength(32)
       expect(updated.lingua_rs_detected_at).toBeInstanceOf(Date)
+      expect(updated.lingua_rs_content_sha256).toEqual(
+        createHash('sha256').update(`Item ${random}\n\n${GERMAN}`, 'utf8').digest(),
+      )
     })
 
     it('skips detection when sha is already current (idempotency)', async () => {
-      mockDetectLanguage.mockResolvedValueOnce(makeLinguaResult('en'))
       const random = createRandomString(10)
       const topic = await createTestTopic()
       const feedId = await insertTestRssFeed({ topicId: topic.id, title: `Feed Idem ${random}` })
       const urlObj = await addUrl(null, `https://rss-idem-${random}.example.com/item`)
-      const contentSha = Buffer.alloc(32, 0)
 
       const itemId = await insertTestRssFeedItem({
         rssFeedId: feedId,
         urlId: urlObj!.id,
         guid: `guid-idem-${random}`,
-        itemData: { title: `Idem Item ${random}`, contentSnippet: 'Idempotent content' },
-        contentSha256: contentSha,
+        itemData: { title: `Idem Item ${random}`, contentSnippet: GERMAN },
+        contentSha256: Buffer.alloc(32, 0),
       })
 
-      await detectRssFeedItem(itemId)
-      expect(mockDetectLanguage).toHaveBeenCalledTimes(1)
-      vi.clearAllMocks()
+      await detectRssFeedItemLanguage(itemId)
+      const first = await getLanguageDetectionStateForTest('rss_feed_items', itemId)
+      expect(first.lingua_rs_detected_language).toBe('de')
 
-      await detectRssFeedItem(itemId)
-      expect(mockDetectLanguage).not.toHaveBeenCalled()
+      await detectRssFeedItemLanguage(itemId)
+      expect(await getLanguageDetectionStateForTest('rss_feed_items', itemId)).toEqual(first)
     })
   })
 })
-
-function detectUser(userId: string): Promise<void> {
-  return detectUserLanguage(userId, { detectLanguage: mockDetectLanguage })
-}
-
-function detectTopic(topicId: string): Promise<void> {
-  return detectTopicLanguage(topicId, { detectLanguage: mockDetectLanguage })
-}
-
-function detectRssFeedItem(itemId: string): Promise<void> {
-  return detectRssFeedItemLanguage(itemId, { detectLanguage: mockDetectLanguage })
-}
