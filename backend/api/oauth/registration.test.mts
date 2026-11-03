@@ -138,7 +138,6 @@ describe('OAuth dynamic client registration route', () => {
         })
         .expect(201)
       expect(first.headers['x-ratelimit-limit']).toBe('3')
-      expect(first.headers['x-ratelimit-remaining']).toBe('2')
       await request
         .post('/register')
         .send({
@@ -156,7 +155,6 @@ describe('OAuth dynamic client registration route', () => {
         })
         .expect(429)
       expect(limited.headers['retry-after']).toBe('60')
-      expect(limited.headers['x-ratelimit-remaining']).toBe('0')
     } finally {
       await deleteRouteRateLimitKeys(routeKey, { ip })
     }

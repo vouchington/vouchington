@@ -32,7 +32,7 @@
     "@queues/notifications": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/sentry": "^0.4.0",
+    "@vouchington/sentry": "^0.5.0",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"
   },

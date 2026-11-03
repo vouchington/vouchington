@@ -1,10 +1,14 @@
 import type { SharedDbScopeEvent as PlatformScopeEvent } from '@vouchington/postgres/query-telemetry'
-import type { observeSharedDbScope } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import type {
+  observeSharedDbScope,
+  SharedDbOwnedKeysetRead,
+} from '../backend/data-stores/psql/shared-db-scope-observer.mts'
 
 const observerKey = Symbol.for('voucha.shared-db-scope-observer')
 export type SharedDbScopeEvent = PlatformScopeEvent<
   Parameters<typeof observeSharedDbScope>[0],
-  string
+  string,
+  SharedDbOwnedKeysetRead
 >
 type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 type ObserverHost = Record<symbol, SharedDbScopeObserver | undefined>

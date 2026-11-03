@@ -25,7 +25,7 @@
     "@services/bedrock-embeddings": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/posts": "workspace:^",
-    "@vouchington/queue-errors": "^0.2.0",
+    "@vouchington/queue-errors": "^0.2.1",
     "glide-mq": "^0.20.0",
     "valkyries": "^0.15.0"
   },

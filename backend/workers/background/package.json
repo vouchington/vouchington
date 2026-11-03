@@ -30,7 +30,7 @@
     "@services/hostname-blocking": "workspace:^",
     "@services/images": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
-    "@vouchington/queue-errors": "^0.2.0",
+    "@vouchington/queue-errors": "^0.2.1",
     "@workers/account-lifecycle": "workspace:^",
     "@workers/activitypub": "workspace:^",
     "@workers/admin-imports": "workspace:^",

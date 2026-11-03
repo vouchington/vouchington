@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SharedDbKeysetRead } from '@vouchington/postgres/query-telemetry'
+import type { SharedDbOwnedKeysetRead } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
 import type { SharedDbScopeEvent } from './vitest-shared-db-scope-observer.mts'
 import { OwnedKeysetReadPolicy } from './vitest-owned-keyset-read-policy.mts'
 import { rejectUnscopedSharedDbCall } from './vitest-shared-db-scope-violations.mts'
@@ -12,7 +12,7 @@ const fixture = {
 }
 const owner = 'policy-file:owned-case'
 
-function event(read: SharedDbKeysetRead): SharedDbScopeEvent {
+function event(read: SharedDbOwnedKeysetRead): SharedDbScopeEvent {
   return {
     operation: 'searchCopyrightStaffEmailIntakes',
     table: 'copyright_notice_email_intakes',

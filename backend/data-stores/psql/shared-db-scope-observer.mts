@@ -1,4 +1,7 @@
-import { createSharedDbScopeObserver } from '@vouchington/postgres/query-telemetry'
+import {
+  createSharedDbScopeObserver,
+  type SharedDbKeysetRead,
+} from '@vouchington/postgres/query-telemetry'
 
 /** Explicit SQL-backed service calls whose shared tests must use an owned bound or keyset. */
 const sharedDbScopeTables = {
@@ -34,7 +37,22 @@ const sharedDbScopeTables = {
 
 export type SharedDbScopeOperation = keyof typeof sharedDbScopeTables
 
-const scopeObserver = createSharedDbScopeObserver({
+/** The start bounds are the actual query parameters; completion describes its committed rows. */
+export type SharedDbOwnedKeysetRead = SharedDbKeysetRead<
+  {
+    actorId: string
+    after: { timestamp: unknown; id: unknown } | undefined
+    limit: number
+    sqlLimit: unknown
+  },
+  { rowCount: number; first: { id: string; timestamp: string } | undefined }
+>
+
+const scopeObserver = createSharedDbScopeObserver<
+  SharedDbScopeOperation,
+  (typeof sharedDbScopeTables)[SharedDbScopeOperation],
+  SharedDbOwnedKeysetRead
+>({
   tables: sharedDbScopeTables,
   key: 'voucha.shared-db-scope-observer',
 })
