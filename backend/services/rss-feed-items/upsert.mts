@@ -12,10 +12,6 @@ import {
   lockRssFeedItemWriteScopes,
   resolveAndLockRssFeedItemWrites,
 } from './upsert-write-locks.mts'
-import {
-  enqueueMissingRssFeedItemEmbeddings,
-  enqueueRssFeedItemCategorySnapshotReconciliationBestEffort,
-} from './upsert-enqueues.mts'
 import { prepareRssFeedItemsForUpsert } from './upsert-prepare.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
@@ -41,10 +37,13 @@ import { getExistingRssFeedItems } from './upsert-existing.mts'
 export type UpsertRssFeedItemsDependencies = {
   getExistingRssFeedItems?: typeof getExistingRssFeedItems
 }
+/** redetectLanguage queues language detection for every item in feedItems, unchanged ones too. */
+export type UpsertRssFeedItemsOptions = { redetectLanguage?: boolean }
 export async function upsertRssFeedItems(
   rssFeedId: string,
   feedItems: RssFeedItemToUpsert[],
   dependencies: UpsertRssFeedItemsDependencies = {},
+  options: UpsertRssFeedItemsOptions = {},
 ) {
   assert(feedItems.length > 0, 400, 'feedItems is required')
   const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
@@ -115,6 +114,9 @@ export async function upsertRssFeedItems(
       unchangedUnlinkedExistingRows.push(row)
     }
   }
+  const languageUnchangedRows = options.redetectLanguage
+    ? existingRows.filter(row => !guidsToUpsert.has(row.guid))
+    : unchangedUnlinkedExistingRows
   const unchangedUnlinkedSourceRows = buildRssFeedItemSourceInputs(
     unchangedUnlinkedExistingRows,
     feedItemsByGuid,
@@ -165,18 +167,14 @@ export async function upsertRssFeedItems(
   if (markedStoryPostRelatedUrlProjections)
     void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
   if (itemsToUpsert.length === 0) {
-    if (unchangedUnlinkedExistingRows.length > 0) {
-      void enqueueRssFeedItemCategorySnapshotReconciliationBestEffort()
-      await finishUnchangedRssFeedItemUpsert(
-        isEligibleTopHashtagSource,
-        existingRows,
-        unchangedUnlinkedExistingRows,
-        insertedSourceRows,
-        notificationChangeId,
-      )
-    } else {
-      await enqueueMissingRssFeedItemEmbeddings(existingRows)
-    }
+    await finishUnchangedRssFeedItemUpsert(
+      isEligibleTopHashtagSource,
+      existingRows,
+      unchangedUnlinkedExistingRows,
+      insertedSourceRows,
+      notificationChangeId,
+      languageUnchangedRows,
+    )
     return []
   }
   const insertedUnchangedSourceRows = filterInsertedUnchangedSourceRows(
@@ -192,6 +190,7 @@ export async function upsertRssFeedItems(
     insertedUnchangedSourceRows,
     upsertedRows,
     notificationChangeId,
+    languageUnchangedRows,
   )
 }
 

@@ -1,6 +1,7 @@
 import { enqueueTopHashtagRefreshIfNeeded } from './upsert-top-hashtags.mts'
 import {
   enqueueMissingRssFeedItemEmbeddings,
+  enqueueRssFeedItemLanguageDetection,
   enqueueRssFeedItemCategorySnapshotReconciliationBestEffort,
   enqueueRssFeedItemPostUpsertJobs,
 } from './upsert-enqueues.mts'
@@ -15,6 +16,7 @@ export async function finishRssFeedItemUpsert(
   insertedUnchangedSourceRows: Array<{ rss_feed_item_id: string }>,
   upsertedRows: UpsertedRssFeedItemRow[],
   notificationChangeId: string,
+  languageUnchangedRows: ExistingRssFeedItemRow[],
 ) {
   void enqueueRssFeedItemCategorySnapshotReconciliationBestEffort()
   enqueueTopHashtagRefreshIfNeeded(
@@ -30,7 +32,7 @@ export async function finishRssFeedItemUpsert(
     notificationChangeId,
     {
       existingRowsForFanout: unchangedUnlinkedExistingRows,
-      languageDetectionRows: [...upsertedRows, ...unchangedUnlinkedExistingRows],
+      languageDetectionRows: [...upsertedRows, ...languageUnchangedRows],
     },
   )
 }
@@ -41,7 +43,14 @@ export async function finishUnchangedRssFeedItemUpsert(
   unchangedUnlinkedExistingRows: ExistingRssFeedItemRow[],
   insertedSourceRows: Array<{ rss_feed_item_id: string }>,
   notificationChangeId: string,
+  languageUnchangedRows: ExistingRssFeedItemRow[],
 ): Promise<void> {
+  if (unchangedUnlinkedExistingRows.length === 0) {
+    await enqueueMissingRssFeedItemEmbeddings(existingRows)
+    await enqueueRssFeedItemLanguageDetection(languageUnchangedRows)
+    return
+  }
+  void enqueueRssFeedItemCategorySnapshotReconciliationBestEffort()
   enqueueTopHashtagRefreshIfNeeded(
     isEligibleTopHashtagSource,
     unchangedUnlinkedExistingRows,
@@ -54,7 +63,7 @@ export async function finishUnchangedRssFeedItemUpsert(
     [],
     notificationChangeId,
     {
-      languageDetectionRows: unchangedUnlinkedExistingRows,
+      languageDetectionRows: languageUnchangedRows,
     },
   )
   await enqueueMissingRssFeedItemEmbeddings(

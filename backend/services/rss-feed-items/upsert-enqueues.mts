@@ -145,7 +145,7 @@ async function invalidateRssFeedItemsInChunks(rssFeedItemIds: string[]) {
   await enqueueChunks(rssFeedItemIds, async chunk => invalidate.rss_feed_items(...chunk))
 }
 
-async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnqueueRow[]) {
+export async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnqueueRow[]) {
   await enqueueChunks(
     rows.map(row => row.id),
     async ids => {

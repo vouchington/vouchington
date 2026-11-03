@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { persistFeedMetadataAndReconcileLanguage } from './reconcile-item-language.mts'
-import { rssFeedItemsWorkConfig } from '../rss-feed-items/work-limits.mts'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('persistFeedMetadataAndReconcileLanguage', () => {
-  const readImpl = vi.fn<(...args: any[]) => Promise<any>>()
   const updateRssFeedByIdImpl = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue(null)
-  const enqueueBulkLanguageDetectionImpl = vi
-    .fn<(...args: any[]) => Promise<any>>()
-    .mockResolvedValue(null)
   const upsertPodcastShowImpl = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue(null)
   const deletePodcastShowImpl = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue(null)
   const upsertRssFeedCategoriesImpl = vi
@@ -22,9 +16,7 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
     .mockResolvedValue(null)
 
   const deps = {
-    readImpl,
     updateRssFeedByIdImpl,
-    enqueueBulkLanguageDetectionImpl,
     upsertPodcastShowImpl,
     deletePodcastShowImpl,
     upsertRssFeedCategoriesImpl,
@@ -33,32 +25,11 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
   }
 
   beforeEach(() => {
-    readImpl.mockReset()
-    updateRssFeedByIdImpl.mockReset()
-    enqueueBulkLanguageDetectionImpl.mockReset()
-    upsertPodcastShowImpl.mockReset()
-    deletePodcastShowImpl.mockReset()
-    upsertRssFeedCategoriesImpl.mockReset()
-    deleteRssFeedCategoriesImpl.mockReset()
-    createFeedCategoryRelationsImpl.mockReset()
-    readImpl.mockResolvedValue({
-      command: 'SELECT',
-      fields: [],
-      oid: 0,
-      rowCount: 2,
-      rows: [{ id: 'item-1' }, { id: 'item-2' }],
-    })
-    updateRssFeedByIdImpl.mockResolvedValue(null)
-    enqueueBulkLanguageDetectionImpl.mockResolvedValue(null)
-    upsertPodcastShowImpl.mockResolvedValue(null)
-    deletePodcastShowImpl.mockResolvedValue(null)
-    upsertRssFeedCategoriesImpl.mockResolvedValue(null)
-    deleteRssFeedCategoriesImpl.mockResolvedValue(null)
-    createFeedCategoryRelationsImpl.mockResolvedValue(null)
+    for (const impl of Object.values(deps)) impl.mockReset().mockResolvedValue(null)
   })
 
-  it('persists missing feed metadata and re-enqueues existing items when language changes', async () => {
-    await persistFeedMetadataAndReconcileLanguage(
+  it('persists missing feed metadata and reports a language change', async () => {
+    const languageChanged = await persistFeedMetadataAndReconcileLanguage(
       'feed-1',
       { title: ' Example Feed ', language: 'fr-FR' },
       null,
@@ -67,24 +38,15 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       deps,
     )
 
+    expect(languageChanged).toBe(true)
     expect(updateRssFeedByIdImpl).toHaveBeenCalledWith('feed-1', {
       title: 'Example Feed',
       declared_language: 'fr',
     })
-    expect(readImpl).toHaveBeenCalledWith(expect.stringContaining('rss_feed_item_sources'), [
-      'feed-1',
-      null,
-      1000,
-    ])
-    expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledOnce()
-    expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledWith('rss_feed_item', [
-      'item-1',
-      'item-2',
-    ])
   })
 
-  it('clears declared language and re-enqueues items when a feed drops its language', async () => {
-    await persistFeedMetadataAndReconcileLanguage(
+  it('clears declared language and reports a change when a feed drops its language', async () => {
+    const languageChanged = await persistFeedMetadataAndReconcileLanguage(
       'feed-1',
       { title: 'Existing' },
       'Existing',
@@ -93,55 +55,12 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       deps,
     )
 
+    expect(languageChanged).toBe(true)
     expect(updateRssFeedByIdImpl).toHaveBeenCalledWith('feed-1', { declared_language: null })
-    expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledOnce()
   })
 
-  it('re-enqueues large feeds in bounded batches', async () => {
-    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
-      enqueue_batch_size: 2,
-    })
-    try {
-      const page = (ids: string[]) => ({
-        command: 'SELECT',
-        fields: [],
-        oid: 0,
-        rowCount: ids.length,
-        rows: ids.map(id => ({ id })),
-      })
-      readImpl.mockResolvedValueOnce(page(['item-0', 'item-1']))
-      readImpl.mockResolvedValueOnce(page(['item-2']))
-
-      const secondBatch = Promise.withResolvers<void>()
-      let enqueueCalls = 0
-      enqueueBulkLanguageDetectionImpl.mockImplementation(() => {
-        enqueueCalls += 1
-        if (enqueueCalls === 2) secondBatch.resolve()
-        return Promise.resolve(null)
-      })
-
-      await persistFeedMetadataAndReconcileLanguage(
-        'feed-1',
-        { language: 'en' },
-        'Existing',
-        null,
-        null,
-        deps,
-      )
-      await secondBatch.promise
-
-      expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledTimes(2)
-      expect(enqueueBulkLanguageDetectionImpl.mock.calls[0]![1]).toEqual(['item-0', 'item-1'])
-      expect(enqueueBulkLanguageDetectionImpl.mock.calls[1]![1]).toEqual(['item-2'])
-      expect(readImpl.mock.calls[0]![1]).toEqual(['feed-1', null, 2])
-      expect(readImpl.mock.calls[1]![1]).toEqual(['feed-1', 'item-1', 2])
-    } finally {
-      restoreBatchSize()
-    }
-  })
-
-  it('skips metadata updates and re-enqueues when metadata is unchanged', async () => {
-    await persistFeedMetadataAndReconcileLanguage(
+  it('skips metadata updates and reports no change when metadata is unchanged', async () => {
+    const languageChanged = await persistFeedMetadataAndReconcileLanguage(
       'feed-1',
       { language: 'fr' },
       'Existing',
@@ -150,25 +69,8 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       deps,
     )
 
+    expect(languageChanged).toBe(false)
     expect(updateRssFeedByIdImpl).not.toHaveBeenCalled()
-    expect(readImpl).not.toHaveBeenCalled()
-    expect(enqueueBulkLanguageDetectionImpl).not.toHaveBeenCalled()
-  })
-
-  it('swallows asynchronous re-enqueue failures after persisting metadata', async () => {
-    readImpl.mockRejectedValueOnce(new Error('read failed'))
-
-    await persistFeedMetadataAndReconcileLanguage(
-      'feed-1',
-      { language: 'en' },
-      'Existing',
-      null,
-      null,
-      deps,
-    )
-
-    expect(updateRssFeedByIdImpl).toHaveBeenCalledWith('feed-1', { declared_language: 'en' })
-    expect(readImpl).toHaveBeenCalledTimes(1)
   })
 
   it('deletes categories when iTunes metadata is present but categories list is empty', async () => {
