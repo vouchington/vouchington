@@ -149410,7 +149410,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 50,
           "type": "timestamp with time zone"
         },
         "cards_visibility": {
@@ -149421,7 +149421,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24,
+          "ordinalPosition": 23,
           "type": "user_privacy_audiences"
         },
         "community_digest_frequency": {
@@ -149432,7 +149432,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "digest_frequencies"
         },
         "community_memberships_visibility": {
@@ -149443,7 +149443,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 29,
           "type": "user_privacy_audiences"
         },
         "country": {
@@ -149454,7 +149454,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "created_at": {
@@ -149465,7 +149465,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 64,
+          "ordinalPosition": 63,
           "type": "timestamp with time zone"
         },
         "default_post_broadcast": {
@@ -149476,7 +149476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33,
+          "ordinalPosition": 32,
           "type": "broadcast_types"
         },
         "default_post_privacy": {
@@ -149487,7 +149487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34,
+          "ordinalPosition": 33,
           "type": "privacy_types"
         },
         "deleted_at": {
@@ -149498,7 +149498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 66,
+          "ordinalPosition": 65,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -149509,7 +149509,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 67,
+          "ordinalPosition": 66,
           "type": "uuid"
         },
         "direct_messages_audience": {
@@ -149520,7 +149520,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 34,
           "type": "user_privacy_audiences"
         },
         "followers_visibility": {
@@ -149531,7 +149531,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 30,
           "type": "user_privacy_audiences"
         },
         "follows_visibility": {
@@ -149542,7 +149542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 26,
           "type": "user_privacy_audiences"
         },
         "id": {
@@ -149564,7 +149564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 63,
+          "ordinalPosition": 62,
           "type": "uuid"
         },
         "is_engagement_emails_enabled": {
@@ -149575,7 +149575,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "boolean"
         },
         "is_fediverse_federation_enabled": {
@@ -149586,7 +149586,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "is_moderation_emails_enabled": {
@@ -149597,7 +149597,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "boolean"
         },
         "is_verified_badge_visible": {
@@ -149608,7 +149608,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 55,
+          "ordinalPosition": 54,
           "type": "boolean"
         },
         "likes_visibility": {
@@ -149619,7 +149619,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 32,
+          "ordinalPosition": 31,
           "type": "user_privacy_audiences"
         },
         "lingua_rs_content_sha256": {
@@ -149630,7 +149630,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -149641,7 +149641,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -149652,7 +149652,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -149663,7 +149663,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 20,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -149674,7 +149674,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 21,
           "type": "jsonb"
         },
         "markdown": {
@@ -149696,7 +149696,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "moderation_email_cadences"
         },
         "moderation_email_days_of_week": {
@@ -149707,7 +149707,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "smallint[]"
         },
         "moderation_email_time_of_day": {
@@ -149718,7 +149718,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "moderation_email_timezone": {
@@ -149729,7 +149729,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "news_digest_frequency": {
@@ -149740,7 +149740,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "digest_frequencies"
         },
         "pending_checkout_session_id": {
@@ -149751,7 +149751,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 61,
+          "ordinalPosition": 60,
           "type": "text"
         },
         "pending_verification_session_id": {
@@ -149762,7 +149762,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 60,
+          "ordinalPosition": 59,
           "type": "text"
         },
         "platform_account_kind": {
@@ -149784,7 +149784,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 49,
           "type": "timestamp with time zone"
         },
         "profile_image_id": {
@@ -149795,7 +149795,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 62,
+          "ordinalPosition": 61,
           "type": "uuid"
         },
         "public_verified_name_display": {
@@ -149806,7 +149806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 56,
+          "ordinalPosition": 55,
           "type": "public_verified_name_displays"
         },
         "referrer_user_id": {
@@ -149817,7 +149817,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 48,
           "type": "uuid"
         },
         "rewards_program_statuses_visibility": {
@@ -149828,7 +149828,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 24,
           "type": "user_privacy_audiences"
         },
         "rss_feed_follows_visibility": {
@@ -149839,19 +149839,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 28,
           "type": "user_privacy_audiences"
-        },
-        "should_import_hacker_news_discussions": {
-          "collation": null,
-          "comment": "Whether this user opts in to Hacker News discussion imports.",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "boolean"
         },
         "should_receive_third_party_marketing": {
           "collation": null,
@@ -149861,7 +149850,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "boolean"
         },
         "spending_categories_visibility": {
@@ -149872,7 +149861,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 25,
           "type": "user_privacy_audiences"
         },
         "topic_follows_visibility": {
@@ -149883,7 +149872,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 27,
           "type": "user_privacy_audiences"
         },
         "ui_locale": {
@@ -149894,7 +149883,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "updated_at": {
@@ -149905,7 +149894,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 65,
+          "ordinalPosition": 64,
           "type": "timestamp with time zone"
         },
         "use_display_name_from": {
@@ -149938,7 +149927,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 53,
           "type": "timestamp with time zone"
         },
         "verification_provider": {
@@ -149949,7 +149938,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 52,
           "type": "identity_verification_providers"
         },
         "verification_status": {
@@ -149960,7 +149949,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 52,
+          "ordinalPosition": 51,
           "type": "identity_verification_statuses"
         },
         "verified_first_name": {
@@ -149971,7 +149960,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 57,
+          "ordinalPosition": 56,
           "type": "text"
         },
         "verified_full_name": {
@@ -149982,7 +149971,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 59,
+          "ordinalPosition": 58,
           "type": "text"
         },
         "verified_last_name_initial": {
@@ -149993,7 +149982,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 57,
           "type": "text"
         },
         "vote_weight": {
@@ -150004,7 +149993,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 35,
           "type": "double precision"
         },
         "vote_weight_admin_set_at": {
@@ -150015,7 +150004,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "vote_weight_recalculated_at": {
@@ -150026,7 +150015,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "votes_count_down": {
@@ -150037,7 +150026,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 45,
           "type": "integer"
         },
         "votes_count_none": {
@@ -150048,7 +150037,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 45,
+          "ordinalPosition": 44,
           "type": "integer"
         },
         "votes_count_up": {
@@ -150059,7 +150048,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 43,
           "type": "integer"
         },
         "votes_score_down": {
@@ -150070,7 +150059,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 43,
+          "ordinalPosition": 42,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -150081,7 +150070,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 47,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -150092,7 +150081,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 42,
+          "ordinalPosition": 41,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -150103,7 +150092,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 46,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -150114,7 +150103,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41,
+          "ordinalPosition": 40,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -150125,7 +150114,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 39,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -150136,7 +150125,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 38,
           "type": "xid8"
         }
       },
@@ -155075,7 +155064,7 @@
     },
     "view_users_private": {
       "comment": "Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.",
-      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    users.should_import_hacker_news_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE (e.id = users.id)) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.is_verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE (e.id = users.id)) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.is_verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
       "materialized": false
     },
     "view_users_public": {

@@ -157406,7 +157406,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51
+          "ordinalPosition": 50
         },
         "cards_visibility": {
           "comment": "Privacy: who can see this user's cards.",
@@ -157416,7 +157416,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 23
         },
         "community_digest_frequency": {
           "comment": "Frequency for community digest emails.",
@@ -157426,7 +157426,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 11
         },
         "community_memberships_visibility": {
           "comment": "Privacy: who can see this user's community memberships.",
@@ -157436,7 +157436,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30
+          "ordinalPosition": 29
         },
         "country": {
           "comment": "User preferred country as ISO 3166-1 alpha-2 (e.g., US).",
@@ -157446,7 +157446,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 16
         },
         "created_at": {
           "comment": null,
@@ -157456,7 +157456,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 64
+          "ordinalPosition": 63
         },
         "default_post_broadcast": {
           "comment": "Default audience setting for new posts.",
@@ -157466,7 +157466,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33
+          "ordinalPosition": 32
         },
         "default_post_privacy": {
           "comment": "Default privacy setting for new posts.",
@@ -157476,7 +157476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34
+          "ordinalPosition": 33
         },
         "deleted_at": {
           "comment": null,
@@ -157486,7 +157486,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 66
+          "ordinalPosition": 65
         },
         "deleted_by_id": {
           "comment": null,
@@ -157496,7 +157496,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 67
+          "ordinalPosition": 66
         },
         "direct_messages_audience": {
           "comment": "Privacy: who can send this user direct messages.",
@@ -157506,7 +157506,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35
+          "ordinalPosition": 34
         },
         "followers_visibility": {
           "comment": "Privacy: who can see this user's followers.",
@@ -157516,7 +157516,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31
+          "ordinalPosition": 30
         },
         "follows_visibility": {
           "comment": "Privacy: who can see who this user follows (user follows).",
@@ -157526,7 +157526,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 26
         },
         "id": {
           "comment": null,
@@ -157546,7 +157546,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 63
+          "ordinalPosition": 62
         },
         "is_engagement_emails_enabled": {
           "comment": "Whether the user receives engagement recommendation emails.",
@@ -157556,7 +157556,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "is_fediverse_federation_enabled": {
           "comment": "Per-user opt-in to ActivityPub federation (Phase C). Default FALSE; when TRUE, a public AP actor is exposed at /ap/users/:id and inbound follows are auto-accepted.",
@@ -157566,7 +157566,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 10
         },
         "is_moderation_emails_enabled": {
           "comment": "Whether the user receives community moderation summary emails.",
@@ -157576,7 +157576,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 9
         },
         "is_verified_badge_visible": {
           "comment": "Whether to display the ID-verified badge on this user's public profile.",
@@ -157586,7 +157586,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 55
+          "ordinalPosition": 54
         },
         "likes_visibility": {
           "comment": "Privacy: who can see this user's likes.",
@@ -157596,7 +157596,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 32
+          "ordinalPosition": 31
         },
         "lingua_rs_content_sha256": {
           "comment": null,
@@ -157606,7 +157606,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 19
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -157616,7 +157616,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 22
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -157626,7 +157626,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 18
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -157636,7 +157636,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 20
         },
         "lingua_rs_results": {
           "comment": null,
@@ -157646,7 +157646,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 21
         },
         "markdown": {
           "comment": "User profile bio in markdown format.",
@@ -157666,7 +157666,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 12
         },
         "moderation_email_days_of_week": {
           "comment": "Days of week for selected-day moderation email cadence, 1=Monday and 7=Sunday.",
@@ -157676,7 +157676,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 13
         },
         "moderation_email_time_of_day": {
           "comment": "Local HH:MM time for moderation summary emails.",
@@ -157686,7 +157686,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 14
         },
         "moderation_email_timezone": {
           "comment": "IANA timezone for moderation summary email scheduling.",
@@ -157696,7 +157696,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 15
         },
         "news_digest_frequency": {
           "comment": "Frequency for first-party news digest emails.",
@@ -157706,7 +157706,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "pending_checkout_session_id": {
           "comment": "Stripe Checkout Session that initiated the current identity-verification flow. Set when transitioning to identity_pending; cleared on terminal state. Used to recover checkout linkage when Stripe redacts VerificationSession metadata.",
@@ -157716,7 +157716,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 61
+          "ordinalPosition": 60
         },
         "pending_verification_session_id": {
           "comment": "Stores the Stripe Checkout Session ID during payment_pending, then the Stripe Identity VerificationSession ID during identity_pending; cleared on terminal state.",
@@ -157726,7 +157726,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 60
+          "ordinalPosition": 59
         },
         "platform_account_kind": {
           "comment": "Reserved platform identity: official for people, system for automation, NULL for members and the deleted tombstone.",
@@ -157746,7 +157746,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50
+          "ordinalPosition": 49
         },
         "profile_image_id": {
           "comment": "The user's profile image. NULL if no profile image is set.",
@@ -157756,7 +157756,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 62
+          "ordinalPosition": 61
         },
         "public_verified_name_display": {
           "comment": "How much of the legal name to show publicly.",
@@ -157766,7 +157766,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 56
+          "ordinalPosition": 55
         },
         "referrer_user_id": {
           "comment": "The user who referred this user, for referral attribution.",
@@ -157776,7 +157776,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49
+          "ordinalPosition": 48
         },
         "rewards_program_statuses_visibility": {
           "comment": "Privacy: who can see this user's rewards program statuses.",
@@ -157786,7 +157786,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 24
         },
         "rss_feed_follows_visibility": {
           "comment": "Privacy: who can see this user's RSS feed follows.",
@@ -157796,17 +157796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
-        },
-        "should_import_hacker_news_discussions": {
-          "comment": "Whether this user opts in to Hacker News discussion imports.",
-          "dataType": "boolean",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 28
         },
         "should_receive_third_party_marketing": {
           "comment": "Marketing opt-in/out: TRUE=opted in, FALSE=opted out, NULL=not set.",
@@ -157816,7 +157806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         },
         "spending_categories_visibility": {
           "comment": "Privacy: who can see this user's spending categories.",
@@ -157826,7 +157816,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 25
         },
         "topic_follows_visibility": {
           "comment": "Privacy: who can see this user's topic follows.",
@@ -157836,7 +157826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 27
         },
         "ui_locale": {
           "comment": "User preferred UI locale from supported UI message catalogs (e.g., en).",
@@ -157846,7 +157836,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 17
         },
         "updated_at": {
           "comment": null,
@@ -157856,7 +157846,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 65
+          "ordinalPosition": 64
         },
         "use_display_name_from": {
           "comment": "Which source to use for the displayed name (username, facebook, x, etc.).",
@@ -157886,7 +157876,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54
+          "ordinalPosition": 53
         },
         "verification_provider": {
           "comment": "Provider used for verification, set once payment is initiated.",
@@ -157896,7 +157886,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53
+          "ordinalPosition": 52
         },
         "verification_status": {
           "comment": "Current lifecycle state of the user's identity verification.",
@@ -157906,7 +157896,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 52
+          "ordinalPosition": 51
         },
         "verified_first_name": {
           "comment": "Verified legal first name, private unless user opts in.",
@@ -157916,7 +157906,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 57
+          "ordinalPosition": 56
         },
         "verified_full_name": {
           "comment": "Verified legal full name, private unless user opts in.",
@@ -157926,7 +157916,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 59
+          "ordinalPosition": 58
         },
         "verified_last_name_initial": {
           "comment": "Single initial of verified last name, private unless user opts in.",
@@ -157936,7 +157926,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58
+          "ordinalPosition": 57
         },
         "vote_weight": {
           "comment": "Admin-set multiplier for this user's votes. Default 1.",
@@ -157946,7 +157936,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 35
         },
         "vote_weight_admin_set_at": {
           "comment": "When an admin last manually overrode this user's vote weight. NULL if never overridden.",
@@ -157956,7 +157946,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37
+          "ordinalPosition": 36
         },
         "vote_weight_recalculated_at": {
           "comment": "When the vote weight was last recalculated automatically. NULL if never recalculated.",
@@ -157966,7 +157956,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38
+          "ordinalPosition": 37
         },
         "votes_count_down": {
           "comment": null,
@@ -157976,7 +157966,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46
+          "ordinalPosition": 45
         },
         "votes_count_none": {
           "comment": null,
@@ -157986,7 +157976,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 45
+          "ordinalPosition": 44
         },
         "votes_count_up": {
           "comment": null,
@@ -157996,7 +157986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44
+          "ordinalPosition": 43
         },
         "votes_score_down": {
           "comment": null,
@@ -158006,7 +157996,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 43
+          "ordinalPosition": 42
         },
         "votes_score_net": {
           "comment": null,
@@ -158016,7 +158006,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48
+          "ordinalPosition": 47
         },
         "votes_score_none": {
           "comment": null,
@@ -158026,7 +158016,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 42
+          "ordinalPosition": 41
         },
         "votes_score_sort": {
           "comment": null,
@@ -158036,7 +158026,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47
+          "ordinalPosition": 46
         },
         "votes_score_up": {
           "comment": null,
@@ -158046,7 +158036,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41
+          "ordinalPosition": 40
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -158056,7 +158046,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40
+          "ordinalPosition": 39
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -158066,7 +158056,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39
+          "ordinalPosition": 38
         }
       },
       "comment": "User accounts. Core identity table for all registered users.",
@@ -163414,7 +163404,7 @@
     },
     "view_users_private": {
       "comment": "Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.",
-      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', fa.facebook_user_data ->> 'name'::text, 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE fa.user_id = users.id) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM user_roles\n             LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id\n          WHERE user_roles.user_id = users.id) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds AND surface.user_id = users.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    users.should_import_hacker_news_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', aa.apple_user_data ->> 'name'::text, 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE aa.user_id = users.id) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', ga.google_user_data ->> 'name'::text, 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE ga.user_id = users.id) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', xa.x_user_data ->> 'name'::text, 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE xa.user_id = users.id) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', la.linkedin_user_data ->> 'name'::text, 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE la.user_id = users.id) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', ma.microsoft_user_data ->> 'name'::text, 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE ma.user_id = users.id) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', gha.github_user_data ->> 'name'::text, 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE gha.user_id = users.id) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE e.id = users.id) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN users.verification_status = 'verified'::identity_verification_statuses AND users.is_verified_badge_visible = true THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN users.verified_first_name IS NOT NULL AND users.verified_last_name_initial IS NOT NULL THEN ((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE bla.user_id = users.id AND bla.disconnect_requested_at IS NULL) AS bluesky_account\n   FROM users\n     LEFT JOIN user_email_addresses ON user_email_addresses.user_id = users.id AND user_email_addresses.is_primary = true\n     LEFT JOIN user_phone_numbers ON user_phone_numbers.user_id = users.id AND user_phone_numbers.is_primary = true\n     LEFT JOIN view_current_paid_memberships paid_membership ON paid_membership.user_id = users.id\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE user_suspensions.user_id = users.id AND user_suspensions.lifted_at IS NULL\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON true\n  WHERE users.deleted_at IS NULL;",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', fa.facebook_user_data ->> 'name'::text, 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE fa.user_id = users.id) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM user_roles\n             LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id\n          WHERE user_roles.user_id = users.id) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds AND surface.user_id = users.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', aa.apple_user_data ->> 'name'::text, 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE aa.user_id = users.id) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', ga.google_user_data ->> 'name'::text, 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE ga.user_id = users.id) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', xa.x_user_data ->> 'name'::text, 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE xa.user_id = users.id) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', la.linkedin_user_data ->> 'name'::text, 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE la.user_id = users.id) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', ma.microsoft_user_data ->> 'name'::text, 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE ma.user_id = users.id) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', gha.github_user_data ->> 'name'::text, 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE gha.user_id = users.id) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE e.id = users.id) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN users.verification_status = 'verified'::identity_verification_statuses AND users.is_verified_badge_visible = true THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN users.verified_first_name IS NOT NULL AND users.verified_last_name_initial IS NOT NULL THEN ((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE bla.user_id = users.id AND bla.disconnect_requested_at IS NULL) AS bluesky_account\n   FROM users\n     LEFT JOIN user_email_addresses ON user_email_addresses.user_id = users.id AND user_email_addresses.is_primary = true\n     LEFT JOIN user_phone_numbers ON user_phone_numbers.user_id = users.id AND user_phone_numbers.is_primary = true\n     LEFT JOIN view_current_paid_memberships paid_membership ON paid_membership.user_id = users.id\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE user_suspensions.user_id = users.id AND user_suspensions.lifted_at IS NULL\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON true\n  WHERE users.deleted_at IS NULL;",
       "materialized": false
     },
     "view_users_public": {
