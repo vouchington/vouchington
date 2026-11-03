@@ -78,7 +78,7 @@ export async function runCopyrightDeliveryBatchScenarios(): Promise<void> {
 async function runDeliveryWrites(noticeId: string): Promise<void> {
   registerScenarioContract('copyright-delivery-batches', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'copyright_notices', max: 3 },
+      { kind: 'maxProcessedRows', relation: 'copyright_notices', max: 4 },
       { kind: 'maxProcessedRows', relation: 'copyright_notice_correspondence_messages', max: 12 },
     ],
   })

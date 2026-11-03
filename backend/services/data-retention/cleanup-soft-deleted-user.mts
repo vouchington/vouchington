@@ -68,13 +68,22 @@ export async function cleanupSoftDeletedUser(
 
 async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
   await retainUserCascadeHardDeletedPosts(query, targetId)
-  const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch:delete */
+  const { rows } = await query<{ deleted: number }>(sql`/* cleanupSoftDeletedUserBatch:delete */
+    WITH removed AS (
       DELETE FROM users WHERE id = ${targetId}
         AND NOT EXISTS (SELECT 1 FROM community_members WHERE user_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM user_lists WHERE owner_user_id = ${targetId})
-        AND NOT EXISTS (SELECT 1 FROM memberships WHERE user_id = ${targetId})`)
-  return rowCount ?? 0
+        AND NOT EXISTS (SELECT 1 FROM memberships WHERE user_id = ${targetId})
+      RETURNING id
+    ), clocked AS (
+      UPDATE retained_user_identities identity
+      SET purged_at = clock_timestamp()
+      FROM removed WHERE identity.id = removed.id
+      RETURNING identity.id
+    )
+    SELECT count(*)::integer AS deleted FROM clocked`)
+  return rows[0]?.deleted ?? 0
 }
 
 async function lockFinalUserPurge(query: QueryExecutor, targetId: string): Promise<void> {

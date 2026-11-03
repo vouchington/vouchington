@@ -193,6 +193,8 @@ is off by default and deletes nothing until the owner approves a period.
 - The private-evidence erasure sweep applies to `us_dmca` cases. EU and UK case outcomes remain
   available while their owning rows exist; their detailed history follows the separate six-year
   partition window.
+- Staff may preserve a case for overlapping written litigation threats or court and regulator requests. They can record a new hold after private evidence has been erased; the remaining legal case cannot expire until every hold is released. Explicit closure of a territorial escalation and resolution of a supervised complaint are separate decisions.
+- A party account's hold release and final deletion extend the case clock even after the account's shorter audit history has expired. The retained account identity carries these dates without granting access to the deleted account.
 - A case is never swept while any blocker exists: open queue work, an open deadline, an active
   restriction, an operative incident, a pending delivery, a live guest capability, an unresolved
   hold, a pending thread-linked email reply, or a preservation hold on a party account. Resolving

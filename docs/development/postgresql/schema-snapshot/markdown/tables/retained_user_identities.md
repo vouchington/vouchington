@@ -6,9 +6,11 @@ Concrete user identity owner that outlives the live row while durable references
 
 Not partitioned — growth: unbounded.
 
-| Column | Type   | Nullable | Default | Identity | Generated | Collation | Comment |
-| ------ | ------ | -------- | ------- | -------- | --------- | --------- | ------- |
-| `id`   | `uuid` | no       |         |          |           |           |         |
+| Column                                     | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                                   |
+| ------------------------------------------ | -------------------------- | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                       | `uuid`                     | no       |         |          |           |           |                                                                                                                                           |
+| `last_legal_preservation_hold_released_at` | `timestamp with time zone` | yes      |         |          |           |           | Latest released account legal hold, retained after bounded deletion of its audit row so case retention still waits its full legal period. |
+| `purged_at`                                | `timestamp with time zone` | yes      |         |          |           |           | Final hard deletion time of the account, retained for the legal clock of copyright cases naming this party.                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 

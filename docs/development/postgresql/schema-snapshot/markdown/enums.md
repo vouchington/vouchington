@@ -380,6 +380,12 @@
 - `poster_daily_cap`
 - `non_post_target`
 
+## `copyright_case_preservation_kinds`
+
+- `litigation_threat`
+- `regulator_request`
+- `court_request`
+
 ## `copyright_claimant_misuse_event_outcomes`
 
 - `notice_withdrawn`
