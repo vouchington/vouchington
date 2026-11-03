@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
+import * as browserCrawl from '@services/browser-crawl'
 import type { BrowserCrawlResult } from '@services/browser-crawl'
 import { createCrawler, type Crawler } from '@services/crawlers'
 import { addUrl } from '@services/urls'
@@ -22,19 +23,34 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { processBrowserCrawl } from './processors.mts'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
+import {
+  deleteTestRobotsTxtCache,
+  setTestRobotsTxtCache,
+} from '@voucha/test-helpers/entities/dispatch'
+
+const ALLOW_ALL_ROBOTS = 'User-agent: *\nAllow: /'
+const DISALLOW_ALL_ROBOTS = 'User-agent: *\nDisallow: /'
+const seededHostnames: string[] = []
 
 describe('processBrowserCrawl', () => {
+  afterAll(() => deleteTestRobotsTxtCache(...seededHostnames))
+
   function randomSuffix(): string {
     return Math.random().toString(36).slice(2, 10)
   }
 
-  async function createBrowserCrawlFixture(suffix = randomSuffix()): Promise<{
+  async function createBrowserCrawlFixture(
+    suffix = randomSuffix(),
+    robotsTxt = ALLOW_ALL_ROBOTS,
+  ): Promise<{
     linkId: string
     url: { id: string; url: string; hostname: { id: string; hostname: string } }
     crawler: Crawler
   }> {
     const user = (await createTestUser()) as PrivateUser
     const hostname = `browser-crawl-${suffix}.example.com`
+    seededHostnames.push(hostname)
+    await setTestRobotsTxtCache(hostname, robotsTxt)
     const referralProgram = await createReferralProgramFixture({
       createdById: user.id,
       randomSuffix: suffix,
@@ -81,89 +97,54 @@ describe('processBrowserCrawl', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('delegates crawlable browser results through the result handler', async () => {
-    const crawler = { id: 'crawler_browser_delegate' } as Parameters<typeof processBrowserCrawl>[2]
-    const result = createBrowserResult({ statusCode: 204, hasContent: false })
-    const handledResults: Array<{ urlId: string; linkId: string; result: BrowserCrawlResult }> = []
+  it('records a crawlable result without content as a crawl failure, crawling the exact URL', async () => {
+    const fixture = await createBrowserCrawlFixture()
+    const crawl = stubBrowserCrawl(createBrowserResult({ statusCode: 204, hasContent: false }))
 
-    await processBrowserCrawl(
-      {
-        id: 'url_browser_delegate',
-        url: 'https://browser-delegate.example.com/page',
-        hostname: { id: 'hostname_browser_delegate', hostname: 'browser-delegate.example.com' },
-      },
-      'link_browser_delegate',
-      crawler,
-      {
-        isUrlCrawlable: () => Promise.resolve(true),
-        crawlWithBrowser: url => {
-          expect(url).toBe('https://browser-delegate.example.com/page')
-          return Promise.resolve(result)
-        },
-        handleBrowserCrawlResult: (urlId, linkId, handledCrawler, handledResult) => {
-          expect(handledCrawler).toBe(crawler)
-          handledResults.push({ urlId, linkId, result: handledResult })
-          return Promise.resolve()
-        },
-      },
-    )
+    await processBrowserCrawl(fixture.url, fixture.linkId, fixture.crawler)
 
-    expect(handledResults).toEqual([
-      { urlId: 'url_browser_delegate', linkId: 'link_browser_delegate', result },
-    ])
+    expect(crawl).toHaveBeenCalledExactlyOnceWith(fixture.url.url)
+    const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
+    expect(linkStatus.consecutive_crawl_failures).toBe(1)
+    expect(linkStatus.last_crawl_failure_at).toBeTruthy()
+    expect(linkStatus.deactivated_at).toBeNull()
+    expect(await getReferralLinkLastCrawlId(fixture.linkId)).toBeNull()
   })
 
-  it('delegates browser crawl failures through the error handler', async () => {
-    const failure = new Error('browser failed')
-    const handledErrors: Array<{ linkId: string; error: unknown }> = []
+  it('rethrows non-health browser failures without changing referral-link crawl status', async () => {
+    const fixture = await createBrowserCrawlFixture()
 
-    await processBrowserCrawl(
-      {
-        id: 'url_browser_error_delegate',
-        url: 'https://browser-error-delegate.example.com/page',
-        hostname: {
-          id: 'hostname_browser_error_delegate',
-          hostname: 'browser-error-delegate.example.com',
-        },
-      },
-      'link_browser_error_delegate',
-      { id: 'crawler_browser_error_delegate' } as Parameters<typeof processBrowserCrawl>[2],
-      {
-        isUrlCrawlable: () => Promise.resolve(true),
-        crawlWithBrowser: () => Promise.reject(failure),
-        handleBrowserCrawlError: (linkId, error) => {
-          handledErrors.push({ linkId, error })
-          return Promise.resolve()
-        },
-      },
+    await expect(runBrowserCrawl(fixture, suppressedError('browser failed'))).rejects.toThrow(
+      'browser failed',
     )
 
-    expect(handledErrors).toEqual([{ linkId: 'link_browser_error_delegate', error: failure }])
+    const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
+    expect(linkStatus.consecutive_crawl_failures).toBe(0)
+    expect(linkStatus.last_crawl_failure_at).toBeNull()
   })
 
-  it('skips URLs when the robots crawlability check fails closed', async () => {
-    let browserCalled = false
+  it('skips URLs that robots.txt disallows, never opening the browser', async () => {
+    const fixture = await createBrowserCrawlFixture(randomSuffix(), DISALLOW_ALL_ROBOTS)
+    const crawl = stubBrowserCrawl(createBrowserResult({}))
 
     await expect(
-      processBrowserCrawl(
-        {
-          id: 'url_robots_failure',
-          url: 'https://robots-failure.example.com/page',
-          hostname: { id: 'hostname_robots_failure', hostname: 'robots-failure.example.com' },
-        },
-        'link_robots_failure',
-        { id: 'crawler_robots_failure' } as Parameters<typeof processBrowserCrawl>[2],
-        {
-          isUrlCrawlable: () => Promise.reject(suppressedError('robots unavailable')),
-          crawlWithBrowser: () => {
-            browserCalled = true
-            return Promise.resolve(createBrowserResult({}))
-          },
-        },
-      ),
+      processBrowserCrawl(fixture.url, fixture.linkId, fixture.crawler),
     ).resolves.toBeUndefined()
 
-    expect(browserCalled).toBe(false)
+    expect(crawl).not.toHaveBeenCalled()
+    const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
+    expect(linkStatus.consecutive_crawl_failures).toBe(0)
+  })
+
+  it('skips URLs when the crawlability check fails closed', async () => {
+    const fixture = await createBrowserCrawlFixture()
+    const crawl = stubBrowserCrawl(createBrowserResult({}))
+
+    await expect(
+      processBrowserCrawl({ ...fixture.url, url: 'not a url' }, fixture.linkId, fixture.crawler),
+    ).resolves.toBeUndefined()
+
+    expect(crawl).not.toHaveBeenCalled()
   })
 
   it('persists extracted HTML crawl content and records the successful crawl on the referral link', async () => {
@@ -259,6 +240,14 @@ describe('processBrowserCrawl', () => {
   })
 })
 
+function stubBrowserCrawl(resultOrError: BrowserCrawlResult | Error) {
+  const spy = vi.spyOn(browserCrawl, 'crawlWithBrowser')
+  if (resultOrError instanceof Error) spy.mockRejectedValue(resultOrError)
+  else spy.mockResolvedValue(resultOrError)
+  onTestFinished(() => spy.mockRestore())
+  return spy
+}
+
 async function runBrowserCrawl(
   fixture: {
     linkId: string
@@ -267,11 +256,6 @@ async function runBrowserCrawl(
   },
   resultOrError: BrowserCrawlResult | Error,
 ): Promise<void> {
-  await processBrowserCrawl(fixture.url, fixture.linkId, fixture.crawler, {
-    isUrlCrawlable: () => Promise.resolve(true),
-    crawlWithBrowser: () =>
-      resultOrError instanceof Error
-        ? Promise.reject(resultOrError)
-        : Promise.resolve(resultOrError),
-  })
+  stubBrowserCrawl(resultOrError)
+  await processBrowserCrawl(fixture.url, fixture.linkId, fixture.crawler)
 }

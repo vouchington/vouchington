@@ -42,14 +42,6 @@ describe('bounded referral crawl dispatch', () => {
     await crawlReferralLinksQueue.close()
   })
 
-  it('rejects an invalid event clock before saving dispatch progress', async () => {
-    const saveProgress = vi.fn<() => Promise<void>>(async () => {})
-    await expect(
-      dispatchReferralLinkCrawls({ now: new Date(Number.NaN), saveProgress }),
-    ).rejects.toThrow(TypeError)
-    expect(saveProgress).not.toHaveBeenCalled()
-  })
-
   it('preserves selected IDs across capped scheduled continuations', async () => {
     const owner = await createTestUser()
     const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
@@ -106,24 +98,25 @@ describe('bounded referral crawl dispatch', () => {
     ).toSorted()
     await Promise.all(ids.map(setReferralLinkLastCrawlSuccessAtRecent))
     await withOwnedReferralDispatchAdmissions({ linkIds: ids, urlId }, async admissions => {
-      // The event can run in the same millisecond as the last newly created link.
-      const eventNow = getDateFromUUIDv7(ids[1]!)!
       overrideDynamicConfigFieldsForTest(referralCrawlDispatchConfig, {
         batch_size: 1,
         max_rows_per_run: 1,
       })
-      expect(
-        await enqueueReferralLinkCrawlsForUrlId(urlId, {
-          now: eventNow,
-        }),
-      ).toEqual({ count: 1, hasMore: true })
+      // Freeze only the Date around the call so the sweep instant is knowable; the links above
+      // were created under the real clock.
+      const eventNow = new Date()
+      vi.useFakeTimers({ toFake: ['Date'], now: eventNow })
+      const enqueued = await enqueueReferralLinkCrawlsForUrlId(urlId).finally(() =>
+        vi.useRealTimers(),
+      )
+      expect(enqueued).toEqual({ count: 1, hasMore: true })
       const jobs = await admissions.dispatcherJobs(urlId)
       expect(jobs).toHaveLength(1)
       const data = jobs[0]!.data as ReferralCrawlDispatchData
       expect(data.urlId).toBe(urlId)
       expect(data.cursor?.sweepStartedAt).toBe(eventNow.toISOString())
       expect(data.cursor?.afterId).toBe(ids[0])
-      expect(await dispatchReferralLinkCrawls({ ...data, now: new Date(0) })).toMatchObject({
+      expect(await dispatchReferralLinkCrawls(data)).toMatchObject({
         count: 1,
         hasMore: false,
       })
@@ -166,10 +159,12 @@ describe('bounded referral crawl dispatch', () => {
       [cutoffMs + 1, 3],
     ] as const) {
       await withOwnedReferralDispatchAdmissions({ linkIds: ids, urlId }, async admissions => {
-        expect(await enqueueReferralLinkCrawlsForUrlId(urlId, { now: new Date(nowMs) })).toEqual({
-          count,
-          hasMore: false,
-        })
+        expect(
+          await dispatchReferralLinkCrawls({
+            urlId,
+            cursor: { sweepStartedAt: new Date(nowMs).toISOString() },
+          }),
+        ).toEqual({ count, hasMore: false })
         for (const [index, linkId] of ids.entries())
           expect(await admissions.crawlJobs(linkId)).toHaveLength(index < count ? 1 : 0)
       })

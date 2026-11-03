@@ -20,11 +20,6 @@ import {
 import { getAmexCardSlugCatalog, constructChildUrls } from './construct-amex-children.mts'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
-type ReferralLinkUnfurlDependencies = {
-  crawlWithBrowser?: typeof crawlWithBrowser
-  getAmexCardSlugCatalog?: typeof getAmexCardSlugCatalog
-}
-
 /** Serializes concurrent unfurls of the same parent so their reconcile passes can't race. */
 async function lockParentForUnfurl(parentLinkId: string, query: TransactionQuery): Promise<void> {
   await query(sql`/* lockParentForUnfurl */
@@ -39,19 +34,8 @@ async function lockParentForUnfurl(parentLinkId: string, query: TransactionQuery
  * run. Re-running is also the primary freshness mechanism for Amex's rotating CORID/GENCODE
  * tokens (see plan § Idempotency / self-heal) -- the health-check crawler is only a weak
  * backstop for that.
- *
- * `dependencies.crawlWithBrowser` mirrors the injection seam in
- * `backend/workers/crawl-browser/processors.mts` -- it lets tests exercise the full
- * construct/validate/create/reconcile flow against a fixture `finalUrl` without a real browser,
- * without mocking the `@services/browser-crawl` module. `dependencies.getAmexCardSlugCatalog`
- * is the same pattern applied to the seeded catalog -- it lets a reconcile test simulate Amex
- * dropping a card between two runs without mutating the shared, dirty-database seed rows that
- * `construct-amex-children.test.mts` asserts a fixed count against.
  */
-export async function runReferralLinkUnfurl(
-  parentLinkId: string,
-  dependencies?: ReferralLinkUnfurlDependencies,
-): Promise<void> {
+export async function runReferralLinkUnfurl(parentLinkId: string): Promise<void> {
   const parent = await getUserReferralLink(parentLinkId)
   // Missing/deleted, or itself a child (should never be enqueued, but tolerate a stale job) --
   // nothing to do, no error.
@@ -80,8 +64,7 @@ export async function runReferralLinkUnfurl(
     // business landed page is needed, is an unverified build-time assumption tracked in
     // Follow-ups; the validation below gates every constructed URL regardless, so
     // constructing business children from the same params is structurally safe either way.
-    const doCrawlWithBrowser = dependencies?.crawlWithBrowser ?? crawlWithBrowser
-    const crawlResult = await doCrawlWithBrowser(parentUrl.url)
+    const crawlResult = await crawlWithBrowser(parentUrl.url)
     finalUrl = crawlResult.finalUrl
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err))
@@ -92,8 +75,7 @@ export async function runReferralLinkUnfurl(
 
   let validCandidates: Array<{ url: string; referralProgramId: string }>
   try {
-    const doGetAmexCardSlugCatalog = dependencies?.getAmexCardSlugCatalog ?? getAmexCardSlugCatalog
-    const catalog = await doGetAmexCardSlugCatalog()
+    const catalog = await getAmexCardSlugCatalog()
     const candidateUrls = constructChildUrls(finalUrl, catalog)
     // Load the ordered enabled-rule catalog once before opening the write transaction.
     const validations = await validateReferralLinkUrls(candidateUrls)

@@ -28,7 +28,6 @@ import { getUrlById } from '@services/urls/get'
 import type { PrivateUser } from '@services/users/types'
 import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from './dispatch.mts'
 import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
-import { getDateFromUUIDv7 } from '@modules/utils'
 
 // Only the crawler's product token gets 8s; the wildcard group would give 3s.
 const ROBOTS_CRAWL_DELAY_8S =
@@ -96,10 +95,7 @@ describe('dispatch', () => {
     const url = await getUrlById(first.url_id)
     assert.ok(url)
     const ownedIds = [first.id, second.id, recent.id, deleted.id, deactivated.id]
-    const result = await dispatchReferralLinkCrawls({
-      referralLinkIds: ownedIds,
-      now: getDateFromUUIDv7(ownedIds.toSorted().at(-1)!)!,
-    })
+    const result = await dispatchReferralLinkCrawls({ referralLinkIds: ownedIds })
 
     assert.deepEqual(result, { count: 2, hasMore: false })
     const jobs = (await readAllQueueJobs(crawlReferralLinksQueue)).filter(
