@@ -13521,6 +13521,10 @@ importers:
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+    devDependencies:
+      '@modules/bluesky-oauth':
+        specifier: workspace:^
+        version: link:../../modules/bluesky-oauth
 
   backend/workers/cache-purge:
     dependencies:

@@ -16,9 +16,7 @@ export const findYourFriends = createWorker(
   QUEUE_NAME,
   (job: Job) => {
     if (job.name === 'dispatchFindYourFriends')
-      return processRetainedSweep(job, save =>
-        processFindYourFriendsDispatcher(undefined, job.data, save),
-      )
+      return processRetainedSweep(job, save => processFindYourFriendsDispatcher(job.data, save))
     const orderingKey = job.opts.ordering?.key
 
     switch (orderingKey) {

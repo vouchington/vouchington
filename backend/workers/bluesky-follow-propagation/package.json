@@ -26,5 +26,8 @@
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@services/bluesky-follows": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1"
+  },
+  "devDependencies": {
+    "@modules/bluesky-oauth": "workspace:^"
   }
 }
