@@ -14,6 +14,7 @@ import { getRssFeedItemEmbedsByItems } from '@services/rss-feed-items/get-rss-fe
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { proxyThumbnailUrls } from '@services/rss-feed-items'
 import { sanitizeRssFeedItemContentHtml } from '@services/rss-feed-items/sanitize-content-html'
+import { getRssFeedItemHackerNewsDetails } from '@services/urls/hacker-news-sidecars'
 import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
@@ -56,6 +57,7 @@ app.route('/api/v1/rss-feed-items/:id').get(async (ctx: Context) => {
       {},
       isAdminUser(currentUser) ? 'administrator' : 'public',
     ),
+    rss_feed_item_hacker_news_references: getRssFeedItemHackerNewsDetails([item]),
   }
 
   if (currentUser) {

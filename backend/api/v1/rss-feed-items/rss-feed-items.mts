@@ -28,6 +28,7 @@ import {
   prepareRssFeedItemsSearchParams,
   resolveRssFeedItemsSearchParams,
 } from '@services/search-params'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 
 import {
@@ -68,6 +69,7 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       rss_feed_item_content_html: {},
       rss_feed_item_thumbnail_url: {},
       rss_feed_item_embeds: {},
+      rss_feed_item_hacker_news_references: {},
     }
 
     ctx.setType('json')
@@ -125,6 +127,9 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
         {},
         isAdminUser(currentUser) ? 'administrator' : 'public',
       ),
+    ),
+    rss_feed_item_hacker_news_references: itemsPromise.then(items =>
+      getRssFeedItemHackerNewsSummaries(items),
     ),
     stories: storyIds.length > 0 ? getStoriesByIdBatch(storyIds).then(indexById) : {},
     story_member_pages: storyMemberPagesMap,

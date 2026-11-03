@@ -42,6 +42,11 @@ export function postSearchFilterSchemaProperties() {
     data_point_vertical: { type: 'string' },
     review_topic: topicReferenceSchema,
     story_id: { type: 'string', format: 'uuid' },
+    has_hacker_news_references: {
+      type: 'boolean',
+      description:
+        'Only items whose URL is seen or mentioned on Hacker News (true) or not (false).',
+    },
     time_range: postTimeRangeSchema,
     topic: topicReferenceSchema,
     topics: { type: 'array', items: topicReferenceSchema },

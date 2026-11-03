@@ -18,6 +18,7 @@ import {
 } from '@services/search-params'
 import { isAdminUser } from '@services/users'
 import { getPostCommunitiesRecord } from '@services/communities/post-communities-record'
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getUrlEmbedsByUrlIds, type UrlEmbed } from '@services/rss-feed-items/get-url-embed'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
@@ -60,6 +61,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       post_elections: {},
       markdown_to_html: {},
       post_link_embeds: {},
+      post_hacker_news_references: {},
     }
 
     if (isAdminUser(currentUser)) {
@@ -120,6 +122,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       return renderMarkdownBatch(entities, adminIds)
     }),
     communities: rawPostsPromise.then(posts => getPostCommunitiesRecord(posts)),
+    post_hacker_news_references: getPostHackerNewsSummaries(postIds),
     post_link_embeds: rawPostsPromise.then(async posts => {
       const urlIds = [
         ...new Set(posts.flatMap(p => (p?.post_type === 'link' && p.url_id ? [p.url_id] : []))),

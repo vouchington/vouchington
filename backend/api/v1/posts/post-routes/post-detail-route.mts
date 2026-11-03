@@ -21,6 +21,7 @@ import {
 } from '@services/posts'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getUrlEmbedByUrlId } from '@services/rss-feed-items'
+import { getPostHackerNewsDetails } from '@services/urls/hacker-news-sidecars'
 import { DELETED_USER_ID, getUserMarkdown, isAdminUser, isFollowingUser } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { userTag } from '@ts-shared/cache/cache-tags'
@@ -165,6 +166,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
       .then(elections => elections[0] ?? null)
       .then(election => maybeSanitizeElection(currentUser, election)),
     communities: getPostCommunitiesRecord([post]),
+    post_hacker_news_references: getPostHackerNewsDetails([post.id]),
   }
 
   if (currentUser) {

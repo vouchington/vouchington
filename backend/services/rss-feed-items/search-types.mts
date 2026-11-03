@@ -14,6 +14,7 @@ export type SearchRssFeedItemsOptions = {
   limit?: number
   after?: string
   has_related_posts?: boolean
+  has_hacker_news_references?: boolean
   media_types?: Array<'article' | 'audio' | 'video'>
   text_search_query?: string
   /** When set, returns embedding-ranked results instead of recency ordering. */

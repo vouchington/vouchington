@@ -1,6 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { getRssFeedItemSearchCursor } from './search-cursor.mts'
 import {
+  buildRssFeedItemHasHackerNewsReferences,
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
@@ -56,6 +57,7 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
     hashtag_alias_ids = [],
     story_id,
     has_related_posts,
+    has_hacker_news_references,
     media_types = [],
     text_search_query,
     read,
@@ -118,6 +120,11 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
   } else if (has_related_posts === false) {
     const related = buildHasRelatedPostsFilter(currentUserId, isAdministrator)
     filters.push(sql`NOT `.append(related))
+  }
+
+  if (has_hacker_news_references !== undefined) {
+    const references = buildRssFeedItemHasHackerNewsReferences()
+    filters.push(has_hacker_news_references ? references : sql`NOT `.append(references))
   }
 
   if (media_types.length > 0) {

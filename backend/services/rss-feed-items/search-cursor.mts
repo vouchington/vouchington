@@ -20,6 +20,7 @@ export function getRssFeedItemSearchCursorScope(options: SearchRssFeedItemsOptio
     media_types: normalizeArray(options.media_types),
     story_id: options.story_id ?? null,
     has_related_posts: options.has_related_posts ?? null,
+    has_hacker_news_references: options.has_hacker_news_references ?? null,
     read: options.currentUserId ? (options.read ?? null) : null,
     text_search_query: options.text_search_query?.trim() ?? '',
   }

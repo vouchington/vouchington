@@ -34,6 +34,7 @@ type ToolArgs = PagedSearchArgs & {
   data_point_vertical?: string
   review_topic?: string
   story_id?: string
+  has_hacker_news_references?: boolean
   time_range?: '1d' | '1w' | '1m' | '1y' | 'all'
   topic?: string
   topics?: string[]
@@ -120,6 +121,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
             ...(args.data_point_vertical && { data_point_vertical: args.data_point_vertical }),
             ...(topics.review_topic && { review_topic: topics.review_topic }),
             ...(args.story_id && { story_id: args.story_id }),
+            ...(args.has_hacker_news_references !== undefined && {
+              has_hacker_news_references: args.has_hacker_news_references,
+            }),
             ...(args.time_range && { time_range: args.time_range }),
             ...(topics.topic && { topic: topics.topic }),
             ...(topics.topics && { topics: topics.topics }),
