@@ -157,7 +157,7 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
     })
 
     it('does not chain after the page that completes the sweep', async () => {
-      await withRecoveryPage(async ({ first, second, jobs }) => {
+      await withRecoveryPage(async ({ second, jobs }) => {
         await setTestMicrosoftStoreRecoveryCursor({
           cursor: uuidBefore(second),
           upperBound: second,
