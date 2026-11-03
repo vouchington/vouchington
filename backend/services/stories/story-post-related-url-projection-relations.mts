@@ -20,14 +20,9 @@ import {
 import type { ProjectionWork, SourceRow } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
 
-type StoryPostRelatedUrlProjectionRelationDependencies = {
-  enqueueBulkCrawlUrls?: (entries: Parameters<typeof enqueueBulkCrawlUrls>[0]) => Promise<unknown>
-}
-
 export async function writeStoryPostRelatedUrlProjectionRelations(
   work: ProjectionWork,
   rows: SourceRow[],
-  dependencies: StoryPostRelatedUrlProjectionRelationDependencies = {},
 ): Promise<boolean> {
   const { rows: pendingRows } = await write<{
     url_id: string
@@ -69,9 +64,7 @@ export async function writeStoryPostRelatedUrlProjectionRelations(
   const pendingEffectIds: string[] = []
   for (const row of pendingEffects) pendingEffectIds.push(row.url_id)
   if (pendingEffectIds.length > 0) {
-    await (dependencies.enqueueBulkCrawlUrls ?? enqueueBulkCrawlUrls)(
-      crawlEntriesForUrlIds(pendingEffectIds),
-    )
+    await enqueueBulkCrawlUrls(crawlEntriesForUrlIds(pendingEffectIds))
     const { rowCount } = await write(
       `/* markStoryPostRelatedUrlProjectionEffectsDispatched */
         UPDATE story_post_related_url_projection_receipts SET effects_dispatched_at = CURRENT_TIMESTAMP

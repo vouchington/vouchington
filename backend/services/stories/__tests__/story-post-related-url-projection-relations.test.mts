@@ -1,5 +1,7 @@
+import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
 import { createTestStoryProjectionLease } from '../../../test-helpers/entities/story-projection-work.mts'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import * as crawlerEnqueues from '@queues/crawler/enqueues'
 import {
   createTestUserDirect,
   createReferralProgramFixture,
@@ -116,29 +118,24 @@ describe('story post related URL projection relations', () => {
 
   it('does not crawl an already-active relation in a restarted generation', async () => {
     const { post, story, url } = await createProjectablePost('skip-active-crawl')
+    await using crawls = createEntityRelationCrawlObserver(new Set([url.id]))
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions, {
-          enqueueBulkCrawlUrls: async () => {},
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
       ).resolves.toBe(true)
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(first.work)
     }
+    expect(crawls.ownedPromises()).toHaveLength(1)
     await refreshStoryPostForStory(story.id)
 
     const restarted = await stageProjectionRelations(post.id)
-    const crawledUrlIds: string[] = []
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions, {
-          enqueueBulkCrawlUrls: async entries => {
-            crawledUrlIds.push(...entries.map(entry => entry.urlId))
-          },
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions),
       ).resolves.toBe(true)
-      expect(crawledUrlIds).toEqual([])
+      expect(crawls.ownedPromises()).toHaveLength(1)
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, restarted.work.generation, url.id),
       ).resolves.toMatchObject({ crawlRequired: false })
@@ -150,29 +147,26 @@ describe('story post related URL projection relations', () => {
 
   it('retries the durable crawl requirement after post-commit crawl dispatch fails', async () => {
     const { post, url } = await createProjectablePost('retry-crawl-dispatch')
+    const enqueueSpy = vi.spyOn(crawlerEnqueues, 'enqueueBulkCrawlUrls')
+    enqueueSpy.mockRejectedValueOnce(new Error('crawl queue unavailable'))
     const staged = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions, {
-          enqueueBulkCrawlUrls: async () => {
-            throw new Error('crawl queue unavailable')
-          },
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions),
       ).rejects.toThrow('crawl queue unavailable')
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, staged.work.generation, url.id),
       ).resolves.toMatchObject({ crawlRequired: true, effectsDispatchedAt: null })
 
-      const crawledUrlIds: string[] = []
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions, {
-          enqueueBulkCrawlUrls: async entries => {
-            crawledUrlIds.push(...entries.map(entry => entry.urlId))
-          },
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions),
       ).resolves.toBe(true)
-      expect(crawledUrlIds).toEqual([url.id])
+      expect(enqueueSpy.mock.calls).toEqual([[[{ urlId: url.id }]], [[{ urlId: url.id }]]])
+      await expect(
+        getTestStoryPostProjectionReceiptState(post.id, staged.work.generation, url.id),
+      ).resolves.toMatchObject({ effectsDispatchedAt: expect.any(Date) })
     } finally {
+      enqueueSpy.mockRestore()
       await releaseStoryPostRelatedUrlProjectionWork(staged.work)
       await drainProjection(post.id)
     }
@@ -180,16 +174,15 @@ describe('story post related URL projection relations', () => {
 
   it('carries a failed crawl dispatch across a projection generation restart', async () => {
     const { post, story, url } = await createProjectablePost('restart-crawl-dispatch')
+    const enqueueSpy = vi.spyOn(crawlerEnqueues, 'enqueueBulkCrawlUrls')
+    enqueueSpy.mockRejectedValueOnce(new Error('crawl queue unavailable'))
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions, {
-          enqueueBulkCrawlUrls: async () => {
-            throw new Error('crawl queue unavailable')
-          },
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
       ).rejects.toThrow('crawl queue unavailable')
     } finally {
+      enqueueSpy.mockRestore()
       await releaseStoryPostRelatedUrlProjectionWork(first.work)
     }
 

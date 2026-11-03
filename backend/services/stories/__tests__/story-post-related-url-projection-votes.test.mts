@@ -1,3 +1,4 @@
+import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
 import { createTestStoryProjectionLease } from '../../../test-helpers/entities/story-projection-work.mts'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -27,12 +28,11 @@ describe('story post related URL projection votes', () => {
 
   it('restores the story-teller vote for an existing projected relation', async () => {
     const { post, story, url } = await createProjectablePost()
+    await using crawls = createEntityRelationCrawlObserver(new Set([url.id]))
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions, {
-          enqueueBulkCrawlUrls: async () => {},
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
       ).resolves.toBe(true)
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(first.work)
@@ -43,10 +43,9 @@ describe('story post related URL projection votes', () => {
     const restarted = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions, {
-          enqueueBulkCrawlUrls: async () => {},
-        }),
+        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions),
       ).resolves.toBe(true)
+      expect(crawls.ownedPromises()).toHaveLength(1)
       const storyTeller = await getSystemUserByUsername('story-teller')
       if (!storyTeller) throw new Error('Expected story-teller system user')
       await expect(getTestStoryPostRelatedUrlVoteState(post.id, url.id)).resolves.toEqual({
