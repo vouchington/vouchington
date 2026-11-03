@@ -177,13 +177,6 @@
       "owner_classification": "direct-boundary"
     },
     {
-      "path": "backend/services/comments/ancestor-ids.mts",
-      "classification": "raw-hydrator",
-      "reason": "Entity-listener ancestry lookup is a worker primitive, while the public ancestors route batch-filters every hydrated post.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
-      "owner_classification": "direct-boundary"
-    },
-    {
       "path": "backend/services/comments/ancestors.mts",
       "classification": "raw-hydrator",
       "reason": "The public ancestors route validates every returned ancestor with canViewPostsBatch before serialization.",
