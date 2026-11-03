@@ -10,27 +10,16 @@ import { getUserImportExportConfig } from './config.mts'
 
 type PendingRow = { id: string; row_index: number }
 
-type DispatchDependencies = {
-  enqueueContinuation: (importId: string, cursor: number) => Promise<unknown>
-  enqueueRows: typeof enqueueBulkUserRssFeedImportRows
-}
-
-const defaultDependencies: DispatchDependencies = {
-  enqueueContinuation: enqueueUserRssFeedImportDispatchContinuation,
-  enqueueRows: enqueueBulkUserRssFeedImportRows,
-}
-
 /**
  * Puts one page of an import's pending rows on the queue, then continues from the page's last row.
  * At most one page per import waits on the queue, so concurrent imports take turns instead of one
  * large import filling the ready list. Rows that already finished are not pending, so a repeated
  * run enqueues only what is outstanding.
  */
-export async function dispatchUserRssFeedImport(
-  data: { importId: string; cursor?: number },
-  dependencies: Partial<DispatchDependencies> = {},
-): Promise<void> {
-  const { enqueueContinuation, enqueueRows } = { ...defaultDependencies, ...dependencies }
+export async function dispatchUserRssFeedImport(data: {
+  importId: string
+  cursor?: number
+}): Promise<void> {
   if (!isUUID(data.importId)) throw new UnrecoverableError(`Invalid import ${data.importId}`)
 
   const pageSize = getUserImportExportConfig().import_dispatch_page_size
@@ -38,10 +27,15 @@ export async function dispatchUserRssFeedImport(
   const page = pending.slice(0, pageSize)
   if (page.length === 0) return
 
-  await enqueueRows(page.map(row => ({ importId: data.importId, rowId: row.id })))
+  await enqueueBulkUserRssFeedImportRows(
+    page.map(row => ({ importId: data.importId, rowId: row.id })),
+  )
   // The cursor advances only once the page is on the queue.
   if (pending.length > pageSize) {
-    await enqueueContinuation(data.importId, page[page.length - 1]!.row_index)
+    await enqueueUserRssFeedImportDispatchContinuation(
+      data.importId,
+      page[page.length - 1]!.row_index,
+    )
   }
 }
 

@@ -22,6 +22,8 @@ export type RealGlideBackgroundHarness<TJob extends JobDefinition> = {
 /** Owns an isolated real GlideMQ queue and its event-based worker lifecycle. */
 export async function startRealGlideBackgroundLifecycle<TJob extends JobDefinition>(options: {
   queueNamePrefix: string
+  /** A fixed queue name, for a test whose own Valkey namespace makes the queue private. */
+  queueName?: string
   connection: RealGlideConnection
   processor: RealGlideProcessor
   workers?: number
@@ -31,7 +33,7 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
   // This helper promises native execution even when ordinary service admissions use TestQueue.
   const { Queue, Worker } = nativeGlideMq
   const { connection, processor, workers = 1, concurrency = 1 } = options
-  const queueName = `${options.queueNamePrefix}_${randomUUID()}`
+  const queueName = options.queueName ?? `${options.queueNamePrefix}_${randomUUID()}`
   const queue = new Queue(queueName, connection)
   let closing = false
   let closePromise: Promise<void> | undefined

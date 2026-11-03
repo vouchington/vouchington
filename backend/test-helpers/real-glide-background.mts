@@ -16,6 +16,11 @@ export type BackgroundHarnessOptions = {
   connection: RealGlideConnection
   createProcessor: (handlers: ReadonlyMap<string, BackgroundHandler>) => RealGlideProcessor
   bodies?: Record<string, JobBody>
+  /**
+   * Run on the production `background` queue instead of a unique one. Only for a test that gives
+   * itself a private Valkey namespace first, so production enqueues reach this harness's workers.
+   */
+  queueName?: string
   workers?: number
   concurrency?: number
   workerOptions?: Partial<WorkerOptions>
@@ -39,6 +44,7 @@ export function startBackgroundHarness(
   )
   return startRealGlideBackgroundLifecycle<BackgroundJobDefinition>({
     queueNamePrefix: 'background_harness',
+    queueName: options.queueName,
     connection: options.connection,
     processor: options.createProcessor(handlers),
     workers: options.workers,

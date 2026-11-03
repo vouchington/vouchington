@@ -4,23 +4,14 @@ import { read } from '@data-stores/psql'
 import pgvector from 'pgvector/pg'
 import sql from 'sql-template-strings'
 
-type ToolsSearchTopicsSemanticDependencies = {
-  getCachedSearchEmbedding: typeof getCachedSearchEmbedding
-}
-
-const defaultToolsSearchTopicsSemanticDependencies: ToolsSearchTopicsSemanticDependencies = {
-  getCachedSearchEmbedding,
-}
-
 export async function toolsSearchTopicsSemantic(
   query: string,
   limit: number,
-  dependencies: ToolsSearchTopicsSemanticDependencies = defaultToolsSearchTopicsSemanticDependencies,
 ): Promise<ToolsTopicSearchResult[]> {
   const safeLimit = Math.min(Math.max(1, limit), 25)
 
   // Get embedding for the query (cached in Valkey, consistent with posts semantic search)
-  const embedding = await dependencies.getCachedSearchEmbedding(query)
+  const embedding = await getCachedSearchEmbedding(query)
 
   // Search topics by semantic similarity
   const embeddingVector = pgvector.toSql(embedding)
