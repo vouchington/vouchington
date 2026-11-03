@@ -30,28 +30,25 @@ export function spendCapDelayedRegistryKey(day: string): string {
 export function registerSpendCapDelayedJob<T extends SpendCapDelayData>(
   job: Job<T>,
   day: string,
-  registry: RegistryClient = workerQueueCommandClient,
 ): Promise<SpendCapRegistration> {
-  return registerDelayedJob(job, day, false, registry)
+  return registerDelayedJob(job, day, false)
 }
 
 export function registerSpendCapDelayedJobAfterFreshBreach<T extends SpendCapDelayData>(
   job: Job<T>,
   day: string,
-  registry: RegistryClient = workerQueueCommandClient,
 ): Promise<SpendCapRegistration> {
-  return registerDelayedJob(job, day, true, registry)
+  return registerDelayedJob(job, day, true)
 }
 
 async function registerDelayedJob<T extends SpendCapDelayData>(
   job: Job<T>,
   day: string,
   reopenReleasing: boolean,
-  registry: RegistryClient,
 ): Promise<SpendCapRegistration> {
   const key = spendCapDelayedRegistryKey(day)
   const field = jobField(job.id)
-  const accepted = await registry.invokeScript(registerDelayedJobScript, {
+  const accepted = await workerQueueCommandClient.invokeScript(registerDelayedJobScript, {
     keys: [key],
     args: [field, randomUUID(), String(REGISTER_TTL_MS), reopenReleasing ? '1' : '0'],
   })
@@ -60,9 +57,15 @@ async function registerDelayedJob<T extends SpendCapDelayData>(
 
   try {
     await job.updateData({ ...job.data, spendCapDelayedDay: day })
-    await registry.hset(key, { [field]: MARKED })
+    await workerQueueCommandClient.hset(key, { [field]: MARKED })
   } catch (err) {
-    await abortSpendCapDelayedJobRegistration(key, field, registration.generation, registry, err)
+    await abortSpendCapDelayedJobRegistration(
+      key,
+      field,
+      registration.generation,
+      workerQueueCommandClient,
+      err,
+    )
   }
   return registration
 }

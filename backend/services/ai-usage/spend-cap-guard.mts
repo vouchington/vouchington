@@ -30,15 +30,7 @@ export class SpendCapBreachError extends Error {
 }
 
 type SpendCapGuardDeps = {
-  waitForSpendCapConfig: () => Promise<void>
-  getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
-}
-
-const defaultGuardDeps: SpendCapGuardDeps = {
-  waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
-  getSpendCapFields,
-  getDailyAiCostTotalMicrounits,
 }
 
 /**
@@ -55,7 +47,7 @@ const defaultGuardDeps: SpendCapGuardDeps = {
 export async function evaluateSpendCapBreach(
   deps: Partial<SpendCapGuardDeps> = {},
 ): Promise<SpendCapBreach | null> {
-  return evaluateUntilUtcDayStable({ ...defaultGuardDeps, ...deps }, 2)
+  return evaluateUntilUtcDayStable({ getDailyAiCostTotalMicrounits, ...deps }, 2)
 }
 
 async function evaluateUntilUtcDayStable(
@@ -74,8 +66,8 @@ async function evaluateSpendCapBreachForDay(
   day: string,
 ): Promise<SpendCapBreach | null> {
   try {
-    await merged.waitForSpendCapConfig()
-    const spendCap = merged.getSpendCapFields()
+    await spendCapConfig.waitForInitialization()
+    const spendCap = getSpendCapFields()
     if (
       !spendCap.enabled ||
       !Number.isSafeInteger(spendCap.daily_cap_microunits) ||

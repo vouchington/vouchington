@@ -3,6 +3,7 @@ import { Queue, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
+import { interceptRegistryScriptsForTest } from '../../test-helpers/ai-agents-spend-cap.mts'
 import {
   beginSpendCapDelayedJobRelease,
   spendCapDelayedRegistryKey,
@@ -61,21 +62,7 @@ describe('AI spend-cap atomic promotion with real GlideMQ', () => {
     const registryKey = spendCapDelayedRegistryKey(day)
     const queue = new Queue<SpendCapTestJobData>(AI_AGENTS_QUEUE_NAME, connection)
     const jobs: Job<SpendCapTestJobData>[] = []
-    const batchInvocationKeyCounts: number[] = []
-    const batchInvocationArgCounts: number[] = []
-    const registry = {
-      hlen: async (...args: Parameters<typeof workerQueueCommandClient.hlen>) =>
-        workerQueueCommandClient.hlen(...args),
-      hscan: async (...args: Parameters<typeof workerQueueCommandClient.hscan>) =>
-        workerQueueCommandClient.hscan(...args),
-      invokeScript: async (...args: Parameters<typeof workerQueueCommandClient.invokeScript>) => {
-        const options = args[1]
-        if (!options) throw new Error('Expected Valkey script options')
-        batchInvocationKeyCounts.push(options.keys?.length ?? 0)
-        batchInvocationArgCounts.push(options.args?.length ?? 0)
-        return workerQueueCommandClient.invokeScript(...args)
-      },
-    }
+    const promotionInvocations: { keys: unknown[]; args: unknown[] }[] = []
 
     try {
       const firstJob = await queue.add(
@@ -103,14 +90,29 @@ describe('AI spend-cap atomic promotion with real GlideMQ', () => {
       await Promise.all(jobs.map(job => job.changeDelay(60 * 60 * 1000)))
       const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
       if (!lease) throw new Error('Expected release lease')
+      interceptRegistryScriptsForTest(options => {
+        if (options?.keys?.includes(registryKey)) {
+          promotionInvocations.push({ keys: options.keys, args: options.args ?? [] })
+        }
+      })
 
-      await expect(releaseSpendCapDelayedJobs(day, lease, queue, registry)).resolves.toEqual({
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue)).resolves.toEqual({
         released: 2,
         hasPending: false,
         cursor: '0',
       })
-      expect(batchInvocationKeyCounts).toEqual([7])
-      expect(batchInvocationArgCounts).toEqual([6])
+      expect(promotionInvocations).toHaveLength(1)
+      expect(promotionInvocations[0]?.keys).toHaveLength(7)
+      const promotionArgs = promotionInvocations[0]?.args ?? []
+      expect(promotionArgs.slice(0, 2)).toEqual([lease, day])
+      expect(promotionArgs).toHaveLength(6)
+      const byJobId = (a: unknown[], b: unknown[]) => String(a[1]).localeCompare(String(b[1]))
+      const promotedPairs = [promotionArgs.slice(2, 4), promotionArgs.slice(4, 6)].toSorted(byJobId)
+      const expectedPairs = [
+        [`job:${firstJob.id}`, firstJob.id],
+        [`job:${secondJob.id}`, secondJob.id],
+      ].toSorted(byJobId)
+      expect(promotedPairs).toEqual(expectedPairs)
       await expect(Promise.all(jobs.map(job => job.getState()))).resolves.toEqual([
         'prioritized',
         'prioritized',
@@ -150,19 +152,6 @@ describe('AI spend-cap atomic promotion with real GlideMQ', () => {
     const registryKey = spendCapDelayedRegistryKey(day)
     const queue = new Queue<SpendCapTestJobData>(AI_AGENTS_QUEUE_NAME, connection)
     let job: Job<SpendCapTestJobData> | undefined
-    const registry = {
-      hlen: async (...args: Parameters<typeof workerQueueCommandClient.hlen>) =>
-        workerQueueCommandClient.hlen(...args),
-      hscan: async (...args: Parameters<typeof workerQueueCommandClient.hscan>) =>
-        workerQueueCommandClient.hscan(...args),
-      invokeScript: async (...args: Parameters<typeof workerQueueCommandClient.invokeScript>) => {
-        const options = args[1]
-        if (options?.keys?.some(key => String(key).endsWith(':scheduled')) && job) {
-          await job.updateData({ ...job.data, spendCapDelayedDay: newerDay })
-        }
-        return workerQueueCommandClient.invokeScript(...args)
-      },
-    }
 
     try {
       const created = await queue.add(
@@ -176,8 +165,13 @@ describe('AI spend-cap atomic promotion with real GlideMQ', () => {
       await job.changeDelay(60 * 60 * 1000)
       const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
       if (!lease) throw new Error('Expected release lease')
+      interceptRegistryScriptsForTest(async options => {
+        if (options?.keys?.some(key => String(key).endsWith(':scheduled')) && job) {
+          await job.updateData({ ...job.data, spendCapDelayedDay: newerDay })
+        }
+      })
 
-      await expect(releaseSpendCapDelayedJobs(day, lease, queue, registry)).resolves.toEqual({
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue)).resolves.toEqual({
         released: 0,
         hasPending: true,
         cursor: '0',

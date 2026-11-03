@@ -57,13 +57,14 @@ export async function releaseSpendCapDelayedJobs(
   day: string,
   lease: string,
   queue: AgentQueue,
-  registry: RegistryClient = workerQueueCommandClient,
   cursor = '0',
   dayHasEnded = false,
 ): Promise<SpendCapReleaseResult> {
   const RELEASE_BATCH_SIZE = getAiUsageWorkLimit('release_batch_size')
   const key = spendCapDelayedRegistryKey(day)
-  const [nextCursor, fields] = await registry.hscan(key, cursor, { count: RELEASE_BATCH_SIZE })
+  const [nextCursor, fields] = await workerQueueCommandClient.hscan(key, cursor, {
+    count: RELEASE_BATCH_SIZE,
+  })
   const entries = registryEntries(fields)
   const actions = await pMap(
     entries,
@@ -77,13 +78,17 @@ export async function releaseSpendCapDelayedJobs(
     (action): action is Extract<ReleaseAction, { kind: 'delete' }> => action?.kind === 'delete',
   )
   const [, released] = await Promise.all([
-    pMap(deletions, action => deleteEntry(key, lease, action.field, action.phase, registry), {
+    pMap(deletions, action => deleteEntry(key, lease, action.field, action.phase), {
       concurrency: RELEASE_CONCURRENCY,
       stopOnError: false,
     }),
-    promotePage(key, lease, day, promotions, queue.name, registry),
+    promotePage(key, lease, day, promotions, queue.name),
   ])
-  return { released, hasPending: (await registry.hlen(key)) > 3, cursor: nextCursor }
+  return {
+    released,
+    hasPending: (await workerQueueCommandClient.hlen(key)) > 3,
+    cursor: nextCursor,
+  }
 }
 
 async function classifyReleaseEntry(
@@ -129,11 +134,10 @@ async function promotePage(
   day: string,
   entries: { field: string; jobId: string }[],
   queueName: string,
-  registry: RegistryClient,
 ): Promise<number> {
   if (entries.length === 0) return 0
   const queueKey = `${workerQueuePrefix ?? 'glide'}:{${queueName}}`
-  const promoted = await registry.invokeScript(promotePageScript, {
+  const promoted = await workerQueueCommandClient.invokeScript(promotePageScript, {
     keys: [
       key,
       `${queueKey}:stream`,
@@ -152,9 +156,8 @@ async function deleteEntry(
   lease: string,
   field: string,
   phase: string,
-  registry: RegistryClient,
 ): Promise<void> {
-  await registry.invokeScript(deleteEntryScript, {
+  await workerQueueCommandClient.invokeScript(deleteEntryScript, {
     keys: [key],
     args: [lease, field, phase],
   })
