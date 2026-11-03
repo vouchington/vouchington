@@ -8,7 +8,7 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import type { MicrosoftStoreClient } from './types.mts'
 
 describe('Microsoft Store membership verification edge cases', () => {
@@ -18,9 +18,7 @@ describe('Microsoft Store membership verification edge cases', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: clientFixture(fixture, 'different-product'),
-    })
+    await processWithMicrosoftStore(verification.id, clientFixture(fixture, 'different-product'))
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -33,9 +31,7 @@ describe('Microsoft Store membership verification edge cases', () => {
     const verification = await fixture.submit()
 
     await expect(
-      processMicrosoftStoreMembershipVerification(verification.id, {
-        client: clientFixture(fixture, 'missing-recurrence'),
-      }),
+      processWithMicrosoftStore(verification.id, clientFixture(fixture, 'missing-recurrence')),
     ).rejects.toThrow('Microsoft Store Collections/Recurrence response lag')
 
     await expect(
@@ -48,9 +44,7 @@ describe('Microsoft Store membership verification edge cases', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: clientFixture(fixture, 'malformed-expiry'),
-    })
+    await processWithMicrosoftStore(verification.id, clientFixture(fixture, 'malformed-expiry'))
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -64,15 +58,13 @@ describe('Microsoft Store membership verification edge cases', () => {
     let recurrenceCalls = 0
 
     await expect(
-      processMicrosoftStoreMembershipVerification(verification.id, {
-        client: {
-          queryCollections: async () => {
-            throw new Error('Microsoft Collections is temporarily unavailable')
-          },
-          queryRecurrences: async () => {
-            recurrenceCalls += 1
-            return []
-          },
+      processWithMicrosoftStore(verification.id, {
+        queryCollections: async () => {
+          throw new Error('Microsoft Collections is temporarily unavailable')
+        },
+        queryRecurrences: async () => {
+          recurrenceCalls += 1
+          return []
         },
       }),
     ).rejects.toThrow('Microsoft Collections is temporarily unavailable')
@@ -104,7 +96,7 @@ describe('Microsoft Store membership verification edge cases', () => {
     }
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, { client })
+    await processWithMicrosoftStore(verification.id, client)
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -130,7 +122,7 @@ describe('Microsoft Store membership verification edge cases', () => {
     }
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, { client })
+    await processWithMicrosoftStore(verification.id, client)
 
     await expect(getMembershipByUserId(fixture.user.id)).resolves.toMatchObject({
       expires_at: new Date(laterExpiry),
@@ -154,7 +146,7 @@ describe('Microsoft Store membership verification edge cases', () => {
     }
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, { client })
+    await processWithMicrosoftStore(verification.id, client)
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),

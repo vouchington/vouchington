@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Worker } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getMembershipByUserId } from '@services/memberships'
 import {
@@ -8,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import { MicrosoftStoreResponseError } from './response-error.mts'
 import type { MicrosoftStoreClient } from './types.mts'
 
@@ -19,9 +20,10 @@ describe('Microsoft Store provider verification outcomes', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: failingClient(new MicrosoftStoreResponseError(401, true)),
-    })
+    await processWithMicrosoftStore(
+      verification.id,
+      failingClient(new MicrosoftStoreResponseError(401, true)),
+    )
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -30,21 +32,53 @@ describe('Microsoft Store provider verification outcomes', () => {
   })
 
   it.each([
-    ['generic 401 service authentication failure', new MicrosoftStoreResponseError(401, false)],
-    ['generic 403 service authorization failure', new MicrosoftStoreResponseError(403, false)],
-    ['429 throttling response', new MicrosoftStoreResponseError(429, false)],
-    ['5xx service response', new MicrosoftStoreResponseError(503, false)],
-    ['network timeout', new Error('Microsoft Store request timed out')],
-  ] as const)('retries a %s', async (_description, error) => {
+    [
+      'generic 401 service authentication failure',
+      new MicrosoftStoreResponseError(401, false),
+      { status: 401, invalidStoreIdKey: false },
+    ],
+    [
+      'generic 403 service authorization failure',
+      new MicrosoftStoreResponseError(403, false),
+      { status: 403, invalidStoreIdKey: false },
+    ],
+    [
+      '5xx service response',
+      new MicrosoftStoreResponseError(503, false),
+      { status: 503, invalidStoreIdKey: false },
+    ],
+    [
+      'network timeout',
+      new Error('Microsoft Store request timed out'),
+      { message: 'Microsoft Store request timed out' },
+    ],
+  ] as const)('retries a %s', async (_description, error, rejection) => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await expect(
-      processMicrosoftStoreMembershipVerification(verification.id, {
-        client: failingClient(error),
-      }),
-    ).rejects.toBe(error)
+    const processing = processWithMicrosoftStore(verification.id, failingClient(error))
+    await expect(processing).rejects.toMatchObject(rejection)
 
+    await expect(
+      getMembershipVerification(fixture.user.id, verification.id),
+    ).resolves.toMatchObject({ status: 'pending', reason_code: null })
+    await expect(getMembershipByUserId(fixture.user.id)).resolves.toBeNull()
+  })
+
+  it('requeues a 429 throttling response as a queue rate-limit error', async () => {
+    const fixture = await createFixture()
+    const verification = await fixture.submit()
+
+    const rejection = await processWithMicrosoftStore(
+      verification.id,
+      failingClient(new MicrosoftStoreResponseError(429, false)),
+    ).then(
+      () => null,
+      (err: unknown) => err,
+    )
+
+    expect(rejection).toBeInstanceOf(Worker.RateLimitError)
+    expect(rejection).toMatchObject({ cause: { status: 429 } })
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
     ).resolves.toMatchObject({ status: 'pending', reason_code: null })
@@ -56,22 +90,20 @@ describe('Microsoft Store provider verification outcomes', () => {
     const verification = await fixture.submit()
 
     await expect(
-      processMicrosoftStoreMembershipVerification(verification.id, {
-        client: {
-          queryCollections: async () => [],
-          queryRecurrences: async () => [
-            {
-              id: `recurrence-${randomUUID()}`,
-              productId: fixture.productId,
-              skuId: '0001',
-              startTime: new Date(Date.now() - 86_400_000).toISOString(),
-              expirationTime: new Date(Date.now() + 86_400_000).toISOString(),
-              lastModified: new Date().toISOString(),
-              recurrenceState: 'Active',
-              autoRenew: true,
-            },
-          ],
-        },
+      processWithMicrosoftStore(verification.id, {
+        queryCollections: async () => [],
+        queryRecurrences: async () => [
+          {
+            id: `recurrence-${randomUUID()}`,
+            productId: fixture.productId,
+            skuId: '0001',
+            startTime: new Date(Date.now() - 86_400_000).toISOString(),
+            expirationTime: new Date(Date.now() + 86_400_000).toISOString(),
+            lastModified: new Date().toISOString(),
+            recurrenceState: 'Active',
+            autoRenew: true,
+          },
+        ],
       }),
     ).rejects.toThrow('Microsoft Store Collections/Recurrence response lag')
 

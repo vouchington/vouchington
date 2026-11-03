@@ -8,7 +8,7 @@ import {
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { getMembershipByUserId } from '../index.mts'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import type { MicrosoftStoreClient } from './types.mts'
 
 describe('Microsoft verification of a lineage bound to another owner', () => {
@@ -84,12 +84,12 @@ describe('Microsoft verification of a lineage bound to another owner', () => {
       ],
     }
     const original = await submit(owner.id)
-    await processMicrosoftStoreMembershipVerification(original.id, { client })
+    await processWithMicrosoftStore(original.id, client)
     const membership = await getMembershipByUserId(owner.id)
     expect(membership).toMatchObject({ status: 'active', plan: 'plus' })
     const competing = await submit(other.id)
-    await processMicrosoftStoreMembershipVerification(competing.id, { client })
-    await processMicrosoftStoreMembershipVerification(competing.id, { client })
+    await processWithMicrosoftStore(competing.id, client)
+    await processWithMicrosoftStore(competing.id, client)
     await expect(getMembershipVerification(other.id, competing.id)).resolves.toMatchObject({
       status: 'conflict',
       reason_code: 'wrong_account',

@@ -5,7 +5,7 @@ import { createTestMembershipVerificationForPriorEvidence } from '@voucha/test-h
 import { createMembershipVerification, getMembershipVerification } from './verifications.mts'
 import { getMembershipByUserId } from './index.mts'
 import { processGooglePlayMembershipVerification } from './google/process-verification.mts'
-import { processMicrosoftStoreMembershipVerification } from './microsoft/process-verification.mts'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 
 describe('provider verification of already rejected evidence', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -40,11 +40,9 @@ describe('provider verification of already rejected evidence', () => {
                 acknowledgeSubscription: unavailable,
               },
             })
-          : processMicrosoftStoreMembershipVerification(id, {
-              client: {
-                queryCollections: unavailable,
-                queryRecurrences: unavailable,
-              },
+          : processWithMicrosoftStore(id, {
+              queryCollections: unavailable,
+              queryRecurrences: unavailable,
             })
       await process(initial.id)
       await expect(getMembershipVerification(user.id, initial.id)).resolves.toMatchObject({

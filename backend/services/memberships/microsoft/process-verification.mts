@@ -7,13 +7,11 @@ import { MicrosoftStoreResponseError } from './response-error.mts'
 import { commitAcceptedMicrosoftStoreVerification } from './verification-commit.mts'
 import { decryptEvidence, expired, getContext, getMapping } from './verification-persistence.mts'
 import { reject, terminalizeConflict } from './verification-outcomes.mts'
-import type { MicrosoftStoreClient } from './types.mts'
 import { verifyMicrosoftStoreAuthoritativeState } from './verify-authoritative-state.mts'
 
 /** Fetches Collections and Recurrence truth in a worker, then atomically records the normalized projection. */
 export async function processMicrosoftStoreMembershipVerification(
   verificationId: string,
-  dependencies: { client?: MicrosoftStoreClient } = {},
 ): Promise<void> {
   try {
     await using initial = await beginTransaction()
@@ -28,7 +26,7 @@ export async function processMicrosoftStoreMembershipVerification(
     if (!mapping) return await reject(context, 'wrong_product', initial)
     await initial.commit()
 
-    const client = dependencies.client ?? createConfiguredMicrosoftStoreClient()
+    const client = createConfiguredMicrosoftStoreClient()
     const [collections, recurrences] = await Promise.all([
       client.queryCollections({
         key: evidence.collectionsKey,
