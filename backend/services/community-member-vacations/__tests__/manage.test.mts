@@ -100,7 +100,7 @@ describe('getMyCommunityVacationSettings', () => {
 
   it('returns null when vacation has expired (ends_at in the past)', async () => {
     const community = await createTestCommunity(mod.id)
-    const expiredEndsAt = new Date(Date.now() - 1000).toISOString()
+    const expiredEndsAt = new Date(Date.now() - dayMs).toISOString()
     await setMyCommunityVacation(mod.id, { communityId: community.id, endsAt: expiredEndsAt })
 
     const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })

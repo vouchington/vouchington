@@ -77,12 +77,12 @@ export function rejectNextPostgresTransactionForTest(error: Error): () => void {
 
 /**
  * Answer default-pool `read()` calls whose statement text contains `marker` from `answers`, in call
- * order: an entry replaces that call's rows, `null` (or running past the list) runs the real read.
+ * order: each entry replaces that call's rows, and calls past the end of the list run the real read.
  * Use to make a read observe state from before a concurrent write; returns the restore.
  */
 export function answerPostgresReadsForTest(
   marker: string,
-  answers: ReadonlyArray<Record<string, unknown>[] | null>,
+  answers: ReadonlyArray<Record<string, unknown>[]>,
 ): () => void {
   const realRead = psql.read
   let calls = 0
