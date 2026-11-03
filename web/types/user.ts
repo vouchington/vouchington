@@ -90,7 +90,6 @@ export interface User {
   moderation_email_timezone?: string | null
   processing_restricted_at?: string | null
   should_receive_third_party_marketing?: boolean | null
-  should_import_hacker_news_discussions?: boolean
   suspended_at?: string | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
@@ -128,7 +127,6 @@ export type UpdateUserBody = Pick<
 > & {
   processing_restricted_at?: boolean
   should_receive_third_party_marketing?: boolean
-  should_import_hacker_news_discussions?: boolean
 }
 export interface PublicUser {
   id: string

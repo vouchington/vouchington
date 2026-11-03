@@ -52,7 +52,6 @@ export async function updateUserFields(
     moderation_email_timezone,
     processing_restricted_at,
     should_receive_third_party_marketing,
-    should_import_hacker_news_discussions,
     country,
     ui_locale,
     direct_messages_audience,
@@ -117,7 +116,6 @@ export async function updateUserFields(
     moderation_email_timezone,
     processing_restricted_at,
     should_receive_third_party_marketing,
-    should_import_hacker_news_discussions,
     is_fediverse_federation_enabled,
   })
 

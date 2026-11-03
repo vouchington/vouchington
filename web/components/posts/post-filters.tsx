@@ -7,6 +7,7 @@
 
 import { Suspense } from 'react'
 import { ListFilters } from '@/components/shared/list-filters'
+import { HackerNewsFilterToggle } from '@/components/hacker-news/hacker-news-filter-toggle'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { PostTimeRangeSelect } from './post-time-range-select'
 
@@ -19,6 +20,7 @@ interface PostFiltersProps {
   enableRelevanceSort?: boolean
   /** Adds the time range dropdown; lists that do not search by time leave it off. */
   showTimeRange?: boolean
+  showHackerNewsFilter?: boolean
 }
 
 export function PostFilters(props: PostFiltersProps) {
@@ -37,6 +39,7 @@ function PostFiltersContent({
   enableHashtagSearch = true,
   enableRelevanceSort = true,
   showTimeRange = false,
+  showHackerNewsFilter = false,
 }: PostFiltersProps) {
   const t = useTranslations()
   const resolvedSortOptions = sortOptions ?? [
@@ -72,6 +75,7 @@ function PostFiltersContent({
       enableHashtagSearch={enableHashtagSearch}
     >
       {showTimeRange && <PostTimeRangeSelect />}
+      {showHackerNewsFilter ? <HackerNewsFilterToggle /> : null}
     </ListFilters>
   )
 }

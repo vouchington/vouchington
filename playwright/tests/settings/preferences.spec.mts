@@ -1,8 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { withCleanUser } from '../../helpers/auth.mts'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { updateUserFields } from '../../../backend/services/users/update-fields.mts'
 
 test.describe('Preferences Page', () => {
   test.use({ storageState: AUTH_STATE })
@@ -71,32 +69,5 @@ test.describe('Preferences Page', () => {
 
     await page.reload()
     await expect(listStyleSelect).toContainText('Compact')
-  })
-
-  test('Hacker News discussions preference persists after page reload', async ({ page }) => {
-    const user = await withCleanUser(page)
-    await updateUserFields(user.id, { should_import_hacker_news_discussions: false })
-    await navigateTo(page, '/my/preferences')
-    await waitForBelowFoldHydration(page)
-
-    const hnSwitch = page.getByTestId('preferences-hn-discussions-switch')
-    await expect(hnSwitch).toHaveAttribute('data-state', 'unchecked')
-    const patched = page.waitForResponse(
-      response =>
-        response.request().method() === 'PATCH' &&
-        response.url().includes('/api/v1/users/') &&
-        response.ok(),
-    )
-    await hnSwitch.click()
-    await patched
-    await expect(page.getByText('Hacker News discussions updated')).toBeVisible()
-    await expect(hnSwitch).toHaveAttribute('data-state', 'checked')
-
-    await page.reload()
-    await waitForBelowFoldHydration(page)
-    await expect(page.getByTestId('preferences-hn-discussions-switch')).toHaveAttribute(
-      'data-state',
-      'checked',
-    )
   })
 })

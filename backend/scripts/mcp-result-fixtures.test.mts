@@ -51,7 +51,7 @@ describe('MCP result catalog generation', () => {
           general.arguments['option'] = 'email'
           break
         case 'wrong type':
-          settings['should_import_hacker_news_discussions'] = 'false'
+          settings['country'] = 42
           break
         case 'missing setting':
           delete settings['country']

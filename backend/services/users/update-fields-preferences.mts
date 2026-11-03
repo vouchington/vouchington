@@ -18,7 +18,6 @@ type UserPreferenceOptions = Pick<
   | 'moderation_email_timezone'
   | 'processing_restricted_at'
   | 'should_receive_third_party_marketing'
-  | 'should_import_hacker_news_discussions'
   | 'is_fediverse_federation_enabled'
 >
 
@@ -38,7 +37,6 @@ export function appendUserPreferenceFields(
     moderation_email_timezone,
     processing_restricted_at,
     should_receive_third_party_marketing,
-    should_import_hacker_news_discussions,
     is_fediverse_federation_enabled,
   }: UserPreferenceOptions,
 ): boolean {
@@ -74,7 +72,6 @@ export function appendUserPreferenceFields(
   nextHasSet = appendModerationEmailTimezone(query, nextHasSet, moderation_email_timezone)
   nextHasSet = appendProcessingRestriction(query, nextHasSet, processing_restricted_at)
   nextHasSet = appendThirdPartyMarketing(query, nextHasSet, should_receive_third_party_marketing)
-  nextHasSet = appendHnDiscussions(query, nextHasSet, should_import_hacker_news_discussions)
   return appendBooleanPreference(
     query,
     nextHasSet,
@@ -109,7 +106,6 @@ export function hasUserFieldUpdates(options: UpdateUserOptions): boolean {
     options.moderation_email_timezone,
     options.processing_restricted_at,
     options.should_receive_third_party_marketing,
-    options.should_import_hacker_news_discussions,
     options.country,
     options.ui_locale,
     options.is_fediverse_federation_enabled,
@@ -283,20 +279,6 @@ function appendThirdPartyMarketing(
     hasSet,
     sql`should_receive_third_party_marketing = ${thirdPartyMarketing}`,
   )
-}
-
-function appendHnDiscussions(
-  query: ReturnType<typeof sql>,
-  hasSet: boolean,
-  hnDiscussions: UpdateUserOptions['should_import_hacker_news_discussions'],
-): boolean {
-  if (hnDiscussions === undefined) return hasSet
-  assert(
-    typeof hnDiscussions === 'boolean',
-    422,
-    'should_import_hacker_news_discussions must be a boolean',
-  )
-  return appendSet(query, hasSet, sql`should_import_hacker_news_discussions = ${hnDiscussions}`)
 }
 
 function isValidTimeZone(timeZone: string): boolean {

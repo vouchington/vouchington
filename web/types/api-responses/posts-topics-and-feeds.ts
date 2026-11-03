@@ -1,5 +1,6 @@
 import type * as Api from './shared'
 import type { PaginatedResponse } from './pagination-and-entities'
+import type { HackerNewsReferenceCounts, HackerNewsReferenceDetail } from '../hacker-news'
 
 type Post = Api.Post
 type PostMetrics = Api.PostMetrics
@@ -38,6 +39,7 @@ export type PostsResponseBody = PaginatedResponse<PostSearchResult> & {
   agent_moderation_elections?: Record<string, AgentModerationElection>
   users?: Record<string, PublicUser>
   post_link_embeds?: Record<string, UrlEmbed>
+  post_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
 }
 
 /**
@@ -71,6 +73,7 @@ export interface PostResponseBody {
   election_vote?: ElectionVote
   bookmarks?: Record<string, Record<string, boolean>>
   link_embed?: UrlEmbed | null
+  post_hacker_news_references?: Record<string, HackerNewsReferenceDetail>
 }
 
 /**
@@ -169,6 +172,7 @@ export interface RssFeedItemResponseBody {
   content_html: string | null
   rss_feed_item_thumbnail_url?: Record<string, string>
   rss_feed_item_embeds?: Record<string, UrlEmbed>
+  rss_feed_item_hacker_news_references?: Record<string, HackerNewsReferenceDetail>
 
   election_vote?: ElectionVote | null
   bookmarks?: Record<string, Record<string, boolean>>

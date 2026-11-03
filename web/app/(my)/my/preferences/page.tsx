@@ -11,7 +11,7 @@ export const metadata: Metadata = createNoIndexMetadata('Display Preferences')
 
 export default async function PreferencesPage() {
   const t = await getTranslations()
-  const currentUser = await requireCurrentUser()
+  await requireCurrentUser()
 
   return (
     <div className='space-y-6'>
@@ -19,10 +19,7 @@ export default async function PreferencesPage() {
         title={t('extracted.preferences.page.display_34e108c0')}
         description={t('extracted.preferences.page.customizeYourBrowsingExperience_99eaeb2e')}
       />
-      <PreferencesForm
-        userId={currentUser.id}
-        hnDiscussionsEnabled={currentUser.should_import_hacker_news_discussions === true}
-      />
+      <PreferencesForm />
     </div>
   )
 }

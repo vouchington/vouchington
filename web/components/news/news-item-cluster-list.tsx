@@ -11,6 +11,7 @@ import { NewsItemClusterListRow } from './news-item-cluster-list-row'
 import { useNewsItemClusters } from './use-news-item-clusters'
 import type { NewsCommunityDiscussionTarget } from './community-discussion-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
 
 interface NewsItemClusterListProps {
   data: RssFeedItemsFeedResponseBody
@@ -67,29 +68,31 @@ export function NewsItemClusterList({
           clearError={news.clearError}
           resetKey={news.resetKey}
         >
-          <div className='space-y-4'>
-            {news.visibleClusters.map(cluster => (
-              <NewsItemClusterListRow
-                key={cluster.primaryResult.id}
-                allBookmarks={news.allBookmarks}
-                allElectionVotes={news.allElectionVotes}
-                allElections={news.allElections}
-                allPosts={news.allPosts}
-                allRelatedPostsByUrlId={news.allRelatedPostsByUrlId}
-                allStories={news.allStories}
-                allStoryPostIds={news.allStoryPostIds}
-                allThumbnailUrls={news.allThumbnailUrls}
-                allEmbeds={news.allEmbeds}
-                allUsers={news.allUsers}
-                cluster={cluster}
-                communityDiscussionTarget={communityDiscussionTarget}
-                expandedStoryIds={news.expandedStoryIds}
-                feedStyle={feedStyle}
-                onExpandedStoryIdsChange={news.handleExpandedStoryIdsChange}
-                onLoadStoryMore={news.handleLoadStoryMore}
-              />
-            ))}
-          </div>
+          <HackerNewsReferencesProvider references={news.allHackerNewsReferences}>
+            <div className='space-y-4'>
+              {news.visibleClusters.map(cluster => (
+                <NewsItemClusterListRow
+                  key={cluster.primaryResult.id}
+                  allBookmarks={news.allBookmarks}
+                  allElectionVotes={news.allElectionVotes}
+                  allElections={news.allElections}
+                  allPosts={news.allPosts}
+                  allRelatedPostsByUrlId={news.allRelatedPostsByUrlId}
+                  allStories={news.allStories}
+                  allStoryPostIds={news.allStoryPostIds}
+                  allThumbnailUrls={news.allThumbnailUrls}
+                  allEmbeds={news.allEmbeds}
+                  allUsers={news.allUsers}
+                  cluster={cluster}
+                  communityDiscussionTarget={communityDiscussionTarget}
+                  expandedStoryIds={news.expandedStoryIds}
+                  feedStyle={feedStyle}
+                  onExpandedStoryIdsChange={news.handleExpandedStoryIdsChange}
+                  onLoadStoryMore={news.handleLoadStoryMore}
+                />
+              ))}
+            </div>
+          </HackerNewsReferencesProvider>
         </InfiniteScroll>
       )}
       {modal === undefined ? children : modal}

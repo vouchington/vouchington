@@ -70,7 +70,6 @@ const SETTING_FIELDS = [
   'default_post_privacy',
   'country',
   'ui_locale',
-  'should_import_hacker_news_discussions',
 ] as const satisfies readonly (keyof UpdateUserOptions)[]
 
 export type SettingField = (typeof SETTING_FIELDS)[number]
@@ -113,10 +112,6 @@ export const SETTINGS_PARAMETERS = {
     ui_locale: {
       ...setting('ui_locale'),
       description: 'A supported interface locale, or null to use the default.',
-    },
-    should_import_hacker_news_discussions: {
-      type: 'boolean',
-      description: 'Whether post and article pages show related Hacker News discussions.',
     },
   },
   minProperties: 1,

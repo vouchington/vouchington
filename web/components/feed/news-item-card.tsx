@@ -17,6 +17,7 @@ import type { PublicUser } from '@/types/user'
 import { stripHtmlTags } from '@/lib/utils/strip-html-tags'
 import { decodeHtmlEntities } from '@ts-shared/utils/html'
 import { NewsItemHeader } from '@/components/news/news-item-header'
+import { HackerNewsReferenceLabel } from '@/components/hacker-news/hacker-news-reference-label'
 import { YoutubeRssMetadataRow } from '@/components/news/youtube-rss-metadata-row'
 import { PodcastEpisodePlayer } from './podcast-episode-player'
 import { VideoEmbed } from './video-embed'
@@ -152,6 +153,7 @@ function NewsItemCardContent({
           </Link>
         </div>
         <NewsItemHeader item={item} />
+        <HackerNewsReferenceLabel entityId={item.id} />
         <FollowerShareActions
           entityType='rss_feed_item'
           entityId={item.id}

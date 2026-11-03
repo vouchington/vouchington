@@ -18,18 +18,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_01 = [
   { key: 'extracted.aiCosts.page.requests_ada27592', consumers: ['dotnet', 'swift'] },
   { key: 'extracted.aiCosts.page.totalCostUsd_eed03fbf', consumers: ['dotnet', 'swift'] },
   { key: 'extracted.aiCosts.page.unpricedRequestCount', consumers: ['dotnet', 'swift'] },
-  {
-    key: 'extracted.asides.hnDiscussionsAside.commentsComments_29834540',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'extracted.asides.hnDiscussionsAside.hackerNews_619f304a',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'extracted.asides.hnDiscussionsAside.pointsPoints_29c78cd8',
-    consumers: ['dotnet', 'swift'],
-  },
   { key: 'extracted.intents.admin.aiCosts_75cce222', consumers: ['dotnet'] },
   { key: 'extracted.intents.admin.appeals_03e8c5a5', consumers: ['dotnet'] },
   { key: 'extracted.intents.admin.dynamicConfig_59cf5829', consumers: ['dotnet'] },

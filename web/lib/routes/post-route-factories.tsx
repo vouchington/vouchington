@@ -174,7 +174,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
             t={t}
             post={post}
             authorAside={authorAside}
-            sourceUrls={[postResponse.link_embed?.source_url]}
+            hackerNewsReferences={postResponse.post_hacker_news_references?.[post.id]}
           />
         }
         showFooter={false}

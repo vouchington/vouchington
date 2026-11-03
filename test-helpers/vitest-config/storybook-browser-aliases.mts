@@ -18,7 +18,6 @@ const storybookMockAliases = {
   '@/components/tags/post-related-topics-aside': 'post-detail-asides.tsx',
   '@/components/tags/post-related-posts-aside': 'post-detail-asides.tsx',
   '@/components/tags/post-related-urls-aside': 'post-detail-asides.tsx',
-  '@/components/asides/hn-discussions-post-aside': 'post-detail-asides.tsx',
   '@/components/seo/anonymous-structured-data-script': 'anonymous-structured-data-script.ts',
   '@/components/shared/follow-button': 'follow-button.tsx',
   '@/components/tags/manage-tags-tabs': 'manage-tags-tabs.tsx',

@@ -22,10 +22,7 @@ export const Default: Story = {
         <h1 className='text-2xl font-bold'>Display</h1>
         <p className='text-sm text-muted-foreground'>Customize your browsing experience</p>
       </div>
-      <PreferencesForm
-        hnDiscussionsEnabled={false}
-        userId='storybook-user'
-      />
+      <PreferencesForm />
     </Frame>
   ),
 }
