@@ -22,7 +22,6 @@ type ReplayableSubmission = {
 export async function replayDsaStatementSubmission(
   currentUserId: string,
   submissionId: string,
-  buildPayload: typeof buildCopyrightDsaStatementPayload = buildCopyrightDsaStatementPayload,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<ReplayableSubmission>(
@@ -35,7 +34,7 @@ export async function replayDsaStatementSubmission(
   const item = rows[0]
   if (!item || item.submitted_at) return false
   if (item.failed_at) {
-    if (!(await rebuildFailedPayload(submissionId, item, buildPayload, transaction))) return false
+    if (!(await rebuildFailedPayload(submissionId, item, transaction))) return false
   } else {
     const round = await readDsaStatementSubmissionRound(submissionId, transaction)
     if (!round.hasPermanentFailure && round.retryableFailures < 5) return false
@@ -64,11 +63,13 @@ export async function replayDsaStatementSubmission(
 async function rebuildFailedPayload(
   submissionId: string,
   item: ReplayableSubmission,
-  buildPayload: typeof buildCopyrightDsaStatementPayload,
   transaction: TransactionQuery,
 ): Promise<boolean> {
   try {
-    const payload = await buildPayload(item.copyright_restriction_id, transaction)
+    const payload = await buildCopyrightDsaStatementPayload(
+      item.copyright_restriction_id,
+      transaction,
+    )
     await transaction(sql`/* replayDsaStatementSubmission:freezePayload */
       UPDATE copyright_dsa_statement_submissions
       SET payload = ${JSON.stringify(payload)}::jsonb, failed_at = NULL, failure_code = NULL

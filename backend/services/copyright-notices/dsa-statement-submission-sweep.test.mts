@@ -4,6 +4,8 @@ import {
 } from '@voucha/test-helpers/dsa-approval-withdrawal-fixtures'
 import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import Sentry from '@modules/on-error/sentry'
+import { overrideDsaStatementSubmissionConfigForTest } from '@voucha/test-helpers/dsa-switches'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { copyrightSweepConfig } from './work-limits.mts'
@@ -27,9 +29,31 @@ import {
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { prepareDsaStatementSubmissionSweep } from './dsa-statement-submission-sweep.mts'
 
-type DsaStatementSweepDependencies = Required<
-  NonNullable<Parameters<typeof prepareDsaStatementSubmissionSweep>[0]>
->
+async function configureSweep(
+  fields: { dsaSorDatabase?: boolean; dsaSorDatabaseFrom?: string } = {},
+  credentials: { url: string; token: string } = {
+    url: 'https://dsa.example.test',
+    token: 'synthetic-dsa-token',
+  },
+): Promise<void> {
+  vi.stubEnv('DSA_TRANSPARENCY_DATABASE_URL', credentials.url)
+  vi.stubEnv('DSA_TRANSPARENCY_DATABASE_TOKEN', credentials.token)
+  onTestFinished(await overrideDsaStatementSubmissionConfigForTest(fields))
+}
+
+function configMissingReport(missingEnvVar: string) {
+  return [
+    'scheduled_job_config_missing',
+    {
+      level: 'warning',
+      tags: {
+        reason: 'scheduled_job_config_missing',
+        jobName: 'processReconcileDsaStatementSubmissions',
+        missingEnvVar,
+      },
+    },
+  ] as const
+}
 
 async function restrictionIdFor(noticeId: string): Promise<string> {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
@@ -57,13 +81,8 @@ describe('DSA statement submission materialization', () => {
     const second = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
     )
-    const options = {
-      isEnabled: async () => true,
-      getFrom: async () => from,
-      url: () => 'https://dsa.example.test',
-      token: () => 'synthetic-dsa-token',
-      restrictionIds: [first.restrictionId, second.restrictionId],
-    }
+    await configureSweep({ dsaSorDatabaseFrom: '2026-07-01' })
+    const options = { restrictionIds: [first.restrictionId, second.restrictionId] }
 
     await expect(prepareDsaStatementSubmissionSweep(options)).resolves.toEqual({
       from,
@@ -80,22 +99,19 @@ describe('DSA statement submission materialization', () => {
   })
 
   it('stops before searching or recording work when the configured start date is absent', async () => {
-    const warning = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
-    const buildPayload = vi.fn<DsaStatementSweepDependencies['buildPayload']>()
+    const restriction = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
+    await configureSweep({ dsaSorDatabaseFrom: '' })
+    const warning = vi.spyOn(Sentry, 'captureMessage').mockReturnValue('')
 
     await expect(
-      prepareDsaStatementSubmissionSweep({
-        isEnabled: async () => true,
-        getFrom: async () => null,
-        recordConfigMissing: warning,
-        buildPayload,
-      }),
+      prepareDsaStatementSubmissionSweep({ restrictionIds: [restriction.restrictionId] }),
     ).resolves.toBeNull()
     expect(warning).toHaveBeenCalledExactlyOnceWith(
-      'processReconcileDsaStatementSubmissions',
-      'copyright.dsaSorDatabaseFrom',
+      ...configMissingReport('copyright.dsaSorDatabaseFrom'),
     )
-    expect(buildPayload).not.toHaveBeenCalled()
+    expect(await countTestDsaSubmissionsForRestriction(restriction.restrictionId)).toBe(0)
   })
 
   it('records each eligible restriction once across cutoff, lift, and jurisdiction', async () => {
@@ -138,25 +154,27 @@ describe('DSA statement submission materialization', () => {
     const reimposed = courtRestrictions.find(row => row.id !== court.restriction.id)
     if (!reimposed) throw new Error('Court hold did not reimpose a restriction')
 
-    const warning = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
+    const warning = vi.spyOn(Sentry, 'captureMessage').mockReturnValue('')
+    const restoreOff = await overrideDsaStatementSubmissionConfigForTest({
+      dsaSorDatabase: false,
+      dsaSorDatabaseFrom: '2026-07-01',
+    })
+    onTestFinished(restoreOff)
     expect(
-      await prepareDsaStatementSubmissionSweep({
-        isEnabled: async () => false,
-        getFrom: async () => from,
-        recordConfigMissing: warning,
-      }),
+      await prepareDsaStatementSubmissionSweep({ restrictionIds: [midnight.restrictionId] }),
     ).toBeNull()
+    restoreOff()
     expect(await countTestDsaSubmissionsForRestriction(midnight.restrictionId)).toBe(0)
+    const restoreUnset = await overrideDsaStatementSubmissionConfigForTest({
+      dsaSorDatabaseFrom: '',
+    })
+    onTestFinished(restoreUnset)
     expect(
-      await prepareDsaStatementSubmissionSweep({
-        isEnabled: async () => true,
-        getFrom: async () => null,
-        recordConfigMissing: warning,
-      }),
+      await prepareDsaStatementSubmissionSweep({ restrictionIds: [midnight.restrictionId] }),
     ).toBeNull()
+    restoreUnset()
     expect(warning).toHaveBeenCalledExactlyOnceWith(
-      'processReconcileDsaStatementSubmissions',
-      'copyright.dsaSorDatabaseFrom',
+      ...configMissingReport('copyright.dsaSorDatabaseFrom'),
     )
     expect(await countTestDsaSubmissionsForRestriction(midnight.restrictionId)).toBe(0)
 
@@ -172,19 +190,12 @@ describe('DSA statement submission materialization', () => {
       reimposed.id,
     ]
     const scope = [...eligibleIds, dayBefore.restrictionId]
-    const missingCredentials = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
-    const options = {
-      isEnabled: async () => true,
-      getFrom: async () => from,
-      url: () => '',
-      token: () => '',
-      recordConfigMissing: missingCredentials,
-      restrictionIds: scope,
-    }
+    warning.mockClear()
+    await configureSweep({ dsaSorDatabaseFrom: '2026-07-01' }, { url: '', token: '' })
+    const options = { restrictionIds: scope }
     expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
-    expect(missingCredentials).toHaveBeenCalledExactlyOnceWith(
-      'processReconcileDsaStatementSubmissions',
-      'DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN',
+    expect(warning).toHaveBeenCalledExactlyOnceWith(
+      ...configMissingReport('DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN'),
     )
     for (const id of eligibleIds) {
       expect(await countTestDsaSubmissionsForRestriction(id)).toBe(1)
@@ -192,7 +203,7 @@ describe('DSA statement submission materialization', () => {
     expect(await countTestDsaSubmissionsForRestriction(dayBefore.restrictionId)).toBe(0)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
-    expect(missingCredentials).toHaveBeenCalledTimes(2)
+    expect(warning).toHaveBeenCalledTimes(2)
     for (const id of eligibleIds) {
       expect(await countTestDsaSubmissionsForRestriction(id)).toBe(1)
     }
@@ -215,15 +226,8 @@ describe('DSA statement submission materialization', () => {
       withdrawal_id: scene.withdrawalId,
     })
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
-    const from = new Date('2026-07-01T00:00:00.000Z')
-    const options = {
-      isEnabled: async () => true,
-      getFrom: async () => from,
-      url: () => '',
-      token: () => '',
-      recordConfigMissing: vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>(),
-      restrictionIds: [restrictionId],
-    }
+    await configureSweep({ dsaSorDatabaseFrom: '2026-07-01' }, { url: '', token: '' })
+    const options = { restrictionIds: [restrictionId] }
     expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(1)
     const submission = await readTestDsaSubmissionForRestriction(restrictionId)

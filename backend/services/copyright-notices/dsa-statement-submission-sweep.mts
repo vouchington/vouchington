@@ -24,38 +24,15 @@ const RECONCILE_JOB_NAME = 'processReconcileDsaStatementSubmissions'
 const DATABASE_CREDENTIAL_NAMES =
   'DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN'
 
-type DsaStatementSweepDependencies = {
-  isEnabled: typeof isCopyrightDsaSorDatabaseEnabled
-  getFrom: typeof getCopyrightDsaSorDatabaseFrom
-  recordConfigMissing: typeof recordScheduledJobConfigMissing
-  buildPayload: typeof buildCopyrightDsaStatementPayload
-  reportBuildFailure: typeof reportDsaStatementBuildFailure
-  url: () => string | undefined
-  token: () => string | undefined
-  isConfigured: typeof isDsaTransparencyDatabaseConfigured
-}
-
-const defaultDependencies: DsaStatementSweepDependencies = {
-  isEnabled: isCopyrightDsaSorDatabaseEnabled,
-  getFrom: getCopyrightDsaSorDatabaseFrom,
-  recordConfigMissing: recordScheduledJobConfigMissing,
-  buildPayload: buildCopyrightDsaStatementPayload,
-  reportBuildFailure: reportDsaStatementBuildFailure,
-  url: () => process.env.DSA_TRANSPARENCY_DATABASE_URL,
-  token: () => process.env.DSA_TRANSPARENCY_DATABASE_TOKEN,
-  isConfigured: isDsaTransparencyDatabaseConfigured,
-}
-
 /** Checks both audited gates, materializes eligible decisions once, and never enqueues without credentials. */
 export async function prepareDsaStatementSubmissionSweep(
-  overrides: Partial<DsaStatementSweepDependencies> & { restrictionIds?: readonly string[] } = {},
+  options: { restrictionIds?: readonly string[] } = {},
 ): Promise<{ from: Date; hasMore: boolean } | null> {
-  const { restrictionIds, ...dependencyOverrides } = overrides
-  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
-  if (!(await dependencies.isEnabled())) return null
-  const from = await dependencies.getFrom()
+  const { restrictionIds } = options
+  if (!(await isCopyrightDsaSorDatabaseEnabled())) return null
+  const from = await getCopyrightDsaSorDatabaseFrom()
   if (!from) {
-    dependencies.recordConfigMissing(RECONCILE_JOB_NAME, 'copyright.dsaSorDatabaseFrom')
+    recordScheduledJobConfigMissing(RECONCILE_JOB_NAME, 'copyright.dsaSorDatabaseFrom')
     return null
   }
 
@@ -80,12 +57,15 @@ export async function prepareDsaStatementSubmissionSweep(
   )
   for (const restrictionId of page.results) {
     // oxlint-disable-next-line no-await-in-loop -- each payload and insert is one transaction.
-    await materializeDsaStatementSubmission(restrictionId, from, dependencies)
+    await materializeDsaStatementSubmission(restrictionId, from)
   }
   if (
-    !dependencies.isConfigured({ url: dependencies.url() ?? '', token: dependencies.token() ?? '' })
+    !isDsaTransparencyDatabaseConfigured({
+      url: process.env.DSA_TRANSPARENCY_DATABASE_URL ?? '',
+      token: process.env.DSA_TRANSPARENCY_DATABASE_TOKEN ?? '',
+    })
   ) {
-    dependencies.recordConfigMissing(RECONCILE_JOB_NAME, DATABASE_CREDENTIAL_NAMES)
+    recordScheduledJobConfigMissing(RECONCILE_JOB_NAME, DATABASE_CREDENTIAL_NAMES)
     return null
   }
   return { from, hasMore: page.page_info.has_next_page }
@@ -95,26 +75,21 @@ export async function prepareDsaStatementSubmissionSweep(
 async function materializeDsaStatementSubmission(
   restrictionId: string,
   from: Date,
-  dependencies: Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>,
 ): Promise<boolean> {
   try {
-    return await insertDsaStatementSubmission(restrictionId, from, dependencies.buildPayload)
+    return await insertDsaStatementSubmission(restrictionId, from)
   } catch (err) {
     const failureCode = getDsaStatementBuildFailureCode(err)
     if (!failureCode) throw err
     if (await recordDsaStatementBuildFailure(restrictionId, from, failureCode))
-      dependencies.reportBuildFailure({ restrictionId, failureCode })
+      reportDsaStatementBuildFailure({ restrictionId, failureCode })
     return false
   }
 }
 
-async function insertDsaStatementSubmission(
-  restrictionId: string,
-  from: Date,
-  buildPayload: typeof buildCopyrightDsaStatementPayload,
-): Promise<boolean> {
+async function insertDsaStatementSubmission(restrictionId: string, from: Date): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const payload = await buildPayload(restrictionId, transaction)
+  const payload = await buildCopyrightDsaStatementPayload(restrictionId, transaction)
   const lockedNotice = await lockCopyrightNoticeForRestriction(transaction, restrictionId)
   const { rows } = await transaction<{ id: string }>(sql`/* insertDsaStatementSubmission */
     INSERT INTO copyright_dsa_statement_submissions (copyright_restriction_id, payload, available_at)
