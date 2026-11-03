@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { fn } from 'storybook/test'
 import { AppealsClient } from '@/components/appeals/appeals-client'
 import { AppealContext } from '@/components/appeals/appeal-context'
+import { AppealDetail } from '@/components/appeals/appeal-detail'
+import { AppealDetailDialog } from '@/components/appeals/appeal-detail-dialog'
 import { AppealRow } from '@/components/appeals/appeal-row'
 import { MemberAppealRow } from '@/components/appeals/member-appeal-row'
 import { toModerationAppealSummary } from '@/types/appeals'
@@ -79,5 +81,36 @@ export const MemberRow: Story = {
         </tbody>
       </table>
     </EntityStoryFrame>
+  ),
+}
+
+const detailActions = {
+  viewerRole: 'administrator',
+  disabled: false,
+  onEdit: fn(),
+  onApprove: fn(),
+  onSend: fn(),
+  onRerunAI: fn(),
+  onResolve: fn(),
+} as const
+
+export const Detail: Story = {
+  render: () => (
+    <EntityStoryFrame title='Appeal Detail (staff)'>
+      <AppealDetail
+        appeal={pendingAppeal}
+        {...detailActions}
+      />
+    </EntityStoryFrame>
+  ),
+}
+
+export const DetailDialog: Story = {
+  render: () => (
+    <AppealDetailDialog
+      appeal={pendingAppeal}
+      onClose={fn()}
+      {...detailActions}
+    />
   ),
 }

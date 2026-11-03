@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { fn } from 'storybook/test'
 import { DisputesClient } from '@/components/disputes/disputes-client'
 import { DisputeContext } from '@/components/disputes/dispute-context'
+import { DisputeDetail } from '@/components/disputes/dispute-detail'
+import { DisputeDetailDialog } from '@/components/disputes/dispute-detail-dialog'
 import { DisputeRow } from '@/components/disputes/dispute-row'
 import { MemberDisputeRow } from '@/components/disputes/member-dispute-row'
 import { toReviewDisputeSummary } from '@/types/review-disputes'
@@ -101,5 +103,36 @@ export const ClaimReviewVerified: Story = {
     <EntityStoryFrame title='Topic Claim Review (verified)'>
       <TopicClaimReview claim={verifiedClaim} />
     </EntityStoryFrame>
+  ),
+}
+
+const detailActions = {
+  disabled: false,
+  onEdit: fn(),
+  onApprove: fn(),
+  onSend: fn(),
+  onRerunAI: fn(),
+  onResolve: fn(),
+  onAnnotate: fn(),
+}
+
+export const Detail: Story = {
+  render: () => (
+    <EntityStoryFrame title='Dispute Detail (staff)'>
+      <DisputeDetail
+        dispute={pendingDispute}
+        {...detailActions}
+      />
+    </EntityStoryFrame>
+  ),
+}
+
+export const DetailDialog: Story = {
+  render: () => (
+    <DisputeDetailDialog
+      dispute={pendingDispute}
+      onClose={fn()}
+      {...detailActions}
+    />
   ),
 }
