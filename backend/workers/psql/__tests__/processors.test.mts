@@ -1,4 +1,6 @@
+import { randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
+import { createTestUser, insertTestPost } from '@voucha/test-helpers'
 import type { DataRetentionLimits } from '@services/data-retention/config'
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import { AI_RETENTION_FAMILIES } from '@queues/psql/types'
@@ -30,7 +32,6 @@ const emptyCleanupResult = {
 } as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
 const dataRetentionCleanup =
   vi.fn<(limits: DataRetentionLimits) => ReturnType<typeof runDataRetentionCleanup>>()
-const reconcileVoteDrift = vi.fn<() => Promise<void>>()
 const runConfigDriven = vi.fn<() => Promise<void>>()
 const runMigrations = vi.fn<() => Promise<void>>()
 const runViews = vi.fn<() => Promise<void>>()
@@ -44,7 +45,6 @@ describe('processPsql', () => {
     ['createPartitions', createPartitions],
     ['cleanupPartitions', cleanupPartitions],
     ['dataRetentionCleanup', dataRetentionCleanup],
-    ['reconcileVoteDrift', reconcileVoteDrift],
   ] as const)('calls %s when selected', async (jobName, processor) => {
     processor.mockReset()
     if (jobName === 'dataRetentionCleanup')
@@ -56,12 +56,26 @@ describe('processPsql', () => {
       cleanupPartitions,
       createPartitions,
       dataRetentionCleanup,
-      reconcileVoteDrift: reconcileVoteDrift as never,
       runConfigDriven,
       runMigrations,
       runViews,
     })
 
     expect(processor).toHaveBeenCalledOnce()
+  })
+
+  it('reconciles post vote drift against real posts', async () => {
+    const creator = await createTestUser()
+    await insertTestPost({
+      title: 'Processor vote drift',
+      slug: `processor-vote-drift-${randomBytes(6).toString('hex')}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+
+    const result = await processPsql('reconcileVoteDrift')
+
+    expect(result).toMatchObject({ entityTable: 'posts' })
+    expect((result as { sampled: number }).sampled).toBeGreaterThanOrEqual(1)
   })
 })

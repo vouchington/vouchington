@@ -10,32 +10,13 @@ import { UnrecoverableError } from '@vouchington/queue-errors'
 import { publishImportProgress } from '@data-stores/valkey-pubsub'
 import createHttpError from 'http-errors'
 
-type AdminImportProcessorDependencies = {
-  getImportRowWithBatch: typeof getImportRowWithBatch
-  getPrivateUserByAny: typeof getPrivateUserByAny
-  processTopicRow: typeof processTopicRow
-  publishImportProgress: typeof publishImportProgress
-  updateRowCompleted: typeof updateRowCompleted
-  updateRowFailed: typeof updateRowFailed
-}
-
 export async function processImportRow(
   batchId: string,
   rowId: string,
   options: { isFinalAttempt?: boolean } = {},
-  dependencies?: Partial<AdminImportProcessorDependencies>,
 ): Promise<void> {
   const { isFinalAttempt = true } = options
-  const deps = {
-    getImportRowWithBatch,
-    getPrivateUserByAny,
-    processTopicRow,
-    publishImportProgress,
-    updateRowCompleted,
-    updateRowFailed,
-    ...dependencies,
-  }
-  const result = await deps.getImportRowWithBatch(rowId)
+  const result = await getImportRowWithBatch(rowId)
 
   if (!result) {
     const err = createHttpError(500, `Import row ${rowId} not found`, {
@@ -63,14 +44,14 @@ export async function processImportRow(
   // Do NOT skip failed rows — allow retries to re-attempt them.
   if (row.completed_at) return
 
-  const admin = await deps.getPrivateUserByAny(batch.created_by_id)
+  const admin = await getPrivateUserByAny(batch.created_by_id)
   if (!admin) {
     // Creator gone — permanent failure (no retry since we return without throwing).
-    const failProgress = await deps.updateRowFailed(rowId, 'Import batch creator not found', {
+    const failProgress = await updateRowFailed(rowId, 'Import batch creator not found', {
       isFinalAttempt: true,
     })
     if (failProgress) {
-      void deps.publishImportProgress(failProgress.batchId, failProgress).catch(onError)
+      void publishImportProgress(failProgress.batchId, failProgress).catch(onError)
     }
     return
   }
@@ -80,24 +61,24 @@ export async function processImportRow(
 
     switch (batch.import_type) {
       case 'topic':
-        createdEntityId = await deps.processTopicRow(admin, row)
+        createdEntityId = await processTopicRow(admin, row)
         break
       default:
         throw new Error(`Unknown import_type: ${batch.import_type}`)
     }
 
-    const progress = await deps.updateRowCompleted(rowId, createdEntityId)
-    void deps.publishImportProgress(progress.batchId, progress).catch(onError)
+    const progress = await updateRowCompleted(rowId, createdEntityId)
+    void publishImportProgress(progress.batchId, progress).catch(onError)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     // UnrecoverableErrors (e.g. URL validation) never succeed on retry — treat as final
     // regardless of isFinalAttempt so the row and batch are marked complete immediately.
     const isFinalFailure = isFinalAttempt || err instanceof UnrecoverableError
-    const failProgress = await deps.updateRowFailed(rowId, message, {
+    const failProgress = await updateRowFailed(rowId, message, {
       isFinalAttempt: isFinalFailure,
     })
     if (failProgress) {
-      void deps.publishImportProgress(failProgress.batchId, failProgress).catch(onError)
+      void publishImportProgress(failProgress.batchId, failProgress).catch(onError)
     }
     throw err // Let glide-mq handle retries
   }
