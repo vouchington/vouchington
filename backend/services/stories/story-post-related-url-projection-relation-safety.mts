@@ -10,9 +10,6 @@ import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related
 
 export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
   work: ProjectionWork,
-  enqueue: (
-    entries: Parameters<typeof enqueueBulkCrawlUrls>[0],
-  ) => Promise<unknown> = enqueueBulkCrawlUrls,
 ): Promise<number | null> {
   const CRAWL_EFFECT_PAGE_SIZE = getStoriesWorkLimit('crawl_effect_page_size')
   const { rows } = await write<{ generation: string; url_id: string }>(
@@ -34,7 +31,7 @@ export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
     generations.push(row.generation)
     urlIds.push(row.url_id)
   }
-  await enqueue(crawlEntries)
+  await enqueueBulkCrawlUrls(crawlEntries)
   const { rowCount } = await write(
     `/* markRecoveredStoryPostRelatedUrlProjectionCrawlEffectsDispatched */
       UPDATE story_post_related_url_projection_receipts receipt
