@@ -5,6 +5,7 @@ import * as membershipsService from '@services/memberships'
 import * as appleRecovery from './apple-notification-recovery.mts'
 import * as googlePlay from './google-play.mts'
 import * as microsoftStore from './microsoft-store.mts'
+import * as providerJob from './membership-provider-job.mts'
 import { processMembershipJob } from './process-job.mts'
 import * as verificationJob from './process-verification-job.mts'
 import * as renewalCheck from './renewal-notification-check.mts'
@@ -142,6 +143,10 @@ describe('processMembershipJob routes', () => {
   })
 
   it('routes the Google Play and Microsoft Store jobs with their data', async () => {
+    // The real wrapper takes the shared provider-call lease, which other files contend for.
+    const providerLease = vi
+      .spyOn(providerJob, 'processMembershipProviderJob')
+      .mockImplementation((_job, operation) => operation())
     const notification = vi.spyOn(googlePlay, 'processGooglePlayNotification').mockResolvedValue()
     const activeSource = vi.spyOn(googlePlay, 'processGooglePlayActiveSource').mockResolvedValue()
     const acknowledgement = vi
@@ -151,9 +156,10 @@ describe('processMembershipJob routes', () => {
       .spyOn(microsoftStore, 'processMicrosoftStoreSource')
       .mockResolvedValue()
 
-    await processMembershipJob(
-      job('processGooglePlayNotification', { evidenceId: 'google-evidence-1' }),
-    )
+    const notificationJob = job('processGooglePlayNotification', {
+      evidenceId: 'google-evidence-1',
+    })
+    await processMembershipJob(notificationJob)
     await processMembershipJob(
       job('reconcileGooglePlayActiveSource', { sourceId: 'google-source-1' }),
     )
@@ -164,6 +170,7 @@ describe('processMembershipJob routes', () => {
       job('reconcileMicrosoftStoreSource', { sourceId: 'microsoft-source-1' }),
     )
 
+    expect(providerLease.mock.calls.map(([leasedJob]) => leasedJob)).toEqual([notificationJob])
     expect(notification).toHaveBeenCalledExactlyOnceWith({ evidenceId: 'google-evidence-1' })
     expect(activeSource).toHaveBeenCalledExactlyOnceWith({ sourceId: 'google-source-1' })
     expect(acknowledgement).toHaveBeenCalledExactlyOnceWith({ acknowledgementId: 'google-ack-1' })
