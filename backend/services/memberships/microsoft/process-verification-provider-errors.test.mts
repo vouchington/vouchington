@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Worker } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getMembershipByUserId } from '@services/memberships'
 import {
@@ -42,11 +43,6 @@ describe('Microsoft Store provider verification outcomes', () => {
       { status: 403, invalidStoreIdKey: false },
     ],
     [
-      '429 throttling response',
-      new MicrosoftStoreResponseError(429, false),
-      { cause: { status: 429 } },
-    ],
-    [
       '5xx service response',
       new MicrosoftStoreResponseError(503, false),
       { status: 503, invalidStoreIdKey: false },
@@ -63,6 +59,26 @@ describe('Microsoft Store provider verification outcomes', () => {
     const processing = processWithMicrosoftStore(verification.id, failingClient(error))
     await expect(processing).rejects.toMatchObject(rejection)
 
+    await expect(
+      getMembershipVerification(fixture.user.id, verification.id),
+    ).resolves.toMatchObject({ status: 'pending', reason_code: null })
+    await expect(getMembershipByUserId(fixture.user.id)).resolves.toBeNull()
+  })
+
+  it('requeues a 429 throttling response as a queue rate-limit error', async () => {
+    const fixture = await createFixture()
+    const verification = await fixture.submit()
+
+    const rejection = await processWithMicrosoftStore(
+      verification.id,
+      failingClient(new MicrosoftStoreResponseError(429, false)),
+    ).then(
+      () => null,
+      (err: unknown) => err,
+    )
+
+    expect(rejection).toBeInstanceOf(Worker.RateLimitError)
+    expect(rejection).toMatchObject({ cause: { status: 429 } })
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
     ).resolves.toMatchObject({ status: 'pending', reason_code: null })
