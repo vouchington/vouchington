@@ -43,4 +43,19 @@ describe('runOAuthAccountConnectionPostCommitEffects', () => {
       capture.mockRestore()
     }
   })
+
+  it('reports a verified-email cache invalidation failure after the vote-weight enqueue succeeds', async () => {
+    const userId = randomUUID()
+    const failure = new Error('verified-email cache unavailable')
+    const invalidate = vi.spyOn(ValkeyCache.prototype, 'delete').mockRejectedValueOnce(failure)
+    const capture = vi.spyOn(Sentry, 'captureException').mockReturnValue('')
+    try {
+      await runOAuthAccountConnectionPostCommitEffects(userId)
+      expect(capture.mock.calls.map(([reported]) => reported)).toEqual([failure])
+      expect(invalidate).toHaveBeenCalledWith(userId)
+    } finally {
+      invalidate.mockRestore()
+      capture.mockRestore()
+    }
+  })
 })
