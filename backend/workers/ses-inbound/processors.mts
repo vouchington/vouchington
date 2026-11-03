@@ -7,8 +7,6 @@ import {
   readRetainedFailedSesInboundProcessJobs,
   type RetryableSesInboundJob,
 } from '@queues/ses-inbound/enqueues'
-import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
-import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import {
   assertSesInboundProcessJobData,
   assertSesInboundReconcileJobData,
@@ -17,14 +15,11 @@ import {
   type SesInboundReconcileJobData,
 } from '@ts-shared/ses-inbound-contract'
 import { getSesInboundReconcileMaxPagesPerRun } from '@queues/ses-inbound/config'
-import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.mts'
+import { SesInboundTerminalError } from './processors/mime.mts'
 import { processCopyrightInboundEmail } from './processors/copyright-email.mts'
 import {
   deleteSesInboundObject,
-  copySesInboundObjectToCopyrightEvidence,
   listCopyrightSesInboundObjects,
-  loadSesInboundObjectAndHash,
-  loadSesInboundObjectVersion,
   moveSesInboundObjectToFailed,
   readSesInboundBucket,
 } from './processors/s3.mts'
@@ -33,15 +28,7 @@ export async function processSesInboundEmail(data: SesInboundProcessJobData): Pr
   assertSesInboundProcessJobData(data)
 
   try {
-    await processCopyrightInboundEmail(data, {
-      copySesInboundObjectToCopyrightEvidence,
-      createCopyrightEmailIntake,
-      enqueueCopyrightEmailIntake,
-      loadSesInboundObjectAndHash,
-      loadSesInboundObjectVersion,
-      parseSesInboundMime,
-      recordCopyrightEmailParse,
-    })
+    await processCopyrightInboundEmail(data)
     await deleteSesInboundObject(data.objectKey)
   } catch (err) {
     if (!(err instanceof SesInboundTerminalError)) throw err

@@ -26,13 +26,6 @@ type DeliverActivityToInboxInput = {
   privateKeyPem: string
 }
 
-export type DeliverActivityToInboxDeps = {
-  validateUrl: typeof validateUrl
-  fetch: typeof undici.fetch
-}
-
-const defaultDeps: DeliverActivityToInboxDeps = { validateUrl, fetch: undici.fetch }
-
 function cancelResponseBody(response: UndiciResponse): void {
   const cancellation = response.body?.cancel()
   if (cancellation) {
@@ -53,13 +46,10 @@ function cancelResponseBody(response: UndiciResponse): void {
 // `redirect: 'manual'` is load-bearing SSRF protection: silently following a redirect would
 // deliver to a target host that was never validated.
 /* no-mistakes: integration=activitypub */
-export async function deliverActivityToInbox(
-  input: DeliverActivityToInboxInput,
-  deps: DeliverActivityToInboxDeps = defaultDeps,
-): Promise<void> {
+export async function deliverActivityToInbox(input: DeliverActivityToInboxInput): Promise<void> {
   let resolvedAddresses
   try {
-    resolvedAddresses = await deps.validateUrl(input.inboxUrl, { timeoutMs: DNS_TIMEOUT_MS })
+    resolvedAddresses = await validateUrl(input.inboxUrl, { timeoutMs: DNS_TIMEOUT_MS })
   } catch (err) {
     if (err instanceof UnsafeUrlError) {
       throw createHttpError(422, `Unsafe delivery inbox URL: ${err.reason}`)
@@ -91,7 +81,7 @@ export async function deliverActivityToInbox(
 
   let response: UndiciResponse
   try {
-    response = await deps.fetch(input.inboxUrl, {
+    response = await undici.fetch(input.inboxUrl, {
       method: 'POST',
       dispatcher,
       headers,
