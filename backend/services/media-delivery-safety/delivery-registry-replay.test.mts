@@ -69,17 +69,17 @@ describe('media delivery replay jobs', () => {
           await processReplayMediaDeliveryRegistry(data, dependencies)
           await processReplayMediaDeliveryRegistry(data, dependencies)
         }
-        const continuationJobs = await Promise.all(
-          pages
-            .filter(page => page.hasMore && page.after)
-            .map(page =>
-              notifications.searchJobs({
-                name: 'notifications.processReplayMediaDeliveryRegistry',
-                data: { ...data, after: page.after },
-              }),
-            ),
+        const continuationJobs = await notifications.searchJobs({
+          name: 'notifications.processReplayMediaDeliveryRegistry',
+          data: { actorUserId: data.actorUserId },
+        })
+        expect(
+          continuationJobs.map(job => (job.data as { after?: string }).after).toSorted(),
+        ).toEqual(
+          [
+            ...new Set(pages.filter(page => page.hasMore && page.after).map(page => page.after)),
+          ].toSorted(),
         )
-        expect(continuationJobs.every(jobs => jobs.length === 1)).toBe(true)
         expect(
           await notifications.searchJobs({
             name: 'notifications.processReplayMediaDeliveryRegistry',
