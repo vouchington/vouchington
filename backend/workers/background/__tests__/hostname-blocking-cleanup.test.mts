@@ -114,7 +114,64 @@ describe('hostname block cleanup background handlers', () => {
     await expect(process(job)).resolves.toBeUndefined()
     await expect(background.getJob(`hostnameBlock__${blockId}__1`)).resolves.toBeFalsy()
   })
+  it('requeues a stale cleanup retry at the durable progress and cursor', async () => {
+    const administrator = await createTestUserDirect({ administrator: true })
+    const hostname = `stale-${randomBytes(6).toString('hex')}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const operation = await createOperation(hostnameId, hostname, administrator.id)
+    const process = createBackgroundProcessor(
+      buildHandlerMap(hostnameBlockingHandlers, ['hostname-blocking']),
+    )
+    const stale = { blockId: operation.blockId, progress: operation.progress + 1 }
+    await enqueueOrReactivateHostnameBlockCleanups([stale])
+    const job = await background.getJob(`hostnameBlock__${stale.blockId}__${stale.progress}`)
+    if (!job) throw new Error('Missing stale cleanup job')
+
+    await process(job)
+
+    const current = `hostnameBlock__${operation.blockId}__${operation.progress}`
+    await expect(background.getJob(current).then(found => found?.data)).resolves.toEqual({
+      blockId: operation.blockId,
+      progress: operation.progress,
+      cursor: { stage: 'subdomains' },
+    })
+  })
+
+  it('recovers pending cleanups and continues a full recovery page', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(hostnameBlockingWorkConfig, {
+      recovery_batch_size: 1,
+    })
+    try {
+      const administrator = await createTestUserDirect({ administrator: true })
+      const hostname = `recover-${randomBytes(6).toString('hex')}.example.com`
+      const hostnameId = await insertTestUrlHostname({ hostname })
+      const operation = await createOperation(hostnameId, hostname, administrator.id)
+      const process = createBackgroundProcessor(
+        buildHandlerMap(hostnameBlockingHandlers, ['hostname-blocking']),
+      )
+      const afterBlockId = previousUuid(operation.blockId)
+      await enqueueHostnameBlockRecovery({ afterBlockId })
+      const job = await background.getJob(`hostnameBlockingRecovery__${afterBlockId}`)
+      if (!job) throw new Error('Missing recovery job')
+
+      await process(job)
+
+      await expect(
+        background.getJob(`hostnameBlock__${operation.blockId}__${operation.progress}`),
+      ).resolves.toBeTruthy()
+      await expect(
+        background.getJob(`hostnameBlockingRecovery__${operation.blockId}`),
+      ).resolves.toBeTruthy()
+    } finally {
+      restore()
+    }
+  })
 })
+
+function previousUuid(id: string): string {
+  const hex = (BigInt(`0x${id.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
 
 async function createOperation(hostnameId: string, hostname: string, administratorId: string) {
   await using query = await beginTransaction()
