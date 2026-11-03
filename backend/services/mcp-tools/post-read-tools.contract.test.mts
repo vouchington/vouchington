@@ -92,6 +92,7 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
       expect((await call(author, 'ancestors', post.id)).body).toEqual({
         success: true,
         ancestors: [],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
       })
     })
 

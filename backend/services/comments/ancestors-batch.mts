@@ -24,7 +24,7 @@ export async function getCommentAncestorsBatch(
         FROM posts WHERE posts.id = ANY(${postIds}::uuid[])
         UNION ALL
         SELECT ancestors.origin_id, posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.deleted_at, ancestors.depth + 1
-        -- no-mistakes-disable-next-line postgres-bounded-statements: the readability check must see the whole chain so a hidden ancestor above any page window keeps hiding the reply; each step joins one parent by primary key.
+        -- no-mistakes-disable-next-line postgres-bounded-statements: the readability check must see the whole chain so a hidden ancestor above any page window keeps hiding the reply. Cost: one row per ancestor per requested id, and depth has no write-time cap, so it grows with chain depth; resolveReadableThreads then loads every live ancestor and runs canViewPostsBatch over all of them.
         FROM posts JOIN ancestors ON ancestors.parent_post_id = posts.id
         WHERE ancestors.post_type = 'comment'
       )

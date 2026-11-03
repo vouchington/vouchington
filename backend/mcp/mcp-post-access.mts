@@ -70,10 +70,12 @@ const live = (node: { deleted_at: Date | null }) => !node.deleted_at
 
 /**
  * Resolves many posts at once with exactly the visibility `resolveReadableThread` gives each one,
- * in the order of `postIds`: the thread, or null where it answers as not found. A page costs one
- * ancestors query, one cached post read, one `requirePrivateToolUser` and one `canViewPostsBatch`
- * over the union of the thread chains, however many posts it holds. Takes post ids only; an
- * entry that is not a UUID is not found.
+ * in the order of `postIds`: the thread, or null where it answers as not found. A page runs one
+ * ancestors statement, one cached post read, one `requirePrivateToolUser` and one
+ * `canViewPostsBatch` over the union of the thread chains, however many posts it holds. Rows are
+ * not bounded the same way: the ancestors statement returns one row per ancestor per requested id,
+ * and every live ancestor is loaded and checked, so cost grows with chain depth. Takes post ids
+ * only; an entry that is not a UUID is not found.
  */
 export async function resolveReadableThreads(
   currentUser: BasicUser,

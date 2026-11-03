@@ -31,7 +31,7 @@ const LIMIT = COMMENT_ANCESTOR_PAGE_MAX_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a comment's parent chain, excluding the comment: the thread root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for the next window toward the root; the root repeats on every page. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.",
+      "Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.",
     parameters: {
       type: 'object',
       properties: {
@@ -40,7 +40,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           type: 'integer',
           minimum: 1,
           maximum: LIMIT,
-          description: `Parents per page, from 1 to ${LIMIT} (default: ${LIMIT})`,
+          description: `Parents per page (default ${LIMIT})`,
         },
         after: { type: 'string' },
       },
