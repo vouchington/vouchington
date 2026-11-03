@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import type {
-  claimRecoverableDataRequests,
-  RecoverableDataRequest,
-} from '@services/account-data-requests/recovery'
-import type { enqueueBulkExportRequests } from '@queues/account-lifecycle/enqueues/account-data-requests'
+import { claimRecoverableDataRequests, createDataRequest } from '@services/account-data-requests'
+import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import {
   ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
   ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
@@ -39,7 +37,6 @@ describe('processAccountDataRequestJob', () => {
     expect(processors.processExportRequest).toHaveBeenCalledWith(
       'request-1',
       'user-1',
-      undefined,
       'attempt-1',
       true,
     )
@@ -73,38 +70,43 @@ describe('processAccountDataRequestJob', () => {
 
 describe('recoverExportRequests', () => {
   it('enqueues every claimed database attempt', async () => {
-    const requests: RecoverableDataRequest[] = [
-      { requestId: 'request-1', userId: 'user-1', processingAttemptId: 'attempt-1' },
-    ]
-    const claim = vi
-      .fn<typeof claimRecoverableDataRequests>()
-      .mockResolvedValue({ requests, hasMore: false })
-    const enqueue = vi.fn<typeof enqueueBulkExportRequests>().mockResolvedValue([])
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
+    await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
 
     await expect(
       recoverExportRequests({
-        claimRecoverableDataRequests: claim,
-        enqueueBulkExportRequests: enqueue,
+        claimRecoverableDataRequests: (_requestIds, batchSize) =>
+          claimRecoverableDataRequests([request.id], batchSize),
       }),
     ).resolves.toEqual({ enqueued: 1, hasMore: false })
-    expect(enqueue).toHaveBeenCalledWith(requests)
+
+    const queued = await accountLifecycle.getJob(exportJobId(request))
+    expect(queued?.data).toEqual({
+      requestId: request.id,
+      userId: user.id,
+      processingAttemptId: request.processing_attempt_id,
+    })
   })
 
   it('does not enqueue an empty recovery batch', async () => {
-    const claim = vi
-      .fn<typeof claimRecoverableDataRequests>()
-      .mockResolvedValue({ requests: [], hasMore: false })
-    const enqueue = vi.fn<typeof enqueueBulkExportRequests>()
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
 
     await expect(
       recoverExportRequests({
-        claimRecoverableDataRequests: claim,
-        enqueueBulkExportRequests: enqueue,
+        claimRecoverableDataRequests: (_requestIds, batchSize) =>
+          claimRecoverableDataRequests([request.id], batchSize),
       }),
     ).resolves.toEqual({ enqueued: 0, hasMore: false })
-    expect(enqueue).not.toHaveBeenCalled()
+
+    expect(await accountLifecycle.getJob(exportJobId(request))).toBeNull()
   })
 })
+
+function exportJobId(request: { id: string; processing_attempt_id: string }): string {
+  return `account-data-export__${request.id}__${request.processing_attempt_id}`
+}
 
 function job(name: string, data: Record<string, unknown> = {}): Job {
   return { name, data, attemptsMade: 2, opts: { attempts: 3 } } as Job

@@ -19,46 +19,13 @@ import { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
 import { DATA_EXPORT_EXPIRY_DAYS } from '@queues/account-lifecycle/config'
 import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
 
-type ExportRequestDependencies = {
-  deleteExportFromS3: typeof deleteExportFromS3
-  enqueueSendDataExportReadyEmail: typeof enqueueSendDataExportReadyEmail
-  finishDataRequestUpload: typeof finishDataRequestUpload
-  getPrivateUserByAny: typeof getPrivateUserByAny
-  leaseDataRequestUpload: typeof leaseDataRequestUpload
-  markDataRequestFailed: typeof markDataRequestFailed
-  markDataRequestProcessing: typeof markDataRequestProcessing
-  markDataRequestReady: typeof markDataRequestReady
-  publishTerminalStatus: typeof publishTerminalStatus
-  uploadExportToS3: typeof uploadExportToS3
-  wasDataRequestMadeBySubject: typeof wasDataRequestMadeBySubject
-  writeExportFiles: typeof writeExportFiles
-  zipDir: typeof zipDir
-}
-
 export async function processExportRequest(
   requestId: string,
   userId: string,
-  dependencies?: Partial<ExportRequestDependencies>,
   processingAttemptId?: string,
   isFinalAttempt = true,
 ): Promise<void> {
-  const deps = {
-    deleteExportFromS3,
-    enqueueSendDataExportReadyEmail,
-    getPrivateUserByAny,
-    finishDataRequestUpload,
-    leaseDataRequestUpload,
-    markDataRequestFailed,
-    markDataRequestProcessing,
-    markDataRequestReady,
-    publishTerminalStatus,
-    uploadExportToS3,
-    wasDataRequestMadeBySubject,
-    writeExportFiles,
-    zipDir,
-    ...dependencies,
-  }
-  const started = await deps.markDataRequestProcessing(requestId, processingAttemptId)
+  const started = await markDataRequestProcessing(requestId, processingAttemptId)
   if (!started) return
 
   let tmpDir: string | undefined
@@ -67,25 +34,25 @@ export async function processExportRequest(
     const exportDir = join(tmpDir, 'export')
     const zipPath = join(tmpDir, `${requestId}.zip`)
 
-    await deps.writeExportFiles(userId, exportDir)
-    await deps.zipDir(exportDir, zipPath)
+    await writeExportFiles(userId, exportDir)
+    await zipDir(exportDir, zipPath)
 
     const attemptId = processingAttemptId ?? requestId
     const leaseStartedAt = performance.now()
-    if (!(await deps.leaseDataRequestUpload(requestId, attemptId))) return
+    if (!(await leaseDataRequestUpload(requestId, attemptId))) return
 
     const uploadTimeRemaining = Math.floor(
       DATA_REQUEST_UPLOAD_LEASE_MS - (performance.now() - leaseStartedAt) - 5_000,
     )
     if (uploadTimeRemaining <= 0) throw new Error('Account data upload lease expired')
-    const s3Key = await deps.uploadExportToS3(
+    const s3Key = await uploadExportToS3(
       requestId,
       attemptId,
       zipPath,
       AbortSignal.timeout(uploadTimeRemaining),
     )
     try {
-      await deps.finishDataRequestUpload(requestId, attemptId)
+      await finishDataRequestUpload(requestId, attemptId)
     } catch {
       // The bounded lease expires naturally; terminal export progress must not depend on this hint.
     }
@@ -93,11 +60,11 @@ export async function processExportRequest(
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + DATA_EXPORT_EXPIRY_DAYS)
 
-    const saved = await deps.markDataRequestReady(requestId, s3Key, expiresAt, processingAttemptId)
+    const saved = await markDataRequestReady(requestId, s3Key, expiresAt, processingAttemptId)
     if (!saved) {
       // Account was deleted while export was in-flight; best-effort clean up the orphaned object
       try {
-        await deps.deleteExportFromS3(s3Key)
+        await deleteExportFromS3(s3Key)
       } catch {
         // Non-fatal: durable deletion work retains the deterministic key for retry.
       }
@@ -106,16 +73,16 @@ export async function processExportRequest(
 
     // Publish terminal ready state before email so SSE subscribers resolve immediately
     // regardless of how long the email notification takes.
-    await deps.publishTerminalStatus(requestId, 'ready')
+    await publishTerminalStatus(requestId, 'ready')
 
     // Best-effort: send email notification; do not fail the export if this errors. Only the
     // subject's own export is announced: an administrator-run export must stay invisible to them.
     try {
-      const user = (await deps.wasDataRequestMadeBySubject(requestId))
-        ? await deps.getPrivateUserByAny(userId)
+      const user = (await wasDataRequestMadeBySubject(requestId))
+        ? await getPrivateUserByAny(userId)
         : null
       if (user) {
-        await deps.enqueueSendDataExportReadyEmail(
+        await enqueueSendDataExportReadyEmail(
           { userId, uiLocale: user.ui_locale ?? null },
           { requestId },
         )
@@ -124,7 +91,7 @@ export async function processExportRequest(
       // Non-fatal: export is ready, notification failure should not mark export as failed
     }
   } catch (err) {
-    const failed = await deps.markDataRequestFailed(
+    const failed = await markDataRequestFailed(
       requestId,
       processingAttemptId,
       err instanceof Error ? err.message : String(err),
@@ -132,7 +99,7 @@ export async function processExportRequest(
     )
     if (isFinalAttempt && failed) {
       // Publish terminal failed state so SSE subscribers resolve immediately.
-      await deps.publishTerminalStatus(requestId, 'failed')
+      await publishTerminalStatus(requestId, 'failed')
     }
     throw new Error(`Export failed for request ${requestId}`, { cause: err })
   } finally {
