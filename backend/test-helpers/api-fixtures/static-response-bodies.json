@@ -2890,7 +2890,6 @@
       {
         "created_at": "2026-05-31T12:00:00.000Z",
         "details": {
-          "reporter_user_ids": ["reporter-3"],
           "window_minutes": 30
         },
         "flag_type": "mass_report_suspected",
@@ -2921,7 +2920,6 @@
       {
         "created_at": "2026-06-01T12:00:00.000Z",
         "details": {
-          "reporter_user_ids": ["reporter-1", "reporter-2"],
           "window_minutes": 30
         },
         "flag_type": "mass_report_suspected",
@@ -2952,7 +2950,6 @@
       {
         "created_at": "2026-05-31T12:00:00.000Z",
         "details": {
-          "reporter_user_ids": ["reporter-3"],
           "window_minutes": 30
         },
         "flag_type": "mass_report_suspected",

@@ -6,7 +6,7 @@ import { read, write } from '@data-stores/psql'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
-import { FLAG_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
+import { FLAG_COLUMNS_WITH_HOSTNAME, FLAG_SUMMARY_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
 import { attachReportFlagEntityLabels } from './flag-entity-labels.mts'
@@ -65,7 +65,7 @@ export async function getReportIntegrityFlags(
 
   const query = sql`/* getReportIntegrityFlags */
     SELECT`
-  query.append(FLAG_COLUMNS_WITH_HOSTNAME)
+  query.append(FLAG_SUMMARY_COLUMNS_WITH_HOSTNAME)
   query.append(sql`
     FROM report_integrity_flags
     WHERE TRUE

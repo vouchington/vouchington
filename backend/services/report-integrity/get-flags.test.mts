@@ -65,6 +65,22 @@ describe('getReportIntegrityFlags / getReportIntegrityFlagByIdFromPrimary', () =
   })
 
   describe('getReportIntegrityFlags', () => {
+    it('omits the reporter id set from list rows but keeps it on the detail read', async () => {
+      const reporter = await createTestUserDirect({ username: randomUsername() })
+      const target = await createTestUserDirect({ username: randomUsername() })
+      const flagId = await insertTestReportIntegrityFlag({
+        reportedUserId: target.id,
+        reporterCount: 1,
+        reporterUserIds: [reporter.id],
+      })
+
+      const list = await getReportIntegrityFlags({ ids: [flagId] })
+      expect(list.results[0]).toMatchObject({ reporter_count: 1 })
+      expect(list.results[0]!.details).not.toHaveProperty('reporter_user_ids')
+      const detail = await getReportIntegrityFlagByIdFromPrimary(flagId)
+      expect(detail!.details.reporter_user_ids).toEqual([reporter.id])
+    })
+
     it('returns the natural hostname alongside the factual hostname id', async () => {
       const hostname = `report-integrity-${randomBytes(8).toString('hex')}.example.com`
       const hostnameId = await insertTestUrlHostname({ hostname })

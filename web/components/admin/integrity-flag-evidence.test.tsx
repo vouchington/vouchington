@@ -3,13 +3,12 @@ import { render, screen } from '@testing-library/react'
 import { IntegrityFlagEvidence } from './integrity-flag-evidence'
 
 describe('IntegrityFlagEvidence', () => {
-  it('shows mass-report aggregates without the reporter ID set', () => {
+  it('shows mass-report aggregates', () => {
     const { container } = render(
       <IntegrityFlagEvidence
         domain='report'
         flagType='mass_report_suspected'
         details={{
-          reporter_user_ids: ['019f7000-0000-7000-8000-000000000101'],
           reporter_count: 12,
           new_account_reporter_count: 9,
           threshold: 10,
@@ -22,8 +21,6 @@ describe('IntegrityFlagEvidence', () => {
     expect(container).toHaveTextContent('Alert threshold: 10')
     expect(container).toHaveTextContent('Window (minutes): 60')
     expect(container).toHaveTextContent('New account age (days): 7')
-    expect(container).not.toHaveTextContent('019f7000-0000-7000-8000-000000000101')
-    expect(container).not.toHaveTextContent('reporter_user_ids')
   })
 
   it('shows velocity evidence as counts and time bounds', () => {

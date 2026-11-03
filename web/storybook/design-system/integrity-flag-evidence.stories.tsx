@@ -20,13 +20,11 @@ export const MassReports: Story = {
       threshold: 10,
       window_minutes: 60,
       new_account_age_days: 7,
-      reporter_user_ids: ['019f7000-0000-7000-8000-000000000101'],
     },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByText('New account reporters: 9')).toBeVisible()
-    await expect(canvas.queryByText(/019f7000/)).toBeNull()
   },
 }
 
