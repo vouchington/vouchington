@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { stubDsaTransparencyDatabaseProvider } from '@voucha/test-helpers/dsa-transparency-database-provider'
 import { configureDsaStatementSubmissionForTest } from '@voucha/test-helpers/dsa-switches'
-import { afterNextPostgresCommitForTest } from '@voucha/test-helpers/injected-failures'
+import { afterNextPostgresCommitForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestDsaSubmission,

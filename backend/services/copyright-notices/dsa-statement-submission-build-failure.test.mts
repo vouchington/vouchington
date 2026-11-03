@@ -7,10 +7,8 @@ import {
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
 import { overrideDsaStatementSubmissionConfigForTest } from '@voucha/test-helpers/dsa-switches'
-import {
-  rejectNextPostgresTransactionForTest,
-  rewritePostgresTransactionRowsForTest,
-} from '@voucha/test-helpers/injected-failures'
+import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import { rewritePostgresTransactionRowsForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import {
   countTestDsaSubmissionsForRestriction,
   readTestDsaAttempts,
