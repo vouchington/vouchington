@@ -18,19 +18,12 @@ import {
 import createHttpError from 'http-errors'
 
 type StartIdentityVerificationDependencies = {
-  assertEligibleForIdentityVerification: typeof assertEligibleForIdentityVerification
   createIdentityCheckoutSession: (
     payload: Omit<
       CreateIdentityCheckoutSessionPayload,
       'customerIdempotencyKey' | 'checkoutIdempotencyKey'
     >,
   ) => Promise<StripeCheckoutSessionResult>
-  invalidateUsers: typeof invalidate.users
-  reserveAttempt: typeof reserveIdentityVerificationAttempt
-  attachCheckoutToAttempt: typeof attachCheckoutToIdentityVerificationAttempt
-  releaseAttempt: typeof releaseReservedIdentityVerificationAttempt
-  releaseAttachedAttempt: typeof releaseAttachedIdentityVerificationAttempt
-  beginTransaction: typeof beginTransaction
 }
 
 /**
@@ -45,24 +38,13 @@ type StartIdentityVerificationDependencies = {
 export async function startIdentityVerification(
   currentUser: PrivateUser,
   opts: { successUrl: string; cancelUrl: string },
-  dependencies: Pick<StartIdentityVerificationDependencies, 'createIdentityCheckoutSession'> &
-    Partial<Omit<StartIdentityVerificationDependencies, 'createIdentityCheckoutSession'>>,
+  dependencies: StartIdentityVerificationDependencies,
 ): Promise<{ url: string }> {
-  const assertEligible =
-    dependencies?.assertEligibleForIdentityVerification ?? assertEligibleForIdentityVerification
   const createCheckoutSession = dependencies.createIdentityCheckoutSession
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
 
-  await assertEligible(currentUser)
+  await assertEligibleForIdentityVerification(currentUser)
 
-  const reserveAttempt = dependencies?.reserveAttempt ?? reserveIdentityVerificationAttempt
-  const attachCheckout =
-    dependencies?.attachCheckoutToAttempt ?? attachCheckoutToIdentityVerificationAttempt
-  const releaseAttempt = dependencies?.releaseAttempt ?? releaseReservedIdentityVerificationAttempt
-  const releaseAttachedAttempt =
-    dependencies?.releaseAttachedAttempt ?? releaseAttachedIdentityVerificationAttempt
-  const attempt = await reserveAttempt(currentUser.id)
+  const attempt = await reserveIdentityVerificationAttempt(currentUser.id)
 
   // Create the Stripe customer and checkout session before claiming the DB row.
   // Concurrent requests that also reach this point will create orphaned sessions,
@@ -84,9 +66,9 @@ export async function startIdentityVerification(
       },
     })
     if (!session.url) throw new Error('Stripe Checkout session missing URL')
-    await attachCheckout(attempt.id, session.id)
+    await attachCheckoutToIdentityVerificationAttempt(attempt.id, session.id)
   } catch (err) {
-    await releaseAttempt(attempt.id).catch(onError)
+    await releaseReservedIdentityVerificationAttempt(attempt.id).catch(onError)
     throw err
   }
 
@@ -96,7 +78,7 @@ export async function startIdentityVerification(
   // attempt marker distinguishes an acknowledgement-lost committed claim from a concurrent loser.
   let claimCommitted = false
   try {
-    await using transaction = await begin()
+    await using transaction = await beginTransaction()
     const { rows } = await transaction(
       sql`/* startIdentityVerification:claim-and-persist */
       WITH eligible_user AS (
@@ -136,7 +118,7 @@ export async function startIdentityVerification(
     claimCommitted =
       (rows[0] as { claim_committed?: boolean } | undefined)?.claim_committed === true
   } catch (err) {
-    await using transaction = await begin()
+    await using transaction = await beginTransaction()
     const { rows } = await transaction(sql`/* startIdentityVerification:recover-ambiguous-claim */
         SELECT checkout_claimed_at
         FROM identity_verification_attempts
@@ -147,20 +129,20 @@ export async function startIdentityVerification(
     await transaction.commit()
     const recovered = rows[0] as { checkout_claimed_at?: Date | null } | undefined
     if (recovered?.checkout_claimed_at) {
-      await invalidateUsers(currentUser.id).catch(onError)
+      await invalidate.users(currentUser.id).catch(onError)
       return { url: session.url }
     }
-    await releaseAttachedAttempt(attempt.id, session.id).catch(onError)
+    await releaseAttachedIdentityVerificationAttempt(attempt.id, session.id).catch(onError)
     throw err
   }
 
   if (!claimCommitted) {
-    await releaseAttachedAttempt(attempt.id, session.id).catch(onError)
+    await releaseAttachedIdentityVerificationAttempt(attempt.id, session.id).catch(onError)
     throw createHttpError(409, 'A verification request is already in progress for this account.')
   }
 
   // Best-effort: the checkout session and DB transition already succeeded; a cache
   // invalidation failure must not prevent the client from receiving the checkout URL.
-  await invalidateUsers(currentUser.id).catch(onError)
+  await invalidate.users(currentUser.id).catch(onError)
   return { url: session.url }
 }

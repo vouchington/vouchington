@@ -114,3 +114,35 @@ export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error)
   })
   return () => spy.mockRestore()
 }
+
+/**
+ * While installed, wrap every transaction opened through `psql.beginTransaction`. Run
+ * `beforeStatement` once, on the first statement (in whichever transaction reaches it) whose text
+ * contains `marker`, immediately before that statement. The callback receives that
+ * transaction's executor, so a lifecycle change it writes is visible to the statement that follows,
+ * as a concurrent commit between two statements would be; a throw rejects that statement. Returns
+ * the restore.
+ */
+export function runBeforePostgresStatementForTest(
+  marker: string,
+  beforeStatement: (transaction: QueryExecutor) => Promise<void>,
+): () => void {
+  const realBegin = psql.beginTransaction
+  let ran = false
+  const spy = vi.spyOn(psql, 'beginTransaction').mockImplementation(async options => {
+    const transaction = await realBegin(options)
+    return new Proxy(transaction, {
+      apply(target, thisArgument, argumentsList: Parameters<typeof transaction>) {
+        const [input] = argumentsList
+        const text = typeof input === 'string' ? input : input.text
+        if (ran || !text.includes(marker)) return Reflect.apply(target, thisArgument, argumentsList)
+        ran = true
+        return (async () => {
+          await beforeStatement(target)
+          return Reflect.apply(target, thisArgument, argumentsList)
+        })()
+      },
+    })
+  })
+  return () => spy.mockRestore()
+}

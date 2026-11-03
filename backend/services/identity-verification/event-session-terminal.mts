@@ -2,18 +2,10 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { invalidate } from '@services/entity-cache/invalidate'
 
-type TerminalSessionLifecycleDependencies = {
-  invalidateUsers: typeof invalidate.users
-  beginTransaction: typeof beginTransaction
-}
-
 export async function onCheckoutAbortedForIdentity(
   _eventId: string,
   eventData: Record<string, unknown>,
-  dependencies?: Partial<TerminalSessionLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
   const metadata = eventData.metadata as Record<string, string> | undefined
   if (metadata?.intent !== 'identity-verification') return
   const userId = metadata?.user_id
@@ -21,7 +13,7 @@ export async function onCheckoutAbortedForIdentity(
   const checkoutSessionId = eventData.id as string | undefined
   if (!checkoutSessionId) return
 
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rows } = await transaction(sql`/* onCheckoutAbortedForIdentity */
       WITH pending_user AS (
         SELECT id
@@ -53,20 +45,17 @@ export async function onCheckoutAbortedForIdentity(
     `)
   await transaction.commit()
   if (!rows.length) return
-  await invalidateUsers(userId)
+  await invalidate.users(userId)
 }
 
 export async function onVerificationSessionCanceled(
   _eventId: string,
   eventData: Record<string, unknown>,
-  dependencies?: Partial<TerminalSessionLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
   const sessionId = eventData.id as string | undefined
   if (!sessionId) return
 
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rows } = await transaction(sql`/* onVerificationSessionCanceled */
       UPDATE users
       SET verification_status = 'unverified',
@@ -79,5 +68,5 @@ export async function onVerificationSessionCanceled(
       RETURNING id
     `)
   await transaction.commit()
-  await Promise.all((rows as { id: string }[]).map(row => invalidateUsers(row.id)))
+  await Promise.all((rows as { id: string }[]).map(row => invalidate.users(row.id)))
 }
