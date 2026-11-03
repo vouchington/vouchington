@@ -3,7 +3,6 @@ import { runRelationPublicationMutation } from '@services/entity-relations/publi
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedTopicId, seedUser } from '../run-support.mts'
 import { lockTopicHostnameOwnership } from '@services/topics/hostname-ownership-lock'
-import { lockTopicMergeHostnameOwnership } from '@services/topics/merge-hostname-ownership'
 import { seedUuid } from '../seed-data/common.mts'
 import { addUrls } from '@services/urls/upsert'
 import { createTopic } from '@services/topics/create'
@@ -112,10 +111,12 @@ export async function runHostnameOwnershipSnapshotScenario(): Promise<void> {
     'hostname-owner-merge-snapshot',
     async () => {
       await using query = await beginTransaction()
-      await lockTopicMergeHostnameOwnership(query, [topicId, seedTopicId])
+      await lockTopicHostnameOwnership(query, [topicId, seedTopicId], [], {
+        includeDeletedLandingPages: true,
+      })
     },
     undefined,
-    'getTopicMergeHostnameOwnershipIds',
+    'getTopicHostnameOwnershipIds',
   )
 }
 
