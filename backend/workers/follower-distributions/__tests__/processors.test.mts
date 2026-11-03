@@ -1,115 +1,86 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import type {
-  advanceFollowerDistributionChunkCursor,
-  processFollowerDistributionChunk,
-  listIncompleteFollowerDistributionIdPage,
-} from '@services/follower-distributions'
-import type {
-  enqueueBackfillFollowerDistributionsContinuation,
-  enqueueBulkProcessFollowerDistributions,
-} from '@queues/follower-distributions/enqueues'
 import { background } from '@queues/background/queues'
+import { sendPostToFollowers, sharePostWithFollowers } from '@services/follower-distributions'
+import { followerDistributionsWorkConfig } from '@services/follower-distributions/work-limits'
+import { createTestPost, createTestUser, followUser } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { getFollowerDistributionCursorForTest } from '@voucha/test-helpers/sql-follower-distribution'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 
 import { backfillFollowerDistributions, processFollowerDistribution } from '../processors.mts'
 
-const mockAdvanceFollowerDistributionChunkCursor =
-  vi.fn<typeof advanceFollowerDistributionChunkCursor>()
-const mockEnqueueBulkProcessFollowerDistributions =
-  vi.fn<typeof enqueueBulkProcessFollowerDistributions>()
-const mockProcessFollowerDistributionChunk = vi.fn<typeof processFollowerDistributionChunk>()
-const mockEnqueueBackfillContinuation =
-  vi.fn<typeof enqueueBackfillFollowerDistributionsContinuation>()
-const mockListIncompleteFollowerDistributionIdPage =
-  vi.fn<typeof listIncompleteFollowerDistributionIdPage>()
+const lastPossibleId = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 
 describe('follower distribution worker processors with queue side effects', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
   it('does not advance the distribution cursor if push enqueueing fails', async () => {
-    mockProcessFollowerDistributionChunk.mockResolvedValue({
-      completed: true,
-      cursorRecipientId: 'recipient-1',
-      distributionId: 'distribution-1',
-      notificationsToDeliver: [{ notificationId: 'notification-1', userId: 'user-1' }],
-      processed: 1,
-    })
+    const distributionId = await createOwnDistribution(true)
     vi.spyOn(background, 'addBulk').mockRejectedValue(new Error('Valkey unavailable'))
 
     await expect(
-      runProcessFollowerDistribution({ distributionId: 'distribution-1' }),
+      processFollowerDistribution({
+        data: { distributionId },
+        updateData: vi.fn<Job['updateData']>(),
+        moveToDelayed: vi.fn<Job['moveToDelayed']>(),
+      }),
     ).rejects.toThrow('Valkey unavailable')
 
-    expect(mockAdvanceFollowerDistributionChunkCursor).not.toHaveBeenCalled()
+    await expect(getFollowerDistributionCursorForTest(distributionId)).resolves.toBeNull()
   })
 
   it('backfills one page of incomplete distributions and continues from its last id', async () => {
-    mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({
-      ids: ['distribution-1', 'distribution-2'],
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(followerDistributionsWorkConfig, {
+        backfill_batch_size: 1,
+      }),
+    )
+    const distributionId = await createOwnDistribution()
+
+    await expect(backfillFollowerDistributions(uuidBefore(distributionId))).resolves.toEqual({
+      enqueued: 1,
       hasMore: true,
     })
 
-    const result = await runBackfillFollowerDistributions('distribution-0')
-
-    expect(result).toEqual({ enqueued: 2, hasMore: true })
-    expect(mockListIncompleteFollowerDistributionIdPage).toHaveBeenCalledWith('distribution-0')
-    expect(mockEnqueueBulkProcessFollowerDistributions).toHaveBeenCalledWith([
-      'distribution-1',
-      'distribution-2',
+    const jobs = await readAllQueueJobs(background)
+    expect(
+      jobs
+        .filter(job => (job.data as { distributionId?: string }).distributionId === distributionId)
+        .map(job => ({ name: job.name, data: job.data })),
+    ).toEqual([
+      { name: 'follower-distributions.processFollowerDistribution', data: { distributionId } },
     ])
-    expect(mockEnqueueBackfillContinuation).toHaveBeenCalledWith('distribution-2')
+    const continuation = await background.getJob(
+      `backfill_follower_distributions__${distributionId}`,
+    )
+    expect(continuation?.name).toBe('follower-distributions.backfillFollowerDistributions')
+    expect(continuation?.data).toEqual({ afterId: distributionId })
   })
 
-  it('stops after a short page without a continuation', async () => {
-    mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({
-      ids: ['distribution-3'],
+  it('enqueues nothing past the last possible id', async () => {
+    await expect(backfillFollowerDistributions(lastPossibleId)).resolves.toEqual({
+      enqueued: 0,
       hasMore: false,
     })
 
-    await expect(runBackfillFollowerDistributions()).resolves.toEqual({
-      enqueued: 1,
-      hasMore: false,
-    })
-    expect(mockEnqueueBackfillContinuation).not.toHaveBeenCalled()
-  })
-
-  it('backfills through the real page reader past the last possible id', async () => {
     await expect(
-      backfillFollowerDistributions('ffffffff-ffff-ffff-ffff-ffffffffffff'),
-    ).resolves.toEqual({ enqueued: 0, hasMore: false })
-  })
-
-  it('enqueues nothing when no distribution is incomplete', async () => {
-    mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({ ids: [], hasMore: false })
-
-    await runBackfillFollowerDistributions()
-
-    expect(mockEnqueueBulkProcessFollowerDistributions).not.toHaveBeenCalled()
+      background.getJob(`backfill_follower_distributions__${lastPossibleId}`),
+    ).resolves.toBeFalsy()
   })
 })
 
-function runProcessFollowerDistribution(data: { distributionId: string }) {
-  const job = {
-    data,
-    updateData: vi.fn<Job['updateData']>(),
-    moveToDelayed: vi.fn<Job['moveToDelayed']>(),
-  }
-  return processFollowerDistribution(job, {
-    advanceFollowerDistributionChunkCursor: mockAdvanceFollowerDistributionChunkCursor,
-    processFollowerDistributionChunk: mockProcessFollowerDistributionChunk,
-  })
-}
-
-function runBackfillFollowerDistributions(afterId?: string) {
-  return backfillFollowerDistributions(afterId, {
-    enqueueBackfillFollowerDistributionsContinuation: mockEnqueueBackfillContinuation,
-    enqueueBulkProcessFollowerDistributions: mockEnqueueBulkProcessFollowerDistributions,
-    listIncompleteFollowerDistributionIdPage: mockListIncompleteFollowerDistributionIdPage,
-  })
+async function createOwnDistribution(notify = false): Promise<string> {
+  const sender = await createTestUser()
+  const creator = await createTestUser()
+  const follower = await createTestUser()
+  await followUser(follower, sender)
+  const post = await createTestPost({ user: creator, privacy: 'public' })
+  const distribution = notify
+    ? await sendPostToFollowers(sender, post.id, { audience: 'all_followers' })
+    : await sharePostWithFollowers(sender, post.id)
+  return distribution.distribution_id
 }
