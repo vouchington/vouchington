@@ -1,49 +1,15 @@
-import {
-  getImagePlacementForCopyright,
-  getImagePlacementCopyrightOwner,
-  restoreImagePlacementForCopyright,
-  withholdImagePlacementForCopyright,
-} from '@services/images/placements'
-import { clearUnavailableImagePlacementCopyrightWithholding } from '@services/images/placement-copyright-resolution'
-import {
-  prepublishImagePlacementDenial,
-  publishStagedMediaDeliveryRecord,
-} from '@services/media-delivery-safety'
-import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
+import { publishStagedCopyrightDeliveryRecord } from './action-delivery-edge.mts'
 
-async function prepublishCopyrightImagePlacementDenial(
-  ...args: Parameters<typeof prepublishImagePlacementDenial>
-): ReturnType<typeof prepublishImagePlacementDenial> {
-  assertMediaDeliveryLegalEnforcementEnabled()
-  return prepublishImagePlacementDenial(...args)
-}
-
-async function publishStagedCopyrightDeliveryRecord(
-  mediaDeliveryRegistryRecordId: string,
-): Promise<void> {
-  assertMediaDeliveryLegalEnforcementEnabled()
-  await publishStagedMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
-}
-
+/**
+ * Kept for the persisted-authority race tests: they must pause after the staged tuple commits and
+ * before `publishStagedMediaDeliveryRecord` takes the placement delivery lock, and no real boundary
+ * sits between those two points. Production never passes it.
+ */
 export type CopyrightActionDeliveryDependencies = {
-  assertMediaDeliveryLegalEnforcementEnabled: typeof assertMediaDeliveryLegalEnforcementEnabled
-  clearUnavailableImagePlacementCopyrightWithholding: typeof clearUnavailableImagePlacementCopyrightWithholding
-  getImagePlacementForCopyright: typeof getImagePlacementForCopyright
-  withholdImagePlacementForCopyright: typeof withholdImagePlacementForCopyright
-  restoreImagePlacementForCopyright: typeof restoreImagePlacementForCopyright
-  getImagePlacementCopyrightOwner: typeof getImagePlacementCopyrightOwner
-  prepublishImagePlacementDenial: typeof prepublishImagePlacementDenial
-  publishStagedMediaDeliveryRecord: typeof publishStagedMediaDeliveryRecord
+  publishStagedMediaDeliveryRecord: typeof publishStagedCopyrightDeliveryRecord
 }
 
 const defaultDependencies: CopyrightActionDeliveryDependencies = {
-  assertMediaDeliveryLegalEnforcementEnabled,
-  clearUnavailableImagePlacementCopyrightWithholding,
-  getImagePlacementForCopyright,
-  withholdImagePlacementForCopyright,
-  restoreImagePlacementForCopyright,
-  getImagePlacementCopyrightOwner,
-  prepublishImagePlacementDenial: prepublishCopyrightImagePlacementDenial,
   publishStagedMediaDeliveryRecord: publishStagedCopyrightDeliveryRecord,
 }
 

@@ -1,9 +1,9 @@
 import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { decryptSecret } from '@modules/token-secrets'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { readTestCopyrightRestrictionAdministratorLift } from '@voucha/test-helpers/copyright-administrator-lifts'
 import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
@@ -14,6 +14,15 @@ import { processCopyrightActionIntent } from './index.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 
 describe('administrator copyright restriction lifts', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('lifts a confirmed post restriction after its author is deleted and retains the audit decision', async () => {
     const [poster, moderator, administrator] = await Promise.all([
       createTestUserDirect(),
@@ -33,11 +42,7 @@ describe('administrator copyright restriction lifts', () => {
     if (!restriction || !incident?.is_operative || !withhold)
       throw new Error('confirmed restriction fixture missing')
 
-    await processCopyrightActionIntent(
-      withhold.id,
-      new Date(),
-      createTestCopyrightDeliveryDependencies(async () => undefined),
-    )
+    await processCopyrightActionIntent(withhold.id, new Date())
     await recordCopyrightRepeatInfringerDisposition({
       currentUser: moderator,
       incidentId: incident.id,
@@ -95,13 +100,7 @@ describe('administrator copyright restriction lifts', () => {
     )
     if (!restore) throw new Error('administrator restore intent missing')
     expect(after?.restrictions.find(row => row.id === restriction.id)?.lifted_at).toBeNull()
-    await expect(
-      processCopyrightActionIntent(
-        restore.id,
-        new Date(),
-        createTestCopyrightDeliveryDependencies(async () => undefined),
-      ),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(restore.id, new Date())).resolves.toBe('applied')
     expect(await getImagePlacementForCopyright(after!.targets[0]!.placement_id)).toMatchObject({
       withheld: false,
     })

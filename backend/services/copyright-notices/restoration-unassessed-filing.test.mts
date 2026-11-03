@@ -1,7 +1,6 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   appendCopyrightLegalHoldAssessment,
   createCopyrightCounterNotice,
@@ -81,6 +80,15 @@ async function recordCourtFiling(
 }
 
 describe('unassessed court or CCB filings', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('queues an unassessed filing as urgent then returns it to ordinary work once assessed', async () => {
     const { moderator, notice, target } = await createCopyrightRestorationHoldFixture().then(
       fixture => ({
@@ -255,12 +263,7 @@ describe('unassessed court or CCB filings', () => {
       intent => intent.action === 'withhold',
     )
     if (!withhold) throw new Error('initial withhold intent disappeared')
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
-    await expect(
-      processCopyrightActionIntent(withhold.id, new Date(), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('applied')
     const restore = await createEligibleCopyrightRestoreIntent({
       noticeId: notice.id,
       targetId: target.id,
@@ -270,11 +273,7 @@ describe('unassessed court or CCB filings', () => {
       now,
     })
     const filing = await recordCourtFiling(notice.id)
-    await expect(
-      processCopyrightActionIntent(restore.id, now, {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('blocked')
+    await expect(processCopyrightActionIntent(restore.id, now)).resolves.toBe('blocked')
     await appendCopyrightLegalHoldAssessment({
       currentUser: moderator,
       submissionId: filing.id,
@@ -289,9 +288,7 @@ describe('unassessed court or CCB filings', () => {
       rationale: 'The filing does not identify a commenced proceeding.',
     })
     await expect(
-      processCopyrightActionIntent(restore.id, new Date(now.getTime() + 120_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(restore.id, new Date(now.getTime() + 120_000)),
     ).resolves.toBe('applied')
   })
 })

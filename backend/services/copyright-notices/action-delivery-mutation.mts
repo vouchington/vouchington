@@ -1,6 +1,10 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { CopyrightImagePlacementMutation } from '@services/images/placements'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import {
+  getImagePlacementForCopyright,
+  restoreImagePlacementForCopyright,
+  withholdImagePlacementForCopyright,
+  type CopyrightImagePlacementMutation,
+} from '@services/images/placements'
 import {
   completeCopyrightActionIntentInTransaction,
   type LockedCopyrightActionDelivery,
@@ -16,7 +20,6 @@ export async function mutateCopyrightPlacement(input: {
   legal: LockedCopyrightActionDelivery
   current: CurrentPlacement
   now: Date
-  dependencies: CopyrightActionDeliveryDependencies
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<{ placement: CurrentPlacement } | { terminal: 'stale' }> {
   const mutation =
@@ -24,14 +27,14 @@ export async function mutateCopyrightPlacement(input: {
     (input.legal.action === 'restore' && !input.current.withheld)
       ? ({ status: 'already_applied', placement: input.current } as const)
       : input.legal.action === 'withhold'
-        ? await input.dependencies.withholdImagePlacementForCopyright(
+        ? await withholdImagePlacementForCopyright(
             {
               placementId: input.legal.placement_id,
               expectedRevision: input.legal.expected_placement_revision,
             },
             { query: input.query },
           )
-        : await input.dependencies.restoreImagePlacementForCopyright(
+        : await restoreImagePlacementForCopyright(
             {
               placementId: input.legal.placement_id,
               expectedRevision: input.legal.expected_placement_revision,
@@ -57,9 +60,7 @@ export async function mutateCopyrightPlacement(input: {
 }
 
 export function isCurrentPlacementForIntent(
-  current: Awaited<
-    ReturnType<CopyrightActionDeliveryDependencies['getImagePlacementForCopyright']>
-  >,
+  current: Awaited<ReturnType<typeof getImagePlacementForCopyright>>,
   legal: LockedCopyrightActionDelivery,
 ): current is CurrentPlacement {
   return Boolean(

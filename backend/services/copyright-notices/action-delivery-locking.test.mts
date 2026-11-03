@@ -3,7 +3,7 @@ import {
   rewriteTestCopyrightDeliveryAttempt,
 } from '@voucha/test-helpers/copyright-attempt-history'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   completeTestCopyrightActionClaim,
   createTestUnreadableCopyrightResponse,
@@ -11,7 +11,7 @@ import {
   createTestRejectedCopyrightResponse,
 } from '@voucha/test-helpers/copyright-lease-fencing'
 import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   createCounterNoticeRestoreIntent,
@@ -32,6 +32,11 @@ import { getCopyrightActionDeliveryDependencies } from './action-delivery-depend
 
 // Form screening's reclaimed-owner regression is owned by form-screening-executions.test.mts.
 describe('copyright queue lease fencing', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('rejects the reclaimed delivery owner completion and failure', async () => {
     const { notice } = await createCopyrightRestorationHoldFixture()
     const intent = await createCopyrightDeliveryIntent({
@@ -135,6 +140,7 @@ describe('copyright queue lease fencing', () => {
   })
 
   it('rejects reclaimed action completion, failure, and execution before side effects', async () => {
+    const edge = installTestMediaDeliveryEdge()
     const { notice, intent } = await createActionClaimFixture()
     const now = new Date()
     const old = (await claimCopyrightActionIntent(intent.id, now))!
@@ -153,18 +159,9 @@ describe('copyright queue lease fencing', () => {
       }),
     ).toBe('not_claimed')
     expect(
-      await executeCopyrightActionIntent(
-        old,
-        later,
-        getCopyrightActionDeliveryDependencies(
-          createTestCopyrightDeliveryDependencies(async () => {
-            throw new Error('stale owner published')
-          }),
-        ),
-      ),
+      await executeCopyrightActionIntent(old, later, getCopyrightActionDeliveryDependencies({})),
     ).toBe('not_claimed')
     const failure = new Error('expired worker failed')
-    let denialPublished = false
     await expect(
       compensateCopyrightActionFailure(
         old,
@@ -174,15 +171,10 @@ describe('copyright queue lease fencing', () => {
           revision: old.expected_placement_revision,
           imageId: old.image_id,
         },
-        getCopyrightActionDeliveryDependencies({
-          prepublishImagePlacementDenial: async () => {
-            denialPublished = true
-          },
-        }),
         failure,
       ),
     ).rejects.toBe(failure)
-    expect(denialPublished).toBe(false)
+    expect(edge.put).not.toHaveBeenCalled()
     expect((await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents[0]!.state).toBe(
       'claimed',
     )
@@ -193,12 +185,19 @@ describe('copyright queue lease fencing', () => {
   })
 
   it('keeps an expired competing claim out while compensation is running', async () => {
+    const edge = installTestMediaDeliveryEdge()
     const { intent, now } = await createActionClaimFixture('restore')
     const old = (await claimCopyrightActionIntent(intent.id, now))!
     const later = new Date(now.getTime() + 16 * 60 * 1000)
     const entered = Promise.withResolvers<void>()
     const resume = Promise.withResolvers<void>()
     const error = new Error('provider failure')
+    edge.put.mockImplementation(async input => {
+      entered.resolve()
+      await resume.promise
+      edge.accept(input)
+      return { $metadata: {} }
+    })
     const compensation = compensateCopyrightActionFailure(
       old,
       now,
@@ -207,12 +206,6 @@ describe('copyright queue lease fencing', () => {
         revision: old.expected_placement_revision,
         imageId: old.image_id,
       },
-      getCopyrightActionDeliveryDependencies({
-        prepublishImagePlacementDenial: async () => {
-          entered.resolve()
-          await resume.promise
-        },
-      }),
       error,
     ).catch(err => err)
     try {

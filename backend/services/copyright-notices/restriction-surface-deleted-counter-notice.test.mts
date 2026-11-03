@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
   completeTestMediaDeliveryRecord,
   getTestMediaDeliveryRecord,
@@ -30,17 +30,22 @@ import {
 import { encodeUuidCursorBefore } from '../../test-helpers/modules/pagination/uuid-cursors.mts'
 
 describe('deleted community image setters and copyright response flows', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('keeps a community restriction withheld when its setter is deleted without a counter-notice', async () => {
     const fixture = await createTestCopyrightImageFixture('community-banner-image')
     const restricted = await createTestCopyrightRestrictionForImage(fixture)
     const setter = await getTestPrivateUserById(fixture.actorUserId)
     if (!setter) throw new Error('Community setter fixture missing')
 
-    await processCopyrightActionIntent(
-      restricted.withholdIntentId,
-      new Date(),
-      createTestCopyrightDeliveryDependencies(async () => undefined),
-    )
+    await processCopyrightActionIntent(restricted.withholdIntentId, new Date())
     const initialWithheld = await getImagePlacementForCopyright(fixture.placementId)
     const recordId = await getTestMediaDeliveryRegistryRecordId({
       placementId: fixture.placementId,
@@ -86,11 +91,7 @@ describe('deleted community image setters and copyright response flows', () => {
     const restricted = await createTestCopyrightRestrictionForImage(fixture)
     const setter = await getTestPrivateUserById(fixture.actorUserId)
     if (!setter) throw new Error('Community setter fixture missing')
-    await processCopyrightActionIntent(
-      restricted.withholdIntentId,
-      new Date(),
-      createTestCopyrightDeliveryDependencies(async () => undefined),
-    )
+    await processCopyrightActionIntent(restricted.withholdIntentId, new Date())
     const counterNotice = await createCopyrightCounterNotice(
       setter,
       restricted.noticeId,
@@ -144,11 +145,7 @@ describe('deleted community image setters and copyright response flows', () => {
       )
       const setter = await getTestPrivateUserById(fixture.actorUserId)
       if (!setter) throw new Error('Community setter fixture missing')
-      await processCopyrightActionIntent(
-        restricted.withholdIntentId,
-        new Date(),
-        createTestCopyrightDeliveryDependencies(async () => undefined),
-      )
+      await processCopyrightActionIntent(restricted.withholdIntentId, new Date())
       await completeCopyrightMandatoryHumanReview({
         noticeId: restricted.noticeId,
         restrictionId: restricted.restrictionId,
@@ -219,13 +216,7 @@ describe('deleted community image setters and copyright response flows', () => {
           row.copyright_restriction_id === restricted.restrictionId && row.action === 'restore',
       )
       if (!restore) throw new Error('Statutory restore intent missing')
-      await expect(
-        processCopyrightActionIntent(
-          restore.id,
-          dueAt,
-          createTestCopyrightDeliveryDependencies(async () => undefined),
-        ),
-      ).resolves.toBe('applied')
+      await expect(processCopyrightActionIntent(restore.id, dueAt)).resolves.toBe('applied')
       const restored = await getCopyrightNoticePrivateAggregate(restricted.noticeId)
       expect(restored?.deadlines.find(row => row.id === review.deadlineId)).toMatchObject({
         ...window,

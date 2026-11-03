@@ -1,9 +1,9 @@
 import { processCopyrightActionIntent } from './index.mts'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { markCopyrightDeliveryIntentSent } from './delivery-intents.mts'
 import { copyrightEmailSubject } from './statement-of-reasons-wording.mts'
 import { listNotifications } from '@services/notifications'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   createClearScreenedForm,
@@ -26,6 +26,17 @@ import {
 } from './delivery-transport.mts'
 
 describe('poster statements on human imposition', () => {
+  let edge: ReturnType<typeof installTestMediaDeliveryEdge>
+
+  beforeEach(() => {
+    edge = installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   useCopyrightIntakeEnvironment()
   it('delivers truthful immutable authorization text even when withholding delivery fails', async () => {
     const poster = await createTestUser()
@@ -41,15 +52,10 @@ describe('poster statements on human imposition', () => {
     const action = (await getCopyrightNoticePrivateAggregate(noticeId))!.actionIntents.find(
       row => row.action === 'withhold',
     )!
-    await expect(
-      processCopyrightActionIntent(
-        action.id,
-        new Date(),
-        createTestCopyrightDeliveryDependencies(async () => {
-          throw new Error('Edge unavailable')
-        }),
-      ),
-    ).rejects.toThrow('Edge unavailable')
+    edge.put.mockRejectedValue(new Error('Edge unavailable'))
+    await expect(processCopyrightActionIntent(action.id, new Date())).rejects.toThrow(
+      'Edge unavailable',
+    )
     const email = before.find(row => row.recipient_role === 'poster' && row.channel === 'email')!
     expect(email.text).toContain('An image restriction was authorized')
     expect(email.text).not.toContain('The image is withheld')

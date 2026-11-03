@@ -1,5 +1,5 @@
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import {
   failCopyrightActionIntent,
   type CopyrightClaimedActionIntent,
@@ -9,7 +9,6 @@ export async function compensateCopyrightActionFailure(
   intent: CopyrightClaimedActionIntent,
   now: Date,
   restorePublishedTuple: { placementId: string; revision: number; imageId: string } | null,
-  dependencies: CopyrightActionDeliveryDependencies,
   error: unknown,
 ): Promise<'blocked'> {
   const failureMessage = error instanceof Error ? error.message : String(error)
@@ -22,7 +21,7 @@ export async function compensateCopyrightActionFailure(
       if (intent.action === 'withhold')
         await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
       if (restorePublishedTuple) {
-        await dependencies.prepublishImagePlacementDenial({
+        await prepublishCopyrightImagePlacementDenial({
           ...restorePublishedTuple,
         })
       }

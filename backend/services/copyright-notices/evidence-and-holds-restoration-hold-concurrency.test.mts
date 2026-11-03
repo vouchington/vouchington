@@ -1,16 +1,23 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { appendCopyrightLegalHoldAssessment, processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 
 describe('late legal-hold and restoration concurrency', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('serializes the placement fence before case records, leaving a concurrent restored tuple denied', async () => {
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     const { moderator, notice, restorationAt, restore, target } =
-      await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
+      await openHeldCounterNoticeRestore()
     const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
@@ -21,9 +28,7 @@ describe('late legal-hold and restoration concurrency', () => {
     })
 
     const [restoreOutcome, holdOutcome] = await Promise.all([
-      processCopyrightActionIntent(restore.id, restorationAt, {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(restore.id, restorationAt),
       appendCopyrightLegalHoldAssessment({
         currentUser: moderator,
         submissionId: holdSubmission.id,
@@ -36,10 +41,6 @@ describe('late legal-hold and restoration concurrency', () => {
         sameMaterial: true,
         targetIds: [target.id],
         rationale: 'Verified qualifying filing during restoration.',
-        dependencies: {
-          assertLegalEnforcementEnabled: () => {},
-          publishPlacement: publish,
-        },
       }),
     ])
 

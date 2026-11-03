@@ -1,9 +1,6 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { describe, expect, it } from 'vitest'
-import {
-  createTestCopyrightDeliveryDependencies,
-  type CopyrightTestDeliveryPublisher,
-} from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   replayTestFailedCopyrightActionBehindHoldFence,
   cancelTestCopyrightRestorationDeadline,
@@ -26,24 +23,12 @@ import {
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-const publish: CopyrightTestDeliveryPublisher = async () => undefined
-
 async function blockedCopyrightRestore(targetCount = 1) {
-  const scene = await openHeldCounterNoticeRestore(
-    createTestCopyrightDeliveryDependencies(publish),
-    targetCount,
+  const scene = await openHeldCounterNoticeRestore(targetCount)
+  const hold = await recordOrdinaryCopyrightHold(scene)
+  await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+    'blocked',
   )
-  const hold = await recordOrdinaryCopyrightHold(
-    scene,
-    createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
-  )
-  await expect(
-    processCopyrightActionIntent(
-      scene.restore.id,
-      scene.restorationAt,
-      createTestCopyrightDeliveryDependencies(publish),
-    ),
-  ).resolves.toBe('blocked')
   return { ...scene, hold }
 }
 
@@ -64,6 +49,15 @@ async function exhaustDelivery(intentId: string, now: Date) {
 }
 
 describe('blocked copyright restoration recovery', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it.each([
     'unassessed',
     'unresolved',
@@ -131,9 +125,7 @@ describe('blocked copyright restoration recovery', () => {
   })
 
   it('makes manual failed replay wait at placement before taking its intent row', async () => {
-    const scene = await openHeldCounterNoticeRestore(
-      createTestCopyrightDeliveryDependencies(publish),
-    )
+    const scene = await openHeldCounterNoticeRestore()
     await exhaustDelivery(scene.restore.id, scene.restorationAt)
     await expect(
       replayTestFailedCopyrightActionBehindHoldFence({

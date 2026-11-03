@@ -5,7 +5,6 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
 import {
   createCopyrightCounterNotice,
   processCopyrightActionIntent,
@@ -72,7 +71,7 @@ export async function createCopyrightRestorationHoldFixture(targetCount = 1) {
     idempotencyKey: `copyright-hold-receipt-${crypto.randomUUID()}`,
     recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
   })
-  return { aggregate, assessment, claimant, moderator, notice }
+  return { aggregate, assessment, claimant, moderator, notice, postId }
 }
 
 async function createAssessmentAndReceipt(
@@ -97,15 +96,12 @@ async function createAssessmentAndReceipt(
   return { assessment, receipt }
 }
 
-export async function deliverInitialCopyrightWithhold(
-  noticeId: string,
-  dependencies: Partial<CopyrightActionDeliveryDependencies>,
-): Promise<void> {
+export async function deliverInitialCopyrightWithhold(noticeId: string): Promise<void> {
   const withhold = (await getCopyrightNoticePrivateAggregate(noticeId))?.actionIntents.find(
     intent => intent.action === 'withhold',
   )
   if (!withhold) throw new Error('initial withhold intent disappeared')
-  const result = await processCopyrightActionIntent(withhold.id, new Date(), dependencies)
+  const result = await processCopyrightActionIntent(withhold.id, new Date())
   if (result !== 'applied') throw new Error(`Initial withhold was not applied: ${result}`)
 }
 

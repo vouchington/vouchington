@@ -1,9 +1,9 @@
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
+import { clearUnavailableImagePlacementCopyrightWithholding } from '@services/images/placement-copyright-resolution'
 import { createCopyrightPosterNoticesInTransaction } from './restriction-poster-notices.mts'
 import type { CopyrightRestorationOutcome } from './statement-of-reasons.mts'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import { resolveCopyrightDeadlineIfComplete } from './action-delivery-finalization.mts'
 import {
   completeCopyrightActionIntentInTransaction,
@@ -18,14 +18,12 @@ export async function completeUnavailableRestore(input: {
   legal: LockedCopyrightActionDelivery
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
-  dependencies: CopyrightActionDeliveryDependencies
 }): Promise<void> {
   await runSequentially([
     () =>
-      input.dependencies.clearUnavailableImagePlacementCopyrightWithholding(
-        input.legal.placement_id,
-        { query: input.query },
-      ),
+      clearUnavailableImagePlacementCopyrightWithholding(input.legal.placement_id, {
+        query: input.query,
+      }),
     () =>
       liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'unavailable' }),
     () =>

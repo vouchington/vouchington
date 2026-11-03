@@ -1,6 +1,7 @@
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -23,6 +24,17 @@ import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/co
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright restriction concurrency', () => {
+  let edge: ReturnType<typeof installTestMediaDeliveryEdge>
+
+  beforeEach(() => {
+    edge = installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('notifies only the poster at the restricted post-image placement', async () => {
     const [targetPoster, unrelatedPoster, moderatorRecord] = await Promise.all([
       createTestUserDirect(),
@@ -107,13 +119,20 @@ describe('copyright restriction concurrency', () => {
     )
     const withholdIntent = restricted?.actionIntents.find(intent => intent.action === 'withhold')
     if (!withholdIntent) throw new Error('withhold intent disappeared')
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
-    await expect(
-      processCopyrightActionIntent(withholdIntent.id, new Date(), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('applied')
-    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ state: 'withheld', imageId }))
+    await expect(processCopyrightActionIntent(withholdIntent.id, new Date())).resolves.toBe(
+      'applied',
+    )
+    const withheldPlacement = await getImagePlacementForCopyright(targetPlacement.placement_id)
+    if (!withheldPlacement) throw new Error('withheld placement disappeared')
+    expect(
+      edge.records.get(
+        getImagePlacementDeliveryKey({
+          placementId: withheldPlacement.placementId,
+          revision: withheldPlacement.revision,
+          imageId,
+        }),
+      )?.state,
+    ).toBe('withheld')
     const completed = await getCopyrightNoticePrivateAggregate(notice.id)
     expect(completed?.actionIntents).toContainEqual(
       expect.objectContaining({

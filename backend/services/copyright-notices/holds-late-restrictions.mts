@@ -18,10 +18,6 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   targetIds: string[],
   receivedAt: Date,
   transaction: TransactionQuery,
-  dependencies: {
-    assertLegalEnforcementEnabled?: typeof assertMediaDeliveryLegalEnforcementEnabled
-    publishPlacement?: typeof prepublishImagePlacementDenial
-  } = {},
 ): Promise<string[]> {
   const { rows } = await transaction<{
     id: string
@@ -70,15 +66,10 @@ export async function activateLateCopyrightLegalHoldRestrictions(
     ) SELECT inserted.id, target.placement_id
       FROM inserted JOIN copyright_notice_targets target ON target.id = inserted.copyright_notice_target_id
   `)
-  if (rows.length > 0) {
-    const assertEnabled =
-      dependencies.assertLegalEnforcementEnabled ?? assertMediaDeliveryLegalEnforcementEnabled
-    assertEnabled()
-  }
   if (rows.length === 0) return []
-  const publishPlacement = dependencies.publishPlacement ?? prepublishImagePlacementDenial
+  assertMediaDeliveryLegalEnforcementEnabled()
   // One sorted acquisition for every placement, before any revision is read. The per-placement
-  // lock inside publishPlacement re-enters these locks (advisory xact locks and row locks are
+  // lock inside prepublishImagePlacementDenial re-enters these locks (advisory xact locks and row locks are
   // re-entrant), so it adds no new lock order.
   await lockImageDeliveryMutation(transaction, {
     placementIds: rows.map(restriction => restriction.placement_id),
@@ -105,7 +96,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   for (const { placement } of toWithhold) {
     // oxlint-disable no-await-in-loop -- each edge denial is a conditional single-item DynamoDB write acknowledged under its own lease, in sorted placement order.
     // no-mistakes-disable-next-line query-reached-per-item: each edge denial is a conditional single-item DynamoDB write acknowledged under its own projection lease before PostgreSQL withholds the placement; the edge has no conditional batch write.
-    await publishPlacement(
+    await prepublishImagePlacementDenial(
       {
         placementId: placement.placementId,
         revision: placement.revision,

@@ -1,5 +1,4 @@
 import { createTestUserDirect } from './entities/users.mts'
-import { createTestCopyrightDeliveryDependencies } from './copyright-delivery-dependencies.mts'
 import { processCopyrightActionIntent } from '../services/copyright-notices/action-delivery.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { liftCopyrightRestrictionWithoutSetter } from '../services/copyright-notices/restriction-lifts.mts'
@@ -12,11 +11,7 @@ import {
 export async function createRetentionAdministratorLiftCase(): Promise<{ noticeId: string }> {
   const fixture = await createTestCopyrightImageFixture('topic-logo-image')
   const restricted = await createTestCopyrightRestrictionForImage(fixture)
-  await processCopyrightActionIntent(
-    restricted.withholdIntentId,
-    new Date(),
-    createTestCopyrightDeliveryDependencies(async () => undefined),
-  )
+  await processCopyrightActionIntent(restricted.withholdIntentId, new Date())
   const administrator = await createTestUserDirect({ administrator: true })
   await liftCopyrightRestrictionWithoutSetter({
     currentUser: administrator,
@@ -28,10 +23,6 @@ export async function createRetentionAdministratorLiftCase(): Promise<{ noticeId
   const restored = await getCopyrightNoticePrivateAggregate(restricted.noticeId)
   const restoreIntent = restored?.actionIntents.find(intent => intent.action === 'restore')
   if (!restoreIntent) throw new Error('Administrator lift restore intent missing')
-  await processCopyrightActionIntent(
-    restoreIntent.id,
-    new Date(),
-    createTestCopyrightDeliveryDependencies(async () => undefined),
-  )
+  await processCopyrightActionIntent(restoreIntent.id, new Date())
   return { noticeId: restricted.noticeId }
 }

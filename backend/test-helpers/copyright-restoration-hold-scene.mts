@@ -1,6 +1,4 @@
 import { appendTestCopyrightNoticeSubmission } from './copyright-notice-submissions.mts'
-import type { prepublishImagePlacementDenial } from '../services/media-delivery-safety/index.mts'
-import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
 import { appendCopyrightLegalHoldAssessment } from '../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import {
@@ -10,10 +8,7 @@ import {
 } from './copyright-restoration-hold-fixtures.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-export async function openHeldCounterNoticeRestore(
-  dependencies: Partial<CopyrightActionDeliveryDependencies>,
-  targetCount = 1,
-) {
+export async function openHeldCounterNoticeRestore(targetCount = 1) {
   const { aggregate, assessment, claimant, moderator, notice } =
     await createCopyrightRestorationHoldFixture(targetCount)
   const target = aggregate.targets[0]!
@@ -28,7 +23,7 @@ export async function openHeldCounterNoticeRestore(
     intent => intent.action === 'withhold',
   )
   if (!initialWithhold) throw new Error('initial withhold intent disappeared')
-  await deliverInitialCopyrightWithhold(notice.id, dependencies)
+  await deliverInitialCopyrightWithhold(notice.id)
   for (const other of aggregate.targets.slice(1)) {
     await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: notice.id,
@@ -60,7 +55,6 @@ export async function openHeldCounterNoticeRestore(
 
 export async function recordOrdinaryCopyrightHold(
   scene: Awaited<ReturnType<typeof openHeldCounterNoticeRestore>>,
-  publish: typeof prepublishImagePlacementDenial,
   targetIds: string[] = [scene.target.id],
 ) {
   const receivedAt = new Date('2026-07-03T12:00:00.000Z')
@@ -84,6 +78,5 @@ export async function recordOrdinaryCopyrightHold(
     sameMaterial: true,
     targetIds,
     rationale: 'Verified original claimant proceeding on this target.',
-    dependencies: { assertLegalEnforcementEnabled: () => {}, publishPlacement: publish },
   })
 }

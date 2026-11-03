@@ -5,7 +5,8 @@ import {
   readEuTransparencyReportMethod,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
 import {
   compileEuCopyrightTransparencyReport,
@@ -20,6 +21,15 @@ function closedPeriod(): { start: Date; end: Date } {
 }
 
 describe('closed EU report snapshot', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   useDsaTransparencyReports()
 
   it('keeps global figures and method for the published period', async () => {

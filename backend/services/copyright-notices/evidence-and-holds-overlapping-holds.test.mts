@@ -1,8 +1,7 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -13,16 +12,19 @@ import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-res
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright notice overlapping legal holds', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('replays a blocked restore after the final overlapping hold resolves', async () => {
-    const publish: typeof prepublishImagePlacementDenial = async () => undefined
+    installTestMediaDeliveryEdge()
     const { initialWithhold, moderator, notice, restorationAt, restore, restriction, target } =
-      await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
+      await openHeldCounterNoticeRestore()
     const initialRestore = restore
-    await expect(
-      processCopyrightActionIntent(initialRestore.id, restorationAt, {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(initialRestore.id, restorationAt)).resolves.toBe(
+      'applied',
+    )
 
     expect(
       (await readTestCopyrightStatementIntents(notice.id)).filter(
@@ -37,16 +39,13 @@ describe('copyright notice overlapping legal holds', () => {
       noticeId: notice.id,
       targetId: target.id,
       assessedAt: new Date(restorationAt.getTime() + 60_000),
-      publish,
     })
     const holdWithhold = (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
       intent => intent.action === 'withhold' && intent.id !== initialWithhold.id,
     )
     if (!holdWithhold) throw new Error('hold withhold intent disappeared')
     await expect(
-      processCopyrightActionIntent(holdWithhold.id, new Date(restorationAt.getTime() + 120_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(holdWithhold.id, new Date(restorationAt.getTime() + 120_000)),
     ).resolves.toBe('applied')
 
     const secondHold = await createQualifyingHold({
@@ -54,7 +53,6 @@ describe('copyright notice overlapping legal holds', () => {
       noticeId: notice.id,
       targetId: target.id,
       assessedAt: new Date(restorationAt.getTime() + 150_000),
-      publish,
     })
     await resolveCopyrightLegalHold({
       currentUser: moderator,
@@ -68,9 +66,7 @@ describe('copyright notice overlapping legal holds', () => {
     )
     if (!holdRestore) throw new Error('hold restore intent disappeared')
     await expect(
-      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 240_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 240_000)),
     ).resolves.toBe('blocked')
     await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
@@ -84,9 +80,7 @@ describe('copyright notice overlapping legal holds', () => {
       rationale: `resolution-${crypto.randomUUID()}`,
     })
     await expect(
-      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 360_000), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
+      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 360_000)),
     ).resolves.toBe('applied')
     await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
@@ -99,7 +93,6 @@ async function createQualifyingHold(input: {
   noticeId: string
   targetId: string
   assessedAt: Date
-  publish: typeof prepublishImagePlacementDenial
 }) {
   const receivedAt = new Date('2026-07-03T12:00:00.000Z')
   const submission = await appendTestCopyrightNoticeSubmission({
@@ -122,9 +115,5 @@ async function createQualifyingHold(input: {
     sameMaterial: true,
     targetIds: [input.targetId],
     rationale: 'Verified qualifying federal court filing.',
-    dependencies: {
-      assertLegalEnforcementEnabled: () => {},
-      publishPlacement: input.publish,
-    },
   })
 }

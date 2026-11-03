@@ -1,8 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
-import { getImagePlacementKey } from '@services/images/placements'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
+import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import {
   completeCopyrightActionIntentInTransaction,
@@ -20,7 +20,6 @@ export async function finalizeCopyrightActionAfterDelivery(
   leaseToken: string,
   action: 'withhold' | 'restore',
   now: Date,
-  dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   await lockCopyrightActionClaim(intentId, transaction)
@@ -34,7 +33,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   await transaction(sql`/* finalizeCopyrightActionAfterDelivery:noticeLock */
     SELECT id FROM copyright_notices WHERE id = ${legal.copyright_notice_id} FOR UPDATE
   `)
-  const current = await dependencies.getImagePlacementForCopyright(legal.placement_id, {
+  const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
   })
   if (action === 'withhold' && legal.restriction_lifted_at !== null) {
@@ -70,7 +69,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   if (action === 'restore' && (await restoreIsBlocked(legal, now, transaction))) {
     await runSequentially([
       () =>
-        dependencies.prepublishImagePlacementDenial(
+        prepublishCopyrightImagePlacementDenial(
           {
             placementId: current.placementId,
             revision: current.revision,
@@ -98,7 +97,6 @@ export async function finalizeCopyrightActionAfterDelivery(
     now,
     legal,
     transaction,
-    dependencies,
   })
   await transaction.commit()
   return true
@@ -110,7 +108,6 @@ async function completeCopyrightActionAndInvalidate(input: {
   now: Date
   legal: Parameters<typeof hasCopyrightActionBlocker>[0]
   transaction: Awaited<ReturnType<typeof beginTransaction>>
-  dependencies: CopyrightActionDeliveryDependencies
 }): Promise<void> {
   await runSequentially([
     () =>
@@ -129,12 +126,7 @@ async function completeCopyrightActionAndInvalidate(input: {
         input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
         input.transaction,
       ),
-    () =>
-      invalidateCopyrightPlacementCache(
-        input.legal.placement_id,
-        input.transaction,
-        input.dependencies,
-      ),
+    () => invalidateCopyrightPlacementCache(input.legal.placement_id, input.transaction),
   ])
 }
 

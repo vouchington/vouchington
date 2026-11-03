@@ -41,7 +41,7 @@ describe('copyright action persisted delivery authority', () => {
 
   it('does not let a paused restore publish an allow after a newer withholding commits', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const scene = await openHeldCounterNoticeRestore({})
+    const scene = await openHeldCounterNoticeRestore()
     const prepared = Promise.withResolvers<string>()
     const resume = Promise.withResolvers<void>()
     const restoring = processCopyrightActionIntent(scene.restore.id, scene.restorationAt, {
@@ -100,7 +100,7 @@ describe('copyright action persisted delivery authority', () => {
 
   it('checks a court filing admitted after preparation before the first restored allow can escape', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const scene = await openHeldCounterNoticeRestore({})
+    const scene = await openHeldCounterNoticeRestore()
     const prepared = Promise.withResolvers<string>()
     const resume = Promise.withResolvers<void>()
     const restoring = processCopyrightActionIntent(scene.restore.id, scene.restorationAt, {
@@ -166,7 +166,7 @@ describe('copyright action persisted delivery authority', () => {
     ['MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off'],
   ])('refuses restoration authority changes while %s is disabled', async (key, value) => {
     installTestMediaDeliveryEdge()
-    const scene = await openHeldCounterNoticeRestore({})
+    const scene = await openHeldCounterNoticeRestore()
     const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     const placement = await getImagePlacementForCopyright(scene.target.placement_id)
     vi.stubEnv(key, value)
@@ -185,7 +185,7 @@ describe('copyright action persisted delivery authority', () => {
 
   it('permits replay audit foreign keys while retaining the notice fence against filing admission', async () => {
     installTestMediaDeliveryEdge()
-    const scene = await openHeldCounterNoticeRestore({})
+    const scene = await openHeldCounterNoticeRestore()
     const current = await getImagePlacementForCopyright(scene.target.placement_id)
     if (!current) throw new Error('Copyright placement missing')
     const tuple = {

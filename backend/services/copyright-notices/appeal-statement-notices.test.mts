@@ -1,6 +1,6 @@
 import { processCopyrightActionIntent, createCopyrightAppeal } from './index.mts'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestUser } from '@voucha/test-helpers'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
@@ -11,6 +11,15 @@ import { reviewCopyrightAppeal } from './submission-reviews.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 
 describe('appeal as first human review', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   useCopyrightIntakeEnvironment()
   useAutomaticProvisionalWithholding()
   it.each(['confirm', 'reverse'] as const)(
@@ -51,11 +60,7 @@ describe('appeal as first human review', () => {
         const restore = (await getCopyrightNoticePrivateAggregate(caseId))!.actionIntents.find(
           intent => intent.action === 'restore',
         )!
-        await processCopyrightActionIntent(
-          restore.id,
-          new Date(),
-          createTestCopyrightDeliveryDependencies(async () => undefined),
-        )
+        await processCopyrightActionIntent(restore.id, new Date())
         const restoration = (await readTestCopyrightStatementIntents(caseId)).find(
           row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
         )!

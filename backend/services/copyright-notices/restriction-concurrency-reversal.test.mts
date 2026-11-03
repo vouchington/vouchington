@@ -1,7 +1,6 @@
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { describe, expect, it, vi } from 'vitest'
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   createTestUserDirect,
@@ -17,6 +16,15 @@ import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/co
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright restriction reversal concurrency', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('cancels a queued withhold after reversal restores the placement', async () => {
     const [poster, moderatorRecord] = await Promise.all([
       createTestUserDirect(),
@@ -82,17 +90,10 @@ describe('copyright restriction reversal concurrency', () => {
     const restoreIntent = reversed?.actionIntents.find(intent => intent.action === 'restore')
     const withholdIntent = reversed?.actionIntents.find(intent => intent.action === 'withhold')
     if (!restoreIntent || !withholdIntent) throw new Error('reversal intents disappeared')
-    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
-    await expect(
-      processCopyrightActionIntent(restoreIntent.id, new Date(), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('applied')
-    await expect(
-      processCopyrightActionIntent(withholdIntent.id, new Date(), {
-        ...createTestCopyrightDeliveryDependencies(publish),
-      }),
-    ).resolves.toBe('stale')
+    await expect(processCopyrightActionIntent(restoreIntent.id, new Date())).resolves.toBe(
+      'applied',
+    )
+    await expect(processCopyrightActionIntent(withholdIntent.id, new Date())).resolves.toBe('stale')
 
     const statements = await readTestCopyrightStatementIntents(notice.id)
     expect(statements.filter(row => row.delivery_kind === 'poster_review_notice')).toHaveLength(2)

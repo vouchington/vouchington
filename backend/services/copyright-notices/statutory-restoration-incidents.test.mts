@@ -1,8 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import {
-  createTestCopyrightDeliveryDependencies,
-  type CopyrightTestDeliveryPublisher,
-} from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   readTestLiftReversalFacts,
   readTestLiftSourceFlags,
@@ -23,8 +20,6 @@ import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
-
-const publish: CopyrightTestDeliveryPublisher = async () => undefined
 const noReversalSource = {
   reversal_authorized: false,
   reversal_by_review: false,
@@ -33,10 +28,6 @@ const noReversalSource = {
 }
 
 type Scene = Awaited<ReturnType<typeof openHeldCounterNoticeRestore>>
-
-function openScene(): Promise<Scene> {
-  return openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
-}
 
 async function readIncident(accountUserId: string, noticeId: string) {
   const account = await readTestRepeatInfringerIncidents(accountUserId)
@@ -49,16 +40,21 @@ async function readRestoreState(noticeId: string): Promise<string | undefined> {
 }
 
 function applyRestore(scene: Scene) {
-  return processCopyrightActionIntent(
-    scene.restore.id,
-    scene.restorationAt,
-    createTestCopyrightDeliveryDependencies(publish),
-  )
+  return processCopyrightActionIntent(scene.restore.id, scene.restorationAt)
 }
 
 describe('statutory restoration and repeat-infringer incidents', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('stops counting the incident when the restoration completes, leaving the reversal sources and ledger alone', async () => {
-    const scene = await openScene()
+    const scene = await openHeldCounterNoticeRestore()
     const accountId = scene.claimant.id
     expect((await readIncident(accountId, scene.notice.id))?.is_operative).toBe(true)
     const ledgerBefore = await readTestClaimantMisuseSummary(accountId)
@@ -75,7 +71,7 @@ describe('statutory restoration and repeat-infringer incidents', () => {
   })
 
   it('opens no repeat-infringer review when one of two incidents was restored this way', async () => {
-    const scene = await openScene()
+    const scene = await openHeldCounterNoticeRestore()
     const accountId = scene.claimant.id
     await expect(applyRestore(scene)).resolves.toBe('applied')
 
@@ -93,12 +89,9 @@ describe('statutory restoration and repeat-infringer incidents', () => {
   })
 
   it('keeps counting the incident while a court hold blocks the restoration', async () => {
-    const scene = await openScene()
+    const scene = await openHeldCounterNoticeRestore()
     const accountId = scene.claimant.id
-    const hold = await recordOrdinaryCopyrightHold(
-      scene,
-      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
-    )
+    const hold = await recordOrdinaryCopyrightHold(scene)
 
     await expect(applyRestore(scene)).resolves.toBe('blocked')
     await expect(readRestoreState(scene.notice.id)).resolves.toBe('blocked')
@@ -121,7 +114,7 @@ describe('statutory restoration and repeat-infringer incidents', () => {
     useStaydownMatching()
 
     it('holds no entry for a statutorily restored image and does not register it again', async () => {
-      const scene = await openScene()
+      const scene = await openHeldCounterNoticeRestore()
       expect(await readCopyrightStaydownEntries(scene.notice.id)).toHaveLength(1)
 
       await expect(applyRestore(scene)).resolves.toBe('applied')

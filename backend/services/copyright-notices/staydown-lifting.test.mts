@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -24,14 +23,13 @@ describe('copyright staydown entries when a restriction is lifted', () => {
   })
 
   it('removes only the lifted restriction entry when its restore is delivered', async () => {
-    const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
-    const scene = await openHeldCounterNoticeRestore(dependencies, 2)
+    const scene = await openHeldCounterNoticeRestore(2)
     const before = await readCopyrightStaydownEntries(scene.notice.id)
     expect(before).toHaveLength(2)
 
-    await expect(
-      processCopyrightActionIntent(scene.restore.id, scene.restorationAt, dependencies),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+      'applied',
+    )
 
     const after = await readCopyrightStaydownEntries(scene.notice.id)
     expect(after).toHaveLength(1)

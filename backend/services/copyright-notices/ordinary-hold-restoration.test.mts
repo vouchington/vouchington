@@ -1,9 +1,10 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  createTestCopyrightDeliveryDependencies,
-  type CopyrightTestDeliveryPublisher,
-} from '@voucha/test-helpers/copyright-delivery-dependencies'
+  acceptTestMediaDeliveryEdgeWrites,
+  rejectTestMediaDeliveryEdgeState,
+} from '@voucha/test-helpers/copyright-delivery-edge'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -18,23 +19,19 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('ordinary copyright hold restoration', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('reopens the original statutory restore only after both ordinary holds resolve', async () => {
-    const publish: CopyrightTestDeliveryPublisher = async () => undefined
-    const scene = await openHeldCounterNoticeRestore(
-      createTestCopyrightDeliveryDependencies(publish),
+    installTestMediaDeliveryEdge()
+    const scene = await openHeldCounterNoticeRestore()
+    const firstHold = await recordHold(scene)
+    const secondHold = await recordHold(scene)
+    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+      'blocked',
     )
-    const firstHold = await recordHold(
-      scene,
-      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
-    )
-    const secondHold = await recordHold(
-      scene,
-      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
-    )
-    const deps = createTestCopyrightDeliveryDependencies(publish)
-    await expect(
-      processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
-    ).resolves.toBe('blocked')
 
     await resolveCopyrightLegalHold({
       currentUser: scene.moderator,
@@ -73,38 +70,30 @@ describe('ordinary copyright hold restoration', () => {
     expect(
       resolved?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toHaveLength(1)
-    await expect(
-      processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+      'applied',
+    )
     await expect(getImagePlacementForCopyright(scene.target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
   })
 
   it('restores only the counter-noticed target in a two-target case', async () => {
-    const publish: CopyrightTestDeliveryPublisher = async () => undefined
-    const scene = await openHeldCounterNoticeRestore(
-      createTestCopyrightDeliveryDependencies(publish),
-      2,
-    )
+    installTestMediaDeliveryEdge()
+    const scene = await openHeldCounterNoticeRestore(2)
     const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     const otherTarget = aggregate?.targets.find(target => target.id !== scene.target.id)
     const otherWithhold = aggregate?.actionIntents.find(
       intent => intent.action === 'withhold' && intent.id !== scene.initialWithhold.id,
     )
     if (!otherTarget || !otherWithhold) throw new Error('Second target fixture disappeared')
-    const deps = createTestCopyrightDeliveryDependencies(publish)
-    await expect(
-      processCopyrightActionIntent(otherWithhold.id, scene.restorationAt, deps),
-    ).resolves.toBe('applied')
-    const hold = await recordHold(
-      scene,
-      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
-      [scene.target.id, otherTarget.id],
+    await expect(processCopyrightActionIntent(otherWithhold.id, scene.restorationAt)).resolves.toBe(
+      'applied',
     )
-    await expect(
-      processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
-    ).resolves.toBe('blocked')
+    const hold = await recordHold(scene, [scene.target.id, otherTarget.id])
+    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+      'blocked',
+    )
     await resolveCopyrightLegalHold({
       currentUser: scene.moderator,
       assessmentId: hold.id,
@@ -112,9 +101,9 @@ describe('ordinary copyright hold restoration', () => {
       resolutionKind: 'dismissed',
       rationale: 'Both proceedings ended.',
     })
-    await expect(
-      processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
-    ).resolves.toBe('applied')
+    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
+      'applied',
+    )
     const resolved = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(
       resolved?.actionIntents
@@ -138,21 +127,14 @@ describe('ordinary copyright hold restoration', () => {
   it.each(['current', 'superseded'] as const)(
     'rechecks %s authority after an already applied restore is interrupted by a filing',
     async authority => {
-      const publish: CopyrightTestDeliveryPublisher = async () => undefined
-      const scene = await openHeldCounterNoticeRestore(
-        createTestCopyrightDeliveryDependencies(publish),
-      )
+      const edge = installTestMediaDeliveryEdge()
+      const scene = await openHeldCounterNoticeRestore()
       const failure = new Error('External publication unavailable.')
-      const failingPublish: CopyrightTestDeliveryPublisher = async input => {
-        if (input.state === 'allow') throw failure
-      }
+      rejectTestMediaDeliveryEdgeState(edge, 'allow', failure)
       await expect(
-        processCopyrightActionIntent(
-          scene.restore.id,
-          scene.restorationAt,
-          createTestCopyrightDeliveryDependencies(failingPublish),
-        ),
+        processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
       ).rejects.toBe(failure)
+      acceptTestMediaDeliveryEdgeWrites(edge)
       const applied = await getCopyrightNoticePrivateAggregate(scene.notice.id)
       expect(applied?.restrictions[0]?.lifted_at).not.toBeNull()
       expect(applied?.deadlines[0]?.resolved_at).not.toBeNull()
@@ -165,13 +147,7 @@ describe('ordinary copyright hold restoration', () => {
         bodyCiphertext: `filing-${crypto.randomUUID()}`,
       })
       const retryAt = new Date(scene.restorationAt.getTime() + 120_000)
-      await expect(
-        processCopyrightActionIntent(
-          scene.restore.id,
-          retryAt,
-          createTestCopyrightDeliveryDependencies(publish),
-        ),
-      ).resolves.toBe('blocked')
+      await expect(processCopyrightActionIntent(scene.restore.id, retryAt)).resolves.toBe('blocked')
       if (authority === 'superseded') {
         const assessment = applied?.assessments.find(
           record =>
@@ -205,13 +181,9 @@ describe('ordinary copyright hold restoration', () => {
         expected_placement_revision: scene.restore.expected_placement_revision,
         copyright_notice_deadline_id: scene.restore.copyright_notice_deadline_id,
       })
-      await expect(
-        processCopyrightActionIntent(
-          scene.restore.id,
-          retryAt,
-          createTestCopyrightDeliveryDependencies(publish),
-        ),
-      ).resolves.toBe(authority === 'current' ? 'applied' : 'not_claimed')
+      await expect(processCopyrightActionIntent(scene.restore.id, retryAt)).resolves.toBe(
+        authority === 'current' ? 'applied' : 'not_claimed',
+      )
       expect(reopened?.deadlines).toEqual(applied?.deadlines)
     },
   )
