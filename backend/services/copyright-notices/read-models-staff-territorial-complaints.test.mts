@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
 import { encodeScopedAliasCursor } from '@modules/pagination'
-import { withTransactionOptions } from '@data-stores/psql'
-import { selectStaffTerritorialCases } from './read-models-staff-territorial.mts'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-participant-cases'
+import {
+  createTestEuParticipantCase,
+  readStaffTerritorialCard,
+} from '@voucha/test-helpers/copyright-eu-participant-cases'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { territorialRecipientCursorScope } from './read-models-staff-territorial-recipients.mts'
@@ -111,10 +111,7 @@ describe('territorial recipients and queue counts', () => {
     expect(page.body.page_info.has_next_page).toBe(false)
     await staff.get(endpoint).query({ after: 'not-a-cursor' }).expect(400)
 
-    const cards = await withTransactionOptions({}, query =>
-      selectStaffTerritorialCases([noticeId], query),
-    )
-    const card = cards.get(noticeId)
+    const card = await readStaffTerritorialCard(noticeId)
     expect(card).toMatchObject({ complaint_count: 1, dispute_settlement_count: 0 })
     expect(card).not.toHaveProperty('recipients')
     expect(card).not.toHaveProperty('complaints')
@@ -160,10 +157,5 @@ describe('territorial recipient cursor walk', () => {
 })
 
 async function liveDecisionId(noticeId: string): Promise<string> {
-  return withTransactionOptions({}, async query => {
-    const { rows } = await query<{ id: string }>(
-      sql`/* liveTerritorialDecisionId */ SELECT current_territorial_decision_identity_id AS id FROM copyright_notices WHERE id = ${noticeId}`,
-    )
-    return rows[0]!.id
-  })
+  return (await readStaffTerritorialCard(noticeId))!.decision!.id
 }

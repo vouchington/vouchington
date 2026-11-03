@@ -1,3 +1,5 @@
+import { withTransactionOptions } from '@data-stores/psql'
+import { selectStaffTerritorialCases } from '../services/copyright-notices/read-models-staff-territorial.mts'
 import { createTestUser } from './entities/users.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import {
@@ -82,4 +84,12 @@ export async function createTestEuParticipantComplaint(input: {
     rationale: input.rationale,
   })
   return { request, decision }
+}
+
+/** The staff review-queue territorial card of one notice, read through the real read model. */
+export async function readStaffTerritorialCard(noticeId: string) {
+  const cards = await withTransactionOptions({}, query =>
+    selectStaffTerritorialCases([noticeId], query),
+  )
+  return cards.get(noticeId)
 }

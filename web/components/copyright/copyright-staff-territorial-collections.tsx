@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
@@ -63,12 +69,14 @@ export function CopyrightStaffTerritorialCollections(props: Props) {
       }}
     >
       <DialogContent
-        aria-describedby={undefined}
         className='max-h-[90vh] overflow-y-auto'
         data-pw='copyright-staff-territorial-details-dialog'
       >
         <DialogHeader>
           <DialogTitle>Deliveries, complaints and settlements</DialogTitle>
+          <DialogDescription>
+            Poster delivery status, complaints and dispute settlements for this case.
+          </DialogDescription>
         </DialogHeader>
         {failed ? (
           <p
