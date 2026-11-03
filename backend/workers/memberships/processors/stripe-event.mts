@@ -31,7 +31,7 @@ export async function processStripeEvent(
   if (!processingAcquired) return
 
   try {
-    const outcome = await handleStripeEvent(stripeEvent.payload, undefined, applicationContext)
+    const outcome = await handleStripeEvent(stripeEvent.payload, applicationContext)
     await markStripeEventCompleted(stripeEventRecordId, outcome, leaseToken)
   } catch (err) {
     await markStripeEventFailed(

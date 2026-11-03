@@ -44,38 +44,23 @@ describe('terminal membership subscription event handlers', () => {
       sku_id: sku.id,
       stripe_subscription_id: subscriptionId,
     })
-    const lapsedUserIds: string[] = []
     mockGetStripeSubscription.mockResolvedValue(
       stripeSubscription(subscriptionId, 'active', sku.stripe_price_id),
     )
     const activeEventId = uniqueStripeId('evt')
     await insertStripeMembershipEvent(activeEventId, subscriptionId)
-    await handleSubscriptionDeleted(
-      activeEventId,
-      { id: subscriptionId },
-      userId => {
-        lapsedUserIds.push(userId)
-      },
-      applicationContext,
-    )
-    expect(lapsedUserIds).toEqual([])
+    await handleSubscriptionDeleted(activeEventId, { id: subscriptionId }, applicationContext)
     mockGetStripeSubscription.mockResolvedValue(
       stripeSubscription(subscriptionId, 'canceled', sku.stripe_price_id),
     )
     const terminalEventId = uniqueStripeId('evt')
     await insertStripeMembershipEvent(terminalEventId, subscriptionId)
-    await handleSubscriptionDeleted(
-      terminalEventId,
-      { id: subscriptionId },
-      undefined,
-      applicationContext,
-    )
+    await handleSubscriptionDeleted(terminalEventId, { id: subscriptionId }, applicationContext)
     const staleEventId = uniqueStripeId('evt')
     await insertStripeMembershipEvent(staleEventId, subscriptionId)
     await handleSubscriptionUpdated(
       staleEventId,
       { id: subscriptionId, status: 'active' },
-      undefined,
       applicationContext,
     )
     await expect(getTestMembershipRaw(membership.id)).resolves.toMatchObject({
@@ -98,28 +83,16 @@ describe('terminal membership subscription event handlers', () => {
     mockGetStripeSubscription.mockResolvedValue(
       stripeSubscription(subscriptionId, 'canceled', sku.stripe_price_id),
     )
-    const lapsedUserIds: string[] = []
     const firstEventId = uniqueStripeId('evt')
     const repeatedTerminalEventId = uniqueStripeId('evt')
     await insertStripeMembershipEvent(firstEventId, subscriptionId)
     await insertStripeMembershipEvent(repeatedTerminalEventId, subscriptionId)
-    await handleSubscriptionDeleted(
-      firstEventId,
-      { id: subscriptionId },
-      userId => {
-        lapsedUserIds.push(userId)
-      },
-      applicationContext,
-    )
+    await handleSubscriptionDeleted(firstEventId, { id: subscriptionId }, applicationContext)
     await handleSubscriptionDeleted(
       repeatedTerminalEventId,
       { id: subscriptionId },
-      userId => {
-        lapsedUserIds.push(userId)
-      },
       applicationContext,
     )
-    expect(lapsedUserIds).toEqual([member.id])
     await expect(getMembershipHistory(member.id)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ stripe_event_id: firstEventId })]),
     )

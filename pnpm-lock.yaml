@@ -11066,6 +11066,9 @@ importers:
         specifier: ^23.0.1
         version: 23.0.1(@types/node@26.6.5)
     devDependencies:
+      '@modules/stripe':
+        specifier: workspace:^
+        version: link:../../modules/stripe
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5

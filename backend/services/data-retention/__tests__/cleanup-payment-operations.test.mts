@@ -129,7 +129,6 @@ describe('payment operational retention', () => {
         id: expiredCheckoutId,
         mode: 'subscription',
       }),
-      undefined,
       { applicationId: fixture.applicationId },
     )
     expect(await getMembershipPurchaseIntentExpiredAt(expiredCheckoutIntentId)).toBeInstanceOf(Date)

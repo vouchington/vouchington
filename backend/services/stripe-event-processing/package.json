@@ -29,6 +29,7 @@
     "stripe": "^23.0.1"
   },
   "devDependencies": {
+    "@modules/stripe": "workspace:^",
     "@types/node": "^26.6.5"
   }
 }

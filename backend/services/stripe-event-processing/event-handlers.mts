@@ -22,68 +22,20 @@ import {
   handleSubscriptionUpdated,
 } from '@services/stripe/event-subscription-handlers'
 
-type StripeEventDependencies = {
-  handleCheckoutSessionCompleted: typeof handleCheckoutSessionCompleted
-  handleCheckoutSessionPaymentFailed: typeof handleCheckoutSessionPaymentFailed
-  handleInvoicePaid: typeof handleInvoicePaid
-  handleInvoicePaymentFailure: typeof handleInvoicePaymentFailure
-  handleInvoicePaymentPaid: typeof handleInvoicePaymentPaid
-  handleSubscriptionDeleted: typeof handleSubscriptionDeleted
-  handleSubscriptionUpdated: typeof handleSubscriptionUpdated
-  handleChargeRefunded: typeof handleChargeRefunded
-  handleChargeDisputeClosed: typeof handleChargeDisputeClosed
-  onCheckoutAbortedForIdentity: typeof onCheckoutAbortedForIdentity
-  onVerificationSessionCanceled: typeof onVerificationSessionCanceled
-  onVerificationSessionRequiresInput: typeof onVerificationSessionRequiresInput
-  onVerificationSessionVerified: typeof onVerificationSessionVerified
-}
-
 type StripeEvent = Parameters<typeof ingestStripeEvent>[0]
-
-const defaultDependencies: StripeEventDependencies = {
-  handleCheckoutSessionCompleted,
-  handleCheckoutSessionPaymentFailed,
-  handleInvoicePaid,
-  handleInvoicePaymentFailure,
-  handleInvoicePaymentPaid,
-  handleSubscriptionDeleted,
-  handleSubscriptionUpdated,
-  handleChargeRefunded,
-  handleChargeDisputeClosed,
-  onCheckoutAbortedForIdentity,
-  onVerificationSessionCanceled,
-  onVerificationSessionRequiresInput,
-  onVerificationSessionVerified,
-}
 
 export async function handleStripeEvent(
   event: StripeEvent,
-  dependencies?: Partial<StripeEventDependencies>,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<'processed' | 'ignored'> {
   const eventData = event.data.object as unknown as Record<string, unknown>
-  const {
-    handleCheckoutSessionCompleted: handleCheckoutCompleted,
-    handleCheckoutSessionPaymentFailed: handleCheckoutPaymentFailed,
-    handleInvoicePaid: handleInvoicePaidEvent,
-    handleInvoicePaymentFailure: handleInvoicePaymentFailedEvent,
-    handleInvoicePaymentPaid: handleInvoicePaymentPaidEvent,
-    handleSubscriptionDeleted: handleSubscriptionDeletedEvent,
-    handleSubscriptionUpdated: handleSubscriptionUpdatedEvent,
-    handleChargeRefunded: handleChargeRefundedEvent,
-    handleChargeDisputeClosed: handleChargeDisputeClosedEvent,
-    onCheckoutAbortedForIdentity: onCheckoutAborted,
-    onVerificationSessionCanceled: onVerificationCanceled,
-    onVerificationSessionRequiresInput: onVerificationRequiresInput,
-    onVerificationSessionVerified: onVerificationVerified,
-  } = mergeDefinedDependencies(defaultDependencies, dependencies)
   switch (event.type) {
     case 'checkout.session.completed':
     case 'checkout.session.async_payment_succeeded':
-      await handleCheckoutCompleted(event.id, eventData, undefined, applicationContext)
+      await handleCheckoutSessionCompleted(event.id, eventData, applicationContext)
       return 'processed'
     case 'checkout.session.async_payment_failed':
-      await handleCheckoutPaymentFailed(event.id, eventData, undefined, applicationContext)
+      await handleCheckoutSessionPaymentFailed(event.id, eventData, applicationContext)
       return 'processed'
     case 'checkout.session.expired':
       if (eventData.mode === 'subscription' && typeof eventData.id === 'string') {
@@ -93,17 +45,17 @@ export async function handleStripeEvent(
           applicationId: applicationContext.applicationId,
         })
       }
-      await onCheckoutAborted(event.id, eventData)
+      await onCheckoutAbortedForIdentity(event.id, eventData)
       return 'processed'
     case 'invoice.paid':
-      await handleInvoicePaidEvent(event.id, eventData, applicationContext)
+      await handleInvoicePaid(event.id, eventData, applicationContext)
       return 'processed'
     case 'invoice.payment_failed':
     case 'invoice.payment_action_required':
-      await handleInvoicePaymentFailedEvent(event.id, eventData, applicationContext)
+      await handleInvoicePaymentFailure(event.id, eventData, applicationContext)
       return 'processed'
     case 'invoice_payment.paid':
-      await handleInvoicePaymentPaidEvent(
+      await handleInvoicePaymentPaid(
         eventData,
         event.livemode ? 'production' : 'test',
         applicationContext,
@@ -112,23 +64,23 @@ export async function handleStripeEvent(
     case 'customer.subscription.updated':
     case 'customer.subscription.paused':
     case 'customer.subscription.resumed':
-      await handleSubscriptionUpdatedEvent(event.id, eventData, undefined, applicationContext)
+      await handleSubscriptionUpdated(event.id, eventData, applicationContext)
       return 'processed'
     case 'customer.subscription.deleted':
-      await handleSubscriptionDeletedEvent(event.id, eventData, undefined, applicationContext)
+      await handleSubscriptionDeleted(event.id, eventData, applicationContext)
       return 'processed'
     case 'identity.verification_session.verified':
-      await onVerificationVerified(event.id, eventData)
+      await onVerificationSessionVerified(event.id, eventData)
       return 'processed'
     case 'identity.verification_session.requires_input':
-      await onVerificationRequiresInput(event.id, eventData)
+      await onVerificationSessionRequiresInput(event.id, eventData)
       return 'processed'
     case 'identity.verification_session.canceled':
     case 'identity.verification_session.redacted':
-      await onVerificationCanceled(event.id, eventData)
+      await onVerificationSessionCanceled(event.id, eventData)
       return 'processed'
     case 'charge.refunded':
-      await handleChargeRefundedEvent(
+      await handleChargeRefunded(
         event.id,
         eventData,
         event.livemode ? 'production' : 'test',
@@ -137,7 +89,7 @@ export async function handleStripeEvent(
       return 'processed'
     case 'charge.dispute.closed':
     case 'charge.dispute.funds_reinstated':
-      await handleChargeDisputeClosedEvent(
+      await handleChargeDisputeClosed(
         eventData,
         event.livemode ? 'production' : 'test',
         applicationContext,
@@ -153,19 +105,4 @@ export async function handleStripeEvent(
     default:
       return 'ignored'
   }
-}
-
-function mergeDefinedDependencies<T extends Record<string, unknown>>(
-  defaults: T,
-  overrides: Partial<T> | undefined,
-): T {
-  if (!overrides) return { ...defaults }
-
-  const merged = { ...defaults }
-  for (const key of Object.keys(overrides) as Array<keyof T>) {
-    const value = overrides[key]
-    if (value === undefined) continue
-    merged[key] = value as T[keyof T]
-  }
-  return merged
 }

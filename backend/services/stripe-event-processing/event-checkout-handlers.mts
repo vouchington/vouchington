@@ -17,33 +17,23 @@ import {
   handleInvoicePaymentFailure,
 } from '@services/stripe/event-subscription-handlers'
 
-type CheckoutSessionCompletedDependencies = {
-  ensureMembershipFromStripeSubscription: typeof ensureMembershipFromStripeSubscription
-  onCheckoutCompletedForIdentity: typeof onCheckoutCompletedForIdentity
-}
-
-type CheckoutSessionPaymentFailedDependencies = {
-  handleCheckoutSessionPaymentFailure: typeof handleCheckoutSessionPaymentFailure
-  onCheckoutAbortedForIdentity: typeof onCheckoutAbortedForIdentity
-}
-
 export async function handleCheckoutSessionCompleted(
   eventId: string,
   eventData: Record<string, unknown>,
-  dependencies?: Partial<CheckoutSessionCompletedDependencies>,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<void> {
-  const ensureMembership =
-    dependencies?.ensureMembershipFromStripeSubscription ?? ensureMembershipFromStripeSubscription
-  const onCheckoutCompleted =
-    dependencies?.onCheckoutCompletedForIdentity ?? onCheckoutCompletedForIdentity
   if (eventData.mode === 'subscription') {
     const paymentStatus = eventData.payment_status
     if (paymentStatus !== 'paid' && paymentStatus !== 'no_payment_required') return
     const subscriptionId = getStripeObjectString(eventData.subscription)
     const customerId = getStripeObjectString(eventData.customer)
     if (!subscriptionId || !customerId) return
-    await ensureMembership(eventId, subscriptionId, customerId, applicationContext)
+    await ensureMembershipFromStripeSubscription(
+      eventId,
+      subscriptionId,
+      customerId,
+      applicationContext,
+    )
     return
   }
 
@@ -52,7 +42,7 @@ export async function handleCheckoutSessionCompleted(
     if (paymentStatus !== 'paid' && paymentStatus !== 'no_payment_required') return
     const metadata = eventData.metadata as Record<string, string> | undefined
     if (metadata?.intent === 'identity-verification') {
-      await onCheckoutCompleted(eventId, eventData)
+      await onCheckoutCompletedForIdentity(eventId, eventData)
     }
   }
 }
@@ -60,15 +50,10 @@ export async function handleCheckoutSessionCompleted(
 export async function handleCheckoutSessionPaymentFailed(
   eventId: string,
   eventData: Record<string, unknown>,
-  dependencies?: Partial<CheckoutSessionPaymentFailedDependencies>,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<void> {
-  const handlePaymentFailure =
-    dependencies?.handleCheckoutSessionPaymentFailure ?? handleCheckoutSessionPaymentFailure
-  const onCheckoutAborted =
-    dependencies?.onCheckoutAbortedForIdentity ?? onCheckoutAbortedForIdentity
-  await handlePaymentFailure(eventId, eventData, applicationContext)
-  await onCheckoutAborted(eventId, eventData)
+  await handleCheckoutSessionPaymentFailure(eventId, eventData, applicationContext)
+  await onCheckoutAbortedForIdentity(eventId, eventData)
 }
 
 export {
