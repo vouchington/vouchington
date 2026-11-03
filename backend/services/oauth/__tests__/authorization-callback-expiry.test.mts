@@ -16,15 +16,14 @@ describe('OAuth authorization callback expiry', () => {
     '2030-01-01T00:00:00.000Z',
   ])('decides expiry at the callback instant %s', async instant => {
     const decisionAt = new Date(instant)
-    vi.setSystemTime(decisionAt)
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
     const authorizationIds: string[] = []
     onTestFinished(async () => {
       await deleteTestOAuthAuthorizationFixtures({ authorizationIds })
     })
 
+    // Insert fixtures under the real clock: uuid's v7 state only moves forward, so a
+    // future frozen instant would otherwise leave far-future ids for later files in this fork.
+    const cases: { expired: boolean; state: string; authorizationId: string }[] = []
     for (const [offsetMs, expired] of [
       [-1, true],
       [0, true],
@@ -37,14 +36,23 @@ describe('OAuth authorization callback expiry', () => {
         callbackCodeCiphertext: 'boundary-callback-ciphertext',
       })
       authorizationIds.push(authorizationId)
+      cases.push({ expired, state, authorizationId })
+    }
+
+    for (const { expired, state, authorizationId } of cases) {
+      vi.setSystemTime(decisionAt)
       const outcome = await receiveOAuthAuthorizationCallback({
         provider: 'github',
         state,
         code: 'provider-code',
-      }).then(
-        value => ({ kind: 'accepted', value }),
-        (err: unknown) => ({ kind: 'rejected', value: err }),
-      )
+      })
+        .then(
+          value => ({ kind: 'accepted', value }),
+          (err: unknown) => ({ kind: 'rejected', value: err }),
+        )
+        .finally(() => {
+          vi.useRealTimers()
+        })
       const expectedOutcome = expired
         ? { kind: 'rejected', value: { status: 410 } }
         : { kind: 'accepted', value: { flowId: authorizationId, exchangeRequired: true } }
