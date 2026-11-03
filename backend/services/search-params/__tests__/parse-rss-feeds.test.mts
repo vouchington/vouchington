@@ -1,189 +1,109 @@
-import { it, expect, describe, vi } from 'vitest'
-import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'
+import { it, expect, describe } from 'vitest'
+import {
+  createTestUser,
+  insertTestTopic,
+  insertUnlinkedTopicAliasForTest,
+} from '@voucha/test-helpers'
 import { parseRssFeedsSearchParams } from '../parse-rss-feeds.mts'
 
+async function insertSlugTopic(label: string) {
+  const user = await createTestUser({ administrator: true })
+  const slug = `rss-feeds-${label}-${crypto.randomUUID().slice(0, 8)}`
+  const topicId = await insertTestTopic({ name: `RSS feeds ${slug}`, slug, createdById: user!.id })
+  return { slug, topicId }
+}
+
 describe('parse-rss-feeds', () => {
-  const resolveHashtagTopicSearch = vi.fn<VitestLooseMock>()
-
   it('resolves #slug token in q into hashtag_topic_ids and strips it from text_search_query', async () => {
-    const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [{ kind: 'linked_topic', topicId: uuid }],
-      hasUnknown: false,
-      topicIds: [uuid],
-      textSearchQuery: 'foo',
-    })
+    const { slug, topicId } = await insertSlugTopic('hashtag')
 
-    const { searchOptions } = await parseRssFeedsSearchParams(
-      { q: 'foo #ai' },
-      { resolveHashtagTopicSearch },
-    )
+    const { searchOptions } = await parseRssFeedsSearchParams({ q: `foo #${slug}` })
 
-    expect(searchOptions.hashtag_topic_ids).toEqual([uuid])
+    expect(searchOptions.hashtag_topic_ids).toEqual([topicId])
     expect(searchOptions.text_search_query).toBe('foo')
   })
 
   it('keeps multiple resolved hashtags as independent topic constraints', async () => {
-    const uuidOne = 'aaaaaaaa-0000-0000-0000-000000000001'
-    const uuidTwo = 'bbbbbbbb-0000-0000-0000-000000000002'
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [
-        { kind: 'linked_topic', topicId: uuidOne },
-        { kind: 'linked_topic', topicId: uuidTwo },
-      ],
-      hasUnknown: false,
-      topicIds: [uuidOne, uuidTwo],
-      textSearchQuery: undefined,
+    const first = await insertSlugTopic('hashtag-one')
+    const second = await insertSlugTopic('hashtag-two')
+
+    const { searchOptions } = await parseRssFeedsSearchParams({
+      q: `#${first.slug} #${second.slug}`,
     })
 
-    const { searchOptions } = await parseRssFeedsSearchParams(
-      { q: '#topic-one #topic-two' },
-      { resolveHashtagTopicSearch },
-    )
-
-    expect(searchOptions.hashtag_topic_ids).toEqual([uuidOne, uuidTwo])
+    expect(searchOptions.hashtag_topic_ids).toEqual([first.topicId, second.topicId])
     expect(searchOptions.topic_match).toBeUndefined()
     expect(searchOptions.text_search_query).toBeUndefined()
   })
 
   it('keeps a singular topic filter and resolved hashtag as intersecting constraints', async () => {
-    const singularTopicId = 'aaaaaaaa-0000-0000-0000-000000000001'
-    const hashtagTopicId = 'bbbbbbbb-0000-0000-0000-000000000002'
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [{ kind: 'linked_topic', topicId: hashtagTopicId }],
-      hasUnknown: false,
-      topicIds: [hashtagTopicId],
-      textSearchQuery: undefined,
+    const singular = await insertSlugTopic('singular')
+    const hashtag = await insertSlugTopic('hashtag')
+
+    const { searchOptions } = await parseRssFeedsSearchParams({
+      q: `#${hashtag.slug}`,
+      topic: singular.slug,
     })
 
-    const { searchOptions } = await parseRssFeedsSearchParams(
-      { q: '#hashtag-topic', topic: 'singular-topic' },
-      {
-        getTopicIdByAnyCached: vi
-          .fn<typeof getTopicIdByAnyCached>()
-          .mockResolvedValue(singularTopicId),
-        getTopicIdsByAnyCachedBatch: vi
-          .fn<typeof getTopicIdsByAnyCachedBatch>()
-          .mockResolvedValue([]),
-        resolveHashtagTopicSearch,
-      },
-    )
-
     expect(searchOptions).toMatchObject({
-      topic_id: singularTopicId,
-      hashtag_topic_ids: [hashtagTopicId],
+      topic_id: singular.topicId,
+      hashtag_topic_ids: [hashtag.topicId],
     })
   })
 
   it('keeps plural topics and resolved hashtags as independent filters', async () => {
-    const topicId = 'aaaaaaaa-0000-0000-0000-000000000001'
-    const hashtagTopicId = 'bbbbbbbb-0000-0000-0000-000000000002'
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [{ kind: 'linked_topic', topicId: hashtagTopicId }],
-      hasUnknown: false,
-      topicIds: [hashtagTopicId],
-      textSearchQuery: undefined,
+    const plural = await insertSlugTopic('plural')
+    const hashtag = await insertSlugTopic('hashtag')
+
+    const { searchOptions } = await parseRssFeedsSearchParams({
+      q: `#${hashtag.slug}`,
+      topics: [plural.slug],
     })
 
-    const { searchOptions } = await parseRssFeedsSearchParams(
-      { q: '#hashtag-topic', topics: ['plural-topic'] },
-      {
-        getTopicIdsByAnyCachedBatch: vi
-          .fn<typeof getTopicIdsByAnyCachedBatch>()
-          .mockResolvedValue([topicId]),
-        resolveHashtagTopicSearch,
-      },
-    )
-
     expect(searchOptions).toMatchObject({
-      topic_ids: [topicId],
-      hashtag_topic_ids: [hashtagTopicId],
+      topic_ids: [plural.topicId],
+      hashtag_topic_ids: [hashtag.topicId],
     })
     expect(searchOptions.topic_match).toBeUndefined()
   })
 
   it('includes only resolved plural publisher type ids', async () => {
-    const publisherTypeId = 'cccccccc-0000-0000-0000-000000000003'
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [],
-      hasUnknown: false,
-      topicIds: [],
-      textSearchQuery: undefined,
-    })
-    const getTopicIdsByAnyCachedBatchMock = vi
-      .fn<typeof getTopicIdsByAnyCachedBatch>()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([publisherTypeId])
+    const publisherType = await insertSlugTopic('publisher-type')
 
-    const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams(
-      { publisher_types: ['local-news'] },
-      { getTopicIdsByAnyCachedBatch: getTopicIdsByAnyCachedBatchMock, resolveHashtagTopicSearch },
-    )
+    const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams({
+      publisher_types: [publisherType.slug],
+    })
 
     expect(shouldReturnEmpty).toBe(false)
-    expect(searchOptions.publisher_type_ids).toEqual([publisherTypeId])
+    expect(searchOptions.publisher_type_ids).toEqual([publisherType.topicId])
   })
 
   it('omits the plural publisher type filter when no identifiers resolve', async () => {
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [],
-      hasUnknown: false,
-      topicIds: [],
-      textSearchQuery: undefined,
+    const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams({
+      publisher_types: [`rss-feeds-missing-type-${crypto.randomUUID().slice(0, 8)}`],
     })
-    const getTopicIdsByAnyCachedBatchMock = vi
-      .fn<typeof getTopicIdsByAnyCachedBatch>()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([null])
-
-    const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams(
-      { publisher_types: ['missing-type'] },
-      { getTopicIdsByAnyCachedBatch: getTopicIdsByAnyCachedBatchMock, resolveHashtagTopicSearch },
-    )
 
     expect(shouldReturnEmpty).toBe(true)
     expect(searchOptions).not.toHaveProperty('publisher_type_ids')
   })
 
   it('returns an empty result for an unknown or unlinked hashtag', async () => {
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [{ kind: 'exact_alias', aliasId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }],
-      hasUnknown: false,
-      topicIds: [],
-      textSearchQuery: 'news',
-    })
+    const unlinkedSlug = `rss-feeds-unlinked-${crypto.randomUUID().slice(0, 8)}`
+    await insertUnlinkedTopicAliasForTest(unlinkedSlug)
 
-    await expect(
-      parseRssFeedsSearchParams({ q: 'news #unlinked' }, { resolveHashtagTopicSearch }),
-    ).resolves.toMatchObject({ shouldReturnEmpty: true })
-
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [],
-      hasUnknown: true,
-      topicIds: [],
-      textSearchQuery: 'news',
+    await expect(parseRssFeedsSearchParams({ q: `news #${unlinkedSlug}` })).resolves.toMatchObject({
+      shouldReturnEmpty: true,
     })
     await expect(
-      parseRssFeedsSearchParams({ q: 'news #missing' }, { resolveHashtagTopicSearch }),
+      parseRssFeedsSearchParams({
+        q: `news #rss-feeds-missing-${crypto.randomUUID().slice(0, 8)}`,
+      }),
     ).resolves.toMatchObject({ shouldReturnEmpty: true })
   })
 
   it('narrows valid feed types and rejects unsupported string values', async () => {
-    resolveHashtagTopicSearch.mockResolvedValue({
-      filters: [],
-      hasUnknown: false,
-      topicIds: [],
-      textSearchQuery: undefined,
-    })
-
-    const validResult = await parseRssFeedsSearchParams(
-      { feed_type: 'podcast' },
-      { resolveHashtagTopicSearch },
-    )
-    const invalidResult = await parseRssFeedsSearchParams(
-      { feed_type: 'newsletter' },
-      { resolveHashtagTopicSearch },
-    )
+    const validResult = await parseRssFeedsSearchParams({ feed_type: 'podcast' })
+    const invalidResult = await parseRssFeedsSearchParams({ feed_type: 'newsletter' })
 
     expect(validResult.searchOptions.feed_type).toBe('podcast')
     expect(invalidResult).toEqual({ shouldReturnEmpty: true, searchOptions: {} })

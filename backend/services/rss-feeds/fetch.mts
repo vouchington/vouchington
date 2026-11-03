@@ -175,7 +175,7 @@ export async function fetchRssFeed(
   }
 
   const [items] = await Promise.all([
-    upsertRssFeedItems(rssFeedId, validItems, {}, { redetectLanguage: languageChanged }),
+    upsertRssFeedItems(rssFeedId, validItems, { redetectLanguage: languageChanged }),
     reclassifyRssFeedTypeIfNeeded(
       rssFeedId,
       { url: feedUrl, feed_type: rssFeed.feed_type },
