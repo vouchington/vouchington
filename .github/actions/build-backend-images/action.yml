@@ -283,6 +283,37 @@ runs:
         fi
         echo "✓ schema-reset.mts (twice) and migrate.mts ran on the compiled image and public.users exists"
 
+        # A command that names no entrypoint (the Node shape of an --eval override) must fail
+        # instead of serving. The timeout turns a regression that serves into a failed check.
+        STATUS=0
+        UNKNOWN_OUTPUT=$(timeout 30 docker run --rm --network host \
+          -e NODE_ENV=test -e ENVIRONMENT=test -e VALKEY_URL \
+          "$IMAGE" --experimental-strip-types --input-type=module --eval 'x' 2>&1) || STATUS=$?
+        if [ "$STATUS" = 0 ] || [ "$STATUS" = 124 ] || ! grep -qF 'Unknown executable command' <<<"$UNKNOWN_OUTPUT"; then
+          echo "✗ the API image did not reject an unknown command (exit $STATUS). Output:"
+          echo "$UNKNOWN_OUTPUT"
+          exit 1
+        fi
+        echo "✓ an unknown command exited $STATUS without serving"
+
+        # The staging Aurora wake keeps a connection open for the duration it is given; one second
+        # ends within about a second. Outside staging it must refuse before connecting.
+        docker run --rm --network host \
+          -e NODE_ENV=staging -e ENVIRONMENT=staging \
+          -e DATABASE_URL="$RESET_DATABASE_URL" -e VALKEY_URL \
+          "$IMAGE" staging-aurora-wake.mts 1
+        echo "✓ staging-aurora-wake.mts 1 exited 0"
+        STATUS=0
+        timeout 30 docker run --rm --network host \
+          -e NODE_ENV=staging -e ENVIRONMENT=production \
+          -e DATABASE_URL="$RESET_DATABASE_URL" -e VALKEY_URL \
+          "$IMAGE" staging-aurora-wake.mts 1 >/dev/null 2>&1 || STATUS=$?
+        if [ "$STATUS" = 0 ] || [ "$STATUS" = 124 ]; then
+          echo "✗ staging-aurora-wake.mts did not refuse a non-staging environment (exit $STATUS)"
+          exit 1
+        fi
+        echo "✓ staging-aurora-wake.mts refused a non-staging environment (exit $STATUS)"
+
         # Every run above uses NODE_ENV=test, which skips the signal handlers and the deployed-only
         # boot guards. Boot the way a deployed task does and require a clean exit on docker stop.
         DEPLOYED_PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)

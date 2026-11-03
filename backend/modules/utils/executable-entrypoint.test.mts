@@ -4,46 +4,59 @@ import { selectExecutableEntrypoint } from './executable-entrypoint.mts'
 const entrypoints = ['migrate.mts', 'serve.mts', 'valkey-admin.mts']
 
 describe('selectExecutableEntrypoint', () => {
-  it('runs the fallback with unchanged arguments when no entrypoint is named', () => {
+  it('selects the entrypoint named first and keeps the arguments after it', () => {
     expect(
-      selectExecutableEntrypoint(['bun', '/app/api', '--port'], entrypoints, 'serve.mts'),
-    ).toEqual({
-      entrypoint: 'serve.mts',
-      argv: ['bun', '/app/api', '--port'],
-    })
+      selectExecutableEntrypoint(['bun', '/app/api', 'valkey-admin.mts', 'diagnose'], entrypoints),
+    ).toEqual({ entrypoint: 'valkey-admin.mts', argv: ['bun', '/app/api', 'diagnose'] })
   })
 
-  it('drops the node flags of an ECS command override up to the named entrypoint', () => {
-    const argv = ['bun', '/app/api', '--experimental-strip-types', 'migrate.mts', '--forced']
-    expect(selectExecutableEntrypoint(argv, entrypoints, 'serve.mts')).toEqual({
+  it('drops the leading flags of an ECS command override', () => {
+    const argv = [
+      'bun',
+      '/app/api',
+      '--experimental-strip-types',
+      '--disable-warning=ExperimentalWarning',
+      'migrate.mts',
+      '--forced',
+    ]
+    expect(selectExecutableEntrypoint(argv, entrypoints)).toEqual({
       entrypoint: 'migrate.mts',
       argv: ['bun', '/app/api', '--forced'],
     })
   })
 
-  it.each(['migrate.mts', 'valkey-admin.mts'])(
-    'selects %s from the exact ECS command override of the infrastructure one-off tasks',
-    name => {
-      const argv = [
-        'bun',
-        '/app/api',
-        '--experimental-strip-types',
-        '--disable-warning=ExperimentalWarning',
-        name,
-        'diagnose',
-      ]
-      expect(selectExecutableEntrypoint(argv, entrypoints, 'serve.mts')).toEqual({
-        entrypoint: name,
-        argv: ['bun', '/app/api', 'diagnose'],
-      })
-    },
-  )
-
   it('ignores an entrypoint name in the executable path positions', () => {
-    const argv = ['migrate.mts', 'serve.mts', 'valkey-admin.mts', 'diagnose']
-    expect(selectExecutableEntrypoint(argv, entrypoints, 'serve.mts')).toEqual({
-      entrypoint: 'valkey-admin.mts',
-      argv: ['migrate.mts', 'serve.mts', 'diagnose'],
-    })
+    expect(
+      selectExecutableEntrypoint(['migrate.mts', 'serve.mts', 'valkey-admin.mts'], entrypoints),
+    ).toEqual({ entrypoint: 'valkey-admin.mts', argv: ['migrate.mts', 'serve.mts'] })
+  })
+
+  it('rejects a Node eval command instead of falling back to a server', () => {
+    const argv = ['bun', '/app/api', '--experimental-strip-types', '--input-type=module', '--eval']
+    expect(() => selectExecutableEntrypoint([...argv, 'x'], entrypoints)).toThrow(
+      /Unknown executable command "x"; expected one of: migrate\.mts, serve\.mts, valkey-admin\.mts/,
+    )
+  })
+
+  it('rejects no command', () => {
+    expect(() => selectExecutableEntrypoint(['bun', '/app/api'], entrypoints)).toThrow(
+      'Unknown executable command (none)',
+    )
+    expect(() => selectExecutableEntrypoint(['bun', '/app/api', '--flag'], entrypoints)).toThrow(
+      'Unknown executable command (none)',
+    )
+  })
+
+  it('does not select an entrypoint that follows an unknown non-flag argument', () => {
+    expect(() =>
+      selectExecutableEntrypoint(['bun', '/app/api', '--flag', 'value', 'serve.mts'], entrypoints),
+    ).toThrow('Unknown executable command "value"')
+  })
+
+  it('truncates a long received script in the error', () => {
+    const script = 'a'.repeat(500)
+    expect(() => selectExecutableEntrypoint(['bun', '/app/api', script], entrypoints)).toThrow(
+      `"${'a'.repeat(80)}..."`,
+    )
   })
 })
