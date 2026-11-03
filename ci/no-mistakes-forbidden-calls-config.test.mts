@@ -173,7 +173,6 @@ describe('no-mistakes forbidden-calls config', () => {
       scope: 'repository',
       options: {
         roots: [{ vitest: true }],
-        excludeRoots: ['static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'],
         traversal: 'transitive',
         unknownCalls: 'ignore',
         targets: [

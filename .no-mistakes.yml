@@ -1877,9 +1877,6 @@ rules:
     options:
       roots:
         - vitest: true
-      # This reviewed mock test replaces no-mistakes, so it is not a traversal root.
-      excludeRoots:
-        - 'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'
       traversal: transitive
       unknownCalls: ignore
       targets:
