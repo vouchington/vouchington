@@ -24,11 +24,6 @@ export type SesInboundObjectPage = {
 export type SesInboundSourceIdentity = { eTag: string; versionId?: string }
 
 /* no-mistakes: integration=aws */
-export async function loadSesInboundObject(objectKey: string): Promise<Readable> {
-  return (await loadSesInboundObjectWithMetadata(objectKey)).body
-}
-
-/* no-mistakes: integration=aws */
 async function loadSesInboundObjectWithMetadata(
   objectKey: string,
   sourceIdentity?: SesInboundSourceIdentity,
