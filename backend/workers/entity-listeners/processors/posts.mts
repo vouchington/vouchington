@@ -39,10 +39,7 @@ async function requestTaggingForApprovedPost(postId: string): Promise<void> {
   })
 }
 
-export const processPostCreated = async (
-  { id }: { id: string },
-  dependencies: { recoverPostCreatedEffects?: typeof recoverPostCreatedEffects } = {},
-) => {
+export const processPostCreated = async ({ id }: { id: string }) => {
   const post = await getPostByAny(id, { readOnly: false })
   if (!post) return
   await repairEntityBloomKeys('posts', id)
@@ -76,7 +73,7 @@ export const processPostCreated = async (
 
   await handlePostCommentAction(post.id)
 
-  await (dependencies.recoverPostCreatedEffects ?? recoverPostCreatedEffects)(post)
+  await recoverPostCreatedEffects(post)
 }
 
 export const processPostUpdated = async ({

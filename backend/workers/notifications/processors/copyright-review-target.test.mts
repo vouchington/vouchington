@@ -1,4 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { sentryCaptureMessageMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
+import { copyrightConfig } from '@services/copyright-notices/config'
 import { processCheckCopyrightReviewTarget } from './copyright-review-target.mts'
 
 type Deps = Required<NonNullable<Parameters<typeof processCheckCopyrightReviewTarget>[0]>>
@@ -13,19 +16,8 @@ const noBreaches: CopyrightReviewTargetBreaches = {
   emailIntakesWaitingPastTarget: { count: 0, emailIntakeIds: [] },
 }
 
-function checkDeps(reviewTargetMinutes: number | null, breaches: CopyrightReviewTargetBreaches) {
-  return {
-    getReviewTargetMinutes: vi.fn<Deps['getReviewTargetMinutes']>(async () => reviewTargetMinutes),
-    readBreaches: vi.fn<Deps['readBreaches']>(async () => breaches),
-    recordBreach: vi.fn<Deps['recordBreach']>(
-      context =>
-        context.waitingPastTarget.count +
-          context.missedEscalation.count +
-          context.missedRestorationDeadline.count +
-          context.emailIntakesWaitingPastTarget.count >
-        0,
-    ),
-  }
+function checkDeps(breaches: CopyrightReviewTargetBreaches) {
+  return { readBreaches: vi.fn<Deps['readBreaches']>(async () => breaches) }
 }
 
 describe('processCheckCopyrightReviewTarget', () => {
@@ -39,7 +31,8 @@ describe('processCheckCopyrightReviewTarget', () => {
   })
 
   it('reads with no target and reports a quiet sweep while the target is unset', async () => {
-    const deps = checkDeps(null, noBreaches)
+    onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { reviewTargetMinutes: 0 }))
+    const deps = checkDeps(noBreaches)
 
     await expect(processCheckCopyrightReviewTarget(deps)).resolves.toEqual({ paged: false })
 
@@ -47,19 +40,19 @@ describe('processCheckCopyrightReviewTarget', () => {
       now: NOW,
       reviewTargetMinutes: null,
     })
-    expect(deps.recordBreach).toHaveBeenCalledExactlyOnceWith({
-      reviewTargetMinutes: null,
-      ...noBreaches,
-    })
+    expect(sentryCaptureMessageMock).not.toHaveBeenCalled()
   })
 
   it('passes the configured target through and pages the breaches it read', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(copyrightConfig, { reviewTargetMinutes: 240 }),
+    )
     const breaches = {
       ...noBreaches,
       waitingPastTarget: { count: 2, noticeIds: ['notice-a', 'notice-b'] },
       emailIntakesWaitingPastTarget: { count: 1, emailIntakeIds: ['intake-a'] },
     }
-    const deps = checkDeps(240, breaches)
+    const deps = checkDeps(breaches)
 
     await expect(processCheckCopyrightReviewTarget(deps)).resolves.toEqual({ paged: true })
 
@@ -67,9 +60,21 @@ describe('processCheckCopyrightReviewTarget', () => {
       now: NOW,
       reviewTargetMinutes: 240,
     })
-    expect(deps.recordBreach).toHaveBeenCalledExactlyOnceWith({
-      reviewTargetMinutes: 240,
-      ...breaches,
-    })
+    expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith(
+      'copyright_review_target_breach',
+      expect.objectContaining({
+        extra: {
+          reviewTargetMinutes: 240,
+          waitingPastTargetCount: 2,
+          waitingPastTargetNoticeIds: ['notice-a', 'notice-b'],
+          missedEscalationCount: 0,
+          missedEscalationNoticeIds: [],
+          missedRestorationDeadlineCount: 0,
+          missedRestorationDeadlineNoticeIds: [],
+          emailIntakesWaitingPastTargetCount: 1,
+          emailIntakesWaitingPastTargetIds: ['intake-a'],
+        },
+      }),
+    )
   })
 })

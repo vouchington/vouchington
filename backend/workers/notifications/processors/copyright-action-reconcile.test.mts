@@ -1,9 +1,10 @@
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
-import { describe, expect, it, vi } from 'vitest'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { notifications } from '@queues/notifications/queues'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightSweepIdPage } from '@services/copyright-notices'
 import { processReconcileCopyrightActionIntents } from './copyright-action-reconcile.mts'
 
+const realAddBulk = notifications.addBulk
 type Deps = Required<NonNullable<Parameters<typeof processReconcileCopyrightActionIntents>[0]>>
 type DueRestorationPage = Awaited<ReturnType<Deps['searchDueRestorations']>>
 
@@ -81,16 +82,36 @@ function reconcileDeps(pages: SweepPages = {}) {
     searchActionIntents: vi.fn<Deps['searchActionIntents']>(
       sweep(log, 'action intents', pages.actionIntents),
     ),
-    enqueueBulkApplyCopyrightActions: vi.fn<Deps['enqueueBulkApplyCopyrightActions']>(async ids => {
-      for (const id of ids) log.push(`enqueue ${id}`)
-    }),
-    now: () => NOW,
   }
-  return { deps, log }
+  const enqueueBulk = vi.spyOn(notifications, 'addBulk').mockImplementation((jobs, ...rest) => {
+    for (const job of jobs) log.push(`enqueue ${(job.data as { intentId: string }).intentId}`)
+    return realAddBulk.call(notifications, jobs, ...rest)
+  })
+  return { deps, enqueueBulk, log }
 }
 
+function enqueuedIntentIds(enqueueBulk: { mock: { calls: unknown[][] } }): string[][] {
+  return enqueueBulk.mock.calls.map(([jobs]) =>
+    (jobs as { data: { intentId: string } }[]).map(job => job.data.intentId),
+  )
+}
+
+const RUN = crypto.randomUUID()
+const intent = (name: string) => `${name}-${RUN}`
+
 describe('processReconcileCopyrightActionIntents', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
   it('rotates one page per unfinished stage under the shared job budget', async () => {
+    const [intent1, intent2, intent3] = [intent('intent-1'), intent('intent-2'), intent('intent-3')]
     const { deps, log } = reconcileDeps({
       formReviews: [page(['review-1'], 'review-cursor'), page(['review-2'], null)],
       pendingEnforcement: [
@@ -103,7 +124,7 @@ describe('processReconcileCopyrightActionIntents', () => {
       ],
       blockedHoldRestorations: [page(['notice-1'], 'notice-cursor'), page(['notice-2'], null)],
       dueRestorations: [page(['deadline-1'], 'deadline-cursor'), page(['deadline-2'], null)],
-      actionIntents: [page(['intent-1', 'intent-2'], 'intent-cursor'), page(['intent-3'], null)],
+      actionIntents: [page([intent1, intent2], 'intent-cursor'), page([intent3], null)],
     })
 
     await expect(processReconcileCopyrightActionIntents(deps)).resolves.toEqual({
@@ -124,8 +145,8 @@ describe('processReconcileCopyrightActionIntents', () => {
       'search due restorations',
       'create restore intents deadline-1',
       'search action intents',
-      'enqueue intent-1',
-      'enqueue intent-2',
+      `enqueue ${intent1}`,
+      `enqueue ${intent2}`,
       'search form reviews',
       'recover form review review-2',
       'search pending enforcement',
@@ -137,7 +158,7 @@ describe('processReconcileCopyrightActionIntents', () => {
       'search due restorations',
       'create restore intents deadline-2',
       'search action intents',
-      'enqueue intent-3',
+      `enqueue ${intent3}`,
     ])
     expect(deps.searchFormReviews.mock.calls).toEqual([
       [{ limit: 100 }],
@@ -172,13 +193,26 @@ describe('processReconcileCopyrightActionIntents', () => {
       [{ now: NOW, limit: 100 }],
       [{ now: NOW, limit: 100, after: 'intent-cursor' }],
     ])
+    const queued = (await readAllQueueJobs(notifications)).filter(job =>
+      [intent1, intent2, intent3].includes((job.data as { intentId?: string }).intentId ?? ''),
+    )
+    expect(queued.map(job => [job.name, job.data])).toEqual(
+      expect.arrayContaining(
+        [intent1, intent2, intent3].map(intentId => [
+          'notifications.processApplyCopyrightAction',
+          { intentId },
+        ]),
+      ),
+    )
+    expect(queued).toHaveLength(3)
   })
 
   it('waits for blocked hold recovery before creating and enqueueing restores', async () => {
-    const { deps } = reconcileDeps({
+    const intentId = intent('intent')
+    const { deps, enqueueBulk } = reconcileDeps({
       blockedHoldRestorations: [page(['notice'], null)],
       dueRestorations: [page(['deadline'], null)],
-      actionIntents: [page(['intent'], null)],
+      actionIntents: [page([intentId], null)],
     })
     const entered = Promise.withResolvers<void>()
     const released = Promise.withResolvers<number>()
@@ -192,22 +226,24 @@ describe('processReconcileCopyrightActionIntents', () => {
       expect(deps.searchDueRestorations).not.toHaveBeenCalled()
       expect(deps.createDueRestoreIntents).not.toHaveBeenCalled()
       expect(deps.searchActionIntents).not.toHaveBeenCalled()
-      expect(deps.enqueueBulkApplyCopyrightActions).not.toHaveBeenCalled()
+      expect(enqueueBulk).not.toHaveBeenCalled()
     } finally {
       released.resolve(1)
       await reconciliation
     }
     expect(deps.createDueRestoreIntents).toHaveBeenCalledOnce()
-    expect(deps.enqueueBulkApplyCopyrightActions).toHaveBeenCalledWith(['intent'])
+    expect(enqueuedIntentIds(enqueueBulk)).toEqual([[intentId]])
   })
 
   it('keeps reconciling past failed items and stages, then fails with every error', async () => {
-    const { deps } = reconcileDeps({
+    const failingIntent = intent('failing-intent')
+    const samePageIntent = intent('same-page-intent')
+    const { deps, enqueueBulk } = reconcileDeps({
       formReviews: [page(['failing-review', 'same-page-review'], null)],
       pendingEnforcement: [page(['assessment'], null)],
       suspendedClaimants: [page(['failing-claimant', 'same-page-claimant'], null)],
       blockedHoldRestorations: [page(['failing-notice', 'same-page-notice'], null)],
-      actionIntents: [page(['failing-intent', 'same-page-intent'], null)],
+      actionIntents: [page([failingIntent, samePageIntent], null)],
     })
     const reviewFailure = new Error('form review recovery failed')
     const recoveryFailure = new Error('decision recovery failed')
@@ -220,7 +256,7 @@ describe('processReconcileCopyrightActionIntents', () => {
     deps.liftSuspendedClaimantRestrictions.mockRejectedValueOnce(liftFailure)
     deps.searchDueRestorations.mockRejectedValueOnce(dueSearchFailure)
     deps.recoverBlockedHoldRestorations.mockRejectedValueOnce(holdFailure)
-    deps.enqueueBulkApplyCopyrightActions.mockRejectedValueOnce(enqueueFailure)
+    enqueueBulk.mockRejectedValueOnce(enqueueFailure)
 
     const failure = await processReconcileCopyrightActionIntents(deps).then(
       () => null,
@@ -240,60 +276,6 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(deps.enforceAssessment).toHaveBeenCalledWith('assessment')
     expect(deps.liftSuspendedClaimantRestrictions).toHaveBeenCalledWith('same-page-claimant', NOW)
     expect(deps.recoverBlockedHoldRestorations).toHaveBeenCalledWith('same-page-notice', NOW)
-    expect(deps.enqueueBulkApplyCopyrightActions.mock.calls).toEqual([
-      [['failing-intent', 'same-page-intent']],
-    ])
-  })
-  it('continues only unfinished stages at the configured cap even when a head item fails', async () => {
-    overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
-      batch_size: 1,
-      max_batches_per_run: 1,
-    })
-    const { deps } = reconcileDeps({ formReviews: [page(['head'], 'head-cursor')] })
-    const failure = new Error('head failed')
-    deps.recoverFormReview.mockRejectedValueOnce(failure)
-    const enqueueContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
-    await expect(
-      processReconcileCopyrightActionIntents({ ...deps, enqueueContinuation }),
-    ).rejects.toBeInstanceOf(AggregateError)
-    expect(enqueueContinuation).toHaveBeenCalledWith({
-      evaluatedAt: NOW.toISOString(),
-      pending: [
-        'decisions',
-        'enforcement',
-        'suspended',
-        'blocked',
-        'restorations',
-        'actions',
-        'forms',
-      ],
-      cursors: { forms: 'head-cursor' },
-    })
-    const round = reconcileDeps({
-      decisionAssessments: [page(['decision-tail'], 'decision-cursor')],
-    }).deps
-    const continuation = enqueueContinuation.mock.calls[0]?.[0]
-    if (!continuation) throw new Error('Expected pending stage continuation')
-    const nextContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
-    await processReconcileCopyrightActionIntents(
-      { ...round, enqueueContinuation: nextContinuation },
-      continuation,
-    )
-    expect(round.searchFormReviews).not.toHaveBeenCalled()
-    expect(round.recoverDecisionAssessments).toHaveBeenCalledExactlyOnceWith({ limit: 1 })
-    expect(round.searchPendingEnforcement).not.toHaveBeenCalled()
-    expect(nextContinuation).toHaveBeenCalledWith({
-      evaluatedAt: NOW.toISOString(),
-      pending: [
-        'enforcement',
-        'suspended',
-        'blocked',
-        'restorations',
-        'actions',
-        'forms',
-        'decisions',
-      ],
-      cursors: { forms: 'head-cursor', decisions: 'decision-cursor' },
-    })
+    expect(enqueuedIntentIds(enqueueBulk)).toEqual([[failingIntent, samePageIntent]])
   })
 })

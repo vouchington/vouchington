@@ -73,7 +73,7 @@ describe('stripe-event', () => {
           subscription: subscriptionId,
         }),
       )
-      await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
+      await processStripeEvent(toJobData(storedEvent), true, applicationContext)
 
       const membership = await getMembershipByUserId(user.id)
       expect(membership).not.toBeNull()
@@ -122,7 +122,7 @@ describe('stripe-event', () => {
           subscription: subscriptionId,
         }),
       )
-      await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
+      await processStripeEvent(toJobData(storedEvent), true, applicationContext)
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw?.status).toBe('past_due')
@@ -166,7 +166,7 @@ describe('stripe-event', () => {
           items: { data: [{ price: { id: stripePriceId } }] },
         }),
       )
-      await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
+      await processStripeEvent(toJobData(storedEvent), true, applicationContext)
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw?.status).toBe('paused')
@@ -185,11 +185,41 @@ describe('stripe-event', () => {
           subscription: subscriptionId,
         }),
       )
-      await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
+      await processStripeEvent(toJobData(storedEvent), true, applicationContext)
 
       const ignoredEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
       expect(ignoredEvent?.status).toBe('ignored')
     })
+
+    it.each([
+      { isFinalAttempt: false, terminal: false },
+      { isFinalAttempt: true, terminal: true },
+    ])(
+      'records a processing failure before retrying the job (final attempt: $isFinalAttempt)',
+      async ({ isFinalAttempt, terminal }) => {
+        const subscriptionId = createUniqueStripeId('sub', 'failure')
+        const failure = new Error('handler failed')
+        mockGetStripeSubscription.mockRejectedValue(failure)
+        const storedEvent = await insertStripeEvent(
+          createProductionStripeEvent('invoice.payment_failed', {
+            id: createUniqueStripeId('in', 'failure'),
+            object: 'invoice',
+            customer: createUniqueStripeId('cus', 'failure'),
+            subscription: subscriptionId,
+          }),
+        )
+
+        await expect(
+          processStripeEvent(toJobData(storedEvent), isFinalAttempt, applicationContext),
+        ).rejects.toBe(failure)
+
+        const failedEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
+        expect(failedEvent?.last_error_message).toBe('handler failed')
+        expect(failedEvent?.last_error_at).not.toBeNull()
+        expect(failedEvent?.failed_at !== null).toBe(terminal)
+        expect(failedEvent?.attempt_count).toBe(1)
+      },
+    )
 
     it('skips duplicate jobs after processing has been acquired', async () => {
       const user = await createTestUser()
@@ -226,8 +256,8 @@ describe('stripe-event', () => {
           subscription: subscriptionId,
         }),
       )
-      await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
-      await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
+      await processStripeEvent(toJobData(storedEvent), true, applicationContext)
+      await processStripeEvent(toJobData(storedEvent), true, applicationContext)
 
       const processedEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
       expect(processedEvent?.attempt_count).toBe(1)

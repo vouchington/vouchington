@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { ai_agents } from '@queues/ai-agents/queues'
 import {
   createEntityRelationWithElection,
   createTestUser,
@@ -52,31 +53,32 @@ describe('post entity listener creation dispatch', () => {
 
   it('completes core dispatch before propagating a recovery failure for retry', async () => {
     const creator = await createTestUser()
+    const story = await insertTestStory({ title: randomUUID() })
     const postId = await insertTestPost({
       title: `Recovery failure ${randomUUID()}`,
       slug: `recovery-failure-${randomUUID()}`,
       createdById: creator.id,
-      markdown: 'Core post-created work must still run.',
+      markdown: '',
       clearanceStatus: 'approved',
+      postType: 'story',
     })
+    await insertTestPostStory(postId, story.id, creator.id)
     const recoveryError = new Error('recovery unavailable')
-    const recoverPostCreatedEffects = vi.fn<(post: { id: string }) => Promise<void>>(async () => {
-      const mentionJobs = await readAllQueueJobs(postMentionsQueue)
-      expect(
-        mentionJobs.some(
-          job =>
-            job.name === POST_MENTIONS_PROCESS_JOB.name &&
-            (job.data as { postId?: string }).postId === postId,
-        ),
-      ).toBe(true)
-      throw recoveryError
+    vi.spyOn(ai_agents, 'add').mockRejectedValue(recoveryError)
+    onTestFinished(() => {
+      vi.restoreAllMocks()
     })
 
-    await expect(processPostCreated({ id: postId }, { recoverPostCreatedEffects })).rejects.toBe(
-      recoveryError,
-    )
+    await expect(processPostCreated({ id: postId })).rejects.toBe(recoveryError)
 
-    expect(recoverPostCreatedEffects).toHaveBeenCalledWith(expect.objectContaining({ id: postId }))
+    const mentionJobs = await readAllQueueJobs(postMentionsQueue)
+    expect(
+      mentionJobs.filter(
+        job =>
+          job.name === POST_MENTIONS_PROCESS_JOB.name &&
+          (job.data as { postId?: string }).postId === postId,
+      ),
+    ).toHaveLength(1)
   })
 
   it('enqueues spam detection for pending user posts', async () => {
@@ -207,14 +209,21 @@ describe('post entity listener creation dispatch', () => {
     })
     await insertTestPostStory(postId, story.id, creator.id)
     const enqueueError = new Error('story-agent queue unavailable')
-    const enqueueStoryPostAgent = vi
-      .fn<(postId: string) => Promise<void>>()
-      .mockRejectedValue(enqueueError)
+    const add = vi.spyOn(ai_agents, 'add').mockRejectedValue(enqueueError)
+    onTestFinished(() => {
+      vi.restoreAllMocks()
+    })
 
-    await expect(
-      recoverPostCreatedEffects({ id: postId, post_type: 'story' }, { enqueueStoryPostAgent }),
-    ).rejects.toBe(enqueueError)
-    expect(enqueueStoryPostAgent).toHaveBeenCalledWith(postId)
+    await expect(recoverPostCreatedEffects({ id: postId, post_type: 'story' })).rejects.toBe(
+      enqueueError,
+    )
+    expect(add).toHaveBeenCalledWith(
+      'story-post',
+      { post_id: postId, force: undefined },
+      expect.objectContaining({
+        deduplication: { id: `story_post_agent_${postId}`, mode: 'simple' },
+      }),
+    )
   })
 
   it('enqueues content-hash-specific spam detection when post content changes', async () => {

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { Readable } from 'node:stream'
 import { randomBytes } from 'node:crypto'
+import sharp from 'sharp'
+import { imageStatePubSub } from '@data-stores/valkey-pubsub'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   setImageHashAndProcessing,
@@ -8,39 +10,51 @@ import {
   markImageDeleted,
   updateImageStatus,
 } from '@voucha/test-helpers/entities/images'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { getImageById } from '@services/images/get'
 import { deriveUploadStatus } from '@services/images/get-upload-state'
-import {
-  processExtractImageMetadata,
-  type ProcessExtractImageMetadataDeps,
-} from './extract-metadata.mts'
+import * as imageStorage from '@services/images/s3'
 import * as presignModule from '@services/images/presign-upload-url'
 import type { PrivateUser } from '@services/users/types'
+import { processExtractImageMetadata } from './extract-metadata.mts'
 
 let user: PrivateUser
 
-function createAsyncVoidMock() {
-  return vi.fn<() => Promise<void>>(async () => undefined)
+const COMPLETE_STATE = {
+  upload_status: 'complete',
+  upload_error: null,
+  ready: false,
+  blocked: false,
+} as const
+
+async function createJpeg(): Promise<Buffer> {
+  return sharp({ create: { width: 64, height: 32, channels: 3, background: '#808080' } })
+    .jpeg()
+    .toBuffer()
 }
 
-function createPublishImageStateMock() {
-  return vi.fn<(imageId: string, state: Record<string, unknown>) => Promise<void>>(
-    async () => undefined,
-  )
-}
-
-function createGetImageFromS3Mock(body?: AsyncIterable<Uint8Array>) {
-  return vi.fn<ProcessExtractImageMetadataDeps['getImageFromS3']>(async () => ({
+/** S3 holds `bytes` for every key; the returned spy records each read. */
+function storeInS3(bytes: Buffer | undefined) {
+  return vi.spyOn(imageStorage, 'getImageFromS3').mockImplementation(async () => ({
     $metadata: {},
-    Body: (body ?? Readable.from([Buffer.from('fake-bytes')])) as never,
+    Body: bytes ? (Readable.from([bytes]) as never) : undefined,
   }))
 }
 
-function createSharpMock(metadata: Record<string, unknown>) {
-  return vi.fn<(filename: string) => { metadata: () => Promise<Record<string, unknown>> }>(() => ({
-    metadata: vi.fn<() => Promise<Record<string, unknown>>>(async () => metadata),
-  }))
+function watchPublishedStates() {
+  return vi.spyOn(imageStatePubSub, 'publish').mockResolvedValue(undefined as never)
+}
+
+async function readImageCreatedJobs(imageId: string) {
+  return (await readAllQueueJobs(backgroundQueue))
+    .filter(
+      job =>
+        job.name.endsWith('processImageCreated') && (job.data as { id?: string }).id === imageId,
+    )
+    .map(job => job.data)
 }
 
 describe('extract-metadata', () => {
@@ -56,7 +70,7 @@ describe('extract-metadata', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   async function createProcessingImage(): Promise<string> {
@@ -68,86 +82,87 @@ describe('extract-metadata', () => {
     return image_id
   }
 
-  function makeDeps(overrides?: Partial<ProcessExtractImageMetadataDeps>) {
-    return {
-      getImageFromS3: overrides?.getImageFromS3 ?? createGetImageFromS3Mock(),
-      getDeployEnvironment:
-        overrides?.getDeployEnvironment ??
-        vi.fn<ProcessExtractImageMetadataDeps['getDeployEnvironment']>(() => 'test'),
-      publishImageState: overrides?.publishImageState ?? createPublishImageStateMock(),
-      enqueueOnImageCreated: overrides?.enqueueOnImageCreated ?? createAsyncVoidMock(),
-      createSharp:
-        overrides?.createSharp ?? createSharpMock({ format: 'jpeg', width: 1920, height: 1080 }),
-      onError: overrides?.onError ?? vi.fn<(error: Error) => void>(),
-    }
-  }
-
   describe('processExtractImageMetadata', () => {
-    it('finalizes image to complete and enqueues onImageCreated', async () => {
+    it('finalizes image to complete, publishes it, and enqueues onImageCreated', async () => {
       const image_id = await createProcessingImage()
-      const enqueueOnImageCreated = createAsyncVoidMock()
-      const publishImageState = createPublishImageStateMock()
+      const getImageFromS3 = storeInS3(await createJpeg())
+      const publish = watchPublishedStates()
 
-      await processExtractImageMetadata(image_id, {
-        ...makeDeps({ enqueueOnImageCreated, publishImageState }),
-      })
+      await processExtractImageMetadata(image_id)
 
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('complete')
-      expect(updated?.data).toMatchObject({ format: 'jpeg', width: 1920, height: 1080 })
+      expect(updated?.data).toMatchObject({ format: 'jpeg', width: 64, height: 32 })
       expect(updated?.upload_completed_at).toBeDefined()
-      expect(enqueueOnImageCreated).toHaveBeenCalledWith(image_id)
-      expect(publishImageState).toHaveBeenCalledWith(image_id, {
-        id: image_id,
-        upload_status: 'complete',
-        upload_error: null,
-        ready: false,
-        blocked: false,
-      })
+      expect(getImageFromS3).toHaveBeenCalledExactlyOnceWith(expect.any(String), updated?.s3_key)
+      expect(await readImageCreatedJobs(image_id)).toEqual([{ id: image_id }])
+      expect(publish).toHaveBeenCalledExactlyOnceWith(image_id, { id: image_id, ...COMPLETE_STATE })
     })
 
     it('does not mark upload failed when onImageCreated enqueue fails after finalize', async () => {
       const image_id = await createProcessingImage()
       const processingImage = await getImageById(image_id)
-      const onError = vi.fn<(error: Error) => void>()
-      const enqueueOnImageCreated = vi.fn<() => Promise<void>>(async () => {
-        throw new Error('queue unavailable')
+      storeInS3(await createJpeg())
+      watchPublishedStates()
+      const add = backgroundQueue.add
+      vi.spyOn(backgroundQueue, 'add').mockImplementation((name, data, ...rest) => {
+        if (name.endsWith('processImageCreated') && (data as { id?: string }).id === image_id)
+          return Promise.reject(new Error('queue unavailable'))
+        return add.call(backgroundQueue, name, data, ...rest)
       })
 
-      await processExtractImageMetadata(image_id, {
-        ...makeDeps({ enqueueOnImageCreated, onError }),
-      })
+      await processExtractImageMetadata(image_id)
 
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('complete')
       expect(updated?.upload_error).toBeNull()
-      expect(onError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'queue unavailable',
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'queue unavailable' }),
+        {
           tags: { imageId: image_id },
-          extra: expect.objectContaining({
+          extra: {
             context: 'extractImageMetadata.enqueueOnImageCreated',
             s3Key: processingImage?.s3_key,
-          }),
-        }),
+          },
+        },
       )
     })
 
-    it('marks image as failed when sharp returns unsupported format', async () => {
+    it('marks image as failed when the stored format is unsupported', async () => {
       const image_id = await createProcessingImage()
-      const createSharp = createSharpMock({ format: 'bmp', width: 100, height: 100 })
+      storeInS3(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'))
+      const publish = watchPublishedStates()
 
-      await expect(
-        processExtractImageMetadata(image_id, {
-          ...makeDeps({ createSharp }),
-        }),
-      ).rejects.toMatchObject({
+      await expect(processExtractImageMetadata(image_id)).rejects.toMatchObject({
         status: 415,
+        message: 'Unsupported format: svg',
       })
 
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('failed')
-      expect(updated?.upload_error).toContain('Unsupported format')
+      expect(updated?.upload_error).toBe('Unsupported format: svg')
+      expect(publish).toHaveBeenCalledExactlyOnceWith(image_id, {
+        id: image_id,
+        upload_status: 'failed',
+        upload_error: 'Unsupported format: svg',
+        ready: false,
+        blocked: false,
+      })
+      expect(await readImageCreatedJobs(image_id)).toEqual([])
+    })
+
+    it('marks image as failed when the stored bytes are not an image', async () => {
+      const image_id = await createProcessingImage()
+      storeInS3(Buffer.from('not an image'))
+      watchPublishedStates()
+
+      await expect(processExtractImageMetadata(image_id)).rejects.toThrow(
+        /unsupported image format/,
+      )
+
+      const updated = await getImageById(image_id)
+      expect(updated && deriveUploadStatus(updated)).toBe('failed')
+      expect(await readImageCreatedJobs(image_id)).toEqual([])
     })
 
     it('no-ops when image is already complete', async () => {
@@ -156,23 +171,17 @@ describe('extract-metadata', () => {
         contentLength: 1024,
       })
       await setImageCompleteWithData(image_id, randomBytes(32), { format: 'jpeg' })
+      const getImageFromS3 = storeInS3(await createJpeg())
 
-      const getImageFromS3 = createGetImageFromS3Mock()
-
-      await processExtractImageMetadata(image_id, {
-        ...makeDeps({ getImageFromS3 }),
-      })
+      await processExtractImageMetadata(image_id)
 
       expect(getImageFromS3).not.toHaveBeenCalled()
     })
 
     it('no-ops gracefully when image record is missing', async () => {
-      const missingId = '00000000-0000-0000-0000-000000000000'
-      const getImageFromS3 = createGetImageFromS3Mock()
+      const getImageFromS3 = storeInS3(await createJpeg())
 
-      await processExtractImageMetadata(missingId, {
-        ...makeDeps({ getImageFromS3 }),
-      })
+      await processExtractImageMetadata('00000000-0000-0000-0000-000000000000')
 
       expect(getImageFromS3).not.toHaveBeenCalled()
     })
@@ -180,11 +189,9 @@ describe('extract-metadata', () => {
     it('no-ops when a queued metadata job replays after image deletion', async () => {
       const imageId = await createProcessingImage()
       await markImageDeleted(imageId)
-      const getImageFromS3 = createGetImageFromS3Mock()
+      const getImageFromS3 = storeInS3(await createJpeg())
 
-      await processExtractImageMetadata(imageId, {
-        ...makeDeps({ getImageFromS3 }),
-      })
+      await processExtractImageMetadata(imageId)
 
       expect(getImageFromS3).not.toHaveBeenCalled()
     })
@@ -196,9 +203,7 @@ describe('extract-metadata', () => {
       })
       await updateImageStatus(image_id, 'pending')
 
-      await expect(processExtractImageMetadata(image_id, makeDeps())).rejects.toThrow(
-        /Cannot extract metadata/,
-      )
+      await expect(processExtractImageMetadata(image_id)).rejects.toThrow(/Cannot extract metadata/)
     })
 
     it('terminalizes a processing row without an immutable final key', async () => {
@@ -207,63 +212,60 @@ describe('extract-metadata', () => {
         contentLength: 1024,
       })
       await updateImageStatus(image_id, 'processing')
-      const unrecoverable = vi.fn<ProcessExtractImageMetadataDeps['unrecoverable']>(error => {
-        throw error
-      })
+      const getImageFromS3 = storeInS3(await createJpeg())
+      watchPublishedStates()
 
-      await expect(
-        processExtractImageMetadata(image_id, {
-          ...makeDeps(),
-          unrecoverable,
-        }),
-      ).rejects.toThrow(/does not have an immutable final S3 key/)
+      await expect(processExtractImageMetadata(image_id)).rejects.toThrow(
+        /does not have an immutable final S3 key/,
+      )
 
-      expect(unrecoverable).toHaveBeenCalledOnce()
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('failed')
+      expect(getImageFromS3).not.toHaveBeenCalled()
     })
 
     it('skips finalize when row already transitioned out of processing', async () => {
       const image_id = await createProcessingImage()
-      const getImageFromS3 = createGetImageFromS3Mock()
-      const createSharp = vi.fn<
-        (filename: string) => { metadata: () => Promise<Record<string, unknown>> }
-      >(() => ({
-        metadata: async () => {
-          await updateImageStatus(image_id, 'failed')
-          return { format: 'jpeg', width: 1920, height: 1080 }
-        },
-      }))
-      const enqueueOnImageCreated = createAsyncVoidMock()
-
-      await processExtractImageMetadata(image_id, {
-        ...makeDeps({
-          getImageFromS3,
-          createSharp,
-          enqueueOnImageCreated,
-        }),
+      const bytes = await createJpeg()
+      vi.spyOn(imageStorage, 'getImageFromS3').mockImplementation(async () => {
+        await updateImageStatus(image_id, 'failed')
+        return { $metadata: {}, Body: Readable.from([bytes]) as never }
       })
+      const publish = watchPublishedStates()
+
+      await processExtractImageMetadata(image_id)
 
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('failed')
-      expect(enqueueOnImageCreated).not.toHaveBeenCalled()
+      expect(await readImageCreatedJobs(image_id)).toEqual([])
+      expect(publish).not.toHaveBeenCalled()
     })
 
     it('marks image as failed when S3 body is empty', async () => {
       const image_id = await createProcessingImage()
-      const getImageFromS3 = vi.fn<ProcessExtractImageMetadataDeps['getImageFromS3']>(async () => ({
-        $metadata: {},
-        Body: undefined,
-      }))
+      storeInS3(undefined)
+      watchPublishedStates()
 
-      await expect(
-        processExtractImageMetadata(image_id, {
-          ...makeDeps({ getImageFromS3 }),
-        }),
-      ).rejects.toThrow(/S3 response body is empty/)
+      await expect(processExtractImageMetadata(image_id)).rejects.toThrow(
+        /S3 response body is empty/,
+      )
 
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('failed')
+    })
+
+    it('reports a failed-state publish that keeps failing after retries', async () => {
+      const image_id = await createProcessingImage()
+      storeInS3(undefined)
+      const publishFailure = new Error('transient publish failure')
+      const publish = vi.spyOn(imageStatePubSub, 'publish').mockRejectedValue(publishFailure)
+
+      await expect(processExtractImageMetadata(image_id)).rejects.toThrow(
+        /S3 response body is empty/,
+      )
+
+      expect(publish).toHaveBeenCalledTimes(3)
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(publishFailure, {})
     })
   })
 })

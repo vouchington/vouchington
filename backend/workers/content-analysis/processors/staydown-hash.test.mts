@@ -3,6 +3,7 @@ import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import { getImageByIdFromPrimary } from '@services/images/get'
+import * as imageStorage from '@services/images/s3'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import {
   readCopyrightStaydownEntries,
@@ -20,8 +21,6 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 import { processStaydownHash } from './staydown-hash.mts'
 
-type ProcessStaydownHashDeps = Required<NonNullable<Parameters<typeof processStaydownHash>[1]>>
-
 /** A random seed per test: the shared test database keeps earlier runs' registry entries. */
 function randomSeed(): number {
   return Math.floor(Math.random() * 2_000_000_000)
@@ -30,13 +29,15 @@ function randomSeed(): number {
 /** A world where S3 holds whatever bytes the test stored under an image's key. */
 function createWorld() {
   const objects = new Map<string, Buffer>()
-  const getImageFromS3 = vi.fn<ProcessStaydownHashDeps['getImageFromS3']>(async (_env, key) => ({
-    $metadata: {},
-    Body: Readable.from([objects.get(key)!]) as never,
-  }))
+  const getImageFromS3 = vi
+    .spyOn(imageStorage, 'getImageFromS3')
+    .mockImplementation(async (_env, key) => ({
+      $metadata: {},
+      Body: Readable.from([objects.get(key)!]) as never,
+    }))
   return {
     getImageFromS3,
-    hash: (imageId: string) => processStaydownHash(imageId, { getImageFromS3 }),
+    hash: (imageId: string) => processStaydownHash(imageId),
     async store(imageId: string, bytes: Buffer) {
       const image = await getImageByIdFromPrimary(imageId)
       objects.set(image!.s3_key!, bytes)

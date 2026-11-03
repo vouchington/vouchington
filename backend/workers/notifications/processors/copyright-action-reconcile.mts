@@ -39,9 +39,6 @@ type ReconcileCopyrightActionIntentsDeps = {
   searchDueRestorations: typeof searchDueStatutoryCopyrightRestorationDeadlineIds
   createDueRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntentsForDeadline
   searchActionIntents: typeof searchRecoverableCopyrightActionIntentIds
-  enqueueBulkApplyCopyrightActions: (intentIds: string[]) => Promise<unknown>
-  enqueueContinuation: typeof enqueueReconcileCopyrightActionIntents
-  now: () => Date
 }
 
 const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
@@ -57,9 +54,6 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
   searchDueRestorations: searchDueStatutoryCopyrightRestorationDeadlineIds,
   createDueRestoreIntents: createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchActionIntents: searchRecoverableCopyrightActionIntentIds,
-  enqueueBulkApplyCopyrightActions,
-  enqueueContinuation: enqueueReconcileCopyrightActionIntents,
-  now: () => new Date(),
 }
 
 /**
@@ -73,7 +67,7 @@ export async function processReconcileCopyrightActionIntents(
   data: CopyrightSweepContinuation = {},
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
-  const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : deps.now()
+  const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : new Date()
   const cursors = new Map(Object.entries(data.cursors ?? {}))
   const budget = createCopyrightSweepBudget()
   const deferred = new Set<string>()
@@ -155,7 +149,7 @@ export async function processReconcileCopyrightActionIntents(
       enqueueBulkCopyrightSweepPages(
         tally,
         page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
-        ids => deps.enqueueBulkApplyCopyrightActions(ids),
+        enqueueBulkApplyCopyrightActions,
         options('actions'),
       ),
   ]
@@ -179,7 +173,7 @@ export async function processReconcileCopyrightActionIntents(
   }
   pending.push(...deferred)
   if (pending.length > 0)
-    await deps.enqueueContinuation({
+    await enqueueReconcileCopyrightActionIntents({
       evaluatedAt: evaluatedAt.toISOString(),
       pending,
       cursors: Object.fromEntries(cursors),

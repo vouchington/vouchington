@@ -18,13 +18,6 @@ type ReportableError = Error & {
   extra?: Record<string, unknown>
 }
 
-function publishImageState(
-  imageId: string,
-  state: Parameters<typeof imageStatePubSub.publish>[1],
-): ReturnType<typeof imageStatePubSub.publish> {
-  return imageStatePubSub.publish(imageId, state)
-}
-
 interface ExtractedMetadata {
   format?: string
   width?: number
@@ -33,79 +26,40 @@ interface ExtractedMetadata {
   [key: string]: unknown
 }
 
-export type ProcessExtractImageMetadataDeps = {
-  withTemporaryMediaFile: (
-    body: MediaBody,
-    useFile: (path: string) => Promise<ExtractedMetadata>,
-    options?: Parameters<typeof withTemporaryMediaFile>[2],
-  ) => Promise<ExtractedMetadata>
-  getImageFromS3: typeof getImageFromS3
-  getImageById: typeof getImageByIdFromPrimary
-  getDeployEnvironment: typeof getDeployEnvironment
-  finalizeImageMetadata: typeof finalizeImageMetadata
-  markImageUploadFailed: typeof markImageUploadFailed
-  enqueueOnImageCreated: typeof enqueueOnImageCreated
-  publishImageState: typeof imageStatePubSub.publish
-  createSharp: (filename: string) => { metadata(): Promise<unknown> }
-  onError: typeof onError
-  unrecoverable: typeof unrecoverable
-}
-
-const defaultDeps: ProcessExtractImageMetadataDeps = {
-  withTemporaryMediaFile,
-  getImageFromS3,
-  getImageById: getImageByIdFromPrimary,
-  getDeployEnvironment,
-  finalizeImageMetadata,
-  markImageUploadFailed,
-  enqueueOnImageCreated,
-  publishImageState,
-  createSharp: sharp,
-  onError,
-  unrecoverable,
-}
-
-async function readS3Body(
-  s3Key: string,
-  deps: ProcessExtractImageMetadataDeps,
-): Promise<MediaBody> {
-  const s3Response = await deps.getImageFromS3(deps.getDeployEnvironment(), s3Key)
+async function readS3Body(s3Key: string): Promise<MediaBody> {
+  const s3Response = await getImageFromS3(getDeployEnvironment(), s3Key)
   if (!s3Response.Body) {
     throw new Error('S3 response body is empty')
   }
   return s3Response.Body as unknown as MediaBody
 }
 
-export async function processExtractImageMetadata(
-  imageId: string,
-  deps: Partial<ProcessExtractImageMetadataDeps> = {},
-): Promise<void> {
-  const resolvedDeps: ProcessExtractImageMetadataDeps = { ...defaultDeps, ...deps }
-  const image = await resolvedDeps.getImageById(imageId)
+export async function processExtractImageMetadata(imageId: string): Promise<void> {
+  const image = await getImageByIdFromPrimary(imageId)
   if (!image) return
   const uploadStatus = deriveUploadStatus(image)
   if (uploadStatus === 'complete') return
   if (uploadStatus !== 'processing') {
-    resolvedDeps.unrecoverable(
+    unrecoverable(
       new Error(`Cannot extract metadata for image ${imageId} in upload_status=${uploadStatus}`),
     )
   }
   const canonicalS3Key = image.sha_256?.toString('hex')
   if (!canonicalS3Key || image.s3_key !== canonicalS3Key) {
     const error = new Error(`Image ${imageId} does not have an immutable final S3 key`)
-    await failImageMetadata(imageId, error.message, resolvedDeps)
-    resolvedDeps.unrecoverable(error)
+    await failImageMetadata(imageId, error.message)
+    unrecoverable(error)
   }
 
   let shouldEnqueueImageCreated = false
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- ordered source, spool, and DB transition
-    const body = await readS3Body(canonicalS3Key, resolvedDeps)
-    const metadata = await resolvedDeps.withTemporaryMediaFile(
+    const body = await readS3Body(canonicalS3Key)
+    const metadata = await withTemporaryMediaFile(
       body,
       async filename => {
-        const sharpMetadata = await resolvedDeps.createSharp(filename).metadata()
-        const metadata: ExtractedMetadata = { ...(sharpMetadata as Record<string, unknown>) }
+        const sharpMetadata = await sharp(filename).metadata()
+        const metadata: ExtractedMetadata = { ...sharpMetadata }
 
         if (!metadata.format || !SUPPORTED_IMAGE_FORMATS.includes(metadata.format)) {
           throw createHttpError(415, `Unsupported format: ${metadata.format}`)
@@ -115,28 +69,28 @@ export async function processExtractImageMetadata(
       { prefix: 'image-extract-' },
     )
 
-    const { rowCount } = await resolvedDeps.finalizeImageMetadata(imageId, metadata)
+    const { rowCount } = await finalizeImageMetadata(imageId, metadata)
     if (rowCount === 0) return
 
     shouldEnqueueImageCreated = true
-    resolvedDeps
-      .publishImageState(imageId, {
+    imageStatePubSub
+      .publish(imageId, {
         id: imageId,
         upload_status: 'complete',
         upload_error: null,
         ready: false,
         blocked: false,
       })
-      .catch(resolvedDeps.onError)
+      .catch(onError)
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
-    await failImageMetadata(imageId, errorMessage, resolvedDeps)
+    await failImageMetadata(imageId, errorMessage)
     throw err
   }
 
   if (shouldEnqueueImageCreated) {
     try {
-      await resolvedDeps.enqueueOnImageCreated(imageId)
+      await enqueueOnImageCreated(imageId)
     } catch (err) {
       const reportError = (
         err instanceof Error
@@ -148,16 +102,17 @@ export async function processExtractImageMetadata(
         s3Key: image.s3_key,
         context: 'extractImageMetadata.enqueueOnImageCreated',
       }
-      resolvedDeps.onError(reportError)
+      onError(reportError)
     }
   }
 }
 
-async function failImageMetadata(
-  imageId: string,
-  errorMessage: string,
-  deps: ProcessExtractImageMetadataDeps,
-): Promise<void> {
-  await deps.markImageUploadFailed(imageId, errorMessage)
-  await publishFailedImageState(imageId, errorMessage, deps.publishImageState, deps.onError)
+async function failImageMetadata(imageId: string, errorMessage: string): Promise<void> {
+  await markImageUploadFailed(imageId, errorMessage)
+  await publishFailedImageState(
+    imageId,
+    errorMessage,
+    (id, state) => imageStatePubSub.publish(id, state),
+    onError,
+  )
 }

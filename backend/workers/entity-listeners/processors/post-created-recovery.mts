@@ -21,15 +21,8 @@ type CreatedPost = {
   url_id?: string | null
 }
 
-type RecoveryDependencies = {
-  enqueueStoryPostAgent?: typeof enqueueStoryPostAgent
-}
-
 /** Rebuilds creation-only effects entirely from durable post, URL, review, and story rows. */
-export async function recoverPostCreatedEffects(
-  post: CreatedPost,
-  dependencies: RecoveryDependencies = {},
-): Promise<void> {
+export async function recoverPostCreatedEffects(post: CreatedPost): Promise<void> {
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
   void entityCacheBloomFilters.posts.add(bloomKeys)
@@ -37,7 +30,7 @@ export async function recoverPostCreatedEffects(
   await Promise.all([
     recoverPostUrlEffects(post),
     recoverApprovedCommunityModeration(post.id),
-    recoverStoryEffects(post, dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent),
+    recoverStoryEffects(post),
   ])
 }
 
@@ -69,13 +62,10 @@ async function recoverApprovedCommunityModeration(postId: string): Promise<void>
   await requestCommunityModerationRunForPost(postId)
 }
 
-async function recoverStoryEffects(
-  post: CreatedPost,
-  enqueueStoryPost: typeof enqueueStoryPostAgent,
-): Promise<void> {
+async function recoverStoryEffects(post: CreatedPost): Promise<void> {
   if (post.post_type !== 'story') return
   const postStory = await getPostStoryByPostId(post.id, { readOnly: false })
   if (!postStory) return
   await invalidateStories(postStory.story_id)
-  await enqueueStoryPost(post.id)
+  await enqueueStoryPostAgent(post.id)
 }
