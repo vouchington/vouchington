@@ -189,14 +189,12 @@ describe('story post related URL projection relations', () => {
     await refreshStoryPostForStory(story.id)
     const restarted = await createTestStoryProjectionLease(post.id)
     if (!restarted) throw new Error('Expected restarted projection work')
-    const crawledUrlIds: string[] = []
+    await using crawls = createEntityRelationCrawlObserver(new Set([url.id]))
     try {
-      await expect(
-        drainPendingStoryPostRelatedUrlProjectionCrawlEffects(restarted, async entries => {
-          crawledUrlIds.push(...entries.map(entry => entry.urlId))
-        }),
-      ).resolves.toBe(1)
-      expect(crawledUrlIds).toEqual([url.id])
+      await expect(drainPendingStoryPostRelatedUrlProjectionCrawlEffects(restarted)).resolves.toBe(
+        1,
+      )
+      expect(crawls.enqueueSpy.mock.calls).toEqual([[[{ urlId: url.id }]]])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, first.work.generation, url.id),
       ).resolves.toMatchObject({ effectsDispatchedAt: expect.any(Date) })
