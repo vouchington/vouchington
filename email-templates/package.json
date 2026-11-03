@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@ts-shared/money": "workspace:^",
-    "@vouchington/localization": "^0.3.0",
+    "@vouchington/localization": "^0.3.1",
     "@vouchington/localization-compiler": "^0.3.0"
   },
   "devDependencies": {
@@ -35,7 +35,7 @@
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19",
-    "@vouchington/email": "^0.2.0",
+    "@vouchington/email": "^0.2.1",
     "esbuild": "^0.28.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

@@ -33,7 +33,7 @@
     "@services/notifications": "workspace:^",
     "@services/notifications-push": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/queue-errors": "^0.2.0",
+    "@vouchington/queue-errors": "^0.2.1",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
