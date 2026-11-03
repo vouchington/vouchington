@@ -14,6 +14,8 @@ import {
   suspendTestUser,
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
+import { holdTestUserRowLock } from '@voucha/test-helpers/user-row-lock'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { v7 } from 'uuid'
 import { describe, expect, it } from 'vitest'
 import { createNativeCompletionToken } from './native-completion-token.mts'
@@ -49,17 +51,31 @@ describe('native Bluesky callback timeout race', () => {
 
   it('returns the handoff when persistence wins the authorization lock race', async () => {
     const fixture = await createClaimedNativeFixture()
-    const gate = createLockGate()
-    const persistence = persistNativeBlueskyLinkCompletion(fixture, {
-      afterAuthorizationLock: gate.hold,
-    })
-    await gate.entered
-    const resolution = resolveNativeBlueskyCallbackFailure(fixture.flowId, fixture.tokenHash)
+    await using userLock = await holdTestUserRowLock(fixture.userId)
 
-    gate.release()
+    // Persistence holds the authorization lock while it waits for the user row.
+    const { persistence, resolution } = await withTestOwnedPostgresWait(
+      {
+        holderProcessId: userLock.processId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'getActiveNativeLinkUser',
+        releaseHolder: userLock.release,
+      },
+      async waitForLock => {
+        const pending = persistNativeBlueskyLinkCompletion(fixture)
+        await waitForLock(pending)
+        const racing = resolveNativeBlueskyCallbackFailure(fixture.flowId, fixture.tokenHash)
+        await userLock.release()
+        return {
+          persistence: await pending,
+          resolution: await racing,
+        }
+      },
+    )
 
-    await expect(persistence).resolves.toBeUndefined()
-    await expect(resolution).resolves.toBe('completed')
+    expect(persistence).toBeUndefined()
+    expect(resolution).toBe('completed')
     expect(await testBlueskyLinkCompletionExists(fixture.flowId)).toBe(true)
   })
 

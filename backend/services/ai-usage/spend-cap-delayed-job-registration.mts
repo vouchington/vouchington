@@ -5,7 +5,6 @@ const abortDelayedJobRegistrationScript = registerWorkerQueueScript(
   loadScript('abort-spend-cap-delayed-job-registration.lua', import.meta.url),
 )
 
-type RegistryScriptClient = Pick<typeof workerQueueCommandClient, 'invokeScript'>
 export type SpendCapRegistration = {
   accepted: boolean
   generation: string
@@ -28,12 +27,11 @@ export async function abortSpendCapDelayedJobRegistration(
   key: string,
   field: string,
   generation: string,
-  registry: RegistryScriptClient,
   registrationError: unknown,
 ): Promise<never> {
   const error = toError(registrationError)
   try {
-    await registry.invokeScript(abortDelayedJobRegistrationScript, {
+    await workerQueueCommandClient.invokeScript(abortDelayedJobRegistrationScript, {
       keys: [key],
       args: [generation, field],
     })

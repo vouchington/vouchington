@@ -27,7 +27,6 @@ const completeReleaseScript = registerWorkerQueueScript(
   loadScript('complete-spend-cap-release.lua', import.meta.url),
 )
 
-type RegistryClient = Pick<typeof workerQueueCommandClient, 'hlen' | 'hscan' | 'invokeScript'>
 type SpendCapDelayData = { spendCapDelayedDay?: string }
 type AgentQueue = Pick<Queue<SpendCapDelayData>, 'getJob' | 'name'>
 type ReleaseAction =
@@ -43,10 +42,9 @@ export type SpendCapReleaseResult = {
 export async function beginSpendCapDelayedJobRelease(
   day: string,
   generation: string,
-  registry: RegistryClient = workerQueueCommandClient,
 ): Promise<string | undefined> {
   const lease = randomUUID()
-  const started = await registry.invokeScript(beginReleaseScript, {
+  const started = await workerQueueCommandClient.invokeScript(beginReleaseScript, {
     keys: [spendCapDelayedRegistryKey(day)],
     args: [generation, lease],
   })
@@ -119,9 +117,8 @@ export async function completeSpendCapDelayedJobRelease(
   day: string,
   generation: string,
   lease: string,
-  registry: RegistryClient = workerQueueCommandClient,
 ): Promise<boolean> {
-  const completed = await registry.invokeScript(completeReleaseScript, {
+  const completed = await workerQueueCommandClient.invokeScript(completeReleaseScript, {
     keys: [spendCapDelayedRegistryKey(day)],
     args: [generation, lease],
   })
