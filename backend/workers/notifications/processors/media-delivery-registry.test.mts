@@ -8,6 +8,16 @@ import type {
   reconcileMediaDeliveryRepairMarkers,
 } from '@services/media-delivery-safety'
 import {
+  createTestUser,
+  insertTestImage,
+  insertTestTopic,
+  getTestImageSurfacePlacements,
+  setTestTopicSurfaceImages,
+} from '@voucha/test-helpers'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
+import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers/entities/media-delivery-retry'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import {
   processApplyMediaDeliveryRegistryRecord,
   processReconcileMediaDeliveryRegistry,
 } from './media-delivery-registry.mts'
@@ -20,6 +30,33 @@ describe('media delivery registry processors', () => {
           'image-placement:00000000-0000-7000-8000-000000000001:0:00000000-0000-7000-8000-000000000002',
       }),
     ).resolves.toBe('not_claimed')
+  })
+
+  it('publishes the owned staged record whose id it was given', async () => {
+    const user = await createTestUser({ administrator: true })
+    const imageId = await insertTestImage(user.id)
+    const topicId = await insertTestTopic({
+      name: `apply-${crypto.randomUUID()}`,
+      slug: `apply-${crypto.randomUUID()}`,
+      createdById: user.id,
+    })
+    await setTestTopicSurfaceImages(topicId, { logoImageId: imageId })
+    const [placement] = await getTestImageSurfacePlacements({ topicId })
+    const mediaDeliveryRegistryRecordId = await getTestMediaDeliveryRegistryRecordId({
+      placementId: placement!.placement_id,
+      revision: placement!.placement_revision,
+      imageId,
+    })
+    installTestMediaDeliveryEdge()
+
+    await expect(
+      processApplyMediaDeliveryRegistryRecord({
+        mediaDeliveryRegistryRecordId: mediaDeliveryRegistryRecordId!,
+      }),
+    ).resolves.toBe('completed')
+    expect(await getTestMediaDeliveryRecordSnapshot(mediaDeliveryRegistryRecordId!)).toMatchObject({
+      state: 'completed',
+    })
   })
 
   it.each([100, 1])(
