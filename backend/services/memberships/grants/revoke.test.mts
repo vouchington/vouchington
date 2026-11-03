@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestSku,
   createTestUser,
@@ -11,6 +11,7 @@ import {
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import { spyOnMembershipEntitlementAdmission } from '../../../test-helpers/membership-entitlement-admission.mts'
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { CompletedMembershipGrantError, revokeMembershipGrant } from './revoke.mts'
@@ -82,17 +83,20 @@ describe('revokeMembershipGrant', () => {
     expect(queuedGrantId).toBeDefined()
     await revokeMembershipGrant(admin.id, queuedGrantId!, 'revoke before replay')
     await updateTestMembershipExpiresAt(active.id, new Date('2020-01-01T00:00:00.000Z'))
-    const enqueueEntitlementEffects = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-
-    const replayed = await revokeMembershipGrant(
-      admin.id,
-      queuedGrantId!,
-      'replayed reason is retained',
-      { enqueueDeliverMembershipEntitlementEffects: enqueueEntitlementEffects },
-    )
+    const queue = spyOnMembershipEntitlementAdmission()
+    let replayed: Awaited<ReturnType<typeof revokeMembershipGrant>>
+    try {
+      replayed = await revokeMembershipGrant(
+        admin.id,
+        queuedGrantId!,
+        'replayed reason is retained',
+      )
+      await expect(queue.admittedCount()).resolves.toBe(1)
+    } finally {
+      queue.restore()
+    }
 
     expect(replayed).toMatchObject({ alreadyRevoked: true })
-    expect(enqueueEntitlementEffects).toHaveBeenCalledOnce()
     await expect(getMembershipHistory(member.id)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ change_type: 'expiration' })]),
     )

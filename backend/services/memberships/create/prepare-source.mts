@@ -81,15 +81,13 @@ export async function getFamilyMembershipSourceProjectionAdmission(
 export async function prepareMembershipCreation(
   options: CreateMembershipOptions,
   query: QueryExecutor,
-  enqueueEntitlementEffects: () => Promise<void>,
   directTermEffectiveAt: Date | undefined,
 ) {
   const productId = await getMembershipProductIdForCreation(options, query)
   const { expired: expiredMemberships } = await expireElapsedMemberships(options.userId, query, {
     expiresThrough: directTermEffectiveAt,
   })
-  if (expiredMemberships > 0)
-    registerEntitlementEffectsAfterCommit(query, enqueueEntitlementEffects)
+  if (expiredMemberships > 0) registerEntitlementEffectsAfterCommit(query)
   const directStatus = options.status ?? 'active'
   if (
     options.stripeSubscriptionId &&

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   deleteTestOAuthAuthorizationFixtures,
   getTestOAuthAuthorization,
@@ -9,34 +9,21 @@ import { createTestUser, insertTestOAuthAccount } from '@voucha/test-helpers'
 import { receiveOAuthAuthorizationCallback } from '../authorization-callback.mts'
 
 describe('OAuth authorization callback expiry', () => {
-  it('rejects an invalid internal decision clock without changing the owned flow', async () => {
-    const state = randomUUID()
-    const authorizationId = await insertTestOAuthAuthorization({ state })
-    onTestFinished(async () => {
-      await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
-    })
-
-    await expect(
-      receiveOAuthAuthorizationCallback(
-        { provider: 'github', state, code: 'provider-code' },
-        () => new Date(Number.NaN),
-      ),
-    ).rejects.toThrow(RangeError)
-    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({ status: 'pending' })
-  })
-
   it.each([
     '2028-02-29T23:59:59.999Z',
     '2028-03-01T00:00:00.000Z',
     '2029-12-31T23:59:59.999Z',
     '2030-01-01T00:00:00.000Z',
-  ])('uses the supplied decision instant at %s', async instant => {
+  ])('decides expiry at the callback instant %s', async instant => {
     const decisionAt = new Date(instant)
     const authorizationIds: string[] = []
     onTestFinished(async () => {
       await deleteTestOAuthAuthorizationFixtures({ authorizationIds })
     })
 
+    // Insert fixtures under the real clock: uuid's v7 state only moves forward, so a
+    // future frozen instant would otherwise leave far-future ids for later files in this fork.
+    const cases: { expired: boolean; state: string; authorizationId: string }[] = []
     for (const [offsetMs, expired] of [
       [-1, true],
       [0, true],
@@ -49,13 +36,23 @@ describe('OAuth authorization callback expiry', () => {
         callbackCodeCiphertext: 'boundary-callback-ciphertext',
       })
       authorizationIds.push(authorizationId)
-      const outcome = await receiveOAuthAuthorizationCallback(
-        { provider: 'github', state, code: 'provider-code' },
-        () => decisionAt,
-      ).then(
-        value => ({ kind: 'accepted', value }),
-        (err: unknown) => ({ kind: 'rejected', value: err }),
-      )
+      cases.push({ expired, state, authorizationId })
+    }
+
+    for (const { expired, state, authorizationId } of cases) {
+      vi.setSystemTime(decisionAt)
+      const outcome = await receiveOAuthAuthorizationCallback({
+        provider: 'github',
+        state,
+        code: 'provider-code',
+      })
+        .then(
+          value => ({ kind: 'accepted', value }),
+          (err: unknown) => ({ kind: 'rejected', value: err }),
+        )
+        .finally(() => {
+          vi.useRealTimers()
+        })
       const expectedOutcome = expired
         ? { kind: 'rejected', value: { status: 410 } }
         : { kind: 'accepted', value: { flowId: authorizationId, exchangeRequired: true } }
@@ -84,14 +81,11 @@ describe('OAuth authorization callback expiry', () => {
       })
 
       await expect(
-        receiveOAuthAuthorizationCallback(
-          {
-            provider,
-            state,
-            code: 'provider-code',
-          },
-          () => new Date(),
-        ),
+        receiveOAuthAuthorizationCallback({
+          provider,
+          state,
+          code: 'provider-code',
+        }),
       ).rejects.toMatchObject({ status: 410 })
       expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
         status: 'expired',
@@ -126,14 +120,11 @@ describe('OAuth authorization callback expiry', () => {
     })
 
     await expect(
-      receiveOAuthAuthorizationCallback(
-        {
-          provider: 'github',
-          state,
-          code: 'provider-code',
-        },
-        () => new Date(),
-      ),
+      receiveOAuthAuthorizationCallback({
+        provider: 'github',
+        state,
+        code: 'provider-code',
+      }),
     ).rejects.toMatchObject({ status: 410 })
     expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
       status: 'completed',

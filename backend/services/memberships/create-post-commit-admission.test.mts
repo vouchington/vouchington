@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { GlideClient } from '@glidemq/speedkey'
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import {
   beginTransaction,
   createTestMembership,
@@ -9,8 +8,8 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { memberships } from '@queues/memberships/queues'
-import { QUEUE_NAME } from '@queues/memberships/config'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { spyOnMembershipEntitlementAdmission } from '../../test-helpers/membership-entitlement-admission.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createMembership } from './create.mts'
 import { getMembershipByUserId } from './get.mts'
@@ -19,24 +18,24 @@ import { updateMembershipFromEvent } from './update.mts'
 describe('createMembership post-commit entitlement admission', () => {
   it('waits for owned admission after the membership is durable', async () => {
     const admission = Promise.withResolvers<void>()
-    const entered = Promise.withResolvers<'entered'>()
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const enqueue = vi.fn<() => Promise<void>>(() => {
-      entered.resolve('entered')
-      return admission.promise
-    })
+    const queue = spyOnMembershipEntitlementAdmission({ gate: admission.promise })
     let creation: ReturnType<typeof createMembership> | undefined
     let settled = false
     try {
-      creation = createMembership(
-        { userId: member.id, plan: 'plus', skuId: sku.id, durationDays: 30 },
-        { enqueueDeliverMembershipEntitlementEffects: enqueue },
-      ).then(result => {
+      creation = createMembership({
+        userId: member.id,
+        plan: 'plus',
+        skuId: sku.id,
+        durationDays: 30,
+      }).then(result => {
         settled = true
         return result
       })
-      await expect(Promise.race([entered.promise, creation])).resolves.toBe('entered')
+      await expect(
+        Promise.race([queue.started.then(() => 'entered' as const), creation]),
+      ).resolves.toBe('entered')
 
       await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
         id: expect.any(String),
@@ -45,37 +44,37 @@ describe('createMembership post-commit entitlement admission', () => {
       expect(settled).toBe(false)
       admission.resolve()
       await expect(creation).resolves.toMatchObject({ projected: true })
+      await expect(queue.admittedCount()).resolves.toBe(1)
     } finally {
       admission.resolve()
       await creation?.catch(() => undefined)
+      queue.restore()
     }
   })
 
   it('holds borrowed actions until the transaction owner commits and awaits admission', async () => {
     const admission = Promise.withResolvers<void>()
-    const entered = Promise.withResolvers<'entered'>()
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const enqueue = vi.fn<() => Promise<void>>(() => {
-      entered.resolve('entered')
-      return admission.promise
-    })
+    const queue = spyOnMembershipEntitlementAdmission({ gate: admission.promise })
     await using transaction = await beginTransaction()
     let commit: Promise<void> | undefined
     try {
       const created = await createMembership(
         { userId: member.id, plan: 'plus', skuId: sku.id, durationDays: 30 },
-        { query: transaction, enqueueDeliverMembershipEntitlementEffects: enqueue },
+        { query: transaction },
       )
       expect(created.projected).toBe(true)
-      expect(enqueue).not.toHaveBeenCalled()
+      await expect(queue.admittedCount()).resolves.toBe(0)
 
       let settled = false
       commit = transaction.commit().then(() => {
         settled = true
         return undefined
       })
-      await expect(Promise.race([entered.promise, commit])).resolves.toBe('entered')
+      await expect(
+        Promise.race([queue.started.then(() => 'entered' as const), commit]),
+      ).resolves.toBe('entered')
       await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
         id: created.id,
         plan: 'plus',
@@ -83,9 +82,11 @@ describe('createMembership post-commit entitlement admission', () => {
       expect(settled).toBe(false)
       admission.resolve()
       await commit
+      await expect(queue.admittedCount()).resolves.toBe(1)
     } finally {
       admission.resolve()
       await commit?.catch(() => undefined)
+      queue.restore()
     }
   })
 
@@ -117,83 +118,43 @@ describe('createMembership post-commit entitlement admission', () => {
 
   it('awaits a started queue admission when enqueue metrics throw after the factory starts it', async () => {
     const admission = Promise.withResolvers<void>()
-    const entered = Promise.withResolvers<void>()
-    const admitted = Promise.withResolvers<void>()
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
     const trackingFailure = new Error('Owned enqueue metric failure')
-    const enqueueJob = createEnqueueFunction<
-      Record<string, never>,
-      'deliverMembershipEntitlementEffects'
-    >({
-      queue: memberships,
-      queueName: QUEUE_NAME,
-      jobName: 'deliverMembershipEntitlementEffects',
-      trackJobEnqueue() {
-        throw trackingFailure
-      },
-    })
-    const enqueue = async () => {
-      await enqueueJob({})
-    }
-    const original = memberships.add
-    let startedQueueAdmission: ReturnType<typeof memberships.add> | undefined
-    const spy = vi.spyOn(memberships, 'add').mockImplementation((name, ...args) => {
-      const started = original.call(memberships, name, ...args)
-      if (name !== 'deliverMembershipEntitlementEffects') return started
-      startedQueueAdmission = started
-      entered.resolve()
-      return started.then(
-        async job => {
-          admitted.resolve()
-          await admission.promise
-          return job
-        },
-        err => {
-          admitted.reject(err)
-          throw err
-        },
-      )
+    const queue = spyOnMembershipEntitlementAdmission({
+      gate: admission.promise,
+      trackingFailure,
     })
     let creation: ReturnType<typeof createMembership> | undefined
     let settled = false
     try {
-      creation = createMembership(
-        { userId: member.id, plan: 'plus', skuId: sku.id, durationDays: 30 },
-        { enqueueDeliverMembershipEntitlementEffects: enqueue },
-      ).then(result => {
+      creation = createMembership({
+        userId: member.id,
+        plan: 'plus',
+        skuId: sku.id,
+        durationDays: 30,
+      }).then(result => {
         settled = true
         return result
       })
       await expect(
-        Promise.race([
-          entered.promise.then(() => 'started' as const),
-          creation.then(() => 'settled' as const),
-        ]),
+        Promise.race([queue.started.then(() => 'started' as const), creation]),
       ).resolves.toBe('started')
-      await expect(
-        Promise.race([
-          admitted.promise.then(() => 'admitted' as const),
-          creation.then(() => 'settled' as const),
-        ]),
-      ).resolves.toBe('admitted')
       await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
         id: expect.any(String),
         plan: 'plus',
       })
       expect(settled).toBe(false)
-      expect(
-        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === trackingFailure),
-      ).toHaveLength(1)
 
       admission.resolve()
       await expect(creation).resolves.toMatchObject({ projected: true })
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === trackingFailure),
+      ).toHaveLength(1)
     } finally {
       admission.resolve()
       await creation?.catch(() => undefined)
-      const job = await startedQueueAdmission?.catch(() => null)
-      if (job) await job.remove()
-      spy.mockRestore()
+      queue.restore()
     }
   })
 

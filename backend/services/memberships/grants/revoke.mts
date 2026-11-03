@@ -1,6 +1,6 @@
-import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
-import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { registerEntitlementEffectsAfterCommit } from '../entitlement-effects-after-commit.mts'
 import { recordMembershipChange } from '../changes.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
 import { activateOldestQueuedGrant } from './activate-queued.mts'
@@ -26,13 +26,7 @@ export async function revokeMembershipGrant(
   currentUserId: string,
   grantId: string,
   reason: string,
-  dependencies: {
-    enqueueDeliverMembershipEntitlementEffects?: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort
-  } = {},
 ): Promise<RevokedMembershipGrant | null> {
-  const enqueueEntitlementEffects =
-    dependencies.enqueueDeliverMembershipEntitlementEffects ??
-    enqueueDeliverMembershipEntitlementEffectsBestEffort
   const revocationReason = reason.trim()
   if (revocationReason.length < 1 || revocationReason.length > 1000)
     throw new RangeError('Revocation reason must be 1-1000 characters')
@@ -42,7 +36,7 @@ export async function revokeMembershipGrant(
     outcome.expired > 0 ||
     (outcome.kind === 'result' && outcome.result && !outcome.result.alreadyRevoked)
   )
-    registerPostCommitAction(query, () => enqueueEntitlementEffects())
+    registerEntitlementEffectsAfterCommit(query)
   await query.commit()
   if (outcome.kind === 'completed') {
     throw new CompletedMembershipGrantError()

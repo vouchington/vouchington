@@ -18,22 +18,16 @@ describe('OAuth authorization broker callback', () => {
     const flowId = await insertPendingAuthorization(state, cleanup)
     const code = `provider-code-${randomUUID()}`
 
-    const first = await receiveCallback(
-      {
-        provider: 'github',
-        state,
-        code,
-      },
-      () => new Date(),
-    )
-    const replay = await receiveCallback(
-      {
-        provider: 'github',
-        state,
-        code,
-      },
-      () => new Date(),
-    )
+    const first = await receiveCallback({
+      provider: 'github',
+      state,
+      code,
+    })
+    const replay = await receiveCallback({
+      provider: 'github',
+      state,
+      code,
+    })
 
     expect(first).toMatchObject({
       flowId,
@@ -61,8 +55,8 @@ describe('OAuth authorization broker callback', () => {
     cleanup.authorizationIds.push(flowId)
     const code = `google-code-${randomUUID()}`
 
-    const first = await receiveCallback({ provider: 'google', state, code }, () => new Date())
-    const replay = await receiveCallback({ provider: 'google', state, code }, () => new Date())
+    const first = await receiveCallback({ provider: 'google', state, code })
+    const replay = await receiveCallback({ provider: 'google', state, code })
 
     expect(first).toMatchObject({ flowId, callbackMode: 'web', exchangeRequired: true })
     expect(replay).toEqual(first)
@@ -108,14 +102,11 @@ describe('OAuth authorization broker callback', () => {
     const state = randomBytes(32).toString('base64url')
     const flowId = await insertPendingAuthorization(state, cleanup)
 
-    const result = await receiveCallback(
-      {
-        provider: 'github',
-        state,
-        error: 'access denied by user',
-      },
-      () => new Date(),
-    )
+    const result = await receiveCallback({
+      provider: 'github',
+      state,
+      error: 'access denied by user',
+    })
 
     expect(result).toMatchObject({
       flowId,
@@ -138,22 +129,16 @@ describe('OAuth authorization broker callback', () => {
     const flowId = await insertTestOAuthAuthorization({ provider: 'google', state })
     cleanup.authorizationIds.push(flowId)
 
-    const result = await receiveCallback(
-      {
-        provider: 'google',
-        state,
-        error: 'access_denied',
-      },
-      () => new Date(),
-    )
-    const replay = await receiveCallback(
-      {
-        provider: 'google',
-        state,
-        error: 'access_denied',
-      },
-      () => new Date(),
-    )
+    const result = await receiveCallback({
+      provider: 'google',
+      state,
+      error: 'access_denied',
+    })
+    const replay = await receiveCallback({
+      provider: 'google',
+      state,
+      error: 'access_denied',
+    })
 
     expect(result).toMatchObject({ flowId, callbackMode: 'web', exchangeRequired: false })
     expect(replay).toEqual(result)
@@ -168,20 +153,17 @@ describe('OAuth authorization broker callback', () => {
     const cleanup = registerCleanup()
 
     await expect(
-      receiveCallback({ provider: 'github', state: '', code: 'code' }, () => new Date()),
+      receiveCallback({ provider: 'github', state: '', code: 'code' }),
     ).rejects.toMatchObject({ status: 400 })
     await expect(
-      receiveCallback({ provider: 'github', state: randomUUID() }, () => new Date()),
+      receiveCallback({ provider: 'github', state: randomUUID() }),
     ).rejects.toMatchObject({ status: 400 })
     await expect(
-      receiveCallback(
-        {
-          provider: 'github',
-          state: randomUUID(),
-          code: 'code',
-        },
-        () => new Date(),
-      ),
+      receiveCallback({
+        provider: 'github',
+        state: randomUUID(),
+        code: 'code',
+      }),
     ).rejects.toMatchObject({ status: 400 })
 
     const nonResumableState = randomUUID()
@@ -191,14 +173,11 @@ describe('OAuth authorization broker callback', () => {
     })
     cleanup.authorizationIds.push(nonResumableId)
     await expect(
-      receiveCallback(
-        {
-          provider: 'github',
-          state: nonResumableState,
-          code: 'code',
-        },
-        () => new Date(),
-      ),
+      receiveCallback({
+        provider: 'github',
+        state: nonResumableState,
+        code: 'code',
+      }),
     ).rejects.toMatchObject({ status: 409 })
   })
 
