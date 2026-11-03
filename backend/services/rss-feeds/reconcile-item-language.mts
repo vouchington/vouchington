@@ -129,7 +129,7 @@ async function reenqueueItemLanguageDetectionIfNeeded(
   for (;;) {
     /* oxlint-disable no-await-in-loop -- each page starts after the previous page's last item id. */
     // no-mistakes-disable-next-line query-reached-per-item: each keyset page starts after the previous page's last item id, so the reads cannot be merged.
-    const { rows } = await readFn(
+    const { rows }: { rows: { id: string }[] } = await readFn(
       `/* reenqueueItemLanguageDetectionIfNeeded */
        SELECT s.rss_feed_item_id AS id
        FROM rss_feed_item_sources s
@@ -141,7 +141,7 @@ async function reenqueueItemLanguageDetectionIfNeeded(
        LIMIT $3`,
       [rssFeedId, afterItemId, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE],
     )
-    const itemIds = (rows as { id: string }[]).map(row => row.id)
+    const itemIds: string[] = rows.map(row => row.id)
     if (itemIds.length > 0) {
       await enqueueBulkLanguageDetectionFn('rss_feed_item', itemIds).catch(onError)
     }
