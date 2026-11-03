@@ -1,15 +1,9 @@
-import { vi } from 'vitest'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { onTestFinished, vi } from 'vitest'
 
-export const mockConnectOverCDP = vi.fn<VitestLooseMock>()
-export const mockReadFile = vi.fn<VitestLooseMock>()
-export const mockWriteFile = vi.fn<VitestLooseMock>()
-export const mockRename = vi.fn<VitestLooseMock>()
-export const mockUnlink = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-export const mockDeserialize = vi.fn<VitestLooseMock>()
-export const mockFromPrebuiltAdsAndTracking = vi.fn<VitestLooseMock>()
-export const mockBlockerSerialize = vi.fn<VitestLooseMock>()
-export const mockEnableBlockingInPage = vi.fn<VitestLooseMock>()
-export const mockAssertSafeUrlSync = vi.fn<VitestLooseMock>()
+const CSR_HYDRATION_WAIT_MS = 5_000
 
 export function makeMockRoute(url: string, isNavigationRequest = false) {
   return {
@@ -76,30 +70,40 @@ export function makeMockBrowser(page: ReturnType<typeof makeMockPage>) {
   }
 }
 
-export function resetCrawlMocks() {
-  vi.clearAllMocks()
-  mockReadFile.mockRejectedValue(new Error('ENOENT'))
-  const blockerInstance = {
-    serialize: mockBlockerSerialize.mockReturnValue(Buffer.from('data')),
-    enableBlockingInPage: mockEnableBlockingInPage.mockResolvedValue(undefined),
-  }
-  mockFromPrebuiltAdsAndTracking.mockResolvedValue(blockerInstance)
-  mockDeserialize.mockReturnValue(blockerInstance)
-  mockWriteFile.mockResolvedValue(undefined)
-  mockRename.mockResolvedValue(undefined)
-  mockUnlink.mockResolvedValue(undefined)
+/** Points the adblocker disk cache at a private temp dir; call before importing the crawl modules. */
+export async function useAdblockerCachePath({ unwritable = false } = {}) {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'adblocker-cache-'))
+  const cachePath = path.join(
+    cacheDir,
+    ...(unwritable ? ['missing-dir'] : []),
+    'adblocker-engine.bin',
+  )
+  vi.stubEnv('ADBLOCKER_CACHE_PATH', cachePath)
+  onTestFinished(async () => {
+    vi.unstubAllEnvs()
+    await fs.rm(cacheDir, { recursive: true, force: true })
+  })
+  return cachePath
 }
 
-export function getCrawlTestDependencies() {
-  return {
-    connect: mockConnectOverCDP,
-    readFile: mockReadFile,
-    writeFile: mockWriteFile,
-    rename: mockRename,
-    unlink: mockUnlink,
-    deserializeBlocker: mockDeserialize,
-    fromPrebuiltAdsAndTracking: mockFromPrebuiltAdsAndTracking,
-    assertSafeUrlSync: mockAssertSafeUrlSync,
-    csrHydrationWaitMs: 0,
-  }
+/**
+ * Runs the post-load CSR hydration wait immediately and records the delay production requested.
+ * Every other timer is untouched.
+ */
+export function skipHydrationWait() {
+  const delays: number[] = []
+  const realSetTimeout = globalThis.setTimeout
+  const spy = vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
+    callback: () => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => {
+    if (delay === CSR_HYDRATION_WAIT_MS) {
+      delays.push(delay)
+      return realSetTimeout(callback, 0)
+    }
+    return Reflect.apply(realSetTimeout, globalThis, [callback, delay, ...args])
+  }) as typeof setTimeout)
+  onTestFinished(() => spy.mockRestore())
+  return delays
 }

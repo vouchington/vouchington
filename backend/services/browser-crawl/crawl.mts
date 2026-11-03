@@ -1,13 +1,4 @@
-import fs from 'node:fs/promises'
-import {
-  chromium,
-  type Browser,
-  type BrowserContext,
-  type Page,
-  type Route,
-  type WebSocketRoute,
-} from 'playwright-core'
-import { PlaywrightBlocker } from '@ghostery/adblocker-playwright'
+import type { Browser, BrowserContext, Page, Route, WebSocketRoute } from 'playwright-core'
 import onError from '@modules/on-error'
 import {
   CrawlerConnectError,
@@ -29,43 +20,10 @@ import { measureAndSerializePage } from './page-content.mts'
 import { openBrowserSession } from './browser-session.mts'
 
 const WEBSOCKET_ALLOWED_SCHEMES = ['ws:', 'wss:'] as const
-type BrowserCrawlDependencies = {
-  connect: (wsEndpoint: string) => Promise<Browser>
-  readFile: typeof fs.readFile
-  writeFile: typeof fs.writeFile
-  rename: typeof fs.rename
-  unlink: typeof fs.unlink
-  deserializeBlocker: typeof PlaywrightBlocker.deserialize
-  fromPrebuiltAdsAndTracking: (fetchImpl: typeof fetch) => Promise<PlaywrightBlocker>
-  assertSafeUrlSync: typeof assertSafeUrlSync
-  csrHydrationWaitMs: number
-}
-
-function fromPrebuiltAdsAndTracking(fetchImpl: typeof fetch): Promise<PlaywrightBlocker> {
-  // v8 ignore next -- exercised only by crawl.integration.test.mts against the live Lightpanda cloud CDP endpoint; every mocked unit test overrides this dependency
-  return PlaywrightBlocker.fromPrebuiltAdsAndTracking(fetchImpl) as Promise<PlaywrightBlocker>
-}
-
-const defaultDependencies: BrowserCrawlDependencies = {
-  // v8 ignore next -- exercised only by crawl.integration.test.mts against the live Lightpanda cloud CDP endpoint; every mocked unit test overrides this dependency
-  connect: wsEndpoint => chromium.connectOverCDP(wsEndpoint),
-  readFile: fs.readFile,
-  writeFile: fs.writeFile,
-  rename: fs.rename,
-  unlink: fs.unlink,
-  deserializeBlocker: PlaywrightBlocker.deserialize,
-  fromPrebuiltAdsAndTracking,
-  assertSafeUrlSync,
-  csrHydrationWaitMs: CSR_HYDRATION_WAIT_MS,
-}
 
 /* no-mistakes: integration=http */
 /** Crawl a URL using the Lightpanda cloud CDP endpoint. */
-export async function crawlWithBrowser(
-  url: string,
-  dependencyOverrides: Partial<BrowserCrawlDependencies> = {},
-): Promise<BrowserCrawlResult> {
-  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
+export async function crawlWithBrowser(url: string): Promise<BrowserCrawlResult> {
   const cdpUrl = process.env.LIGHTPANDA_CDP_URL
   if (!cdpUrl) throw new Error('LIGHTPANDA_CDP_URL is not set')
   let cdpEndpoint: URL
@@ -92,13 +50,13 @@ export async function crawlWithBrowser(
       // Token stays on this in-memory URL only; redactToken() below scrubs it from any failure.
       const wsEndpoint = new URL(cdpEndpoint.href)
       wsEndpoint.searchParams.set('token', token)
-      const session = await openBrowserSession(dependencies.connect, wsEndpoint.href)
+      const session = await openBrowserSession(wsEndpoint.href)
       browser = session.browser
       context = session.context
       page = session.page
       page.setDefaultTimeout(NAVIGATION_TIMEOUT_MS)
 
-      const blocker = await getBlocker(dependencies)
+      const blocker = await getBlocker()
 
       if (blocker) await blocker.enableBlockingInPage(page)
 
@@ -112,7 +70,7 @@ export async function crawlWithBrowser(
           return
         }
         try {
-          dependencies.assertSafeUrlSync(rawUrl)
+          assertSafeUrlSync(rawUrl)
         } catch (err) {
           // Captured so the navigation catch below can rethrow it as CrawlerSsrfError instead of the generic aborted-navigation error Playwright raises.
           if (route.request().isNavigationRequest() && err instanceof Error) ssrfError = err
@@ -128,7 +86,7 @@ export async function crawlWithBrowser(
       // own sandbox, layering an app-level guard on top of (not replacing) Lightpanda cloud's own network-level private-address blocking.
       await page.routeWebSocket('**/*', async (ws: WebSocketRoute) => {
         try {
-          dependencies.assertSafeUrlSync(ws.url(), WEBSOCKET_ALLOWED_SCHEMES)
+          assertSafeUrlSync(ws.url(), WEBSOCKET_ALLOWED_SCHEMES)
         } catch {
           await ws.close({ code: 1008, reason: 'blocked by client' })
           return
@@ -145,7 +103,7 @@ export async function crawlWithBrowser(
     try {
       // 'networkidle' requires zero in-flight connections and times out on real-world
       // referral pages that hold a persistent connection open (WebSockets, SSE,
-      // long-polling analytics/chat widgets). 'load' plus the csrHydrationWaitMs wait
+      // long-polling analytics/chat widgets). 'load' plus the CSR_HYDRATION_WAIT_MS wait
       // below is the reliable analog of the previous Puppeteer 'networkidle2' milestone
       // (<=2 connections tolerated), which we can no longer express directly in Playwright.
       const gotoResponse = await page.goto(url, {
@@ -162,7 +120,7 @@ export async function crawlWithBrowser(
       throw new CrawlerNetworkError(url, 0, error)
     }
 
-    await new Promise(resolve => setTimeout(resolve, dependencies.csrHydrationWaitMs))
+    await new Promise(resolve => setTimeout(resolve, CSR_HYDRATION_WAIT_MS))
 
     const finalUrl = page.url() // post-redirect landed URL, incl. any redirect-minted tokens
     const pageContent = (await page.evaluate(measureAndSerializePage, {

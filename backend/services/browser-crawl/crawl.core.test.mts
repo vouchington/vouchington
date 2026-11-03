@@ -1,32 +1,52 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
-  getCrawlTestDependencies,
   makeMockBrowser,
   makeMockPage,
-  mockBlockerSerialize,
-  mockConnectOverCDP,
-  mockDeserialize,
-  mockEnableBlockingInPage,
-  mockFromPrebuiltAdsAndTracking,
-  mockReadFile,
-  mockRename,
-  mockUnlink,
-  mockWriteFile,
-  resetCrawlMocks,
+  skipHydrationWait,
+  useAdblockerCachePath,
 } from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
-let crawl: typeof import('./crawl.mts')
-let errors: typeof import('@modules/on-error/errors')
 
-async function loadFreshCrawl() {
+type Fresh = Awaited<ReturnType<typeof loadFreshCrawl>>
+
+async function loadFreshCrawl(options: { unwritable?: boolean } = {}) {
+  const cachePath = await useAdblockerCachePath(options)
   vi.resetModules()
-  errors = await import('@modules/on-error/errors')
-  crawl = await import('./crawl.mts')
+  const playwright = await import('playwright-core')
+  const adblocker = await import('@ghostery/adblocker-playwright')
+  const errors = await import('@modules/on-error/errors')
+  const crawl = await import('./crawl.mts')
+  const connect = vi.spyOn(playwright.chromium, 'connectOverCDP')
+  const download = vi
+    .spyOn(adblocker.PlaywrightBlocker, 'fromPrebuiltAdsAndTracking')
+    .mockResolvedValue(adblocker.PlaywrightBlocker.empty())
+  const enableBlocking = vi
+    .spyOn(adblocker.PlaywrightBlocker.prototype, 'enableBlockingInPage')
+    .mockResolvedValue(undefined as never)
+  const hydrationDelays = skipHydrationWait()
+  onTestFinished(() => {
+    connect.mockRestore()
+    download.mockRestore()
+    enableBlocking.mockRestore()
+  })
+  return {
+    adblocker,
+    cachePath,
+    connect,
+    crawl,
+    download,
+    enableBlocking,
+    errors,
+    hydrationDelays,
+    connectTo: (browser: ReturnType<typeof makeMockBrowser>) =>
+      connect.mockResolvedValue(browser as never),
+  }
 }
 
 describe('crawlWithBrowser', () => {
+  let f: Fresh
+
   beforeEach(async () => {
-    await loadFreshCrawl()
-    resetCrawlMocks()
+    f = await loadFreshCrawl()
   })
 
   afterEach(() => {
@@ -35,7 +55,7 @@ describe('crawlWithBrowser', () => {
   })
 
   function crawlWithBrowserForTest(url: string) {
-    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
+    return f.crawl.crawlWithBrowser(url)
   }
 
   it('throws Error (not CrawlerNetworkError) when LIGHTPANDA_CDP_URL is not set', async () => {
@@ -44,7 +64,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_CDP_URL is not set',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      errors.CrawlerNetworkError,
+      f.errors.CrawlerNetworkError,
     )
   })
 
@@ -54,7 +74,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_CDP_URL is not a valid URL',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      errors.CrawlerNetworkError,
+      f.errors.CrawlerNetworkError,
     )
   })
 
@@ -64,7 +84,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_CDP_URL must use ws:// or wss:// protocol',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      errors.CrawlerNetworkError,
+      f.errors.CrawlerNetworkError,
     )
   })
 
@@ -76,17 +96,17 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_TOKEN is not set',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      errors.CrawlerNetworkError,
+      f.errors.CrawlerNetworkError,
     )
-    expect(mockConnectOverCDP).not.toHaveBeenCalled()
+    expect(f.connect).not.toHaveBeenCalled()
   })
 
   it('throws CrawlerConnectError when chromium.connectOverCDP throws', async () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
-    mockConnectOverCDP.mockRejectedValue(new Error('connection refused'))
+    f.connect.mockRejectedValue(new Error('connection refused'))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      errors.CrawlerConnectError,
+      f.errors.CrawlerConnectError,
     )
   })
 
@@ -98,9 +118,9 @@ describe('crawlWithBrowser', () => {
     browser.mockContext.newPage = vi
       .fn<VitestLooseMock>()
       .mockRejectedValue(new Error('CDP session closed'))
-    mockConnectOverCDP.mockResolvedValue(browser)
+    f.connectTo(browser)
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      errors.CrawlerConnectError,
+      f.errors.CrawlerConnectError,
     )
     expect(browser.mockContext.close).toHaveBeenCalledOnce()
     expect(browser.close).toHaveBeenCalledOnce()
@@ -109,7 +129,7 @@ describe('crawlWithBrowser', () => {
   it('redacts the token from the connect-failure cause message', async () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'super-secret-token'
-    mockConnectOverCDP.mockRejectedValue(
+    f.connect.mockRejectedValue(
       new Error(
         'failed to connect to wss://uswest.cloud.lightpanda.io/ws?token=super-secret-token',
       ),
@@ -120,7 +140,7 @@ describe('crawlWithBrowser', () => {
     } catch (err) {
       caught = err
     }
-    expect(caught).toBeInstanceOf(errors.CrawlerConnectError)
+    expect(caught).toBeInstanceOf(f.errors.CrawlerConnectError)
     const message = caught instanceof Error ? caught.message : ''
     expect(message).not.toContain('super-secret-token')
     const cause = caught instanceof Error ? caught.cause : undefined
@@ -133,7 +153,7 @@ describe('crawlWithBrowser', () => {
     const token = 'a/b+c=d&e f'
     process.env.LIGHTPANDA_TOKEN = token
     const encodedToken = new URLSearchParams({ token }).toString().slice('token='.length)
-    mockConnectOverCDP.mockRejectedValue(
+    f.connect.mockRejectedValue(
       new Error(`failed to connect to wss://uswest.cloud.lightpanda.io/ws?token=${encodedToken}`),
     )
     let caught: unknown
@@ -142,7 +162,7 @@ describe('crawlWithBrowser', () => {
     } catch (err) {
       caught = err
     }
-    expect(caught).toBeInstanceOf(errors.CrawlerConnectError)
+    expect(caught).toBeInstanceOf(f.errors.CrawlerConnectError)
     const cause = caught instanceof Error ? caught.cause : undefined
     expect(cause instanceof Error ? cause.message : '').not.toContain(encodedToken)
     expect(cause instanceof Error ? cause.message : '').not.toContain(token)
@@ -156,14 +176,14 @@ describe('crawlWithBrowser', () => {
       'ECONNREFUSED wss://uswest.cloud.lightpanda.io/ws?token=super-secret-token',
     )
     const connectError = new Error('failed to connect', { cause: socketError })
-    mockConnectOverCDP.mockRejectedValue(connectError)
+    f.connect.mockRejectedValue(connectError)
     let caught: unknown
     try {
       await crawlWithBrowserForTest('https://example.com')
     } catch (err) {
       caught = err
     }
-    expect(caught).toBeInstanceOf(errors.CrawlerConnectError)
+    expect(caught).toBeInstanceOf(f.errors.CrawlerConnectError)
     const cause = caught instanceof Error ? caught.cause : undefined
     expect(cause).toBeInstanceOf(Error)
     expect(cause instanceof Error ? cause.message : '').toBe('failed to connect')
@@ -182,9 +202,9 @@ describe('crawlWithBrowser', () => {
     const timeoutErr = new Error('Navigation timeout')
     timeoutErr.name = 'TimeoutError'
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(timeoutErr)
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      errors.CrawlerTimeoutError,
+      f.errors.CrawlerTimeoutError,
     )
   })
 
@@ -194,9 +214,9 @@ describe('crawlWithBrowser', () => {
     const page = makeMockPage()
     class TimeoutError extends Error {}
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(new TimeoutError('timeout'))
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      errors.CrawlerTimeoutError,
+      f.errors.CrawlerTimeoutError,
     )
   })
 
@@ -205,12 +225,12 @@ describe('crawlWithBrowser', () => {
     process.env.LIGHTPANDA_TOKEN = 'test-token'
     const page = makeMockPage()
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(new Error('net::ERR_NAME_NOT_RESOLVED'))
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      errors.CrawlerNetworkError,
+      f.errors.CrawlerNetworkError,
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      errors.CrawlerConnectError,
+      f.errors.CrawlerConnectError,
     )
   })
 
@@ -218,7 +238,7 @@ describe('crawlWithBrowser', () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
     const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(page))
     const result = await crawlWithBrowserForTest('https://example.com')
     expect(result).toMatchObject({
       statusCode: 200,
@@ -237,63 +257,41 @@ describe('crawlWithBrowser', () => {
     page.evaluate = vi
       .fn<VitestLooseMock>()
       .mockResolvedValue({ contentLength: 100, html: undefined, title: 'Test Title' })
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(page))
     const result = await crawlWithBrowserForTest('https://example.com')
     expect(result.html).toBeUndefined()
     expect(result.statusCode).toBe(200)
   })
 
-  it('uses cached blocker on second call (cache hit)', async () => {
+  it('waits the CSR hydration delay before reading the page', async () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
-    const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(makeMockPage()))
     await crawlWithBrowserForTest('https://example.com')
-    await crawlWithBrowserForTest('https://example.com')
-    // fromPrebuiltAdsAndTracking should only be called once (second call uses cache)
-    expect(mockFromPrebuiltAdsAndTracking).toHaveBeenCalledTimes(1)
+    expect(f.hydrationDelays).toEqual([5000])
   })
 
-  it('uses disk cache when readFile succeeds (PlaywrightBlocker.deserialize called)', async () => {
+  it('captures the post-redirect landed URL as finalUrl', async () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
-    const buf = Buffer.from('serialized-blocker')
-    mockReadFile.mockResolvedValue(buf)
-    const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    await crawlWithBrowserForTest('https://example.com')
-    expect(mockDeserialize).toHaveBeenCalledWith(buf)
-    expect(mockFromPrebuiltAdsAndTracking).not.toHaveBeenCalled()
-  })
+    const inputUrl = 'https://americanexpress.com/en-us/referral/all-cards?ref=JONATOycVU'
+    const landedUrl =
+      'https://www.americanexpress.com/en-us/credit-cards/referral/prospect/all-cards/personal?CORID=abc&GENCODE=def&ref=JONATOycVU'
 
-  it('unlinks corrupt cache file when PlaywrightBlocker.deserialize throws', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    const buf = Buffer.from('corrupt-data')
-    mockReadFile.mockResolvedValue(buf)
-    mockDeserialize.mockImplementationOnce(() => {
-      throw new Error('corrupt cache')
+    // page.url() only starts returning landedUrl once goto() has resolved, like a real browser
+    // mid-navigation, so reading it before awaiting goto() would capture the stale input URL.
+    let navigated = false
+    const page = makeMockPage({
+      goto: vi.fn<VitestLooseMock>().mockImplementation(async () => {
+        navigated = true
+        return { status: () => 200 }
+      }),
+      url: vi.fn<VitestLooseMock>().mockImplementation(() => (navigated ? landedUrl : inputUrl)),
     })
-    const blockerInstance = {
-      serialize: mockBlockerSerialize.mockReturnValue(Buffer.from('data')),
-      enableBlockingInPage: mockEnableBlockingInPage.mockResolvedValue(undefined),
-    }
-    mockFromPrebuiltAdsAndTracking.mockResolvedValue(blockerInstance)
-    const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    await crawlWithBrowserForTest('https://example.com')
-    expect(mockUnlink).toHaveBeenCalledWith(expect.stringContaining('adblocker-engine.bin'))
-  })
+    f.connectTo(makeMockBrowser(page))
+    const result = await crawlWithBrowserForTest(inputUrl)
 
-  it('fetches fresh blocker when disk read fails and writes cache to disk', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    mockReadFile.mockRejectedValue(new Error('ENOENT'))
-    const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    await crawlWithBrowserForTest('https://example.com')
-    expect(mockFromPrebuiltAdsAndTracking).toHaveBeenCalledTimes(1)
-    expect(mockWriteFile).toHaveBeenCalledTimes(1)
-    expect(mockRename).toHaveBeenCalledTimes(1)
+    expect(page.goto).toHaveBeenCalledWith(inputUrl, expect.objectContaining({ waitUntil: 'load' }))
+    expect(result.finalUrl).toBe(landedUrl)
   })
 })

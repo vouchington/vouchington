@@ -1,112 +1,52 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
-  getCrawlTestDependencies,
   makeMockBrowser,
   makeMockPage,
   makeMockRoute,
   makeMockWebSocketRoute,
-  mockAssertSafeUrlSync,
-  mockBlockerSerialize,
-  mockConnectOverCDP,
-  mockEnableBlockingInPage,
-  mockFromPrebuiltAdsAndTracking,
-  mockReadFile,
-  mockRename,
-  mockWriteFile,
-  resetCrawlMocks,
+  skipHydrationWait,
+  useAdblockerCachePath,
 } from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
-let crawl: typeof import('./crawl.mts')
-let blocker: typeof import('./adblocker-cache.mts')
-let errors: typeof import('@modules/on-error/errors')
+
+type Fresh = Awaited<ReturnType<typeof loadFreshCrawl>>
+
 async function loadFreshCrawl() {
+  await useAdblockerCachePath()
   vi.resetModules()
-  errors = await import('@modules/on-error/errors')
-  blocker = await import('./adblocker-cache.mts')
-  crawl = await import('./crawl.mts')
-}
-describe('crawlWithBrowser', () => {
-  beforeEach(async () => {
-    await loadFreshCrawl()
-    resetCrawlMocks()
+  const playwright = await import('playwright-core')
+  const adblocker = await import('@ghostery/adblocker-playwright')
+  const errors = await import('@modules/on-error/errors')
+  const crawl = await import('./crawl.mts')
+  const connect = vi.spyOn(playwright.chromium, 'connectOverCDP')
+  const download = vi
+    .spyOn(adblocker.PlaywrightBlocker, 'fromPrebuiltAdsAndTracking')
+    .mockResolvedValue(adblocker.PlaywrightBlocker.empty())
+  const enableBlocking = vi
+    .spyOn(adblocker.PlaywrightBlocker.prototype, 'enableBlockingInPage')
+    .mockResolvedValue(undefined as never)
+  skipHydrationWait()
+  onTestFinished(() => {
+    connect.mockRestore()
+    download.mockRestore()
+    enableBlocking.mockRestore()
   })
-  afterEach(() => {
-    delete process.env.LIGHTPANDA_CDP_URL
-    delete process.env.LIGHTPANDA_TOKEN
-  })
-  function crawlWithBrowserForTest(url: string) {
-    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
+  return {
+    crawl,
+    download,
+    enableBlocking,
+    errors,
+    connectTo: (browser: ReturnType<typeof makeMockBrowser>) =>
+      connect.mockResolvedValue(browser as never),
   }
-
-  it('returns null blocker when fetch times out, sets blockerFetchFailedAt cooldown', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    mockReadFile.mockRejectedValue(new Error('ENOENT'))
-    // Simulate fetch timing out (rejects)
-    mockFromPrebuiltAdsAndTracking.mockRejectedValue(
-      new Error('adblocker fetch timed out after 30000ms'),
-    )
-    const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    // First call: fetch fails, crawl continues without blocker
-    await crawlWithBrowserForTest('https://example.com')
-    // Second call: within cooldown window so no retry
-    await crawlWithBrowserForTest('https://example.com')
-    expect(mockFromPrebuiltAdsAndTracking).toHaveBeenCalledTimes(1)
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to load adblocker'),
-      expect.any(Error),
-    )
-    consoleSpy.mockRestore()
-  })
-
-  it('logs error but still returns blocker when disk write fails', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    mockReadFile.mockRejectedValue(new Error('ENOENT'))
-    mockWriteFile.mockRejectedValue(new Error('disk full'))
-    const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const result = await crawlWithBrowserForTest('https://example.com')
-    expect(result.statusCode).toBe(200)
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to write adblocker cache'),
-      expect.any(Error),
-    )
-    consoleSpy.mockRestore()
-  })
-
-  it('returns null when the adblocker fetch reaches its timeout', async () => {
-    vi.useFakeTimers()
-    mockReadFile.mockRejectedValue(new Error('ENOENT'))
-    mockFromPrebuiltAdsAndTracking.mockReturnValue(new Promise(() => {}))
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-    const resultPromise = blocker.getBlocker(getCrawlTestDependencies()).then(result => {
-      expect(result).toBeNull()
-      return undefined
-    })
-
-    await vi.advanceTimersByTimeAsync(30000)
-
-    await resultPromise
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to load adblocker filter list'),
-      expect.any(Error),
-    )
-    consoleSpy.mockRestore()
-    vi.useRealTimers()
-  })
-})
+}
 
 describe('crawlWithBrowser — request interception', () => {
+  let f: Fresh
+
   beforeEach(async () => {
-    await loadFreshCrawl()
-    vi.clearAllMocks()
-    mockReadFile.mockRejectedValue(new Error('ENOENT'))
-    mockWriteFile.mockResolvedValue(undefined)
-    mockRename.mockResolvedValue(undefined)
+    f = await loadFreshCrawl()
+    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
+    process.env.LIGHTPANDA_TOKEN = 'test-token'
   })
 
   afterEach(() => {
@@ -114,34 +54,18 @@ describe('crawlWithBrowser — request interception', () => {
     delete process.env.LIGHTPANDA_TOKEN
   })
 
-  function crawlWithBrowserForTest(url: string) {
-    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
-  }
-
-  async function setupAndGetRouteHandler(blockerEnabled: boolean) {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    if (blockerEnabled) {
-      const blockerInstance = {
-        serialize: mockBlockerSerialize.mockReturnValue(Buffer.from('data')),
-        enableBlockingInPage: mockEnableBlockingInPage.mockResolvedValue(undefined),
-      }
-      mockFromPrebuiltAdsAndTracking.mockResolvedValue(blockerInstance)
-    } else {
-      // Make fetch fail so no blocker is loaded
-      mockFromPrebuiltAdsAndTracking.mockRejectedValue(new Error('no blocker'))
-    }
-
+  async function setupAndGetPage(blockerEnabled: boolean) {
+    if (!blockerEnabled) f.download.mockRejectedValue(new Error('no blocker'))
     const page = makeMockPage()
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
+    f.connectTo(makeMockBrowser(page))
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await crawlWithBrowserForTest('https://example.com')
+    await f.crawl.crawlWithBrowser('https://example.com')
     consoleSpy.mockRestore()
     return page
   }
 
   it('calls route.continue() for non-http(s) URLs (e.g. data:)', async () => {
-    const page = await setupAndGetRouteHandler(false)
+    const page = await setupAndGetPage(false)
     const route = makeMockRoute('data:text/plain,hello')
     page.fireRoute(route)
     expect(route.continue).toHaveBeenCalled()
@@ -150,10 +74,7 @@ describe('crawlWithBrowser — request interception', () => {
   })
 
   it('calls route.abort("blockedbyclient") for private IP URLs', async () => {
-    mockAssertSafeUrlSync.mockImplementationOnce(() => {
-      throw new Error('private network address')
-    })
-    const page = await setupAndGetRouteHandler(false)
+    const page = await setupAndGetPage(false)
     const route = makeMockRoute('http://192.168.1.1/endpoint')
     page.fireRoute(route)
     expect(route.abort).toHaveBeenCalledWith('blockedbyclient')
@@ -162,7 +83,7 @@ describe('crawlWithBrowser — request interception', () => {
   })
 
   it('calls route.fallback() for SSRF-safe URLs when no blocker is installed', async () => {
-    const page = await setupAndGetRouteHandler(false)
+    const page = await setupAndGetPage(false)
     const route = makeMockRoute('https://example.com/safe')
     page.fireRoute(route)
     expect(route.fallback).toHaveBeenCalled()
@@ -171,7 +92,7 @@ describe('crawlWithBrowser — request interception', () => {
   })
 
   it('calls route.fallback() for SSRF-safe URLs when a blocker is present, deferring to it', async () => {
-    const page = await setupAndGetRouteHandler(true)
+    const page = await setupAndGetPage(true)
     const route = makeMockRoute('https://example.com/safe')
     page.fireRoute(route)
     expect(route.fallback).toHaveBeenCalled()
@@ -180,26 +101,22 @@ describe('crawlWithBrowser — request interception', () => {
   })
 
   it('registers the ad-blocker handler before the SSRF-guard route handler (LIFO ordering)', async () => {
-    const page = await setupAndGetRouteHandler(true)
-    const enableOrder = mockEnableBlockingInPage.mock.invocationCallOrder[0]
+    const page = await setupAndGetPage(true)
+    const enableOrder = f.enableBlocking.mock.invocationCallOrder[0]
     const routeOrder = page.route.mock.invocationCallOrder[0]
     expect(enableOrder).toBeLessThan(routeOrder)
   })
 
   it('calls ws.connectToServer() for SSRF-safe WebSocket URLs', async () => {
-    const page = await setupAndGetRouteHandler(false)
+    const page = await setupAndGetPage(false)
     const ws = makeMockWebSocketRoute('wss://example.com/socket')
     page.fireWebSocketRoute(ws)
-    expect(mockAssertSafeUrlSync).toHaveBeenCalledWith('wss://example.com/socket', ['ws:', 'wss:'])
     expect(ws.connectToServer).toHaveBeenCalled()
     expect(ws.close).not.toHaveBeenCalled()
   })
 
   it('closes with code 1008 for SSRF-unsafe WebSocket URLs (private IP)', async () => {
-    mockAssertSafeUrlSync.mockImplementationOnce(() => {
-      throw new Error('private network address')
-    })
-    const page = await setupAndGetRouteHandler(false)
+    const page = await setupAndGetPage(false)
     // Fixture string for a mock WebSocketRoute, not a live connection; the test asserts this URL gets blocked.
     const ws = makeMockWebSocketRoute('ws://192.168.1.1/socket')
     page.fireWebSocketRoute(ws)
@@ -207,63 +124,53 @@ describe('crawlWithBrowser — request interception', () => {
     expect(ws.connectToServer).not.toHaveBeenCalled()
   })
 
+  it('closes with code 1008 for WebSocket URLs outside the ws and wss schemes', async () => {
+    const page = await setupAndGetPage(false)
+    const ws = makeMockWebSocketRoute('https://example.com/socket')
+    page.fireWebSocketRoute(ws)
+    expect(ws.close).toHaveBeenCalledWith({ code: 1008, reason: 'blocked by client' })
+    expect(ws.connectToServer).not.toHaveBeenCalled()
+  })
+
   it('rethrows the captured SSRF error from page.goto instead of a generic CrawlerNetworkError', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    const ssrfError = new errors.CrawlerSsrfError(
-      'http://169.254.169.254/',
-      'private network address',
-    )
-    mockAssertSafeUrlSync.mockImplementation(() => {
-      throw ssrfError
-    })
     const page = makeMockPage()
     page.goto = vi.fn<VitestLooseMock>().mockImplementation(async (url: string) => {
       await page.fireRoute(makeMockRoute(url, true))
       throw new Error('net::ERR_FAILED')
     })
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    await expect(crawlWithBrowserForTest('http://169.254.169.254/')).rejects.toBe(ssrfError)
-    await expect(crawlWithBrowserForTest('http://169.254.169.254/')).rejects.not.toBeInstanceOf(
-      errors.CrawlerNetworkError,
-    )
+    f.connectTo(makeMockBrowser(page))
+    const caught = await f.crawl.crawlWithBrowser('http://169.254.169.254/').catch(err => err)
+    expect(caught).toBeInstanceOf(f.errors.CrawlerSsrfError)
+    expect(caught).not.toBeInstanceOf(f.errors.CrawlerNetworkError)
+    expect(caught).toMatchObject({ code: 'CrawlerSsrfError', url: 'http://169.254.169.254/' })
   })
 
   it('does not let a sub-resource SSRF block override a real navigation error', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    mockAssertSafeUrlSync.mockImplementation(() => {
-      throw new errors.CrawlerSsrfError(
-        'http://169.254.169.254/image.png',
-        'private network address',
-      )
-    })
     const page = makeMockPage()
+    const route = makeMockRoute('http://169.254.169.254/image.png', false)
     page.goto = vi.fn<VitestLooseMock>().mockImplementation(async () => {
       // Sub-resource (not the navigation request itself) hits the SSRF guard.
-      await page.fireRoute(makeMockRoute('http://169.254.169.254/image.png', false))
+      await page.fireRoute(route)
       throw new Error('net::ERR_NAME_NOT_RESOLVED')
     })
-    mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
-    await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      errors.CrawlerNetworkError,
-    )
-    await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      errors.CrawlerSsrfError,
-    )
+    f.connectTo(makeMockBrowser(page))
+    const caught = await f.crawl.crawlWithBrowser('https://example.com').catch(err => err)
+    expect(caught).toBeInstanceOf(f.errors.CrawlerNetworkError)
+    expect(caught).not.toBeInstanceOf(f.errors.CrawlerSsrfError)
+    expect(route.abort).toHaveBeenCalledWith('blockedbyclient')
   })
 })
 
 describe('crawlWithBrowser — browser context', () => {
+  let f: Fresh
+
   beforeEach(async () => {
-    await loadFreshCrawl()
-    vi.clearAllMocks()
-    mockReadFile.mockRejectedValue(new Error('ENOENT'))
-    mockWriteFile.mockResolvedValue(undefined)
-    mockRename.mockResolvedValue(undefined)
-    mockFromPrebuiltAdsAndTracking.mockRejectedValue(new Error('no blocker'))
+    f = await loadFreshCrawl()
+    f.download.mockRejectedValue(new Error('no blocker'))
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    onTestFinished(() => consoleSpy.mockRestore())
   })
 
   afterEach(() => {
@@ -271,17 +178,11 @@ describe('crawlWithBrowser — browser context', () => {
     delete process.env.LIGHTPANDA_TOKEN
   })
 
-  function crawlWithBrowserForTest(url: string) {
-    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
-  }
-
   it('creates a browser context with serviceWorkers: block, then the page from that context', async () => {
     const page = makeMockPage()
     const browser = makeMockBrowser(page)
-    mockConnectOverCDP.mockResolvedValue(browser)
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await crawlWithBrowserForTest('https://example.com')
-    consoleSpy.mockRestore()
+    f.connectTo(browser)
+    await f.crawl.crawlWithBrowser('https://example.com')
     expect(browser.newContext).toHaveBeenCalledWith({ serviceWorkers: 'block' })
     expect(browser.mockContext.newPage).toHaveBeenCalled()
   })
@@ -289,10 +190,8 @@ describe('crawlWithBrowser — browser context', () => {
   it('closes the context, page, and browser on completion', async () => {
     const page = makeMockPage()
     const browser = makeMockBrowser(page)
-    mockConnectOverCDP.mockResolvedValue(browser)
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await crawlWithBrowserForTest('https://example.com')
-    consoleSpy.mockRestore()
+    f.connectTo(browser)
+    await f.crawl.crawlWithBrowser('https://example.com')
     expect(page.close).toHaveBeenCalled()
     expect(browser.mockContext.close).toHaveBeenCalled()
     expect(browser.close).toHaveBeenCalled()

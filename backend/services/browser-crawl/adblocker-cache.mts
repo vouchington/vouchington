@@ -1,6 +1,6 @@
 import path from 'node:path'
-import type fs from 'node:fs/promises'
-import type { PlaywrightBlocker } from '@ghostery/adblocker-playwright'
+import fs from 'node:fs/promises'
+import { PlaywrightBlocker } from '@ghostery/adblocker-playwright'
 import onError from '@modules/on-error'
 
 const ADBLOCKER_CACHE_PATH =
@@ -9,55 +9,40 @@ const ADBLOCKER_CACHE_PATH =
 const ADBLOCKER_FETCH_TIMEOUT_MS = 30_000
 const BLOCKER_FETCH_RETRY_MS = 5 * 60 * 1_000
 
-export type BrowserAdblockerDependencies = {
-  readFile: typeof fs.readFile
-  writeFile: typeof fs.writeFile
-  rename: typeof fs.rename
-  unlink: typeof fs.unlink
-  deserializeBlocker: (data: Buffer) => PlaywrightBlocker
-  fromPrebuiltAdsAndTracking: (fetchImpl: typeof fetch) => Promise<PlaywrightBlocker>
-}
-
 let cachedBlocker: PlaywrightBlocker | null = null
 let blockerFetchFailedAt = 0
 
-export async function getBlocker(
-  dependencies: BrowserAdblockerDependencies,
-): Promise<PlaywrightBlocker | null> {
+export async function getBlocker(): Promise<PlaywrightBlocker | null> {
   if (cachedBlocker) return cachedBlocker
-  const diskBlocker = await readBlockerFromDisk(dependencies)
+  const diskBlocker = await readBlockerFromDisk()
   if (diskBlocker) return diskBlocker
   if (blockerFetchFailedAt && Date.now() - blockerFetchFailedAt < BLOCKER_FETCH_RETRY_MS)
     return null
-  return fetchAndCacheBlocker(dependencies)
+  return fetchAndCacheBlocker()
 }
 
-async function readBlockerFromDisk(
-  dependencies: BrowserAdblockerDependencies,
-): Promise<PlaywrightBlocker | null> {
+async function readBlockerFromDisk(): Promise<PlaywrightBlocker | null> {
   let diskData: Buffer | undefined
   try {
-    diskData = await dependencies.readFile(ADBLOCKER_CACHE_PATH)
+    diskData = await fs.readFile(ADBLOCKER_CACHE_PATH)
   } catch {
     return null
   }
   try {
-    cachedBlocker = dependencies.deserializeBlocker(diskData)
+    cachedBlocker = PlaywrightBlocker.deserialize(diskData)
     return cachedBlocker
   } catch {
-    await dependencies.unlink(ADBLOCKER_CACHE_PATH).catch(onError)
+    await fs.unlink(ADBLOCKER_CACHE_PATH).catch(onError)
     return null
   }
 }
 
-async function fetchAndCacheBlocker(
-  dependencies: BrowserAdblockerDependencies,
-): Promise<PlaywrightBlocker | null> {
+async function fetchAndCacheBlocker(): Promise<PlaywrightBlocker | null> {
   let blocker: PlaywrightBlocker
   let fetchTimeoutHandle: ReturnType<typeof setTimeout> | undefined
   try {
     blocker = await Promise.race([
-      dependencies.fromPrebuiltAdsAndTracking(fetch),
+      PlaywrightBlocker.fromPrebuiltAdsAndTracking(fetch),
       new Promise<never>((_, reject) => {
         fetchTimeoutHandle = setTimeout(
           () =>
@@ -75,20 +60,17 @@ async function fetchAndCacheBlocker(
     clearTimeout(fetchTimeoutHandle)
   }
   cachedBlocker = blocker
-  await writeBlockerToDisk(blocker, dependencies)
+  await writeBlockerToDisk(blocker)
   return blocker
 }
 
-async function writeBlockerToDisk(
-  blocker: PlaywrightBlocker,
-  dependencies: BrowserAdblockerDependencies,
-) {
+async function writeBlockerToDisk(blocker: PlaywrightBlocker) {
   const tmpPath = `${ADBLOCKER_CACHE_PATH}.tmp`
   try {
-    await dependencies.writeFile(tmpPath, blocker.serialize())
-    await dependencies.rename(tmpPath, ADBLOCKER_CACHE_PATH)
+    await fs.writeFile(tmpPath, blocker.serialize())
+    await fs.rename(tmpPath, ADBLOCKER_CACHE_PATH)
   } catch (err: unknown) {
     console.error('Failed to write adblocker cache', err)
-    await dependencies.unlink(tmpPath).catch(onError)
+    await fs.unlink(tmpPath).catch(onError)
   }
 }
