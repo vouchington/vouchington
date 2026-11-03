@@ -8,18 +8,12 @@ type CompletedModerationImage = {
   s3_key: string
 }
 
-type ImageUploadDependencies = NonNullable<
-  Parameters<typeof createImageUploadUrl>[1]['dependencies']
->
-
-async function createCompletedModerationImage(
-  user: { id: string },
-  dependencies: ImageUploadDependencies,
-): Promise<CompletedModerationImage> {
+async function createCompletedModerationImage(user: {
+  id: string
+}): Promise<CompletedModerationImage> {
   const { image_id } = await createImageUploadUrl(user, {
     contentType: 'image/png',
     contentLength: 1024,
-    dependencies,
   })
   await markImageComplete(image_id)
   const image = await getImageByAny(image_id)

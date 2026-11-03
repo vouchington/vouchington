@@ -14,7 +14,6 @@ import { persistImageHashWhileProcessing } from '../services/images/complete-upl
 import { markImageUploadFailed } from '../services/images/upload-state.mts'
 import { getImageByIdFromPrimary } from '../services/images/get.mts'
 import { imagesWorkMaxValues } from '../services/images/work-limits.mts'
-import { imageUploadsQueue } from '../queues/image-uploads/queues.mts'
 import { backgroundQueue as cachePurge } from './shared-background-queue.mts'
 
 /** Natural upload timestamps stay immutable; only the invocation clock advances. */
@@ -31,7 +30,6 @@ export async function createContentAnalysisCleanupFixtures() {
       await createImageUploadUrl(user, {
         contentType: 'image/jpeg',
         contentLength: 1024,
-        dependencies: { presignImageUploadUrl: async () => 'https://example.com/owned-upload' },
       })
     ).image_id
   const uploads = await Promise.allSettled([
@@ -69,7 +67,6 @@ export async function createContentAnalysisCleanupFixtures() {
       (imagesWorkMaxValues.abandoned_threshold_hours + 1) * 60 * 60 * 1000,
   )
   return {
-    recoveryQueue: imageUploadsQueue,
     purgeQueue: cachePurge,
     ownedUserTags: [ownedUser.id, ownedUser.username].map(userTag),
     foreignUserTags: [foreignUser.id, foreignUser.username].map(userTag),

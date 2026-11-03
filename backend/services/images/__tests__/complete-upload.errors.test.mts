@@ -1,26 +1,26 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestUser, insertPendingTestImage } from '@voucha/test-helpers'
-import type { PrivateUser } from '@voucha/types/entities/user'
+import { createHash, randomBytes } from 'node:crypto'
 import { Readable } from 'node:stream'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createTestUser,
+  insertPendingTestImage,
+  markImageDeleted,
+  setImageHashAndProcessing,
+} from '@voucha/test-helpers'
+import type { PrivateUser } from '@voucha/types/entities/user'
 import { MediaSizeLimitError } from '@vouchington/media'
+import { completeImageUpload } from '../complete-upload.mts'
+import * as imageReads from '../get.mts'
 import { getImageById } from '../get.mts'
 import { deriveUploadStatus } from '../get-upload-state.mts'
 import * as s3Module from '../s3-upload-lifecycle.mts'
 
-const { freezeImageUploadMock, getImageByHashMock, persistImageHashWhileProcessingMock } =
-  vi.hoisted(() => ({
-    freezeImageUploadMock: vi.fn<typeof import('../freeze-upload.mts').freezeImageUpload>(),
-    getImageByHashMock: vi.fn<typeof import('../get.mts').getImageByHash>(),
-    persistImageHashWhileProcessingMock:
-      vi.fn<typeof import('../complete-upload-digest.mts').persistImageHashWhileProcessing>(),
-  }))
+type SourceBody = Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>
 
-const { completeImageUpload } = await import('../complete-upload.mts')
-
-const digestRaceDependencies = {
-  freezeImageUpload: freezeImageUploadMock,
-  getImageByHash: getImageByHashMock,
-  persistImageHashWhileProcessing: persistImageHashWhileProcessingMock,
+function stubSource(body: Readable) {
+  vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
+    Body: body,
+  } as SourceBody)
 }
 
 describe('completeImageUpload utility failures', () => {
@@ -32,68 +32,57 @@ describe('completeImageUpload utility failures', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
-    freezeImageUploadMock.mockReset()
-    getImageByHashMock.mockReset()
-    persistImageHashWhileProcessingMock.mockReset()
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([Buffer.from('image')]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
   })
 
   it('preserves unexpected hashing failures and marks the claimed upload failed', async () => {
     const imageId = await insertPendingTestImage(user.id)
     const error = new Error('hashing failed')
-    freezeImageUploadMock.mockRejectedValue(error)
+    stubSource(
+      new Readable({
+        read() {
+          this.destroy(error)
+        },
+      }),
+    )
 
-    await expect(
-      completeImageUpload(user, imageId, { freezeImageUpload: freezeImageUploadMock }),
-    ).rejects.toBe(error)
+    await expect(completeImageUpload(user, imageId)).rejects.toBe(error)
     const image = await getImageById(imageId)
     expect(image && deriveUploadStatus(image)).toBe('failed')
-    expect(image?.upload_error).toBe(error.message)
-  })
-
-  it('does not reinterpret typed utility errors as workflow errors', async () => {
-    const imageId = await insertPendingTestImage(user.id)
-    const error = new Error('invalid media policy')
-    freezeImageUploadMock.mockRejectedValue(error)
-
-    await expect(
-      completeImageUpload(user, imageId, { freezeImageUpload: freezeImageUploadMock }),
-    ).rejects.toBe(error)
-    const image = await getImageById(imageId)
-    expect(image && deriveUploadStatus(image)).toBe('failed')
-    expect(image?.upload_error).toBe(error.message)
+    expect(image?.upload_error).toBe('hashing failed')
   })
 
   it('preserves the hard streamed-size error and terminalizes the claimed upload', async () => {
     const imageId = await insertPendingTestImage(user.id)
-    const error = new MediaSizeLimitError(50 * 1024 * 1024, 50 * 1024 * 1024 + 1)
-    freezeImageUploadMock.mockRejectedValue(error)
+    const chunk = Buffer.alloc(1024 * 1024)
+    stubSource(
+      Readable.from(
+        (function* () {
+          for (let index = 0; index < 51; index++) yield chunk
+        })(),
+      ),
+    )
 
-    await expect(
-      completeImageUpload(user, imageId, { freezeImageUpload: freezeImageUploadMock }),
-    ).rejects.toBe(error)
+    const failure = await completeImageUpload(user, imageId).then(
+      () => null,
+      err => err as unknown,
+    )
+
+    expect(failure).toBeInstanceOf(MediaSizeLimitError)
     const image = await getImageById(imageId)
     expect(image && deriveUploadStatus(image)).toBe('failed')
-    expect(image?.upload_error).toBe(error.message)
+    expect(image?.upload_error).toBe((failure as Error).message)
   })
 
   it('rejects and removes an upload matching a previously deleted image', async () => {
+    const bytes = Buffer.from(`previously deleted ${randomBytes(16).toString('hex')}`)
     const imageId = await insertPendingTestImage(user.id)
     const deletedImageId = await insertPendingTestImage(user.id)
-    const deletedImage = await getImageById(deletedImageId)
-    expect(deletedImage).not.toBeNull()
-    freezeImageUploadMock.mockResolvedValue(frozenUpload('ab'))
-    getImageByHashMock.mockResolvedValueOnce({ ...deletedImage!, deleted_at: new Date() })
+    await setImageHashAndProcessing(deletedImageId, createHash('sha256').update(bytes).digest())
+    await markImageDeleted(deletedImageId)
+    stubSource(Readable.from([bytes]))
     const deleteFromS3Spy = vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
 
-    await expect(
-      completeImageUpload(user, imageId, {
-        freezeImageUpload: freezeImageUploadMock,
-        getImageByHash: getImageByHashMock,
-      }),
-    ).rejects.toMatchObject({
+    await expect(completeImageUpload(user, imageId)).rejects.toMatchObject({
       status: 400,
       message: 'Image was previously flagged and deleted',
     })
@@ -103,40 +92,37 @@ describe('completeImageUpload utility failures', () => {
   })
 
   it('returns the committed winner when digest persistence loses a unique race', async () => {
+    const bytes = Buffer.from(`unique race ${randomBytes(16).toString('hex')}`)
+    const hash = createHash('sha256').update(bytes).digest()
     const imageId = await insertPendingTestImage(user.id)
     const winnerId = await insertPendingTestImage(user.id)
-    const winner = await getImageById(winnerId)
-    expect(winner).not.toBeNull()
-    freezeImageUploadMock.mockResolvedValue(frozenUpload('cd'))
-    getImageByHashMock.mockResolvedValueOnce(null).mockResolvedValueOnce(winner)
-    persistImageHashWhileProcessingMock.mockRejectedValue({ code: '23505' })
+    await setImageHashAndProcessing(winnerId, hash)
+    stubSource(Readable.from([bytes]))
+    // The first digest lookup predates the winner's commit; persistence then hits the real unique index.
+    vi.spyOn(imageReads, 'getImageByHash').mockResolvedValueOnce(null)
     const deleteFromS3Spy = vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
 
-    await expect(completeImageUpload(user, imageId, digestRaceDependencies)).resolves.toEqual(
-      winner,
-    )
+    await expect(completeImageUpload(user, imageId)).resolves.toMatchObject({
+      id: winnerId,
+      sha_256: hash,
+    })
     expect(deleteFromS3Spy).toHaveBeenCalledWith(expect.objectContaining({ id: imageId }))
     expect(await getImageById(imageId)).toBeNull()
   })
 
   it('preserves a unique violation when no committed winner can be loaded', async () => {
+    const bytes = Buffer.from(`unique violation ${randomBytes(16).toString('hex')}`)
+    const hash = createHash('sha256').update(bytes).digest()
     const imageId = await insertPendingTestImage(user.id)
-    const error = { code: '23505' }
-    freezeImageUploadMock.mockResolvedValue(frozenUpload('ef'))
-    getImageByHashMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null)
-    persistImageHashWhileProcessingMock.mockRejectedValue(error)
+    const deletedWinnerId = await insertPendingTestImage(user.id)
+    await setImageHashAndProcessing(deletedWinnerId, hash)
+    await markImageDeleted(deletedWinnerId)
+    stubSource(Readable.from([bytes]))
+    // The stale first lookup hides the deleted owner; the retained digest still violates the unique index.
+    vi.spyOn(imageReads, 'getImageByHash').mockResolvedValueOnce(null)
     vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
 
-    await expect(completeImageUpload(user, imageId, digestRaceDependencies)).rejects.toBe(error)
+    await expect(completeImageUpload(user, imageId)).rejects.toMatchObject({ code: '23505' })
     expect(await getImageById(imageId)).toBeNull()
   })
 })
-
-function frozenUpload(byte: string) {
-  return {
-    bytes: 32,
-    cleanup: vi.fn<() => Promise<void>>(async () => undefined),
-    filename: '/unused/frozen-upload',
-    sha256: Buffer.from(byte.repeat(32), 'hex'),
-  }
-}

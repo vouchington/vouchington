@@ -1,5 +1,5 @@
 import { getImagesWorkLimit } from './work-limits.mts'
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { markImageUploadSourcesDeleted } from './complete-upload-state.mts'
@@ -18,15 +18,9 @@ const ABANDONED_UPLOAD_ERROR = 'Upload abandoned before completion'
 export async function cleanupAbandonedUploads(
   sweep: AbandonedUploadSweep,
   save: (sweep: AbandonedUploadSweep) => Promise<void>,
-  dependencies: {
-    recoveryQueue?: typeof imageUploadsQueue
-    acknowledgementQuery?: QueryExecutor
-  } = {},
 ) {
   const batchSize = getImagesWorkLimit('cleanup_batch_size')
-  const enqueueRecovery = createExtractImageMetadataEnqueue(
-    dependencies.recoveryQueue ?? imageUploadsQueue,
-  )
+  const enqueueRecovery = createExtractImageMetadataEnqueue(imageUploadsQueue)
   let state = sweep
   const counts = { cleaned: 0, recovered: 0, stagedSourcesDeleted: 0 }
   for (const phase of UPLOAD_CLEANUP_PHASES) {
@@ -40,7 +34,7 @@ export async function cleanupAbandonedUploads(
         const results = await Promise.allSettled(
           rows
             .slice(offset, offset + STAGED_SOURCE_CLEANUP_CONCURRENCY)
-            .map(image => cleanupStagedUploadSource(image.id, dependencies.acknowledgementQuery)),
+            .map(image => cleanupStagedUploadSource(image.id)),
         )
         rejectFailedPageEffects(results)
         // A known provider failure stays dirty for the next sweep without starving later keys.
@@ -62,7 +56,7 @@ export async function cleanupAbandonedUploads(
         result.status === 'fulfilled' && result.value ? [result.value] : [],
       )
       // oxlint-disable-next-line no-await-in-loop -- acknowledge one successful bounded phase before checkpointing
-      await markImageUploadSourcesDeleted(deletedIds, { query: dependencies.acknowledgementQuery }) // no-mistakes-disable-line query-reached-per-item: one bounded acknowledgement batch per fixed phase preserves checkpoint ordering
+      await markImageUploadSourcesDeleted(deletedIds) // no-mistakes-disable-line query-reached-per-item: one bounded acknowledgement batch per fixed phase preserves checkpoint ordering
       counts.cleaned += rows.length
     }
     const last = rows.at(-1)

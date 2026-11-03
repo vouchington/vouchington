@@ -12,21 +12,7 @@ import {
   lockImageAssetMutation,
 } from '@services/media-delivery-safety'
 
-type UpsertImageModerationDependencies = {
-  createOpenAIModeration: typeof createOpenAIModeration
-  presignImageReadUrl: typeof presignImageReadUrl
-}
-
-const defaultDependencies: UpsertImageModerationDependencies = {
-  createOpenAIModeration,
-  presignImageReadUrl,
-}
-
-export async function upsertImageOpenAIModeration(
-  imageId: string,
-  dependencyOverrides: Partial<UpsertImageModerationDependencies> = {},
-) {
-  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
+export async function upsertImageOpenAIModeration(imageId: string) {
   const image = await getImageByAny(imageId)
   if (!image) {
     return {
@@ -87,9 +73,9 @@ export async function upsertImageOpenAIModeration(
     }
   }
 
-  const imageUrl = await dependencies.presignImageReadUrl(image.s3_key)
+  const imageUrl = await presignImageReadUrl(image.s3_key)
 
-  const results = await dependencies.createOpenAIModeration([], [imageUrl])
+  const results = await createOpenAIModeration([], [imageUrl])
   const flagged = results.some(result => result.flagged)
 
   const applied = await applyImageOpenAIModerationResults(imageId, results, flagged)

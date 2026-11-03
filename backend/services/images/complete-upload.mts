@@ -25,24 +25,7 @@ import {
 import { markImageUploadFailed } from './upload-state.mts'
 import { deleteImagesFromS3 } from './s3.mts'
 
-type CompleteImageUploadDependencies = {
-  freezeImageUpload: typeof freezeImageUpload
-  getImageByHash: typeof getImageByHash
-  persistImageHashWhileProcessing: typeof persistImageHashWhileProcessing
-}
-
-const defaultDependencies: CompleteImageUploadDependencies = {
-  freezeImageUpload,
-  getImageByHash,
-  persistImageHashWhileProcessing,
-}
-
-export async function completeImageUpload(
-  user: { id: string },
-  imageId: string,
-  dependencies: Partial<CompleteImageUploadDependencies> = {},
-) {
-  const resolvedDependencies = { ...defaultDependencies, ...dependencies }
+export async function completeImageUpload(user: { id: string }, imageId: string) {
   const claim = await claimImageUpload(user.id, imageId)
   if (!claim.claimed) return claim.image
 
@@ -51,9 +34,9 @@ export async function completeImageUpload(
   try {
     const source = await getImageUploadSourceFromS3(image)
     if (!source.Body) throw new Error('S3 response body is empty')
-    frozen = await resolvedDependencies.freezeImageUpload(source.Body as unknown as MediaBody)
+    frozen = await freezeImageUpload(source.Body as unknown as MediaBody)
 
-    const existingImage = await resolvedDependencies.getImageByHash(frozen.sha256, true)
+    const existingImage = await getImageByHash(frozen.sha256, true)
     if (existingImage?.deleted_at) {
       await deleteImageUploadSourceFromS3(image)
       await deletePendingImage(imageId)
@@ -74,14 +57,11 @@ export async function completeImageUpload(
       return existingImage
     } else {
       try {
-        processingImage = await resolvedDependencies.persistImageHashWhileProcessing(
-          frozen.sha256,
-          imageId,
-        )
+        processingImage = await persistImageHashWhileProcessing(frozen.sha256, imageId)
       } catch (err) {
         if (!isUniqueViolation(err)) throw err
         await deleteDuplicateUpload(image, imageId)
-        const winner = await resolvedDependencies.getImageByHash(frozen.sha256)
+        const winner = await getImageByHash(frozen.sha256)
         if (winner) return winner
         throw err
       }

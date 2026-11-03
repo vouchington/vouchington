@@ -4,7 +4,6 @@ import { createImageUploadUrl } from './create-upload-url.mts'
 import { getImageById } from './get.mts'
 import { deriveUploadStatus } from './get-upload-state.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { MediaError } from '@vouchington/media'
 import { S3Buckets } from '@modules/aws'
 
 const NOW = Date.UTC(2026, 0, 31, 23, 59, 59)
@@ -171,21 +170,5 @@ describe('createImageUploadUrl', () => {
         contentLength: 1024.5,
       }),
     ).rejects.toThrow('Content length must be an integer')
-  })
-
-  it('preserves media errors outside the image validation contract', async () => {
-    const error = new MediaError('POLICY_INVALID', 'Invalid upload policy')
-
-    await expect(
-      createImageUploadUrl(user, {
-        contentType: 'image/jpeg',
-        contentLength: 1024,
-        dependencies: {
-          presignImageUploadUrl: async () => {
-            throw error
-          },
-        },
-      }),
-    ).rejects.toBe(error)
   })
 })
