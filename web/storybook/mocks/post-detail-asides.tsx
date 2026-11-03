@@ -1,8 +1,6 @@
 'use client'
 
-import { createContext, useContext, type ReactNode } from 'react'
 import { FollowContextCard } from '@/components/social/follow-context-card'
-import { HnDiscussionsAside } from '@/components/asides/hn-discussions-aside'
 import { PostRelatedTopicsAsideContent } from '@/components/tags/post-related-topics-aside-content'
 import { PostRelatedPostsAsideContent } from '@/components/tags/post-related-posts-aside-content'
 import { PostRelatedUrlsAsideContent } from '@/components/tags/post-related-urls-aside-content'
@@ -19,21 +17,6 @@ import {
   postAsideUrlRelations,
   postAsideReferralResponse,
 } from './post-detail-asides-data'
-
-const EMPTY_EXTRA_URLS: Array<string | null | undefined> = []
-const HnPreferenceContext = createContext(false)
-
-export function PostAsideFixturePreferences({
-  children,
-  importHackerNews,
-}: {
-  children: ReactNode
-  importHackerNews: boolean
-}) {
-  return (
-    <HnPreferenceContext.Provider value={importHackerNews}>{children}</HnPreferenceContext.Provider>
-  )
-}
 
 // Preserve the production composite and synchronous views; only its server data producers
 // are replaced. Synchronous content and its normal client interactions remain intact.
@@ -128,28 +111,4 @@ export function PostReviewReferralLinksAside({ post }: { post: Post }) {
     )
   }
   return null
-}
-
-export function HnDiscussionsPostAside({
-  extraUrls = EMPTY_EXTRA_URLS,
-  post,
-}: {
-  extraUrls?: Array<string | null | undefined>
-  post: Post
-}) {
-  const importHackerNews = useContext(HnPreferenceContext)
-  const { currentUser } = useAuth()
-  const relatedUrls = posts.some(candidate => candidate.id === post.id)
-    ? postAsideUrlRelations.flatMap(relation => {
-        const url = relation.object_data.url
-        return typeof url === 'string' ? [url] : []
-      })
-    : []
-
-  return (
-    <HnDiscussionsAside
-      enabled={importHackerNews && currentUser !== null}
-      urls={[...extraUrls, ...relatedUrls]}
-    />
-  )
 }

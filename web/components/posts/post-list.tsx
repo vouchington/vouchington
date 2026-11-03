@@ -15,6 +15,7 @@ import { useState } from 'react'
 // ast-grep-ignore: web-no-raw-api-response-client-boundary -- PostList owns browser pagination and merges every response sidecar across server and client-fetched pages.
 import type { PostsResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
 
 const AGENT_EXCLUDED_POST_TYPES = new Set(['article', 'blog_post'])
 
@@ -64,6 +65,10 @@ export function PostList({
   const allCommunities = mergeRecords(pages, page => page.communities ?? {})
   const allBookmarks = mergeRecords(pages, page => page.bookmarks ?? {})
   const allLinkEmbeds = mergeRecords(pages, page => page.post_link_embeds ?? {})
+  const allHackerNewsReferences = mergeRecords(
+    pages,
+    page => page.post_hacker_news_references ?? {},
+  )
   if (allResults.length === 0) {
     return emptyState !== undefined ? (
       emptyState
@@ -87,49 +92,51 @@ export function PostList({
       clearError={clearError}
       resetKey={resetKey}
     >
-      <div className='space-y-4'>
-        {allResults.map((result, i) => {
-          const post = allPosts[result.entity_id ?? result.id]
-          if (!post) return null
-          if (allBookmarks[post.id]?.hide || hiddenPostIds.has(post.id)) return null
+      <HackerNewsReferencesProvider references={allHackerNewsReferences}>
+        <div className='space-y-4'>
+          {allResults.map((result, i) => {
+            const post = allPosts[result.entity_id ?? result.id]
+            if (!post) return null
+            if (allBookmarks[post.id]?.hide || hiddenPostIds.has(post.id)) return null
 
-          const postModerations = AGENT_EXCLUDED_POST_TYPES.has(post.post_type)
-            ? undefined
-            : allModerations?.[post.id]
-          const moderationElectionVotes = postModerations
-            ? Object.fromEntries(
-                postModerations.flatMap(m =>
-                  allElectionVotes[m.id] ? [[m.id, allElectionVotes[m.id]!]] : [],
-                ),
-              )
-            : undefined
+            const postModerations = AGENT_EXCLUDED_POST_TYPES.has(post.post_type)
+              ? undefined
+              : allModerations?.[post.id]
+            const moderationElectionVotes = postModerations
+              ? Object.fromEntries(
+                  postModerations.flatMap(m =>
+                    allElectionVotes[m.id] ? [[m.id, allElectionVotes[m.id]!]] : [],
+                  ),
+                )
+              : undefined
 
-          return (
-            <PostCard
-              key={result.id}
-              post={post}
-              priority={i === 0}
-              metrics={allMetrics[post.id]}
-              election={allElections?.[post.id]}
-              html={allHtml?.[post.id]}
-              moderations={postModerations}
-              moderationElections={allModerationElections}
-              moderationElectionVotes={moderationElectionVotes}
-              electionVote={allElectionVotes[post.id]}
-              view={listStyle}
-              filterReviewTopicIds={filterReviewTopicIds}
-              sharedByUser={result.shared_by_id ? allUsers[result.shared_by_id] : undefined}
-              community={post.community_id ? allCommunities[post.community_id] : undefined}
-              sharedAt={result.shared_at}
-              linkEmbed={allLinkEmbeds[post.id]}
-              hideDownCount={hideDownCount}
-              initialSaved={allBookmarks[post.id]?.save ?? false}
-              initialHidden={allBookmarks[post.id]?.hide ?? false}
-              onHide={handlePostHidden}
-            />
-          )
-        })}
-      </div>
+            return (
+              <PostCard
+                key={result.id}
+                post={post}
+                priority={i === 0}
+                metrics={allMetrics[post.id]}
+                election={allElections?.[post.id]}
+                html={allHtml?.[post.id]}
+                moderations={postModerations}
+                moderationElections={allModerationElections}
+                moderationElectionVotes={moderationElectionVotes}
+                electionVote={allElectionVotes[post.id]}
+                view={listStyle}
+                filterReviewTopicIds={filterReviewTopicIds}
+                sharedByUser={result.shared_by_id ? allUsers[result.shared_by_id] : undefined}
+                community={post.community_id ? allCommunities[post.community_id] : undefined}
+                sharedAt={result.shared_at}
+                linkEmbed={allLinkEmbeds[post.id]}
+                hideDownCount={hideDownCount}
+                initialSaved={allBookmarks[post.id]?.save ?? false}
+                initialHidden={allBookmarks[post.id]?.hide ?? false}
+                onHide={handlePostHidden}
+              />
+            )
+          })}
+        </div>
+      </HackerNewsReferencesProvider>
     </InfiniteScroll>
   )
 }

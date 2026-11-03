@@ -303,9 +303,6 @@
             "rss_feed_follows_visibility": {
               "$ref": "#/components/schemas/UserPrivacyAudience"
             },
-            "should_import_hacker_news_discussions": {
-              "type": "boolean"
-            },
             "should_receive_third_party_marketing": {
               "anyOf": [
                 {
@@ -11264,9 +11261,6 @@
             },
             "rss_feed_follows_visibility": {
               "$ref": "#/components/schemas/UserPrivacyAudience"
-            },
-            "should_import_hacker_news_discussions": {
-              "type": "boolean"
             },
             "should_receive_third_party_marketing": {
               "anyOf": [
@@ -37145,9 +37139,6 @@
         "rss_feed_follows_visibility": {
           "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
           "type": "string"
-        },
-        "should_import_hacker_news_discussions": {
-          "type": "boolean"
         },
         "should_receive_third_party_marketing": {
           "type": "boolean"

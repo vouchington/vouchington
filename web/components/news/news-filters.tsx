@@ -1,9 +1,10 @@
 'use client'
 
 import { ListFilters } from '@/components/shared/list-filters'
+import { HackerNewsFilterToggle } from '@/components/hacker-news/hacker-news-filter-toggle'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export function NewsFilters() {
+export function NewsFilters({ showHackerNewsFilter = false }: { showHackerNewsFilter?: boolean }) {
   const t = useTranslations()
   const newsSortOptions = [{ label: t('extracted.news.newsFilters.new_18fdd549'), value: 'new' }]
   return (
@@ -14,6 +15,8 @@ export function NewsFilters() {
       sortOptions={newsSortOptions}
       showSort={false}
       enableHashtagSearch
-    />
+    >
+      {showHackerNewsFilter ? <HackerNewsFilterToggle /> : null}
+    </ListFilters>
   )
 }

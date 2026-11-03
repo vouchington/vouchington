@@ -55,7 +55,7 @@ export function ManagePostTags({
           t={t}
           post={post}
           authorAside={postData.author_aside ?? null}
-          sourceUrls={[postData.link_embed?.source_url]}
+          hackerNewsReferences={postData.post_hacker_news_references?.[post.id]}
         />
       </AsideDrawer>
       <ContentContainer
@@ -98,7 +98,7 @@ export function ManagePostTags({
             t={t}
             post={post}
             authorAside={postData.author_aside ?? null}
-            sourceUrls={[postData.link_embed?.source_url]}
+            hackerNewsReferences={postData.post_hacker_news_references?.[post.id]}
           />
         </AsideColumn>
       </ContentContainer>

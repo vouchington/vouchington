@@ -82,7 +82,6 @@ export const optionMcpResultCases: readonly McpResultFixtureCase[] = [
         default_post_privacy: 'private',
         country: 'US',
         ui_locale: null,
-        should_import_hacker_news_discussions: false,
       },
     },
   },

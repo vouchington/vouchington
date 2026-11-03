@@ -108,7 +108,6 @@ export type PrivateUser = BasicUser & {
   phone_number?: string | null
   processing_restricted_at?: Date | null
   should_receive_third_party_marketing?: boolean | null
-  should_import_hacker_news_discussions?: boolean
   suspended_at?: Date | null
   suspended_reason?: string | null
   suspended_by_id?: string | null

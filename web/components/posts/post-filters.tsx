@@ -7,6 +7,7 @@
 
 import { Suspense } from 'react'
 import { ListFilters } from '@/components/shared/list-filters'
+import { HackerNewsFilterToggle } from '@/components/hacker-news/hacker-news-filter-toggle'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface PostFiltersProps {
@@ -16,6 +17,7 @@ interface PostFiltersProps {
   defaultSort?: string
   enableHashtagSearch?: boolean
   enableRelevanceSort?: boolean
+  showHackerNewsFilter?: boolean
 }
 
 export function PostFilters(props: PostFiltersProps) {
@@ -33,6 +35,7 @@ function PostFiltersContent({
   defaultSort = 'new',
   enableHashtagSearch = true,
   enableRelevanceSort = true,
+  showHackerNewsFilter = false,
 }: PostFiltersProps) {
   const t = useTranslations()
   const resolvedSortOptions = sortOptions ?? [
@@ -66,6 +69,8 @@ function PostFiltersContent({
       showSearch={showSearch}
       showSort={showSort}
       enableHashtagSearch={enableHashtagSearch}
-    />
+    >
+      {showHackerNewsFilter ? <HackerNewsFilterToggle /> : null}
+    </ListFilters>
   )
 }

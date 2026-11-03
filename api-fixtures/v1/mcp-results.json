@@ -125,8 +125,7 @@
           "default_post_broadcast": "followers",
           "default_post_privacy": "private",
           "country": "US",
-          "ui_locale": null,
-          "should_import_hacker_news_discussions": false
+          "ui_locale": null
         }
       }
     },

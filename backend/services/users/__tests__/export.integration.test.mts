@@ -71,7 +71,6 @@ describe('writeExportFiles', () => {
       direct_messages_audience: 'users',
       processing_restricted_at: true,
       should_receive_third_party_marketing: true,
-      should_import_hacker_news_discussions: true,
       country: 'us',
       ui_locale: 'EN_us',
     })
@@ -89,7 +88,6 @@ describe('writeExportFiles', () => {
         community_memberships_visibility: 'nobody',
         direct_messages_audience: 'users',
         should_receive_third_party_marketing: 'true',
-        should_import_hacker_news_discussions: 'true',
         country: 'US',
         ui_locale: 'en',
       })

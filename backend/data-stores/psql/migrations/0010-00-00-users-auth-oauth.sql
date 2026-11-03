@@ -129,7 +129,6 @@ CREATE TABLE IF NOT EXISTS users (
 
   -- user profile
   markdown TEXT NOT NULL DEFAULT '',
-  should_import_hacker_news_discussions BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- user settings
   -- TRUE = opt-in
@@ -277,7 +276,6 @@ CREATE INDEX IF NOT EXISTS idx_users__lingua_rs_pending
 
 COMMENT ON TABLE users IS 'User accounts. Core identity table for all registered users.';
 COMMENT ON COLUMN users.platform_account_kind IS 'Reserved platform identity: official for people, system for automation, NULL for members and the deleted tombstone.';
-COMMENT ON COLUMN users.should_import_hacker_news_discussions IS 'Whether this user opts in to Hacker News discussion imports.';
 COMMENT ON COLUMN users.use_display_name_from IS 'Which source to use for the displayed name (username, facebook, x, etc.).';
 COMMENT ON COLUMN users.username IS 'Unique username chosen by the user. NULL if not yet set. Case-insensitive (stored lowercase).';
 COMMENT ON COLUMN users.markdown IS 'User profile bio in markdown format.';

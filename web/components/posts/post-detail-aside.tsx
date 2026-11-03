@@ -1,7 +1,8 @@
 import { PostRelatedPostsAside } from '@/components/tags/post-related-posts-aside'
 import { PostRelatedTopicsAside } from '@/components/tags/post-related-topics-aside'
 import { PostRelatedUrlsAside } from '@/components/tags/post-related-urls-aside'
-import { HnDiscussionsPostAside } from '@/components/asides/hn-discussions-post-aside'
+import { HackerNewsReferencesAside } from '@/components/hacker-news/hacker-news-references-aside'
+import type { HackerNewsReferenceDetail } from '@/types/hacker-news'
 import { ContributeCtaAside } from '@/components/asides/contribute-cta-aside'
 import PostFollowContext from '@/components/posts/post-follow-context'
 import { PostReviewReferralLinksAside } from '@/components/posts/post-review-referral-links-aside'
@@ -10,20 +11,18 @@ import type { Post, AuthorAside } from '@/types/posts'
 import { SequentialAsideSuspense } from '@/components/asides/sequential-aside-suspense'
 import type { getTranslations } from '@/lib/i18n/get-translations'
 
-const EMPTY_SOURCE_URLS: Array<string | null | undefined> = []
-
 interface PostDetailAsideProps {
   t: Awaited<ReturnType<typeof getTranslations>>
   post: Post
   authorAside: AuthorAside | null
-  sourceUrls?: Array<string | null | undefined>
+  hackerNewsReferences?: HackerNewsReferenceDetail
 }
 
 export function PostDetailAside({
   t,
   post,
   authorAside,
-  sourceUrls = EMPTY_SOURCE_URLS,
+  hackerNewsReferences,
 }: PostDetailAsideProps) {
   return (
     <>
@@ -41,12 +40,9 @@ export function PostDetailAside({
         <PostRelatedTopicsAside post={post} />
         <PostRelatedPostsAside post={post} />
         <PostRelatedUrlsAside post={post} />
-        <HnDiscussionsPostAside
-          post={post}
-          extraUrls={sourceUrls}
-        />
         <ContributeCtaAside />
       </SequentialAsideSuspense>
+      <HackerNewsReferencesAside references={hackerNewsReferences} />
     </>
   )
 }

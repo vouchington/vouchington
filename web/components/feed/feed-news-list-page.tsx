@@ -7,6 +7,7 @@ import { getRssFeedItemsFeed } from '@/lib/api/server'
 import { FeedTopSection } from './feed-top-section'
 import { FeedViewToggle } from './feed-view-toggle'
 import { NewsFilters } from '@/components/news/news-filters'
+import { HACKER_NEWS_FILTER_PARAM } from '@/components/hacker-news/hacker-news-filter-param'
 import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { FEED_PAGE_LIMIT } from '@/lib/feed-route-configs'
@@ -36,6 +37,7 @@ export async function FeedNewsListPage({ config, searchParams, action }: FeedNew
     limit: FEED_PAGE_LIMIT,
     ...(query ? { q: query } : {}),
     ...(mediaType ? { media_type: mediaType } : {}),
+    ...(searchParams[HACKER_NEWS_FILTER_PARAM] === '1' ? { has_hacker_news_references: true } : {}),
   }
   const dataResult = await getRssFeedItemsFeed(config.feedType, {
     searchParams: queryParams,
@@ -55,7 +57,7 @@ export async function FeedNewsListPage({ config, searchParams, action }: FeedNew
       <FeedTopSection
         category={config.category}
         activeFilterPath={config.path}
-        filters={<NewsFilters />}
+        filters={<NewsFilters showHackerNewsFilter />}
         viewToggle={<FeedViewToggle />}
         action={action}
       />

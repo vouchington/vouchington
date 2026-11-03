@@ -1320,7 +1320,6 @@
         "follows_visibility",
         "likes_visibility",
         "rss_feed_follows_visibility",
-        "should_import_hacker_news_discussions",
         "topic_follows_visibility",
         "ui_locale"
       ]

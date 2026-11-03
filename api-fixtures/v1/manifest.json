@@ -35332,12 +35332,6 @@
                           ]
                         }
                       },
-                      "should_import_hacker_news_discussions": {
-                        "required": false,
-                        "schema": {
-                          "type": "boolean"
-                        }
-                      },
                       "should_receive_third_party_marketing": {
                         "required": false,
                         "schema": {
@@ -60766,12 +60760,6 @@
                                 ]
                               }
                             },
-                            "should_import_hacker_news_discussions": {
-                              "required": false,
-                              "schema": {
-                                "type": "boolean"
-                              }
-                            },
                             "should_receive_third_party_marketing": {
                               "required": false,
                               "schema": {
@@ -63128,12 +63116,6 @@
                               ]
                             }
                           },
-                          "should_import_hacker_news_discussions": {
-                            "required": false,
-                            "schema": {
-                              "type": "boolean"
-                            }
-                          },
                           "should_receive_third_party_marketing": {
                             "required": false,
                             "schema": {
@@ -64809,12 +64791,6 @@
                               "value": "hidden"
                             }
                           ]
-                        }
-                      },
-                      "should_import_hacker_news_discussions": {
-                        "required": false,
-                        "schema": {
-                          "type": "boolean"
                         }
                       },
                       "should_receive_third_party_marketing": {

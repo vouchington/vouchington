@@ -24,7 +24,6 @@ export function streamProfile(userId: string) {
       default_post_privacy,
       processing_restricted_at,
       should_receive_third_party_marketing,
-      should_import_hacker_news_discussions,
       country,
       ui_locale,
       uuid_extract_timestamp(id) AS created_at,

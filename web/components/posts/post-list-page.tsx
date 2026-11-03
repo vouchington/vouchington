@@ -22,6 +22,7 @@ import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
 import { PostListTopSection } from './post-list-top-section'
 import { PostListEmptyState } from './post-list-empty-state'
 import { joinSearchParamValues } from '@/lib/search-param-values'
+import { HACKER_NEWS_FILTER_PARAM } from '@/components/hacker-news/hacker-news-filter-param'
 
 interface PostListPageProps {
   config: PostRouteConfig
@@ -41,6 +42,7 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
     ...(q ? { q } : {}),
     ...(topics ? { topics } : {}),
     ...(postTypes ? { post_types: postTypes } : {}),
+    ...(params[HACKER_NEWS_FILTER_PARAM] === '1' ? { has_hacker_news_references: true } : {}),
     sort,
     limit: 25,
   }
@@ -88,7 +90,12 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
 
         <PostListTopSection
           config={config}
-          filters={<PostFilters defaultSort='hot' />}
+          filters={
+            <PostFilters
+              defaultSort='hot'
+              showHackerNewsFilter
+            />
+          }
           viewToggle={<PostViewToggle />}
           isAuthenticated={!!currentUser}
           userRoles={currentUser?.roles ?? []}
