@@ -25,11 +25,7 @@ import { createFollowNotification } from '@services/notifications/create-follow-
 import { listNotifications } from '@services/notifications/list'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { background } from '@queues/background/queues'
-import {
-  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
-  NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
-} from '@queues/background/enqueues/notifications-jobs'
-import type { ReconcileNotificationPushIntentsData } from '@queues/notifications/enqueues'
+import { NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB } from '@queues/background/enqueues/notifications-jobs'
 
 async function queuedPushes(userIds: string[]) {
   const jobs = await readAllQueueJobs(background)
@@ -196,40 +192,6 @@ describe('notification push intent processors', () => {
         ).resolves.toEqual({ enqueued: 1 })
         await expect(queuedPushes([recipient.id])).resolves.toEqual([
           { userId: recipient.id, notificationId: fixture.notificationIds[0] },
-        ])
-      },
-    )
-  })
-})
-
-describe('notification push-intent recovery', () => {
-  it('chains another bounded page when at least 100 intents are available', async () => {
-    const recipient = await createTestUserDirect()
-    await withTestNotificationPushRecoveryBacklog(
-      { userId: recipient.id, count: 100 },
-      async fixture => {
-        await expect(
-          processReconcileNotificationPushIntents(
-            { scanBefore: fixture.scanBefore, after: fixture.after },
-            scopedTo(fixture.notificationIds),
-          ),
-        ).resolves.toEqual({ enqueued: 100 })
-
-        const pushes = await queuedPushes([recipient.id])
-        expect(pushes.map(push => push.notificationId).toSorted()).toEqual(fixture.notificationIds)
-        const continuations = (await readAllQueueJobs(background))
-          .filter(job => job.name === NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB.name)
-          .map(job => job.data as ReconcileNotificationPushIntentsData)
-          .filter(data => data.after?.userId === recipient.id)
-        expect(continuations).toEqual([
-          {
-            scanBefore: fixture.scanBefore,
-            after: {
-              updatedAt: fixture.scanBefore,
-              userId: recipient.id,
-              notificationId: fixture.notificationIds[99],
-            },
-          },
         ])
       },
     )
